@@ -97,12 +97,5 @@ transformation::MakeTransformationMoveBlockDown(uint32_t id) {
   return result;
 }
 
-protobufs::Transformation TransformationMoveBlockDown::ToMessage() {
-  protobufs::Transformation result;
-  result.set_allocated_move_block_down(
-      new protobufs::TransformationMoveBlockDown(message_));
-  return result;
-}
-
 }  // namespace fuzz
 }  // namespace spvtools

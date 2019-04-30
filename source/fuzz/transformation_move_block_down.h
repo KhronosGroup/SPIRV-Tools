@@ -1,3 +1,5 @@
+#include <utility>
+
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,46 +25,21 @@ namespace fuzz {
 
 namespace transformation {
 
+// - |block_id| must be the id of a block b in the given module.
+// - b must not be the first nor last block appearing, in program order,
+//   in a function.
+// - b must not dominate the block that follows it in program order.
 bool IsApplicable(const protobufs::TransformationMoveBlockDown& message,
                   opt::IRContext* context, const FactManager& fact_manager);
+
+// The block with id |block_id| is moved down; i.e. the program order
+// between it and the block that follows it is swapped.
 void Apply(const protobufs::TransformationMoveBlockDown& message,
            opt::IRContext* context, FactManager* fact_manager);
 protobufs::TransformationMoveBlockDown MakeTransformationMoveBlockDown(
     uint32_t id);
 
 }  // namespace transformation
-
-// A transformation that moves a basic block to be one position lower in program
-// order.
-class TransformationMoveBlockDown : public Transformation {
- public:
-  // Constructs a transformation from a protobuf message.
-  explicit TransformationMoveBlockDown(
-      const protobufs::TransformationMoveBlockDown message)
-      : message_(message) {}
-
-  ~TransformationMoveBlockDown() override = default;
-
-  // - |block_id_| must be the id of a block b in the given module.
-  // - b must not be the first nor last block appearing, in program order,
-  //   in a function.
-  // - b must not dominate the block that follows it in program order.
-  bool IsApplicable(opt::IRContext* context,
-                    const FactManager& fact_manager) override {
-    return transformation::IsApplicable(message_, context, fact_manager);
-  }
-
-  // The block with id |block_id_| is moved down; i.e. the program order
-  // between it and the block that follows it is swapped.
-  void Apply(opt::IRContext* context, FactManager* fact_manager) override {
-    transformation::Apply(message_, context, fact_manager);
-  }
-
-  protobufs::Transformation ToMessage() override;
-
- private:
-  const protobufs::TransformationMoveBlockDown message_;
-};
 
 }  // namespace fuzz
 }  // namespace spvtools

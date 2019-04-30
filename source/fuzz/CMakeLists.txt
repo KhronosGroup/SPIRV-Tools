@@ -45,6 +45,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         protobufs/spirvfuzz.pb.cc
         pseudo_random_generator.cpp
         replayer.cpp
+        transformation.cpp
         transformation_add_boolean_constant.cpp
         transformation_add_dead_break.cpp
         transformation_move_block_down.cpp

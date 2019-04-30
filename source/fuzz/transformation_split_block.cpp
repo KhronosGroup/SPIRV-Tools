@@ -24,8 +24,14 @@ using opt::IRContext;
 using opt::Instruction;
 using opt::Operand;
 
-std::pair<bool, BasicBlock::iterator>
-TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
+namespace {
+
+// Returns (true, block.end()) if the relevant instruction is in this block
+// but inapplicable
+//         (true, it) if 'it' is an iterator for the relevant instruction
+//         (false, _) otherwise.
+std::pair<bool, BasicBlock::iterator> FindInstToSplitBefore(
+    const protobufs::TransformationSplitBlock& message, BasicBlock* block) {
   // There are three possibilities:
   // (1) the transformation wants to split at some offset from the block's
   //     label.
@@ -33,9 +39,9 @@ TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
   //     non-label instruction inside the block.
   // (3) the split associated with this transformation has nothing to do with
   //     this block
-  if (result_id_ == block->id()) {
+  if (message.result_id() == block->id()) {
     // Case (1).
-    if (offset_ == 0) {
+    if (message.offset() == 0) {
       // The offset is not allowed to be 0: this would mean splitting before the
       // block's label.
       return {true, block->end()};
@@ -43,16 +49,17 @@ TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
     // Conceptually, the first instruction in the block is [label + 1].
     // We thus start from 1 when applying the offset.
     auto inst_it = block->begin();
-    for (uint32_t i = 1; i < offset_ && inst_it != block->end(); i++) {
+    for (uint32_t i = 1; i < message.offset() && inst_it != block->end(); i++) {
       ++inst_it;
     }
     // This is either the desired instruction, or the end of the block.
     return {true, inst_it};
   }
   for (auto inst_it = block->begin(); inst_it != block->end(); ++inst_it) {
-    if (result_id_ == inst_it->result_id()) {
+    if (message.result_id() == inst_it->result_id()) {
       // Case (2): we have found the base instruction; we now apply the offset.
-      for (uint32_t i = 0; i < offset_ && inst_it != block->end(); i++) {
+      for (uint32_t i = 0; i < message.offset() && inst_it != block->end();
+           i++) {
         ++inst_it;
       }
       // This is either the desired instruction, or the end of the block.
@@ -63,16 +70,19 @@ TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
   return {false, block->end()};
 }
 
-bool TransformationSplitBlock::IsApplicable(IRContext* context,
-                                            const FactManager& /*unused*/) {
-  if (!fuzzerutil::IsFreshId(context, fresh_id_)) {
+}  // namespace
+
+bool transformation::IsApplicable(
+    const protobufs::TransformationSplitBlock& message, IRContext* context,
+    const FactManager& /*unused*/) {
+  if (!fuzzerutil::IsFreshId(context, message.fresh_id())) {
     // We require the id for the new block to be unused.
     return false;
   }
   // Consider every block in every function.
   for (auto& function : *context->module()) {
     for (auto& block : function) {
-      auto maybe_split_before = FindInstToSplitBefore(&block);
+      auto maybe_split_before = FindInstToSplitBefore(message, &block);
       if (!maybe_split_before.first) {
         continue;
       }
@@ -108,11 +118,11 @@ bool TransformationSplitBlock::IsApplicable(IRContext* context,
   return false;
 }
 
-void TransformationSplitBlock::Apply(IRContext* context,
-                                     FactManager* /*unused*/) {
+void transformation::Apply(const protobufs::TransformationSplitBlock& message,
+                           IRContext* context, FactManager* /*unused*/) {
   for (auto& function : *context->module()) {
     for (auto& block : function) {
-      auto maybe_split_before = FindInstToSplitBefore(&block);
+      auto maybe_split_before = FindInstToSplitBefore(message, &block);
       if (!maybe_split_before.first) {
         continue;
       }
@@ -121,16 +131,16 @@ void TransformationSplitBlock::Apply(IRContext* context,
              "instruction to split on.");
       // We need to make sure the module's id bound is large enough to add the
       // fresh id.
-      fuzzerutil::UpdateModuleIdBound(context, fresh_id_);
+      fuzzerutil::UpdateModuleIdBound(context, message.fresh_id());
       // Split the block.
-      auto new_bb =
-          block.SplitBasicBlock(context, fresh_id_, maybe_split_before.second);
+      auto new_bb = block.SplitBasicBlock(context, message.fresh_id(),
+                                          maybe_split_before.second);
       // The split does not automatically add a branch between the two parts of
       // the original block, so we add one.
       block.AddInstruction(MakeUnique<Instruction>(
           context, SpvOpBranch, 0, 0,
-          std::initializer_list<Operand>{
-              Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {fresh_id_})}));
+          std::initializer_list<Operand>{Operand(
+              spv_operand_type_t::SPV_OPERAND_TYPE_ID, {message.fresh_id()})}));
       // If we split before OpPhi instructions, we need to update their
       // predecessor operand so that the block they used to be inside is now the
       // predecessor.
@@ -150,13 +160,14 @@ void TransformationSplitBlock::Apply(IRContext* context,
          "transformation.");
 }
 
-protobufs::Transformation TransformationSplitBlock::ToMessage() {
-  auto split_block_message = new protobufs::TransformationSplitBlock;
-  split_block_message->set_fresh_id(fresh_id_);
-  split_block_message->set_offset(offset_);
-  split_block_message->set_result_id(result_id_);
-  protobufs::Transformation result;
-  result.set_allocated_split_block(split_block_message);
+protobufs::TransformationSplitBlock
+transformation::MakeTransformationSplitBlock(uint32_t result_id,
+                                             uint32_t offset,
+                                             uint32_t fresh_id) {
+  protobufs::TransformationSplitBlock result;
+  result.set_result_id(result_id);
+  result.set_offset(offset);
+  result.set_fresh_id(fresh_id);
   return result;
 }
 

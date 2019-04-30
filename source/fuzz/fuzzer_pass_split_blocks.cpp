@@ -23,7 +23,7 @@ using opt::IRContext;
 void FuzzerPassSplitBlocks::Apply(
     IRContext* ir_context, FactManager* fact_manager,
     FuzzerContext* fuzzer_context,
-    std::vector<std::unique_ptr<Transformation>>* transformations) {
+    protobufs::TransformationSequence* transformations) {
   // Collect up all the blocks in the module.
   std::vector<opt::BasicBlock*> available_blocks;
   for (auto& function : *ir_context->module()) {
@@ -72,14 +72,13 @@ void FuzzerPassSplitBlocks::Apply(
     auto base_offset =
         base_offset_pairs[fuzzer_context->GetRandomGenerator()->RandomUint32(
             (uint32_t)base_offset_pairs.size())];
-    std::unique_ptr<TransformationSplitBlock> transformation =
-        MakeUnique<TransformationSplitBlock>(
-            base_offset.first, base_offset.second, fuzzer_context->FreshId());
+    auto message = transformation::MakeTransformationSplitBlock(
+        base_offset.first, base_offset.second, fuzzer_context->FreshId());
     // If the position we have chosen turns out to be a valid place to split the
     // block, we apply the split. Otherwise the block just doesn't get split.
-    if (transformation->IsApplicable(ir_context, *fact_manager)) {
-      transformation->Apply(ir_context, fact_manager);
-      transformations->push_back(std::move(transformation));
+    if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
+      transformation::Apply(message, ir_context, fact_manager);
+      *transformations->add_transformations()->mutable_split_block() = message;
     }
   }
 }

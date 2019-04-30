@@ -23,7 +23,7 @@ using opt::IRContext;
 void FuzzerPassPermuteBlocks::Apply(
     IRContext* ir_context, FactManager* fact_manager,
     FuzzerContext* fuzzer_context,
-    std::vector<std::unique_ptr<Transformation>>* transformations) {
+    protobufs::TransformationSequence* transformations) {
   // For now we do something very simple: we randomly decide whether to move a
   // block, and for each block that we do move, we push it down as far as we
   // legally can.
@@ -63,11 +63,10 @@ void FuzzerPassPermuteBlocks::Apply(
       while (true) {
         protobufs::TransformationMoveBlockDown message;
         message.set_block_id(*id);
-        std::unique_ptr<TransformationMoveBlockDown> transformation =
-            MakeUnique<TransformationMoveBlockDown>(message);
-        if (transformation->IsApplicable(ir_context, *fact_manager)) {
-          transformation->Apply(ir_context, fact_manager);
-          transformations->push_back(std::move(transformation));
+        if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
+          transformation::Apply(message, ir_context, fact_manager);
+          *transformations->add_transformations()->mutable_move_block_down() =
+              message;
         } else {
           break;
         }

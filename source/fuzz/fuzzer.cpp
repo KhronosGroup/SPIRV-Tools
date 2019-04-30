@@ -83,12 +83,6 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   auto minimum_fresh_id = ir_context->module()->id_bound() + 100;
   FuzzerContext fuzzer_context(&random_generator, minimum_fresh_id);
 
-  // This keeps a record of all the transformations that are applied.
-  // Currently we do not do anything further with it, but in due course it will
-  // be serialized along with the generated binary, for use in test case
-  // reduction.
-  std::vector<std::unique_ptr<Transformation>> transformations_applied;
-
   // An empty fact manager.
   // TODO: settle on a way to provide initial facts.
   FactManager fact_manager;
@@ -97,26 +91,20 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // present, such as boolean constants.
   FuzzerPassAddUsefulConstructs().Apply(ir_context.get(), &fact_manager,
                                         &fuzzer_context,
-                                        &transformations_applied);
+                                        transformation_sequence_out);
 
   // Apply some semantics-preserving passes.
   FuzzerPassSplitBlocks().Apply(ir_context.get(), &fact_manager,
-                                &fuzzer_context, &transformations_applied);
+                                &fuzzer_context, transformation_sequence_out);
   FuzzerPassAddDeadBreaks().Apply(ir_context.get(), &fact_manager,
-                                  &fuzzer_context, &transformations_applied);
+                                  &fuzzer_context, transformation_sequence_out);
 
   // Finally, give the blocks in the module a good shake-up.
   FuzzerPassPermuteBlocks().Apply(ir_context.get(), &fact_manager,
-                                  &fuzzer_context, &transformations_applied);
+                                  &fuzzer_context, transformation_sequence_out);
 
   // Write out the module as a binary.
   ir_context->module()->ToBinary(binary_out, false);
-
-  // Turn all the transformations into a proto message.
-  for (auto& transformation : transformations_applied) {
-    *transformation_sequence_out->add_transformations() =
-        transformation->ToMessage();
-  }
 
   return Fuzzer::FuzzerResultStatus::kComplete;
 }

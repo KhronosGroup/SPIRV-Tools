@@ -21,38 +21,25 @@
 namespace spvtools {
 namespace fuzz {
 
-// Supports adding the constants true and false to a module, which may be
-// necessary in order to enable other transformations if they are not present.
-class TransformationAddBooleanConstant : public Transformation {
- public:
-  // Constructs a transformation from a given id and boolean.
-  TransformationAddBooleanConstant(uint32_t fresh_id, bool is_true)
-      : fresh_id_(fresh_id), is_true_(is_true) {}
+namespace transformation {
 
-  // Constructs a transformation from a protobuf message.
-  explicit TransformationAddBooleanConstant(
-      const protobufs::TransformationAddBooleanConstant& message)
-      : fresh_id_(message.fresh_id()), is_true_(message.is_true()) {}
+// - |fresh_id| must not be used by the module.
+// - The module must already contain OpTypeBool.
+// - The module must not already contain an OpConstantTrue (OpConstantFalse)
+//   instruction if |is_true| holds (does not hold).
+bool IsApplicable(const protobufs::TransformationAddBooleanConstant& message,
+                  opt::IRContext* context, const FactManager& fact_manager);
 
-  ~TransformationAddBooleanConstant() override = default;
+// - Adds OpConstantTrue (OpConstantFalse) to the module with id |fresh_id|
+// if |is_true| holds (does not hold).
+void Apply(const protobufs::TransformationAddBooleanConstant& message,
+           opt::IRContext* context, FactManager* fact_manager);
 
-  // - |fresh_id_| must not be used by the module.
-  // - The module must already contain OpTypeBool.
-  // - The module must not already contain an OpConstantTrue (OpConstantFalse)
-  // instruction if is_true_ holds (does not hold).
-  bool IsApplicable(opt::IRContext* context,
-                    const FactManager& fact_manager) override;
+// Helper factory to create a transformation message.
+protobufs::TransformationAddBooleanConstant
+MakeTransformationAddBooleanConstant(uint32_t fresh_id, bool is_true);
 
-  // - Adds OpConstantTrue (OpConstantFalse) to the module with id |fresh_id_|
-  // if is_true_ holds (does not hold).
-  void Apply(opt::IRContext* context, FactManager* fact_manager) override;
-
-  protobufs::Transformation ToMessage() override;
-
- private:
-  const uint32_t fresh_id_;
-  const bool is_true_;
-};
+}  // namespace transformation
 
 }  // namespace fuzz
 }  // namespace spvtools

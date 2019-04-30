@@ -15,8 +15,9 @@
 #ifndef SOURCE_FUZZ_FUZZER_PASS_H_
 #define SOURCE_FUZZ_FUZZER_PASS_H_
 
+#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
-#include "source/fuzz/transformation.h"
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -32,10 +33,9 @@ class FuzzerPass {
   // facts from |fact_manager|, and using |fuzzer_context| to guide the process.
   // Appends to |transformations| all transformations that were applied during
   // the pass.
-  virtual void Apply(
-      opt::IRContext* ir_context, FactManager* fact_manager,
-      FuzzerContext* fuzzer_context,
-      std::vector<std::unique_ptr<Transformation>>* transformations) = 0;
+  virtual void Apply(opt::IRContext* ir_context, FactManager* fact_manager,
+                     FuzzerContext* fuzzer_context,
+                     protobufs::TransformationSequence* transformations) = 0;
 
  private:
 };

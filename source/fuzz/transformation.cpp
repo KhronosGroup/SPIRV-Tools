@@ -1,0 +1,84 @@
+// Copyright (c) 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "source/fuzz/transformation.h"
+#include "source/fuzz/transformation_add_boolean_constant.h"
+#include "source/fuzz/transformation_add_dead_break.h"
+#include "source/fuzz/transformation_move_block_down.h"
+#include "source/fuzz/transformation_replace_constant_with_uniform.h"
+#include "source/fuzz/transformation_split_block.h"
+
+namespace spvtools {
+namespace fuzz {
+namespace transformation {
+
+using protobufs::Transformation;
+
+bool IsApplicable(const Transformation& message,
+                  spvtools::opt::IRContext* context,
+                  const spvtools::fuzz::FactManager& fact_manager) {
+  switch (message.transformation_case()) {
+    case Transformation::TransformationCase::kAddBooleanConstant:
+      return transformation::IsApplicable(message.add_boolean_constant(),
+                                          context, fact_manager);
+    case Transformation::TransformationCase::kAddDeadBreak:
+      return transformation::IsApplicable(message.add_dead_break(), context,
+                                          fact_manager);
+    case Transformation::TransformationCase::kMoveBlockDown:
+      return transformation::IsApplicable(message.move_block_down(), context,
+                                          fact_manager);
+    case Transformation::TransformationCase::kReplaceConstantWithUniform:
+      return transformation::IsApplicable(
+          message.replace_constant_with_uniform(), context, fact_manager);
+    case Transformation::TransformationCase::kSplitBlock:
+      return transformation::IsApplicable(message.split_block(), context,
+                                          fact_manager);
+    default:
+      assert(message.transformation_case() ==
+             Transformation::TransformationCase::TRANSFORMATION_NOT_SET);
+      assert(false);
+      return false;
+  }
+}
+
+void Apply(const Transformation& message, spvtools::opt::IRContext* context,
+           spvtools::fuzz::FactManager* fact_manager) {
+  switch (message.transformation_case()) {
+    case Transformation::TransformationCase::kAddBooleanConstant:
+      transformation::Apply(message.add_boolean_constant(), context,
+                            fact_manager);
+      break;
+    case Transformation::TransformationCase::kAddDeadBreak:
+      transformation::Apply(message.add_dead_break(), context, fact_manager);
+      break;
+    case Transformation::TransformationCase::kMoveBlockDown:
+      transformation::Apply(message.move_block_down(), context, fact_manager);
+      break;
+    case Transformation::TransformationCase::kReplaceConstantWithUniform:
+      transformation::Apply(message.replace_constant_with_uniform(), context,
+                            fact_manager);
+      break;
+    case Transformation::TransformationCase::kSplitBlock:
+      transformation::Apply(message.split_block(), context, fact_manager);
+      break;
+    default:
+      assert(message.transformation_case() ==
+             Transformation::TransformationCase::TRANSFORMATION_NOT_SET);
+      assert(false);
+  }
+}
+
+}  // namespace transformation
+}  // namespace fuzz
+}  // namespace spvtools

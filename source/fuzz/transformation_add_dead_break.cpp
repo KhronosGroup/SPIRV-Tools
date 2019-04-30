@@ -24,8 +24,9 @@ using opt::BasicBlock;
 using opt::IRContext;
 using opt::Instruction;
 
-BasicBlock* TransformationAddDeadBreak::MaybeFindBlock(
-    IRContext* context, uint32_t maybe_block_id) {
+namespace {
+
+BasicBlock* MaybeFindBlock(IRContext* context, uint32_t maybe_block_id) {
   auto inst = context->get_def_use_mgr()->GetDef(maybe_block_id);
   if (inst == nullptr) {
     // No instruction defining this id was found.
@@ -39,19 +40,18 @@ BasicBlock* TransformationAddDeadBreak::MaybeFindBlock(
   return context->cfg()->block(maybe_block_id);
 }
 
-bool TransformationAddDeadBreak::PhiIdsOk(IRContext* context,
-                                          BasicBlock* bb_from,
-                                          BasicBlock* bb_to) {
+bool PhiIdsOk(const protobufs::TransformationAddDeadBreak& message,
+              IRContext* context, BasicBlock* bb_from, BasicBlock* bb_to) {
   if (bb_from->IsSuccessor(bb_to)) {
-    // There is already an edge from |from_block_| to |to_block_|, so there is
+    // There is already an edge from |from_block| to |to_block|, so there is
     // no need to extend OpPhi instructions.  Do not allow phi ids to be
     // present. This might turn out to be too strict; perhaps it would be OK
     // just to ignore the ids in this case.
-    return phi_ids_.empty();
+    return message.phi_ids().empty();
   }
-  // The break would add a previously non-existent edge from |from_block_| to
-  // |to_block_|, so we go through the given phi ids and check that they exactly
-  // match the OpPhi instructions in |to_block_|.
+  // The break would add a previously non-existent edge from |from_block| to
+  // |to_block|, so we go through the given phi ids and check that they exactly
+  // match the OpPhi instructions in |to_block|.
   uint32_t phi_index = 0;
   // An explicit loop, rather than applying a lambda to each OpPhi in |bb_to|,
   // makes sense here because we need to increment |phi_index| for each OpPhi
@@ -62,14 +62,14 @@ bool TransformationAddDeadBreak::PhiIdsOk(IRContext* context,
       // a non-OpPhi then we have seen them all.
       break;
     }
-    if (phi_index == phi_ids_.size()) {
+    if (phi_index == (uint32_t)message.phi_ids().size()) {
       // Not enough phi ids have been provided to account for the OpPhi
       // instructions.
       return false;
     }
     // Look for an instruction defining the next phi id.
     Instruction* phi_extension =
-        context->get_def_use_mgr()->GetDef(phi_ids_[phi_index]);
+        context->get_def_use_mgr()->GetDef(message.phi_ids()[phi_index]);
     if (!phi_extension) {
       // The id given to extend this OpPhi does not exist.
       return false;
@@ -90,13 +90,13 @@ bool TransformationAddDeadBreak::PhiIdsOk(IRContext* context,
     if (!found) {
       // The id did not correspond to a constant, so it must come from an
       // instruction in the function.  Check whether its definition dominates
-      // the exit of |from_block_|.
+      // the exit of |from_block|.
       auto dominator_analysis =
           context->GetDominatorAnalysis(bb_from->GetParent());
       if (!dominator_analysis->Dominates(phi_extension,
                                          bb_from->terminator())) {
         // The given id is no good as its definition does not dominate the exit
-        // of |from_block_|
+        // of |from_block|
         return false;
       }
     }
@@ -105,37 +105,39 @@ bool TransformationAddDeadBreak::PhiIdsOk(IRContext* context,
   // Reject the transformation if not all of the ids for extending OpPhi
   // instructions are needed. This might turn out to be stricter than necessary;
   // perhaps it would be OK just to not use the ids in this case.
-  return phi_index == phi_ids_.size();
+  return phi_index == (uint32_t)message.phi_ids().size();
 }
 
-bool TransformationAddDeadBreak::FromBlockIsInLoopContinueConstruct(
-    IRContext* context, uint32_t maybe_loop_header) {
+bool FromBlockIsInLoopContinueConstruct(
+    const protobufs::TransformationAddDeadBreak& message, IRContext* context,
+    uint32_t maybe_loop_header) {
   // We deem a block to be part of a loop's continue construct if the loop's
   // continue target dominates the block.
   auto containing_construct_block = context->cfg()->block(maybe_loop_header);
   if (containing_construct_block->IsLoopHeader()) {
     auto continue_target = containing_construct_block->ContinueBlockId();
     if (context->GetDominatorAnalysis(containing_construct_block->GetParent())
-            ->Dominates(continue_target, from_block_)) {
+            ->Dominates(continue_target, message.from_block())) {
       return true;
     }
   }
   return false;
 }
 
-bool TransformationAddDeadBreak::AddingBreakRespectsStructuredControlFlow(
-    IRContext* context, BasicBlock* bb_from) {
-  // Look at the structured control flow associated with |from_block_| and
+bool AddingBreakRespectsStructuredControlFlow(
+    const protobufs::TransformationAddDeadBreak& message, IRContext* context,
+    BasicBlock* bb_from) {
+  // Look at the structured control flow associated with |from_block| and
   // check whether it is contained in an appropriate construct with merge id
-  // |to_block_| such that a break from |from_block_| to |to_block_| is legal.
+  // |to_block| such that a break from |from_block| to |to_block| is legal.
 
   // There are three legal cases to consider:
-  // (1) |from_block_| is a loop header and |to_block_| is its merge
-  // (2) |from_block_| is a non-header node of a construct, and |to_block_|
+  // (1) |from_block| is a loop header and |to_block| is its merge
+  // (2) |from_block| is a non-header node of a construct, and |to_block|
   //     is the merge for that construct
-  // (3) |from_block_| is a non-header node of a selection construct, and
-  //     |to_block_| is the merge for the innermost loop containing
-  //     |from_block_|
+  // (3) |from_block| is a non-header node of a selection construct, and
+  //     |to_block| is the merge for the innermost loop containing
+  //     |from_block|
   //
   // The reason we need to distinguish between cases (1) and (2) is that the
   // structured CFG analysis does not deem a header to be part of the construct
@@ -143,48 +145,54 @@ bool TransformationAddDeadBreak::AddingBreakRespectsStructuredControlFlow(
 
   // Consider case (1)
   if (bb_from->IsLoopHeader()) {
-    // Case (1) holds if |to_block_| is the merge block for the loop;
+    // Case (1) holds if |to_block| is the merge block for the loop;
     // otherwise no case holds
-    return bb_from->MergeBlockId() == to_block_;
+    return bb_from->MergeBlockId() == message.to_block();
   }
 
-  // Both cases (2) and (3) require that |from_block_| is inside some
+  // Both cases (2) and (3) require that |from_block| is inside some
   // structured control flow construct.
 
   auto containing_construct =
-      context->GetStructuredCFGAnalysis()->ContainingConstruct(from_block_);
+      context->GetStructuredCFGAnalysis()->ContainingConstruct(
+          message.from_block());
   if (!containing_construct) {
-    // |from_block_| is not in a construct from which we can break.
+    // |from_block| is not in a construct from which we can break.
     return false;
   }
 
   // Consider case (2)
-  if (to_block_ ==
+  if (message.to_block() ==
       context->cfg()->block(containing_construct)->MergeBlockId()) {
     // This looks like an instance of case (2).
     // However, the structured CFG analysis regards the continue construct of a
     // loop as part of the loop, but it is not legal to jump from a loop's
     // continue construct to the loop's merge, so we need to check for this
     // case.
-    return !FromBlockIsInLoopContinueConstruct(context, containing_construct);
+    return !FromBlockIsInLoopContinueConstruct(message, context,
+                                               containing_construct);
   }
 
-  // Case (3) holds if and only if |to_block_| is the merge block for this
-  // innermost loop that contains |from_block_|
+  // Case (3) holds if and only if |to_block| is the merge block for this
+  // innermost loop that contains |from_block|
   auto containing_loop_header =
-      context->GetStructuredCFGAnalysis()->ContainingLoop(from_block_);
+      context->GetStructuredCFGAnalysis()->ContainingLoop(message.from_block());
   if (containing_loop_header &&
-      to_block_ ==
+      message.to_block() ==
           context->cfg()->block(containing_loop_header)->MergeBlockId()) {
-    return !FromBlockIsInLoopContinueConstruct(context, containing_loop_header);
+    return !FromBlockIsInLoopContinueConstruct(message, context,
+                                               containing_loop_header);
   }
   return false;
 }
 
-bool TransformationAddDeadBreak::IsApplicable(IRContext* context,
-                                              const FactManager& /*unused*/) {
+}  // namespace
+
+bool transformation::IsApplicable(
+    const protobufs::TransformationAddDeadBreak& message, IRContext* context,
+    const FactManager& /*unused*/) {
   // First, we check that a constant with the same value as
-  // |break_condition_value_| is present.
+  // |break_condition_value| is present.
   opt::analysis::Bool bool_type;
   auto registered_bool_type =
       context->get_type_mgr()->GetRegisteredType(&bool_type);
@@ -192,24 +200,24 @@ bool TransformationAddDeadBreak::IsApplicable(IRContext* context,
     return false;
   }
   opt::analysis::BoolConstant bool_constant(registered_bool_type->AsBool(),
-                                            break_condition_value_);
+                                            message.break_condition_value());
   if (!context->get_constant_mgr()->FindConstant(&bool_constant)) {
     // The required constant is not present, so the transformation cannot be
     // applied.
     return false;
   }
 
-  // Check that |from_block_| and |to_block_| really are block ids
-  BasicBlock* bb_from = MaybeFindBlock(context, from_block_);
+  // Check that |from_block| and |to_block| really are block ids
+  BasicBlock* bb_from = MaybeFindBlock(context, message.from_block());
   if (bb_from == nullptr) {
     return false;
   }
-  BasicBlock* bb_to = MaybeFindBlock(context, to_block_);
+  BasicBlock* bb_to = MaybeFindBlock(context, message.to_block());
   if (bb_to == nullptr) {
     return false;
   }
 
-  // Check that |from_block_| ends with an unconditional branch.
+  // Check that |from_block| ends with an unconditional branch.
   if (bb_from->terminator()->opcode() != SpvOpBranch) {
     // The block associated with the id does not end with an unconditional
     // branch.
@@ -219,36 +227,36 @@ bool TransformationAddDeadBreak::IsApplicable(IRContext* context,
   assert(bb_from != nullptr &&
          "We should have found a block if this line of code is reached.");
   assert(
-      bb_from->id() == from_block_ &&
+      bb_from->id() == message.from_block() &&
       "The id of the block we found should match the source id for the break.");
   assert(bb_to != nullptr &&
          "We should have found a block if this line of code is reached.");
   assert(
-      bb_to->id() == to_block_ &&
+      bb_to->id() == message.to_block() &&
       "The id of the block we found should match the target id for the break.");
 
   // Check whether the data passed to extend OpPhi instructions is appropriate.
-  if (!PhiIdsOk(context, bb_from, bb_to)) {
+  if (!PhiIdsOk(message, context, bb_from, bb_to)) {
     return false;
   }
 
   // Finally, check that adding the break would respect the rules of structured
   // control flow.
-  return AddingBreakRespectsStructuredControlFlow(context, bb_from);
+  return AddingBreakRespectsStructuredControlFlow(message, context, bb_from);
 }
 
-void TransformationAddDeadBreak::Apply(IRContext* context,
-                                       FactManager* /*unused*/) {
+void transformation::Apply(const protobufs::TransformationAddDeadBreak& message,
+                           IRContext* context, FactManager* /*unused*/) {
   // Get the id of the boolean constant to be used as the break condition.
   opt::analysis::Bool bool_type;
   opt::analysis::BoolConstant bool_constant(
       context->get_type_mgr()->GetRegisteredType(&bool_type)->AsBool(),
-      break_condition_value_);
+      message.break_condition_value());
   uint32_t bool_id = context->get_constant_mgr()->FindDeclaredConstant(
       &bool_constant, context->get_type_mgr()->GetId(&bool_type));
 
-  auto bb_from = context->cfg()->block(from_block_);
-  auto bb_to = context->cfg()->block(to_block_);
+  auto bb_from = context->cfg()->block(message.from_block());
+  auto bb_to = context->cfg()->block(message.to_block());
   const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
   auto successor = bb_from->terminator()->GetSingleWordInOperand(0);
   assert(bb_from->terminator()->opcode() == SpvOpBranch &&
@@ -261,9 +269,10 @@ void TransformationAddDeadBreak::Apply(IRContext* context,
   bb_from->terminator()->SetOpcode(SpvOpBranchConditional);
   bb_from->terminator()->SetInOperands(
       {{SPV_OPERAND_TYPE_ID, {bool_id}},
-       {SPV_OPERAND_TYPE_ID, {break_condition_value_ ? successor : to_block_}},
        {SPV_OPERAND_TYPE_ID,
-        {break_condition_value_ ? to_block_ : successor}}});
+        {message.break_condition_value() ? successor : message.to_block()}},
+       {SPV_OPERAND_TYPE_ID,
+        {message.break_condition_value() ? message.to_block() : successor}}});
 
   // Update OpPhi instructions in the target block if this break adds a
   // previously non-existent edge from source to target.
@@ -273,13 +282,13 @@ void TransformationAddDeadBreak::Apply(IRContext* context,
       if (inst.opcode() != SpvOpPhi) {
         break;
       }
-      assert(phi_index < phi_ids_.size() &&
+      assert(phi_index < (uint32_t)message.phi_ids().size() &&
              "There should be exactly one phi id per OpPhi instruction.");
-      inst.AddOperand({SPV_OPERAND_TYPE_ID, {phi_ids_[phi_index]}});
-      inst.AddOperand({SPV_OPERAND_TYPE_ID, {from_block_}});
+      inst.AddOperand({SPV_OPERAND_TYPE_ID, {message.phi_ids()[phi_index]}});
+      inst.AddOperand({SPV_OPERAND_TYPE_ID, {message.from_block()}});
       phi_index++;
     }
-    assert(phi_index == phi_ids_.size() &&
+    assert(phi_index == (uint32_t)message.phi_ids().size() &&
            "There should be exactly one phi id per OpPhi instruction.");
   }
 
@@ -287,26 +296,18 @@ void TransformationAddDeadBreak::Apply(IRContext* context,
   context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
-TransformationAddDeadBreak::TransformationAddDeadBreak(
-    const spvtools::fuzz::protobufs::TransformationAddDeadBreak& message)
-    : from_block_(message.from_block()),
-      to_block_(message.to_block()),
-      break_condition_value_(message.break_condition_value()) {
-  for (auto id : message.phi_ids()) {
-    phi_ids_.push_back(id);
+protobufs::TransformationAddDeadBreak
+transformation::MakeTransformationAddDeadBreak(uint32_t from_block,
+                                               uint32_t to_block,
+                                               bool break_condition_value,
+                                               std::vector<uint32_t> phi_ids) {
+  protobufs::TransformationAddDeadBreak result;
+  result.set_from_block(from_block);
+  result.set_to_block(to_block);
+  result.set_break_condition_value(break_condition_value);
+  for (auto id : phi_ids) {
+    result.add_phi_ids(id);
   }
-}
-
-protobufs::Transformation TransformationAddDeadBreak::ToMessage() {
-  auto add_dead_break_message = new protobufs::TransformationAddDeadBreak;
-  add_dead_break_message->set_break_condition_value(break_condition_value_);
-  add_dead_break_message->set_from_block(from_block_);
-  for (auto id : phi_ids_) {
-    add_dead_break_message->add_phi_ids(id);
-  }
-  add_dead_break_message->set_to_block(to_block_);
-  protobufs::Transformation result;
-  result.set_allocated_add_dead_break(add_dead_break_message);
   return result;
 }
 

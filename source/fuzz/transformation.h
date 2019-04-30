@@ -21,9 +21,8 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace transformation {
 
-// The base class for all metamorphic transformations.
-//
 // Rules for transformations
 // -------------------------
 //
@@ -55,29 +54,23 @@ namespace fuzz {
 //     effect of the transformation, the method should be commented in the
 //     header file for a transformation with a precise English description of
 //     the effect.
-class Transformation {
- public:
-  Transformation() = default;
 
-  virtual ~Transformation() = default;
+// A precondition that determines whether the transformation can be cleanly
+// applied to the SPIR-V module, such that semantics are preserved.
+// Preconditions for individual transformations must be documented in the
+// associated header file using precise English. The fact manager is used to
+// provide access to facts about the module that are known to be true, on which
+// the precondition may depend.
+bool IsApplicable(const protobufs::Transformation& message,
+                  opt::IRContext* context, const FactManager& fact_manager);
 
-  // A precondition that determines whether the transformation can be cleanly
-  // applied to the SPIR-V module, such that semantics are preserved.
-  // Subclasses must document the precondition in their header file using
-  // precise English.
-  // The fact manager is used to provide access to facts about the module that
-  // are known to be true, on which the precondition may depend.
-  virtual bool IsApplicable(opt::IRContext* context,
-                            const FactManager& fact_manager) = 0;
+// Requires that the transformation is applicable.  Applies the
+// transformation, mutating the given SPIR-V module and possibly updating the
+// fact manager with new facts established by the transformation.
+void Apply(const protobufs::Transformation& message, opt::IRContext* context,
+           FactManager* fact_manager);
 
-  // Requires that the transformation is applicable.  Applies the
-  // transformation, mutating the given SPIR-V module and possibly updating the
-  // fact manager with new facts established by the transformation.
-  virtual void Apply(opt::IRContext* context, FactManager* fact_manager) = 0;
-
-  // Obtain a protobuf message corresponding to the transformation.
-  virtual protobufs::Transformation ToMessage() = 0;
-};
+}  // namespace transformation
 
 }  // namespace fuzz
 }  // namespace spvtools
