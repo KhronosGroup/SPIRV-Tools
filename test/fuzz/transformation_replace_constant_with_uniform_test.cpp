@@ -112,38 +112,35 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
 
   // These transformations work: they match the facts.
   auto transformation_use_of_9_in_store =
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_9_in_store, blockname_a, 100, 101));
-  ASSERT_TRUE(transformation_use_of_9_in_store.IsApplicable(context.get(),
-                                                            fact_manager));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, blockname_a, 100, 101);
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_9_in_store,
+                                           context.get(), fact_manager));
   auto transformation_use_of_11_in_add =
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_11_in_add, blockname_b, 102, 103));
-  ASSERT_TRUE(transformation_use_of_11_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_11_in_add, blockname_b, 102, 103);
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_11_in_add,
+                                           context.get(), fact_manager));
   auto transformation_use_of_14_in_add =
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_14_in_add, blockname_c, 104, 105));
-  ASSERT_TRUE(transformation_use_of_14_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_14_in_add, blockname_c, 104, 105);
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_14_in_add,
+                                           context.get(), fact_manager));
 
   // The transformations are not applicable if we change which uniforms are
   // applied to which constants.
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_9_in_store, blockname_b, 101, 102))
-                   .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_11_in_add, blockname_c, 101, 102))
-                   .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_14_in_add, blockname_a, 101, 102))
-                   .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, blockname_b, 101, 102),
+      context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_11_in_add, blockname_c, 101, 102),
+      context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_14_in_add, blockname_a, 101, 102),
+      context.get(), fact_manager));
 
   // The following transformations do not apply because the uniform descriptors
   // are not sensible.
@@ -151,38 +148,37 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
       FactManager::MakeUniformBufferElementDescriptor(19, {0});
   protobufs::UniformBufferElementDescriptor nonsense_uniform_descriptor2 =
       FactManager::MakeUniformBufferElementDescriptor(18, {5});
-  ASSERT_FALSE(
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_9_in_store, nonsense_uniform_descriptor1, 101, 102))
-          .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_9_in_store, nonsense_uniform_descriptor2, 101, 102))
-          .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, nonsense_uniform_descriptor1, 101, 102),
+      context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, nonsense_uniform_descriptor2, 101, 102),
+      context.get(), fact_manager));
 
   // The following transformation does not apply because the id descriptor is
   // not sensible.
   protobufs::IdUseDescriptor nonsense_id_use_descriptor =
       module_navigation::MakeIdUseDescriptor(9, SpvOpIAdd, 0, 15, 0);
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       nonsense_id_use_descriptor, blockname_a, 101, 102))
-                   .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          nonsense_id_use_descriptor, blockname_a, 101, 102),
+      context.get(), fact_manager));
 
   // The following transformations do not apply because the ids are not fresh.
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_11_in_add, blockname_b, 15, 103))
-                   .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_11_in_add, blockname_b, 102, 15))
-                   .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_11_in_add, blockname_b, 15, 103),
+      context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_11_in_add, blockname_b, 102, 15),
+      context.get(), fact_manager));
 
   // Apply the use of 9 in a store.
-  transformation_use_of_9_in_store.Apply(context.get(), &fact_manager);
+  transformation::Apply(transformation_use_of_9_in_store, context.get(),
+                        &fact_manager);
   CheckValid(env, context.get());
   std::string after_replacing_use_of_9_in_store = R"(
                OpCapability Shader
@@ -233,10 +229,11 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   )";
   CheckEqual(env, after_replacing_use_of_9_in_store, context.get());
 
-  ASSERT_TRUE(transformation_use_of_11_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_11_in_add,
+                                           context.get(), fact_manager));
   // Apply the use of 11 in an add.
-  transformation_use_of_11_in_add.Apply(context.get(), &fact_manager);
+  transformation::Apply(transformation_use_of_11_in_add, context.get(),
+                        &fact_manager);
   CheckValid(env, context.get());
   std::string after_replacing_use_of_11_in_add = R"(
                OpCapability Shader
@@ -289,10 +286,11 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   )";
   CheckEqual(env, after_replacing_use_of_11_in_add, context.get());
 
-  ASSERT_TRUE(transformation_use_of_14_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_14_in_add,
+                                           context.get(), fact_manager));
   // Apply the use of 15 in an add.
-  transformation_use_of_14_in_add.Apply(context.get(), &fact_manager);
+  transformation::Apply(transformation_use_of_14_in_add, context.get(),
+                        &fact_manager);
   CheckValid(env, context.get());
   std::string after_replacing_use_of_14_in_add = R"(
                OpCapability Shader
@@ -488,82 +486,82 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
 
   // These transformations work: they match the facts.
   auto transformation_use_of_13_in_store =
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_13_in_store, blockname_1, 100, 101));
-  ASSERT_TRUE(transformation_use_of_13_in_store.IsApplicable(context.get(),
-                                                             fact_manager));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_13_in_store, blockname_1, 100, 101);
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_13_in_store,
+                                           context.get(), fact_manager));
   auto transformation_use_of_15_in_add =
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_15_in_add, blockname_2, 102, 103));
-  ASSERT_TRUE(transformation_use_of_15_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_15_in_add, blockname_2, 102, 103);
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_15_in_add,
+                                           context.get(), fact_manager));
   auto transformation_use_of_17_in_add =
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_17_in_add, blockname_3, 104, 105));
-  ASSERT_TRUE(transformation_use_of_17_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_17_in_add, blockname_3, 104, 105);
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_17_in_add,
+                                           context.get(), fact_manager));
   auto transformation_use_of_20_in_store =
-      TransformationReplaceConstantWithUniform(
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              use_of_20_in_store, blockname_4, 106, 107));
-  ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(context.get(),
-                                                             fact_manager));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_20_in_store, blockname_4, 106, 107);
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_20_in_store,
+                                           context.get(), fact_manager));
 
-  ASSERT_TRUE(transformation_use_of_13_in_store.IsApplicable(context.get(),
-                                                             fact_manager));
-  ASSERT_TRUE(transformation_use_of_15_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
-  ASSERT_TRUE(transformation_use_of_17_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
-  ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(context.get(),
-                                                             fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_13_in_store,
+                                           context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_15_in_add,
+                                           context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_17_in_add,
+                                           context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_20_in_store,
+                                           context.get(), fact_manager));
 
-  transformation_use_of_13_in_store.Apply(context.get(), &fact_manager);
+  transformation::Apply(transformation_use_of_13_in_store, context.get(),
+                        &fact_manager);
   CheckValid(env, context.get());
-  ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(context.get(),
-                                                              fact_manager));
-  ASSERT_TRUE(transformation_use_of_15_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
-  ASSERT_TRUE(transformation_use_of_17_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
-  ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(context.get(),
-                                                             fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
+                                            context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_15_in_add,
+                                           context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_17_in_add,
+                                           context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_20_in_store,
+                                           context.get(), fact_manager));
 
-  transformation_use_of_15_in_add.Apply(context.get(), &fact_manager);
+  transformation::Apply(transformation_use_of_15_in_add, context.get(),
+                        &fact_manager);
   CheckValid(env, context.get());
-  ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(context.get(),
-                                                              fact_manager));
-  ASSERT_FALSE(transformation_use_of_15_in_add.IsApplicable(context.get(),
-                                                            fact_manager));
-  ASSERT_TRUE(transformation_use_of_17_in_add.IsApplicable(context.get(),
-                                                           fact_manager));
-  ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(context.get(),
-                                                             fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
+                                            context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_15_in_add,
+                                            context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_17_in_add,
+                                           context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_20_in_store,
+                                           context.get(), fact_manager));
 
-  transformation_use_of_17_in_add.Apply(context.get(), &fact_manager);
+  transformation::Apply(transformation_use_of_17_in_add, context.get(),
+                        &fact_manager);
   CheckValid(env, context.get());
-  ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(context.get(),
-                                                              fact_manager));
-  ASSERT_FALSE(transformation_use_of_15_in_add.IsApplicable(context.get(),
-                                                            fact_manager));
-  ASSERT_FALSE(transformation_use_of_17_in_add.IsApplicable(context.get(),
-                                                            fact_manager));
-  ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(context.get(),
-                                                             fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
+                                            context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_15_in_add,
+                                            context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_17_in_add,
+                                            context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_20_in_store,
+                                           context.get(), fact_manager));
 
-  transformation_use_of_20_in_store.Apply(context.get(), &fact_manager);
+  transformation::Apply(transformation_use_of_20_in_store, context.get(),
+                        &fact_manager);
   CheckValid(env, context.get());
-  ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(context.get(),
-                                                              fact_manager));
-  ASSERT_FALSE(transformation_use_of_15_in_add.IsApplicable(context.get(),
-                                                            fact_manager));
-  ASSERT_FALSE(transformation_use_of_17_in_add.IsApplicable(context.get(),
-                                                            fact_manager));
-  ASSERT_FALSE(transformation_use_of_20_in_store.IsApplicable(context.get(),
-                                                              fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
+                                            context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_15_in_add,
+                                            context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_17_in_add,
+                                            context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_20_in_store,
+                                            context.get(), fact_manager));
 
   std::string after = R"(
                OpCapability Shader
@@ -712,10 +710,10 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
 
   // This transformation is not available because no uniform pointer to integer
   // type is present:
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_9_in_store, blockname_0, 100, 101))
-                   .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, blockname_0, 100, 101),
+      context.get(), fact_manager));
 }
 
 TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
@@ -788,10 +786,10 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
 
   // This transformation is not available because no constant is present for the
   // index 1 required to index into the uniform buffer:
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_9_in_store, blockname_9, 100, 101))
-                   .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, blockname_9, 100, 101),
+      context.get(), fact_manager));
 }
 
 TEST(TransformationReplaceConstantWithUniformTest,
@@ -862,10 +860,10 @@ TEST(TransformationReplaceConstantWithUniformTest,
 
   // This transformation is not available because no integer type is present to
   // allow a constant index to be expressed:
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_9_in_store, blockname_3, 100, 101))
-                   .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, blockname_3, 100, 101),
+      context.get(), fact_manager));
 }
 
 TEST(TransformationReplaceConstantWithUniformTest,
@@ -949,25 +947,25 @@ TEST(TransformationReplaceConstantWithUniformTest,
       module_navigation::MakeIdUseDescriptor(11, SpvOpStore, 1, 10, 1);
 
   // These are right:
-  ASSERT_TRUE(TransformationReplaceConstantWithUniform(
-                  transformation::MakeTransformationReplaceConstantWithUniform(
-                      use_of_9_in_store, blockname_9, 100, 101))
-                  .IsApplicable(context.get(), fact_manager));
-  ASSERT_TRUE(TransformationReplaceConstantWithUniform(
-                  transformation::MakeTransformationReplaceConstantWithUniform(
-                      use_of_11_in_store, blockname_10, 102, 103))
-                  .IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, blockname_9, 100, 101),
+      context.get(), fact_manager));
+  ASSERT_TRUE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_11_in_store, blockname_10, 102, 103),
+      context.get(), fact_manager));
 
   // These are wrong because the constants do not match the facts about
   // uniforms.
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_11_in_store, blockname_9, 100, 101))
-                   .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   transformation::MakeTransformationReplaceConstantWithUniform(
-                       use_of_9_in_store, blockname_10, 102, 103))
-                   .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_11_in_store, blockname_9, 100, 101),
+      context.get(), fact_manager));
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          use_of_9_in_store, blockname_10, 102, 103),
+      context.get(), fact_manager));
 }
 
 TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
@@ -1228,81 +1226,83 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
   fact_manager.AddUniformIntValueFact(32, false, {100}, uniform_h_x);
   fact_manager.AddUniformIntValueFact(32, false, {200}, uniform_h_y);
 
-  std::vector<TransformationReplaceConstantWithUniform> transformations;
+  std::vector<protobufs::TransformationReplaceConstantWithUniform>
+      transformations;
 
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(18, SpvOpStore, 1, 20, 0),
-          uniform_f_a_4, 200, 201)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_a_4, 200, 201));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(22, SpvOpStore, 1, 23, 0),
-          uniform_f_a_3, 202, 203)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_a_3, 202, 203));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(25, SpvOpStore, 1, 26, 0),
-          uniform_f_a_2, 204, 205)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_a_2, 204, 205));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(28, SpvOpStore, 1, 29, 0),
-          uniform_f_a_1, 206, 207)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_a_1, 206, 207));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(31, SpvOpStore, 1, 32, 0),
-          uniform_f_a_0, 208, 209)));
+          uniform_f_a_0, 208, 209));
 
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(30, SpvOpStore, 1, 35, 0),
-          uniform_f_b_w, 210, 211)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_b_w, 210, 211));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(27, SpvOpStore, 1, 37, 0),
-          uniform_f_b_z, 212, 213)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_b_z, 212, 213));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(24, SpvOpStore, 1, 39, 0),
-          uniform_f_b_y, 214, 215)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_b_y, 214, 215));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(21, SpvOpStore, 1, 41, 0),
-          uniform_f_b_x, 216, 217)));
+          uniform_f_b_x, 216, 217));
 
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(44, SpvOpStore, 1, 45, 0),
-          uniform_f_c_z, 220, 221)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_c_z, 220, 221));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(46, SpvOpStore, 1, 47, 0),
-          uniform_f_c_y, 222, 223)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_f_c_y, 222, 223));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(48, SpvOpStore, 1, 49, 0),
-          uniform_f_c_x, 224, 225)));
+          uniform_f_c_x, 224, 225));
 
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(50, SpvOpStore, 1, 52, 0),
-          uniform_f_d, 226, 227)));
+          uniform_f_d, 226, 227));
 
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(53, SpvOpStore, 1, 54, 0),
-          uniform_h_x, 228, 229)));
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+          uniform_h_x, 228, 229));
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(55, SpvOpStore, 1, 56, 0),
-          uniform_h_y, 230, 231)));
+          uniform_h_y, 230, 231));
 
-  transformations.emplace_back(TransformationReplaceConstantWithUniform(
+  transformations.emplace_back(
       transformation::MakeTransformationReplaceConstantWithUniform(
           module_navigation::MakeIdUseDescriptor(42, SpvOpStore, 1, 43, 0),
-          uniform_g, 218, 219)));
+          uniform_g, 218, 219));
 
   for (auto& transformation : transformations) {
-    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
-    transformation.Apply(context.get(), &fact_manager);
+    ASSERT_TRUE(transformation::IsApplicable(transformation, context.get(),
+                                             fact_manager));
+    transformation::Apply(transformation, context.get(), &fact_manager);
     CheckValid(env, context.get());
   }
 

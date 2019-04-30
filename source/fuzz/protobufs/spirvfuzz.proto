@@ -57,18 +57,41 @@ message Transformation {
 }
 
 message TransformationAddBooleanConstant {
+
+  // Supports adding the constants true and false to a module, which may be
+  // necessary in order to enable other transformations if they are not present.
+
   uint32 fresh_id = 1;
   bool is_true = 2;
+
 }
 
 message TransformationAddDeadBreak {
+
+  // A transformation that turns a basic block that unconditionally branches to
+  // its successor into a block that potentially breaks out of a structured
+  // control flow construct, but in such a manner that the break cannot actually
+  // be taken.
+
+  // The block to break from
   uint32 from_block = 1;
+
+  // The merge block to break to
   uint32 to_block = 2;
+
+  // Determines whether the break condition is true or false
   bool break_condition_value = 3;
+
+  // A sequence of ids suitable for extending OpPhi instructions as a result of
+  // the new break edge
   repeated uint32 phi_ids = 4;
+
 }
 
 message TransformationMoveBlockDown {
+  // A transformation that moves a basic block to be one position lower in program
+  // order.
+
   // The id of the block to move down.
   uint32 block_id = 1;
 }
@@ -90,7 +113,24 @@ message TransformationReplaceConstantWithUniform {
 }
 
 message TransformationSplitBlock {
+
+  // A transformation that splits a basic block into two basic blocks.
+
+  // The result id of an instruction.
   uint32 result_id = 1;
+
+  // An offset, such that the block containing |result_id_| should be split
+  // right before the instruction |offset_| instructions after |result_id_|.
   uint32 offset = 2;
+
+  // An id that must not yet be used by the module to which this transformation
+  // is applied.  Rather than having the transformation choose a suitable id on
+  // application, we require the id to be given upfront in order to facilitate
+  // reducing fuzzed shaders by removing transformations.  The reason is that
+  // future transformations may refer to the fresh id introduced by this
+  // transformation, and if we end up changing what that id is, due to removing
+  // earlier transformations, it may inhibit later transformations from
+  // applying.
   uint32 fresh_id = 3;
+
 }

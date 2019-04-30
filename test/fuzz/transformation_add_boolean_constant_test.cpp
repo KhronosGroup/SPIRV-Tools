@@ -45,31 +45,39 @@ TEST(TransformationAddBooleanConstantTest, NeitherPresentInitiallyAddBoth) {
   FactManager fact_manager;
 
   // True and false can both be added as neither is present.
-  ASSERT_TRUE(TransformationAddBooleanConstant(7, true).IsApplicable(
+  ASSERT_TRUE(transformation::IsApplicable(
+      transformation::MakeTransformationAddBooleanConstant(7, true),
       context.get(), fact_manager));
-  ASSERT_TRUE(TransformationAddBooleanConstant(7, false).IsApplicable(
+  ASSERT_TRUE(transformation::IsApplicable(
+      transformation::MakeTransformationAddBooleanConstant(7, false),
       context.get(), fact_manager));
 
   // Id 5 is already taken.
-  ASSERT_FALSE(TransformationAddBooleanConstant(5, true).IsApplicable(
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationAddBooleanConstant(5, true),
       context.get(), fact_manager));
 
-  auto add_true = TransformationAddBooleanConstant(7, true);
-  auto add_false = TransformationAddBooleanConstant(8, false);
+  auto add_true = transformation::MakeTransformationAddBooleanConstant(7, true);
+  auto add_false =
+      transformation::MakeTransformationAddBooleanConstant(8, false);
 
-  ASSERT_TRUE(add_true.IsApplicable(context.get(), fact_manager));
-  add_true.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(
+      transformation::IsApplicable(add_true, context.get(), fact_manager));
+  transformation::Apply(add_true, context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Having added true, we cannot add it again.
-  ASSERT_FALSE(add_true.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      transformation::IsApplicable(add_true, context.get(), fact_manager));
 
-  ASSERT_TRUE(add_false.IsApplicable(context.get(), fact_manager));
-  add_false.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(
+      transformation::IsApplicable(add_false, context.get(), fact_manager));
+  transformation::Apply(add_false, context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Having added false, we cannot add it again.
-  ASSERT_FALSE(add_false.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      transformation::IsApplicable(add_false, context.get(), fact_manager));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -118,51 +126,12 @@ TEST(TransformationAddBooleanConstantTest, NoOpTypeBoolPresent) {
   FactManager fact_manager;
 
   // Neither true nor false can be added as OpTypeBool is not present.
-  ASSERT_FALSE(TransformationAddBooleanConstant(6, true).IsApplicable(
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationAddBooleanConstant(6, true),
       context.get(), fact_manager));
-  ASSERT_FALSE(TransformationAddBooleanConstant(6, false).IsApplicable(
+  ASSERT_FALSE(transformation::IsApplicable(
+      transformation::MakeTransformationAddBooleanConstant(6, false),
       context.get(), fact_manager));
-}
-
-TEST(TransformationAddBooleanConstantTest, ProtobufMessage) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %6 = OpTypeBool
-          %3 = OpTypeFunction %2
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context1.get());
-  FactManager fact_manager1;
-
-  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context2.get());
-  FactManager fact_manager2;
-
-  auto transformation1 = TransformationAddBooleanConstant(7, true);
-  auto transformation2 = TransformationAddBooleanConstant(
-      transformation1.ToMessage().add_boolean_constant());
-
-  ASSERT_TRUE(transformation1.IsApplicable(context1.get(), fact_manager1));
-  ASSERT_TRUE(transformation2.IsApplicable(context2.get(), fact_manager2));
-
-  transformation1.Apply(context1.get(), &fact_manager1);
-  transformation2.Apply(context2.get(), &fact_manager2);
-
-  CheckEqual(env, context1.get(), context2.get());
 }
 
 }  // namespace

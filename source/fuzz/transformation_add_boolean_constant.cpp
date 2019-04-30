@@ -22,45 +22,46 @@ namespace fuzz {
 
 using opt::IRContext;
 
-bool TransformationAddBooleanConstant::IsApplicable(
+bool transformation::IsApplicable(
+    const protobufs::TransformationAddBooleanConstant& message,
     IRContext* context, const FactManager& /*unused*/) {
   opt::analysis::Bool bool_type;
   if (!context->get_type_mgr()->GetId(&bool_type)) {
     // No OpTypeBool is present.
     return false;
   }
-  opt::analysis::BoolConstant bool_constant(&bool_type, is_true_);
+  opt::analysis::BoolConstant bool_constant(&bool_type, message.is_true());
   if (context->get_constant_mgr()->FindConstant(&bool_constant)) {
     // The desired constant is already present.
     return false;
   }
-  if (context->get_def_use_mgr()->GetDef(fresh_id_)) {
+  if (context->get_def_use_mgr()->GetDef(message.fresh_id())) {
     // We require the id for the new block to be unused.
     return false;
   }
   return true;
 }
 
-void TransformationAddBooleanConstant::Apply(IRContext* context,
-                                             FactManager* /*unused*/) {
+void transformation::Apply(
+    const protobufs::TransformationAddBooleanConstant& message,
+    IRContext* context, FactManager* /*unused*/) {
   opt::analysis::Bool bool_type;
   // Add the boolean constant to the module, ensuring the module's id bound is
   // high enough.
-  fuzzerutil::UpdateModuleIdBound(context, fresh_id_);
+  fuzzerutil::UpdateModuleIdBound(context, message.fresh_id());
   context->module()->AddGlobalValue(
-      is_true_ ? SpvOpConstantTrue : SpvOpConstantFalse, fresh_id_,
-      context->get_type_mgr()->GetId(&bool_type));
+      message.is_true() ? SpvOpConstantTrue : SpvOpConstantFalse,
+      message.fresh_id(), context->get_type_mgr()->GetId(&bool_type));
   // Invalidate all analyses
   context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
-protobufs::Transformation TransformationAddBooleanConstant::ToMessage() {
-  auto add_boolean_constant_message =
-      new protobufs::TransformationAddBooleanConstant;
-  add_boolean_constant_message->set_fresh_id(fresh_id_);
-  add_boolean_constant_message->set_is_true(is_true_);
-  protobufs::Transformation result;
-  result.set_allocated_add_boolean_constant(add_boolean_constant_message);
+protobufs::TransformationAddBooleanConstant
+transformation::MakeTransformationAddBooleanConstant(uint32_t fresh_id,
+                                                     bool is_true) {
+  protobufs::TransformationAddBooleanConstant result;
+  result.set_fresh_id(fresh_id);
+  result.set_is_true(is_true);
   return result;
 }
 

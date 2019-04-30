@@ -23,21 +23,25 @@ using opt::IRContext;
 void FuzzerPassAddUsefulConstructs::Apply(
     IRContext* ir_context, FactManager* fact_manager,
     FuzzerContext* fuzzer_context,
-    std::vector<std::unique_ptr<Transformation>>* transformations) {
+    protobufs::TransformationSequence* transformations) {
   // Add OpConstantTrue if it is not already there.
-  auto make_true = MakeUnique<TransformationAddBooleanConstant>(
-      fuzzer_context->FreshId(), true);
-  if (make_true->IsApplicable(ir_context, *fact_manager)) {
-    make_true->Apply(ir_context, fact_manager);
-    transformations->push_back(std::move(make_true));
+  protobufs::TransformationAddBooleanConstant make_true;
+  make_true.set_fresh_id(fuzzer_context->FreshId());
+  make_true.set_is_true(true);
+  if (transformation::IsApplicable(make_true, ir_context, *fact_manager)) {
+    transformation::Apply(make_true, ir_context, fact_manager);
+    *transformations->add_transformations()->mutable_add_boolean_constant() =
+        make_true;
   }
 
   // Add OpConstantFalse if it is not already there.
-  auto make_false = MakeUnique<TransformationAddBooleanConstant>(
-      fuzzer_context->FreshId(), false);
-  if (make_false->IsApplicable(ir_context, *fact_manager)) {
-    make_false->Apply(ir_context, fact_manager);
-    transformations->push_back(std::move(make_false));
+  protobufs::TransformationAddBooleanConstant make_false;
+  make_false.set_fresh_id(fuzzer_context->FreshId());
+  make_false.set_is_true(false);
+  if (transformation::IsApplicable(make_false, ir_context, *fact_manager)) {
+    transformation::Apply(make_false, ir_context, fact_manager);
+    *transformations->add_transformations()->mutable_add_boolean_constant() =
+        make_false;
   }
 }
 

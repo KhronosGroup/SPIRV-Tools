@@ -163,11 +163,5 @@ transformation::MakeTransformationReplaceConstantWithUniform(
   return result;
 }
 
-protobufs::Transformation
-TransformationReplaceConstantWithUniform::ToMessage() {
-  assert(false && "TODO");
-  return protobufs::Transformation();
-}
-
 }  // namespace fuzz
 }  // namespace spvtools
