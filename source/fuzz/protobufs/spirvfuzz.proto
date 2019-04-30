@@ -2,6 +2,46 @@ syntax = "proto3";
 
 package spvtools.fuzz.protobufs;
 
+message IdUseDescriptor {
+
+  // Describes a use of an id as an input operand to an instruction in some block
+  // of a function.
+
+  // An id that we would like to be able to find a use of.
+  uint32 id_of_interest = 1;
+
+  // The opcode for the instruction that uses the id.
+  uint32 target_instruction_opcode = 2;
+
+  // The input operand index at which the use is expected.
+  uint32 in_operand_index = 3;
+
+  // The id of an instruction after which the instruction that contains the use
+  // is believed to occur; it might be the using instruction itself.
+  uint32 base_instruction_result_id = 4;
+
+  // The number of matching opcodes to skip over when searching for the using
+  // instruction from the base instruction.
+  uint32 num_opcodes_to_ignore = 5;
+
+}
+
+message UniformBufferElementDescriptor {
+
+  // Represents a data element inside a uniform buffer via the result id
+  // of a uniform variable instruction, and a series of indices to follow,
+  // in order to drill through composite structures in the uniform buffer
+  // to get to an element.
+
+  // The result id of a uniform variable.
+  uint32 uniform_variable_id = 1;
+
+  // An ordered sequence of indices through composite structures in the
+  // uniform buffer.
+  repeated uint32 indices = 2;
+
+}
+
 message TransformationSequence {
   repeated Transformation transformations = 1;
 }
@@ -34,6 +74,19 @@ message TransformationMoveBlockDown {
 }
 
 message TransformationReplaceConstantWithUniform {
+
+  // A descriptor for the id we would like to replace
+  IdUseDescriptor id_use_descriptor = 1;
+
+  // Uniform descriptor to identify which uniform value to choose
+  UniformBufferElementDescriptor uniform_descriptor = 2;
+
+  // Id that will store the result of an access chain
+  uint32 fresh_id_for_access_chain = 3;
+
+  // Id that will store the result of a load
+  uint32 fresh_id_for_load = 4;
+
 }
 
 message TransformationSplitBlock {
