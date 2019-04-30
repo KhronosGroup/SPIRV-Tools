@@ -78,12 +78,10 @@ class FactManager {
   virtual ~FactManager() = default;
 
   void AddUniformFloatValueFact(uint32_t width, std::vector<uint32_t>&& data,
-                                UniformBufferElementDescriptor&& descriptor);
+                                UniformBufferElementDescriptor descriptor);
   void AddUniformIntValueFact(uint32_t width, bool is_signed,
                               std::vector<uint32_t>&& data,
-                              UniformBufferElementDescriptor&& descriptor);
-  void AddUniformBoolValueFact(bool value,
-                               UniformBufferElementDescriptor&& descriptor);
+                              UniformBufferElementDescriptor descriptor);
 
   std::vector<const opt::analysis::Constant*>
   ConstantsAvailableFromUniformsForType(const opt::analysis::Type& type);
