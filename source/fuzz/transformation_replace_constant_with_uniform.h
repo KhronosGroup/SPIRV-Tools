@@ -1,3 +1,5 @@
+#include <utility>
+
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,12 +26,16 @@ namespace fuzz {
 
 namespace transformation {
 
+// TODO
 bool IsApplicable(
     const protobufs::TransformationReplaceConstantWithUniform& message,
     opt::IRContext* context, const FactManager& fact_manager);
+
+// TODO
 void Apply(const protobufs::TransformationReplaceConstantWithUniform& message,
            opt::IRContext* context, FactManager* fact_manager);
 
+// Helper factory to create a transformation message.
 protobufs::TransformationReplaceConstantWithUniform
 MakeTransformationReplaceConstantWithUniform(
     protobufs::IdUseDescriptor id_use,
@@ -37,33 +43,6 @@ MakeTransformationReplaceConstantWithUniform(
     uint32_t fresh_id_for_access_chain, uint32_t fresh_id_for_load);
 
 }  // namespace transformation
-
-// TODO.
-class TransformationReplaceConstantWithUniform : public Transformation {
- public:
-  // Constructs a transformation from a protobuf message.
-  explicit TransformationReplaceConstantWithUniform(
-      const protobufs::TransformationReplaceConstantWithUniform& message)
-      : message_(message) {}
-
-  ~TransformationReplaceConstantWithUniform() override = default;
-
-  // TODO
-  bool IsApplicable(opt::IRContext* context,
-                    const FactManager& fact_manager) override {
-    return transformation::IsApplicable(message_, context, fact_manager);
-  }
-
-  // TODO
-  void Apply(opt::IRContext* context, FactManager* fact_manager) override {
-    return transformation::Apply(message_, context, fact_manager);
-  }
-
-  protobufs::Transformation ToMessage() override;
-
- private:
-  const protobufs::TransformationReplaceConstantWithUniform message_;
-};
 
 }  // namespace fuzz
 }  // namespace spvtools

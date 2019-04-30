@@ -24,30 +24,6 @@
 namespace spvtools {
 namespace fuzz {
 
-namespace {
-
-// Helper function to create a transformation from an associated proto message.
-std::unique_ptr<Transformation> FromMessage(
-    const protobufs::Transformation& message) {
-  if (message.has_add_boolean_constant()) {
-    return MakeUnique<TransformationAddBooleanConstant>(
-        message.add_boolean_constant());
-  }
-  if (message.has_add_dead_break()) {
-    return MakeUnique<TransformationAddDeadBreak>(message.add_dead_break());
-  }
-  if (message.has_move_block_down()) {
-    return MakeUnique<TransformationMoveBlockDown>(message.move_block_down());
-  }
-  if (message.has_split_block()) {
-    return MakeUnique<TransformationSplitBlock>(message.split_block());
-  }
-  assert(false && "Unknown transformation.");
-  return nullptr;
-}
-
-}  // namespace
-
 struct Replayer::Impl {
   explicit Impl(spv_target_env env) : target_env(env) {}
 
@@ -94,14 +70,13 @@ Replayer::ReplayerResultStatus Replayer::Run(
   // Consider the transformation proto messages in turn.
   for (auto& transformation_message :
        transformation_sequence_in.transformations()) {
-    // Create a transformation from the transformation proto message.
-    auto transformation = FromMessage(transformation_message);
     // Check whether the transformation can be applied.
-    if (transformation->IsApplicable(ir_context.get(), fact_manager)) {
-      // The transformation is applicable, so apply it, and copy its proto
-      // message to the sequence of proto messages for transformations that were
-      // applied.
-      transformation->Apply(ir_context.get(), &fact_manager);
+    if (transformation::IsApplicable(transformation_message, ir_context.get(),
+                                     fact_manager)) {
+      // The transformation is applicable, so apply it, and copy it to the
+      // sequence of transformations that were applied.
+      transformation::Apply(transformation_message, ir_context.get(),
+                            &fact_manager);
       *transformation_sequence_out->add_transformations() =
           transformation_message;
     }
