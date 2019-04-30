@@ -21,18 +21,25 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace transformation {
+
+bool IsApplicable(const protobufs::TransformationMoveBlockDown& message,
+                  opt::IRContext* context, const FactManager& fact_manager);
+void Apply(const protobufs::TransformationMoveBlockDown& message,
+           opt::IRContext* context, FactManager* fact_manager);
+protobufs::TransformationMoveBlockDown MakeTransformationMoveBlockDown(
+    uint32_t id);
+
+}  // namespace transformation
+
 // A transformation that moves a basic block to be one position lower in program
 // order.
 class TransformationMoveBlockDown : public Transformation {
  public:
-  // Constructs a transformation from a given id.
-  explicit TransformationMoveBlockDown(uint32_t block_id)
-      : block_id_(block_id) {}
-
   // Constructs a transformation from a protobuf message.
   explicit TransformationMoveBlockDown(
-      const protobufs::TransformationMoveBlockDown& message)
-      : block_id_(message.block_id()) {}
+      const protobufs::TransformationMoveBlockDown message)
+      : message_(message) {}
 
   ~TransformationMoveBlockDown() override = default;
 
@@ -41,17 +48,20 @@ class TransformationMoveBlockDown : public Transformation {
   //   in a function.
   // - b must not dominate the block that follows it in program order.
   bool IsApplicable(opt::IRContext* context,
-                    const FactManager& fact_manager) override;
+                    const FactManager& fact_manager) override {
+    return transformation::IsApplicable(message_, context, fact_manager);
+  }
 
   // The block with id |block_id_| is moved down; i.e. the program order
   // between it and the block that follows it is swapped.
-  void Apply(opt::IRContext* context, FactManager* fact_manager) override;
+  void Apply(opt::IRContext* context, FactManager* fact_manager) override {
+    transformation::Apply(message_, context, fact_manager);
+  }
 
   protobufs::Transformation ToMessage() override;
 
  private:
-  // The id of the block to move down.
-  const uint32_t block_id_;
+  const protobufs::TransformationMoveBlockDown message_;
 };
 
 }  // namespace fuzz

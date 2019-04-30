@@ -54,7 +54,8 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible1) {
 
   FactManager fact_manager;
 
-  auto transformation = TransformationMoveBlockDown(11);
+  auto transformation = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(11));
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -91,7 +92,8 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible2) {
 
   FactManager fact_manager;
 
-  auto transformation = TransformationMoveBlockDown(5);
+  auto transformation = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(5));
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -130,7 +132,8 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible3) {
 
   FactManager fact_manager;
 
-  auto transformation = TransformationMoveBlockDown(100);
+  auto transformation = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(100));
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -173,7 +176,8 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible4) {
 
   FactManager fact_manager;
 
-  auto transformation = TransformationMoveBlockDown(12);
+  auto transformation = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(12));
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -241,7 +245,8 @@ TEST(TransformationMoveBlockDownTest, MovePossible) {
 
   FactManager fact_manager;
 
-  auto transformation = TransformationMoveBlockDown(11);
+  auto transformation = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(11));
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
@@ -352,17 +357,28 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   // The block ids are: 5 14 20 23 21 25 29 32 30 15
   // We make a transformation to move each of them down, plus a transformation
   // to move a non-block, 27, down.
-  auto move_down_5 = TransformationMoveBlockDown(5);
-  auto move_down_14 = TransformationMoveBlockDown(14);
-  auto move_down_20 = TransformationMoveBlockDown(20);
-  auto move_down_23 = TransformationMoveBlockDown(23);
-  auto move_down_21 = TransformationMoveBlockDown(21);
-  auto move_down_25 = TransformationMoveBlockDown(25);
-  auto move_down_29 = TransformationMoveBlockDown(29);
-  auto move_down_32 = TransformationMoveBlockDown(32);
-  auto move_down_30 = TransformationMoveBlockDown(30);
-  auto move_down_15 = TransformationMoveBlockDown(15);
-  auto move_down_27 = TransformationMoveBlockDown(27);
+  auto move_down_5 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(5));
+  auto move_down_14 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(14));
+  auto move_down_20 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(20));
+  auto move_down_23 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(23));
+  auto move_down_21 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(21));
+  auto move_down_25 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(25));
+  auto move_down_29 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(29));
+  auto move_down_32 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(32));
+  auto move_down_30 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(30));
+  auto move_down_15 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(15));
+  auto move_down_27 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(27));
 
   // Dominance is as follows:
   //  5 dominates everything else
@@ -739,7 +755,8 @@ TEST(TransformationMoveBlockDownTest, Protobuf) {
   FactManager fact_manager1;
   FactManager fact_manager2;
 
-  auto transformation1 = TransformationMoveBlockDown(11);
+  auto transformation1 = TransformationMoveBlockDown(
+      transformation::MakeTransformationMoveBlockDown(11));
   auto transformation2 = TransformationMoveBlockDown(
       transformation1.ToMessage().move_block_down());
 
