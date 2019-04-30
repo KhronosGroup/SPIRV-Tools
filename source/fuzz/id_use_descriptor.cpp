@@ -16,23 +16,18 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace module_navigation {
 
-uint32_t IdUseDescriptor::GetIdOfInterest() const { return id_of_interest_; }
-
-uint32_t IdUseDescriptor::GetInOperandIndex() const {
-  return in_operand_index_;
-}
-
-opt::Instruction* IdUseDescriptor::FindInstruction(
-    spvtools::opt::IRContext* context) const {
+opt::Instruction* module_navigation::FindInstruction(
+    const protobufs::IdUseDescriptor& descriptor,
+    spvtools::opt::IRContext* context) {
   for (auto& function : *context->module()) {
     for (auto& block : function) {
-      bool found_base = block.id() == base_instruction_result_id_;
+      bool found_base = block.id() == descriptor.base_instruction_result_id();
       uint32_t num_ignored = 0;
       for (auto& instruction : block) {
         if (instruction.HasResultId() &&
-            instruction.result_id() == base_instruction_result_id_) {
+            instruction.result_id() ==
+                descriptor.base_instruction_result_id()) {
           assert(!found_base &&
                  "It should not be possible to find the base instruction "
                  "multiple times.");
@@ -41,16 +36,18 @@ opt::Instruction* IdUseDescriptor::FindInstruction(
                  "The skipped instruction count should only be incremented "
                  "after the instruction base has been found.");
         }
-        if (found_base && instruction.opcode() == target_instruction_opcode_) {
-          if (num_ignored == num_opcodes_to_ignore_) {
-            if (in_operand_index_ >= instruction.NumInOperands()) {
+        if (found_base &&
+            instruction.opcode() == descriptor.target_instruction_opcode()) {
+          if (num_ignored == descriptor.num_opcodes_to_ignore()) {
+            if (descriptor.in_operand_index() >= instruction.NumInOperands()) {
               return nullptr;
             }
-            auto in_operand = instruction.GetInOperand(in_operand_index_);
+            auto in_operand =
+                instruction.GetInOperand(descriptor.in_operand_index());
             if (in_operand.type != SPV_OPERAND_TYPE_ID) {
               return nullptr;
             }
-            if (in_operand.words[0] != id_of_interest_) {
+            if (in_operand.words[0] != descriptor.id_of_interest()) {
               return nullptr;
             }
             return &instruction;
@@ -68,6 +65,18 @@ opt::Instruction* IdUseDescriptor::FindInstruction(
   return nullptr;
 }
 
-}  // namespace module_navigation
+protobufs::IdUseDescriptor module_navigation::MakeIdUseDescriptor(
+    uint32_t id_of_interest, SpvOp target_instruction_opcode,
+    uint32_t in_operand_index, uint32_t base_instruction_result_id,
+    uint32_t num_opcodes_to_ignore) {
+  protobufs::IdUseDescriptor result;
+  result.set_id_of_interest(id_of_interest);
+  result.set_target_instruction_opcode(target_instruction_opcode);
+  result.set_in_operand_index(in_operand_index);
+  result.set_base_instruction_result_id(base_instruction_result_id);
+  result.set_num_opcodes_to_ignore(num_opcodes_to_ignore);
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools
