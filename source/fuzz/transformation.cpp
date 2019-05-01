@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation.h"
-#include "source/fuzz/transformation_add_boolean_constant.h"
+#include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_dead_break.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"

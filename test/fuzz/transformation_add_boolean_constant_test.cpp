@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_add_boolean_constant.h"
+#include "source/fuzz/transformation_add_constant_boolean.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationAddBooleanConstantTest, NeitherPresentInitiallyAddBoth) {
+TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -46,20 +46,20 @@ TEST(TransformationAddBooleanConstantTest, NeitherPresentInitiallyAddBoth) {
 
   // True and false can both be added as neither is present.
   ASSERT_TRUE(transformation::IsApplicable(
-      transformation::MakeTransformationAddBooleanConstant(7, true),
+      transformation::MakeTransformationAddConstantBoolean(7, true),
       context.get(), fact_manager));
   ASSERT_TRUE(transformation::IsApplicable(
-      transformation::MakeTransformationAddBooleanConstant(7, false),
+      transformation::MakeTransformationAddConstantBoolean(7, false),
       context.get(), fact_manager));
 
   // Id 5 is already taken.
   ASSERT_FALSE(transformation::IsApplicable(
-      transformation::MakeTransformationAddBooleanConstant(5, true),
+      transformation::MakeTransformationAddConstantBoolean(5, true),
       context.get(), fact_manager));
 
-  auto add_true = transformation::MakeTransformationAddBooleanConstant(7, true);
+  auto add_true = transformation::MakeTransformationAddConstantBoolean(7, true);
   auto add_false =
-      transformation::MakeTransformationAddBooleanConstant(8, false);
+      transformation::MakeTransformationAddConstantBoolean(8, false);
 
   ASSERT_TRUE(
       transformation::IsApplicable(add_true, context.get(), fact_manager));
@@ -101,7 +101,7 @@ TEST(TransformationAddBooleanConstantTest, NeitherPresentInitiallyAddBoth) {
   CheckEqual(env, after_transformation, context.get());
 }
 
-TEST(TransformationAddBooleanConstantTest, NoOpTypeBoolPresent) {
+TEST(TransformationAddConstantBooleanTest, NoOpTypeBoolPresent) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -127,10 +127,10 @@ TEST(TransformationAddBooleanConstantTest, NoOpTypeBoolPresent) {
 
   // Neither true nor false can be added as OpTypeBool is not present.
   ASSERT_FALSE(transformation::IsApplicable(
-      transformation::MakeTransformationAddBooleanConstant(6, true),
+      transformation::MakeTransformationAddConstantBoolean(6, true),
       context.get(), fact_manager));
   ASSERT_FALSE(transformation::IsApplicable(
-      transformation::MakeTransformationAddBooleanConstant(6, false),
+      transformation::MakeTransformationAddConstantBoolean(6, false),
       context.get(), fact_manager));
 }
 

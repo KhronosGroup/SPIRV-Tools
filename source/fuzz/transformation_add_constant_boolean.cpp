@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_add_boolean_constant.h"
+#include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/types.h"
@@ -23,7 +23,7 @@ namespace fuzz {
 using opt::IRContext;
 
 bool transformation::IsApplicable(
-    const protobufs::TransformationAddBooleanConstant& message,
+    const protobufs::TransformationAddConstantBoolean& message,
     IRContext* context, const FactManager& /*unused*/) {
   opt::analysis::Bool bool_type;
   if (!context->get_type_mgr()->GetId(&bool_type)) {
@@ -43,7 +43,7 @@ bool transformation::IsApplicable(
 }
 
 void transformation::Apply(
-    const protobufs::TransformationAddBooleanConstant& message,
+    const protobufs::TransformationAddConstantBoolean& message,
     IRContext* context, FactManager* /*unused*/) {
   opt::analysis::Bool bool_type;
   // Add the boolean constant to the module, ensuring the module's id bound is
@@ -56,10 +56,10 @@ void transformation::Apply(
   context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
-protobufs::TransformationAddBooleanConstant
-transformation::MakeTransformationAddBooleanConstant(uint32_t fresh_id,
+protobufs::TransformationAddConstantBoolean
+transformation::MakeTransformationAddConstantBoolean(uint32_t fresh_id,
                                                      bool is_true) {
-  protobufs::TransformationAddBooleanConstant result;
+  protobufs::TransformationAddConstantBoolean result;
   result.set_fresh_id(fresh_id);
   result.set_is_true(is_true);
   return result;

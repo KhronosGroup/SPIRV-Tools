@@ -48,7 +48,7 @@ message TransformationSequence {
 
 message Transformation {
   oneof transformation {
-    TransformationAddBooleanConstant add_boolean_constant = 1;
+    TransformationAddConstantBoolean add_boolean_constant = 1;
     TransformationAddDeadBreak add_dead_break = 2;
     TransformationMoveBlockDown move_block_down = 3;
     TransformationReplaceConstantWithUniform replace_constant_with_uniform = 4;
@@ -56,7 +56,7 @@ message Transformation {
   }
 }
 
-message TransformationAddBooleanConstant {
+message TransformationAddConstantBoolean {
 
   // Supports adding the constants true and false to a module, which may be
   // necessary in order to enable other transformations if they are not present.

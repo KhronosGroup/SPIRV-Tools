@@ -27,17 +27,17 @@ namespace transformation {
 // - The module must already contain OpTypeBool.
 // - The module must not already contain an OpConstantTrue (OpConstantFalse)
 //   instruction if |is_true| holds (does not hold).
-bool IsApplicable(const protobufs::TransformationAddBooleanConstant& message,
+bool IsApplicable(const protobufs::TransformationAddConstantBoolean& message,
                   opt::IRContext* context, const FactManager& fact_manager);
 
 // - Adds OpConstantTrue (OpConstantFalse) to the module with id |fresh_id|
 // if |is_true| holds (does not hold).
-void Apply(const protobufs::TransformationAddBooleanConstant& message,
+void Apply(const protobufs::TransformationAddConstantBoolean& message,
            opt::IRContext* context, FactManager* fact_manager);
 
 // Helper factory to create a transformation message.
-protobufs::TransformationAddBooleanConstant
-MakeTransformationAddBooleanConstant(uint32_t fresh_id, bool is_true);
+protobufs::TransformationAddConstantBoolean
+MakeTransformationAddConstantBoolean(uint32_t fresh_id, bool is_true);
 
 }  // namespace transformation
 

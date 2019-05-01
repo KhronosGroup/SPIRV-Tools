@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
-#include "source/fuzz/transformation_add_boolean_constant.h"
+#include "source/fuzz/transformation_add_constant_boolean.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -25,7 +25,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations) {
   // Add OpConstantTrue if it is not already there.
-  protobufs::TransformationAddBooleanConstant make_true;
+  protobufs::TransformationAddConstantBoolean make_true;
   make_true.set_fresh_id(fuzzer_context->FreshId());
   make_true.set_is_true(true);
   if (transformation::IsApplicable(make_true, ir_context, *fact_manager)) {
@@ -35,7 +35,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
   }
 
   // Add OpConstantFalse if it is not already there.
-  protobufs::TransformationAddBooleanConstant make_false;
+  protobufs::TransformationAddConstantBoolean make_false;
   make_false.set_fresh_id(fuzzer_context->FreshId());
   make_false.set_is_true(false);
   if (transformation::IsApplicable(make_false, ir_context, *fact_manager)) {
