@@ -43,7 +43,7 @@ class FactManager {
         const protobufs::UniformBufferElementDescriptor* descriptor) const {
       std::u32string data;
       data.push_back(descriptor->uniform_variable_id());
-      for (auto id : descriptor->indices()) {
+      for (auto id : descriptor->index()) {
         data.push_back(id);
       }
       return std::hash<std::u32string>()(data);
@@ -55,8 +55,8 @@ class FactManager {
         const protobufs::UniformBufferElementDescriptor* first,
         const protobufs::UniformBufferElementDescriptor* second) const {
       return first->uniform_variable_id() == second->uniform_variable_id() &&
-             std::equal(first->indices().begin(), first->indices().end(),
-                        second->indices().begin());
+             std::equal(first->index().begin(), first->index().end(),
+                        second->index().begin());
     }
   };
 

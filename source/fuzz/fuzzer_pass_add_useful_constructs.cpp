@@ -30,7 +30,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
   make_true.set_is_true(true);
   if (transformation::IsApplicable(make_true, ir_context, *fact_manager)) {
     transformation::Apply(make_true, ir_context, fact_manager);
-    *transformations->add_transformations()->mutable_add_boolean_constant() =
+    *transformations->add_transformation()->mutable_add_boolean_constant() =
         make_true;
   }
 
@@ -40,7 +40,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
   make_false.set_is_true(false);
   if (transformation::IsApplicable(make_false, ir_context, *fact_manager)) {
     transformation::Apply(make_false, ir_context, fact_manager);
-    *transformations->add_transformations()->mutable_add_boolean_constant() =
+    *transformations->add_transformation()->mutable_add_boolean_constant() =
         make_false;
   }
 }

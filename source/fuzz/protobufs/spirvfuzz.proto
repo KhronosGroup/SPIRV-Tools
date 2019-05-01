@@ -38,12 +38,12 @@ message UniformBufferElementDescriptor {
 
   // An ordered sequence of indices through composite structures in the
   // uniform buffer.
-  repeated uint32 indices = 2;
+  repeated uint32 index = 2;
 
 }
 
 message TransformationSequence {
-  repeated Transformation transformations = 1;
+  repeated Transformation transformation = 1;
 }
 
 message Transformation {
@@ -84,7 +84,7 @@ message TransformationAddDeadBreak {
 
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
-  repeated uint32 phi_ids = 4;
+  repeated uint32 phi_id = 4;
 
 }
 

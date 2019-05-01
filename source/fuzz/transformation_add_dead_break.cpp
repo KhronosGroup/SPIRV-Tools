@@ -47,7 +47,7 @@ bool PhiIdsOk(const protobufs::TransformationAddDeadBreak& message,
     // no need to extend OpPhi instructions.  Do not allow phi ids to be
     // present. This might turn out to be too strict; perhaps it would be OK
     // just to ignore the ids in this case.
-    return message.phi_ids().empty();
+    return message.phi_id().empty();
   }
   // The break would add a previously non-existent edge from |from_block| to
   // |to_block|, so we go through the given phi ids and check that they exactly
@@ -62,14 +62,14 @@ bool PhiIdsOk(const protobufs::TransformationAddDeadBreak& message,
       // a non-OpPhi then we have seen them all.
       break;
     }
-    if (phi_index == (uint32_t)message.phi_ids().size()) {
+    if (phi_index == (uint32_t)message.phi_id().size()) {
       // Not enough phi ids have been provided to account for the OpPhi
       // instructions.
       return false;
     }
     // Look for an instruction defining the next phi id.
     Instruction* phi_extension =
-        context->get_def_use_mgr()->GetDef(message.phi_ids()[phi_index]);
+        context->get_def_use_mgr()->GetDef(message.phi_id()[phi_index]);
     if (!phi_extension) {
       // The id given to extend this OpPhi does not exist.
       return false;
@@ -105,7 +105,7 @@ bool PhiIdsOk(const protobufs::TransformationAddDeadBreak& message,
   // Reject the transformation if not all of the ids for extending OpPhi
   // instructions are needed. This might turn out to be stricter than necessary;
   // perhaps it would be OK just to not use the ids in this case.
-  return phi_index == (uint32_t)message.phi_ids().size();
+  return phi_index == (uint32_t)message.phi_id().size();
 }
 
 bool FromBlockIsInLoopContinueConstruct(
@@ -282,13 +282,13 @@ void transformation::Apply(const protobufs::TransformationAddDeadBreak& message,
       if (inst.opcode() != SpvOpPhi) {
         break;
       }
-      assert(phi_index < (uint32_t)message.phi_ids().size() &&
+      assert(phi_index < (uint32_t)message.phi_id().size() &&
              "There should be exactly one phi id per OpPhi instruction.");
-      inst.AddOperand({SPV_OPERAND_TYPE_ID, {message.phi_ids()[phi_index]}});
+      inst.AddOperand({SPV_OPERAND_TYPE_ID, {message.phi_id()[phi_index]}});
       inst.AddOperand({SPV_OPERAND_TYPE_ID, {message.from_block()}});
       phi_index++;
     }
-    assert(phi_index == (uint32_t)message.phi_ids().size() &&
+    assert(phi_index == (uint32_t)message.phi_id().size() &&
            "There should be exactly one phi id per OpPhi instruction.");
   }
 
@@ -300,13 +300,13 @@ protobufs::TransformationAddDeadBreak
 transformation::MakeTransformationAddDeadBreak(uint32_t from_block,
                                                uint32_t to_block,
                                                bool break_condition_value,
-                                               std::vector<uint32_t> phi_ids) {
+                                               std::vector<uint32_t> phi_id) {
   protobufs::TransformationAddDeadBreak result;
   result.set_from_block(from_block);
   result.set_to_block(to_block);
   result.set_break_condition_value(break_condition_value);
-  for (auto id : phi_ids) {
-    result.add_phi_ids(id);
+  for (auto id : phi_id) {
+    result.add_phi_id(id);
   }
   return result;
 }

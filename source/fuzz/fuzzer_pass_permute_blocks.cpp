@@ -65,7 +65,7 @@ void FuzzerPassPermuteBlocks::Apply(
         message.set_block_id(*id);
         if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
           transformation::Apply(message, ir_context, fact_manager);
-          *transformations->add_transformations()->mutable_move_block_down() =
+          *transformations->add_transformation()->mutable_move_block_down() =
               message;
         } else {
           break;
