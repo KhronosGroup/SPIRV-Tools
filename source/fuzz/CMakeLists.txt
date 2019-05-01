@@ -27,7 +27,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         random_generator.h
         replayer.h
         transformation.h
-        transformation_add_boolean_constant.h
+        transformation_add_constant_boolean.h
         transformation_add_dead_break.h
         transformation_move_block_down.h
         transformation_replace_constant_with_uniform.h
@@ -46,7 +46,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         pseudo_random_generator.cpp
         replayer.cpp
         transformation.cpp
-        transformation_add_boolean_constant.cpp
+        transformation_add_constant_boolean.cpp
         transformation_add_dead_break.cpp
         transformation_move_block_down.cpp
         transformation_replace_constant_with_uniform.cpp
