@@ -18,7 +18,7 @@ add_spvtools_unittest(TARGET fuzz
 
         fact_manager_test.cpp
         fuzz_test_util.cpp
-        transformation_add_boolean_constant_test.cpp
+        transformation_add_constant_boolean_test.cpp
         transformation_add_dead_break_test.cpp
         transformation_move_block_down_test.cpp
         transformation_replace_constant_with_uniform_test.cpp
