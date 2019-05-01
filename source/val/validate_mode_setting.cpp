@@ -237,33 +237,25 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
 
   const auto mode = inst->GetOperandAs<SpvExecutionMode>(1);
   if (inst->opcode() == SpvOpExecutionModeId) {
-    switch (mode) {
-      case SpvExecutionModeSubgroupsPerWorkgroupId:
-      case SpvExecutionModeLocalSizeHintId: {
-        const auto operand_id = inst->GetOperandAs<uint32_t>(2);
-        const auto* operand_inst = _.FindDef(operand_id);
+    size_t operand_count = inst->operands().size();
+    for (size_t i = 2; i < operand_count; ++i) {
+      const auto operand_id = inst->GetOperandAs<uint32_t>(2);
+      const auto* operand_inst = _.FindDef(operand_id);
+      if (mode == SpvExecutionModeSubgroupsPerWorkgroupId ||
+          mode == SpvExecutionModeLocalSizeHintId ||
+          mode == SpvExecutionModeLocalSizeId) {
         if (!spvOpcodeIsConstant(operand_inst->opcode())) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
-                 << "For OpExecutionModeId Extra Operand id must be "
-                    "constant instruction.";
+                 << "For OpExecutionModeId all Extra Operand ids must be "
+                    "constant "
+                    "instructions.";
         }
-      } break;
-      case SpvExecutionModeLocalSizeId: {
-        for (int i = 0; i < 3; ++i) {
-          const auto operand_id = inst->GetOperandAs<uint32_t>(2 + i);
-          const auto* operand_inst = _.FindDef(operand_id);
-          if (!spvOpcodeIsConstant(operand_inst->opcode())) {
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << "For OpExecutionModeId all Extra Operand ids must be "
-                      "constant instructions.";
-          }
-        }
-      } break;
-      default:
+      } else {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpExecutionModeId is only valid when the Mode operand is an "
                   "execution mode that takes Extra Operands that are id "
                   "operands.";
+      }
     }
   } else if (mode == SpvExecutionModeSubgroupsPerWorkgroupId ||
              mode == SpvExecutionModeLocalSizeHintId ||

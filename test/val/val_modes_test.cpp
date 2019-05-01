@@ -888,8 +888,8 @@ OpExecutionModeId %main SubgroupsPerWorkgroupId %int_1
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_ID, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("For OpExecutionModeId Extra Operand id must be "
-                        "constant instruction."));
+              HasSubstr("For OpExecutionModeId all Extra Operand ids must be "
+                        "constant instructions."));
 }
 
 TEST_F(ValidateModeExecution, ExecModeLocalSizeHintIdBad) {
@@ -943,8 +943,8 @@ OpExecutionModeId %main LocalSizeHintId %int_1
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_ID, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("For OpExecutionModeId Extra Operand id must be "
-                        "constant instruction."));
+              HasSubstr("For OpExecutionModeId all Extra Operand ids must be "
+                        "constant instructions."));
 }
 
 TEST_F(ValidateModeExecution, ExecModeLocalSizeIdBad) {
