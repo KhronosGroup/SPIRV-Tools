@@ -76,10 +76,8 @@ class FixStorageClass : public Pass {
 
   // Change |inst| to match that operand |op_idx| now has type |type_id|, and
   // adjust any uses of |inst| accordingly. Returns true if the code changed.
-  bool PropagateType(Instruction* inst,
-                     uint32_t type_id,
-                     uint32_t op_idx,
-                     std::set <uint32_t>* seen);
+  bool PropagateType(Instruction* inst, uint32_t type_id, uint32_t op_idx,
+                     std::set<uint32_t>* seen);
 
   // Changes the result type of |inst| to |new_type_id|.
   bool ChangeResultType(Instruction* inst, uint32_t new_type_id);

@@ -260,8 +260,8 @@ bool FixStorageClass::PropagateType(Instruction* inst, uint32_t type_id,
 
     std::vector<std::pair<Instruction*, uint32_t>> uses;
     get_def_use_mgr()->ForEachUse(inst,
-                                  [&uses](Instruction* use, uint32_t op_idx) {
-                                    uses.push_back({use, op_idx});
+                                  [&uses](Instruction* use, uint32_t idx) {
+                                    uses.push_back({use, idx});
                                   });
 
     for (auto& use : uses) {
