@@ -69,7 +69,7 @@ Replayer::ReplayerResultStatus Replayer::Run(
 
   // Consider the transformation proto messages in turn.
   for (auto& transformation_message :
-       transformation_sequence_in.transformations()) {
+       transformation_sequence_in.transformation()) {
     // Check whether the transformation can be applied.
     if (transformation::IsApplicable(transformation_message, ir_context.get(),
                                      fact_manager)) {
@@ -77,7 +77,7 @@ Replayer::ReplayerResultStatus Replayer::Run(
       // sequence of transformations that were applied.
       transformation::Apply(transformation_message, ir_context.get(),
                             &fact_manager);
-      *transformation_sequence_out->add_transformations() =
+      *transformation_sequence_out->add_transformation() =
           transformation_message;
     }
   }
