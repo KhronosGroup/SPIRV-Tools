@@ -78,7 +78,7 @@ void FuzzerPassSplitBlocks::Apply(
     // block, we apply the split. Otherwise the block just doesn't get split.
     if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
       transformation::Apply(message, ir_context, fact_manager);
-      *transformations->add_transformations()->mutable_split_block() = message;
+      *transformations->add_transformation()->mutable_split_block() = message;
     }
   }
 }

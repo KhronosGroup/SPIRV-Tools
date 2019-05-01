@@ -39,7 +39,7 @@ std::unique_ptr<opt::Instruction> MakeAccessChainInstruction(
   auto registered_int_type =
       context->get_type_mgr()->GetRegisteredType(&int_type)->AsInteger();
   auto int_type_id = context->get_type_mgr()->GetId(&int_type);
-  for (auto index : message.uniform_descriptor().indices()) {
+  for (auto index : message.uniform_descriptor().index()) {
     opt::analysis::IntConstant int_constant(registered_int_type, {index});
     auto constant_id = context->get_constant_mgr()->FindDeclaredConstant(
         &int_constant, int_type_id);
@@ -151,7 +151,7 @@ bool transformation::IsApplicable(
   auto registered_int_type =
       context->get_type_mgr()->GetRegisteredType(&int_type)->AsInteger();
   auto int_type_id = context->get_type_mgr()->GetId(&int_type);
-  for (auto index : message.uniform_descriptor().indices()) {
+  for (auto index : message.uniform_descriptor().index()) {
     opt::analysis::IntConstant int_constant(registered_int_type, {index});
     if (!context->get_constant_mgr()->FindDeclaredConstant(&int_constant,
                                                            int_type_id)) {

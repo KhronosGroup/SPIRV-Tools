@@ -125,7 +125,7 @@ FactManager::MakeUniformBufferElementDescriptor(
   protobufs::UniformBufferElementDescriptor result;
   result.set_uniform_variable_id(uniform_variable_id);
   for (auto index : indices) {
-    result.add_indices(index);
+    result.add_index(index);
   }
   return result;
 }
