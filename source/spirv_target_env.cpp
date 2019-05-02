@@ -15,6 +15,7 @@
 #include "source/spirv_target_env.h"
 
 #include <cstring>
+#include <string>
 
 #include "source/spirv_constant.h"
 #include "spirv-tools/libspirv.h"
