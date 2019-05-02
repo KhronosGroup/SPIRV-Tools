@@ -58,7 +58,7 @@ if "%KOKORO_GITHUB_COMMIT%." == "." (
   set BUILD_SHA=%KOKORO_GITHUB_COMMIT%
 )
 
-set CMAKE_FLAGS=-GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PREFIX=install -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe
+set CMAKE_FLAGS=-DCMAKE_INSTALL_PREFIX=%KOKORO_ARTIFACTS_DIR%\install -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe
 
 :: Skip building tests for VS2013
 if %VS_VERSION% == 2013 (
@@ -86,6 +86,13 @@ if %VS_VERSION% NEQ 2013 (
   if !ERRORLEVEL! NEQ 0 exit /b !ERRORLEVEL!
 )
 echo "Tests Completed %DATE% %TIME%"
+
+:: ################################################
+:: Install and package.
+:: ################################################
+ninja install
+cd %KOKORO_ARTIFACTS_DIR%
+zip -r install.zip install
 
 :: Clean up some directories.
 rm -rf %SRC%\build
