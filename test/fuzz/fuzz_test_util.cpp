@@ -36,6 +36,10 @@ bool IsEqual(const spv_target_env env,
                      kFuzzDisassembleOption)) {
     return false;
   }
+  // Using expect gives us a string diff if the strings are not the same.
+  EXPECT_EQ(expected_disassembled, actual_disassembled);
+  // We then return the result of the equality comparison, to be used by an
+  // assertion in the test root function.
   return expected_disassembled == actual_disassembled;
 }
 
