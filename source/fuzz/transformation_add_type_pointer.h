@@ -22,11 +22,13 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// TODO
+// - |message.fresh_id| must not be used by the module
+// - |message.base_type_id| must be the result id of an OpType[...] instruction
 bool IsApplicable(const protobufs::TransformationAddTypePointer& message,
                   opt::IRContext* context, const FactManager& fact_manager);
 
-// TODO
+// Adds an OpTypePointer instruction with the given storage class and base type
+// to the module.
 void Apply(const protobufs::TransformationAddTypePointer& message,
            opt::IRContext* context, FactManager* fact_manager);
 

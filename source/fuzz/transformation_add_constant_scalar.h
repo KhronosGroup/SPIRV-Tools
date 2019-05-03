@@ -22,11 +22,13 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// TODO
+// - |message.fresh_id| must not be used by the module
+// - |message.type_id| must be the id of a floating-point or integer type
+// - The size of |message.word| must be compatible with the width of this type
 bool IsApplicable(const protobufs::TransformationAddConstantScalar& message,
                   opt::IRContext* context, const FactManager& fact_manager);
 
-// TODO
+// Adds a new OpConstant instruction with the given type and words.
 void Apply(const protobufs::TransformationAddConstantScalar& message,
            opt::IRContext* context, FactManager* fact_manager);
 
