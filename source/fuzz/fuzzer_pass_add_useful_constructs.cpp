@@ -29,8 +29,10 @@ void FuzzerPassAddUsefulConstructs::MaybeAddIntConstant(
     opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
     FactManager* fact_manager,
     protobufs::TransformationSequence* transformations, uint32_t width,
-    bool is_signed, std::vector<uint32_t> data) {
+    bool is_signed, std::vector<uint32_t> data) const {
   opt::analysis::Integer temp_int_type(width, is_signed);
+  assert(ir_context->get_type_mgr()->GetId(&temp_int_type) &&
+         "int type should already be registered.");
   auto registered_int_type = ir_context->get_type_mgr()
                                  ->GetRegisteredType(&temp_int_type)
                                  ->AsInteger();
@@ -42,6 +44,35 @@ void FuzzerPassAddUsefulConstructs::MaybeAddIntConstant(
     protobufs::TransformationAddConstantScalar add_constant_int =
         transformation::MakeTransformationAddConstantScalar(
             fuzzer_context->FreshId(), int_type_id, data);
+    assert(transformation::IsApplicable(add_constant_int, ir_context,
+                                        *fact_manager) &&
+           "Should be applicable by construction.");
+    transformation::Apply(add_constant_int, ir_context, fact_manager);
+    *transformations->add_transformation()->mutable_add_constant_scalar() =
+        add_constant_int;
+  }
+}
+
+void FuzzerPassAddUsefulConstructs::MaybeAddFloatConstant(
+    opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
+    FactManager* fact_manager,
+    protobufs::TransformationSequence* transformations, uint32_t width,
+    std::vector<uint32_t> data) const {
+  opt::analysis::Float temp_float_type(width);
+  assert(ir_context->get_type_mgr()->GetId(&temp_float_type) &&
+         "float type should already be registered.");
+  auto registered_float_type = ir_context->get_type_mgr()
+                                   ->GetRegisteredType(&temp_float_type)
+                                   ->AsFloat();
+  auto float_type_id = ir_context->get_type_mgr()->GetId(registered_float_type);
+  assert(
+      float_type_id &&
+      "The relevant float type should have been added to the module already.");
+  opt::analysis::FloatConstant float_constant(registered_float_type, data);
+  if (!ir_context->get_constant_mgr()->FindConstant(&float_constant)) {
+    protobufs::TransformationAddConstantScalar add_constant_int =
+        transformation::MakeTransformationAddConstantScalar(
+            fuzzer_context->FreshId(), float_type_id, data);
     assert(transformation::IsApplicable(add_constant_int, ir_context,
                                         *fact_manager) &&
            "Should be applicable by construction.");
@@ -134,38 +165,23 @@ void FuzzerPassAddUsefulConstructs::Apply(
   }
 
   // Add 32-bit float constants 0.0 and 1.0 if not present.
-  opt::analysis::Float temp_float_type(32);
-  auto registered_float_type = ir_context->get_type_mgr()
-                                   ->GetRegisteredType(&temp_float_type)
-                                   ->AsFloat();
-  auto float_type_id = ir_context->get_type_mgr()->GetId(registered_float_type);
-  assert(float_type_id &&
-         "This int type must be present as we should have added it already.");
   uint32_t uint_data[2];
   float float_data[2] = {0.0, 1.0};
   memcpy(uint_data, float_data, sizeof(float_data));
-  for (int i = 0; i < 2; i++) {
-    opt::analysis::FloatConstant float_constant(registered_float_type,
-                                                {uint_data[i]});
-    if (!ir_context->get_constant_mgr()->FindConstant(&float_constant)) {
-      protobufs::TransformationAddConstantScalar add_constant_float =
-          transformation::MakeTransformationAddConstantScalar(
-              fuzzer_context->FreshId(), float_type_id, {uint_data[i]});
-      assert(transformation::IsApplicable(add_constant_float, ir_context,
-                                          *fact_manager) &&
-             "Should be applicable by construction.");
-      transformation::Apply(add_constant_float, ir_context, fact_manager);
-      *transformations->add_transformation()->mutable_add_constant_scalar() =
-          add_constant_float;
-    }
+  for (unsigned int& datum : uint_data) {
+    MaybeAddFloatConstant(ir_context, fuzzer_context, fact_manager,
+                          transformations, 32, {datum});
   }
 
-  // Add pointer types with uniform storage class for all known-to-be-constant
-  // elements of uniform buffers, and add signed integer constants for all
-  // indices that might be required to access them.
+  // For every known-to-be-constant uniform, make sure we have instructions
+  // declaring:
+  // - a pointer type with uniform storage class, whose pointee type is the type
+  // of the element
+  // - a signed integer constant for each index required to access the element
+  // - a constant for the constant value itself
   for (auto type : fact_manager->GetTypesForWhichUniformValuesAreKnown()) {
     opt::analysis::Pointer uniform_pointer(type, SpvStorageClassUniform);
-    if (!ir_context->get_type_mgr()->GetRegisteredType(&uniform_pointer)) {
+    if (!ir_context->get_type_mgr()->GetId(&uniform_pointer)) {
       auto base_type_id = ir_context->get_type_mgr()->GetId(type);
       assert(base_type_id &&
              "All relevant scalar types should already have been added.");
@@ -176,8 +192,23 @@ void FuzzerPassAddUsefulConstructs::Apply(
              "Should be applicable by construction.");
       transformation::Apply(add_pointer, ir_context, fact_manager);
     }
-    for (const opt::analysis::Constant* constant :
+    for (const opt::analysis::ScalarConstant* constant :
          fact_manager->GetConstantsAvailableFromUniformsForType(*type)) {
+      if (constant->AsIntConstant()) {
+        auto int_constant = constant->AsIntConstant();
+        auto int_type = int_constant->type()->AsInteger();
+        MaybeAddIntConstant(ir_context, fuzzer_context, fact_manager,
+                            transformations, int_type->width(),
+                            int_type->IsSigned(), int_constant->words());
+      } else {
+        assert(constant->AsFloatConstant() &&
+               "Known uniform values must be integer or floating-point.");
+        auto float_constant = constant->AsFloatConstant();
+        auto float_type = float_constant->type()->AsFloat();
+        MaybeAddFloatConstant(ir_context, fuzzer_context, fact_manager,
+                              transformations, float_type->width(),
+                              float_constant->words());
+      }
       for (auto& uniform_buffer_element_descriptor :
            *fact_manager->GetUniformDescriptorsForConstant(*constant)) {
         for (auto index : uniform_buffer_element_descriptor.index()) {

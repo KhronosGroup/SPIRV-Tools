@@ -22,9 +22,9 @@ namespace fuzz {
 namespace {
 
 using opt::analysis::BoolConstant;
-using opt::analysis::Constant;
 using opt::analysis::FloatConstant;
 using opt::analysis::IntConstant;
+using opt::analysis::ScalarConstant;
 
 using opt::analysis::Bool;
 using opt::analysis::Float;
@@ -87,85 +87,6 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
     std::memcpy(&buffer_double_20, &temp, sizeof(temp));
   }
 
-  // Make some constants.
-
-  // Signed 32
-  //  IntConstant int_32_1_fst(&type_int32_fst, {1});
-  //  assert(1 == int_32_1_fst.GetS32());
-  //  IntConstant int_32_1_snd(&type_int32_snd, {1});
-  //  assert(1 == int_32_1_snd.GetS32());
-  //  IntConstant int_32_minint_fst(&type_int32_fst, {temp_uint32[0]});
-  //  assert(std::numeric_limits<int32_t>::min() == int_32_minint_fst.GetS32());
-  //  IntConstant int_32_minint_snd(&type_int32_snd, {temp_uint32[0]});
-  //  assert(std::numeric_limits<int32_t>::min() == int_32_minint_snd.GetS32());
-  //
-  //  // Signed 64
-  //  IntConstant int_64_1_fst(&type_int64_fst, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(1 == int_64_1_fst.GetS64()); IntConstant
-  //  int_64_1_snd(&type_int64_snd, {temp_uint32[0], temp_uint32[1]}); assert(1
-  //  == int_64_1_snd.GetS64()); IntConstant int_64_maxint_fst(&type_int64_fst,
-  //  {temp_uint32[0], temp_uint32[1]});
-  //  assert(std::numeric_limits<int64_t>::max() == int_64_maxint_fst.GetS64());
-  //  IntConstant int_64_maxint_snd(&type_int64_snd, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(std::numeric_limits<int64_t>::max() ==
-  //  int_64_maxint_snd.GetS64());
-  //
-  //  // Unsigned 32
-  //  IntConstant uint_32_1_fst(&type_uint32_fst, {1});
-  //  assert(1 == uint_32_1_fst.GetU32());
-  //  IntConstant uint_32_1_snd(&type_uint32_snd, {1});
-  //  assert(1 == uint_32_1_snd.GetU32());
-  //  IntConstant uint_32_minint_fst(&type_uint32_fst,
-  //  {std::numeric_limits<uint32_t>::min()});
-  //  assert(std::numeric_limits<uint32_t>::min() ==
-  //  uint_32_minint_fst.GetU32()); IntConstant
-  //  uint_32_minint_snd(&type_uint32_snd,
-  //  {std::numeric_limits<uint32_t>::min()});
-  //  assert(std::numeric_limits<uint32_t>::min() ==
-  //  uint_32_minint_snd.GetU32());
-  //
-  //  // Unsigned 64
-  //  IntConstant uint_64_1_fst(&type_uint64_fst, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(1 == uint_64_1_fst.GetU64()); IntConstant
-  //  uint_64_1_snd(&type_uint64_snd, {temp_uint32[0], temp_uint32[1]});
-  //  assert(1 == uint_64_1_snd.GetU64());
-  //  IntConstant uint_64_maxint_fst(&type_uint64_fst, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(std::numeric_limits<uint64_t>::max() ==
-  //  uint_64_maxint_fst.GetU64()); IntConstant
-  //  uint_64_maxint_snd(&type_uint64_snd, {temp_uint32[0], temp_uint32[1]});
-  //  assert(std::numeric_limits<uint64_t>::max() ==
-  //  uint_64_maxint_snd.GetU64());
-  //
-  //  // Float
-  //  FloatConstant float_32_10_fst(&type_float_fst, {temp_uint32[0]});
-  //  assert(10.0f == float_32_10_fst.GetFloat());
-  //  FloatConstant float_32_10_snd(&type_float_snd, {temp_uint32[0]});
-  //  assert(10.0f == float_32_10_snd.GetFloat());
-  //  FloatConstant float_32_20_fst(&type_float_fst, {temp_uint32[0]});
-  //  assert(20.0f == float_32_20_fst.GetFloat());
-  //  FloatConstant float_32_20_snd(&type_float_snd, {temp_uint32[0]});
-  //  assert(20.0f == float_32_20_snd.GetFloat());
-  //
-  //  // Double
-  //  FloatConstant float_64_10_fst(&type_double_fst, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(10.0 == float_64_10_fst.GetDouble());
-  //  FloatConstant float_64_10_snd(&type_double_snd, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(10.0 == float_64_10_snd.GetDouble());
-  //  FloatConstant float_64_20_fst(&type_double_fst, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(20.0 == float_64_20_fst.GetDouble());
-  //  FloatConstant float_64_20_snd(&type_double_snd, {temp_uint32[0],
-  //  temp_uint32[1]}); assert(20.0 == float_64_20_snd.GetDouble());
-  //
-  //  // Bool
-  //  BoolConstant bool_true_fst(&type_bool_fst, true);
-  //  assert(bool_true_fst.value());
-  //  BoolConstant bool_true_snd(&type_bool_fst, true);
-  //  assert(bool_true_snd.value());
-  //  BoolConstant bool_false_fst(&type_bool_fst, false);
-  //  assert(!bool_false_fst.value());
-  //  BoolConstant bool_false_snd(&type_bool_fst, false);
-  //  assert(!bool_false_snd.value());
-  //
   FactManager fact_manager;
 
   Integer type_int32_fst(32, true);
@@ -306,7 +227,7 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
       fact_manager.GetConstantsAvailableFromUniformsForType(type_float_fst)[0]
           ->AsFloatConstant()
           ->GetFloat());
-  const std::vector<const Constant*>& double_constants =
+  const std::vector<const ScalarConstant*>& double_constants =
       fact_manager.GetConstantsAvailableFromUniformsForType(type_double_fst);
   ASSERT_EQ(10.0, double_constants[0]->AsFloatConstant()->GetDouble());
   ASSERT_EQ(20.0, double_constants[1]->AsFloatConstant()->GetDouble());
