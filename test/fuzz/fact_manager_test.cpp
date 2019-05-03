@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fact_manager.h"
+#include "source/fuzz/uniform_buffer_element_descriptor.h"
 
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -182,136 +183,131 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
 
   // Initially there should be no facts about uniforms.
   ASSERT_TRUE(
-      fact_manager.ConstantsAvailableFromUniformsForType(type_uint32_snd)
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_snd)
           .empty());
 
   fact_manager.AddUniformIntValueFact(
-      32, true, {1},
-      FactManager::MakeUniformBufferElementDescriptor(1, {2, 3}));
+      32, true, {1}, MakeUniformBufferElementDescriptor(1, {2, 3}));
   fact_manager.AddUniformIntValueFact(
-      32, true, {1},
-      FactManager::MakeUniformBufferElementDescriptor(2, {1, 2, 3}));
+      32, true, {1}, MakeUniformBufferElementDescriptor(2, {1, 2, 3}));
   fact_manager.AddUniformIntValueFact(
-      32, true, {1},
-      FactManager::MakeUniformBufferElementDescriptor(3, {1, 0, 2, 3}));
+      32, true, {1}, MakeUniformBufferElementDescriptor(3, {1, 0, 2, 3}));
 
   fact_manager.AddUniformIntValueFact(
       32, true, {buffer_int32_min[0]},
-      FactManager::MakeUniformBufferElementDescriptor(4, {2, 3}));
+      MakeUniformBufferElementDescriptor(4, {2, 3}));
   fact_manager.AddUniformIntValueFact(
       32, true, {buffer_int32_min[0]},
-      FactManager::MakeUniformBufferElementDescriptor(5, {1, 2, 3}));
+      MakeUniformBufferElementDescriptor(5, {1, 2, 3}));
 
   fact_manager.AddUniformIntValueFact(
       64, true, {buffer_int64_max[0], buffer_int64_max[1]},
-      FactManager::MakeUniformBufferElementDescriptor(6, {1, 2, 3}));
+      MakeUniformBufferElementDescriptor(6, {1, 2, 3}));
   fact_manager.AddUniformIntValueFact(
       64, true, {buffer_int64_max[0], buffer_int64_max[1]},
-      FactManager::MakeUniformBufferElementDescriptor(7, {1, 1}));
+      MakeUniformBufferElementDescriptor(7, {1, 1}));
 
   fact_manager.AddUniformIntValueFact(
-      32, false, {1},
-      FactManager::MakeUniformBufferElementDescriptor(8, {2, 3}));
+      32, false, {1}, MakeUniformBufferElementDescriptor(8, {2, 3}));
   fact_manager.AddUniformIntValueFact(
-      32, false, {1},
-      FactManager::MakeUniformBufferElementDescriptor(9, {1, 2, 3}));
+      32, false, {1}, MakeUniformBufferElementDescriptor(9, {1, 2, 3}));
   fact_manager.AddUniformIntValueFact(
-      32, false, {1},
-      FactManager::MakeUniformBufferElementDescriptor(10, {1, 0, 2, 3}));
+      32, false, {1}, MakeUniformBufferElementDescriptor(10, {1, 0, 2, 3}));
 
   fact_manager.AddUniformIntValueFact(
       64, false, {buffer_uint64_1[0], buffer_uint64_1[1]},
-      FactManager::MakeUniformBufferElementDescriptor(11, {0}));
+      MakeUniformBufferElementDescriptor(11, {0}));
 
   fact_manager.AddUniformIntValueFact(
       64, false, {buffer_uint64_max[0], buffer_uint64_max[0]},
-      FactManager::MakeUniformBufferElementDescriptor(12, {0, 0}));
+      MakeUniformBufferElementDescriptor(12, {0, 0}));
 
   fact_manager.AddUniformIntValueFact(
       64, false, {buffer_uint64_max[0], buffer_uint64_max[0]},
-      FactManager::MakeUniformBufferElementDescriptor(13, {1, 0}));
+      MakeUniformBufferElementDescriptor(13, {1, 0}));
 
   fact_manager.AddUniformFloatValueFact(
-      32, {buffer_float_10[0]},
-      FactManager::MakeUniformBufferElementDescriptor(14, {6}));
+      32, {buffer_float_10[0]}, MakeUniformBufferElementDescriptor(14, {6}));
 
   fact_manager.AddUniformFloatValueFact(
-      32, {buffer_float_10[0]},
-      FactManager::MakeUniformBufferElementDescriptor(15, {7}));
+      32, {buffer_float_10[0]}, MakeUniformBufferElementDescriptor(15, {7}));
 
   fact_manager.AddUniformFloatValueFact(
-      32, {buffer_float_10[0]},
-      FactManager::MakeUniformBufferElementDescriptor(16, {9, 9}));
+      32, {buffer_float_10[0]}, MakeUniformBufferElementDescriptor(16, {9, 9}));
 
   fact_manager.AddUniformFloatValueFact(
       64, {buffer_double_10[0], buffer_double_10[1]},
-      FactManager::MakeUniformBufferElementDescriptor(17, {9, 9, 1}));
+      MakeUniformBufferElementDescriptor(17, {9, 9, 1}));
 
   fact_manager.AddUniformFloatValueFact(
       64, {buffer_double_10[0], buffer_double_10[1]},
-      FactManager::MakeUniformBufferElementDescriptor(18, {9, 9, 2}));
+      MakeUniformBufferElementDescriptor(18, {9, 9, 2}));
 
   fact_manager.AddUniformFloatValueFact(
       64, {buffer_double_20[0], buffer_double_20[1]},
-      FactManager::MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}));
+      MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}));
 
   // The available constants should be the same regardless of which version of
   // each type we use.
-  ASSERT_EQ(fact_manager.ConstantsAvailableFromUniformsForType(type_int32_fst),
-            fact_manager.ConstantsAvailableFromUniformsForType(type_int32_fst));
-
-  ASSERT_EQ(fact_manager.ConstantsAvailableFromUniformsForType(type_int64_fst),
-            fact_manager.ConstantsAvailableFromUniformsForType(type_int64_fst));
+  ASSERT_EQ(
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_int32_fst),
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_int32_fst));
 
   ASSERT_EQ(
-      fact_manager.ConstantsAvailableFromUniformsForType(type_uint32_fst),
-      fact_manager.ConstantsAvailableFromUniformsForType(type_uint32_snd));
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst),
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst));
 
   ASSERT_EQ(
-      fact_manager.ConstantsAvailableFromUniformsForType(type_uint64_fst),
-      fact_manager.ConstantsAvailableFromUniformsForType(type_uint64_fst));
-
-  ASSERT_EQ(fact_manager.ConstantsAvailableFromUniformsForType(type_float_fst),
-            fact_manager.ConstantsAvailableFromUniformsForType(type_float_snd));
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_fst),
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_snd));
 
   ASSERT_EQ(
-      fact_manager.ConstantsAvailableFromUniformsForType(type_double_fst),
-      fact_manager.ConstantsAvailableFromUniformsForType(type_double_snd));
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint64_fst),
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint64_fst));
 
-  ASSERT_EQ(2,
-            fact_manager.ConstantsAvailableFromUniformsForType(type_int32_fst)
-                .size());
-  ASSERT_EQ(1,
-            fact_manager.ConstantsAvailableFromUniformsForType(type_int64_fst)
-                .size());
-  ASSERT_EQ(1,
-            fact_manager.ConstantsAvailableFromUniformsForType(type_uint32_fst)
-                .size());
-  ASSERT_EQ(2,
-            fact_manager.ConstantsAvailableFromUniformsForType(type_uint64_fst)
-                .size());
-  ASSERT_EQ(1,
-            fact_manager.ConstantsAvailableFromUniformsForType(type_float_fst)
-                .size());
-  ASSERT_EQ(2,
-            fact_manager.ConstantsAvailableFromUniformsForType(type_double_fst)
-                .size());
+  ASSERT_EQ(
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_float_fst),
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_float_snd));
+
+  ASSERT_EQ(
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_double_fst),
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_double_snd));
+
+  ASSERT_EQ(
+      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_int32_fst)
+             .size());
+  ASSERT_EQ(
+      1, fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst)
+             .size());
+  ASSERT_EQ(
+      1, fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_fst)
+             .size());
+  ASSERT_EQ(
+      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_uint64_fst)
+             .size());
+  ASSERT_EQ(
+      1, fact_manager.GetConstantsAvailableFromUniformsForType(type_float_fst)
+             .size());
+  ASSERT_EQ(
+      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_double_fst)
+             .size());
 
   ASSERT_EQ(
       std::numeric_limits<int64_t>::max(),
-      fact_manager.ConstantsAvailableFromUniformsForType(type_int64_fst)[0]
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst)[0]
           ->AsIntConstant()
           ->GetS64());
+  ASSERT_EQ(1, fact_manager
+                   .GetConstantsAvailableFromUniformsForType(type_uint32_fst)[0]
+                   ->AsIntConstant()
+                   ->GetU32());
   ASSERT_EQ(
-      1, fact_manager.ConstantsAvailableFromUniformsForType(type_uint32_fst)[0]
-             ->AsIntConstant()
-             ->GetU32());
-  ASSERT_EQ(10.0f, fact_manager
-                       .ConstantsAvailableFromUniformsForType(type_float_fst)[0]
-                       ->AsFloatConstant()
-                       ->GetFloat());
+      10.0f,
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_float_fst)[0]
+          ->AsFloatConstant()
+          ->GetFloat());
   const std::vector<const Constant*>& double_constants =
-      fact_manager.ConstantsAvailableFromUniformsForType(type_double_fst);
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_double_fst);
   ASSERT_EQ(10.0, double_constants[0]->AsFloatConstant()->GetDouble());
   ASSERT_EQ(20.0, double_constants[1]->AsFloatConstant()->GetDouble());
 
@@ -320,13 +316,13 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
           fact_manager.GetUniformDescriptorsForConstant(*double_constants[0]);
   ASSERT_EQ(2, descriptors_for_double_10->size());
   {
-    auto temp = FactManager::MakeUniformBufferElementDescriptor(17, {9, 9, 1});
-    ASSERT_TRUE(FactManager::UniformBufferElementDescriptorEquals()(
+    auto temp = MakeUniformBufferElementDescriptor(17, {9, 9, 1});
+    ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &temp, &(*descriptors_for_double_10)[0]));
   }
   {
-    auto temp = FactManager::MakeUniformBufferElementDescriptor(18, {9, 9, 2});
-    ASSERT_TRUE(FactManager::UniformBufferElementDescriptorEquals()(
+    auto temp = MakeUniformBufferElementDescriptor(18, {9, 9, 2});
+    ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &temp, &(*descriptors_for_double_10)[1]));
   }
   const std::vector<protobufs::UniformBufferElementDescriptor>*
@@ -334,18 +330,17 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
           fact_manager.GetUniformDescriptorsForConstant(*double_constants[1]);
   ASSERT_EQ(1, descriptors_for_double_20->size());
   {
-    auto temp =
-        FactManager::MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0});
-    ASSERT_TRUE(FactManager::UniformBufferElementDescriptorEquals()(
+    auto temp = MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0});
+    ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &temp, &(*descriptors_for_double_20)[0]));
   }
 
   auto constant_1 = fact_manager.GetConstantFromUniformDescriptor(
-      FactManager::MakeUniformBufferElementDescriptor(18, {9, 9, 2}));
+      MakeUniformBufferElementDescriptor(18, {9, 9, 2}));
   ASSERT_TRUE(constant_1 != nullptr);
 
   auto constant_2 = fact_manager.GetConstantFromUniformDescriptor(
-      FactManager::MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}));
+      MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}));
   ASSERT_TRUE(constant_2 != nullptr);
 
   ASSERT_TRUE(opt::analysis::ConstantEqual()(double_constants[0], constant_1));
