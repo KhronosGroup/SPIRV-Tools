@@ -199,6 +199,8 @@ void Apply(const protobufs::TransformationReplaceConstantWithUniform& message,
   // Update the module id bound to reflect the new instructions.
   fuzzerutil::UpdateModuleIdBound(context, message.fresh_id_for_load());
   fuzzerutil::UpdateModuleIdBound(context, message.fresh_id_for_access_chain());
+
+  context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::TransformationReplaceConstantWithUniform

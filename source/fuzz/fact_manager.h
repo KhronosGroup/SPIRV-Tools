@@ -62,7 +62,7 @@ class FactManager {
 
   // Provides a sequence of all distinct constants for which an equal uniform
   // element is known.
-  std::vector<const opt::analysis::Constant*>
+  std::vector<const opt::analysis::ScalarConstant*>
   GetConstantsAvailableFromUniformsForType(
       const opt::analysis::Type& type) const;
 
@@ -70,11 +70,11 @@ class FactManager {
   // |constant|.
   const std::vector<protobufs::UniformBufferElementDescriptor>*
   GetUniformDescriptorsForConstant(
-      const opt::analysis::Constant& constant) const;
+      const opt::analysis::ScalarConstant& constant) const;
 
   // Returns the constant known to be equal to the given uniform element, and
   // nullptr if there is no such constant.
-  const opt::analysis::Constant* GetConstantFromUniformDescriptor(
+  const opt::analysis::ScalarConstant* GetConstantFromUniformDescriptor(
       const protobufs::UniformBufferElementDescriptor& uniform_descriptor)
       const;
 
