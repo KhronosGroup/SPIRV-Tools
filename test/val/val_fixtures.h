@@ -121,12 +121,14 @@ void ValidateBase<T>::CompileSuccessfully(std::string code,
                                           spv_target_env env) {
   DestroyBinary();
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(ScopedContext(env).context, code.c_str(),
-                            code.size(), &binary_, &diagnostic))
+  ScopedContext context(env);
+  auto status = spvTextToBinary(context.context, code.c_str(), code.size(),
+                                &binary_, &diagnostic);
+  EXPECT_EQ(SPV_SUCCESS, status)
       << "ERROR: " << diagnostic->error
       << "\nSPIR-V could not be compiled into binary:\n"
       << code;
+  ASSERT_EQ(SPV_SUCCESS, status);
   spvDiagnosticDestroy(diagnostic);
 }
 
