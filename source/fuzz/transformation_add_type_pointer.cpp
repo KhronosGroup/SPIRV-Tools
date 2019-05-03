@@ -24,15 +24,22 @@ using opt::IRContext;
 bool IsApplicable(const protobufs::TransformationAddTypePointer& message,
                   IRContext* context,
                   const spvtools::fuzz::FactManager& /*unused*/) {
-  (void)(message);
-  (void)(context);
-  assert(0);
+  // The id must be fresh.
+  if (!fuzzerutil::IsFreshId(context, message.fresh_id())) {
+    return false;
+  }
+  // The base type must be known.
+  return context->get_type_mgr()->GetType(message.base_type_id()) != nullptr;
 }
 
 void Apply(const protobufs::TransformationAddTypePointer& message,
            IRContext* context, spvtools::fuzz::FactManager* /*unused*/) {
-  (void)(context);
-  assert(0);
+  // Add the pointer type.
+  opt::Instruction::OperandList in_operands = {
+      {SPV_OPERAND_TYPE_STORAGE_CLASS, {message.storage_class()}},
+      {SPV_OPERAND_TYPE_ID, {message.base_type_id()}}};
+  context->module()->AddType(MakeUnique<opt::Instruction>(
+      context, SpvOpTypePointer, 0, message.fresh_id(), in_operands));
   fuzzerutil::UpdateModuleIdBound(context, message.fresh_id());
   // We have added an instruction to the module, so need to be careful about the
   // validity of existing analyses.
