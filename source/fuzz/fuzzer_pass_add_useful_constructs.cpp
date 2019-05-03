@@ -163,7 +163,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
   // Add pointer types with uniform storage class for all known-to-be-constant
   // elements of uniform buffers, and add signed integer constants for all
   // indices that might be required to access them.
-  for (auto type : fact_manager->TypesForWhichUniformValuesAreKnown()) {
+  for (auto type : fact_manager->GetTypesForWhichUniformValuesAreKnown()) {
     opt::analysis::Pointer uniform_pointer(type, SpvStorageClassUniform);
     if (!ir_context->get_type_mgr()->GetRegisteredType(&uniform_pointer)) {
       auto base_type_id = ir_context->get_type_mgr()->GetId(type);
@@ -177,7 +177,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
       transformation::Apply(add_pointer, ir_context, fact_manager);
     }
     for (const opt::analysis::Constant* constant :
-         fact_manager->ConstantsAvailableFromUniformsForType(*type)) {
+         fact_manager->GetConstantsAvailableFromUniformsForType(*type)) {
       for (auto& uniform_buffer_element_descriptor :
            *fact_manager->GetUniformDescriptorsForConstant(*constant)) {
         for (auto index : uniform_buffer_element_descriptor.index()) {

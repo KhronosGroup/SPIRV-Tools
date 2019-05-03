@@ -37,6 +37,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation_move_block_down.h
         transformation_replace_constant_with_uniform.h
         transformation_split_block.h
+        uniform_buffer_element_descriptor.h
 
         fact_manager.cpp
         fuzzer.cpp
@@ -61,6 +62,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation_move_block_down.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_split_block.cpp
+        uniform_buffer_element_descriptor.cpp
         )
 
 if(MSVC)

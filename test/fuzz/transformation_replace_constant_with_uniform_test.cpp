@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
+#include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -91,11 +92,11 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_a =
-      FactManager::MakeUniformBufferElementDescriptor(18, {0});
+      MakeUniformBufferElementDescriptor(18, {0});
   protobufs::UniformBufferElementDescriptor blockname_b =
-      FactManager::MakeUniformBufferElementDescriptor(18, {1});
+      MakeUniformBufferElementDescriptor(18, {1});
   protobufs::UniformBufferElementDescriptor blockname_c =
-      FactManager::MakeUniformBufferElementDescriptor(18, {2});
+      MakeUniformBufferElementDescriptor(18, {2});
 
   fact_manager.AddUniformIntValueFact(32, true, {1}, blockname_a);
   fact_manager.AddUniformIntValueFact(32, true, {2}, blockname_b);
@@ -145,9 +146,9 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   // The following transformations do not apply because the uniform descriptors
   // are not sensible.
   protobufs::UniformBufferElementDescriptor nonsense_uniform_descriptor1 =
-      FactManager::MakeUniformBufferElementDescriptor(19, {0});
+      MakeUniformBufferElementDescriptor(19, {0});
   protobufs::UniformBufferElementDescriptor nonsense_uniform_descriptor2 =
-      FactManager::MakeUniformBufferElementDescriptor(18, {5});
+      MakeUniformBufferElementDescriptor(18, {5});
   ASSERT_FALSE(transformation::IsApplicable(
       transformation::MakeTransformationReplaceConstantWithUniform(
           use_of_9_in_store, nonsense_uniform_descriptor1, 101, 102),
@@ -461,13 +462,13 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_1 =
-      FactManager::MakeUniformBufferElementDescriptor(28, {0});
+      MakeUniformBufferElementDescriptor(28, {0});
   protobufs::UniformBufferElementDescriptor blockname_2 =
-      FactManager::MakeUniformBufferElementDescriptor(28, {1, 1});
+      MakeUniformBufferElementDescriptor(28, {1, 1});
   protobufs::UniformBufferElementDescriptor blockname_3 =
-      FactManager::MakeUniformBufferElementDescriptor(28, {1, 0, 0});
+      MakeUniformBufferElementDescriptor(28, {1, 0, 0});
   protobufs::UniformBufferElementDescriptor blockname_4 =
-      FactManager::MakeUniformBufferElementDescriptor(28, {1, 0, 1, 0});
+      MakeUniformBufferElementDescriptor(28, {1, 0, 1, 0});
 
   fact_manager.AddUniformIntValueFact(32, true, {1}, blockname_1);
   fact_manager.AddUniformIntValueFact(32, true, {2}, blockname_2);
@@ -700,7 +701,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_0 =
-      FactManager::MakeUniformBufferElementDescriptor(12, {0});
+      MakeUniformBufferElementDescriptor(12, {0});
 
   fact_manager.AddUniformIntValueFact(32, true, {0}, blockname_0);
 
@@ -774,9 +775,9 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_0 =
-      FactManager::MakeUniformBufferElementDescriptor(12, {0});
+      MakeUniformBufferElementDescriptor(12, {0});
   protobufs::UniformBufferElementDescriptor blockname_9 =
-      FactManager::MakeUniformBufferElementDescriptor(12, {1});
+      MakeUniformBufferElementDescriptor(12, {1});
 
   fact_manager.AddUniformIntValueFact(32, true, {9}, blockname_9);
 
@@ -847,7 +848,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_3 =
-      FactManager::MakeUniformBufferElementDescriptor(12, {0});
+      MakeUniformBufferElementDescriptor(12, {0});
 
   uint32_t float_data[1];
   float temp = 3.0;
@@ -933,9 +934,9 @@ TEST(TransformationReplaceConstantWithUniformTest,
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_9 =
-      FactManager::MakeUniformBufferElementDescriptor(14, {0});
+      MakeUniformBufferElementDescriptor(14, {0});
   protobufs::UniformBufferElementDescriptor blockname_10 =
-      FactManager::MakeUniformBufferElementDescriptor(14, {1});
+      MakeUniformBufferElementDescriptor(14, {1});
 
   fact_manager.AddUniformIntValueFact(32, true, {9}, blockname_9);
   fact_manager.AddUniformIntValueFact(32, true, {10}, blockname_10);
@@ -1159,42 +1160,42 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
   memcpy(&float_vector_data, &float_vector_values, sizeof(float_vector_values));
 
   protobufs::UniformBufferElementDescriptor uniform_f_a_0 =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 0});
+      MakeUniformBufferElementDescriptor(65, {0, 0, 0});
   protobufs::UniformBufferElementDescriptor uniform_f_a_1 =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 1});
+      MakeUniformBufferElementDescriptor(65, {0, 0, 1});
   protobufs::UniformBufferElementDescriptor uniform_f_a_2 =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 2});
+      MakeUniformBufferElementDescriptor(65, {0, 0, 2});
   protobufs::UniformBufferElementDescriptor uniform_f_a_3 =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 3});
+      MakeUniformBufferElementDescriptor(65, {0, 0, 3});
   protobufs::UniformBufferElementDescriptor uniform_f_a_4 =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 4});
+      MakeUniformBufferElementDescriptor(65, {0, 0, 4});
 
   protobufs::UniformBufferElementDescriptor uniform_f_b_x =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 0});
+      MakeUniformBufferElementDescriptor(65, {0, 1, 0});
   protobufs::UniformBufferElementDescriptor uniform_f_b_y =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 1});
+      MakeUniformBufferElementDescriptor(65, {0, 1, 1});
   protobufs::UniformBufferElementDescriptor uniform_f_b_z =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 2});
+      MakeUniformBufferElementDescriptor(65, {0, 1, 2});
   protobufs::UniformBufferElementDescriptor uniform_f_b_w =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 3});
+      MakeUniformBufferElementDescriptor(65, {0, 1, 3});
 
   protobufs::UniformBufferElementDescriptor uniform_f_c_x =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 2, 0});
+      MakeUniformBufferElementDescriptor(65, {0, 2, 0});
   protobufs::UniformBufferElementDescriptor uniform_f_c_y =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 2, 1});
+      MakeUniformBufferElementDescriptor(65, {0, 2, 1});
   protobufs::UniformBufferElementDescriptor uniform_f_c_z =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 2, 2});
+      MakeUniformBufferElementDescriptor(65, {0, 2, 2});
 
   protobufs::UniformBufferElementDescriptor uniform_f_d =
-      FactManager::MakeUniformBufferElementDescriptor(65, {0, 3});
+      MakeUniformBufferElementDescriptor(65, {0, 3});
 
   protobufs::UniformBufferElementDescriptor uniform_g =
-      FactManager::MakeUniformBufferElementDescriptor(65, {1});
+      MakeUniformBufferElementDescriptor(65, {1});
 
   protobufs::UniformBufferElementDescriptor uniform_h_x =
-      FactManager::MakeUniformBufferElementDescriptor(65, {2, 0});
+      MakeUniformBufferElementDescriptor(65, {2, 0});
   protobufs::UniformBufferElementDescriptor uniform_h_y =
-      FactManager::MakeUniformBufferElementDescriptor(65, {2, 1});
+      MakeUniformBufferElementDescriptor(65, {2, 1});
 
   fact_manager.AddUniformFloatValueFact(32, {float_array_data[0]},
                                         uniform_f_a_0);

@@ -34,83 +34,60 @@ namespace fuzz {
 // the module.
 class FactManager {
  public:
-  static protobufs::UniformBufferElementDescriptor
-  MakeUniformBufferElementDescriptor(uint32_t uniform_variable_id,
-                                     std::vector<uint32_t>&& indices);
+  FactManager();
 
-  struct UniformBufferElementDescriptorHash {
-    size_t operator()(
-        const protobufs::UniformBufferElementDescriptor* descriptor) const {
-      std::u32string data;
-      data.push_back(descriptor->uniform_variable_id());
-      for (auto id : descriptor->index()) {
-        data.push_back(id);
-      }
-      return std::hash<std::u32string>()(data);
-    }
-  };
+  virtual ~FactManager();
 
-  struct UniformBufferElementDescriptorEquals {
-    bool operator()(
-        const protobufs::UniformBufferElementDescriptor* first,
-        const protobufs::UniformBufferElementDescriptor* second) const {
-      return first->uniform_variable_id() == second->uniform_variable_id() &&
-             std::equal(first->index().begin(), first->index().end(),
-                        second->index().begin());
-    }
-  };
+  //==============================
+  // Facts about uniform constants
 
-  FactManager() = default;
-
-  virtual ~FactManager() = default;
-
+  // Adds the fact that the floating-point constant defined by |data|, for
+  // floating-point type with width |width|, is equal to the data identified by
+  // |descriptor|.
   void AddUniformFloatValueFact(
       uint32_t width, std::vector<uint32_t>&& data,
       protobufs::UniformBufferElementDescriptor descriptor);
+
+  // Adds the fact that the integer constant defined by |data|, for integer type
+  // with width |width| and signedness |is_signed|, is equal to the data
+  // identified by |descriptor|.
   void AddUniformIntValueFact(
       uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
       protobufs::UniformBufferElementDescriptor descriptor);
 
-  std::vector<const opt::analysis::Type*> TypesForWhichUniformValuesAreKnown();
+  // Provides a sequence of all types for which at least one "constant ==
+  // uniform element" fact is known.
+  std::vector<const opt::analysis::Type*>
+  GetTypesForWhichUniformValuesAreKnown() const;
 
+  // Provides a sequence of all distinct constants for which an equal uniform
+  // element is known.
   std::vector<const opt::analysis::Constant*>
-  ConstantsAvailableFromUniformsForType(const opt::analysis::Type& type);
+  GetConstantsAvailableFromUniformsForType(
+      const opt::analysis::Type& type) const;
 
+  // Provides details of all uniform elements that are known to be equal to
+  // |constant|.
   const std::vector<protobufs::UniformBufferElementDescriptor>*
-  GetUniformDescriptorsForConstant(const opt::analysis::Constant& constant);
+  GetUniformDescriptorsForConstant(
+      const opt::analysis::Constant& constant) const;
 
+  // Returns the constant known to be equal to the given uniform element, and
+  // nullptr if there is no such constant.
   const opt::analysis::Constant* GetConstantFromUniformDescriptor(
       const protobufs::UniformBufferElementDescriptor& uniform_descriptor)
       const;
 
+  // End of uniform constant facts
+  //==============================
+
  private:
-  const opt::analysis::Type* FindOrRegisterType(
-      const opt::analysis::Type* type);
-  const opt::analysis::Constant* FindOrRegisterConstant(
-      const opt::analysis::Constant* constant);
-  void AddUniformConstantFact(
-      const opt::analysis::Constant* constant,
-      protobufs::UniformBufferElementDescriptor descriptor);
+  // Add an opaque struct type for each distinct category of fact to be managed.
 
-  std::unordered_set<const opt::analysis::Type*, opt::analysis::HashTypePointer,
-                     opt::analysis::CompareTypePointers>
-      type_pool_;
-  std::vector<std::unique_ptr<opt::analysis::Type>> owned_types_;
-
-  std::unordered_set<const opt::analysis::Constant*,
-                     opt::analysis::ConstantHash, opt::analysis::ConstantEqual>
-      constant_pool_;
-  std::vector<std::unique_ptr<opt::analysis::Constant>> owned_constants_;
-
-  std::map<const opt::analysis::Constant*,
-           std::vector<protobufs::UniformBufferElementDescriptor>>
-      constant_to_uniform_descriptors_;
-
-  std::unordered_map<const protobufs::UniformBufferElementDescriptor*,
-                     const opt::analysis::Constant*,
-                     UniformBufferElementDescriptorHash,
-                     UniformBufferElementDescriptorEquals>
-      uniform_descriptor_to_constant_;
+  struct UniformConstantFacts;  // Opaque struct for holding data about uniform
+                                // buffer elements.
+  std::unique_ptr<UniformConstantFacts>
+      uniform_constant_facts_;  // Unique pointer to internal data.
 };
 
 }  // namespace fuzz
