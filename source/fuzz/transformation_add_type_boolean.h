@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_TRANSFORMATION_ADD_BOOLEAN_CONSTANT_H_
-#define SOURCE_FUZZ_TRANSFORMATION_ADD_BOOLEAN_CONSTANT_H_
+#ifndef SOURCE_FUZZ_TRANSFORMATION_ADD_TYPE_BOOLEAN_H_
+#define SOURCE_FUZZ_TRANSFORMATION_ADD_TYPE_BOOLEAN_H_
 
 #include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/fuzz/transformation.h"
@@ -22,22 +22,21 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// - |fresh_id| must not be used by the module.
-// - The module must already contain OpTypeBool.
-bool IsApplicable(const protobufs::TransformationAddConstantBoolean& message,
+// - |message.fresh_id| must not be used by the module.
+// - The module must not yet declare OpTypeBoolean
+bool IsApplicable(const protobufs::TransformationAddTypeBoolean& message,
                   opt::IRContext* context, const FactManager& fact_manager);
 
-// - Adds OpConstantTrue (OpConstantFalse) to the module with id |fresh_id|
-// if |is_true| holds (does not hold).
-void Apply(const protobufs::TransformationAddConstantBoolean& message,
+// Adds OpTypeBoolean with |message.fresh_id| as result id.
+void Apply(const protobufs::TransformationAddTypeBoolean& message,
            opt::IRContext* context, FactManager* fact_manager);
 
 // Helper factory to create a transformation message.
-protobufs::TransformationAddConstantBoolean
-MakeTransformationAddConstantBoolean(uint32_t fresh_id, bool is_true);
+protobufs::TransformationAddTypeBoolean MakeTransformationAddTypeBoolean(
+    uint32_t fresh_id);
 
 }  // namespace transformation
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_TRANSFORMATION_ADD_BOOLEAN_CONSTANT_H_
+#endif  // SOURCE_FUZZ_TRANSFORMATION_ADD_TYPE_BOOLEAN_H_

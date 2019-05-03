@@ -71,6 +71,8 @@ class FactManager {
       uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
       protobufs::UniformBufferElementDescriptor descriptor);
 
+  std::vector<const opt::analysis::Type*> TypesForWhichUniformValuesAreKnown();
+
   std::vector<const opt::analysis::Constant*>
   ConstantsAvailableFromUniformsForType(const opt::analysis::Type& type);
 

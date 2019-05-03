@@ -40,7 +40,7 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -64,20 +64,34 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   ASSERT_TRUE(
       transformation::IsApplicable(add_true, context.get(), fact_manager));
   transformation::Apply(add_true, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Having added true, we cannot add it again.
+  // Having added true, we cannot add it again with the same id.
   ASSERT_FALSE(
       transformation::IsApplicable(add_true, context.get(), fact_manager));
+  // But we can add it with a different id.
+  auto add_true_again =
+      transformation::MakeTransformationAddConstantBoolean(100, true);
+  ASSERT_TRUE(transformation::IsApplicable(add_true_again, context.get(),
+                                           fact_manager));
+  transformation::Apply(add_true_again, context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(
       transformation::IsApplicable(add_false, context.get(), fact_manager));
   transformation::Apply(add_false, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Having added false, we cannot add it again.
+  // Having added false, we cannot add it again with the same id.
   ASSERT_FALSE(
       transformation::IsApplicable(add_false, context.get(), fact_manager));
+  // But we can add it with a different id.
+  auto add_false_again =
+      transformation::MakeTransformationAddConstantBoolean(101, false);
+  ASSERT_TRUE(transformation::IsApplicable(add_false_again, context.get(),
+                                           fact_manager));
+  transformation::Apply(add_false_again, context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -91,14 +105,16 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
           %6 = OpTypeBool
           %3 = OpTypeFunction %2
           %7 = OpConstantTrue %6
+        %100 = OpConstantTrue %6
           %8 = OpConstantFalse %6
+        %101 = OpConstantFalse %6
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationAddConstantBooleanTest, NoOpTypeBoolPresent) {
@@ -121,7 +137,7 @@ TEST(TransformationAddConstantBooleanTest, NoOpTypeBoolPresent) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 

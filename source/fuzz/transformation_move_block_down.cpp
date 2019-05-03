@@ -17,13 +17,13 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace transformation {
 
 using opt::BasicBlock;
 using opt::IRContext;
 
-bool transformation::IsApplicable(
-    const protobufs::TransformationMoveBlockDown& message, IRContext* context,
-    const FactManager& /*unused*/) {
+bool IsApplicable(const protobufs::TransformationMoveBlockDown& message,
+                  IRContext* context, const FactManager& /*unused*/) {
   // Go through every block in every function, looking for a block whose id
   // matches that of the block we want to consider moving down.
   for (auto& function : *context->module()) {
@@ -61,9 +61,8 @@ bool transformation::IsApplicable(
   return false;
 }
 
-void transformation::Apply(
-    const protobufs::TransformationMoveBlockDown& message, IRContext* context,
-    FactManager* /*unused*/) {
+void Apply(const protobufs::TransformationMoveBlockDown& message,
+           IRContext* context, FactManager* /*unused*/) {
   // Go through every block in every function, looking for a block whose id
   // matches that of the block we want to move down.
   for (auto& function : *context->module()) {
@@ -90,12 +89,13 @@ void transformation::Apply(
   assert(false && "No block was found to move down.");
 }
 
-protobufs::TransformationMoveBlockDown
-transformation::MakeTransformationMoveBlockDown(uint32_t id) {
+protobufs::TransformationMoveBlockDown MakeTransformationMoveBlockDown(
+    uint32_t id) {
   protobufs::TransformationMoveBlockDown result;
   result.set_block_id(id);
   return result;
 }
 
+}  // namespace transformation
 }  // namespace fuzz
 }  // namespace spvtools

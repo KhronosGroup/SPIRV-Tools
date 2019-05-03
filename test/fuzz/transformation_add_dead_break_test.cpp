@@ -98,7 +98,7 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   FactManager fact_manager;
 
   const uint32_t merge_block = 16;
@@ -178,32 +178,32 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   ASSERT_TRUE(transformation::IsApplicable(transformation1, context.get(),
                                            fact_manager));
   transformation::Apply(transformation1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation2, context.get(),
                                            fact_manager));
   transformation::Apply(transformation2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation3, context.get(),
                                            fact_manager));
   transformation::Apply(transformation3, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation4, context.get(),
                                            fact_manager));
   transformation::Apply(transformation4, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation5, context.get(),
                                            fact_manager));
   transformation::Apply(transformation5, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation6, context.get(),
                                            fact_manager));
   transformation::Apply(transformation6, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -258,7 +258,7 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
@@ -364,7 +364,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -494,42 +494,42 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
   ASSERT_TRUE(transformation::IsApplicable(transformation1, context.get(),
                                            fact_manager));
   transformation::Apply(transformation1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation2, context.get(),
                                            fact_manager));
   transformation::Apply(transformation2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation3, context.get(),
                                            fact_manager));
   transformation::Apply(transformation3, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation4, context.get(),
                                            fact_manager));
   transformation::Apply(transformation4, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation5, context.get(),
                                            fact_manager));
   transformation::Apply(transformation5, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation6, context.get(),
                                            fact_manager));
   transformation::Apply(transformation6, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation7, context.get(),
                                            fact_manager));
   transformation::Apply(transformation7, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation8, context.get(),
                                            fact_manager));
   transformation::Apply(transformation8, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -606,7 +606,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
@@ -762,7 +762,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -895,52 +895,52 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
   ASSERT_TRUE(transformation::IsApplicable(transformation1, context.get(),
                                            fact_manager));
   transformation::Apply(transformation1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation2, context.get(),
                                            fact_manager));
   transformation::Apply(transformation2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation3, context.get(),
                                            fact_manager));
   transformation::Apply(transformation3, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation4, context.get(),
                                            fact_manager));
   transformation::Apply(transformation4, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation5, context.get(),
                                            fact_manager));
   transformation::Apply(transformation5, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation6, context.get(),
                                            fact_manager));
   transformation::Apply(transformation6, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation7, context.get(),
                                            fact_manager));
   transformation::Apply(transformation7, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation8, context.get(),
                                            fact_manager));
   transformation::Apply(transformation8, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation9, context.get(),
                                            fact_manager));
   transformation::Apply(transformation9, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation10, context.get(),
                                            fact_manager));
   transformation::Apply(transformation10, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -1043,7 +1043,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
@@ -1199,7 +1199,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -1342,37 +1342,37 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   ASSERT_TRUE(transformation::IsApplicable(transformation1, context.get(),
                                            fact_manager));
   transformation::Apply(transformation1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation2, context.get(),
                                            fact_manager));
   transformation::Apply(transformation2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation3, context.get(),
                                            fact_manager));
   transformation::Apply(transformation3, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation4, context.get(),
                                            fact_manager));
   transformation::Apply(transformation4, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation5, context.get(),
                                            fact_manager));
   transformation::Apply(transformation5, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation6, context.get(),
                                            fact_manager));
   transformation::Apply(transformation6, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation7, context.get(),
                                            fact_manager));
   transformation::Apply(transformation7, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -1492,7 +1492,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationAddDeadBreakTest, NoBreakFromContinueConstruct) {
@@ -1556,7 +1556,7 @@ TEST(TransformationAddDeadBreakTest, NoBreakFromContinueConstruct) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -1646,7 +1646,7 @@ TEST(TransformationAddDeadBreakTest, SelectionInContinueConstruct) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -1690,22 +1690,22 @@ TEST(TransformationAddDeadBreakTest, SelectionInContinueConstruct) {
   ASSERT_TRUE(transformation::IsApplicable(transformation1, context.get(),
                                            fact_manager));
   transformation::Apply(transformation1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation2, context.get(),
                                            fact_manager));
   transformation::Apply(transformation2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation3, context.get(),
                                            fact_manager));
   transformation::Apply(transformation3, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation4, context.get(),
                                            fact_manager));
   transformation::Apply(transformation4, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -1770,7 +1770,7 @@ TEST(TransformationAddDeadBreakTest, SelectionInContinueConstruct) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationAddDeadBreakTest, LoopInContinueConstruct) {
@@ -1869,7 +1869,7 @@ TEST(TransformationAddDeadBreakTest, LoopInContinueConstruct) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -1896,12 +1896,12 @@ TEST(TransformationAddDeadBreakTest, LoopInContinueConstruct) {
   ASSERT_TRUE(transformation::IsApplicable(transformation1, context.get(),
                                            fact_manager));
   transformation::Apply(transformation1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation2, context.get(),
                                            fact_manager));
   transformation::Apply(transformation2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -1976,7 +1976,7 @@ TEST(TransformationAddDeadBreakTest, LoopInContinueConstruct) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationAddDeadBreakTest, PhiInstructions) {
@@ -2089,7 +2089,7 @@ TEST(TransformationAddDeadBreakTest, PhiInstructions) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -2150,27 +2150,27 @@ TEST(TransformationAddDeadBreakTest, PhiInstructions) {
   ASSERT_TRUE(transformation::IsApplicable(transformation1, context.get(),
                                            fact_manager));
   transformation::Apply(transformation1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation2, context.get(),
                                            fact_manager));
   transformation::Apply(transformation2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation3, context.get(),
                                            fact_manager));
   transformation::Apply(transformation3, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation4, context.get(),
                                            fact_manager));
   transformation::Apply(transformation4, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation5, context.get(),
                                            fact_manager));
   transformation::Apply(transformation5, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -2253,7 +2253,7 @@ TEST(TransformationAddDeadBreakTest, PhiInstructions) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace

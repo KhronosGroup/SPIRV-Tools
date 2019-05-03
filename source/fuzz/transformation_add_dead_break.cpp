@@ -13,12 +13,14 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_dead_break.h"
+#include "source/fuzz/fact_manager.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/struct_cfg_analysis.h"
 
 namespace spvtools {
 namespace fuzz {
+namespace transformation {
 
 using opt::BasicBlock;
 using opt::IRContext;
@@ -188,9 +190,8 @@ bool AddingBreakRespectsStructuredControlFlow(
 
 }  // namespace
 
-bool transformation::IsApplicable(
-    const protobufs::TransformationAddDeadBreak& message, IRContext* context,
-    const FactManager& /*unused*/) {
+bool IsApplicable(const protobufs::TransformationAddDeadBreak& message,
+                  IRContext* context, const FactManager& /*unused*/) {
   // First, we check that a constant with the same value as
   // |break_condition_value| is present.
   opt::analysis::Bool bool_type;
@@ -245,8 +246,8 @@ bool transformation::IsApplicable(
   return AddingBreakRespectsStructuredControlFlow(message, context, bb_from);
 }
 
-void transformation::Apply(const protobufs::TransformationAddDeadBreak& message,
-                           IRContext* context, FactManager* /*unused*/) {
+void Apply(const protobufs::TransformationAddDeadBreak& message,
+           IRContext* context, FactManager* /*unused*/) {
   // Get the id of the boolean constant to be used as the break condition.
   opt::analysis::Bool bool_type;
   opt::analysis::BoolConstant bool_constant(
@@ -296,11 +297,9 @@ void transformation::Apply(const protobufs::TransformationAddDeadBreak& message,
   context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
-protobufs::TransformationAddDeadBreak
-transformation::MakeTransformationAddDeadBreak(uint32_t from_block,
-                                               uint32_t to_block,
-                                               bool break_condition_value,
-                                               std::vector<uint32_t> phi_id) {
+protobufs::TransformationAddDeadBreak MakeTransformationAddDeadBreak(
+    uint32_t from_block, uint32_t to_block, bool break_condition_value,
+    std::vector<uint32_t> phi_id) {
   protobufs::TransformationAddDeadBreak result;
   result.set_from_block(from_block);
   result.set_to_block(to_block);
@@ -311,5 +310,6 @@ transformation::MakeTransformationAddDeadBreak(uint32_t from_block,
   return result;
 }
 
+}  // namespace transformation
 }  // namespace fuzz
 }  // namespace spvtools

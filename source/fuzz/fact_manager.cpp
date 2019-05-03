@@ -130,5 +130,16 @@ FactManager::MakeUniformBufferElementDescriptor(
   return result;
 }
 
+std::vector<const opt::analysis::Type*>
+FactManager::TypesForWhichUniformValuesAreKnown() {
+  std::vector<const opt::analysis::Type*> result;
+  // Iterate through the sequence of owned types, rather than the unordered type
+  // pool, so that the order of the resulting types is deterministic.
+  for (auto& type : owned_types_) {
+    result.push_back(type.get());
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

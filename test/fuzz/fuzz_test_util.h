@@ -24,29 +24,28 @@
 namespace spvtools {
 namespace fuzz {
 
-// Checks whether the given binaries are bit-wise equal.
-void CheckEqual(spv_target_env env,
-                const std::vector<uint32_t>& expected_binary,
-                const std::vector<uint32_t>& actual_binary);
+// Returns true if and only if the given binaries are bit-wise equal.
+bool IsEqual(spv_target_env env, const std::vector<uint32_t>& expected_binary,
+             const std::vector<uint32_t>& actual_binary);
 
-// Assembles the given text and check whether the resulting binary is bit-wise
-// equal to the given binary.
-void CheckEqual(spv_target_env env, const std::string& expected_text,
-                const std::vector<uint32_t>& actual_binary);
+// Assembles the given text and returns true if and only if the resulting binary
+// is bit-wise equal to the given binary.
+bool IsEqual(spv_target_env env, const std::string& expected_text,
+             const std::vector<uint32_t>& actual_binary);
 
-// Assembles the given text and turns the given IR into binary, then checks
-// whether the resulting binaries are bit-wise equal.
-void CheckEqual(spv_target_env env, const std::string& expected_text,
-                const opt::IRContext* actual_ir);
+// Assembles the given text and turns the given IR into binary, then returns
+// true if and only if the resulting binaries are bit-wise equal.
+bool IsEqual(spv_target_env env, const std::string& expected_text,
+             const opt::IRContext* actual_ir);
 
-// Turns the given IRs into binaries, then checks whether the resulting binaries
-// are bit-wise equal.
-void CheckEqual(spv_target_env env, const opt::IRContext* ir_1,
-                const opt::IRContext* ir_2);
+// Turns the given IRs into binaries, then returns true if and only if the
+// resulting binaries are bit-wise equal.
+bool IsEqual(spv_target_env env, const opt::IRContext* ir_1,
+             const opt::IRContext* ir_2);
 
-// Assembles the given IR context and checks whether the resulting binary is
-// valid.
-void CheckValid(spv_target_env env, const opt::IRContext* ir);
+// Assembles the given IR context and returns true if and only if
+// the resulting binary is valid.
+bool IsValid(spv_target_env env, const opt::IRContext* ir);
 
 // Assembles the given IR context, then returns its disassembly as a string.
 // Useful for debugging.

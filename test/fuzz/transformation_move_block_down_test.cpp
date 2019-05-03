@@ -249,8 +249,8 @@ TEST(TransformationMoveBlockDownTest, MovePossible) {
   ASSERT_TRUE(transformation::IsApplicable(transformation, context.get(),
                                            fact_manager));
   transformation::Apply(transformation, context.get(), &fact_manager);
-  CheckValid(env, context.get());
-  CheckEqual(env, after_transformation, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
@@ -406,7 +406,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   // Let's bubble 20 all the way down.
 
   transformation::Apply(move_down_20, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 23 20 21 25 29 32 30 15
   ASSERT_FALSE(
@@ -431,7 +431,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_15, context.get(), fact_manager));
 
   transformation::Apply(move_down_20, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 23 21 20 25 29 32 30 15
   ASSERT_FALSE(
@@ -456,7 +456,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_15, context.get(), fact_manager));
 
   transformation::Apply(move_down_20, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 23 21 25 20 29 32 30 15
   ASSERT_FALSE(
@@ -481,7 +481,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_15, context.get(), fact_manager));
 
   transformation::Apply(move_down_20, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 23 21 25 29 20 32 30 15
   ASSERT_FALSE(
@@ -506,7 +506,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_15, context.get(), fact_manager));
 
   transformation::Apply(move_down_20, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 23 21 25 29 32 20 30 15
   ASSERT_FALSE(
@@ -531,7 +531,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_15, context.get(), fact_manager));
 
   transformation::Apply(move_down_20, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 23 21 25 29 32 30 20 15
   ASSERT_FALSE(
@@ -556,7 +556,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_15, context.get(), fact_manager));
 
   transformation::Apply(move_down_20, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_bubbling_20_down = R"(
                OpCapability Shader
@@ -628,7 +628,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
                OpBranch %21
                OpFunctionEnd
   )";
-  CheckEqual(env, after_bubbling_20_down, context.get());
+  ASSERT_TRUE(IsEqual(env, after_bubbling_20_down, context.get()));
 
   // Current ordering: 5 14 23 21 25 29 32 30 15 20
   ASSERT_FALSE(
@@ -653,7 +653,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_20, context.get(), fact_manager));
 
   transformation::Apply(move_down_23, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 21 23 25 29 32 30 15 20
   ASSERT_FALSE(
@@ -678,7 +678,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_20, context.get(), fact_manager));
 
   transformation::Apply(move_down_23, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 21 25 23 29 32 30 15 20
   ASSERT_FALSE(
@@ -703,7 +703,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_20, context.get(), fact_manager));
 
   transformation::Apply(move_down_21, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Current ordering: 5 14 25 21 23 29 32 30 15 20
   ASSERT_FALSE(
@@ -728,7 +728,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       transformation::IsApplicable(move_down_20, context.get(), fact_manager));
 
   transformation::Apply(move_down_14, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_more_shuffling = R"(
                OpCapability Shader
@@ -800,7 +800,7 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
                OpBranch %21
                OpFunctionEnd
   )";
-  CheckEqual(env, after_more_shuffling, context.get());
+  ASSERT_TRUE(IsEqual(env, after_more_shuffling, context.get()));
 
   // Final ordering: 5 25 14 21 23 29 32 30 15 20
   ASSERT_FALSE(

@@ -18,6 +18,7 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace transformation {
 
 using opt::BasicBlock;
 using opt::IRContext;
@@ -72,9 +73,8 @@ std::pair<bool, BasicBlock::iterator> FindInstToSplitBefore(
 
 }  // namespace
 
-bool transformation::IsApplicable(
-    const protobufs::TransformationSplitBlock& message, IRContext* context,
-    const FactManager& /*unused*/) {
+bool IsApplicable(const protobufs::TransformationSplitBlock& message,
+                  IRContext* context, const FactManager& /*unused*/) {
   if (!fuzzerutil::IsFreshId(context, message.fresh_id())) {
     // We require the id for the new block to be unused.
     return false;
@@ -118,8 +118,8 @@ bool transformation::IsApplicable(
   return false;
 }
 
-void transformation::Apply(const protobufs::TransformationSplitBlock& message,
-                           IRContext* context, FactManager* /*unused*/) {
+void Apply(const protobufs::TransformationSplitBlock& message,
+           IRContext* context, FactManager* /*unused*/) {
   for (auto& function : *context->module()) {
     for (auto& block : function) {
       auto maybe_split_before = FindInstToSplitBefore(message, &block);
@@ -160,10 +160,8 @@ void transformation::Apply(const protobufs::TransformationSplitBlock& message,
          "transformation.");
 }
 
-protobufs::TransformationSplitBlock
-transformation::MakeTransformationSplitBlock(uint32_t result_id,
-                                             uint32_t offset,
-                                             uint32_t fresh_id) {
+protobufs::TransformationSplitBlock MakeTransformationSplitBlock(
+    uint32_t result_id, uint32_t offset, uint32_t fresh_id) {
   protobufs::TransformationSplitBlock result;
   result.set_result_id(result_id);
   result.set_offset(offset);
@@ -171,5 +169,6 @@ transformation::MakeTransformationSplitBlock(uint32_t result_id,
   return result;
 }
 
+}  // namespace transformation
 }  // namespace fuzz
 }  // namespace spvtools

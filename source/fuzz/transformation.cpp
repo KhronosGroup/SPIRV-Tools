@@ -29,8 +29,8 @@ bool IsApplicable(const Transformation& message,
                   spvtools::opt::IRContext* context,
                   const spvtools::fuzz::FactManager& fact_manager) {
   switch (message.transformation_case()) {
-    case Transformation::TransformationCase::kAddBooleanConstant:
-      return transformation::IsApplicable(message.add_boolean_constant(),
+    case Transformation::TransformationCase::kAddConstantBoolean:
+      return transformation::IsApplicable(message.add_constant_boolean(),
                                           context, fact_manager);
     case Transformation::TransformationCase::kAddDeadBreak:
       return transformation::IsApplicable(message.add_dead_break(), context,
@@ -55,8 +55,8 @@ bool IsApplicable(const Transformation& message,
 void Apply(const Transformation& message, spvtools::opt::IRContext* context,
            spvtools::fuzz::FactManager* fact_manager) {
   switch (message.transformation_case()) {
-    case Transformation::TransformationCase::kAddBooleanConstant:
-      transformation::Apply(message.add_boolean_constant(), context,
+    case Transformation::TransformationCase::kAddConstantBoolean:
+      transformation::Apply(message.add_constant_boolean(), context,
                             fact_manager);
       break;
     case Transformation::TransformationCase::kAddDeadBreak:
