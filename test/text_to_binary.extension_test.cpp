@@ -727,7 +727,7 @@ INSTANTIATE_TEST_SUITE_P(
                              {1, SpvDecorationCounterBuffer, 2})},
         })));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_GOOGLE_hlsl_functionality1, ExtensionAssemblyTest,
     Combine(
         // We'll get coverage over operand tables by trying the universal
