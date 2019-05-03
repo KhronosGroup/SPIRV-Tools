@@ -17,6 +17,7 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace transformation {
 
 namespace {
 
@@ -72,7 +73,7 @@ std::unique_ptr<opt::Instruction> MakeLoadInstruction(
 
 }  // namespace
 
-bool transformation::IsApplicable(
+bool IsApplicable(
     const protobufs::TransformationReplaceConstantWithUniform& message,
     spvtools::opt::IRContext* context,
     const spvtools::fuzz::FactManager& fact_manager) {
@@ -162,10 +163,9 @@ bool transformation::IsApplicable(
   return true;
 }
 
-void transformation::Apply(
-    const protobufs::TransformationReplaceConstantWithUniform& message,
-    spvtools::opt::IRContext* context,
-    spvtools::fuzz::FactManager* /*unused*/) {
+void Apply(const protobufs::TransformationReplaceConstantWithUniform& message,
+           spvtools::opt::IRContext* context,
+           spvtools::fuzz::FactManager* /*unused*/) {
   // Get the instruction that contains the id use we wish to replace.
   auto instruction_containing_constant_use =
       module_navigation::FindInstruction(message.id_use_descriptor(), context);
@@ -202,7 +202,7 @@ void transformation::Apply(
 }
 
 protobufs::TransformationReplaceConstantWithUniform
-transformation::MakeTransformationReplaceConstantWithUniform(
+MakeTransformationReplaceConstantWithUniform(
     protobufs::IdUseDescriptor id_use,
     protobufs::UniformBufferElementDescriptor uniform_descriptor,
     uint32_t fresh_id_for_access_chain, uint32_t fresh_id_for_load) {
@@ -214,5 +214,6 @@ transformation::MakeTransformationReplaceConstantWithUniform(
   return result;
 }
 
+}  // namespace transformation
 }  // namespace fuzz
 }  // namespace spvtools

@@ -23,7 +23,6 @@
 
 namespace spvtools {
 namespace fuzz {
-
 namespace transformation {
 
 // - |fresh_id_for_access_chain| and |fresh_id_for_load| must be distinct fresh
@@ -67,7 +66,6 @@ MakeTransformationReplaceConstantWithUniform(
     uint32_t fresh_id_for_access_chain, uint32_t fresh_id_for_load);
 
 }  // namespace transformation
-
 }  // namespace fuzz
 }  // namespace spvtools
 

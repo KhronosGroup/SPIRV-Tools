@@ -28,7 +28,12 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         replayer.h
         transformation.h
         transformation_add_constant_boolean.h
+        transformation_add_constant_scalar.h
         transformation_add_dead_break.h
+        transformation_add_type_boolean.h
+        transformation_add_type_float.h
+        transformation_add_type_int.h
+        transformation_add_type_pointer.h
         transformation_move_block_down.h
         transformation_replace_constant_with_uniform.h
         transformation_split_block.h
@@ -47,7 +52,12 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         replayer.cpp
         transformation.cpp
         transformation_add_constant_boolean.cpp
+        transformation_add_constant_scalar.cpp
         transformation_add_dead_break.cpp
+        transformation_add_type_boolean.cpp
+        transformation_add_type_float.cpp
+        transformation_add_type_int.cpp
+        transformation_add_type_pointer.cpp
         transformation_move_block_down.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_split_block.cpp

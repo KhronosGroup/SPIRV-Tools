@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_add_constant_boolean.h"
+#include "source/fuzz/transformation_add_type_float.h"
 #include "source/fuzz/fuzzer_util.h"
-#include "source/opt/types.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -22,35 +21,36 @@ namespace transformation {
 
 using opt::IRContext;
 
-bool IsApplicable(const protobufs::TransformationAddConstantBoolean& message,
-                  IRContext* context, const FactManager& /*unused*/) {
-  opt::analysis::Bool bool_type;
-  if (!context->get_type_mgr()->GetId(&bool_type)) {
-    // No OpTypeBool is present.
+bool IsApplicable(const protobufs::TransformationAddTypeFloat& message,
+                  IRContext* context,
+                  const spvtools::fuzz::FactManager& /*unused*/) {
+  if (!fuzzerutil::IsFreshId(context, message.fresh_id())) {
     return false;
   }
-  return fuzzerutil::IsFreshId(context, message.fresh_id());
+
+  // Applicable if there is no float type with this width already declared in
+  // the module.
+  opt::analysis::Float float_type(message.width());
+  return context->get_type_mgr()->GetId(&float_type) == 0;
 }
 
-void Apply(const protobufs::TransformationAddConstantBoolean& message,
-           IRContext* context, FactManager* /*unused*/) {
-  opt::analysis::Bool bool_type;
-  // Add the boolean constant to the module, ensuring the module's id bound is
-  // high enough.
+void Apply(const protobufs::TransformationAddTypeFloat& message,
+           IRContext* context, spvtools::fuzz::FactManager* /*unused*/) {
+  opt::Instruction::OperandList width = {
+      {SPV_OPERAND_TYPE_LITERAL_INTEGER, {message.width()}}};
+  context->module()->AddType(MakeUnique<opt::Instruction>(
+      context, SpvOpTypeFloat, 0, message.fresh_id(), width));
   fuzzerutil::UpdateModuleIdBound(context, message.fresh_id());
-  context->module()->AddGlobalValue(
-      message.is_true() ? SpvOpConstantTrue : SpvOpConstantFalse,
-      message.fresh_id(), context->get_type_mgr()->GetId(&bool_type));
   // We have added an instruction to the module, so need to be careful about the
   // validity of existing analyses.
   context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
-protobufs::TransformationAddConstantBoolean
-MakeTransformationAddConstantBoolean(uint32_t fresh_id, bool is_true) {
-  protobufs::TransformationAddConstantBoolean result;
+protobufs::TransformationAddTypeFloat MakeTransformationAddTypeFloat(
+    uint32_t fresh_id, uint32_t width) {
+  protobufs::TransformationAddTypeFloat result;
   result.set_fresh_id(fresh_id);
-  result.set_is_true(is_true);
+  result.set_width(width);
   return result;
 }
 

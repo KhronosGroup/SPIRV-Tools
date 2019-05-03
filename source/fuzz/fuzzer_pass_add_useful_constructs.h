@@ -33,6 +33,12 @@ class FuzzerPassAddUsefulConstructs : public FuzzerPass {
              protobufs::TransformationSequence* transformations) override;
 
  private:
+  void MaybeAddIntConstant(opt::IRContext* ir_context,
+                           FuzzerContext* fuzzer_context,
+                           FactManager* fact_manager,
+                           protobufs::TransformationSequence* transformations,
+                           uint32_t width, bool is_signed,
+                           std::vector<uint32_t> data);
 };
 
 }  // namespace fuzz
