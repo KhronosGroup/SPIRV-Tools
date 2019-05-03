@@ -684,7 +684,7 @@ INSTANTIATE_TEST_SUITE_P(
              MakeInstruction(SpvOpMemberDecorateString,
                              {1, 3, SpvDecorationUserSemantic},
                              MakeVector("DEF"))},
-        })), );
+        })));
 
 INSTANTIATE_TEST_SUITE_P(
     SPV_GOOGLE_decorate_string, ExtensionAssemblyTest,
@@ -725,7 +725,7 @@ INSTANTIATE_TEST_SUITE_P(
             {"OpDecorateId %1 CounterBuffer %2\n",
              MakeInstruction(SpvOpDecorateId,
                              {1, SpvDecorationCounterBuffer, 2})},
-        })), );
+        })));
 
 INSTANTIATE_TEST_CASE_P(
     SPV_GOOGLE_hlsl_functionality1, ExtensionAssemblyTest,
