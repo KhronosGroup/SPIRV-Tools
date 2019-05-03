@@ -58,7 +58,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
   {
     // Add boolean type if not present.
     opt::analysis::Bool temp_bool_type;
-    if (!ir_context->get_type_mgr()->GetRegisteredType(&temp_bool_type)) {
+    if (!ir_context->get_type_mgr()->GetId(&temp_bool_type)) {
       protobufs::TransformationAddTypeBoolean add_type_boolean =
           transformation::MakeTransformationAddTypeBoolean(
               fuzzer_context->FreshId());
@@ -75,7 +75,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
     // Add signed and unsigned 32-bit integer types if not present.
     for (auto is_signed : {true, false}) {
       opt::analysis::Integer temp_int_type(32, is_signed);
-      if (!ir_context->get_type_mgr()->GetRegisteredType(&temp_int_type)) {
+      if (!ir_context->get_type_mgr()->GetId(&temp_int_type)) {
         protobufs::TransformationAddTypeInt add_type_int =
             transformation::MakeTransformationAddTypeInt(
                 fuzzer_context->FreshId(), 32, is_signed);
@@ -92,7 +92,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
   {
     // Add 32-bit float type if not present.
     opt::analysis::Float temp_float_type(32);
-    if (!ir_context->get_type_mgr()->GetRegisteredType(&temp_float_type)) {
+    if (!ir_context->get_type_mgr()->GetId(&temp_float_type)) {
       protobufs::TransformationAddTypeFloat add_type_float =
           transformation::MakeTransformationAddTypeFloat(
               fuzzer_context->FreshId(), 32);
