@@ -38,7 +38,13 @@ class FuzzerPassAddUsefulConstructs : public FuzzerPass {
                            FactManager* fact_manager,
                            protobufs::TransformationSequence* transformations,
                            uint32_t width, bool is_signed,
-                           std::vector<uint32_t> data);
+                           std::vector<uint32_t> data) const;
+
+  void MaybeAddFloatConstant(opt::IRContext* ir_context,
+                             FuzzerContext* fuzzer_context,
+                             FactManager* fact_manager,
+                             protobufs::TransformationSequence* transformations,
+                             uint32_t width, std::vector<uint32_t> data) const;
 };
 
 }  // namespace fuzz

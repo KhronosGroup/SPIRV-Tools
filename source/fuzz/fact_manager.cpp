@@ -22,11 +22,11 @@ struct FactManager::UniformConstantFacts {
   const opt::analysis::Type* FindOrRegisterType(
       const opt::analysis::Type* type);
 
-  const opt::analysis::Constant* FindOrRegisterConstant(
-      const opt::analysis::Constant* constant);
+  const opt::analysis::ScalarConstant* FindOrRegisterConstant(
+      const opt::analysis::ScalarConstant* constant);
 
   void AddUniformConstantFact(
-      const opt::analysis::Constant* constant,
+      const opt::analysis::ScalarConstant* constant,
       protobufs::UniformBufferElementDescriptor descriptor);
 
   void AddUniformFloatValueFact(
@@ -37,15 +37,15 @@ struct FactManager::UniformConstantFacts {
       uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
       protobufs::UniformBufferElementDescriptor descriptor);
 
-  std::vector<const opt::analysis::Constant*>
+  std::vector<const opt::analysis::ScalarConstant*>
   GetConstantsAvailableFromUniformsForType(
       const spvtools::opt::analysis::Type& type) const;
 
   const std::vector<protobufs::UniformBufferElementDescriptor>*
   GetUniformDescriptorsForConstant(
-      const opt::analysis::Constant& constant) const;
+      const opt::analysis::ScalarConstant& constant) const;
 
-  const opt::analysis::Constant* GetConstantFromUniformDescriptor(
+  const opt::analysis::ScalarConstant* GetConstantFromUniformDescriptor(
       const protobufs::UniformBufferElementDescriptor& uniform_descriptor)
       const;
 
@@ -58,18 +58,18 @@ struct FactManager::UniformConstantFacts {
 
   std::vector<std::unique_ptr<opt::analysis::Type>> owned_types;
 
-  std::unordered_set<const opt::analysis::Constant*,
+  std::unordered_set<const opt::analysis::ScalarConstant*,
                      opt::analysis::ConstantHash, opt::analysis::ConstantEqual>
       constant_pool;
 
-  std::vector<std::unique_ptr<opt::analysis::Constant>> owned_constants;
+  std::vector<std::unique_ptr<opt::analysis::ScalarConstant>> owned_constants;
 
-  std::map<const opt::analysis::Constant*,
+  std::map<const opt::analysis::ScalarConstant*,
            std::vector<protobufs::UniformBufferElementDescriptor>>
       constant_to_uniform_descriptors;
 
   std::unordered_map<const protobufs::UniformBufferElementDescriptor*,
-                     const opt::analysis::Constant*,
+                     const opt::analysis::ScalarConstant*,
                      UniformBufferElementDescriptorHash,
                      UniformBufferElementDescriptorEquals>
       uniform_descriptor_to_constant;
@@ -89,15 +89,16 @@ FactManager::UniformConstantFacts::FindOrRegisterType(
   return result;
 }
 
-const opt::analysis::Constant*
+const opt::analysis::ScalarConstant*
 FactManager::UniformConstantFacts::FindOrRegisterConstant(
-    const opt::analysis::Constant* constant) {
+    const opt::analysis::ScalarConstant* constant) {
   assert(type_pool.find(constant->type()) != type_pool.end());
   auto constant_pool_iterator = constant_pool.find(constant);
   if (constant_pool_iterator != constant_pool.end()) {
     return *constant_pool_iterator;
   }
-  auto cloned_constant = constant->Copy();
+  auto cloned_constant = std::unique_ptr<opt::analysis::ScalarConstant>(
+      constant->Copy().release()->AsScalarConstant());
   auto result = cloned_constant.get();
   owned_constants.push_back(std::move(cloned_constant));
   constant_pool.insert(result);
@@ -105,7 +106,7 @@ FactManager::UniformConstantFacts::FindOrRegisterConstant(
 }
 
 void FactManager::UniformConstantFacts::AddUniformConstantFact(
-    const opt::analysis::Constant* constant,
+    const opt::analysis::ScalarConstant* constant,
     protobufs::UniformBufferElementDescriptor descriptor) {
   auto registered_constant = FindOrRegisterConstant(constant);
   if (constant_to_uniform_descriptors.find(registered_constant) ==
@@ -141,10 +142,10 @@ void FactManager::UniformConstantFacts::AddUniformIntValueFact(
   AddUniformConstantFact(&int_constant, std::move(descriptor));
 }
 
-std::vector<const opt::analysis::Constant*>
+std::vector<const opt::analysis::ScalarConstant*>
 FactManager::UniformConstantFacts::GetConstantsAvailableFromUniformsForType(
     const spvtools::opt::analysis::Type& type) const {
-  std::vector<const opt::analysis::Constant*> result;
+  std::vector<const opt::analysis::ScalarConstant*> result;
   auto iterator = type_pool.find(&type);
   if (iterator == type_pool.end()) {
     return result;
@@ -160,7 +161,7 @@ FactManager::UniformConstantFacts::GetConstantsAvailableFromUniformsForType(
 
 const std::vector<protobufs::UniformBufferElementDescriptor>*
 FactManager::UniformConstantFacts::GetUniformDescriptorsForConstant(
-    const opt::analysis::Constant& constant) const {
+    const opt::analysis::ScalarConstant& constant) const {
   assert(constant_pool.find(&constant) != constant_pool.end());
   if (constant_to_uniform_descriptors.find(&constant) ==
       constant_to_uniform_descriptors.end()) {
@@ -169,7 +170,7 @@ FactManager::UniformConstantFacts::GetUniformDescriptorsForConstant(
   return &constant_to_uniform_descriptors.find(&constant)->second;
 }
 
-const opt::analysis::Constant*
+const opt::analysis::ScalarConstant*
 FactManager::UniformConstantFacts::GetConstantFromUniformDescriptor(
     const protobufs::UniformBufferElementDescriptor& uniform_descriptor) const {
   if (uniform_descriptor_to_constant.find(&uniform_descriptor) ==
@@ -211,7 +212,7 @@ void FactManager::AddUniformIntValueFact(
                                                   std::move(data), descriptor);
 }
 
-std::vector<const opt::analysis::Constant*>
+std::vector<const opt::analysis::ScalarConstant*>
 FactManager::GetConstantsAvailableFromUniformsForType(
     const spvtools::opt::analysis::Type& type) const {
   return uniform_constant_facts_->GetConstantsAvailableFromUniformsForType(
@@ -220,11 +221,12 @@ FactManager::GetConstantsAvailableFromUniformsForType(
 
 const std::vector<protobufs::UniformBufferElementDescriptor>*
 FactManager::GetUniformDescriptorsForConstant(
-    const opt::analysis::Constant& constant) const {
+    const opt::analysis::ScalarConstant& constant) const {
   return uniform_constant_facts_->GetUniformDescriptorsForConstant(constant);
 }
 
-const opt::analysis::Constant* FactManager::GetConstantFromUniformDescriptor(
+const opt::analysis::ScalarConstant*
+FactManager::GetConstantFromUniformDescriptor(
     const protobufs::UniformBufferElementDescriptor& uniform_descriptor) const {
   return uniform_constant_facts_->GetConstantFromUniformDescriptor(
       uniform_descriptor);
