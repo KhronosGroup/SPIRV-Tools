@@ -22,7 +22,6 @@
 
 namespace spvtools {
 namespace fuzz {
-
 namespace transformation {
 
 // - |result_id| must be the result id of an instruction 'base' in some
@@ -47,7 +46,6 @@ protobufs::TransformationSplitBlock MakeTransformationSplitBlock(
     uint32_t result_id, uint32_t offset, uint32_t fresh_id);
 
 }  // namespace transformation
-
 }  // namespace fuzz
 }  // namespace spvtools
 

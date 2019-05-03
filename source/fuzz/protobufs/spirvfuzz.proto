@@ -48,11 +48,16 @@ message TransformationSequence {
 
 message Transformation {
   oneof transformation {
-    TransformationAddConstantBoolean add_boolean_constant = 1;
-    TransformationAddDeadBreak add_dead_break = 2;
-    TransformationMoveBlockDown move_block_down = 3;
-    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 4;
-    TransformationSplitBlock split_block = 5;
+    TransformationAddConstantBoolean add_constant_boolean = 1;
+    TransformationAddConstantScalar add_constant_scalar = 2;
+    TransformationAddDeadBreak add_dead_break = 3;
+    TransformationMoveBlockDown move_block_down = 4;
+    TransformationAddTypeBoolean add_type_boolean = 5;
+    TransformationAddTypeFloat add_type_float = 6;
+    TransformationAddTypeInt add_type_int = 7;
+    TransformationAddTypePointer add_type_pointer = 8;
+    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 9;
+    TransformationSplitBlock split_block = 10;
   }
 }
 
@@ -63,6 +68,21 @@ message TransformationAddConstantBoolean {
 
   uint32 fresh_id = 1;
   bool is_true = 2;
+
+}
+
+message TransformationAddConstantScalar {
+
+  // Adds a constant of the given scalar type
+
+  // Id for the constant
+  uint32 fresh_id = 1;
+
+  // Id for the scalar type of the constant
+  uint32 type_id = 2;
+
+  // Value of the constant
+  repeated uint32 word = 3;
 
 }
 
@@ -85,6 +105,55 @@ message TransformationAddDeadBreak {
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
   repeated uint32 phi_id = 4;
+
+}
+
+message TransformationAddTypeBoolean {
+
+  // Adds OpTypeBool to the module
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+}
+
+message TransformationAddTypeFloat {
+
+  // Adds OpTypeFloat to the module with the given width
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+  // Floating-point width
+  uint32 width = 2;
+
+}
+
+message TransformationAddTypeInt {
+
+  // Adds OpTypeInt to the module with the given width and signedness
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+  // Integer width
+  uint32 width = 2;
+
+  // True if and only if this is a signed type
+  bool is_signed = 3;
+
+}
+
+message TransformationAddTypePointer {
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+  // Pointer storage class
+  uint32 storage_class = 2;
+
+  // Id of the base type for the pointer
+  uint32 base_type_id = 3;
 
 }
 

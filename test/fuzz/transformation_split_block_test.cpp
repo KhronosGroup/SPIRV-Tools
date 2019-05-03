@@ -205,7 +205,7 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
   ASSERT_TRUE(
       transformation::IsApplicable(split_1, context.get(), fact_manager));
   transformation::Apply(split_1, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split_1 = R"(
                OpCapability Shader
@@ -247,13 +247,13 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_split_1, context.get());
+  ASSERT_TRUE(IsEqual(env, after_split_1, context.get()));
 
   auto split_2 = transformation::MakeTransformationSplitBlock(11, 1, 101);
   ASSERT_TRUE(
       transformation::IsApplicable(split_2, context.get(), fact_manager));
   transformation::Apply(split_2, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split_2 = R"(
                OpCapability Shader
@@ -297,13 +297,13 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_split_2, context.get());
+  ASSERT_TRUE(IsEqual(env, after_split_2, context.get()));
 
   auto split_3 = transformation::MakeTransformationSplitBlock(14, 0, 102);
   ASSERT_TRUE(
       transformation::IsApplicable(split_3, context.get(), fact_manager));
   transformation::Apply(split_3, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split_3 = R"(
                OpCapability Shader
@@ -349,7 +349,7 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_split_3, context.get());
+  ASSERT_TRUE(IsEqual(env, after_split_3, context.get()));
 }
 
 TEST(TransformationSplitBlockTest, SplitBlockBeforeSelectBranch) {
@@ -425,7 +425,7 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSelectBranch) {
   auto split = transformation::MakeTransformationSplitBlock(14, 1, 100);
   ASSERT_TRUE(transformation::IsApplicable(split, context.get(), fact_manager));
   transformation::Apply(split, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split = R"(
                OpCapability Shader
@@ -471,7 +471,7 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSelectBranch) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_split, context.get());
+  ASSERT_TRUE(IsEqual(env, after_split, context.get()));
 }
 
 TEST(TransformationSplitBlockTest, SplitBlockBeforeSwitchBranch) {
@@ -551,7 +551,7 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSwitchBranch) {
   auto split = transformation::MakeTransformationSplitBlock(9, 1, 100);
   ASSERT_TRUE(transformation::IsApplicable(split, context.get(), fact_manager));
   transformation::Apply(split, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split = R"(
                OpCapability Shader
@@ -597,7 +597,7 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSwitchBranch) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_split, context.get());
+  ASSERT_TRUE(IsEqual(env, after_split, context.get()));
 }
 
 TEST(TransformationSplitBlockTest, NoSplitDuringOpPhis) {
@@ -730,7 +730,7 @@ TEST(TransformationSplitBlockTest, SplitOpPhiWithSinglePredecessor) {
   auto split = transformation::MakeTransformationSplitBlock(20, 1, 100);
   ASSERT_TRUE(transformation::IsApplicable(split, context.get(), fact_manager));
   transformation::Apply(split, context.get(), &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split = R"(
                OpCapability Shader
@@ -765,7 +765,7 @@ TEST(TransformationSplitBlockTest, SplitOpPhiWithSinglePredecessor) {
          OpReturn
          OpFunctionEnd
   )";
-  CheckEqual(env, after_split, context.get());
+  ASSERT_TRUE(IsEqual(env, after_split, context.get()));
 }
 
 }  // namespace

@@ -87,7 +87,7 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_a =
@@ -179,7 +179,7 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   // Apply the use of 9 in a store.
   transformation::Apply(transformation_use_of_9_in_store, context.get(),
                         &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   std::string after_replacing_use_of_9_in_store = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -227,14 +227,14 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_replacing_use_of_9_in_store, context.get());
+  ASSERT_TRUE(IsEqual(env, after_replacing_use_of_9_in_store, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_11_in_add,
                                            context.get(), fact_manager));
   // Apply the use of 11 in an add.
   transformation::Apply(transformation_use_of_11_in_add, context.get(),
                         &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   std::string after_replacing_use_of_11_in_add = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -284,14 +284,14 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_replacing_use_of_11_in_add, context.get());
+  ASSERT_TRUE(IsEqual(env, after_replacing_use_of_11_in_add, context.get()));
 
   ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_14_in_add,
                                            context.get(), fact_manager));
   // Apply the use of 15 in an add.
   transformation::Apply(transformation_use_of_14_in_add, context.get(),
                         &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   std::string after_replacing_use_of_14_in_add = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -343,7 +343,7 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after_replacing_use_of_14_in_add, context.get());
+  ASSERT_TRUE(IsEqual(env, after_replacing_use_of_14_in_add, context.get()));
 }
 
 TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
@@ -457,7 +457,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_1 =
@@ -517,7 +517,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
 
   transformation::Apply(transformation_use_of_13_in_store, context.get(),
                         &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
                                             context.get(), fact_manager));
   ASSERT_TRUE(transformation::IsApplicable(transformation_use_of_15_in_add,
@@ -529,7 +529,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
 
   transformation::Apply(transformation_use_of_15_in_add, context.get(),
                         &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
                                             context.get(), fact_manager));
   ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_15_in_add,
@@ -541,7 +541,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
 
   transformation::Apply(transformation_use_of_17_in_add, context.get(),
                         &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
                                             context.get(), fact_manager));
   ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_15_in_add,
@@ -553,7 +553,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
 
   transformation::Apply(transformation_use_of_20_in_store, context.get(),
                         &fact_manager);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_13_in_store,
                                             context.get(), fact_manager));
   ASSERT_FALSE(transformation::IsApplicable(transformation_use_of_15_in_add,
@@ -643,7 +643,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
                OpReturn
                OpFunctionEnd
   )";
-  CheckEqual(env, after, context.get());
+  ASSERT_TRUE(IsEqual(env, after, context.get()));
 }
 
 TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
@@ -696,7 +696,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_0 =
@@ -770,7 +770,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_0 =
@@ -843,7 +843,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_3 =
@@ -929,7 +929,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   protobufs::UniformBufferElementDescriptor blockname_9 =
@@ -1146,7 +1146,7 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  CheckValid(env, context.get());
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
 
@@ -1303,7 +1303,7 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
     ASSERT_TRUE(transformation::IsApplicable(transformation, context.get(),
                                              fact_manager));
     transformation::Apply(transformation, context.get(), &fact_manager);
-    CheckValid(env, context.get());
+    ASSERT_TRUE(IsValid(env, context.get()));
   }
 
   std::string after = R"(
@@ -1465,7 +1465,7 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
                OpFunctionEnd
   )";
 
-  CheckEqual(env, after, context.get());
+  ASSERT_TRUE(IsEqual(env, after, context.get()));
 }
 
 }  // namespace

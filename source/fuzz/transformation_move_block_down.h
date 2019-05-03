@@ -22,7 +22,6 @@
 
 namespace spvtools {
 namespace fuzz {
-
 namespace transformation {
 
 // - |block_id| must be the id of a block b in the given module.
@@ -40,7 +39,6 @@ protobufs::TransformationMoveBlockDown MakeTransformationMoveBlockDown(
     uint32_t id);
 
 }  // namespace transformation
-
 }  // namespace fuzz
 }  // namespace spvtools
 

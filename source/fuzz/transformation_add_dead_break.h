@@ -20,7 +20,6 @@
 
 namespace spvtools {
 namespace fuzz {
-
 namespace transformation {
 
 // - |from_block| must be the id of a block a in the given module.
@@ -50,7 +49,6 @@ protobufs::TransformationAddDeadBreak MakeTransformationAddDeadBreak(
     std::vector<uint32_t> phi_ids);
 
 }  // namespace transformation
-
 }  // namespace fuzz
 }  // namespace spvtools
 
