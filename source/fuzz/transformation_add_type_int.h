@@ -22,11 +22,14 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// TODO
+// - |message.fresh_id| must not be used by the module
+// - The module must not contain an OpTypeInt instruction with width
+//   |message.width| and signedness |message.is_signed|
 bool IsApplicable(const protobufs::TransformationAddTypeInt& message,
                   opt::IRContext* context, const FactManager& fact_manager);
 
-// TODO
+// Adds an OpTypeInt instruction to the module with the given width and
+// signedness.
 void Apply(const protobufs::TransformationAddTypeInt& message,
            opt::IRContext* context, FactManager* fact_manager);
 

@@ -22,11 +22,13 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// TODO
+// - |message.fresh_id| must not be used by the module
+// - The module must not contain an OpTypeFloat instruction with width
+//   |message.width|
 bool IsApplicable(const protobufs::TransformationAddTypeFloat& message,
                   opt::IRContext* context, const FactManager& fact_manager);
 
-// TODO
+// Adds an OpTypeFloat instruction to the module with the given width
 void Apply(const protobufs::TransformationAddTypeFloat& message,
            opt::IRContext* context, FactManager* fact_manager);
 
