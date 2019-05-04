@@ -42,6 +42,32 @@ message UniformBufferElementDescriptor {
 
 }
 
+message FactSequence {
+  repeated Fact fact = 1;
+}
+
+message Fact {
+
+  // There may be other facts in due course.
+  oneof fact {
+    ConstantUniformFact constant_uniform_fact = 1;
+  }
+
+}
+
+message ConstantUniformFact {
+
+  // Records the fact that a uniform buffer element is guaranteed to be equal
+  // to a particular constant value.
+
+  // An element of a uniform buffer
+  UniformBufferElementDescriptor uniform_buffer_element_descriptor = 1;
+
+  // The words of the associated constant
+  repeated uint32 constant_word = 2;
+
+}
+
 message TransformationSequence {
   repeated Transformation transformation = 1;
 }

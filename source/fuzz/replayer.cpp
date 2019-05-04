@@ -41,6 +41,7 @@ void Replayer::SetMessageConsumer(MessageConsumer c) {
 
 Replayer::ReplayerResultStatus Replayer::Run(
     const std::vector<uint32_t>& binary_in,
+    const protobufs::FactSequence& initial_facts,
     const protobufs::TransformationSequence& transformation_sequence_in,
     std::vector<uint32_t>* binary_out,
     protobufs::TransformationSequence* transformation_sequence_out) const {
@@ -63,9 +64,10 @@ Replayer::ReplayerResultStatus Replayer::Run(
       impl_->target_env, impl_->consumer, binary_in.data(), binary_in.size());
   assert(ir_context);
 
-  // An empty fact manager.
-  // TODO: settle on a way to provide initial facts.
   FactManager fact_manager;
+  if (!fact_manager.AddFacts(initial_facts, ir_context.get())) {
+    return Replayer::ReplayerResultStatus::kInitialFactsInvalid;
+  }
 
   // Consider the transformation proto messages in turn.
   for (auto& transformation_message :

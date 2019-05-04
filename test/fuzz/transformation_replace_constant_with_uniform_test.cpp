@@ -20,6 +20,18 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+bool AddFactHelper(
+    FactManager* fact_manager, opt::IRContext* context, uint32_t word,
+    const protobufs::UniformBufferElementDescriptor& descriptor) {
+  protobufs::ConstantUniformFact constant_uniform_fact;
+  constant_uniform_fact.add_constant_word(word);
+  *constant_uniform_fact.mutable_uniform_buffer_element_descriptor() =
+      descriptor;
+  protobufs::Fact fact;
+  *fact.mutable_constant_uniform_fact() = constant_uniform_fact;
+  return fact_manager->AddFact(fact, context);
+}
+
 TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   // This test came from the following GLSL:
   //
@@ -98,12 +110,11 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   protobufs::UniformBufferElementDescriptor blockname_c =
       MakeUniformBufferElementDescriptor(18, {2});
 
-  fact_manager.AddUniformIntValueFact(32, true, {1}, blockname_a);
-  fact_manager.AddUniformIntValueFact(32, true, {2}, blockname_b);
-  fact_manager.AddUniformIntValueFact(32, true, {3}, blockname_c);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 1, blockname_a));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 2, blockname_b));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 3, blockname_c));
 
   // The constant ids are 9, 11 and 14, for 1, 2 and 3 respectively.
-
   protobufs::IdUseDescriptor use_of_9_in_store =
       module_navigation::MakeIdUseDescriptor(9, SpvOpStore, 1, 8, 0);
   protobufs::IdUseDescriptor use_of_11_in_add =
@@ -470,10 +481,10 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   protobufs::UniformBufferElementDescriptor blockname_4 =
       MakeUniformBufferElementDescriptor(28, {1, 0, 1, 0});
 
-  fact_manager.AddUniformIntValueFact(32, true, {1}, blockname_1);
-  fact_manager.AddUniformIntValueFact(32, true, {2}, blockname_2);
-  fact_manager.AddUniformIntValueFact(32, true, {3}, blockname_3);
-  fact_manager.AddUniformIntValueFact(32, true, {4}, blockname_4);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 1, blockname_1));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 2, blockname_2));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 3, blockname_3));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 4, blockname_4));
 
   // The constant ids are 13, 15, 17 and 20, for 1, 2, 3 and 4 respectively.
   protobufs::IdUseDescriptor use_of_13_in_store =
@@ -703,7 +714,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
   protobufs::UniformBufferElementDescriptor blockname_0 =
       MakeUniformBufferElementDescriptor(12, {0});
 
-  fact_manager.AddUniformIntValueFact(32, true, {0}, blockname_0);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 0, blockname_0));
 
   // The constant id is 9 for 0.
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -779,7 +790,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
   protobufs::UniformBufferElementDescriptor blockname_9 =
       MakeUniformBufferElementDescriptor(12, {1});
 
-  fact_manager.AddUniformIntValueFact(32, true, {9}, blockname_9);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 9, blockname_9));
 
   // The constant id is 9 for 9.
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -853,7 +864,8 @@ TEST(TransformationReplaceConstantWithUniformTest,
   uint32_t float_data[1];
   float temp = 3.0;
   memcpy(&float_data[0], &temp, sizeof(float));
-  fact_manager.AddUniformFloatValueFact(32, {float_data[0]}, blockname_3);
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, context.get(), float_data[0], blockname_3));
 
   // The constant id is 9 for 3.0.
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -938,8 +950,8 @@ TEST(TransformationReplaceConstantWithUniformTest,
   protobufs::UniformBufferElementDescriptor blockname_10 =
       MakeUniformBufferElementDescriptor(14, {1});
 
-  fact_manager.AddUniformIntValueFact(32, true, {9}, blockname_9);
-  fact_manager.AddUniformIntValueFact(32, true, {10}, blockname_10);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 9, blockname_9));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 10, blockname_10));
 
   // The constant ids for 9 and 10 are 9 and 11 respectively
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -969,7 +981,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
       context.get(), fact_manager));
 }
 
-TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
+TEST(TransformationReplaceConstantWithUniformTest, ComplexReplacements) {
   // The following GLSL was the basis for this test:
 
   // #version 450
@@ -1197,35 +1209,35 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
   protobufs::UniformBufferElementDescriptor uniform_h_y =
       MakeUniformBufferElementDescriptor(65, {2, 1});
 
-  fact_manager.AddUniformFloatValueFact(32, {float_array_data[0]},
-                                        uniform_f_a_0);
-  fact_manager.AddUniformFloatValueFact(32, {float_array_data[1]},
-                                        uniform_f_a_1);
-  fact_manager.AddUniformFloatValueFact(32, {float_array_data[2]},
-                                        uniform_f_a_2);
-  fact_manager.AddUniformFloatValueFact(32, {float_array_data[3]},
-                                        uniform_f_a_3);
-  fact_manager.AddUniformFloatValueFact(32, {float_array_data[4]},
-                                        uniform_f_a_4);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_array_data[0],
+                            uniform_f_a_0));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_array_data[1],
+                            uniform_f_a_1));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_array_data[2],
+                            uniform_f_a_2));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_array_data[3],
+                            uniform_f_a_3));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_array_data[4],
+                            uniform_f_a_4));
 
-  fact_manager.AddUniformIntValueFact(32, true, {1}, uniform_f_b_x);
-  fact_manager.AddUniformIntValueFact(32, true, {2}, uniform_f_b_y);
-  fact_manager.AddUniformIntValueFact(32, true, {3}, uniform_f_b_z);
-  fact_manager.AddUniformIntValueFact(32, true, {4}, uniform_f_b_w);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 1, uniform_f_b_x));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 2, uniform_f_b_y));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 3, uniform_f_b_z));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 4, uniform_f_b_w));
 
-  fact_manager.AddUniformFloatValueFact(32, {float_vector_data[0]},
-                                        uniform_f_c_x);
-  fact_manager.AddUniformFloatValueFact(32, {float_vector_data[1]},
-                                        uniform_f_c_y);
-  fact_manager.AddUniformFloatValueFact(32, {float_vector_data[2]},
-                                        uniform_f_c_z);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_vector_data[0],
+                            uniform_f_c_x));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_vector_data[1],
+                            uniform_f_c_y));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_vector_data[2],
+                            uniform_f_c_z));
 
-  fact_manager.AddUniformIntValueFact(32, false, {42}, uniform_f_d);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 42, uniform_f_d));
 
-  fact_manager.AddUniformIntValueFact(32, true, {22}, uniform_g);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 22, uniform_g));
 
-  fact_manager.AddUniformIntValueFact(32, false, {100}, uniform_h_x);
-  fact_manager.AddUniformIntValueFact(32, false, {200}, uniform_h_y);
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 100, uniform_h_x));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 200, uniform_h_y));
 
   std::vector<protobufs::TransformationReplaceConstantWithUniform>
       transformations;
