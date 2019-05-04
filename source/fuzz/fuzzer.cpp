@@ -47,7 +47,9 @@ void Fuzzer::SetMessageConsumer(MessageConsumer c) {
 }
 
 Fuzzer::FuzzerResultStatus Fuzzer::Run(
-    const std::vector<uint32_t>& binary_in, std::vector<uint32_t>* binary_out,
+    const std::vector<uint32_t>& binary_in,
+    const protobufs::FactSequence& initial_facts,
+    std::vector<uint32_t>* binary_out,
     protobufs::TransformationSequence* transformation_sequence_out,
     spv_const_fuzzer_options options) const {
   // Check compatibility between the library version being linked with and the
@@ -83,9 +85,10 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   auto minimum_fresh_id = ir_context->module()->id_bound() + 100;
   FuzzerContext fuzzer_context(&random_generator, minimum_fresh_id);
 
-  // An empty fact manager.
-  // TODO: settle on a way to provide initial facts.
   FactManager fact_manager;
+  if (!fact_manager.AddFacts(initial_facts, ir_context.get())) {
+    return Fuzzer::FuzzerResultStatus::kInitialFactsInvalid;
+  }
 
   // Add some essential ingredients to the module if they are not already
   // present, such as boolean constants.

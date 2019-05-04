@@ -31,7 +31,141 @@ using opt::analysis::Float;
 using opt::analysis::Integer;
 using opt::analysis::Type;
 
+bool AddFactHelper(
+    FactManager* fact_manager, opt::IRContext* context,
+    std::vector<uint32_t>&& words,
+    const protobufs::UniformBufferElementDescriptor& descriptor) {
+  protobufs::ConstantUniformFact constant_uniform_fact;
+  for (auto word : words) {
+    constant_uniform_fact.add_constant_word(word);
+  }
+  *constant_uniform_fact.mutable_uniform_buffer_element_descriptor() =
+      descriptor;
+  protobufs::Fact fact;
+  *fact.mutable_constant_uniform_fact() = constant_uniform_fact;
+  return fact_manager->AddFact(fact, context);
+}
+
 TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpCapability Int64
+               OpCapability Float64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 450
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeInt 32 0
+         %11 = OpTypeInt 32 1
+         %12 = OpTypeInt 64 0
+         %13 = OpTypeInt 64 1
+         %15 = OpTypeFloat 32
+         %16 = OpTypeFloat 64
+         %17 = OpConstant %11 5
+         %18 = OpConstant %11 20
+         %19 = OpTypeVector %10 4
+         %20 = OpConstant %11 6
+         %21 = OpTypeVector %12 4
+         %22 = OpConstant %11 10
+         %23 = OpTypeVector %11 4
+
+        %102 = OpTypeStruct %10 %10 %23
+        %101 = OpTypePointer Uniform %102
+        %100 = OpVariable %101 Uniform
+
+        %203 = OpTypeArray %23 %17
+        %202 = OpTypeArray %203 %18
+        %201 = OpTypePointer Uniform %202
+        %200 = OpVariable %201 Uniform
+
+        %305 = OpTypeStruct %16 %16 %16 %11 %16
+        %304 = OpTypeStruct %16 %16 %305
+        %303 = OpTypeStruct %304
+        %302 = OpTypeStruct %10 %303
+        %301 = OpTypePointer Uniform %302
+        %300 = OpVariable %301 Uniform
+
+        %400 = OpVariable %101 Uniform
+
+        %500 = OpVariable %201 Uniform
+
+        %604 = OpTypeArray %13 %20
+        %603 = OpTypeArray %604 %20
+        %602 = OpTypeArray %603 %20
+        %601 = OpTypePointer Uniform %602
+        %600 = OpVariable %601 Uniform
+
+        %703 = OpTypeArray %13 %20
+        %702 = OpTypeArray %703 %20
+        %701 = OpTypePointer Uniform %702
+        %700 = OpVariable %701 Uniform
+
+        %802 = OpTypeStruct %702 %602 %19 %202 %302
+        %801 = OpTypePointer Uniform %802
+        %800 = OpVariable %801 Uniform
+
+        %902 = OpTypeStruct %702 %802 %19 %202 %302
+        %901 = OpTypePointer Uniform %902
+        %900 = OpVariable %901 Uniform
+
+       %1003 = OpTypeStruct %802
+       %1002 = OpTypeArray %1003 %20
+       %1001 = OpTypePointer Uniform %1002
+       %1000 = OpVariable %1001 Uniform
+
+       %1101 = OpTypePointer Uniform %21
+       %1100 = OpVariable %1101 Uniform
+
+       %1202 = OpTypeArray %21 %20
+       %1201 = OpTypePointer Uniform %1202
+       %1200 = OpVariable %1201 Uniform
+
+       %1302 = OpTypeArray %21 %20
+       %1301 = OpTypePointer Uniform %1302
+       %1300 = OpVariable %1301 Uniform
+
+       %1402 = OpTypeArray %15 %22
+       %1401 = OpTypePointer Uniform %1402
+       %1400 = OpVariable %1401 Uniform
+
+       %1501 = OpTypePointer Uniform %1402
+       %1500 = OpVariable %1501 Uniform
+
+       %1602 = OpTypeArray %1402 %22
+       %1601 = OpTypePointer Uniform %1602
+       %1600 = OpVariable %1601 Uniform
+
+       %1704 = OpTypeStruct %16 %16 %16
+       %1703 = OpTypeArray %1704 %22
+       %1702 = OpTypeArray %1703 %22
+       %1701 = OpTypePointer Uniform %1702
+       %1700 = OpVariable %1701 Uniform
+
+       %1800 = OpVariable %1701 Uniform
+
+       %1906 = OpTypeStruct %16
+       %1905 = OpTypeStruct %1906
+       %1904 = OpTypeStruct %1905
+       %1903 = OpTypeStruct %1904
+       %1902 = OpTypeStruct %1903
+       %1901 = OpTypePointer Uniform %1902
+       %1900 = OpVariable %1901 Uniform
+
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
   uint32_t buffer_int32_min[1];
   uint32_t buffer_int64_1[2];
   uint32_t buffer_int64_max[2];
@@ -107,66 +241,94 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
       fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_snd)
           .empty());
 
-  fact_manager.AddUniformIntValueFact(
-      32, true, {1}, MakeUniformBufferElementDescriptor(1, {2, 3}));
-  fact_manager.AddUniformIntValueFact(
-      32, true, {1}, MakeUniformBufferElementDescriptor(2, {1, 2, 3}));
-  fact_manager.AddUniformIntValueFact(
-      32, true, {1}, MakeUniformBufferElementDescriptor(3, {1, 0, 2, 3}));
+  // 100[2][3] == int(1)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
+                            MakeUniformBufferElementDescriptor(100, {2, 3})));
 
-  fact_manager.AddUniformIntValueFact(
-      32, true, {buffer_int32_min[0]},
-      MakeUniformBufferElementDescriptor(4, {2, 3}));
-  fact_manager.AddUniformIntValueFact(
-      32, true, {buffer_int32_min[0]},
-      MakeUniformBufferElementDescriptor(5, {1, 2, 3}));
+  // 200[1][2][3] == int(1)
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, context.get(), {1},
+                    MakeUniformBufferElementDescriptor(200, {1, 2, 3})));
 
-  fact_manager.AddUniformIntValueFact(
-      64, true, {buffer_int64_max[0], buffer_int64_max[1]},
-      MakeUniformBufferElementDescriptor(6, {1, 2, 3}));
-  fact_manager.AddUniformIntValueFact(
-      64, true, {buffer_int64_max[0], buffer_int64_max[1]},
-      MakeUniformBufferElementDescriptor(7, {1, 1}));
+  // 300[1][0][2][3] == int(1)
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, context.get(), {1},
+                    MakeUniformBufferElementDescriptor(300, {1, 0, 2, 3})));
 
-  fact_manager.AddUniformIntValueFact(
-      32, false, {1}, MakeUniformBufferElementDescriptor(8, {2, 3}));
-  fact_manager.AddUniformIntValueFact(
-      32, false, {1}, MakeUniformBufferElementDescriptor(9, {1, 2, 3}));
-  fact_manager.AddUniformIntValueFact(
-      32, false, {1}, MakeUniformBufferElementDescriptor(10, {1, 0, 2, 3}));
+  // 400[2][3] = int32_min
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_int32_min[0]},
+                            MakeUniformBufferElementDescriptor(400, {2, 3})));
 
-  fact_manager.AddUniformIntValueFact(
-      64, false, {buffer_uint64_1[0], buffer_uint64_1[1]},
-      MakeUniformBufferElementDescriptor(11, {0}));
+  // 500[1][2][3] = int32_min
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, context.get(), {buffer_int32_min[0]},
+                    MakeUniformBufferElementDescriptor(500, {1, 2, 3})));
 
-  fact_manager.AddUniformIntValueFact(
-      64, false, {buffer_uint64_max[0], buffer_uint64_max[0]},
-      MakeUniformBufferElementDescriptor(12, {0, 0}));
+  // 600[1][2][3] = int64_max
+  ASSERT_TRUE(AddFactHelper(
+      &fact_manager, context.get(), {buffer_int64_max[0], buffer_int64_max[1]},
+      MakeUniformBufferElementDescriptor(600, {1, 2, 3})));
 
-  fact_manager.AddUniformIntValueFact(
-      64, false, {buffer_uint64_max[0], buffer_uint64_max[0]},
-      MakeUniformBufferElementDescriptor(13, {1, 0}));
+  // 700[1][1] = int64_max
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+                            {buffer_int64_max[0], buffer_int64_max[1]},
+                            MakeUniformBufferElementDescriptor(700, {1, 1})));
 
-  fact_manager.AddUniformFloatValueFact(
-      32, {buffer_float_10[0]}, MakeUniformBufferElementDescriptor(14, {6}));
+  // 800[2][3] = uint(1)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
+                            MakeUniformBufferElementDescriptor(800, {2, 3})));
 
-  fact_manager.AddUniformFloatValueFact(
-      32, {buffer_float_10[0]}, MakeUniformBufferElementDescriptor(15, {7}));
+  // 900[1][2][3] = uint(1)
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, context.get(), {1},
+                    MakeUniformBufferElementDescriptor(900, {1, 2, 3})));
 
-  fact_manager.AddUniformFloatValueFact(
-      32, {buffer_float_10[0]}, MakeUniformBufferElementDescriptor(16, {9, 9}));
+  // 1000[1][0][2][3] = uint(1)
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, context.get(), {1},
+                    MakeUniformBufferElementDescriptor(1000, {1, 0, 2, 3})));
 
-  fact_manager.AddUniformFloatValueFact(
-      64, {buffer_double_10[0], buffer_double_10[1]},
-      MakeUniformBufferElementDescriptor(17, {9, 9, 1}));
+  // 1100[0] = uint64(1)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+                            {buffer_uint64_1[0], buffer_uint64_1[1]},
+                            MakeUniformBufferElementDescriptor(1100, {0})));
 
-  fact_manager.AddUniformFloatValueFact(
-      64, {buffer_double_10[0], buffer_double_10[1]},
-      MakeUniformBufferElementDescriptor(18, {9, 9, 2}));
+  // 1200[0][0] = uint64_max
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+                            {buffer_uint64_max[0], buffer_uint64_max[1]},
+                            MakeUniformBufferElementDescriptor(1200, {0, 0})));
 
-  fact_manager.AddUniformFloatValueFact(
-      64, {buffer_double_20[0], buffer_double_20[1]},
-      MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}));
+  // 1300[1][0] = uint64_max
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+                            {buffer_uint64_max[0], buffer_uint64_max[1]},
+                            MakeUniformBufferElementDescriptor(1300, {1, 0})));
+
+  // 1400[6] = float(10.0)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_float_10[0]},
+                            MakeUniformBufferElementDescriptor(1400, {6})));
+
+  // 1500[7] = float(10.0)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_float_10[0]},
+                            MakeUniformBufferElementDescriptor(1500, {7})));
+
+  // 1600[9][9] = float(10.0)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_float_10[0]},
+                            MakeUniformBufferElementDescriptor(1600, {9, 9})));
+
+  // 1700[9][9][1] = double(10.0)
+  ASSERT_TRUE(AddFactHelper(
+      &fact_manager, context.get(), {buffer_double_10[0], buffer_double_10[1]},
+      MakeUniformBufferElementDescriptor(1700, {9, 9, 1})));
+
+  // 1800[9][9][2] = double(10.0)
+  ASSERT_TRUE(AddFactHelper(
+      &fact_manager, context.get(), {buffer_double_10[0], buffer_double_10[1]},
+      MakeUniformBufferElementDescriptor(1800, {9, 9, 2})));
+
+  // 1900[0][0][0][0][0] = double(20.0)
+  ASSERT_TRUE(AddFactHelper(
+      &fact_manager, context.get(), {buffer_double_20[0], buffer_double_20[1]},
+      MakeUniformBufferElementDescriptor(1900, {0, 0, 0, 0, 0})));
 
   // The available constants should be the same regardless of which version of
   // each type we use.
@@ -237,12 +399,12 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
           fact_manager.GetUniformDescriptorsForConstant(*double_constants[0]);
   ASSERT_EQ(2, descriptors_for_double_10->size());
   {
-    auto temp = MakeUniformBufferElementDescriptor(17, {9, 9, 1});
+    auto temp = MakeUniformBufferElementDescriptor(1700, {9, 9, 1});
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &temp, &(*descriptors_for_double_10)[0]));
   }
   {
-    auto temp = MakeUniformBufferElementDescriptor(18, {9, 9, 2});
+    auto temp = MakeUniformBufferElementDescriptor(1800, {9, 9, 2});
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &temp, &(*descriptors_for_double_10)[1]));
   }
@@ -251,17 +413,17 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
           fact_manager.GetUniformDescriptorsForConstant(*double_constants[1]);
   ASSERT_EQ(1, descriptors_for_double_20->size());
   {
-    auto temp = MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0});
+    auto temp = MakeUniformBufferElementDescriptor(1900, {0, 0, 0, 0, 0});
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &temp, &(*descriptors_for_double_20)[0]));
   }
 
   auto constant_1 = fact_manager.GetConstantFromUniformDescriptor(
-      MakeUniformBufferElementDescriptor(18, {9, 9, 2}));
+      MakeUniformBufferElementDescriptor(1800, {9, 9, 2}));
   ASSERT_TRUE(constant_1 != nullptr);
 
   auto constant_2 = fact_manager.GetConstantFromUniformDescriptor(
-      MakeUniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}));
+      MakeUniformBufferElementDescriptor(1900, {0, 0, 0, 0, 0}));
   ASSERT_TRUE(constant_2 != nullptr);
 
   ASSERT_TRUE(opt::analysis::ConstantEqual()(double_constants[0], constant_1));

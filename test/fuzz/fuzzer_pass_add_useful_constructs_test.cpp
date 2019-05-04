@@ -22,6 +22,18 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+bool AddFactHelper(
+    FactManager* fact_manager, opt::IRContext* context, uint32_t word,
+    const protobufs::UniformBufferElementDescriptor& descriptor) {
+  protobufs::ConstantUniformFact constant_uniform_fact;
+  constant_uniform_fact.add_constant_word(word);
+  *constant_uniform_fact.mutable_uniform_buffer_element_descriptor() =
+      descriptor;
+  protobufs::Fact fact;
+  *fact.mutable_constant_uniform_fact() = constant_uniform_fact;
+  return fact_manager->AddFact(fact, context);
+}
+
 TEST(FuzzerPassAddUsefulConstructsTest, CheckBasicStuffIsAdded) {
   // The SPIR-V came from the following empty GLSL shader:
   //
@@ -168,32 +180,31 @@ TEST(FuzzerPassAddUsefulConstructsTest,
   // Add some uniform facts.
 
   // buf.s.x == 200
-  fact_manager.AddUniformIntValueFact(
-      32, true, {200}, MakeUniformBufferElementDescriptor(14, {0, 0}));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 200,
+                            MakeUniformBufferElementDescriptor(14, {0, 0})));
 
   // buf.s.y == 0.5
   const float float_value = 0.5;
   uint32_t float_value_as_uint;
   memcpy(&float_value_as_uint, &float_value, sizeof(float_value));
-  fact_manager.AddUniformFloatValueFact(
-      32, {float_value_as_uint},
-      MakeUniformBufferElementDescriptor(14, {0, 1}));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_value_as_uint,
+                            MakeUniformBufferElementDescriptor(14, {0, 1})));
 
   // buf.s.z == 300
-  fact_manager.AddUniformIntValueFact(
-      32, true, {300}, MakeUniformBufferElementDescriptor(14, {0, 2}));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 300,
+                            MakeUniformBufferElementDescriptor(14, {0, 2})));
 
   // buf.s.w == 400
-  fact_manager.AddUniformIntValueFact(
-      32, true, {400}, MakeUniformBufferElementDescriptor(14, {0, 3}));
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 400,
+                            MakeUniformBufferElementDescriptor(14, {0, 3})));
 
-  // buf.s.w[6] = 22
-  fact_manager.AddUniformIntValueFact(
-      32, false, {22}, MakeUniformBufferElementDescriptor(14, {0, 1, 6}));
+  // buf.w[6] = 22
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 22,
+                            MakeUniformBufferElementDescriptor(14, {1, 6})));
 
-  // buf.s.w[8] = 23
-  fact_manager.AddUniformIntValueFact(
-      32, false, {23}, MakeUniformBufferElementDescriptor(14, {0, 1, 8}));
+  // buf.w[8] = 23
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 23,
+                            MakeUniformBufferElementDescriptor(14, {1, 8})));
 
   // Assert some things about the module that are not true prior to adding the
   // pass
