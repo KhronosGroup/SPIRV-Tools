@@ -38,22 +38,16 @@ class FactManager {
 
   virtual ~FactManager();
 
+  // Adds all the facts from |facts|, checking them for validity with respect to
+  // |context|. Returns true if and only if all facts are valid.
+  bool AddFacts(const protobufs::FactSequence& facts, opt::IRContext* context);
+
+  // Adds |fact| to the fact manager, checking it for validity with respect to
+  // |context|. Returns true if and only if the fact is valid.
+  bool AddFact(const protobufs::Fact& fact, opt::IRContext* context);
+
   //==============================
-  // Facts about uniform constants
-
-  // Adds the fact that the floating-point constant defined by |data|, for
-  // floating-point type with width |width|, is equal to the data identified by
-  // |descriptor|.
-  void AddUniformFloatValueFact(
-      uint32_t width, std::vector<uint32_t>&& data,
-      protobufs::UniformBufferElementDescriptor descriptor);
-
-  // Adds the fact that the integer constant defined by |data|, for integer type
-  // with width |width| and signedness |is_signed|, is equal to the data
-  // identified by |descriptor|.
-  void AddUniformIntValueFact(
-      uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
-      protobufs::UniformBufferElementDescriptor descriptor);
+  // Querying facts about uniform constants
 
   // Provides a sequence of all types for which at least one "constant ==
   // uniform element" fact is known.

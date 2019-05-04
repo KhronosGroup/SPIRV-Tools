@@ -17,6 +17,7 @@
 #include <cstring>
 #include <fstream>
 #include <functional>
+#include <string>
 
 #include "source/fuzz/fuzzer.h"
 #include "source/fuzz/protobufs/spirvfuzz.pb.h"
@@ -46,9 +47,10 @@ void PrintUsage(const char* program) {
   printf(
       R"(%s - Fuzzes an equivalent SPIR-V binary based on a given binary.
 
-USAGE: %s [options] <input>
+USAGE: %s [options] <input> <facts>
 
-The SPIR-V binary is read from <input>.
+The SPIR-V binary is read from <input>.  Facts about the SPIR-V binary are read
+from <facts>
 
 NOTE: The fuzzer is a work in progress.
 
@@ -80,7 +82,8 @@ void FuzzDiagnostic(spv_message_level_t level, const char* /*source*/,
   fprintf(stderr, "%s\n", message);
 }
 
-FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
+FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
+                      const char** in_facts_file,
                       std::unique_ptr<char>* replay_transformations_file,
                       spvtools::FuzzerOptions* fuzzer_options) {
   uint32_t positional_arg_index = 0;
@@ -113,12 +116,16 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
         // this if there was a compelling use case.
         PrintUsage(argv[0]);
         return {FUZZ_STOP, 0};
-      } else {
       }
     } else if (positional_arg_index == 0) {
-      // Input file name
-      assert(!*in_file);
-      *in_file = cur_arg;
+      // Binary input file name
+      assert(!*in_binary_file);
+      *in_binary_file = cur_arg;
+      positional_arg_index++;
+    } else if (positional_arg_index == 1) {
+      // Facts input file name
+      assert(!*in_facts_file);
+      *in_facts_file = cur_arg;
       positional_arg_index++;
     } else {
       spvtools::Error(FuzzDiagnostic, nullptr, {},
@@ -127,8 +134,13 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
     }
   }
 
-  if (!*in_file) {
+  if (!*in_binary_file) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "No input file specified");
+    return {FUZZ_STOP, 1};
+  }
+
+  if (!*in_facts_file) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {}, "No facts file specified");
     return {FUZZ_STOP, 1};
   }
 
@@ -144,13 +156,14 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
 const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_3;
 
 int main(int argc, const char** argv) {
-  const char* in_file = nullptr;
+  const char* in_binary_file = nullptr;
+  const char* in_facts_file = nullptr;
   std::unique_ptr<char> replay_transformations_file = nullptr;
 
   spv_target_env target_env = kDefaultEnvironment;
   spvtools::FuzzerOptions fuzzer_options;
 
-  FuzzStatus status = ParseFlags(argc, argv, &in_file,
+  FuzzStatus status = ParseFlags(argc, argv, &in_binary_file, &in_facts_file,
                                  &replay_transformations_file, &fuzzer_options);
 
   if (status.action == FUZZ_STOP) {
@@ -158,9 +171,24 @@ int main(int argc, const char** argv) {
   }
 
   std::vector<uint32_t> binary_in;
-  if (!ReadFile<uint32_t>(in_file, "rb", &binary_in)) {
+  if (!ReadFile<uint32_t>(in_binary_file, "rb", &binary_in)) {
     return 1;
   }
+
+  spvtools::fuzz::protobufs::FactSequence initial_facts;
+  {
+    std::ifstream facts_input(in_facts_file);
+    std::string facts_json_string((std::istreambuf_iterator<char>(facts_input)),
+                                  std::istreambuf_iterator<char>());
+    facts_input.close();
+    if (google::protobuf::util::Status::OK !=
+        google::protobuf::util::JsonStringToMessage(facts_json_string,
+                                                    &initial_facts)) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error reading facts data");
+      return 1;
+    }
+  }
+
   std::vector<uint32_t> binary_out;
   spvtools::fuzz::protobufs::TransformationSequence transformations_applied;
 
@@ -179,8 +207,8 @@ int main(int argc, const char** argv) {
     spvtools::fuzz::Replayer replayer(target_env);
     replayer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
     auto replay_result_status =
-        replayer.Run(binary_in, existing_transformation_sequence, &binary_out,
-                     &transformations_applied);
+        replayer.Run(binary_in, initial_facts, existing_transformation_sequence,
+                     &binary_out, &transformations_applied);
     if (replay_result_status !=
         spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete) {
       return 1;
@@ -188,16 +216,19 @@ int main(int argc, const char** argv) {
   } else {
     spvtools::fuzz::Fuzzer fuzzer(target_env);
     fuzzer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
-    auto fuzz_result_status = fuzzer.Run(
-        binary_in, &binary_out, &transformations_applied, fuzzer_options);
+    auto fuzz_result_status =
+        fuzzer.Run(binary_in, initial_facts, &binary_out,
+                   &transformations_applied, fuzzer_options);
     if (fuzz_result_status !=
         spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error running fuzzer");
       return 1;
     }
   }
 
   if (!WriteFile<uint32_t>("_spirvfuzzoutput.spv", "wb", binary_out.data(),
                            binary_out.size())) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error writing out binary");
     return 1;
   }
 
@@ -208,7 +239,9 @@ int main(int argc, const char** argv) {
       transformations_applied.SerializeToOstream(&transformations_file);
   transformations_file.close();
   if (!success) {
-    return 2;
+    spvtools::Error(FuzzDiagnostic, nullptr, {},
+                    "Error writing out transformations binary");
+    return 1;
   }
 
   std::string json_string;
@@ -217,7 +250,9 @@ int main(int argc, const char** argv) {
   auto json_generation_status = google::protobuf::util::MessageToJsonString(
       transformations_applied, &json_string, json_options);
   if (json_generation_status != google::protobuf::util::Status::OK) {
-    return 3;
+    spvtools::Error(FuzzDiagnostic, nullptr, {},
+                    "Error writing out transformations in JSON format");
+    return 1;
   }
 
   std::ofstream transformations_json_file("_spirvfuzzoutput.json");

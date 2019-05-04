@@ -29,6 +29,7 @@ class Fuzzer {
   enum FuzzerResultStatus {
     kComplete,
     kInitialBinaryInvalid,
+    kInitialFactsInvalid,
   };
 
   // Constructs a fuzzer from the given target environment.
@@ -48,10 +49,14 @@ class Fuzzer {
   void SetMessageConsumer(MessageConsumer consumer);
 
   // Transforms |binary_in| to |binary_out| by running a number of randomized
-  // fuzzer passes, controlled via |options|.  The transformation sequence that
-  // was applied is returned via |transformation_sequence_out|.
+  // fuzzer passes, controlled via |options|.  Initial facts about the input
+  // binary and the context in which it will execute are provided via
+  // |initial_facts|.  The transformation sequence that was applied is returned
+  // via |transformation_sequence_out|.
   FuzzerResultStatus Run(
-      const std::vector<uint32_t>& binary_in, std::vector<uint32_t>* binary_out,
+      const std::vector<uint32_t>& binary_in,
+      const protobufs::FactSequence& initial_facts,
+      std::vector<uint32_t>* binary_out,
       protobufs::TransformationSequence* transformation_sequence_out,
       spv_const_fuzzer_options options) const;
 

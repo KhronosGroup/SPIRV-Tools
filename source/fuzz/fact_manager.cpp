@@ -1,3 +1,5 @@
+#include <utility>
+
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +16,7 @@
 
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -24,6 +27,9 @@ struct FactManager::UniformConstantFacts {
 
   const opt::analysis::ScalarConstant* FindOrRegisterConstant(
       const opt::analysis::ScalarConstant* constant);
+
+  bool AddFact(const protobufs::ConstantUniformFact& fact,
+               opt::IRContext* context);
 
   void AddUniformConstantFact(
       const opt::analysis::ScalarConstant* constant,
@@ -192,24 +198,119 @@ FactManager::UniformConstantFacts::GetTypesForWhichUniformValuesAreKnown()
   return result;
 }
 
+bool FactManager::UniformConstantFacts::AddFact(
+    const protobufs::ConstantUniformFact& fact, opt::IRContext* context) {
+  auto should_be_uniform_variable = context->get_def_use_mgr()->GetDef(
+      fact.uniform_buffer_element_descriptor().uniform_variable_id());
+  if (!should_be_uniform_variable) {
+    return false;
+  }
+  if (SpvOpVariable != should_be_uniform_variable->opcode()) {
+    return false;
+  }
+  if (SpvStorageClassUniform !=
+      should_be_uniform_variable->GetSingleWordInOperand(0)) {
+    return false;
+  }
+  auto should_be_uniform_pointer_type =
+      context->get_type_mgr()->GetType(should_be_uniform_variable->type_id());
+  if (!should_be_uniform_pointer_type->AsPointer()) {
+    return false;
+  }
+  if (should_be_uniform_pointer_type->AsPointer()->storage_class() !=
+      SpvStorageClassUniform) {
+    return false;
+  }
+  auto should_be_uniform_pointer_instruction =
+      context->get_def_use_mgr()->GetDef(should_be_uniform_variable->type_id());
+  auto element_type =
+      should_be_uniform_pointer_instruction->GetSingleWordInOperand(1);
+
+  for (auto index : fact.uniform_buffer_element_descriptor().index()) {
+    auto should_be_composite_type =
+        context->get_def_use_mgr()->GetDef(element_type);
+    if (SpvOpTypeStruct == should_be_composite_type->opcode()) {
+      if (index >= should_be_composite_type->NumInOperands()) {
+        return false;
+      }
+      element_type = should_be_composite_type->GetSingleWordInOperand(index);
+    } else if (SpvOpTypeArray == should_be_composite_type->opcode()) {
+      auto array_length_constant =
+          context->get_constant_mgr()
+              ->GetConstantFromInst(context->get_def_use_mgr()->GetDef(
+                  should_be_composite_type->GetSingleWordInOperand(1)))
+              ->AsIntConstant();
+      if (array_length_constant->words().size() != 1) {
+        return false;
+      }
+      auto array_length = array_length_constant->GetU32();
+      if (index >= array_length) {
+        return false;
+      }
+      element_type = should_be_composite_type->GetSingleWordInOperand(0);
+    } else if (SpvOpTypeVector == should_be_composite_type->opcode()) {
+      auto vector_length = should_be_composite_type->GetSingleWordInOperand(1);
+      if (index >= vector_length) {
+        return false;
+      }
+      element_type = should_be_composite_type->GetSingleWordInOperand(0);
+    } else {
+      return false;
+    }
+  }
+  auto final_element_type = context->get_type_mgr()->GetType(element_type);
+  if (!(final_element_type->AsFloat() || final_element_type->AsInteger())) {
+    return false;
+  }
+  auto width = final_element_type->AsFloat()
+                   ? final_element_type->AsFloat()->width()
+                   : final_element_type->AsInteger()->width();
+  auto required_words = (width + 32 - 1) / 32;
+  if ((uint32_t)fact.constant_word().size() != required_words) {
+    return false;
+  }
+  std::vector<uint32_t> data;
+  for (auto word : fact.constant_word()) {
+    data.push_back(word);
+  }
+  if (final_element_type->AsFloat()) {
+    AddUniformFloatValueFact(final_element_type->AsFloat()->width(),
+                             std::move(data),
+                             fact.uniform_buffer_element_descriptor());
+  } else {
+    AddUniformIntValueFact(final_element_type->AsInteger()->width(),
+                           final_element_type->AsInteger()->IsSigned(),
+                           std::move(data),
+                           fact.uniform_buffer_element_descriptor());
+  }
+  return true;
+}
+
 FactManager::FactManager() {
   uniform_constant_facts_ = MakeUnique<UniformConstantFacts>();
 }
 
 FactManager::~FactManager() = default;
 
-void FactManager::AddUniformFloatValueFact(
-    uint32_t width, std::vector<uint32_t>&& data,
-    protobufs::UniformBufferElementDescriptor descriptor) {
-  uniform_constant_facts_->AddUniformFloatValueFact(width, std::move(data),
-                                                    descriptor);
+bool FactManager::AddFacts(const protobufs::FactSequence& initial_facts,
+                           opt::IRContext* context) {
+  for (auto& fact : initial_facts.fact()) {
+    if (!AddFact(fact, context)) {
+      return false;
+    }
+  }
+  return true;
 }
 
-void FactManager::AddUniformIntValueFact(
-    uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
-    protobufs::UniformBufferElementDescriptor descriptor) {
-  uniform_constant_facts_->AddUniformIntValueFact(width, is_signed,
-                                                  std::move(data), descriptor);
+bool FactManager::AddFact(const spvtools::fuzz::protobufs::Fact& fact,
+                          spvtools::opt::IRContext* context) {
+  assert(fact.fact_case() == protobufs::Fact::kConstantUniformFact &&
+         "Right now this is the only fact.");
+  if (!uniform_constant_facts_->AddFact(fact.constant_uniform_fact(),
+                                        context)) {
+    return false;
+  }
+  return true;
 }
 
 std::vector<const opt::analysis::ScalarConstant*>
