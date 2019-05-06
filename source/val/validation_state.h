@@ -664,6 +664,21 @@ class ValidationState_t {
   spv_result_t CooperativeMatrixShapesMatch(const Instruction* inst,
                                             uint32_t m1, uint32_t m2);
 
+  // Returns true if |lhs| and |rhs| logically match and, if the decorations of
+  // |rhs| are a subset of |lhs|.
+  //
+  // 1. Must both be either OpTypeArray or OpTypeStruct
+  // 2. If OpTypeArray, then
+  //  * Length must be the same
+  //  * Element type must match or logically match
+  // 3. If OpTypeStruct, then
+  //  * Both have same number of elements
+  //  * Element N for both structs must match or logically match
+  //
+  // If |check_decorations| is false, then the decorations are not checked.
+  bool LogicallyMatch(const Instruction* lhs, const Instruction* rhs,
+                      bool check_decorations);
+
  private:
   ValidationState_t(const ValidationState_t&);
 

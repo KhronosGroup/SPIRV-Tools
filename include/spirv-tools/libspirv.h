@@ -494,6 +494,20 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxStoreStruct(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxLogicalPointer(
     spv_validator_options options, bool val);
 
+// Records whether or not the validator should relax the rules because it is
+// expected that the optimizations will make the code legal.
+//
+// When relaxed, it will allow the following:
+// 1) It will allow relaxed logical pointers.  Setting this option will also
+//    set that option.
+// 2) Pointers that are pass as parameters to function calls do not have to
+//    match the storage class of the formal parameter.
+// 3) Pointers that are actaul parameters on function calls do not have to point
+//    to the same type pointed as the formal parameter.  The types just need to
+//    logically match.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetBeforeHlslLegalization(
+    spv_validator_options options, bool val);
+
 // Records whether the validator should use "relaxed" block layout rules.
 // Relaxed layout rules are described by Vulkan extension
 // VK_KHR_relaxed_block_layout, and they affect uniform blocks, storage blocks,

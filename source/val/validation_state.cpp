@@ -1135,5 +1135,77 @@ std::string ValidationState_t::Disassemble(const uint32_t* words,
                                     words_, num_words_, disassembly_options);
 }
 
+bool ValidationState_t::LogicallyMatch(const Instruction* lhs,
+                                       const Instruction* rhs,
+                                       bool check_decorations) {
+  if (lhs->opcode() != rhs->opcode()) {
+    return false;
+  }
+
+  if (check_decorations) {
+    const auto& dec_a = id_decorations(lhs->id());
+    const auto& dec_b = id_decorations(rhs->id());
+
+    for (const auto& dec : dec_b) {
+      if (std::find(dec_a.begin(), dec_a.end(), dec) == dec_a.end()) {
+        return false;
+      }
+    }
+  }
+
+  if (lhs->opcode() == SpvOpTypeArray) {
+    // Size operands must match.
+    if (lhs->GetOperandAs<uint32_t>(2u) != rhs->GetOperandAs<uint32_t>(2u)) {
+      return false;
+    }
+
+    // Elements must match or logically match.
+    const auto lhs_ele_id = lhs->GetOperandAs<uint32_t>(1u);
+    const auto rhs_ele_id = rhs->GetOperandAs<uint32_t>(1u);
+    if (lhs_ele_id == rhs_ele_id) {
+      return true;
+    }
+
+    const auto lhs_ele = FindDef(lhs_ele_id);
+    const auto rhs_ele = FindDef(rhs_ele_id);
+    if (!lhs_ele || !rhs_ele) {
+      return false;
+    }
+    return LogicallyMatch(lhs_ele, rhs_ele, check_decorations);
+  } else if (lhs->opcode() == SpvOpTypeStruct) {
+    // Number of elements must match.
+    if (lhs->operands().size() != rhs->operands().size()) {
+      return false;
+    }
+
+    for (size_t i = 1u; i < lhs->operands().size(); ++i) {
+      const auto lhs_ele_id = lhs->GetOperandAs<uint32_t>(i);
+      const auto rhs_ele_id = rhs->GetOperandAs<uint32_t>(i);
+      // Elements must match or logically match.
+      if (lhs_ele_id == rhs_ele_id) {
+        continue;
+      }
+
+      const auto lhs_ele = FindDef(lhs_ele_id);
+      const auto rhs_ele = FindDef(rhs_ele_id);
+      if (!lhs_ele || !rhs_ele) {
+        return false;
+      }
+
+      if (!LogicallyMatch(lhs_ele, rhs_ele, check_decorations)) {
+        return false;
+      }
+    }
+
+    // All checks passed.
+    return true;
+  }
+
+  // No other opcodes are acceptable at this point. Arrays and structs are
+  // caught above and if they're elements are not arrays or structs they are
+  // required to match exactly.
+  return false;
+}
+
 }  // namespace val
 }  // namespace spvtools
