@@ -604,7 +604,7 @@ TEST_F(ValidateLogicals, OpSelectWrongTypeIdV14) {
 %val1 = OpSelect %void %true %u32_0 %u32_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body).c_str(), SPV_ENV_UNIVERSAL_1_4);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
@@ -727,12 +727,24 @@ TEST_F(ValidateLogicals, OpSelectArrayV13Bad) {
       HasSubstr("Expected scalar or vector type as Result Type: Select"));
 }
 
-TEST_F(ValidateLogicals, OpSelectArrayV14Good) {
+TEST_F(ValidateLogicals, OpSelectArrayV13TargetV14Bad) {
   const std::string body = R"(
 %val1 = OpSelect %arr_u32_2 %true %nul_arr_u32_2 %arr_u32_2_1_2
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected scalar or vector type as Result Type"));
+}
+
+TEST_F(ValidateLogicals, OpSelectArrayV14Good) {
+  const std::string body = R"(
+%val1 = OpSelect %arr_u32_2 %true %nul_arr_u32_2 %arr_u32_2_1_2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str(), SPV_ENV_UNIVERSAL_1_4);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
@@ -750,12 +762,24 @@ TEST_F(ValidateLogicals, OpSelectStructV13Bad) {
       HasSubstr("Expected scalar or vector type as Result Type: Select"));
 }
 
-TEST_F(ValidateLogicals, OpSelectStructV14Good) {
+TEST_F(ValidateLogicals, OpSelectStructV13TargetV14Bad) {
   const std::string body = R"(
 %val1 = OpSelect %st_u32_u32 %true %nul_st_u32_u32 %st_u32_u32_1_2
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected scalar or vector type as Result Type"));
+}
+
+TEST_F(ValidateLogicals, OpSelectStructV14Good) {
+  const std::string body = R"(
+%val1 = OpSelect %st_u32_u32 %true %nul_st_u32_u32 %st_u32_u32_1_2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str(), SPV_ENV_UNIVERSAL_1_4);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
@@ -773,12 +797,24 @@ TEST_F(ValidateLogicals, OpSelectMatrixV13Bad) {
       HasSubstr("Expected scalar or vector type as Result Type: Select"));
 }
 
-TEST_F(ValidateLogicals, OpSelectMatrixV14Good) {
+TEST_F(ValidateLogicals, OpSelectMatrixV13TargetV14Bad) {
   const std::string body = R"(
 %val1 = OpSelect %mat_f32_2_2 %true %nul_mat_f32_2_2 %mat_f32_2_2_01_12
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected scalar or vector type as Result Type"));
+}
+
+TEST_F(ValidateLogicals, OpSelectMatrixV14Good) {
+  const std::string body = R"(
+%val1 = OpSelect %mat_f32_2_2 %true %nul_mat_f32_2_2 %mat_f32_2_2_01_12
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str(), SPV_ENV_UNIVERSAL_1_4);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }

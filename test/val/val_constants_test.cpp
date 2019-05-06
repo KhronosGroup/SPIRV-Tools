@@ -348,6 +348,25 @@ INSTANTIATE_TEST_SUITE_P(
          true, ""},
     }));
 
+TEST_F(ValidateConstant, SpecConstantUConvert1p3Binary1p4EnvBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%const = OpSpecConstantOp %int UConvert %int0
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Prior to SPIR-V 1.4, specialization constant operation UConvert "
+          "requires Kernel capability or extension SPV_AMD_gpu_shader_int16"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

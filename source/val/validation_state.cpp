@@ -147,12 +147,23 @@ spv_result_t CountInstructions(void* user_data,
   return SPV_SUCCESS;
 }
 
+spv_result_t setHeader(void* user_data, spv_endianness_t, uint32_t,
+                       uint32_t version, uint32_t generator, uint32_t id_bound,
+                       uint32_t) {
+  ValidationState_t& vstate =
+      *(reinterpret_cast<ValidationState_t*>(user_data));
+  vstate.setIdBound(id_bound);
+  vstate.setGenerator(generator);
+  vstate.setVersion(version);
+
+  return SPV_SUCCESS;
+}
+
 // Add features based on SPIR-V core version number.
 void UpdateFeaturesBasedOnSpirvVersion(ValidationState_t::Feature* features,
-                                       spv_target_env env) {
+                                       uint32_t version) {
   assert(features);
-  uint32_t version_word = spvVersionForTargetEnv(env);
-  if (version_word >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+  if (version >= SPV_SPIRV_VERSION_WORD(1, 4)) {
     features->select_between_composites = true;
     features->copy_memory_permits_two_memory_accesses = true;
     features->uconvert_spec_constant_op = true;
@@ -194,8 +205,6 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
 
   const auto env = context_->target_env;
 
-  UpdateFeaturesBasedOnSpirvVersion(&features_, env);
-
   if (spvIsVulkanEnv(env)) {
     // Vulkan 1.1 includes VK_KHR_relaxed_block_layout in core.
     if (env != SPV_ENV_VULKAN_1_0) {
@@ -221,11 +230,12 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     spv_context_t hijacked_context = *ctx;
     hijacked_context.consumer = [](spv_message_level_t, const char*,
                                    const spv_position_t&, const char*) {};
-    spvBinaryParse(&hijacked_context, this, words, num_words,
-                   /* parsed_header = */ nullptr, CountInstructions,
+    spvBinaryParse(&hijacked_context, this, words, num_words, setHeader,
+                   CountInstructions,
                    /* diagnostic = */ nullptr);
     preallocateStorage();
   }
+  UpdateFeaturesBasedOnSpirvVersion(&features_, version_);
 
   friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
       context_, words_, num_words_);

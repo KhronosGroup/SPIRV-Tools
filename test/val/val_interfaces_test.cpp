@@ -327,6 +327,54 @@ OpFunctionEnd
       HasSubstr("OpEntryPoint interfaces should only list global variables"));
 }
 
+TEST_F(ValidateInterfacesTest, ModuleSPV1p3ValidateSPV1p4_NotAllUsedGlobals) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint3 = OpTypeVector %uint 3
+%struct = OpTypeStruct %uint3
+%ptr_struct = OpTypePointer StorageBuffer %struct
+%var = OpVariable %ptr_struct StorageBuffer
+%func_ty = OpTypeFunction %void
+%main = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %struct %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateInterfacesTest, ModuleSPV1p3ValidateSPV1p4_DuplicateInterface) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %gid %gid
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %gid BuiltIn GlobalInvocationId
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%ptr_input_int3 = OpTypePointer Input %int3
+%gid = OpVariable %ptr_input_int3 Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

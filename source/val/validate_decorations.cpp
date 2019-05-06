@@ -695,8 +695,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
         }
         const SpvStorageClass storage_class =
             var_instr->GetOperandAs<SpvStorageClass>(2);
-        if (spvVersionForTargetEnv(vstate.context()->target_env) >=
-            SPV_SPIRV_VERSION_WORD(1, 4)) {
+        if (vstate.version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
           // Starting in 1.4, OpEntryPoint must list all global variables
           // it statically uses and those interfaces must be unique.
           if (storage_class == SpvStorageClassFunction) {
@@ -1351,8 +1350,7 @@ spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
     assert(decoration.params().size() == 1 &&
            "Grammar ensures UniformId has one parameter");
 
-    if (spvVersionForTargetEnv(vstate.context()->target_env) <
-        SPV_SPIRV_VERSION_WORD(1, 4)) {
+    if (vstate.version() < SPV_SPIRV_VERSION_WORD(1, 4)) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
              << dec_name << " decoration requires SPIR-V 1.4 or later";
     }

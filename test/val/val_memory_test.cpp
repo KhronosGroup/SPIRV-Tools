@@ -1397,6 +1397,39 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
+TEST_F(ValidateMemory, VulkanMemoryModelCopyMemoryTwoAccessAvVisBadBinaryV13) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemory %var1 %var2
+  MakePointerAvailableKHR|NonPrivatePointerKHR %device
+  MakePointerVisibleKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "with two memory access operands requires SPIR-V 1.4 or later"));
+}
+
 TEST_F(ValidateMemory, VulkanMemoryModelCopyMemoryTwoAccessAvVisGood) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -2032,7 +2065,8 @@ OpStore %111 %115
 %116 = OpLoad %71 %111
 %121 = OpLoad %6 %60
 %122 = OpAccessChain %82 %120 %79 %121
-OpCooperativeMatrixStoreNV %122 %116 %84 %86 )" + storeMemoryAccess + R"( %81
+OpCooperativeMatrixStoreNV %122 %116 %84 %86 )" +
+                  storeMemoryAccess + R"( %81
 OpReturn
 OpFunctionEnd
 )";

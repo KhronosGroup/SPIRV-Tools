@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/val/validate.h"
-
 #include <algorithm>
 #include <vector>
 
@@ -22,6 +20,7 @@
 #include "source/spirv_target_env.h"
 #include "source/val/function.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -106,8 +105,7 @@ spv_result_t check_interface_variable(ValidationState_t& _,
 }  // namespace
 
 spv_result_t ValidateInterfaces(ValidationState_t& _) {
-  bool is_spv_1_4 = spvVersionForTargetEnv(_.context()->target_env) >=
-                    SPV_SPIRV_VERSION_WORD(1, 4);
+  bool is_spv_1_4 = _.version() >= SPV_SPIRV_VERSION_WORD(1, 4);
   for (auto& inst : _.ordered_instructions()) {
     if (is_interface_variable(&inst, is_spv_1_4)) {
       if (auto error = check_interface_variable(_, &inst)) {
