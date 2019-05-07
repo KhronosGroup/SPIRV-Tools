@@ -6400,8 +6400,8 @@ OpExecutionMode %main LocalSize 1 1 1
 OpName %main "main"
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
-%ptr_private_int = OpTypePointer Input %int
-%dead = OpVariable %ptr_private_int Input
+%ptr_input_int = OpTypePointer Input %int
+%dead = OpVariable %ptr_input_int Input
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -6424,8 +6424,8 @@ OpExecutionMode %main LocalSize 1 1 1
 OpName %main "main"
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
-%ptr_private_int = OpTypePointer Input %int
-%dead = OpVariable %ptr_private_int Input
+%ptr_input_int = OpTypePointer Input %int
+%dead = OpVariable %ptr_input_int Input
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
