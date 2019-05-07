@@ -372,8 +372,9 @@ TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessMixedGood) {
       "OpCopyMemorySized %1 %2 %3 "
       "Volatile|Aligned|Nontemporal|MakePointerAvailableKHR|"
       "MakePointerVisibleKHR|NonPrivatePointerKHR 16 %4 %5\n";
-  EXPECT_THAT(CompiledInstructions(spirv),
-              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 63, 16, 4, 5})));
+  EXPECT_THAT(
+      CompiledInstructions(spirv),
+      Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 63, 16, 4, 5})));
   std::string disassembly =
       EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
   EXPECT_THAT(disassembly, Eq(spirv));
@@ -403,13 +404,13 @@ TEST_F(MemoryRoundTripTest, OpCopyMemorySizedTwoAccessMixedV14Good) {
       "OpCopyMemorySized %1 %2 %3 Volatile|Nontemporal|"
       "MakePointerVisibleKHR %4 "
       "Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 16 %5\n";
-  EXPECT_THAT(CompiledInstructions(spirv),
-              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 21, 4, 42, 16, 5})));
+  EXPECT_THAT(
+      CompiledInstructions(spirv),
+      Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 21, 4, 42, 16, 5})));
   std::string disassembly =
       EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
   EXPECT_THAT(disassembly, Eq(spirv));
 }
-
 
 // TODO(dneto): OpVariable with initializers
 // TODO(dneto): OpImageTexelPointer
