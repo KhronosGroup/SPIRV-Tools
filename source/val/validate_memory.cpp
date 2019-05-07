@@ -861,13 +861,11 @@ spv_result_t ValidateCopyMemoryMemoryAccess(ValidationState_t& _,
         if (auto error = CheckMemoryAccess(_, inst, second_access_index))
           return error;
 
-        // In the two-access form:
+        // In the two-access form in SPIR-V 1.4 and later:
         //  - the first is the target (write) access and it can't have
         //  make-visible.
         //  - the second is the source (read) access and it can't have
         //  make-available.
-        // This is a proposed rule. See
-        // https://gitlab.khronos.org/spirv/SPIR-V/issues/413
         if (first_access & SpvMemoryAccessMakePointerVisibleKHRMask) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Target memory access must not include "
