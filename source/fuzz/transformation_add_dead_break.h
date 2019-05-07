@@ -22,24 +22,27 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// - |from_block| must be the id of a block a in the given module.
-// - |to_block| must be the id of a block b in the given module.
-// - if |break_condition_value| holds (does not hold) then OpConstantTrue
-//   (OpConstantFalse) must be present in the module
-// - |phi_ids| must be a list of ids that are all available at |from_block|
+// - |message.from_block| must be the id of a block a in the given module.
+// - |message.to_block| must be the id of a block b in the given module.
+// - if |message.break_condition_value| holds (does not hold) then
+//   OpConstantTrue (OpConstantFalse) must be present in the module
+// - |message.phi_ids| must be a list of ids that are all available at
+//   |message.from_block|
 // - a and b must be in the same function.
 // - b must be a merge block.
 // - a must end with an unconditional branch to some block c.
 // - replacing this branch with a conditional branch to b or c, with
-//   |bool_id| as the condition, and the ids in |phi_ids| used to extend
+//   the boolean constant associated with |message.break_condition_value| as
+//   the condition, and the ids in |message.phi_ids| used to extend
 //   any OpPhi instructions at b as a result of the edge from a, must
 //   maintain validity of the module.
 bool IsApplicable(const protobufs::TransformationAddDeadBreak& message,
                   opt::IRContext* context, const FactManager& fact_manager);
 
 // Replaces the terminator of a with a conditional branch to b or c.
-// |bool_id| is used as the condition, and the order of b and c is
-// arranged such that control is guaranteed to jump to c.
+// The boolean constant associated with |message.break_condition_value| is used
+// as the condition, and the order of b and c is arranged such that control is
+// guaranteed to jump to c.
 void Apply(const protobufs::TransformationAddDeadBreak& message,
            opt::IRContext* context, FactManager* fact_manager);
 
