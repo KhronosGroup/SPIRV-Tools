@@ -105,12 +105,11 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
 spv_result_t OperandVersionExtensionCheck(
     ValidationState_t& _, const Instruction* inst, size_t which_operand,
     const spv_operand_desc_t& operand_desc, uint32_t word) {
-  const uint32_t target_version =
-      spvVersionForTargetEnv(_.grammar().target_env());
+  const uint32_t module_version = _.version();
   const uint32_t operand_min_version = operand_desc.minVersion;
   const bool reserved = operand_min_version == 0xffffffffu;
   const bool version_satisfied =
-      !reserved && (operand_min_version <= target_version);
+      !reserved && (operand_min_version <= module_version);
 
   if (version_satisfied) {
     return SPV_SUCCESS;
@@ -303,7 +302,7 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
     return SPV_SUCCESS;
   }
 
-  const auto target_version = spvVersionForTargetEnv(_.grammar().target_env());
+  const auto module_version = _.version();
 
   ExtensionSet exts(inst_desc->numExtensions, inst_desc->extensions);
   if (exts.IsEmpty()) {
@@ -314,7 +313,7 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
              << spvOpcodeString(opcode) << " is reserved for future use.";
     }
 
-    if (target_version < min_version) {
+    if (module_version < min_version) {
       return _.diag(SPV_ERROR_WRONG_VERSION, inst)
              << spvOpcodeString(opcode) << " requires "
              << spvTargetEnvDescription(
@@ -331,7 +330,7 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
              << ExtensionSetToString(exts);
     }
 
-    if (target_version < min_version) {
+    if (module_version < min_version) {
       return _.diag(SPV_ERROR_WRONG_VERSION, inst)
              << spvOpcodeString(opcode) << " requires SPIR-V version "
              << SPV_SPIRV_VERSION_MAJOR_PART(min_version) << "."

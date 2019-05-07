@@ -4789,8 +4789,10 @@ TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV13BadTargetV14) {
   const std::string spirv = ShaderWithUniformLikeDecoration(
       "OpDecorateId %int0 UniformId %subgroupscope");
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("requires SPIR-V 1.4 or later"));
+  EXPECT_EQ(SPV_ERROR_WRONG_VERSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires SPIR-V version 1.4 or later"));
 }
 
 TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV14Good) {
@@ -4816,7 +4818,7 @@ TEST_F(ValidateDecorations, UniformIdDecorationTargetsTypeBad) {
   const std::string spirv = ShaderWithUniformLikeDecoration(
       "OpDecorateId %fn UniformId %subgroupscope");
 
-  CompileSuccessfully(spirv);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("UniformId decoration applied to a non-object"));
@@ -4838,7 +4840,7 @@ TEST_F(ValidateDecorations, UniformIdDecorationTargetsVoidValueBad) {
   const std::string spirv = ShaderWithUniformLikeDecoration(
       "OpDecorateId %call UniformId %subgroupscope");
 
-  CompileSuccessfully(spirv);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4))
       << spirv;
   EXPECT_THAT(
@@ -4889,7 +4891,7 @@ TEST_F(ValidateDecorations, UniformDecorationWithWrongInstructionBad) {
   const std::string spirv =
       ShaderWithUniformLikeDecoration("OpDecorateId %int0 Uniform");
 
-  CompileSuccessfully(spirv);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_2));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Decorations that don't take ID parameters may not be "
@@ -4901,7 +4903,7 @@ TEST_F(ValidateDecorations, UniformIdDecorationWithWrongInstructionBad) {
   const std::string spirv = ShaderWithUniformLikeDecoration(
       "OpDecorate %int0 UniformId %subgroupscope");
 
-  CompileSuccessfully(spirv);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5207,7 +5209,7 @@ TEST_F(ValidateDecorations, NoSignedWrapOkInSPV14Good) {
   std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
                                         "%val = OpIAdd %int %zero %zero", "");
 
-  CompileSuccessfully(spirv);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
@@ -5349,7 +5351,7 @@ TEST_F(ValidateDecorations, NoUnsignedWrapOkInSPV14Good) {
   std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
                                         "%val = OpIAdd %int %zero %zero", "");
 
-  CompileSuccessfully(spirv);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }

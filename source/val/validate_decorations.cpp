@@ -1350,11 +1350,6 @@ spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
     assert(decoration.params().size() == 1 &&
            "Grammar ensures UniformId has one parameter");
 
-    if (vstate.version() < SPV_SPIRV_VERSION_WORD(1, 4)) {
-      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << dec_name << " decoration requires SPIR-V 1.4 or later";
-    }
-
     // The scope id is an execution scope.
     if (auto error =
             ValidateExecutionScope(vstate, &inst, decoration.params()[0]))
