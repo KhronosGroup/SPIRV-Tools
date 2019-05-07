@@ -74,6 +74,7 @@ void FuzzerPassAddDeadBreaks::Apply(
       continue;
     }
     if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
+      transformation::Apply(message, ir_context, fact_manager);
       *transformations->add_transformation()->mutable_add_dead_break() =
           message;
     }
