@@ -19,6 +19,7 @@
 
 #include "gmock/gmock.h"
 #include "source/val/decoration.h"
+#include "test/test_fixture.h"
 #include "test/unit_spirv.h"
 #include "test/val/val_code_generator.h"
 #include "test/val/val_fixtures.h"
@@ -4708,7 +4709,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-// Uniform decoration
+// Uniform and UniformId decorations
 
 TEST_F(ValidateDecorations, UniformDecorationGood) {
   const std::string spirv = R"(
@@ -4737,55 +4738,178 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
-TEST_F(ValidateDecorations, UniformDecorationTargetsTypeBad) {
-  const std::string spirv = R"(
+// Returns SPIR-V assembly for a shader that uses a given decoration
+// instruction.
+std::string ShaderWithUniformLikeDecoration(const std::string& inst) {
+  return std::string(R"(
 OpCapability Shader
 OpMemoryModel Logical Simple
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
-OpDecorate %fn Uniform
-%void = OpTypeVoid
-%fn = OpTypeFunction %void
-%main = OpFunction %void None %fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Uniform decoration applied to a non-object"));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("%2 = OpTypeFunction %void"));
-}
-
-TEST_F(ValidateDecorations, UniformDecorationTargetsVoidValueBad) {
-  const std::string spirv = R"(
-OpCapability Shader
-OpMemoryModel Logical Simple
-OpEntryPoint GLCompute %main "main"
-OpExecutionMode %main LocalSize 1 1 1
+OpName %subgroupscope "subgroupscope"
 OpName %call "call"
 OpName %myfunc "myfunc"
-OpDecorate %call Uniform
+OpName %int0 "int0"
+OpName %float0 "float0"
+OpName %fn "fn"
+)") + inst +
+         R"(
 %void = OpTypeVoid
-%fnty = OpTypeFunction %void
-%myfunc = OpFunction %void None %fnty
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 1
+%int0 = OpConstantNull %int
+%int_99 = OpConstant %int 99
+%subgroupscope = OpConstant %int 3
+%float0 = OpConstantNull %float
+%fn = OpTypeFunction %void
+%myfunc = OpFunction %void None %fn
 %myfuncentry = OpLabel
 OpReturn
 OpFunctionEnd
-%main = OpFunction %void None %fnty
+%main = OpFunction %void None %fn
 %entry = OpLabel
 %call = OpFunctionCall %void %myfunc
 OpReturn
 OpFunctionEnd
 )";
+}
+
+TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV13Bad) {
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorateId %int0 UniformId %subgroupscope");
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_WRONG_VERSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires SPIR-V version 1.4 or later\n"
+                        "  OpDecorateId %int0 UniformId %subgroupscope"));
+}
+
+TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV13BadTargetV14) {
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorateId %int0 UniformId %subgroupscope");
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_WRONG_VERSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires SPIR-V version 1.4 or later"));
+}
+
+TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV14Good) {
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorateId %int0 UniformId %subgroupscope");
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationTargetsTypeBad) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorate %fn Uniform");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Uniform decoration applied to a non-object"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("%fn = OpTypeFunction %void"));
+}
+
+TEST_F(ValidateDecorations, UniformIdDecorationTargetsTypeBad) {
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorateId %fn UniformId %subgroupscope");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("UniformId decoration applied to a non-object"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("%fn = OpTypeFunction %void"));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationTargetsVoidValueBad) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorate %call Uniform");
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Uniform decoration applied to a value with void type\n"
                         "  %call = OpFunctionCall %void %myfunc"));
+}
+
+TEST_F(ValidateDecorations, UniformIdDecorationTargetsVoidValueBad) {
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorateId %call UniformId %subgroupscope");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4))
+      << spirv;
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("UniformId decoration applied to a value with void type\n"
+                "  %call = OpFunctionCall %void %myfunc"));
+}
+
+TEST_F(ValidateDecorations,
+       UniformDecorationWithScopeIdV14IdIsFloatValueIsBad) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %float0");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ConstantNull: expected Execution Scope to be a 32-bit int"));
+}
+
+TEST_F(ValidateDecorations,
+       UniformDecorationWithScopeIdV14IdIsInvalidIntValueBad) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %int_99");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Invalid scope value:\n %int_99 = OpConstant %int 99\n"));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationWithScopeIdV14VulkanEnv) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %int0");
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1_SPIRV_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(": in Vulkan environment Execution Scope is limited to "
+                        "Workgroup and Subgroup"));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationWithWrongInstructionBad) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 Uniform");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Decorations that don't take ID parameters may not be "
+                        "used with OpDecorateId\n"
+                        "  OpDecorateId %int0 Uniform"));
+}
+
+TEST_F(ValidateDecorations, UniformIdDecorationWithWrongInstructionBad) {
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorate %int0 UniformId %subgroupscope");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Decorations taking ID parameters may not be used with OpDecorateId\n"
+          "  OpDecorate %int0 UniformId %subgroupscope"));
 }
 
 TEST_F(ValidateDecorations, MultipleOffsetDecorationsOnSameID) {
@@ -5070,6 +5194,26 @@ TEST_F(ValidateDecorations, NoSignedWrapRequiresExtensionBad) {
                         "SPV_KHR_no_integer_wrap_decoration"));
 }
 
+TEST_F(ValidateDecorations, NoSignedWrapRequiresExtensionV13Bad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these extensions: "
+                        "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapOkInSPV14Good) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
 TEST_F(ValidateDecorations, NoSignedWrapIAddGood) {
   std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
                                         "%val = OpIAdd %int %zero %zero");
@@ -5190,6 +5334,26 @@ TEST_F(ValidateDecorations, NoUnsignedWrapRequiresExtensionBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("requires one of these extensions: "
                         "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapRequiresExtensionV13Bad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these extensions: "
+                        "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapOkInSPV14Good) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 TEST_F(ValidateDecorations, NoUnsignedWrapIAddGood) {
@@ -5987,11 +6151,53 @@ TEST_F(ValidateDecorations, NonWritableVarWorkgroupBad) {
                         "buffer\n  %var_wg"));
 }
 
+TEST_F(ValidateDecorations, NonWritableVarWorkgroupV14Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_wg");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, storage "
+                        "buffer, or variable in Private or Function storage "
+                        "class\n  %var_wg"));
+}
+
 TEST_F(ValidateDecorations, NonWritableVarPrivateBad) {
   std::string spirv = ShaderWithNonWritableTarget("%var_priv");
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, or storage "
+                        "buffer\n  %var_priv"));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarPrivateV13Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_priv");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, or storage "
+                        "buffer\n  %var_priv"));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarPrivateV14Good) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_priv");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarPrivateV13TargetV14Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_priv");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Target of NonWritable decoration is invalid: must "
                         "point to a storage image, uniform block, or storage "
@@ -6083,6 +6289,36 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_ID,
                 "is not valid for the WebGPU execution environment."))));
+
+TEST_F(ValidateDecorations, NonWritableVarFunctionV13Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_func");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, or storage "
+                        "buffer\n  %var_func"));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarFunctionV14Good) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_func");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarFunctionV13TargetV14Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_func");
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, or storage "
+                        "buffer\n  %var_func"));
+}
 
 }  // namespace
 }  // namespace val

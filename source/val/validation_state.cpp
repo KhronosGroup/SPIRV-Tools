@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "source/opcode.h"
+#include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
@@ -146,6 +147,30 @@ spv_result_t CountInstructions(void* user_data,
   return SPV_SUCCESS;
 }
 
+spv_result_t setHeader(void* user_data, spv_endianness_t, uint32_t,
+                       uint32_t version, uint32_t generator, uint32_t id_bound,
+                       uint32_t) {
+  ValidationState_t& vstate =
+      *(reinterpret_cast<ValidationState_t*>(user_data));
+  vstate.setIdBound(id_bound);
+  vstate.setGenerator(generator);
+  vstate.setVersion(version);
+
+  return SPV_SUCCESS;
+}
+
+// Add features based on SPIR-V core version number.
+void UpdateFeaturesBasedOnSpirvVersion(ValidationState_t::Feature* features,
+                                       uint32_t version) {
+  assert(features);
+  if (version >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+    features->select_between_composites = true;
+    features->copy_memory_permits_two_memory_accesses = true;
+    features->uconvert_spec_constant_op = true;
+    features->nonwritable_var_in_function_or_private = true;
+  }
+}
+
 }  // namespace
 
 ValidationState_t::ValidationState_t(const spv_const_context ctx,
@@ -205,11 +230,12 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     spv_context_t hijacked_context = *ctx;
     hijacked_context.consumer = [](spv_message_level_t, const char*,
                                    const spv_position_t&, const char*) {};
-    spvBinaryParse(&hijacked_context, this, words, num_words,
-                   /* parsed_header = */ nullptr, CountInstructions,
+    spvBinaryParse(&hijacked_context, this, words, num_words, setHeader,
+                   CountInstructions,
                    /* diagnostic = */ nullptr);
     preallocateStorage();
   }
+  UpdateFeaturesBasedOnSpirvVersion(&features_, version_);
 
   friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
       context_, words_, num_words_);
@@ -447,7 +473,7 @@ void ValidationState_t::set_addressing_model(SpvAddressingModel am) {
       pointer_size_and_alignment_ = 4;
       break;
     default:
-      // fall through
+    // fall through
     case SpvAddressingModelPhysical64:
     case SpvAddressingModelPhysicalStorageBuffer64EXT:
       pointer_size_and_alignment_ = 8;
