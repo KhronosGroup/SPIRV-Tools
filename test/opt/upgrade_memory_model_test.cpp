@@ -1986,4 +1986,55 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
 }
 
+TEST_F(UpgradeMemoryModelTest, SPV14CopyMemoryDstCoherentTwoOperands) {
+  const std::string text = R"(
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 5
+; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]] None
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func" %src %dst
+OpDecorate %dst Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%src = OpVariable %ptr_ssbo_int StorageBuffer
+%dst = OpVariable %ptr_ssbo_int StorageBuffer
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpCopyMemory %dst %src None None
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest,
+       SPV14CopyMemoryDstCoherentPreviousArgsTwoOperands) {
+  const std::string text = R"(
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 5
+; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 4 [[scope]] Aligned 4
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func" %src %dst
+OpDecorate %dst Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%src = OpVariable %ptr_ssbo_int StorageBuffer
+%dst = OpVariable %ptr_ssbo_int StorageBuffer
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpCopyMemory %dst %src Aligned 4 Aligned 4
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
 }  // namespace
