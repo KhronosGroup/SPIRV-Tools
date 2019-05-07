@@ -21,6 +21,7 @@
 #include <string>
 
 #include "source/val/validation_state.h"
+#include "spirv-tools/libspirv.h"
 #include "test/test_fixture.h"
 #include "test/unit_spirv.h"
 
@@ -113,6 +114,7 @@ std::string ValidateBase<T>::CompileFailure(std::string code,
             spvTextToBinary(ScopedContext(env).context, code.c_str(),
                             code.size(), &binary_, &diagnostic));
   std::string result(diagnostic->error);
+  spvDiagnosticDestroy(diagnostic);
   return result;
 }
 
