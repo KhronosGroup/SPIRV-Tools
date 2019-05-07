@@ -14,7 +14,12 @@
 
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
+#include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_dead_break.h"
+#include "source/fuzz/transformation_add_type_boolean.h"
+#include "source/fuzz/transformation_add_type_float.h"
+#include "source/fuzz/transformation_add_type_int.h"
+#include "source/fuzz/transformation_add_type_pointer.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_split_block.h"
@@ -32,8 +37,23 @@ bool IsApplicable(const Transformation& message,
     case Transformation::TransformationCase::kAddConstantBoolean:
       return transformation::IsApplicable(message.add_constant_boolean(),
                                           context, fact_manager);
+    case Transformation::TransformationCase::kAddConstantScalar:
+      return transformation::IsApplicable(message.add_constant_scalar(),
+                                          context, fact_manager);
     case Transformation::TransformationCase::kAddDeadBreak:
       return transformation::IsApplicable(message.add_dead_break(), context,
+                                          fact_manager);
+    case Transformation::TransformationCase::kAddTypeBoolean:
+      return transformation::IsApplicable(message.add_type_boolean(), context,
+                                          fact_manager);
+    case Transformation::TransformationCase::kAddTypeFloat:
+      return transformation::IsApplicable(message.add_type_float(), context,
+                                          fact_manager);
+    case Transformation::TransformationCase::kAddTypeInt:
+      return transformation::IsApplicable(message.add_type_int(), context,
+                                          fact_manager);
+    case Transformation::TransformationCase::kAddTypePointer:
+      return transformation::IsApplicable(message.add_type_pointer(), context,
                                           fact_manager);
     case Transformation::TransformationCase::kMoveBlockDown:
       return transformation::IsApplicable(message.move_block_down(), context,
@@ -59,8 +79,24 @@ void Apply(const Transformation& message, spvtools::opt::IRContext* context,
       transformation::Apply(message.add_constant_boolean(), context,
                             fact_manager);
       break;
+    case Transformation::TransformationCase::kAddConstantScalar:
+      transformation::Apply(message.add_constant_scalar(), context,
+                            fact_manager);
+      break;
     case Transformation::TransformationCase::kAddDeadBreak:
       transformation::Apply(message.add_dead_break(), context, fact_manager);
+      break;
+    case Transformation::TransformationCase::kAddTypeBoolean:
+      transformation::Apply(message.add_type_boolean(), context, fact_manager);
+      break;
+    case Transformation::TransformationCase::kAddTypeFloat:
+      transformation::Apply(message.add_type_float(), context, fact_manager);
+      break;
+    case Transformation::TransformationCase::kAddTypeInt:
+      transformation::Apply(message.add_type_int(), context, fact_manager);
+      break;
+    case Transformation::TransformationCase::kAddTypePointer:
+      transformation::Apply(message.add_type_pointer(), context, fact_manager);
       break;
     case Transformation::TransformationCase::kMoveBlockDown:
       transformation::Apply(message.move_block_down(), context, fact_manager);
