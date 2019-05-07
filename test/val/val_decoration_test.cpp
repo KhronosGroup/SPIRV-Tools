@@ -2254,7 +2254,8 @@ TEST_F(ValidateDecorations, BlockArrayBaseAlignmentWithVulkan1_1StillBad) {
           "member 1 at offset 8 is not aligned to 16"));
 }
 
-TEST_F(ValidateDecorations, BlockArrayBaseAlignmentWithBlockStandardLayoutGood) {
+TEST_F(ValidateDecorations,
+       BlockArrayBaseAlignmentWithBlockStandardLayoutGood) {
   // Same as previous test, but with VK_KHR_uniform_buffer_standard_layout
   std::string spirv = R"(
                OpCapability Shader
@@ -2284,7 +2285,8 @@ TEST_F(ValidateDecorations, BlockArrayBaseAlignmentWithBlockStandardLayoutGood) 
   )";
 
   CompileSuccessfully(spirv);
-  spvValidatorOptionsSetUniformBufferStandardLayout(getValidatorOptions(), true);
+  spvValidatorOptionsSetUniformBufferStandardLayout(getValidatorOptions(),
+                                                    true);
   EXPECT_EQ(SPV_SUCCESS,
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(), Eq(""));

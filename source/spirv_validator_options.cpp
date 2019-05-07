@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/spirv_validator_options.h"
+
 #include <cassert>
 #include <cstring>
-
-#include "source/spirv_validator_options.h"
 
 bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* type) {
   auto match = [s](const char* b) {
@@ -95,8 +95,8 @@ void spvValidatorOptionsSetRelaxBlockLayout(spv_validator_options options,
   options->relax_block_layout = val;
 }
 
-void spvValidatorOptionsSetUniformBufferStandardLayout(spv_validator_options options,
-                                            bool val) {
+void spvValidatorOptionsSetUniformBufferStandardLayout(
+    spv_validator_options options, bool val) {
   options->uniform_buffer_standard_layout = val;
 }
 
