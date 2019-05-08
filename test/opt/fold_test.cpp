@@ -6337,7 +6337,7 @@ TEST_P(SPV14FoldingTest, Case) {
 INSTANTIATE_TEST_SUITE_P(SPV14FoldingTest, SPV14FoldingTest,
 ::testing::Values(
     // Test case 0: select vectors with scalar condition.
-    InstructionFoldingCase<bool>(R"(
+    InstructionFoldingCase<bool>(std::string(R"(
 ; CHECK-NOT: OpSelect
 ; CHECK: %3 = OpCopyObject {{%\w+}} %1
 OpCapability Shader
@@ -6357,10 +6357,10 @@ OpCapability Linkage
 %3 = OpSelect %int4 %true %1 %2
 OpReturn
 OpFunctionEnd
-)",
+)"),
                                  3, true),
     // Test case 1: select struct with scalar condition.
-    InstructionFoldingCase<bool>(R"(
+    InstructionFoldingCase<bool>(std::string(R"(
 ; CHECK-NOT: OpSelect
 ; CHECK: %3 = OpCopyObject {{%\w+}} %2
 OpCapability Shader
@@ -6380,10 +6380,10 @@ OpCapability Linkage
 %3 = OpSelect %struct %true %1 %2
 OpReturn
 OpFunctionEnd
-)",
+)"),
                                  3, true),
     // Test case 1: select array with scalar condition.
-    InstructionFoldingCase<bool>(R"(
+    InstructionFoldingCase<bool>(std::string(R"(
 ; CHECK-NOT: OpSelect
 ; CHECK: %3 = OpCopyObject {{%\w+}} %2
 OpCapability Shader
@@ -6404,7 +6404,7 @@ OpCapability Linkage
 %3 = OpSelect %array %true %1 %2
 OpReturn
 OpFunctionEnd
-)",
+)"),
                                  3, true)
 ));
 
