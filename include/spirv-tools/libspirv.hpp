@@ -88,6 +88,12 @@ class ValidatorOptions {
     spvValidatorOptionsSetRelaxBlockLayout(options_, val);
   }
 
+  // Enables VK_KHR_uniform_buffer_standard_layout when validating standard
+  // uniform layout.  If true, disables scalar block layout rules.
+  void SetUniformBufferStandardLayout(bool val) {
+    spvValidatorOptionsSetUniformBufferStandardLayout(options_, val);
+  }
+
   // Enables VK_EXT_scalar_block_layout when validating standard
   // uniform/storage buffer/push-constant layout.  If true, disables
   // relaxed block layout rules.

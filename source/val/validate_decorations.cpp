@@ -384,6 +384,10 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                          ValidationState_t& vstate) {
   if (vstate.options()->skip_block_layout) return SPV_SUCCESS;
 
+  // blockRules are the same as bufferBlock rules if the uniform buffer
+  // standard layout extension is being used.
+  if (vstate.options()->uniform_buffer_standard_layout) blockRules = false;
+
   // Relaxed layout and scalar layout can both be in effect at the same time.
   // For example, relaxed layout is implied by Vulkan 1.1.  But scalar layout
   // is more permissive than relaxed layout.
