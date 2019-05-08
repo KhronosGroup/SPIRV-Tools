@@ -6311,6 +6311,103 @@ INSTANTIATE_TEST_SUITE_P(OpEntryPointFoldingTest, EntryPointFoldingTest,
         9, true)
 ));
 
+using SPV14FoldingTest =
+::testing::TestWithParam<InstructionFoldingCase<bool>>;
+
+TEST_P(SPV14FoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_4, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
+  EXPECT_EQ(succeeded, tc.expected_result);
+  if (succeeded) {
+    Match(tc.test_body, context.get());
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(SPV14FoldingTest, SPV14FoldingTest,
+::testing::Values(
+    // Test case 0: select vectors with scalar condition.
+    InstructionFoldingCase<bool>(std::string() + R"(
+; CHECK-NOT: OpSelect
+; CHECK: %3 = OpCopyObject {{%\w+}} %1
+OpCapability Shader
+OpCapability Linkage
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int = OpTypeInt 32 0
+%int4 = OpTypeVector %int 4
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%1 = OpUndef %int4
+%2 = OpUndef %int4
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+%3 = OpSelect %int4 %true %1 %2
+OpReturn
+OpFunctionEnd
+)",
+                                 3, true),
+    // Test case 1: select struct with scalar condition.
+    InstructionFoldingCase<bool>(std::string() + R"(
+; CHECK-NOT: OpSelect
+; CHECK: %3 = OpCopyObject {{%\w+}} %2
+OpCapability Shader
+OpCapability Linkage
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantFalse %bool
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int %int %int %int
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%1 = OpUndef %struct
+%2 = OpUndef %struct
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+%3 = OpSelect %struct %true %1 %2
+OpReturn
+OpFunctionEnd
+)",
+                                 3, true),
+    // Test case 1: select array with scalar condition.
+    InstructionFoldingCase<bool>(std::string() + R"(
+; CHECK-NOT: OpSelect
+; CHECK: %3 = OpCopyObject {{%\w+}} %2
+OpCapability Shader
+OpCapability Linkage
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantFalse %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_4 = OpConstant %int 4
+%array = OpTypeStruct %int %int %int %int
+%1 = OpUndef %array
+%2 = OpUndef %array
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+%3 = OpSelect %array %true %1 %2
+OpReturn
+OpFunctionEnd
+)",
+                                 3, true)
+));
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
