@@ -6337,74 +6337,74 @@ TEST_P(SPV14FoldingTest, Case) {
 INSTANTIATE_TEST_SUITE_P(SPV14FoldingTest, SPV14FoldingTest,
 ::testing::Values(
     // Test case 0: select vectors with scalar condition.
-    InstructionFoldingCase<bool>(std::string(R"(
-; CHECK-NOT: OpSelect
-; CHECK: %3 = OpCopyObject {{%\w+}} %1
-OpCapability Shader
-OpCapability Linkage
-%void = OpTypeVoid
-%bool = OpTypeBool
-%true = OpConstantTrue %bool
-%int = OpTypeInt 32 0
-%int4 = OpTypeVector %int 4
-%int_0 = OpConstant %int 0
-%int_1 = OpConstant %int 1
-%1 = OpUndef %int4
-%2 = OpUndef %int4
-%void_fn = OpTypeFunction %void
-%func = OpFunction %void None %void_fn
-%entry = OpLabel
-%3 = OpSelect %int4 %true %1 %2
-OpReturn
-OpFunctionEnd
-)"),
+    InstructionFoldingCase<bool>(std::string() +
+"; CHECK-NOT: OpSelect\n" +
+"; CHECK: %3 = OpCopyObject {{%\\w+}} %1\n" +
+"OpCapability Shader\n" +
+"OpCapability Linkage\n" +
+"%void = OpTypeVoid\n" +
+"%bool = OpTypeBool\n" +
+"%true = OpConstantTrue %bool\n" +
+"%int = OpTypeInt 32 0\n" +
+"%int4 = OpTypeVector %int 4\n" +
+"%int_0 = OpConstant %int 0\n" +
+"%int_1 = OpConstant %int 1\n" +
+"%1 = OpUndef %int4\n" +
+"%2 = OpUndef %int4\n" +
+"%void_fn = OpTypeFunction %void\n" +
+"%func = OpFunction %void None %void_fn\n" +
+"%entry = OpLabel\n" +
+"%3 = OpSelect %int4 %true %1 %2\n" +
+"OpReturn\n" +
+"OpFunctionEnd\n"
+,
                                  3, true),
     // Test case 1: select struct with scalar condition.
-    InstructionFoldingCase<bool>(std::string(R"(
-; CHECK-NOT: OpSelect
-; CHECK: %3 = OpCopyObject {{%\w+}} %2
-OpCapability Shader
-OpCapability Linkage
-%void = OpTypeVoid
-%bool = OpTypeBool
-%true = OpConstantFalse %bool
-%int = OpTypeInt 32 0
-%struct = OpTypeStruct %int %int %int %int
-%int_0 = OpConstant %int 0
-%int_1 = OpConstant %int 1
-%1 = OpUndef %struct
-%2 = OpUndef %struct
-%void_fn = OpTypeFunction %void
-%func = OpFunction %void None %void_fn
-%entry = OpLabel
-%3 = OpSelect %struct %true %1 %2
-OpReturn
-OpFunctionEnd
-)"),
+    InstructionFoldingCase<bool>(std::string() +
+"; CHECK-NOT: OpSelect\n" +
+"; CHECK: %3 = OpCopyObject {{%\\w+}} %2\n" +
+"OpCapability Shader\n" +
+"OpCapability Linkage\n" +
+"%void = OpTypeVoid\n" +
+"%bool = OpTypeBool\n" +
+"%true = OpConstantFalse %bool\n" +
+"%int = OpTypeInt 32 0\n" +
+"%struct = OpTypeStruct %int %int %int %int\n" +
+"%int_0 = OpConstant %int 0\n" +
+"%int_1 = OpConstant %int 1\n" +
+"%1 = OpUndef %struct\n" +
+"%2 = OpUndef %struct\n" +
+"%void_fn = OpTypeFunction %void\n" +
+"%func = OpFunction %void None %void_fn\n" +
+"%entry = OpLabel\n" +
+"%3 = OpSelect %struct %true %1 %2\n" +
+"OpReturn\n" +
+"OpFunctionEnd\n"
+,
                                  3, true),
     // Test case 1: select array with scalar condition.
-    InstructionFoldingCase<bool>(std::string(R"(
-; CHECK-NOT: OpSelect
-; CHECK: %3 = OpCopyObject {{%\w+}} %2
-OpCapability Shader
-OpCapability Linkage
-%void = OpTypeVoid
-%bool = OpTypeBool
-%true = OpConstantFalse %bool
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
-%int_1 = OpConstant %int 1
-%int_4 = OpConstant %int 4
-%array = OpTypeStruct %int %int %int %int
-%1 = OpUndef %array
-%2 = OpUndef %array
-%void_fn = OpTypeFunction %void
-%func = OpFunction %void None %void_fn
-%entry = OpLabel
-%3 = OpSelect %array %true %1 %2
-OpReturn
-OpFunctionEnd
-)"),
+    InstructionFoldingCase<bool>(std::string() +
+"; CHECK-NOT: OpSelect\n" +
+"; CHECK: %3 = OpCopyObject {{%\\w+}} %2\n" +
+"OpCapability Shader\n" +
+"OpCapability Linkage\n" +
+"%void = OpTypeVoid\n" +
+"%bool = OpTypeBool\n" +
+"%true = OpConstantFalse %bool\n" +
+"%int = OpTypeInt 32 0\n" +
+"%int_0 = OpConstant %int 0\n" +
+"%int_1 = OpConstant %int 1\n" +
+"%int_4 = OpConstant %int 4\n" +
+"%array = OpTypeStruct %int %int %int %int\n" +
+"%1 = OpUndef %array\n" +
+"%2 = OpUndef %array\n" +
+"%void_fn = OpTypeFunction %void\n" +
+"%func = OpFunction %void None %void_fn\n" +
+"%entry = OpLabel\n" +
+"%3 = OpSelect %array %true %1 %2\n" +
+"OpReturn\n" +
+"OpFunctionEnd\n"
+,
                                  3, true)
 ));
 
