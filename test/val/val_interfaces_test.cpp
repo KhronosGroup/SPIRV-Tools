@@ -375,6 +375,30 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
 }
 
+TEST_F(ValidateInterfacesTest, SPV14MultipleEntryPointsSameFunction) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main1" %gid
+OpEntryPoint GLCompute %main "main2" %gid
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %gid BuiltIn GlobalInvocationId
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%ptr_input_int3 = OpTypePointer Input %int3
+%gid = OpVariable %ptr_input_int3 Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

@@ -683,8 +683,8 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
     const auto& descs = vstate.entry_point_descriptions(entry_point);
     int num_builtin_inputs = 0;
     int num_builtin_outputs = 0;
-    std::unordered_set<Instruction*> seen_vars;
     for (const auto& desc : descs) {
+      std::unordered_set<Instruction*> seen_vars;
       for (auto interface : desc.interfaces) {
         Instruction* var_instr = vstate.FindDef(interface);
         if (!var_instr || SpvOpVariable != var_instr->opcode()) {
