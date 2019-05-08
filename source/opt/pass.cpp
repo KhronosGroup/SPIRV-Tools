@@ -53,7 +53,7 @@ uint32_t Pass::GetPointeeTypeId(const Instruction* ptrInst) const {
   return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
 }
 
-uint32_t Pass::GenerateCopy(Instruction* object_inst, uint32_t new_type_id,
+uint32_t Pass::GenerateCopy(Instruction* object_to_copy, uint32_t new_type_id,
                             Instruction* insertion_position) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
