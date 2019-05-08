@@ -2015,7 +2015,7 @@ TEST_F(UpgradeMemoryModelTest,
        SPV14CopyMemoryDstCoherentPreviousArgsTwoOperands) {
   const std::string text = R"(
 ; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 5
-; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 4 [[scope]] Aligned 4
+; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 4 [[scope]] Aligned 8
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %func "func" %src %dst
@@ -2028,7 +2028,7 @@ OpDecorate %dst Coherent
 %void_fn = OpTypeFunction %void
 %func = OpFunction %void None %void_fn
 %entry = OpLabel
-OpCopyMemory %dst %src Aligned 4 Aligned 4
+OpCopyMemory %dst %src Aligned 4 Aligned 8
 OpReturn
 OpFunctionEnd
 )";
