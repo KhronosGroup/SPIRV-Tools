@@ -504,6 +504,11 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxLogicalPointer(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxBlockLayout(
     spv_validator_options options, bool val);
 
+// Records whether the validator should use standard block layout rules for
+// uniform blocks.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetUniformBufferStandardLayout(
+    spv_validator_options options, bool val);
+
 // Records whether the validator should use "scalar" block layout rules.
 // Scalar layout rules are more permissive than relaxed block layout.
 //

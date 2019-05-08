@@ -51,6 +51,8 @@ Options:
   --relax-block-layout             Enable VK_KHR_relaxed_block_layout when checking standard
                                    uniform, storage buffer, and push constant layouts.
                                    This is the default when targeting Vulkan 1.1 or later.
+  --uniform-buffer-standard-layout Enable VK_KHR_uniform_buffer_standard_layout when checking standard
+                                   uniform buffer layouts.
   --scalar-block-layout            Enable VK_EXT_scalar_block_layout when checking standard
                                    uniform, storage buffer, and push constant layouts.  Scalar layout
                                    rules are more permissive than relaxed block layout so in effect
@@ -140,6 +142,8 @@ int main(int argc, char** argv) {
         options.SetRelaxLogicalPointer(true);
       } else if (0 == strcmp(cur_arg, "--relax-block-layout")) {
         options.SetRelaxBlockLayout(true);
+      } else if (0 == strcmp(cur_arg, "--uniform-buffer-standard-layout")) {
+        options.SetUniformBufferStandardLayout(true);
       } else if (0 == strcmp(cur_arg, "--scalar-block-layout")) {
         options.SetScalarBlockLayout(true);
       } else if (0 == strcmp(cur_arg, "--skip-block-layout")) {
