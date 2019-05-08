@@ -586,10 +586,10 @@ INSTANTIATE_TEST_SUITE_P(
          "OpReturn\n"
          "%10 = OpLabel\n"
          "OpUnreachable\n"
-         "%11 = OpLabel\n"
-         "OpBranch %9\n"
          "%16 = OpLabel\n"
          "OpUnreachable\n"
+         "%11 = OpLabel\n"
+         "OpBranch %9\n"
          "OpFunctionEnd\n",
          // pass
          "split-invalid-unreachable"}}));

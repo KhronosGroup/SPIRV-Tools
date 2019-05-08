@@ -118,8 +118,8 @@ TEST_F(SplitInvalidUnreachableTest, SelectionInLoop) {
   expected += GetReturnBlock("%14");
   expected += GetReturnBlock("%15");
   expected += GetUnreachableBlock("%10");
-  expected += GetBranchBlock("%11", "%9");
   expected += GetUnreachableBlock("%16");
+  expected += GetBranchBlock("%11", "%9");
   expected += function_tail;
 
   SinglePassRunAndCheck<SplitInvalidUnreachablePass>(input, expected,
@@ -141,9 +141,9 @@ TEST_F(SplitInvalidUnreachableTest, LoopInSelection) {
   expected += GetLoopMergeBlock("%12", "%14", "%11", "%15");
   expected += GetReturnBlock("%13");
   expected += GetUnreachableBlock("%14");
+  expected += GetUnreachableBlock("%16");
   expected += GetBranchBlock("%11", "%12");
   expected += GetReturnBlock("%15");
-  expected += GetUnreachableBlock("%16");
   expected += function_tail;
 
   SinglePassRunAndCheck<SplitInvalidUnreachablePass>(input, expected,

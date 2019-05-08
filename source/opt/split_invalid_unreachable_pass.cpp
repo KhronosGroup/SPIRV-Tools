@@ -54,7 +54,7 @@ Pass::Status SplitInvalidUnreachablePass::Process() {
       }
       context()->get_def_use_mgr()->ForEachUse(
           unreachable->GetLabelInst(),
-          [this, func, &changed](Instruction* use, uint32_t idx) {
+          [this, func, &changed, unreachable](Instruction* use, uint32_t idx) {
             if ((use->opcode() == SpvOpLoopMerge && idx == 0) ||
                 use->opcode() == SpvOpSelectionMerge) {
               uint32_t new_id = context()->TakeNextId();
@@ -70,7 +70,8 @@ Pass::Status SplitInvalidUnreachablePass::Process() {
                       IRContext::kAnalysisInstrToBlockMapping);
               builder.AddUnreachable();
               cfg()->RegisterBlock(block_ptr);
-              (&*func)->AddBasicBlock(std::move(new_block));
+              (&*func)->InsertBasicBlockBefore(std::move(new_block),
+                                               unreachable);
               use->SetInOperand(0, {new_id});
               get_def_use_mgr()->UpdateDefUse(use);
               cfg()->AddEdges(block_ptr);
