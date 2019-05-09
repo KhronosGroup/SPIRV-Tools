@@ -52,32 +52,35 @@ Pass::Status SplitInvalidUnreachablePass::Process() {
           merge_blocks.find(block_id) == merge_blocks.end()) {
         continue;
       }
+
+      std::vector<std::tuple<Instruction*, uint32_t>> usages;
       context()->get_def_use_mgr()->ForEachUse(
           unreachable->GetLabelInst(),
-          [this, func, &changed, unreachable](Instruction* use, uint32_t idx) {
+          [&usages](Instruction* use, uint32_t idx) {
             if ((use->opcode() == SpvOpLoopMerge && idx == 0) ||
                 use->opcode() == SpvOpSelectionMerge) {
-              uint32_t new_id = context()->TakeNextId();
-              std::unique_ptr<Instruction> new_label(
-                  new Instruction(this->context(), SpvOpLabel, 0, new_id, {}));
-              get_def_use_mgr()->AnalyzeInstDefUse(new_label.get());
-              std::unique_ptr<BasicBlock> new_block(
-                  new BasicBlock(std::move(new_label)));
-              auto* block_ptr = new_block.get();
-              InstructionBuilder builder(
-                  context(), new_block.get(),
-                  IRContext::kAnalysisDefUse |
-                      IRContext::kAnalysisInstrToBlockMapping);
-              builder.AddUnreachable();
-              cfg()->RegisterBlock(block_ptr);
-              (&*func)->InsertBasicBlockBefore(std::move(new_block),
-                                               unreachable);
-              use->SetInOperand(0, {new_id});
-              get_def_use_mgr()->UpdateDefUse(use);
-              cfg()->AddEdges(block_ptr);
-              changed = true;
+              usages.push_back(std::make_pair(use, idx));
             }
-          });
+      });
+
+      for (auto usage : usages) {
+        Instruction* use;
+        uint32_t idx;
+        std::tie(use, idx) = usage;
+        uint32_t new_id = context()->TakeNextId();
+        std::unique_ptr<Instruction> new_label(new Instruction(context(), SpvOpLabel, 0, new_id, {}));
+        get_def_use_mgr()->AnalyzeInstDefUse(new_label.get());
+        std::unique_ptr<BasicBlock> new_block(new BasicBlock(std::move(new_label)));
+        auto* block_ptr = new_block.get();
+        InstructionBuilder builder(context(), new_block.get(), IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+        builder.AddUnreachable();
+        cfg()->RegisterBlock(block_ptr);
+        (&*func)->InsertBasicBlockBefore(std::move(new_block), unreachable);
+        use->SetInOperand(0, {new_id});
+        get_def_use_mgr()->UpdateDefUse(use);
+        cfg()->AddEdges(block_ptr);
+        changed = true;
+      }
     }
   }
 
