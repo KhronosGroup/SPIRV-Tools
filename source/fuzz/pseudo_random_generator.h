@@ -35,6 +35,8 @@ class PseudoRandomGenerator : public RandomGenerator {
 
   bool RandomBool() override;
 
+  double RandomDouble() override;
+
  private:
   std::mt19937 mt_;
 };

@@ -34,6 +34,9 @@ class RandomGenerator {
 
   // Returns a boolean.
   virtual bool RandomBool() = 0;
+
+  // Returns a double in the closed interval [0, 1]
+  virtual double RandomDouble() = 0;
 };
 
 }  // namespace fuzz

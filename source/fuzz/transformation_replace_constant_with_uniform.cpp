@@ -84,10 +84,10 @@ bool IsApplicable(
          "Fresh ids for access chain and load result cannot be the same.");
 
   // The ids for the access chain and load instructions must both be fresh.
-  if (context->get_def_use_mgr()->GetDef(message.fresh_id_for_access_chain())) {
+  if (!fuzzerutil::IsFreshId(context, message.fresh_id_for_access_chain())) {
     return false;
   }
-  if (context->get_def_use_mgr()->GetDef(message.fresh_id_for_load())) {
+  if (!fuzzerutil::IsFreshId(context, message.fresh_id_for_load())) {
     return false;
   }
 
