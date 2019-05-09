@@ -227,7 +227,22 @@ opt::Instruction* Apply(
   opt::Instruction* result = binary_instruction.get();
   auto instruction_containing_constant_use =
       module_navigation::FindInstruction(message.id_use_descriptor(), context);
-  instruction_containing_constant_use->InsertBefore(
+
+  // We want to insert the new instruction before the instruction that contains
+  // the use of the boolean, but we need to go backwards one more instruction if
+  // the using instruction is preceded by a merge instruction.
+  auto instruction_before_which_to_insert = instruction_containing_constant_use;
+  {
+    opt::Instruction* previous_node =
+        instruction_before_which_to_insert->PreviousNode();
+    if (previous_node) {
+      if (previous_node->opcode() == SpvOpLoopMerge ||
+          previous_node->opcode() == SpvOpSelectionMerge) {
+        instruction_before_which_to_insert = previous_node;
+      }
+    }
+  }
+  instruction_before_which_to_insert->InsertBefore(
       std::move(binary_instruction));
   instruction_containing_constant_use->SetInOperand(
       message.id_use_descriptor().in_operand_index(),
