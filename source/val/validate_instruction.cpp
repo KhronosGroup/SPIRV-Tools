@@ -107,13 +107,26 @@ spv_result_t OperandVersionExtensionCheck(
     const spv_operand_desc_t& operand_desc, uint32_t word) {
   const uint32_t module_version = _.version();
   const uint32_t operand_min_version = operand_desc.minVersion;
+  const uint32_t operand_last_version = operand_desc.lastVersion;
   const bool reserved = operand_min_version == 0xffffffffu;
-  const bool version_satisfied =
-      !reserved && (operand_min_version <= module_version);
+  const bool version_satisfied = !reserved &&
+                                 (operand_min_version <= module_version) &&
+                                 (module_version <= operand_last_version);
 
   if (version_satisfied) {
     return SPV_SUCCESS;
   }
+
+  if (operand_last_version < module_version) {
+    return _.diag(SPV_ERROR_WRONG_VERSION, inst)
+           << spvtools::utils::CardinalToOrdinal(which_operand)
+           << " operand of " << spvOpcodeString(inst->opcode()) << ": operand "
+           << operand_desc.name << "(" << word << ") requires SPIR-V version "
+           << SPV_SPIRV_VERSION_MAJOR_PART(operand_last_version) << "."
+           << SPV_SPIRV_VERSION_MINOR_PART(operand_last_version)
+           << " or earlier";
+  }
+
   if (!reserved && operand_desc.numExtensions == 0) {
     return _.diag(SPV_ERROR_WRONG_VERSION, inst)
            << spvtools::utils::CardinalToOrdinal(which_operand)
@@ -295,6 +308,7 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
   (void)r;
 
   const auto min_version = inst_desc->minVersion;
+  const auto last_version = inst_desc->lastVersion;
 
   if (inst_desc->numCapabilities > 0u) {
     // We already checked that the direct capability dependency has been
@@ -303,6 +317,13 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
   }
 
   const auto module_version = _.version();
+
+  if (last_version < module_version) {
+    return _.diag(SPV_ERROR_WRONG_VERSION, inst)
+           << spvOpcodeString(opcode) << " requires "
+           << spvTargetEnvDescription(static_cast<spv_target_env>(last_version))
+           << " at maximum.";
+  }
 
   ExtensionSet exts(inst_desc->numExtensions, inst_desc->extensions);
   if (exts.IsEmpty()) {
