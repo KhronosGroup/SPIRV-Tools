@@ -205,7 +205,9 @@ void InstrumentPass::GenStageStreamWriteCode(uint32_t stage_idx,
         GenFragCoordEltDebugOutputCode(
             base_offset_id, uint_frag_coord_inst->result_id(), u, builder);
     } break;
-    default: { assert(false && "unsupported stage"); } break;
+    default: {
+      assert(false && "unsupported stage");
+    } break;
   }
 }
 
@@ -395,9 +397,10 @@ uint32_t InstrumentPass::GetOutputBufferId() {
                                GetOutputBufferBinding());
     AddStorageBufferExt();
     if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
-      // The new buffer to all entry points.
+      // Add the new buffer to all entry points.
       for (auto& entry : get_module()->entry_points()) {
         entry.AddOperand({SPV_OPERAND_TYPE_ID, {output_buffer_id_}});
+        context()->AnalyzeUses(&entry);
       }
     }
   }
@@ -437,6 +440,13 @@ uint32_t InstrumentPass::GetInputBufferId() {
     deco_mgr->AddDecorationVal(input_buffer_id_, SpvDecorationBinding,
                                GetInputBufferBinding());
     AddStorageBufferExt();
+    if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+      // Add the new buffer to all entry points.
+      for (auto& entry : get_module()->entry_points()) {
+        entry.AddOperand({SPV_OPERAND_TYPE_ID, {input_buffer_id_}});
+        context()->AnalyzeUses(&entry);
+      }
+    }
   }
   return input_buffer_id_;
 }
