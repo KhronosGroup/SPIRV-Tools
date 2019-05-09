@@ -484,6 +484,145 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   }
 }
 
+TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
+     MergeInstructions) {
+  // The test came from the following GLSL:
+  //
+  // void main() {
+  //   int x = 1;
+  //   int y = 2;
+  //   if (true) {
+  //     x = 2;
+  //   }
+  //   while(false) {
+  //     y = 2;
+  //   }
+  // }
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %10 "y"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %11 = OpConstant %6 2
+         %12 = OpTypeBool
+         %13 = OpConstantTrue %12
+         %21 = OpConstantFalse %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %11
+               OpSelectionMerge %15 None
+               OpBranchConditional %13 %14 %15
+         %14 = OpLabel
+               OpStore %8 %11
+               OpBranch %15
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpLoopMerge %18 %19 None
+               OpBranchConditional %21 %17 %18
+         %17 = OpLabel
+               OpStore %10 %11
+               OpBranch %19
+         %19 = OpLabel
+               OpBranch %16
+         %18 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto use_of_true_in_if = module_navigation::MakeIdUseDescriptor(
+      13, SpvOpBranchConditional, 0, 10, 0);
+  auto use_of_false_in_while = module_navigation::MakeIdUseDescriptor(
+      21, SpvOpBranchConditional, 0, 16, 0);
+
+  auto replacement_1 = transformation::
+      MakeTransformationReplaceBooleanConstantWithConstantBinary(
+          use_of_true_in_if, 9, 11, SpvOpSLessThan, 100);
+  auto replacement_2 = transformation::
+      MakeTransformationReplaceBooleanConstantWithConstantBinary(
+          use_of_false_in_while, 9, 11, SpvOpSGreaterThanEqual, 101);
+
+  ASSERT_TRUE(
+      transformation::IsApplicable(replacement_1, context.get(), fact_manager));
+  transformation::Apply(replacement_1, context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  ASSERT_TRUE(
+      transformation::IsApplicable(replacement_2, context.get(), fact_manager));
+  transformation::Apply(replacement_2, context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %10 "y"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %11 = OpConstant %6 2
+         %12 = OpTypeBool
+         %13 = OpConstantTrue %12
+         %21 = OpConstantFalse %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %11
+        %100 = OpSLessThan %12 %9 %11
+               OpSelectionMerge %15 None
+               OpBranchConditional %100 %14 %15
+         %14 = OpLabel
+               OpStore %8 %11
+               OpBranch %15
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+        %101 = OpSGreaterThanEqual %12 %9 %11
+               OpLoopMerge %18 %19 None
+               OpBranchConditional %101 %17 %18
+         %17 = OpLabel
+               OpStore %10 %11
+               OpBranch %19
+         %19 = OpLabel
+               OpBranch %16
+         %18 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
