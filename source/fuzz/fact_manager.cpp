@@ -168,7 +168,6 @@ FactManager::UniformConstantFacts::GetConstantsAvailableFromUniformsForType(
 const std::vector<protobufs::UniformBufferElementDescriptor>*
 FactManager::UniformConstantFacts::GetUniformDescriptorsForConstant(
     const opt::analysis::ScalarConstant& constant) const {
-  assert(constant_pool.find(&constant) != constant_pool.end());
   if (constant_to_uniform_descriptors.find(&constant) ==
       constant_to_uniform_descriptors.end()) {
     return nullptr;

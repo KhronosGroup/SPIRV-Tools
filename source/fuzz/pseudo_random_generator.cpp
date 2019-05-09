@@ -34,5 +34,9 @@ uint32_t PseudoRandomGenerator::RandomPercentage() {
   return RandomUint32(101);
 }
 
+double PseudoRandomGenerator::RandomDouble() {
+  return std::uniform_real_distribution<double>(0.0, 1.0)(mt_);
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

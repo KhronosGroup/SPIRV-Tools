@@ -18,6 +18,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass.h
         fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_add_useful_constructs.h
+        fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
@@ -35,6 +36,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation_add_type_int.h
         transformation_add_type_pointer.h
         transformation_move_block_down.h
+        transformation_replace_boolean_constant_with_constant_binary.h
         transformation_replace_constant_with_uniform.h
         transformation_split_block.h
         uniform_buffer_element_descriptor.h
@@ -44,6 +46,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_context.cpp
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_useful_constructs.cpp
+        fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_split_blocks.cpp
         fuzzer_util.cpp
@@ -60,6 +63,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation_add_type_int.cpp
         transformation_add_type_pointer.cpp
         transformation_move_block_down.cpp
+        transformation_replace_boolean_constant_with_constant_binary.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_split_block.cpp
         uniform_buffer_element_descriptor.cpp

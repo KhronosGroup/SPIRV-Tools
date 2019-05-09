@@ -82,8 +82,9 @@ message Transformation {
     TransformationAddTypeFloat add_type_float = 6;
     TransformationAddTypeInt add_type_int = 7;
     TransformationAddTypePointer add_type_pointer = 8;
-    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 9;
-    TransformationSplitBlock split_block = 10;
+    TransformationReplaceBooleanConstantWithConstantBinary replace_boolean_constant_with_constant_binary = 9;
+    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 10;
+    TransformationSplitBlock split_block = 11;
   }
 }
 
@@ -204,6 +205,27 @@ message TransformationReplaceConstantWithUniform {
 
   // Id that will store the result of a load
   uint32 fresh_id_for_load = 4;
+
+}
+
+message TransformationReplaceBooleanConstantWithConstantBinary {
+  // A transformation to capture replacing a use of a boolean constant with
+  // binary operation on two constant values
+
+  // A descriptor for the boolean constant id we would like to replace
+  IdUseDescriptor id_use_descriptor = 1;
+
+  // Id for the constant to be used on the LHS of the comparision
+  uint32 lhs_id = 2;
+
+  // Id for the constant to be used on the RHS of the comparision
+  uint32 rhs_id = 3;
+
+  // Opcode for binary operator
+  uint32 opcode = 4;
+
+  // Id that will store the result of the binary operation instruction
+  uint32 fresh_id_for_binary_operation = 5;
 
 }
 

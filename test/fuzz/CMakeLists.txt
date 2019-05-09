@@ -27,6 +27,7 @@ add_spvtools_unittest(TARGET fuzz
         transformation_add_type_int_test.cpp
         transformation_add_type_pointer_test.cpp
         transformation_move_block_down_test.cpp
+        transformation_replace_boolean_constant_with_constant_binary_test.cpp
         transformation_replace_constant_with_uniform_test.cpp
         transformation_split_block_test.cpp
         LIBS SPIRV-Tools-fuzz

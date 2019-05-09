@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cmath>
+
 #include "source/fuzz/fuzzer_context.h"
 
 namespace spvtools {
@@ -25,7 +27,18 @@ namespace {
 
 const uint32_t kDefaultChanceOfAddingDeadBreak = 20;
 const uint32_t kDefaultChanceOfMovingBlockDown = 25;
+const uint32_t kDefaultChanceOfObfuscatingConstant = 20;
 const uint32_t kDefaultChanceOfSplittingBlock = 20;
+
+// Default functions for controlling how deep to go during recursive
+// generation/transformation. Keep them in alphabetical order.
+
+const std::function<bool(uint32_t, RandomGenerator*)>
+    kDefaultGoDeeperInConstantObfuscation =
+        [](uint32_t current_depth, RandomGenerator* random_generator) -> bool {
+  double chance = 1.0 / std::pow(3.0, (float)(current_depth + 1));
+  return random_generator->RandomDouble() < chance;
+};
 
 }  // namespace
 
@@ -35,7 +48,10 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       next_fresh_id_(min_fresh_id),
       chance_of_adding_dead_break_(kDefaultChanceOfAddingDeadBreak),
       chance_of_moving_block_down_(kDefaultChanceOfMovingBlockDown),
-      chance_of_splitting_block_(kDefaultChanceOfSplittingBlock) {}
+      chance_of_obfuscating_constant_(kDefaultChanceOfObfuscatingConstant),
+      chance_of_splitting_block_(kDefaultChanceOfSplittingBlock),
+      go_deeper_in_constant_obfuscation_(
+          kDefaultGoDeeperInConstantObfuscation) {}
 
 uint32_t FuzzerContext::FreshId() { return next_fresh_id_++; }
 
@@ -51,8 +67,17 @@ uint32_t FuzzerContext::GetChanceOfMovingBlockDown() {
   return chance_of_moving_block_down_;
 }
 
+uint32_t FuzzerContext::GetChanceOfObfuscatingConstant() {
+  return chance_of_obfuscating_constant_;
+}
+
 uint32_t FuzzerContext::GetChanceOfSplittingBlock() {
   return chance_of_splitting_block_;
+}
+
+const std::function<bool(uint32_t, RandomGenerator*)>&
+FuzzerContext::GoDeeperInConstantObfuscation() {
+  return go_deeper_in_constant_obfuscation_;
 }
 
 }  // namespace fuzz
