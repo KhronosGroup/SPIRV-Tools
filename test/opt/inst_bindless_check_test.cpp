@@ -2512,6 +2512,59 @@ OpFunctionEnd
       true);
 }
 
+TEST_F(InstBindlessTest, SPV14AddToEntryPoint) {
+  const std::string text = R"(
+; CHECK: OpEntryPoint GLCompute {{%\w+}} "foo" {{%\w+}} {{%\w+}} {{%\w+}} [[var:%\w+]]
+; CHECK: [[var]] = OpVariable {{%\w+}} StorageBuffer
+OpCapability Shader
+OpExtension "SPV_EXT_descriptor_indexing"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %foo "foo" %gid %image_var %sampler_var
+OpExecutionMode %foo OriginUpperLeft
+OpDecorate %image_var DescriptorSet 0
+OpDecorate %image_var Binding 0
+OpDecorate %sampler_var DescriptorSet 0
+OpDecorate %sampler_var Binding 1
+OpDecorate %gid DescriptorSet 0
+OpDecorate %gid Binding 2
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%v3int = OpTypeVector %int 3
+%float = OpTypeFloat 32
+%v3float = OpTypeVector %float 3
+%v4float = OpTypeVector %float 4
+%struct = OpTypeStruct %v3int
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %struct
+%ptr_ssbo_v3int = OpTypePointer StorageBuffer %v3int
+%gid = OpVariable %ptr_ssbo_struct StorageBuffer
+%image = OpTypeImage %float 3D 0 0 0 1 Unknown
+%ptr_uc_image = OpTypePointer UniformConstant %image
+%sampler = OpTypeSampler
+%ptr_uc_sampler = OpTypePointer UniformConstant %sampler
+%image_var = OpVariable %ptr_uc_image UniformConstant
+%sampler_var = OpVariable %ptr_uc_sampler UniformConstant
+%sampled = OpTypeSampledImage %image
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld_image = OpLoad %image %image_var
+%ld_sampler = OpLoad %sampler %sampler_var
+%gep = OpAccessChain %ptr_ssbo_v3int %gid %int_0
+%ld_gid = OpLoad %v3int %gep
+%convert = OpConvertUToF %v3float %ld_gid
+%sampled_image = OpSampledImage %sampled %ld_image %ld_sampler
+%sample = OpImageSampleImplicitLod %v4float %sampled_image %convert
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_1_SPIRV_1_4);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //   Compute shader
