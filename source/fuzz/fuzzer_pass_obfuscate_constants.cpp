@@ -58,6 +58,9 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
           bool_constant_opcode == SpvOpConstantTrue) &&
          "Precondition: this must be a usage of a boolean constant.");
 
+  // Pick an opcode at random.  First randomly decide whether to generate
+  // a 'greater than' or 'less than' kind of opcode, and then select a
+  // random opcode from the resulting subset.
   SpvOp comparison_opcode;
   if (GetFuzzerContext()->GetRandomGenerator()->RandomBool()) {
     comparison_opcode = greater_than_opcodes
@@ -69,10 +72,12 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
             (uint32_t)less_than_opcodes.size())];
   }
 
+  // We now need to decide how to order constant_id_1 and constant_id_2 such
+  // that 'constant_id_1 comparison_opcode constant_id_2' evaluates to the
+  // boolean constant.  The following considers the rather large number of
+  // cases in turn.  There might be a more compact representation.
   uint32_t lhs_id;
   uint32_t rhs_id;
-
-  // TODO: There is probably a better way to express the following:
   if (bool_constant_opcode == SpvOpConstantTrue) {
     if (first_constant_is_larger) {
       if (std::find(greater_than_opcodes.begin(), greater_than_opcodes.end(),
