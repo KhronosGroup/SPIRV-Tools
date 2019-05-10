@@ -169,8 +169,11 @@ bool AddingBreakRespectsStructuredControlFlow(
     // This looks like an instance of case (2).
     // However, the structured CFG analysis regards the continue construct of a
     // loop as part of the loop, but it is not legal to jump from a loop's
-    // continue construct to the loop's merge, so we need to check for this
-    // case.
+    // continue construct to the loop's merge (except from the back-edge block),
+    // so we need to check for this case.
+    //
+    // TODO(2577): We do not currently allow a dead break from a back edge
+    //  block, but we could and ultimately should.
     return !FromBlockIsInLoopContinueConstruct(message, context,
                                                containing_construct);
   }
