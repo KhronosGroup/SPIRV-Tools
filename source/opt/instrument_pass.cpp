@@ -147,10 +147,11 @@ void InstrumentPass::GenBuiltinOutputCode(uint32_t builtin_id,
                                           uint32_t base_offset_id,
                                           InstructionBuilder* builder) {
   // Load and store builtin
-  Instruction* load_inst =
-      builder->AddUnaryOp(GetUintId(), SpvOpLoad, builtin_id);
-  GenDebugOutputFieldCode(base_offset_id, builtin_off, load_inst->result_id(),
-                          builder);
+  Instruction* var_inst = get_def_use_mgr()->GetDef(builtin_id);
+  uint32_t type_id = GetPointeeTypeId(var_inst);
+  Instruction* load_inst = builder->AddUnaryOp(type_id, SpvOpLoad, builtin_id);
+  uint32_t val_id = GenUintCastCode(load_inst->result_id(), builder);
+  GenDebugOutputFieldCode(base_offset_id, builtin_off, val_id, builder);
 }
 
 void InstrumentPass::GenUintNullOutputCode(uint32_t field_off,
