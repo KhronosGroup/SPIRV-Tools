@@ -182,8 +182,8 @@ FactManager::UniformConstantFacts::GetUniformDescriptorsForConstant(
     }
     registered_constant = *iterator;
   } else if (constant.AsIntConstant()) {
-    opt::analysis::FloatConstant temp((*registered_type)->AsFloat(),
-                                      constant.words());
+    opt::analysis::IntConstant temp((*registered_type)->AsInteger(),
+                                    constant.words());
     auto iterator = constant_pool.find(&temp);
     if (iterator == constant_pool.end()) {
       return nullptr;
