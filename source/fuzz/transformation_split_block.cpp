@@ -27,10 +27,11 @@ using opt::Operand;
 
 namespace {
 
-// Returns (true, block.end()) if the relevant instruction is in this block
-// but inapplicable
-//         (true, it) if 'it' is an iterator for the relevant instruction
-//         (false, _) otherwise.
+// Returns:
+// - (true, block->end()) if the relevant instruction is in this block
+//      but inapplicable
+// - (true, it) if 'it' is an iterator for the relevant instruction
+// - (false, _) otherwise.
 std::pair<bool, BasicBlock::iterator> FindInstToSplitBefore(
     const protobufs::TransformationSplitBlock& message, BasicBlock* block) {
   // There are three possibilities:
@@ -45,6 +46,9 @@ std::pair<bool, BasicBlock::iterator> FindInstToSplitBefore(
     if (message.offset() == 0) {
       // The offset is not allowed to be 0: this would mean splitting before the
       // block's label.
+      // By returning (true, block->end()), we indicate that we did find the
+      // instruction (so that it is not worth searching further for it), but
+      // that splitting will not be possible.
       return {true, block->end()};
     }
     // Conceptually, the first instruction in the block is [label + 1].
