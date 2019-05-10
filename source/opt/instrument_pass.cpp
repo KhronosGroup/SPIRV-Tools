@@ -17,6 +17,7 @@
 #include "instrument_pass.h"
 
 #include "source/cfa.h"
+#include "source/spirv_constant.h"
 
 namespace {
 
@@ -394,6 +395,13 @@ uint32_t InstrumentPass::GetOutputBufferId() {
     deco_mgr->AddDecorationVal(output_buffer_id_, SpvDecorationBinding,
                                GetOutputBufferBinding());
     AddStorageBufferExt();
+    if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+      // Add the new buffer to all entry points.
+      for (auto& entry : get_module()->entry_points()) {
+        entry.AddOperand({SPV_OPERAND_TYPE_ID, {output_buffer_id_}});
+        context()->AnalyzeUses(&entry);
+      }
+    }
   }
   return output_buffer_id_;
 }
@@ -431,6 +439,13 @@ uint32_t InstrumentPass::GetInputBufferId() {
     deco_mgr->AddDecorationVal(input_buffer_id_, SpvDecorationBinding,
                                GetInputBufferBinding());
     AddStorageBufferExt();
+    if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+      // Add the new buffer to all entry points.
+      for (auto& entry : get_module()->entry_points()) {
+        entry.AddOperand({SPV_OPERAND_TYPE_ID, {input_buffer_id_}});
+        context()->AnalyzeUses(&entry);
+      }
+    }
   }
   return input_buffer_id_;
 }
