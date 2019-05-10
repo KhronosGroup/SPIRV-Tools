@@ -168,11 +168,31 @@ FactManager::UniformConstantFacts::GetConstantsAvailableFromUniformsForType(
 const std::vector<protobufs::UniformBufferElementDescriptor>*
 FactManager::UniformConstantFacts::GetUniformDescriptorsForConstant(
     const opt::analysis::ScalarConstant& constant) const {
-  if (constant_to_uniform_descriptors.find(&constant) ==
-      constant_to_uniform_descriptors.end()) {
+  auto registered_type = type_pool.find(constant.type());
+  if (registered_type == type_pool.end()) {
     return nullptr;
   }
-  return &constant_to_uniform_descriptors.find(&constant)->second;
+  const opt::analysis::ScalarConstant* registered_constant;
+  if (constant.AsFloatConstant()) {
+    opt::analysis::FloatConstant temp((*registered_type)->AsFloat(),
+                                      constant.words());
+    auto iterator = constant_pool.find(&temp);
+    if (iterator == constant_pool.end()) {
+      return nullptr;
+    }
+    registered_constant = *iterator;
+  } else if (constant.AsIntConstant()) {
+    opt::analysis::FloatConstant temp((*registered_type)->AsFloat(),
+                                      constant.words());
+    auto iterator = constant_pool.find(&temp);
+    if (iterator == constant_pool.end()) {
+      return nullptr;
+    }
+    registered_constant = *iterator;
+  } else {
+    return nullptr;
+  }
+  return &constant_to_uniform_descriptors.find(registered_constant)->second;
 }
 
 const opt::analysis::ScalarConstant*

@@ -21,6 +21,7 @@
 #include "source/fuzz/transformation_add_type_int.h"
 #include "source/fuzz/transformation_add_type_pointer.h"
 #include "source/fuzz/transformation_move_block_down.h"
+#include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_split_block.h"
 
@@ -58,18 +59,23 @@ bool IsApplicable(const Transformation& message,
     case Transformation::TransformationCase::kMoveBlockDown:
       return transformation::IsApplicable(message.move_block_down(), context,
                                           fact_manager);
+    case Transformation::TransformationCase::
+        kReplaceBooleanConstantWithConstantBinary:
+      return transformation::IsApplicable(
+          message.replace_boolean_constant_with_constant_binary(), context,
+          fact_manager);
     case Transformation::TransformationCase::kReplaceConstantWithUniform:
       return transformation::IsApplicable(
           message.replace_constant_with_uniform(), context, fact_manager);
     case Transformation::TransformationCase::kSplitBlock:
       return transformation::IsApplicable(message.split_block(), context,
                                           fact_manager);
-    default:
-      assert(message.transformation_case() ==
-             Transformation::TransformationCase::TRANSFORMATION_NOT_SET);
+    case Transformation::TRANSFORMATION_NOT_SET:
       assert(false);
       return false;
   }
+  assert(false);
+  return false;
 }
 
 void Apply(const Transformation& message, spvtools::opt::IRContext* context,
@@ -101,6 +107,12 @@ void Apply(const Transformation& message, spvtools::opt::IRContext* context,
     case Transformation::TransformationCase::kMoveBlockDown:
       transformation::Apply(message.move_block_down(), context, fact_manager);
       break;
+    case Transformation::TransformationCase::
+        kReplaceBooleanConstantWithConstantBinary:
+      transformation::Apply(
+          message.replace_boolean_constant_with_constant_binary(), context,
+          fact_manager);
+      break;
     case Transformation::TransformationCase::kReplaceConstantWithUniform:
       transformation::Apply(message.replace_constant_with_uniform(), context,
                             fact_manager);
@@ -108,9 +120,7 @@ void Apply(const Transformation& message, spvtools::opt::IRContext* context,
     case Transformation::TransformationCase::kSplitBlock:
       transformation::Apply(message.split_block(), context, fact_manager);
       break;
-    default:
-      assert(message.transformation_case() ==
-             Transformation::TransformationCase::TRANSFORMATION_NOT_SET);
+    case Transformation::TRANSFORMATION_NOT_SET:
       assert(false);
   }
 }
