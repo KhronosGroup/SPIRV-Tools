@@ -23,54 +23,40 @@ namespace fuzz {
 // A fuzzer pass for turning uses of constants into more complex forms.
 class FuzzerPassObfuscateConstants : public FuzzerPass {
  public:
-  FuzzerPassObfuscateConstants() = default;
+  FuzzerPassObfuscateConstants(
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations)
+      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
 
   ~FuzzerPassObfuscateConstants() override = default;
 
-  void Apply(opt::IRContext* ir_context, FactManager* fact_manager,
-             FuzzerContext* fuzzer_context,
-             protobufs::TransformationSequence* transformations) override;
+  void Apply() override;
 
  private:
   uint32_t FindScalarConstant(
-      opt::IRContext* ir_context,
       const opt::analysis::ScalarConstant* scalar_constant);
 
   void ObfuscateConstant(uint32_t depth,
-                         const protobufs::IdUseDescriptor& constant_use,
-                         opt::IRContext* ir_context, FactManager* fact_manager,
-                         FuzzerContext* fuzzer_context,
-                         protobufs::TransformationSequence* transformations);
+                         const protobufs::IdUseDescriptor& constant_use);
 
   void ObfuscateBoolConstantViaFloatConstantPair(
       uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
-      uint32_t float_constant_id_1, uint32_t float_constant_id_2,
-      opt::IRContext* ir_context, FactManager* fact_manager,
-      FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
+      uint32_t float_constant_id_1, uint32_t float_constant_id_2);
 
   void ObfuscateBoolConstantViaSignedIntConstantPair(
       uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
-      uint32_t signed_int_constant_id_1, uint32_t signed_int_constant_id_2,
-      opt::IRContext* ir_context, FactManager* fact_manager,
-      FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
+      uint32_t signed_int_constant_id_1, uint32_t signed_int_constant_id_2);
 
   void ObfuscateBoolConstantViaUnsignedIntConstantPair(
       uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
-      uint32_t unsigned_int_constant_id_1, uint32_t unsigned_int_constant_id_2,
-      opt::IRContext* ir_context, FactManager* fact_manager,
-      FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
+      uint32_t unsigned_int_constant_id_1, uint32_t unsigned_int_constant_id_2);
 
   void ObfuscateBoolConstantViaConstantPair(
       uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
       const std::vector<SpvOp>& greater_than_opcodes,
       const std::vector<SpvOp>& less_than_opcodes, uint32_t constant_id_1,
-      uint32_t constant_id_2, bool first_constant_is_larger,
-      opt::IRContext* ir_context, FactManager* fact_manager,
-      FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
+      uint32_t constant_id_2, bool first_constant_is_larger);
 };
 
 }  // namespace fuzz

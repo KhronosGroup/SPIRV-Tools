@@ -23,23 +23,24 @@ namespace fuzz {
 using opt::IRContext;
 
 uint32_t FuzzerPassObfuscateConstants::FindScalarConstant(
-    opt::IRContext* ir_context,
     const opt::analysis::ScalarConstant* scalar_constant) {
-  auto type_id = ir_context->get_type_mgr()->GetId(scalar_constant->type());
+  auto type_id = GetIRContext()->get_type_mgr()->GetId(scalar_constant->type());
   if (type_id == 0) {
     return 0;
   }
-  auto registered_type =
-      ir_context->get_type_mgr()->GetRegisteredType(scalar_constant->type());
+  auto registered_type = GetIRContext()->get_type_mgr()->GetRegisteredType(
+      scalar_constant->type());
   if (scalar_constant->AsIntConstant()) {
     opt::analysis::IntConstant temp(registered_type->AsInteger(),
                                     scalar_constant->words());
-    return ir_context->get_constant_mgr()->FindDeclaredConstant(&temp, type_id);
+    return GetIRContext()->get_constant_mgr()->FindDeclaredConstant(&temp,
+                                                                    type_id);
   }
   if (scalar_constant->AsFloatConstant()) {
     opt::analysis::FloatConstant temp(registered_type->AsFloat(),
                                       scalar_constant->words());
-    return ir_context->get_constant_mgr()->FindDeclaredConstant(&temp, type_id);
+    return GetIRContext()->get_constant_mgr()->FindDeclaredConstant(&temp,
+                                                                    type_id);
   }
   return 0;
 }
@@ -48,11 +49,9 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
     uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
     const std::vector<SpvOp>& greater_than_opcodes,
     const std::vector<SpvOp>& less_than_opcodes, uint32_t constant_id_1,
-    uint32_t constant_id_2, bool first_constant_is_larger,
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
-  auto bool_constant_opcode = ir_context->get_def_use_mgr()
+    uint32_t constant_id_2, bool first_constant_is_larger) {
+  auto bool_constant_opcode = GetIRContext()
+                                  ->get_def_use_mgr()
                                   ->GetDef(bool_constant_use.id_of_interest())
                                   ->opcode();
   assert((bool_constant_opcode == SpvOpConstantFalse ||
@@ -60,13 +59,13 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
          "Precondition: this must be a usage of a boolean constant.");
 
   SpvOp comparison_opcode;
-  if (fuzzer_context->GetRandomGenerator()->RandomBool()) {
-    comparison_opcode =
-        greater_than_opcodes[fuzzer_context->GetRandomGenerator()->RandomUint32(
+  if (GetFuzzerContext()->GetRandomGenerator()->RandomBool()) {
+    comparison_opcode = greater_than_opcodes
+        [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
             (uint32_t)greater_than_opcodes.size())];
   } else {
-    comparison_opcode =
-        less_than_opcodes[fuzzer_context->GetRandomGenerator()->RandomUint32(
+    comparison_opcode = less_than_opcodes
+        [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
             (uint32_t)less_than_opcodes.size())];
   }
 
@@ -119,41 +118,40 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
   auto transformation = transformation::
       MakeTransformationReplaceBooleanConstantWithConstantBinary(
           bool_constant_use, lhs_id, rhs_id, comparison_opcode,
-          fuzzer_context->FreshId());
+          GetFuzzerContext()->FreshId());
   // The transformation should be applicable by construction.
-  assert(
-      transformation::IsApplicable(transformation, ir_context, *fact_manager));
+  assert(transformation::IsApplicable(transformation, GetIRContext(),
+                                      *GetFactManager()));
 
   auto binary_operator_instruction =
-      transformation::Apply(transformation, ir_context, fact_manager);
+      transformation::Apply(transformation, GetIRContext(), GetFactManager());
 
-  *transformations->add_transformation()
+  *GetTransformations()
+       ->add_transformation()
        ->mutable_replace_boolean_constant_with_constant_binary() =
       transformation;
 
-  for (uint32_t index : {0, 1}) {
-    if (fuzzer_context->GoDeeperInConstantObfuscation()(
-            depth, fuzzer_context->GetRandomGenerator())) {
+  for (uint32_t index : {0u, 1u}) {
+    if (GetFuzzerContext()->GoDeeperInConstantObfuscation()(
+            depth, GetFuzzerContext()->GetRandomGenerator())) {
       auto in_operand_use = module_navigation::MakeIdUseDescriptor(
           binary_operator_instruction->GetSingleWordInOperand(index),
           binary_operator_instruction->opcode(), index,
           binary_operator_instruction->result_id(), 0);
-      ObfuscateConstant(depth + 1, in_operand_use, ir_context, fact_manager,
-                        fuzzer_context, transformations);
+      ObfuscateConstant(depth + 1, in_operand_use);
     }
   }
 }
 
 void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaFloatConstantPair(
     uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
-    uint32_t float_constant_id_1, uint32_t float_constant_id_2,
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
-  auto float_constant_1 = ir_context->get_constant_mgr()
+    uint32_t float_constant_id_1, uint32_t float_constant_id_2) {
+  auto float_constant_1 = GetIRContext()
+                              ->get_constant_mgr()
                               ->FindDeclaredConstant(float_constant_id_1)
                               ->AsFloatConstant();
-  auto float_constant_2 = ir_context->get_constant_mgr()
+  auto float_constant_2 = GetIRContext()
+                              ->get_constant_mgr()
                               ->FindDeclaredConstant(float_constant_id_2)
                               ->AsFloatConstant();
   assert(float_constant_1->words() != float_constant_2->words() &&
@@ -180,23 +178,21 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaFloatConstantPair(
 
   ObfuscateBoolConstantViaConstantPair(
       depth, bool_constant_use, greater_than_opcodes, less_than_opcodes,
-      float_constant_id_1, float_constant_id_2, first_constant_is_larger,
-      ir_context, fact_manager, fuzzer_context, transformations);
+      float_constant_id_1, float_constant_id_2, first_constant_is_larger);
 }
 
 void FuzzerPassObfuscateConstants::
     ObfuscateBoolConstantViaSignedIntConstantPair(
         uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
-        uint32_t signed_int_constant_id_1, uint32_t signed_int_constant_id_2,
-        IRContext* ir_context, FactManager* fact_manager,
-        FuzzerContext* fuzzer_context,
-        protobufs::TransformationSequence* transformations) {
+        uint32_t signed_int_constant_id_1, uint32_t signed_int_constant_id_2) {
   auto signed_int_constant_1 =
-      ir_context->get_constant_mgr()
+      GetIRContext()
+          ->get_constant_mgr()
           ->FindDeclaredConstant(signed_int_constant_id_1)
           ->AsIntConstant();
   auto signed_int_constant_2 =
-      ir_context->get_constant_mgr()
+      GetIRContext()
+          ->get_constant_mgr()
           ->FindDeclaredConstant(signed_int_constant_id_2)
           ->AsIntConstant();
   assert(signed_int_constant_1->words() != signed_int_constant_2->words() &&
@@ -223,23 +219,22 @@ void FuzzerPassObfuscateConstants::
   ObfuscateBoolConstantViaConstantPair(
       depth, bool_constant_use, greater_than_opcodes, less_than_opcodes,
       signed_int_constant_id_1, signed_int_constant_id_2,
-      first_constant_is_larger, ir_context, fact_manager, fuzzer_context,
-      transformations);
+      first_constant_is_larger);
 }
 
 void FuzzerPassObfuscateConstants::
     ObfuscateBoolConstantViaUnsignedIntConstantPair(
         uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
         uint32_t unsigned_int_constant_id_1,
-        uint32_t unsigned_int_constant_id_2, IRContext* ir_context,
-        FactManager* fact_manager, FuzzerContext* fuzzer_context,
-        protobufs::TransformationSequence* transformations) {
+        uint32_t unsigned_int_constant_id_2) {
   auto unsigned_int_constant_1 =
-      ir_context->get_constant_mgr()
+      GetIRContext()
+          ->get_constant_mgr()
           ->FindDeclaredConstant(unsigned_int_constant_id_1)
           ->AsIntConstant();
   auto unsigned_int_constant_2 =
-      ir_context->get_constant_mgr()
+      GetIRContext()
+          ->get_constant_mgr()
           ->FindDeclaredConstant(unsigned_int_constant_id_2)
           ->AsIntConstant();
   assert(unsigned_int_constant_1->words() != unsigned_int_constant_2->words() &&
@@ -266,27 +261,25 @@ void FuzzerPassObfuscateConstants::
   ObfuscateBoolConstantViaConstantPair(
       depth, bool_constant_use, greater_than_opcodes, less_than_opcodes,
       unsigned_int_constant_id_1, unsigned_int_constant_id_2,
-      first_constant_is_larger, ir_context, fact_manager, fuzzer_context,
-      transformations);
+      first_constant_is_larger);
 }
 
 void FuzzerPassObfuscateConstants::ObfuscateConstant(
-    uint32_t depth, const protobufs::IdUseDescriptor& constant_use,
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
-  switch (ir_context->get_def_use_mgr()
+    uint32_t depth, const protobufs::IdUseDescriptor& constant_use) {
+  switch (GetIRContext()
+              ->get_def_use_mgr()
               ->GetDef(constant_use.id_of_interest())
               ->opcode()) {
     case SpvOpConstantTrue:
     case SpvOpConstantFalse: {
       auto available_types_with_uniforms =
-          fact_manager->GetTypesForWhichUniformValuesAreKnown();
+          GetFactManager()->GetTypesForWhichUniformValuesAreKnown();
       auto chosen_type = available_types_with_uniforms
-          [fuzzer_context->GetRandomGenerator()->RandomUint32(
+          [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
               (uint32_t)available_types_with_uniforms.size())];
       auto available_constants =
-          fact_manager->GetConstantsAvailableFromUniformsForType(*chosen_type);
+          GetFactManager()->GetConstantsAvailableFromUniformsForType(
+              *chosen_type);
       if (available_constants.size() == 1) {
         // TODO: for now we only obfuscate a boolean if there are at least two
         // constants available from uniforms, so that we can do a comparison
@@ -296,46 +289,45 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
         return;
       }
       auto constant_index_1 =
-          fuzzer_context->GetRandomGenerator()->RandomUint32(
+          GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
               (uint32_t)available_constants.size());
       uint32_t constant_index_2;
       do {
-        constant_index_2 = fuzzer_context->GetRandomGenerator()->RandomUint32(
-            (uint32_t)available_constants.size());
+        constant_index_2 =
+            GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
+                (uint32_t)available_constants.size());
       } while (constant_index_1 == constant_index_2);
       auto constant_id_1 =
-          FindScalarConstant(ir_context, available_constants[constant_index_1]);
+          FindScalarConstant(available_constants[constant_index_1]);
       auto constant_id_2 =
-          FindScalarConstant(ir_context, available_constants[constant_index_2]);
+          FindScalarConstant(available_constants[constant_index_2]);
       if (constant_id_1 == 0 || constant_id_2 == 0) {
         return;
       }
       if (chosen_type->AsFloat()) {
-        ObfuscateBoolConstantViaFloatConstantPair(
-            depth, constant_use, constant_id_1, constant_id_2, ir_context,
-            fact_manager, fuzzer_context, transformations);
+        ObfuscateBoolConstantViaFloatConstantPair(depth, constant_use,
+                                                  constant_id_1, constant_id_2);
       } else {
         assert(chosen_type->AsInteger() &&
                "We should only have uniform facts about ints and floats.");
         if (chosen_type->AsInteger()->IsSigned()) {
           ObfuscateBoolConstantViaSignedIntConstantPair(
-              depth, constant_use, constant_id_1, constant_id_2, ir_context,
-              fact_manager, fuzzer_context, transformations);
+              depth, constant_use, constant_id_1, constant_id_2);
         } else {
           ObfuscateBoolConstantViaUnsignedIntConstantPair(
-              depth, constant_use, constant_id_1, constant_id_2, ir_context,
-              fact_manager, fuzzer_context, transformations);
+              depth, constant_use, constant_id_1, constant_id_2);
         }
       }
     } break;
     case SpvOpConstant: {
-      auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
           constant_use.id_of_interest());
       if (!constant->AsScalarConstant()) {
         break;
       }
-      auto uniform_descriptors = fact_manager->GetUniformDescriptorsForConstant(
-          *(constant->AsScalarConstant()));
+      auto uniform_descriptors =
+          GetFactManager()->GetUniformDescriptorsForConstant(
+              *(constant->AsScalarConstant()));
       if (!uniform_descriptors) {
         break;
       }
@@ -344,17 +336,18 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
              "should not be empty.");
       protobufs::UniformBufferElementDescriptor uniform_descriptor =
           (*uniform_descriptors)
-              [fuzzer_context->GetRandomGenerator()->RandomUint32(
+              [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
                   (uint32_t)uniform_descriptors->size())];
       auto transformation =
           transformation::MakeTransformationReplaceConstantWithUniform(
-              constant_use, uniform_descriptor, fuzzer_context->FreshId(),
-              fuzzer_context->FreshId());
+              constant_use, uniform_descriptor, GetFuzzerContext()->FreshId(),
+              GetFuzzerContext()->FreshId());
       // Transformation should be applicable by construction.
-      assert(transformation::IsApplicable(transformation, ir_context,
-                                          *fact_manager));
-      transformation::Apply(transformation, ir_context, fact_manager);
-      *transformations->add_transformation()
+      assert(transformation::IsApplicable(transformation, GetIRContext(),
+                                          *GetFactManager()));
+      transformation::Apply(transformation, GetIRContext(), GetFactManager());
+      *GetTransformations()
+           ->add_transformation()
            ->mutable_replace_constant_with_uniform() = transformation;
     } break;
     default:
@@ -363,13 +356,10 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
   }
 }
 
-void FuzzerPassObfuscateConstants::Apply(
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
+void FuzzerPassObfuscateConstants::Apply() {
   std::vector<protobufs::IdUseDescriptor> candidate_constant_uses;
 
-  for (auto& function : *ir_context->module()) {
+  for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       uint32_t base_instruction_result_id = block.id();
       std::map<SpvOp, uint32_t> skipped_opcode_count;
@@ -385,7 +375,7 @@ void FuzzerPassObfuscateConstants::Apply(
           }
           auto operand_id = inst.GetSingleWordInOperand(in_operand_index);
           auto operand_definition =
-              ir_context->get_def_use_mgr()->GetDef(operand_id);
+              GetIRContext()->get_def_use_mgr()->GetDef(operand_id);
           switch (operand_definition->opcode()) {
             case SpvOpConstantFalse:
             case SpvOpConstantTrue:
@@ -419,16 +409,15 @@ void FuzzerPassObfuscateConstants::Apply(
   }
 
   while (!candidate_constant_uses.empty()) {
-    auto index = fuzzer_context->GetRandomGenerator()->RandomUint32(
+    auto index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
         (uint32_t)candidate_constant_uses.size());
     auto constant_use = std::move(candidate_constant_uses[index]);
     candidate_constant_uses.erase(candidate_constant_uses.begin() + index);
-    if (fuzzer_context->GetRandomGenerator()->RandomPercentage() >
-        fuzzer_context->GetChanceOfObfuscatingConstant()) {
+    if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
+        GetFuzzerContext()->GetChanceOfObfuscatingConstant()) {
       continue;
     }
-    ObfuscateConstant(0, constant_use, ir_context, fact_manager, fuzzer_context,
-                      transformations);
+    ObfuscateConstant(0, constant_use);
   }
 }
 

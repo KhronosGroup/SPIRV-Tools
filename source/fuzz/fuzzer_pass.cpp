@@ -12,30 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_DEAD_BREAKS_H_
-#define SOURCE_FUZZ_FUZZER_PASS_ADD_DEAD_BREAKS_H_
-
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// A fuzzer pass for adding dead break edges to the module.
-class FuzzerPassAddDeadBreaks : public FuzzerPass {
- public:
-  FuzzerPassAddDeadBreaks(opt::IRContext* ir_context, FactManager* fact_manager,
-                          FuzzerContext* fuzzer_context,
-                          protobufs::TransformationSequence* transformations)
-      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
+opt::IRContext* FuzzerPass::GetIRContext() const { return ir_context_; }
 
-  ~FuzzerPassAddDeadBreaks() override = default;
+FactManager* FuzzerPass::GetFactManager() const { return fact_manager_; }
 
-  void Apply() override;
+FuzzerContext* FuzzerPass::GetFuzzerContext() const { return fuzzer_context_; }
 
- private:
-};
+protobufs::TransformationSequence* FuzzerPass::GetTransformations() const {
+  return transformations_;
+}
 
 }  // namespace fuzz
 }  // namespace spvtools
-
-#endif  // #define SOURCE_FUZZ_FUZZER_PASS_ADD_DEAD_BREAKS_H_

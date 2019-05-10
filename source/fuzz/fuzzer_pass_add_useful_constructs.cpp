@@ -26,78 +26,72 @@ namespace fuzz {
 using opt::IRContext;
 
 void FuzzerPassAddUsefulConstructs::MaybeAddIntConstant(
-    opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
-    FactManager* fact_manager,
-    protobufs::TransformationSequence* transformations, uint32_t width,
-    bool is_signed, std::vector<uint32_t> data) const {
+    uint32_t width, bool is_signed, std::vector<uint32_t> data) const {
   opt::analysis::Integer temp_int_type(width, is_signed);
-  assert(ir_context->get_type_mgr()->GetId(&temp_int_type) &&
+  assert(GetIRContext()->get_type_mgr()->GetId(&temp_int_type) &&
          "int type should already be registered.");
-  auto registered_int_type = ir_context->get_type_mgr()
+  auto registered_int_type = GetIRContext()
+                                 ->get_type_mgr()
                                  ->GetRegisteredType(&temp_int_type)
                                  ->AsInteger();
-  auto int_type_id = ir_context->get_type_mgr()->GetId(registered_int_type);
+  auto int_type_id = GetIRContext()->get_type_mgr()->GetId(registered_int_type);
   assert(int_type_id &&
          "The relevant int type should have been added to the module already.");
   opt::analysis::IntConstant int_constant(registered_int_type, data);
-  if (!ir_context->get_constant_mgr()->FindConstant(&int_constant)) {
+  if (!GetIRContext()->get_constant_mgr()->FindConstant(&int_constant)) {
     protobufs::TransformationAddConstantScalar add_constant_int =
         transformation::MakeTransformationAddConstantScalar(
-            fuzzer_context->FreshId(), int_type_id, data);
-    assert(transformation::IsApplicable(add_constant_int, ir_context,
-                                        *fact_manager) &&
+            GetFuzzerContext()->FreshId(), int_type_id, data);
+    assert(transformation::IsApplicable(add_constant_int, GetIRContext(),
+                                        *GetFactManager()) &&
            "Should be applicable by construction.");
-    transformation::Apply(add_constant_int, ir_context, fact_manager);
-    *transformations->add_transformation()->mutable_add_constant_scalar() =
+    transformation::Apply(add_constant_int, GetIRContext(), GetFactManager());
+    *GetTransformations()->add_transformation()->mutable_add_constant_scalar() =
         add_constant_int;
   }
 }
 
 void FuzzerPassAddUsefulConstructs::MaybeAddFloatConstant(
-    opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
-    FactManager* fact_manager,
-    protobufs::TransformationSequence* transformations, uint32_t width,
-    std::vector<uint32_t> data) const {
+    uint32_t width, std::vector<uint32_t> data) const {
   opt::analysis::Float temp_float_type(width);
-  assert(ir_context->get_type_mgr()->GetId(&temp_float_type) &&
+  assert(GetIRContext()->get_type_mgr()->GetId(&temp_float_type) &&
          "float type should already be registered.");
-  auto registered_float_type = ir_context->get_type_mgr()
+  auto registered_float_type = GetIRContext()
+                                   ->get_type_mgr()
                                    ->GetRegisteredType(&temp_float_type)
                                    ->AsFloat();
-  auto float_type_id = ir_context->get_type_mgr()->GetId(registered_float_type);
+  auto float_type_id =
+      GetIRContext()->get_type_mgr()->GetId(registered_float_type);
   assert(
       float_type_id &&
       "The relevant float type should have been added to the module already.");
   opt::analysis::FloatConstant float_constant(registered_float_type, data);
-  if (!ir_context->get_constant_mgr()->FindConstant(&float_constant)) {
+  if (!GetIRContext()->get_constant_mgr()->FindConstant(&float_constant)) {
     protobufs::TransformationAddConstantScalar add_constant_int =
         transformation::MakeTransformationAddConstantScalar(
-            fuzzer_context->FreshId(), float_type_id, data);
-    assert(transformation::IsApplicable(add_constant_int, ir_context,
-                                        *fact_manager) &&
+            GetFuzzerContext()->FreshId(), float_type_id, data);
+    assert(transformation::IsApplicable(add_constant_int, GetIRContext(),
+                                        *GetFactManager()) &&
            "Should be applicable by construction.");
-    transformation::Apply(add_constant_int, ir_context, fact_manager);
-    *transformations->add_transformation()->mutable_add_constant_scalar() =
+    transformation::Apply(add_constant_int, GetIRContext(), GetFactManager());
+    *GetTransformations()->add_transformation()->mutable_add_constant_scalar() =
         add_constant_int;
   }
 }
 
-void FuzzerPassAddUsefulConstructs::Apply(
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
+void FuzzerPassAddUsefulConstructs::Apply() {
   {
     // Add boolean type if not present.
     opt::analysis::Bool temp_bool_type;
-    if (!ir_context->get_type_mgr()->GetId(&temp_bool_type)) {
+    if (!GetIRContext()->get_type_mgr()->GetId(&temp_bool_type)) {
       protobufs::TransformationAddTypeBoolean add_type_boolean =
           transformation::MakeTransformationAddTypeBoolean(
-              fuzzer_context->FreshId());
-      assert(transformation::IsApplicable(add_type_boolean, ir_context,
-                                          *fact_manager) &&
+              GetFuzzerContext()->FreshId());
+      assert(transformation::IsApplicable(add_type_boolean, GetIRContext(),
+                                          *GetFactManager()) &&
              "Should be applicable by construction.");
-      transformation::Apply(add_type_boolean, ir_context, fact_manager);
-      *transformations->add_transformation()->mutable_add_type_boolean() =
+      transformation::Apply(add_type_boolean, GetIRContext(), GetFactManager());
+      *GetTransformations()->add_transformation()->mutable_add_type_boolean() =
           add_type_boolean;
     }
   }
@@ -106,15 +100,15 @@ void FuzzerPassAddUsefulConstructs::Apply(
     // Add signed and unsigned 32-bit integer types if not present.
     for (auto is_signed : {true, false}) {
       opt::analysis::Integer temp_int_type(32, is_signed);
-      if (!ir_context->get_type_mgr()->GetId(&temp_int_type)) {
+      if (!GetIRContext()->get_type_mgr()->GetId(&temp_int_type)) {
         protobufs::TransformationAddTypeInt add_type_int =
             transformation::MakeTransformationAddTypeInt(
-                fuzzer_context->FreshId(), 32, is_signed);
-        assert(transformation::IsApplicable(add_type_int, ir_context,
-                                            *fact_manager) &&
+                GetFuzzerContext()->FreshId(), 32, is_signed);
+        assert(transformation::IsApplicable(add_type_int, GetIRContext(),
+                                            *GetFactManager()) &&
                "Should be applicable by construction.");
-        transformation::Apply(add_type_int, ir_context, fact_manager);
-        *transformations->add_transformation()->mutable_add_type_int() =
+        transformation::Apply(add_type_int, GetIRContext(), GetFactManager());
+        *GetTransformations()->add_transformation()->mutable_add_type_int() =
             add_type_int;
       }
     }
@@ -123,44 +117,47 @@ void FuzzerPassAddUsefulConstructs::Apply(
   {
     // Add 32-bit float type if not present.
     opt::analysis::Float temp_float_type(32);
-    if (!ir_context->get_type_mgr()->GetId(&temp_float_type)) {
+    if (!GetIRContext()->get_type_mgr()->GetId(&temp_float_type)) {
       protobufs::TransformationAddTypeFloat add_type_float =
           transformation::MakeTransformationAddTypeFloat(
-              fuzzer_context->FreshId(), 32);
-      assert(transformation::IsApplicable(add_type_float, ir_context,
-                                          *fact_manager) &&
+              GetFuzzerContext()->FreshId(), 32);
+      assert(transformation::IsApplicable(add_type_float, GetIRContext(),
+                                          *GetFactManager()) &&
              "Should be applicable by construction.");
-      transformation::Apply(add_type_float, ir_context, fact_manager);
-      *transformations->add_transformation()->mutable_add_type_float() =
+      transformation::Apply(add_type_float, GetIRContext(), GetFactManager());
+      *GetTransformations()->add_transformation()->mutable_add_type_float() =
           add_type_float;
     }
   }
 
   // Add boolean constants true and false if not present.
   opt::analysis::Bool temp_bool_type;
-  auto bool_type =
-      ir_context->get_type_mgr()->GetRegisteredType(&temp_bool_type)->AsBool();
+  auto bool_type = GetIRContext()
+                       ->get_type_mgr()
+                       ->GetRegisteredType(&temp_bool_type)
+                       ->AsBool();
   for (auto boolean_value : {true, false}) {
     // Add OpConstantTrue/False if not already there.
     opt::analysis::BoolConstant bool_constant(bool_type, boolean_value);
-    if (!ir_context->get_constant_mgr()->FindConstant(&bool_constant)) {
+    if (!GetIRContext()->get_constant_mgr()->FindConstant(&bool_constant)) {
       protobufs::TransformationAddConstantBoolean add_constant_boolean =
           transformation::MakeTransformationAddConstantBoolean(
-              fuzzer_context->FreshId(), boolean_value);
-      assert(transformation::IsApplicable(add_constant_boolean, ir_context,
-                                          *fact_manager) &&
+              GetFuzzerContext()->FreshId(), boolean_value);
+      assert(transformation::IsApplicable(add_constant_boolean, GetIRContext(),
+                                          *GetFactManager()) &&
              "Should be applicable by construction.");
-      transformation::Apply(add_constant_boolean, ir_context, fact_manager);
-      *transformations->add_transformation()->mutable_add_constant_boolean() =
-          add_constant_boolean;
+      transformation::Apply(add_constant_boolean, GetIRContext(),
+                            GetFactManager());
+      *GetTransformations()
+           ->add_transformation()
+           ->mutable_add_constant_boolean() = add_constant_boolean;
     }
   }
 
   // Add signed and unsigned 32-bit integer constants 0 and 1 if not present.
   for (auto is_signed : {true, false}) {
     for (auto value : {0u, 1u}) {
-      MaybeAddIntConstant(ir_context, fuzzer_context, fact_manager,
-                          transformations, 32, is_signed, {value});
+      MaybeAddIntConstant(32, is_signed, {value});
     }
   }
 
@@ -169,8 +166,7 @@ void FuzzerPassAddUsefulConstructs::Apply(
   float float_data[2] = {0.0, 1.0};
   memcpy(uint_data, float_data, sizeof(float_data));
   for (unsigned int& datum : uint_data) {
-    MaybeAddFloatConstant(ir_context, fuzzer_context, fact_manager,
-                          transformations, 32, {datum});
+    MaybeAddFloatConstant(32, {datum});
   }
 
   // For every known-to-be-constant uniform, make sure we have instructions
@@ -179,43 +175,39 @@ void FuzzerPassAddUsefulConstructs::Apply(
   // of the element
   // - a signed integer constant for each index required to access the element
   // - a constant for the constant value itself
-  for (auto type : fact_manager->GetTypesForWhichUniformValuesAreKnown()) {
+  for (auto type : GetFactManager()->GetTypesForWhichUniformValuesAreKnown()) {
     opt::analysis::Pointer uniform_pointer(type, SpvStorageClassUniform);
-    if (!ir_context->get_type_mgr()->GetId(&uniform_pointer)) {
-      auto base_type_id = ir_context->get_type_mgr()->GetId(type);
+    if (!GetIRContext()->get_type_mgr()->GetId(&uniform_pointer)) {
+      auto base_type_id = GetIRContext()->get_type_mgr()->GetId(type);
       assert(base_type_id &&
              "All relevant scalar types should already have been added.");
       auto add_pointer = transformation::MakeTransformationAddTypePointer(
-          fuzzer_context->FreshId(), SpvStorageClassUniform, base_type_id);
-      assert(transformation::IsApplicable(add_pointer, ir_context,
-                                          *fact_manager) &&
+          GetFuzzerContext()->FreshId(), SpvStorageClassUniform, base_type_id);
+      assert(transformation::IsApplicable(add_pointer, GetIRContext(),
+                                          *GetFactManager()) &&
              "Should be applicable by construction.");
-      transformation::Apply(add_pointer, ir_context, fact_manager);
-      *transformations->add_transformation()->mutable_add_type_pointer() =
+      transformation::Apply(add_pointer, GetIRContext(), GetFactManager());
+      *GetTransformations()->add_transformation()->mutable_add_type_pointer() =
           add_pointer;
     }
     for (const opt::analysis::ScalarConstant* constant :
-         fact_manager->GetConstantsAvailableFromUniformsForType(*type)) {
+         GetFactManager()->GetConstantsAvailableFromUniformsForType(*type)) {
       if (constant->AsIntConstant()) {
         auto int_constant = constant->AsIntConstant();
         auto int_type = int_constant->type()->AsInteger();
-        MaybeAddIntConstant(ir_context, fuzzer_context, fact_manager,
-                            transformations, int_type->width(),
-                            int_type->IsSigned(), int_constant->words());
+        MaybeAddIntConstant(int_type->width(), int_type->IsSigned(),
+                            int_constant->words());
       } else {
         assert(constant->AsFloatConstant() &&
                "Known uniform values must be integer or floating-point.");
         auto float_constant = constant->AsFloatConstant();
         auto float_type = float_constant->type()->AsFloat();
-        MaybeAddFloatConstant(ir_context, fuzzer_context, fact_manager,
-                              transformations, float_type->width(),
-                              float_constant->words());
+        MaybeAddFloatConstant(float_type->width(), float_constant->words());
       }
       for (auto& uniform_buffer_element_descriptor :
-           *fact_manager->GetUniformDescriptorsForConstant(*constant)) {
+           *GetFactManager()->GetUniformDescriptorsForConstant(*constant)) {
         for (auto index : uniform_buffer_element_descriptor.index()) {
-          MaybeAddIntConstant(ir_context, fuzzer_context, fact_manager,
-                              transformations, 32, true, {index});
+          MaybeAddIntConstant(32, true, {index});
         }
       }
     }

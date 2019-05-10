@@ -25,7 +25,13 @@ namespace fuzz {
 // Interface for applying a pass of transformations to a module.
 class FuzzerPass {
  public:
-  FuzzerPass() = default;
+  FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
+             FuzzerContext* fuzzer_context,
+             protobufs::TransformationSequence* transformations)
+      : ir_context_(ir_context),
+        fact_manager_(fact_manager),
+        fuzzer_context_(fuzzer_context),
+        transformations_(transformations) {}
 
   virtual ~FuzzerPass() = default;
 
@@ -33,11 +39,19 @@ class FuzzerPass {
   // facts from |fact_manager|, and using |fuzzer_context| to guide the process.
   // Appends to |transformations| all transformations that were applied during
   // the pass.
-  virtual void Apply(opt::IRContext* ir_context, FactManager* fact_manager,
-                     FuzzerContext* fuzzer_context,
-                     protobufs::TransformationSequence* transformations) = 0;
+  virtual void Apply() = 0;
+
+ protected:
+  opt::IRContext* GetIRContext() const;
+  FactManager* GetFactManager() const;
+  FuzzerContext* GetFuzzerContext() const;
+  protobufs::TransformationSequence* GetTransformations() const;
 
  private:
+  opt::IRContext* ir_context_;
+  FactManager* fact_manager_;
+  FuzzerContext* fuzzer_context_;
+  protobufs::TransformationSequence* transformations_;
 };
 
 }  // namespace fuzz
