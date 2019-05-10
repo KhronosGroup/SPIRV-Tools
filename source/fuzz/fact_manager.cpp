@@ -21,7 +21,9 @@
 namespace spvtools {
 namespace fuzz {
 
-struct FactManager::UniformConstantFacts {
+// The purpose of this struct is to group the fields and data used to represent
+// facts about uniform constants.
+struct FactManager::ConstantUniformFacts {
   const opt::analysis::Type* FindOrRegisterType(
       const opt::analysis::Type* type);
 
@@ -82,7 +84,7 @@ struct FactManager::UniformConstantFacts {
 };
 
 const opt::analysis::Type*
-FactManager::UniformConstantFacts::FindOrRegisterType(
+FactManager::ConstantUniformFacts::FindOrRegisterType(
     const opt::analysis::Type* type) {
   auto type_pool_iterator = type_pool.find(type);
   if (type_pool_iterator != type_pool.end()) {
@@ -96,7 +98,7 @@ FactManager::UniformConstantFacts::FindOrRegisterType(
 }
 
 const opt::analysis::ScalarConstant*
-FactManager::UniformConstantFacts::FindOrRegisterConstant(
+FactManager::ConstantUniformFacts::FindOrRegisterConstant(
     const opt::analysis::ScalarConstant* constant) {
   assert(type_pool.find(constant->type()) != type_pool.end());
   auto constant_pool_iterator = constant_pool.find(constant);
@@ -111,7 +113,7 @@ FactManager::UniformConstantFacts::FindOrRegisterConstant(
   return result;
 }
 
-void FactManager::UniformConstantFacts::AddUniformConstantFact(
+void FactManager::ConstantUniformFacts::AddUniformConstantFact(
     const opt::analysis::ScalarConstant* constant,
     protobufs::UniformBufferElementDescriptor descriptor) {
   auto registered_constant = FindOrRegisterConstant(constant);
@@ -129,7 +131,7 @@ void FactManager::UniformConstantFacts::AddUniformConstantFact(
   uniform_descriptor_to_constant[descriptor_ptr] = registered_constant;
 }
 
-void FactManager::UniformConstantFacts::AddUniformFloatValueFact(
+void FactManager::ConstantUniformFacts::AddUniformFloatValueFact(
     uint32_t width, std::vector<uint32_t>&& data,
     protobufs::UniformBufferElementDescriptor descriptor) {
   opt::analysis::Float float_type = opt::analysis::Float(width);
@@ -138,7 +140,7 @@ void FactManager::UniformConstantFacts::AddUniformFloatValueFact(
   AddUniformConstantFact(&float_constant, std::move(descriptor));
 }
 
-void FactManager::UniformConstantFacts::AddUniformIntValueFact(
+void FactManager::ConstantUniformFacts::AddUniformIntValueFact(
     uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
     protobufs::UniformBufferElementDescriptor descriptor) {
   opt::analysis::Integer integer_type =
@@ -149,7 +151,7 @@ void FactManager::UniformConstantFacts::AddUniformIntValueFact(
 }
 
 std::vector<const opt::analysis::ScalarConstant*>
-FactManager::UniformConstantFacts::GetConstantsAvailableFromUniformsForType(
+FactManager::ConstantUniformFacts::GetConstantsAvailableFromUniformsForType(
     const spvtools::opt::analysis::Type& type) const {
   std::vector<const opt::analysis::ScalarConstant*> result;
   auto iterator = type_pool.find(&type);
@@ -166,7 +168,7 @@ FactManager::UniformConstantFacts::GetConstantsAvailableFromUniformsForType(
 }
 
 const std::vector<protobufs::UniformBufferElementDescriptor>*
-FactManager::UniformConstantFacts::GetUniformDescriptorsForConstant(
+FactManager::ConstantUniformFacts::GetUniformDescriptorsForConstant(
     const opt::analysis::ScalarConstant& constant) const {
   auto registered_type = type_pool.find(constant.type());
   if (registered_type == type_pool.end()) {
@@ -196,7 +198,7 @@ FactManager::UniformConstantFacts::GetUniformDescriptorsForConstant(
 }
 
 const opt::analysis::ScalarConstant*
-FactManager::UniformConstantFacts::GetConstantFromUniformDescriptor(
+FactManager::ConstantUniformFacts::GetConstantFromUniformDescriptor(
     const protobufs::UniformBufferElementDescriptor& uniform_descriptor) const {
   if (uniform_descriptor_to_constant.find(&uniform_descriptor) ==
       uniform_descriptor_to_constant.end()) {
@@ -206,7 +208,7 @@ FactManager::UniformConstantFacts::GetConstantFromUniformDescriptor(
 }
 
 std::vector<const opt::analysis::Type*>
-FactManager::UniformConstantFacts::GetTypesForWhichUniformValuesAreKnown()
+FactManager::ConstantUniformFacts::GetTypesForWhichUniformValuesAreKnown()
     const {
   std::vector<const opt::analysis::Type*> result;
   // Iterate through the sequence of owned types, rather than the unordered type
@@ -217,7 +219,7 @@ FactManager::UniformConstantFacts::GetTypesForWhichUniformValuesAreKnown()
   return result;
 }
 
-bool FactManager::UniformConstantFacts::AddFact(
+bool FactManager::ConstantUniformFacts::AddFact(
     const protobufs::ConstantUniformFact& fact, opt::IRContext* context) {
   auto should_be_uniform_variable = context->get_def_use_mgr()->GetDef(
       fact.uniform_buffer_element_descriptor().uniform_variable_id());
@@ -306,7 +308,7 @@ bool FactManager::UniformConstantFacts::AddFact(
 }
 
 FactManager::FactManager() {
-  uniform_constant_facts_ = MakeUnique<UniformConstantFacts>();
+  uniform_constant_facts_ = MakeUnique<ConstantUniformFacts>();
 }
 
 FactManager::~FactManager() = default;

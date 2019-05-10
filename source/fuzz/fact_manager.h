@@ -46,6 +46,14 @@ class FactManager {
   // |context|. Returns true if and only if the fact is valid.
   bool AddFact(const protobufs::Fact& fact, opt::IRContext* context);
 
+  // The fact manager will ultimately be responsible for managing a few distinct
+  // categories of facts. In principle there could be different fact managers
+  // for each kind of fact, but in practice providing one 'go to' place for
+  // facts will be convenient.  To keep some separation, the public methods of
+  // the fact manager should be grouped according to the kind of fact to which
+  // they relate.  At present we only have one kind of fact: facts about
+  // uniform variables.
+
   //==============================
   // Querying facts about uniform constants
 
@@ -76,11 +84,12 @@ class FactManager {
   //==============================
 
  private:
-  // Add an opaque struct type for each distinct category of fact to be managed.
+  // For each distinct kind of fact to be managed, we use a separate opaque
+  // struct type.
 
-  struct UniformConstantFacts;  // Opaque struct for holding data about uniform
+  struct ConstantUniformFacts;  // Opaque struct for holding data about uniform
                                 // buffer elements.
-  std::unique_ptr<UniformConstantFacts>
+  std::unique_ptr<ConstantUniformFacts>
       uniform_constant_facts_;  // Unique pointer to internal data.
 };
 
