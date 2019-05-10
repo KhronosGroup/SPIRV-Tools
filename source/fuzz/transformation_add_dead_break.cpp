@@ -81,18 +81,11 @@ bool PhiIdsOk(const protobufs::TransformationAddDeadBreak& message,
       // or its type does not match that of the OpPhi.
       return false;
     }
-    // Check whether the given id corresponds to a constant.  If so, that's
-    // fine.
-    bool found = false;
-    for (auto& type_value_inst : context->module()->types_values()) {
-      if (&type_value_inst == phi_extension) {
-        found = true;
-      }
-    }
-    if (!found) {
-      // The id did not correspond to a constant, so it must come from an
-      // instruction in the function.  Check whether its definition dominates
-      // the exit of |from_block|.
+
+    if (context->get_instr_block(phi_extension)) {
+      // The instruction defining the phi id has an associated block (i.e., it
+      // is not a global value).  Check whether its definition dominates the
+      // exit of |from_block|.
       auto dominator_analysis =
           context->GetDominatorAnalysis(bb_from->GetParent());
       if (!dominator_analysis->Dominates(phi_extension,
