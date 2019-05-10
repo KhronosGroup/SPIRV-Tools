@@ -24,9 +24,11 @@ using opt::IRContext;
 bool IsApplicable(const protobufs::TransformationAddConstantScalar& message,
                   IRContext* context,
                   const spvtools::fuzz::FactManager& /*unused*/) {
+  // The id needs to be fresh.
   if (!fuzzerutil::IsFreshId(context, message.fresh_id())) {
     return false;
   }
+  // The type id for the scalar must exist and be a type.
   auto type = context->get_type_mgr()->GetType(message.type_id());
   if (!type) {
     return false;
@@ -41,6 +43,9 @@ bool IsApplicable(const protobufs::TransformationAddConstantScalar& message,
   }
   // The number of words is the integer floor of the width.
   auto words = (width + 32 - 1) / 32;
+
+  // The number of words provided by the transformation needs to match the
+  // width of the type.
   return (uint32_t)message.word().size() == words;
 }
 

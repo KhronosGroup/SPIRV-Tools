@@ -7,6 +7,18 @@ message IdUseDescriptor {
   // Describes a use of an id as an input operand to an instruction in some block
   // of a function.
 
+  // Example:
+  //   - id_of_interest = 42
+  //   - target_instruction_opcode = OpStore
+  //   - in_operand_index = 1
+  //   - base_instruction_result_id = 50
+  //   - num_opcodes_to_ignore = 7
+  // represents a use of id 42 as input operand 1 to an OpStore instruction,
+  // such that the OpStore instruction can be found in the same basic block as
+  // the instruction with result id 50, and in particular is the 8th OpStore
+  // instruction found from instruction 50 onwards (i.e. 7 OpStore
+  // instructions are skipped).
+
   // An id that we would like to be able to find a use of.
   uint32 id_of_interest = 1;
 
