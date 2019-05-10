@@ -19,10 +19,6 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-// TODO: it is OK to have multiple pointer types with the same base type
-// TODO: check for pointer-to-pointer
-// TODO: check for a few different storage classes
-
 TEST(TransformationAddTypePointerTest, BasicTest) {
   // The SPIR-V was obtained from this GLSL:
   //
