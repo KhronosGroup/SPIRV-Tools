@@ -6408,6 +6408,84 @@ INSTANTIATE_TEST_SUITE_P(SPV14FoldingTest, SPV14FoldingTest,
                                  3, true)
 ));
 
+std::string FloatControlsHeader(const std::string& capabilities) {
+  std::string header = R"(
+OpCapability Shader
+)" + capabilities + R"(
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%float_1 = OpConstant %float 1
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+)";
+
+  return header;
+}
+
+using FloatControlsFoldingTest =
+::testing::TestWithParam<InstructionFoldingCase<bool>>;
+
+TEST_P(FloatControlsFoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_4, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
+  EXPECT_EQ(succeeded, tc.expected_result);
+  if (succeeded) {
+    Match(tc.test_body, context.get());
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(FloatControlsFoldingTest, FloatControlsFoldingTest,
+::testing::Values(
+    // Test case 0: no folding with DenormPreserve
+    InstructionFoldingCase<bool>(FloatControlsHeader("OpCapability DenormPreserve") +
+                                 "%1 = OpFAdd %float %float_0 %float_1\n" +
+                                 "OpReturn\n" +
+                                 "OpFunctionEnd\n"
+,
+                                 1, false),
+    // Test case 1: no folding with DenormFlushToZero
+    InstructionFoldingCase<bool>(FloatControlsHeader("OpCapability DenormFlushToZero") +
+                                 "%1 = OpFAdd %float %float_0 %float_1\n" +
+                                 "OpReturn\n" +
+                                 "OpFunctionEnd\n"
+,
+                                 1, false),
+    // Test case 2: no folding with SignedZeroInfNanPreserve
+    InstructionFoldingCase<bool>(FloatControlsHeader("OpCapability SignedZeroInfNanPreserve") +
+                                 "%1 = OpFAdd %float %float_0 %float_1\n" +
+                                 "OpReturn\n" +
+                                 "OpFunctionEnd\n"
+,
+                                 1, false),
+    // Test case 3: no folding with RoundingModeRTE
+    InstructionFoldingCase<bool>(FloatControlsHeader("OpCapability RoundingModeRTE") +
+                                 "%1 = OpFAdd %float %float_0 %float_1\n" +
+                                 "OpReturn\n" +
+                                 "OpFunctionEnd\n"
+,
+                                 1, false),
+    // Test case 4: no folding with RoundingModeRTZ
+    InstructionFoldingCase<bool>(FloatControlsHeader("OpCapability RoundingModeRTZ") +
+                                 "%1 = OpFAdd %float %float_0 %float_1\n" +
+                                 "OpReturn\n" +
+                                 "OpFunctionEnd\n"
+,
+                                 1, false)
+));
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
