@@ -309,20 +309,19 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
 
   const auto min_version = inst_desc->minVersion;
   const auto last_version = inst_desc->lastVersion;
+  const auto module_version = _.version();
+
+  if (last_version < module_version) {
+    return _.diag(SPV_ERROR_WRONG_VERSION, inst)
+           << spvOpcodeString(opcode) << " requires SPIR-V version "
+           << SPV_SPIRV_VERSION_MAJOR_PART(last_version) << "."
+           << SPV_SPIRV_VERSION_MINOR_PART(last_version) << " or earlier";
+  }
 
   if (inst_desc->numCapabilities > 0u) {
     // We already checked that the direct capability dependency has been
     // satisfied. We don't need to check any further.
     return SPV_SUCCESS;
-  }
-
-  const auto module_version = _.version();
-
-  if (last_version < module_version) {
-    return _.diag(SPV_ERROR_WRONG_VERSION, inst)
-           << spvOpcodeString(opcode) << " requires "
-           << spvTargetEnvDescription(static_cast<spv_target_env>(last_version))
-           << " at maximum.";
   }
 
   ExtensionSet exts(inst_desc->numExtensions, inst_desc->extensions);

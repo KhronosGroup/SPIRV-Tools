@@ -6332,6 +6332,36 @@ TEST_F(ValidateDecorations, NonWritableVarFunctionV13TargetV14Bad) {
                         "buffer\n  %var_func"));
 }
 
+TEST_F(ValidateDecorations, BufferBlockV13ValV14Good) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 BufferBlock
+%1 = OpTypeStruct
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateDecorations, BufferBlockV14Bad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 BufferBlock
+%1 = OpTypeStruct
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_WRONG_VERSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("2nd operand of Decorate: operand BufferBlock(3) "
+                        "requires SPIR-V version 1.3 or earlier"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
