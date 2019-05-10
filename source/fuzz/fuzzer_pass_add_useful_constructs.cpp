@@ -191,6 +191,8 @@ void FuzzerPassAddUsefulConstructs::Apply(
                                           *fact_manager) &&
              "Should be applicable by construction.");
       transformation::Apply(add_pointer, ir_context, fact_manager);
+      *transformations->add_transformation()->mutable_add_type_pointer() =
+          add_pointer;
     }
     for (const opt::analysis::ScalarConstant* constant :
          fact_manager->GetConstantsAvailableFromUniformsForType(*type)) {
