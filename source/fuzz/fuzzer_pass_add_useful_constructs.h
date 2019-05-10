@@ -24,27 +24,21 @@ namespace fuzz {
 // constants, if they are not present.
 class FuzzerPassAddUsefulConstructs : public FuzzerPass {
  public:
-  FuzzerPassAddUsefulConstructs() = default;
+  FuzzerPassAddUsefulConstructs(
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations)
+      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations){};
 
   ~FuzzerPassAddUsefulConstructs() override = default;
 
-  void Apply(opt::IRContext* ir_context, FactManager* fact_manager,
-             FuzzerContext* fuzzer_context,
-             protobufs::TransformationSequence* transformations) override;
+  void Apply() override;
 
  private:
-  void MaybeAddIntConstant(opt::IRContext* ir_context,
-                           FuzzerContext* fuzzer_context,
-                           FactManager* fact_manager,
-                           protobufs::TransformationSequence* transformations,
-                           uint32_t width, bool is_signed,
+  void MaybeAddIntConstant(uint32_t width, bool is_signed,
                            std::vector<uint32_t> data) const;
 
-  void MaybeAddFloatConstant(opt::IRContext* ir_context,
-                             FuzzerContext* fuzzer_context,
-                             FactManager* fact_manager,
-                             protobufs::TransformationSequence* transformations,
-                             uint32_t width, std::vector<uint32_t> data) const;
+  void MaybeAddFloatConstant(uint32_t width, std::vector<uint32_t> data) const;
 };
 
 }  // namespace fuzz

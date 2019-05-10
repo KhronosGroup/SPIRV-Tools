@@ -21,14 +21,11 @@ namespace fuzz {
 
 using opt::IRContext;
 
-void FuzzerPassAddDeadBreaks::Apply(
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
+void FuzzerPassAddDeadBreaks::Apply() {
   // We first collect up lots of possibly-applicable transformations.
   std::vector<protobufs::TransformationAddDeadBreak> candidate_transformations;
   // We consider each function separately.
-  for (auto& function : *ir_context->module()) {
+  for (auto& function : *GetIRContext()->module()) {
     // For a given function, we find all the merge blocks in that function.
     std::vector<uint32_t> merge_block_ids;
     for (auto& block : function) {
@@ -49,10 +46,10 @@ void FuzzerPassAddDeadBreaks::Apply(
         auto candidate_transformation =
             transformation::MakeTransformationAddDeadBreak(
                 block.id(), merge_block_id,
-                fuzzer_context->GetRandomGenerator()->RandomBool(),
+                GetFuzzerContext()->GetRandomGenerator()->RandomBool(),
                 std::move(phi_ids));
-        if (transformation::IsApplicable(candidate_transformation, ir_context,
-                                         *fact_manager)) {
+        if (transformation::IsApplicable(candidate_transformation,
+                                         GetIRContext(), *GetFactManager())) {
           // Only consider a transformation as a candidate if it is applicable.
           candidate_transformations.push_back(
               std::move(candidate_transformation));
@@ -65,17 +62,18 @@ void FuzzerPassAddDeadBreaks::Apply(
   // probabilistically deciding whether to consider each one further and
   // applying the still-applicable ones that are considered further.
   while (!candidate_transformations.empty()) {
-    auto index = fuzzer_context->GetRandomGenerator()->RandomUint32(
+    auto index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
         (uint32_t)candidate_transformations.size());
     auto message = std::move(candidate_transformations[index]);
     candidate_transformations.erase(candidate_transformations.begin() + index);
-    if (fuzzer_context->GetRandomGenerator()->RandomPercentage() >
-        fuzzer_context->GetChanceOfAddingDeadBreak()) {
+    if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
+        GetFuzzerContext()->GetChanceOfAddingDeadBreak()) {
       continue;
     }
-    if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
-      transformation::Apply(message, ir_context, fact_manager);
-      *transformations->add_transformation()->mutable_add_dead_break() =
+    if (transformation::IsApplicable(message, GetIRContext(),
+                                     *GetFactManager())) {
+      transformation::Apply(message, GetIRContext(), GetFactManager());
+      *GetTransformations()->add_transformation()->mutable_add_dead_break() =
           message;
     }
   }

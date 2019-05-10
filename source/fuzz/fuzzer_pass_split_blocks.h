@@ -24,13 +24,14 @@ namespace fuzz {
 // can be very useful for giving other passes a chance to apply.
 class FuzzerPassSplitBlocks : public FuzzerPass {
  public:
-  FuzzerPassSplitBlocks() = default;
+  FuzzerPassSplitBlocks(opt::IRContext* ir_context, FactManager* fact_manager,
+                        FuzzerContext* fuzzer_context,
+                        protobufs::TransformationSequence* transformations)
+      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations){};
 
   ~FuzzerPassSplitBlocks() override = default;
 
-  void Apply(opt::IRContext* ir_context, FactManager* fact_manager,
-             FuzzerContext* fuzzer_context,
-             protobufs::TransformationSequence* transformations) override;
+  void Apply() override;
 
  private:
 };

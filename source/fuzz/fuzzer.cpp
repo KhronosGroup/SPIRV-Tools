@@ -93,22 +93,25 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
 
   // Add some essential ingredients to the module if they are not already
   // present, such as boolean constants.
-  FuzzerPassAddUsefulConstructs().Apply(ir_context.get(), &fact_manager,
-                                        &fuzzer_context,
-                                        transformation_sequence_out);
+  FuzzerPassAddUsefulConstructs(ir_context.get(), &fact_manager,
+                                &fuzzer_context, transformation_sequence_out)
+      .Apply();
 
   // Apply some semantics-preserving passes.
-  FuzzerPassSplitBlocks().Apply(ir_context.get(), &fact_manager,
-                                &fuzzer_context, transformation_sequence_out);
-  FuzzerPassAddDeadBreaks().Apply(ir_context.get(), &fact_manager,
-                                  &fuzzer_context, transformation_sequence_out);
-  FuzzerPassObfuscateConstants().Apply(ir_context.get(), &fact_manager,
-                                       &fuzzer_context,
-                                       transformation_sequence_out);
+  FuzzerPassSplitBlocks(ir_context.get(), &fact_manager, &fuzzer_context,
+                        transformation_sequence_out)
+      .Apply();
+  FuzzerPassAddDeadBreaks(ir_context.get(), &fact_manager, &fuzzer_context,
+                          transformation_sequence_out)
+      .Apply();
+  FuzzerPassObfuscateConstants(ir_context.get(), &fact_manager, &fuzzer_context,
+                               transformation_sequence_out)
+      .Apply();
 
   // Finally, give the blocks in the module a good shake-up.
-  FuzzerPassPermuteBlocks().Apply(ir_context.get(), &fact_manager,
-                                  &fuzzer_context, transformation_sequence_out);
+  FuzzerPassPermuteBlocks(ir_context.get(), &fact_manager, &fuzzer_context,
+                          transformation_sequence_out)
+      .Apply();
 
   // Write out the module as a binary.
   ir_context->module()->ToBinary(binary_out, false);

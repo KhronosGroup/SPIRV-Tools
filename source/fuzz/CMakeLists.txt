@@ -44,6 +44,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fact_manager.cpp
         fuzzer.cpp
         fuzzer_context.cpp
+        fuzzer_pass.cpp
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_useful_constructs.cpp
         fuzzer_pass_obfuscate_constants.cpp

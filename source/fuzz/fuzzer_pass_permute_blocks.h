@@ -24,13 +24,14 @@ namespace fuzz {
 // manner.
 class FuzzerPassPermuteBlocks : public FuzzerPass {
  public:
-  FuzzerPassPermuteBlocks() = default;
+  FuzzerPassPermuteBlocks(opt::IRContext* ir_context, FactManager* fact_manager,
+                          FuzzerContext* fuzzer_context,
+                          protobufs::TransformationSequence* transformations)
+      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
 
   ~FuzzerPassPermuteBlocks() override = default;
 
-  void Apply(opt::IRContext* ir_context, FactManager* fact_manager,
-             FuzzerContext* fuzzer_context,
-             protobufs::TransformationSequence* transformations) override;
+  void Apply() override;
 
  private:
 };
