@@ -685,7 +685,7 @@ TEST_F(ValidateFunctionCall,
                OpDecorate %_runtimearr__struct_3 ArrayStride 4
                OpMemberDecorate %_struct_5 0 Offset 0
                OpDecorate %_struct_5 BufferBlock
-               OpMemberDecorate %_struct_15 0 Offset 4
+               OpMemberDecorate %_struct_15 0 NonWritable
         %int = OpTypeInt 32 1
       %int_0 = OpConstant %int 0
        %uint = OpTypeInt 32 0
@@ -709,6 +709,61 @@ TEST_F(ValidateFunctionCall,
                OpFunctionEnd
          %22 = OpFunction %void None %18
          %23 = OpFunctionParameter %_ptr_Function__struct_15
+         %24 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  spvValidatorOptionsSetBeforeHlslLegalization(getValidatorOptions(), true);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("OpFunctionCall Argument <id>"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("type does not match Function <id>"));
+}
+
+TEST_F(ValidateFunctionCall,
+       LogicallyMismatchedPointersIncompatableDecorations2) {
+  //  Validation should fail because the formal parameter has an incompatible
+  //  decoration.
+  std::string spirv =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+               OpSource HLSL 600
+               OpDecorate %2 DescriptorSet 0
+               OpDecorate %2 Binding 0
+               OpMemberDecorate %_struct_3 0 Offset 0
+               OpDecorate %_runtimearr__struct_3 ArrayStride 4
+               OpDecorate %_runtimearr__struct_3b ArrayStride 8
+               OpMemberDecorate %_struct_5 0 Offset 0
+               OpDecorate %_struct_5 BufferBlock
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+  %_struct_3 = OpTypeStruct %int
+%_runtimearr__struct_3 = OpTypeRuntimeArray %_struct_3
+%_runtimearr__struct_3b = OpTypeRuntimeArray %_struct_3
+  %_struct_5 = OpTypeStruct %_runtimearr__struct_3
+  %_struct_5b = OpTypeStruct %_runtimearr__struct_3b
+%_ptr_Uniform__struct_5 = OpTypePointer Uniform %_struct_5
+%_ptr_Uniform__struct_5b = OpTypePointer Uniform %_struct_5b
+       %void = OpTypeVoid
+         %14 = OpTypeFunction %void
+%_ptr_Uniform__struct_3 = OpTypePointer Uniform %_struct_3
+         %18 = OpTypeFunction %void %_ptr_Uniform__struct_5b
+          %2 = OpVariable %_ptr_Uniform__struct_5 Uniform
+          %1 = OpFunction %void None %14
+         %19 = OpLabel
+         %20 = OpAccessChain %_ptr_Uniform__struct_3 %2 %int_0 %uint_0
+         %21 = OpFunctionCall %void %22 %20
+               OpReturn
+               OpFunctionEnd
+         %22 = OpFunction %void None %18
+         %23 = OpFunctionParameter %_ptr_Uniform__struct_5b
          %24 = OpLabel
                OpReturn
                OpFunctionEnd
