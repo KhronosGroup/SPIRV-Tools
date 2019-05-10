@@ -62,6 +62,14 @@ def convert_min_required_version(version):
     return 'SPV_SPIRV_VERSION_WORD({})'.format(version.replace('.', ','))
 
 
+def convert_max_required_version(version):
+    """Converts the maximum required SPIR-V version encoded in the
+    grammar to the symbol in SPIRV-Tools"""
+    if version is None:
+        return '0xffffffffu'
+    return 'SPV_SPIRV_VERSION_WORD({})'.format(version.replace('.', ','))
+
+
 def compose_capability_list(caps):
     """Returns a string containing a braced list of capabilities as enums.
 
@@ -206,7 +214,7 @@ class InstInitializer(object):
     """Instances holds a SPIR-V instruction suitable for printing as
     the initializer for spv_opcode_desc_t."""
 
-    def __init__(self, opname, caps, exts, operands, version):
+    def __init__(self, opname, caps, exts, operands, version, lastVersion):
         """Initialization.
 
         Arguments:
@@ -215,6 +223,7 @@ class InstInitializer(object):
           - exts: a sequence of names of extensions enabling this enumerant
           - operands: a sequence of (operand-kind, operand-quantifier) tuples
           - version: minimal SPIR-V version required for this opcode
+          - lastVersion: last version of SPIR-V that includes this opcode
         """
 
         assert opname.startswith('Op')
@@ -232,6 +241,7 @@ class InstInitializer(object):
         self.def_result_id = 'IdResult' in operands
 
         self.version = convert_min_required_version(version)
+        self.lastVersion = convert_max_required_version(lastVersion)
 
     def fix_syntax(self):
         """Fix an instruction's syntax, adjusting for differences between
@@ -251,7 +261,7 @@ class InstInitializer(object):
                     '{num_operands}', '{{{operands}}}',
                     '{def_result_id}', '{ref_type_id}',
                     '{num_exts}', '{exts}',
-                    '{min_version}}}']
+                    '{min_version}', '{max_version}}}']
         return ', '.join(template).format(
             opname=self.opname,
             num_caps=self.num_caps,
@@ -262,7 +272,8 @@ class InstInitializer(object):
             ref_type_id=(1 if self.ref_type_id else 0),
             num_exts=self.num_exts,
             exts=self.exts,
-            min_version=self.version)
+            min_version=self.version,
+            max_version=self.lastVersion)
 
 
 class ExtInstInitializer(object):
@@ -315,13 +326,14 @@ def generate_instruction(inst, is_ext_inst):
     operands = inst.get('operands', {})
     operands = [(o['kind'], o.get('quantifier', '')) for o in operands]
     min_version = inst.get('version', None)
+    max_version = inst.get('lastVersion', None)
 
     assert opname is not None
 
     if is_ext_inst:
         return str(ExtInstInitializer(opname, opcode, caps, operands))
     else:
-        return str(InstInitializer(opname, caps, exts, operands, min_version))
+        return str(InstInitializer(opname, caps, exts, operands, min_version, max_version))
 
 
 def generate_instruction_table(inst_table):
@@ -370,7 +382,7 @@ def generate_extended_instruction_table(inst_table, set_name):
 class EnumerantInitializer(object):
     """Prints an enumerant as the initializer for spv_operand_desc_t."""
 
-    def __init__(self, enumerant, value, caps, exts, parameters, version):
+    def __init__(self, enumerant, value, caps, exts, parameters, version, lastVersion):
         """Initialization.
 
         Arguments:
@@ -380,6 +392,7 @@ class EnumerantInitializer(object):
           - exts: a sequence of names of extensions enabling this enumerant
           - parameters: a sequence of (operand-kind, operand-quantifier) tuples
           - version: minimal SPIR-V version required for this opcode
+          - lastVersion: last SPIR-V version this opode appears
         """
         self.enumerant = enumerant
         self.value = value
@@ -389,11 +402,13 @@ class EnumerantInitializer(object):
         self.exts = get_extension_array_name(exts)
         self.parameters = [convert_operand_kind(p) for p in parameters]
         self.version = convert_min_required_version(version)
+        self.lastVersion = convert_max_required_version(lastVersion)
 
     def __str__(self):
         template = ['{{"{enumerant}"', '{value}', '{num_caps}',
                     '{caps}', '{num_exts}', '{exts}',
-                    '{{{parameters}}}', '{min_version}}}']
+                    '{{{parameters}}}', '{min_version}',
+                    '{max_version}}}']
         return ', '.join(template).format(
             enumerant=self.enumerant,
             value=self.value,
@@ -402,7 +417,8 @@ class EnumerantInitializer(object):
             num_exts=self.num_exts,
             exts=self.exts,
             parameters=', '.join(self.parameters),
-            min_version=self.version)
+            min_version=self.version,
+            max_version=self.lastVersion)
 
 
 def generate_enum_operand_kind_entry(entry, extension_map):
@@ -426,12 +442,13 @@ def generate_enum_operand_kind_entry(entry, extension_map):
     params = [p.get('kind') for p in params]
     params = zip(params, [''] * len(params))
     version = entry.get('version', None)
+    max_version = entry.get('lastVersion', None)
 
     assert enumerant is not None
     assert value is not None
 
     return str(EnumerantInitializer(
-        enumerant, value, caps, exts, params, version))
+        enumerant, value, caps, exts, params, version, max_version))
 
 
 def generate_enum_operand_kind(enum, synthetic_exts_list):
