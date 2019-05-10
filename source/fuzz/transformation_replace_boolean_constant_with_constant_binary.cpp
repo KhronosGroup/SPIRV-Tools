@@ -122,6 +122,7 @@ bool IsApplicable(
     return false;
   }
 
+  // The left-hand-side id must correspond to a constant instruction.
   auto lhs_constant_inst = context->get_def_use_mgr()->GetDef(message.lhs_id());
   if (!lhs_constant_inst) {
     return false;
@@ -130,6 +131,7 @@ bool IsApplicable(
     return false;
   }
 
+  // The right-hand-side id must correspond to a constant instruction.
   auto rhs_constant_inst = context->get_def_use_mgr()->GetDef(message.rhs_id());
   if (!rhs_constant_inst) {
     return false;
@@ -138,17 +140,20 @@ bool IsApplicable(
     return false;
   }
 
+  // The left- and right-hand side instructions must have the same type.
   if (lhs_constant_inst->type_id() != rhs_constant_inst->type_id()) {
     return false;
   }
 
-  // lhs op rhs must evaluate to the boolean constant
+  // The expression 'LHS opcode RHS' must evaluate to the boolean constant.
   auto lhs_constant =
       context->get_constant_mgr()->FindDeclaredConstant(message.lhs_id());
   auto rhs_constant =
       context->get_constant_mgr()->FindDeclaredConstant(message.rhs_id());
   bool expected_result = (boolean_constant->opcode() == SpvOpConstantTrue);
 
+  // We consider the floating point, signed and unsigned integer cases
+  // separately.  In each case the logic is very similar.
   if (lhs_constant->AsFloatConstant()) {
     assert(rhs_constant->AsFloatConstant() &&
            "Both constants should be of the same type.");

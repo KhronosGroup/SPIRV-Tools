@@ -24,6 +24,7 @@ using opt::IRContext;
 bool IsApplicable(const protobufs::TransformationAddTypeFloat& message,
                   IRContext* context,
                   const spvtools::fuzz::FactManager& /*unused*/) {
+  // The id must be fresh.
   if (!fuzzerutil::IsFreshId(context, message.fresh_id())) {
     return false;
   }

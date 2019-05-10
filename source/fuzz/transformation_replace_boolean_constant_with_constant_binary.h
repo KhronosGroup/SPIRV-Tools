@@ -25,13 +25,23 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// TODO: comment
+// - |message.fresh_id_for_binary_operation| must not already be used by the
+//   module.
+// - |message.id_use_descriptor| must identify a use of a boolean constant c.
+// - |message.lhs_id| and |message.rhs_id| must be the ids of constant
+//   instructions with the same type
+// - |message.opcode| must be suitable for applying to |message.lhs_id| and
+//   |message.rhs_id|, and the result must evaluate to the boolean constant c.
 bool IsApplicable(
     const protobufs::TransformationReplaceBooleanConstantWithConstantBinary&
         message,
     opt::IRContext* context, const FactManager& fact_manager);
 
-// TODO: comment
+// A new instruction is added before the boolean constant usage that computes
+// the result of applying |message.opcode| to |message.lhs_id| and
+// |message.rhs_id| is added, with result id
+// |message.fresh_id_for_binary_operation|.  The boolean constant usage is
+// replaced with this result id.
 opt::Instruction* Apply(
     const protobufs::TransformationReplaceBooleanConstantWithConstantBinary&
         message,
