@@ -5947,10 +5947,8 @@ std::string ShaderWithNonWritableTarget(const std::string& target,
             OpName %simple_struct "simple_struct"
 
             OpDecorate %struct_b Block
-            OpDecorate %struct_bb BufferBlock
             OpDecorate %struct_b_rtarr Block
             OpMemberDecorate %struct_b 0 Offset 0
-            OpMemberDecorate %struct_bb 0 Offset 0
             OpMemberDecorate %struct_b_rtarr 0 Offset 0
             OpDecorate %rtarr ArrayStride 4
 )") + decoration_inst +
@@ -5964,7 +5962,6 @@ std::string ShaderWithNonWritableTarget(const std::string& target,
    %int     = OpTypeInt 32 0
    %int_2   = OpConstant %int 2
   %struct_b = OpTypeStruct %float
- %struct_bb = OpTypeStruct %float
  %rtarr = OpTypeRuntimeArray %float
 %struct_b_rtarr = OpTypeStruct %rtarr
 %simple_struct = OpTypeStruct %float
@@ -5976,7 +5973,6 @@ std::string ShaderWithNonWritableTarget(const std::string& target,
 %rta_imstor = OpTypeRuntimeArray %imstor
 
 %_ptr_Uniform_stb        = OpTypePointer Uniform %struct_b
-%_ptr_Uniform_stbb       = OpTypePointer Uniform %struct_bb
 %_ptr_StorageBuffer_stb  = OpTypePointer StorageBuffer %struct_b
 %_ptr_StorageBuffer_stb_rtarr  = OpTypePointer StorageBuffer %struct_b_rtarr
 %_ptr_Workgroup          = OpTypePointer Workgroup %float
@@ -5990,7 +5986,6 @@ std::string ShaderWithNonWritableTarget(const std::string& target,
 %extra_fn = OpTypeFunction %void %float %_ptr_Private %_ptr_imstor
 
 %var_ubo = OpVariable %_ptr_Uniform_stb Uniform
-%var_ssbo_u = OpVariable %_ptr_Uniform_stbb Uniform
 %var_ssbo_sb = OpVariable %_ptr_StorageBuffer_stb StorageBuffer
 %var_ssbo_sb_rtarr = OpVariable %_ptr_StorageBuffer_stb_rtarr StorageBuffer
 %var_wg = OpVariable %_ptr_Workgroup Workgroup
@@ -6110,7 +6105,24 @@ TEST_F(ValidateDecorations, NonWritableVarUboGood) {
 }
 
 TEST_F(ValidateDecorations, NonWritableVarSsboInUniformGood) {
-  std::string spirv = ShaderWithNonWritableTarget("%var_ssbo_u");
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpDecorate %struct_bb BufferBlock
+OpMemberDecorate %struct_bb 0 Offset 0
+OpDecorate %var_ssbo_u NonWritable
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%struct_bb = OpTypeStruct %float
+%_ptr_Uniform_stbb       = OpTypePointer Uniform %struct_bb
+%var_ssbo_u = OpVariable %_ptr_Uniform_stbb Uniform
+%main = OpFunction %void None %void_fn
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
