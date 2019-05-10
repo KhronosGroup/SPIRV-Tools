@@ -22,9 +22,14 @@ namespace spvtools {
 namespace fuzz {
 namespace module_navigation {
 
+// Attempts to identify the instruction in |context| associated with the id use
+// represented by |descriptor|.  Returns |nullptr| if no such instruction can
+// be found.
 opt::Instruction* FindInstruction(const protobufs::IdUseDescriptor& descriptor,
                                   opt::IRContext* context);
 
+// Creates an IdUseDescriptor protobuf message from the given components.
+// See the protobuf definition for details of what these components mean.
 protobufs::IdUseDescriptor MakeIdUseDescriptor(
     uint32_t id_of_interest, SpvOp target_instruction_opcode,
     uint32_t in_operand_index, uint32_t base_instruction_result_id,

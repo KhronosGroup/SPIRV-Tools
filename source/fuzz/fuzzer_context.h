@@ -46,6 +46,8 @@ class FuzzerContext {
   uint32_t GetChanceOfObfuscatingConstant();
   uint32_t GetChanceOfSplittingBlock();
 
+  // Probability distributions to control how deeply to recurse.
+  // Keep them in alphabetical order.
   const std::function<bool(uint32_t, RandomGenerator*)>&
   GoDeeperInConstantObfuscation();
 

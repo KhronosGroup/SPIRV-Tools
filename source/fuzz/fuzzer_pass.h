@@ -35,10 +35,10 @@ class FuzzerPass {
 
   virtual ~FuzzerPass() = default;
 
-  // Applies the pass to the given module, |ir_context|, assuming and updating
-  // facts from |fact_manager|, and using |fuzzer_context| to guide the process.
-  // Appends to |transformations| all transformations that were applied during
-  // the pass.
+  // Applies the pass to the module |ir_context_|, assuming and updating
+  // facts from |fact_manager_|, and using |fuzzer_context_| to guide the
+  // process.  Appends to |transformations_| all transformations that were
+  // applied during the pass.
   virtual void Apply() = 0;
 
  protected:
