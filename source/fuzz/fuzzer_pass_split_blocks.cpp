@@ -20,25 +20,22 @@ namespace fuzz {
 
 using opt::IRContext;
 
-void FuzzerPassSplitBlocks::Apply(
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
+void FuzzerPassSplitBlocks::Apply() {
   // Collect up all the blocks in the module.
   std::vector<opt::BasicBlock*> available_blocks;
-  for (auto& function : *ir_context->module()) {
+  for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       available_blocks.push_back(&block);
     }
   }
 
   while (!available_blocks.empty()) {
-    auto block_index = fuzzer_context->GetRandomGenerator()->RandomUint32(
+    auto block_index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
         (uint32_t)available_blocks.size());
     auto block = available_blocks[block_index];
     available_blocks.erase(available_blocks.begin() + block_index);
-    if (fuzzer_context->GetRandomGenerator()->RandomPercentage() >
-        fuzzer_context->GetChanceOfSplittingBlock()) {
+    if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
+        GetFuzzerContext()->GetChanceOfSplittingBlock()) {
       continue;
     }
     // We are going to try to split this block.  We now need to choose where to
@@ -69,16 +66,18 @@ void FuzzerPassSplitBlocks::Apply(
     }
     // Having identified all the places we might be able to split the block, we
     // choose one of them.
-    auto base_offset =
-        base_offset_pairs[fuzzer_context->GetRandomGenerator()->RandomUint32(
+    auto base_offset = base_offset_pairs
+        [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
             (uint32_t)base_offset_pairs.size())];
     auto message = transformation::MakeTransformationSplitBlock(
-        base_offset.first, base_offset.second, fuzzer_context->FreshId());
+        base_offset.first, base_offset.second, GetFuzzerContext()->FreshId());
     // If the position we have chosen turns out to be a valid place to split the
     // block, we apply the split. Otherwise the block just doesn't get split.
-    if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
-      transformation::Apply(message, ir_context, fact_manager);
-      *transformations->add_transformation()->mutable_split_block() = message;
+    if (transformation::IsApplicable(message, GetIRContext(),
+                                     *GetFactManager())) {
+      transformation::Apply(message, GetIRContext(), GetFactManager());
+      *GetTransformations()->add_transformation()->mutable_split_block() =
+          message;
     }
   }
 }

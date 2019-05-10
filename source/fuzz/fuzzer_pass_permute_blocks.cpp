@@ -20,10 +20,7 @@ namespace fuzz {
 
 using opt::IRContext;
 
-void FuzzerPassPermuteBlocks::Apply(
-    IRContext* ir_context, FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations) {
+void FuzzerPassPermuteBlocks::Apply() {
   // For now we do something very simple: we randomly decide whether to move a
   // block, and for each block that we do move, we push it down as far as we
   // legally can.
@@ -32,7 +29,7 @@ void FuzzerPassPermuteBlocks::Apply(
   // move-block-down transformations.  This should be possible but will require
   // some thought.
 
-  for (auto& function : *ir_context->module()) {
+  for (auto& function : *GetIRContext()->module()) {
     std::vector<uint32_t> block_ids;
     // Collect all block ids for the function before messing with block
     // ordering.
@@ -53,8 +50,8 @@ void FuzzerPassPermuteBlocks::Apply(
     // would provide more freedom for A to move.
     for (auto id = block_ids.rbegin(); id != block_ids.rend(); ++id) {
       // Randomly decide whether to ignore the block id.
-      if (fuzzer_context->GetRandomGenerator()->RandomPercentage() >
-          fuzzer_context->GetChanceOfMovingBlockDown()) {
+      if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
+          GetFuzzerContext()->GetChanceOfMovingBlockDown()) {
         continue;
       }
       // Keep pushing the block down, until pushing down fails.
@@ -63,10 +60,12 @@ void FuzzerPassPermuteBlocks::Apply(
       while (true) {
         protobufs::TransformationMoveBlockDown message;
         message.set_block_id(*id);
-        if (transformation::IsApplicable(message, ir_context, *fact_manager)) {
-          transformation::Apply(message, ir_context, fact_manager);
-          *transformations->add_transformation()->mutable_move_block_down() =
-              message;
+        if (transformation::IsApplicable(message, GetIRContext(),
+                                         *GetFactManager())) {
+          transformation::Apply(message, GetIRContext(), GetFactManager());
+          *GetTransformations()
+               ->add_transformation()
+               ->mutable_move_block_down() = message;
         } else {
           break;
         }
