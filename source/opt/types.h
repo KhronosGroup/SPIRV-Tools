@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "source/latest_version_spirv_header.h"
+#include "source/opt/instruction.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
@@ -356,12 +357,19 @@ class SampledImage : public Type {
 
 class Array : public Type {
  public:
-  Array(Type* element_type, uint32_t length_id);
+  Array(Type* element_type, uint32_t length_id, uint32_t spec_id);
+  Array(Type* element_type, uint32_t length_id, const Type* constant_type,
+        Operand::OperandData constant_words);
   Array(const Array&) = default;
 
   std::string str() const override;
   const Type* element_type() const { return element_type_; }
   uint32_t LengthId() const { return length_id_; }
+  uint32_t length_spec_id() const { return length_spec_id_; }
+  const Type* length_constant_type() const { return length_constant_type_; }
+  Operand::OperandData length_constant_words() const {
+    return length_constant_words_;
+  }
 
   Array* AsArray() override { return this; }
   const Array* AsArray() const override { return this; }
@@ -376,6 +384,9 @@ class Array : public Type {
 
   const Type* element_type_;
   uint32_t length_id_;
+  uint32_t length_spec_id_;
+  const Type* length_constant_type_;
+  Operand::OperandData length_constant_words_;
 };
 
 class RuntimeArray : public Type {

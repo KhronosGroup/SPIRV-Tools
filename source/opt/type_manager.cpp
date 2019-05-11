@@ -66,7 +66,13 @@ uint32_t TypeManager::GetId(const Type* type) const {
 }
 
 void TypeManager::AnalyzeTypes(const Module& module) {
-  // First pass through the types.  Any types that reference a forward pointer
+  // First pass through the constants, as some will be needed when traversing
+  // the types in the next pass.
+  for (const auto* inst : module.GetConstants()) {
+    id_to_constant_inst_[inst->result_id()] = inst;
+  }
+
+  // Then pass through the types.  Any types that reference a forward pointer
   // (directly or indirectly) are incomplete, and are added to incomplete types.
   for (const auto* inst : module.GetTypes()) {
     RecordIfTypeDefinition(*inst);
@@ -154,7 +160,7 @@ void TypeManager::AnalyzeTypes(const Module& module) {
 
 #ifndef NDEBUG
   // Check if the type pool contains two types that are the same.  This
-  // is an indication that the hashing and comparision are wrong.  It
+  // is an indication that the hashing and comparison are wrong.  It
   // will cause a problem if the type pool gets resized and everything
   // is rehashed.
   for (auto& i : type_pool_) {
@@ -505,8 +511,15 @@ Type* TypeManager::RebuildType(const Type& type) {
     case Type::kArray: {
       const Array* array_ty = type.AsArray();
       const Type* ele_ty = array_ty->element_type();
-      rebuilt_ty =
-          MakeUnique<Array>(RebuildType(*ele_ty), array_ty->LengthId());
+      if (array_ty->length_spec_id() != 0u)
+        rebuilt_ty =
+            MakeUnique<Array>(RebuildType(*ele_ty), array_ty->LengthId(),
+                              array_ty->length_spec_id());
+      else
+        rebuilt_ty =
+            MakeUnique<Array>(RebuildType(*ele_ty), array_ty->LengthId(),
+                              array_ty->length_constant_type(),
+                              array_ty->length_constant_words());
       break;
     }
     case Type::kRuntimeArray: {
@@ -636,15 +649,39 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
     case SpvOpTypeSampledImage:
       type = new SampledImage(GetType(inst.GetSingleWordInOperand(0)));
       break;
-    case SpvOpTypeArray:
-      type = new Array(GetType(inst.GetSingleWordInOperand(0)),
-                       inst.GetSingleWordInOperand(1));
+    case SpvOpTypeArray: {
+      const uint32_t length_id = inst.GetSingleWordInOperand(1);
+      const Instruction* length_constant_inst = id_to_constant_inst_[length_id];
+      assert(length_constant_inst);
+
+      // If it is a specialised constants, retrieve its SpecId.
+      uint32_t spec_id = 0u;
+      Type* length_type = nullptr;
+      Operand::OperandData length_words;
+      if (spvOpcodeIsSpecConstant(length_constant_inst->opcode())) {
+        context()->get_decoration_mgr()->ForEachDecoration(
+            length_id, SpvDecorationSpecId,
+            [&spec_id](const Instruction& decoration) {
+              assert(decoration.opcode() == SpvOpDecorate);
+              spec_id = decoration.GetSingleWordOperand(2u);
+            });
+      } else {
+        length_type = GetType(length_constant_inst->type_id());
+        length_words = length_constant_inst->GetOperand(2u).words;
+      }
+
+      if (spec_id != 0u)
+        type = new Array(GetType(inst.GetSingleWordInOperand(0)), length_id,
+                         spec_id);
+      else
+        type = new Array(GetType(inst.GetSingleWordInOperand(0)), length_id,
+                         length_type, length_words);
       if (id_to_incomplete_type_.count(inst.GetSingleWordInOperand(0))) {
         incomplete_types_.emplace_back(inst.result_id(), type);
         id_to_incomplete_type_[inst.result_id()] = type;
         return type;
       }
-      break;
+    } break;
     case SpvOpTypeRuntimeArray:
       type = new RuntimeArray(GetType(inst.GetSingleWordInOperand(0)));
       if (id_to_incomplete_type_.count(inst.GetSingleWordInOperand(0))) {

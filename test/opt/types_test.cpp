@@ -72,7 +72,7 @@ TestMultipleInstancesOfTheSameType(Image, f64_t_.get(), SpvDimCube, 0, 0, 1, 1,
                                    SpvAccessQualifierWriteOnly);
 TestMultipleInstancesOfTheSameType(Sampler);
 TestMultipleInstancesOfTheSameType(SampledImage, image_t_.get());
-TestMultipleInstancesOfTheSameType(Array, u32_t_.get(), 10);
+TestMultipleInstancesOfTheSameType(Array, u32_t_.get(), 10, 3);
 TestMultipleInstancesOfTheSameType(RuntimeArray, u32_t_.get());
 TestMultipleInstancesOfTheSameType(Struct, std::vector<const Type*>{
                                                u32_t_.get(), f64_t_.get()});
@@ -151,10 +151,10 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new SampledImage(image2));
 
   // Array
-  types.emplace_back(new Array(f32, 100));
-  types.emplace_back(new Array(f32, 42));
+  types.emplace_back(new Array(f32, 100, 1u));
+  types.emplace_back(new Array(f32, 42, 2u));
   auto* a42f32 = types.back().get();
-  types.emplace_back(new Array(u64, 24));
+  types.emplace_back(new Array(u64, 24, s32, {42}));
 
   // RuntimeArray
   types.emplace_back(new RuntimeArray(v3f32));
