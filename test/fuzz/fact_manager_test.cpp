@@ -172,7 +172,6 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   uint32_t buffer_uint64_1[2];
   uint32_t buffer_uint64_max[2];
   uint32_t buffer_float_10[1];
-  uint32_t buffer_float_20[1];
   uint32_t buffer_double_10[2];
   uint32_t buffer_double_20[2];
 
@@ -207,11 +206,6 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   }
 
   {
-    float temp = 20.0f;
-    std::memcpy(&buffer_float_20, &temp, sizeof(temp));
-  }
-
-  {
     double temp = 10.0;
     std::memcpy(&buffer_double_10, &temp, sizeof(temp));
   }
@@ -223,23 +217,18 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
 
   FactManager fact_manager;
 
-  Integer type_int32_fst(32, true);
-  Integer type_int32_snd(32, true);
-  Integer type_int64_fst(64, true);
-  Integer type_int64_snd(64, true);
-  Integer type_uint32_fst(32, false);
-  Integer type_uint32_snd(32, false);
-  Integer type_uint64_fst(64, false);
-  Integer type_uint64_snd(64, false);
-  Float type_float_fst(32);
-  Float type_float_snd(32);
-  Float type_double_fst(64);
-  Float type_double_snd(64);
+  uint32_t type_int32_id = 11;
+  uint32_t type_int64_id = 13;
+  uint32_t type_uint32_id = 10;
+  uint32_t type_uint64_id = 12;
+  uint32_t type_float_id = 15;
+  uint32_t type_double_id = 16;
 
   // Initially there should be no facts about uniforms.
-  ASSERT_TRUE(
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_snd)
-          .empty());
+  ASSERT_TRUE(fact_manager
+                  .GetConstantsAvailableFromUniformsForType(context.get(),
+                                                            type_uint32_id)
+                  .empty());
 
   // 100[2][3] == int(1)
   ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
@@ -330,105 +319,142 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
       &fact_manager, context.get(), {buffer_double_20[0], buffer_double_20[1]},
       MakeUniformBufferElementDescriptor(1900, {0, 0, 0, 0, 0})));
 
-  // The available constants should be the same regardless of which version of
-  // each type we use.
-  ASSERT_EQ(
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_int32_fst),
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_int32_fst));
+  opt::Instruction::OperandList operands = {
+      {SPV_OPERAND_TYPE_LITERAL_INTEGER, {1}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_int32_id, 50, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_int32_min[0]}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_int32_id, 51, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_int64_max[0]}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_int64_max[1]}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_int64_id, 52, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {1}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_uint32_id, 53, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_uint64_1[0]}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_uint64_1[1]}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_uint64_id, 54, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_uint64_max[0]}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_uint64_max[1]}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_uint64_id, 55, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_float_10[0]}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_float_id, 56, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_double_10[0]}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_double_10[1]}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_double_id, 57, operands));
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_double_20[0]}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {buffer_double_20[1]}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_double_id, 58, operands));
 
-  ASSERT_EQ(
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst),
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst));
+  // A duplicate of the constant with id 59.
+  operands = {{SPV_OPERAND_TYPE_LITERAL_INTEGER, {1}}};
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context.get(), SpvOpConstant, type_int32_id, 59, operands));
 
-  ASSERT_EQ(
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_fst),
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_snd));
-
-  ASSERT_EQ(
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint64_fst),
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint64_fst));
-
-  ASSERT_EQ(
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_float_fst),
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_float_snd));
-
-  ASSERT_EQ(
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_double_fst),
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_double_snd));
-
-  ASSERT_EQ(
-      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_int32_fst)
-             .size());
-  ASSERT_EQ(
-      1, fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst)
-             .size());
-  ASSERT_EQ(
-      1, fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_fst)
-             .size());
-  ASSERT_EQ(
-      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_uint64_fst)
-             .size());
-  ASSERT_EQ(
-      1, fact_manager.GetConstantsAvailableFromUniformsForType(type_float_fst)
-             .size());
-  ASSERT_EQ(
-      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_double_fst)
-             .size());
-
-  ASSERT_EQ(
-      std::numeric_limits<int64_t>::max(),
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_fst)[0]
-          ->AsIntConstant()
-          ->GetS64());
+  ASSERT_EQ(3, fact_manager
+                   .GetConstantsAvailableFromUniformsForType(context.get(),
+                                                             type_int32_id)
+                   .size());
   ASSERT_EQ(1, fact_manager
-                   .GetConstantsAvailableFromUniformsForType(type_uint32_fst)[0]
+                   .GetConstantsAvailableFromUniformsForType(context.get(),
+                                                             type_int64_id)
+                   .size());
+  ASSERT_EQ(1, fact_manager
+                   .GetConstantsAvailableFromUniformsForType(context.get(),
+                                                             type_uint32_id)
+                   .size());
+  ASSERT_EQ(2, fact_manager
+                   .GetConstantsAvailableFromUniformsForType(context.get(),
+                                                             type_uint64_id)
+                   .size());
+  ASSERT_EQ(1, fact_manager
+                   .GetConstantsAvailableFromUniformsForType(context.get(),
+                                                             type_float_id)
+                   .size());
+  ASSERT_EQ(2, fact_manager
+                   .GetConstantsAvailableFromUniformsForType(context.get(),
+                                                             type_double_id)
+                   .size());
+
+  ASSERT_EQ(std::numeric_limits<int64_t>::max(),
+            context.get()
+                ->get_constant_mgr()
+                ->FindDeclaredConstant(
+                    fact_manager.GetConstantsAvailableFromUniformsForType(
+                        context.get(), type_int64_id)[0])
+                ->AsIntConstant()
+                ->GetS64());
+  ASSERT_EQ(1, context.get()
+                   ->get_constant_mgr()
+                   ->FindDeclaredConstant(
+                       fact_manager.GetConstantsAvailableFromUniformsForType(
+                           context.get(), type_uint32_id)[0])
                    ->AsIntConstant()
                    ->GetU32());
-  ASSERT_EQ(
-      10.0f,
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_float_fst)[0]
-          ->AsFloatConstant()
-          ->GetFloat());
-  const std::vector<const ScalarConstant*>& double_constants =
-      fact_manager.GetConstantsAvailableFromUniformsForType(type_double_fst);
-  ASSERT_EQ(10.0, double_constants[0]->AsFloatConstant()->GetDouble());
-  ASSERT_EQ(20.0, double_constants[1]->AsFloatConstant()->GetDouble());
+  ASSERT_EQ(10.0f,
+            context.get()
+                ->get_constant_mgr()
+                ->FindDeclaredConstant(
+                    fact_manager.GetConstantsAvailableFromUniformsForType(
+                        context.get(), type_float_id)[0])
+                ->AsFloatConstant()
+                ->GetFloat());
+  const std::vector<uint32_t>& double_constant_ids =
+      fact_manager.GetConstantsAvailableFromUniformsForType(context.get(),
+                                                            type_double_id);
+  ASSERT_EQ(10.0, context.get()
+                      ->get_constant_mgr()
+                      ->FindDeclaredConstant(double_constant_ids[0])
+                      ->AsFloatConstant()
+                      ->GetDouble());
+  ASSERT_EQ(20.0, context.get()
+                      ->get_constant_mgr()
+                      ->FindDeclaredConstant(double_constant_ids[1])
+                      ->AsFloatConstant()
+                      ->GetDouble());
 
-  const std::vector<protobufs::UniformBufferElementDescriptor>*
-      descriptors_for_double_10 =
-          fact_manager.GetUniformDescriptorsForConstant(*double_constants[0]);
-  ASSERT_EQ(2, descriptors_for_double_10->size());
+  const std::vector<protobufs::UniformBufferElementDescriptor>
+      descriptors_for_double_10 = fact_manager.GetUniformDescriptorsForConstant(
+          context.get(), double_constant_ids[0]);
+  ASSERT_EQ(2, descriptors_for_double_10.size());
   {
     auto temp = MakeUniformBufferElementDescriptor(1700, {9, 9, 1});
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
-        &temp, &(*descriptors_for_double_10)[0]));
+        &temp, &descriptors_for_double_10[0]));
   }
   {
     auto temp = MakeUniformBufferElementDescriptor(1800, {9, 9, 2});
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
-        &temp, &(*descriptors_for_double_10)[1]));
+        &temp, &descriptors_for_double_10[1]));
   }
-  const std::vector<protobufs::UniformBufferElementDescriptor>*
-      descriptors_for_double_20 =
-          fact_manager.GetUniformDescriptorsForConstant(*double_constants[1]);
-  ASSERT_EQ(1, descriptors_for_double_20->size());
+  const std::vector<protobufs::UniformBufferElementDescriptor>
+      descriptors_for_double_20 = fact_manager.GetUniformDescriptorsForConstant(
+          context.get(), double_constant_ids[1]);
+  ASSERT_EQ(1, descriptors_for_double_20.size());
   {
     auto temp = MakeUniformBufferElementDescriptor(1900, {0, 0, 0, 0, 0});
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
-        &temp, &(*descriptors_for_double_20)[0]));
+        &temp, &descriptors_for_double_20[0]));
   }
 
-  auto constant_1 = fact_manager.GetConstantFromUniformDescriptor(
-      MakeUniformBufferElementDescriptor(1800, {9, 9, 2}));
-  ASSERT_TRUE(constant_1 != nullptr);
+  auto constant_1_id = fact_manager.GetConstantFromUniformDescriptor(
+      context.get(), MakeUniformBufferElementDescriptor(1800, {9, 9, 2}));
+  ASSERT_TRUE(constant_1_id);
 
-  auto constant_2 = fact_manager.GetConstantFromUniformDescriptor(
-      MakeUniformBufferElementDescriptor(1900, {0, 0, 0, 0, 0}));
-  ASSERT_TRUE(constant_2 != nullptr);
+  auto constant_2_id = fact_manager.GetConstantFromUniformDescriptor(
+      context.get(), MakeUniformBufferElementDescriptor(1900, {0, 0, 0, 0, 0}));
+  ASSERT_TRUE(constant_2_id);
 
-  ASSERT_TRUE(opt::analysis::ConstantEqual()(double_constants[0], constant_1));
+  ASSERT_EQ(double_constant_ids[0], constant_1_id);
 
-  ASSERT_TRUE(opt::analysis::ConstantEqual()(double_constants[1], constant_2));
+  ASSERT_EQ(double_constant_ids[1], constant_2_id);
 }
 
 }  // namespace
