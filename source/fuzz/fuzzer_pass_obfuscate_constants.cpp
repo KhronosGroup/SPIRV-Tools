@@ -22,29 +22,6 @@ namespace fuzz {
 
 using opt::IRContext;
 
-uint32_t FuzzerPassObfuscateConstants::FindScalarConstant(
-    const opt::analysis::ScalarConstant* scalar_constant) {
-  auto type_id = GetIRContext()->get_type_mgr()->GetId(scalar_constant->type());
-  if (type_id == 0) {
-    return 0;
-  }
-  auto registered_type = GetIRContext()->get_type_mgr()->GetRegisteredType(
-      scalar_constant->type());
-  if (scalar_constant->AsIntConstant()) {
-    opt::analysis::IntConstant temp(registered_type->AsInteger(),
-                                    scalar_constant->words());
-    return GetIRContext()->get_constant_mgr()->FindDeclaredConstant(&temp,
-                                                                    type_id);
-  }
-  if (scalar_constant->AsFloatConstant()) {
-    opt::analysis::FloatConstant temp(registered_type->AsFloat(),
-                                      scalar_constant->words());
-    return GetIRContext()->get_constant_mgr()->FindDeclaredConstant(&temp,
-                                                                    type_id);
-  }
-  return 0;
-}
-
 void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
     uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
     const std::vector<SpvOp>& greater_than_opcodes,
@@ -279,12 +256,12 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
     case SpvOpConstantFalse: {
       auto available_types_with_uniforms =
           GetFactManager()->GetTypesForWhichUniformValuesAreKnown();
-      auto chosen_type = available_types_with_uniforms
+      auto chosen_type_id = available_types_with_uniforms
           [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
               (uint32_t)available_types_with_uniforms.size())];
       auto available_constants =
           GetFactManager()->GetConstantsAvailableFromUniformsForType(
-              *chosen_type);
+              GetIRContext(), chosen_type_id);
       if (available_constants.size() == 1) {
         // TODO: for now we only obfuscate a boolean if there are at least two
         // constants available from uniforms, so that we can do a comparison
@@ -302,13 +279,13 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
             GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
                 (uint32_t)available_constants.size());
       } while (constant_index_1 == constant_index_2);
-      auto constant_id_1 =
-          FindScalarConstant(available_constants[constant_index_1]);
-      auto constant_id_2 =
-          FindScalarConstant(available_constants[constant_index_2]);
+      auto constant_id_1 = available_constants[constant_index_1];
+      auto constant_id_2 = available_constants[constant_index_2];
       if (constant_id_1 == 0 || constant_id_2 == 0) {
         return;
       }
+      auto chosen_type =
+          GetIRContext()->get_type_mgr()->GetType(chosen_type_id);
       if (chosen_type->AsFloat()) {
         ObfuscateBoolConstantViaFloatConstantPair(depth, constant_use,
                                                   constant_id_1, constant_id_2);
@@ -325,24 +302,16 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
       }
     } break;
     case SpvOpConstant: {
-      auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
-          constant_use.id_of_interest());
-      if (!constant->AsScalarConstant()) {
-        break;
-      }
       auto uniform_descriptors =
           GetFactManager()->GetUniformDescriptorsForConstant(
-              *(constant->AsScalarConstant()));
-      if (!uniform_descriptors) {
+              GetIRContext(), constant_use.id_of_interest());
+      if (uniform_descriptors.empty()) {
         break;
       }
-      assert(!uniform_descriptors->empty() &&
-             "If the fact manager gives us back some descriptors, the sequence "
-             "should not be empty.");
       protobufs::UniformBufferElementDescriptor uniform_descriptor =
-          (*uniform_descriptors)
+          uniform_descriptors
               [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-                  (uint32_t)uniform_descriptors->size())];
+                  (uint32_t)uniform_descriptors.size())];
       auto transformation =
           transformation::MakeTransformationReplaceConstantWithUniform(
               constant_use, uniform_descriptor, GetFuzzerContext()->FreshId(),

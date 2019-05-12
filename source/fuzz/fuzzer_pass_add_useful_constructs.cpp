@@ -172,17 +172,23 @@ void FuzzerPassAddUsefulConstructs::Apply() {
   // For every known-to-be-constant uniform, make sure we have instructions
   // declaring:
   // - a pointer type with uniform storage class, whose pointee type is the type
-  // of the element
+  //   of the element
   // - a signed integer constant for each index required to access the element
   // - a constant for the constant value itself
-  for (auto type : GetFactManager()->GetTypesForWhichUniformValuesAreKnown()) {
-    opt::analysis::Pointer uniform_pointer(type, SpvStorageClassUniform);
+  for (auto& fact_and_type_id : GetFactManager()->GetConstantUniformFacts()) {
+    uint32_t element_type_id = fact_and_type_id.second;
+    assert(element_type_id);
+    auto element_type =
+        GetIRContext()->get_type_mgr()->GetType(element_type_id);
+    assert(element_type &&
+           "If the constant uniform fact is well-formed, the module must "
+           "already have a declaration of the type for the uniform element.");
+    opt::analysis::Pointer uniform_pointer(element_type,
+                                           SpvStorageClassUniform);
     if (!GetIRContext()->get_type_mgr()->GetId(&uniform_pointer)) {
-      auto base_type_id = GetIRContext()->get_type_mgr()->GetId(type);
-      assert(base_type_id &&
-             "All relevant scalar types should already have been added.");
       auto add_pointer = transformation::MakeTransformationAddTypePointer(
-          GetFuzzerContext()->FreshId(), SpvStorageClassUniform, base_type_id);
+          GetFuzzerContext()->FreshId(), SpvStorageClassUniform,
+          element_type_id);
       assert(transformation::IsApplicable(add_pointer, GetIRContext(),
                                           *GetFactManager()) &&
              "Should be applicable by construction.");
@@ -190,26 +196,24 @@ void FuzzerPassAddUsefulConstructs::Apply() {
       *GetTransformations()->add_transformation()->mutable_add_type_pointer() =
           add_pointer;
     }
-    for (const opt::analysis::ScalarConstant* constant :
-         GetFactManager()->GetConstantsAvailableFromUniformsForType(*type)) {
-      if (constant->AsIntConstant()) {
-        auto int_constant = constant->AsIntConstant();
-        auto int_type = int_constant->type()->AsInteger();
-        MaybeAddIntConstant(int_type->width(), int_type->IsSigned(),
-                            int_constant->words());
-      } else {
-        assert(constant->AsFloatConstant() &&
-               "Known uniform values must be integer or floating-point.");
-        auto float_constant = constant->AsFloatConstant();
-        auto float_type = float_constant->type()->AsFloat();
-        MaybeAddFloatConstant(float_type->width(), float_constant->words());
-      }
-      for (auto& uniform_buffer_element_descriptor :
-           *GetFactManager()->GetUniformDescriptorsForConstant(*constant)) {
-        for (auto index : uniform_buffer_element_descriptor.index()) {
-          MaybeAddIntConstant(32, true, {index});
-        }
-      }
+    std::vector<uint32_t> words;
+    for (auto word : fact_and_type_id.first.constant_word()) {
+      words.push_back(word);
+    }
+    // We get the element type again as the type manager may have been
+    // invalidated since we last retrieved it.
+    element_type = GetIRContext()->get_type_mgr()->GetType(element_type_id);
+    if (element_type->AsInteger()) {
+      MaybeAddIntConstant(element_type->AsInteger()->width(),
+                          element_type->AsInteger()->IsSigned(), words);
+    } else {
+      assert(element_type->AsFloat() &&
+             "Known uniform values must be integer or floating-point.");
+      MaybeAddFloatConstant(element_type->AsFloat()->width(), words);
+    }
+    for (auto index :
+         fact_and_type_id.first.uniform_buffer_element_descriptor().index()) {
+      MaybeAddIntConstant(32, true, {index});
     }
   }
 }

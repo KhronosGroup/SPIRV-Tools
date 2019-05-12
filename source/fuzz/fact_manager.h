@@ -57,28 +57,33 @@ class FactManager {
   //==============================
   // Querying facts about uniform constants
 
-  // Provides a sequence of all types for which at least one "constant ==
+  // Provides the distinct type ids for which at least one  "constant ==
   // uniform element" fact is known.
-  std::vector<const opt::analysis::Type*>
-  GetTypesForWhichUniformValuesAreKnown() const;
+  std::vector<uint32_t> GetTypesForWhichUniformValuesAreKnown() const;
 
-  // Provides a sequence of all distinct constants for which an equal uniform
-  // element is known.
-  std::vector<const opt::analysis::ScalarConstant*>
-  GetConstantsAvailableFromUniformsForType(
-      const opt::analysis::Type& type) const;
+  // Provides the distinct constant ids with type |type_id| for which at least
+  // one "constant == uniform element" fact is known.  If multiple
+  // identically-valued constants are relevant, each will appear in the
+  // sequence.
+  std::vector<uint32_t> GetConstantsAvailableFromUniformsForType(
+      opt::IRContext* ir_context, uint32_t type_id) const;
 
-  // Provides details of all uniform elements that are known to be equal to
-  // |constant|.
-  const std::vector<protobufs::UniformBufferElementDescriptor>*
-  GetUniformDescriptorsForConstant(
-      const opt::analysis::ScalarConstant& constant) const;
+  // Provides details of all uniform elements that are known to be equal to the
+  // constant associated with |constant_id| in |ir_context|.
+  const std::vector<protobufs::UniformBufferElementDescriptor>
+  GetUniformDescriptorsForConstant(opt::IRContext* ir_context,
+                                   uint32_t constant_id) const;
 
-  // Returns the constant known to be equal to the given uniform element, and
-  // nullptr if there is no such constant.
-  const opt::analysis::ScalarConstant* GetConstantFromUniformDescriptor(
+  // Returns the id of a constant whose value is known to match that of
+  // |uniform_descriptor|, and whose type matches the type of the uniform
+  // element.  Returns 0 if no such constant id exists.
+  uint32_t GetConstantFromUniformDescriptor(
+      opt::IRContext* context,
       const protobufs::UniformBufferElementDescriptor& uniform_descriptor)
       const;
+
+  const std::vector<std::pair<protobufs::ConstantUniformFact, uint32_t>>&
+  GetConstantUniformFacts() const;
 
   // End of uniform constant facts
   //==============================

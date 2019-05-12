@@ -104,12 +104,17 @@ bool IsApplicable(
 
   // The fact manager needs to believe that the uniform data element described
   // by the uniform buffer element descriptor will hold a scalar value.
-  auto constant_associated_with_uniform =
+  auto constant_id_associated_with_uniform =
       fact_manager.GetConstantFromUniformDescriptor(
-          message.uniform_descriptor());
-  if (!constant_associated_with_uniform) {
+          context, message.uniform_descriptor());
+  if (!constant_id_associated_with_uniform) {
     return false;
   }
+  auto constant_associated_with_uniform =
+      context->get_constant_mgr()->FindDeclaredConstant(
+          constant_id_associated_with_uniform);
+  assert(constant_associated_with_uniform &&
+         "The constant should be present in the module.");
   if (!constant_associated_with_uniform->AsScalarConstant()) {
     return false;
   }
