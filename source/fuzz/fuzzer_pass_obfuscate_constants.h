@@ -36,17 +36,6 @@ class FuzzerPassObfuscateConstants : public FuzzerPass {
   void Apply() override;
 
  private:
-  // TODO: this helper is necessitated by the way the fact manager stores
-  //  constants, and to difficult interplay between the fact manager and
-  //  constant manager.  It would be good to find a way to reduce this
-  //  complexity.
-  //
-  // Helper method to find the id of a scalar constant if it is declared in the
-  // module.  Needed because the constant might have a type that is different
-  // to the type of a corresponding constant in the constant manager.
-  uint32_t FindScalarConstant(
-      const opt::analysis::ScalarConstant* scalar_constant);
-
   // Applies 0 or more transformations to potentially obfuscate the constant
   // use represented by |constant_use|.  The |depth| parameter controls how
   // deeply obfuscation can recurse.
