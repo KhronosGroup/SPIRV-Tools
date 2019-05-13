@@ -70,8 +70,8 @@ endif()
 
 option(SPIRV_BUILD_COMPRESSION "Build SPIR-V compressing codec" OFF)
 if(SPIRV_BUILD_COMPRESSION)
-  message(FATAL_ERROR "SPIR-V compression codec has been removed from SPIR-V tools."
-          " Please remove SPIRV_BUILD_COMPRESSION from your build options.")
+  message(FATAL_ERROR "SPIR-V compression codec has been removed from SPIR-V tools. "
+          "Please remove SPIRV_BUILD_COMPRESSION from your build options.")
 endif(SPIRV_BUILD_COMPRESSION)
 
 option(SPIRV_WERROR "Enable error on warning" ON)
