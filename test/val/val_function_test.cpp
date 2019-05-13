@@ -684,7 +684,7 @@ TEST_F(ValidateFunctionCall,
                OpMemberDecorate %_struct_3 0 Offset 0
                OpDecorate %_runtimearr__struct_3 ArrayStride 4
                OpMemberDecorate %_struct_5 0 Offset 0
-               OpDecorate %_struct_5 BufferBlock
+               OpDecorate %_struct_5 Block
                OpMemberDecorate %_struct_15 0 NonWritable
         %int = OpTypeInt 32 1
       %int_0 = OpConstant %int 0
@@ -693,17 +693,17 @@ TEST_F(ValidateFunctionCall,
   %_struct_3 = OpTypeStruct %int
 %_runtimearr__struct_3 = OpTypeRuntimeArray %_struct_3
   %_struct_5 = OpTypeStruct %_runtimearr__struct_3
-%_ptr_Uniform__struct_5 = OpTypePointer Uniform %_struct_5
+%_ptr_StorageBuffer__struct_5 = OpTypePointer StorageBuffer %_struct_5
        %void = OpTypeVoid
          %14 = OpTypeFunction %void
  %_struct_15 = OpTypeStruct %int
 %_ptr_Function__struct_15 = OpTypePointer Function %_struct_15
-%_ptr_Uniform__struct_3 = OpTypePointer Uniform %_struct_3
+%_ptr_StorageBuffer__struct_3 = OpTypePointer StorageBuffer %_struct_3
          %18 = OpTypeFunction %void %_ptr_Function__struct_15
-          %2 = OpVariable %_ptr_Uniform__struct_5 Uniform
+          %2 = OpVariable %_ptr_StorageBuffer__struct_5 StorageBuffer
           %1 = OpFunction %void None %14
          %19 = OpLabel
-         %20 = OpAccessChain %_ptr_Uniform__struct_3 %2 %int_0 %uint_0
+         %20 = OpAccessChain %_ptr_StorageBuffer__struct_3 %2 %int_0 %uint_0
          %21 = OpFunctionCall %void %22 %20
                OpReturn
                OpFunctionEnd
