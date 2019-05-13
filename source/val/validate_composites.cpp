@@ -513,74 +513,6 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-// Returns true if |lhs| and |rhs| logically match.
-// 1. Must both be either OpTypeArray or OpTypeStruct
-// 2. If OpTypeArray, then
-//  * Length must be the same
-//  * Element type must match or logically match
-// 3. If OpTypeStruct, then
-//  * Both have same number of elements
-//  * Element N for both structs must match or logically match
-bool LogicallyMatch(ValidationState_t& _, const Instruction* lhs,
-                    const Instruction* rhs) {
-  if (lhs->opcode() != rhs->opcode()) {
-    return false;
-  }
-
-  if (lhs->opcode() == SpvOpTypeArray) {
-    // Size operands must match.
-    if (lhs->GetOperandAs<uint32_t>(2u) != rhs->GetOperandAs<uint32_t>(2u)) {
-      return false;
-    }
-
-    // Elements must match or logically match.
-    const auto lhs_ele_id = lhs->GetOperandAs<uint32_t>(1u);
-    const auto rhs_ele_id = rhs->GetOperandAs<uint32_t>(1u);
-    if (lhs_ele_id == rhs_ele_id) {
-      return true;
-    }
-
-    const auto lhs_ele = _.FindDef(lhs_ele_id);
-    const auto rhs_ele = _.FindDef(rhs_ele_id);
-    if (!lhs_ele || !rhs_ele) {
-      return false;
-    }
-    return LogicallyMatch(_, lhs_ele, rhs_ele);
-  } else if (lhs->opcode() == SpvOpTypeStruct) {
-    // Number of elements must match.
-    if (lhs->operands().size() != rhs->operands().size()) {
-      return false;
-    }
-
-    for (size_t i = 1u; i < lhs->operands().size(); ++i) {
-      const auto lhs_ele_id = lhs->GetOperandAs<uint32_t>(i);
-      const auto rhs_ele_id = rhs->GetOperandAs<uint32_t>(i);
-      // Elements must match or logically match.
-      if (lhs_ele_id == rhs_ele_id) {
-        continue;
-      }
-
-      const auto lhs_ele = _.FindDef(lhs_ele_id);
-      const auto rhs_ele = _.FindDef(rhs_ele_id);
-      if (!lhs_ele || !rhs_ele) {
-        return false;
-      }
-
-      if (!LogicallyMatch(_, lhs_ele, rhs_ele)) {
-        return false;
-      }
-    }
-
-    // All checks passed.
-    return true;
-  }
-
-  // No other opcodes are acceptable at this point. Arrays and structs are
-  // caught above and if they're elements are not arrays or structs they are
-  // required to match exactly.
-  return false;
-}
-
 spv_result_t ValidateCopyLogical(ValidationState_t& _,
                                  const Instruction* inst) {
   const auto result_type = _.FindDef(inst->type_id());
@@ -591,7 +523,7 @@ spv_result_t ValidateCopyLogical(ValidationState_t& _,
            << "Result Type must not equal the Operand type";
   }
 
-  if (!LogicallyMatch(_, source_type, result_type)) {
+  if (!_.LogicallyMatch(source_type, result_type, false)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Result Type does not logically match the Operand type";
   }
