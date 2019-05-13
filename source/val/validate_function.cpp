@@ -32,6 +32,14 @@ bool DoPointeesLogicallyMatch(val::Instruction* a, val::Instruction* b,
     return false;
   }
 
+  const auto& dec_a = _.id_decorations(a->id());
+  const auto& dec_b = _.id_decorations(b->id());
+  for (const auto& dec : dec_b) {
+    if (std::find(dec_a.begin(), dec_a.end(), dec) == dec_a.end()) {
+      return false;
+    }
+  }
+
   uint32_t a_type = a->GetOperandAs<uint32_t>(2);
   uint32_t b_type = b->GetOperandAs<uint32_t>(2);
 
