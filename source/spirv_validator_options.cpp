@@ -90,6 +90,12 @@ void spvValidatorOptionsSetRelaxLogicalPointer(spv_validator_options options,
   options->relax_logical_pointer = val;
 }
 
+void spvValidatorOptionsSetBeforeHlslLegalization(spv_validator_options options,
+                                                  bool val) {
+  options->before_hlsl_legalization = val;
+  options->relax_logical_pointer = val;
+}
+
 void spvValidatorOptionsSetRelaxBlockLayout(spv_validator_options options,
                                             bool val) {
   options->relax_block_layout = val;
