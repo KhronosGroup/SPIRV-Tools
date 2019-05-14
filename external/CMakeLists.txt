@@ -102,3 +102,20 @@ if (NOT ${SPIRV_SKIP_TESTS})
     endif()
   endif()
 endif()
+
+if(SPIRV_BUILD_FUZZER)
+
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(PROTOBUF_BUILD_FIXES
+            -Wno-conversion)
+  endif()
+
+  set(PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
+  if (IS_DIRECTORY ${PROTOBUF_DIR})
+    set(protobuf_BUILD_TESTS OFF)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake EXCLUDE_FROM_ALL)
+  else()
+    message(FATAL_ERROR
+      "protobuf not found - please checkout a copy under external/.")
+  endif()
+endif(SPIRV_BUILD_FUZZER)
