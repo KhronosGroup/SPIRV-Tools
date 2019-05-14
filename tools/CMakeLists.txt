@@ -47,7 +47,6 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   if (NOT DEFINED IOS_PLATFORM) # iOS does not allow std::system calls which spirv-reduce requires
     add_spvtools_tool(TARGET spirv-reduce SRCS reduce/reduce.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-reduce ${SPIRV_TOOLS})
   endif()
-  add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-link SRCS link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-stats
 	            SRCS stats/stats.cpp
@@ -67,7 +66,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                                                  ${SPIRV_HEADER_INCLUDE_DIR})
 
   set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt spirv-stats
-                            spirv-cfg spirv-link spirv-fuzz)
+                            spirv-cfg spirv-link)
   if(NOT DEFINED IOS_PLATFORM)
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-reduce)
   endif()
@@ -82,6 +81,11 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                                                    ${SPIRV_HEADER_INCLUDE_DIR})
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-markv)
   endif(SPIRV_BUILD_COMPRESSION)
+
+  if(SPIRV_BUILD_FUZZER)
+    add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz ${SPIRV_TOOLS})
+    set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-fuzz)
+  endif(SPIRV_BUILD_FUZZER)
 
   if(ENABLE_SPIRV_TOOLS_INSTALL)
     install(TARGETS ${SPIRV_INSTALL_TARGETS}
