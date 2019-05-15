@@ -37,6 +37,7 @@ git clone --depth=1 https://github.com/google/effcee              external/effce
 git clone --depth=1 https://github.com/google/re2                 external/re2
 git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
 pushd external/protobuf
+git fetch --all --tags --prune
 git checkout v3.7.1
 popd
 
