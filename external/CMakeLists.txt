@@ -104,17 +104,15 @@ if (NOT ${SPIRV_SKIP_TESTS})
 endif()
 
 if(SPIRV_BUILD_FUZZER)
-
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(PROTOBUF_BUILD_FIXES
-            -Wno-conversion)
-  endif()
-
   set(PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
+  # TODO(afd): I have found it necessary to have both of the following lines
+  # in order for CMake to run reliably, but I do not understand why and am
+  # sure there must be a better approach.
+  set(protobuf_BUILD_TESTS OFF)
+  set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests")
+  set(protobuf_MSVC_STATIC_RUNTIME OFF)
   if (IS_DIRECTORY ${PROTOBUF_DIR})
-    set(protobuf_BUILD_TESTS OFF)
-    set(protobuf_MSVC_STATIC_RUNTIME OFF)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake EXCLUDE_FROM_ALL)
+    add_subdirectory(${PROTOBUF_DIR} EXCLUDE_FROM_ALL)
   else()
     message(FATAL_ERROR
       "protobuf not found - please checkout a copy under external/.")
