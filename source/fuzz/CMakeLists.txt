@@ -104,14 +104,13 @@ target_include_directories(SPIRV-Tools-fuzz
         PUBLIC ${spirv-tools_SOURCE_DIR}/include
         PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
         PRIVATE ${spirv-tools_BINARY_DIR}
-        PRIVATE ${CMAKE_BINARY_DIR}
-        )
+        PRIVATE ${CMAKE_BINARY_DIR})
 
 # The fuzzer reuses a lot of functionality from the SPIRV-Tools library.
 target_link_libraries(SPIRV-Tools-fuzz
         PUBLIC ${SPIRV_TOOLS}
         PUBLIC SPIRV-Tools-opt
-        PRIVATE protobuf::libprotobuf)
+        PUBLIC protobuf::libprotobuf)
 
 set_property(TARGET SPIRV-Tools-fuzz PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-fuzz)
