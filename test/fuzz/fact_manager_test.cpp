@@ -358,6 +358,8 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
       context.get(), SpvOpConstant, type_int32_id, 59, operands));
 
+  context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
+
   ASSERT_EQ(3, fact_manager
                    .GetConstantsAvailableFromUniformsForType(context.get(),
                                                              type_int32_id)
@@ -384,23 +386,20 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
                    .size());
 
   ASSERT_EQ(std::numeric_limits<int64_t>::max(),
-            context.get()
-                ->get_constant_mgr()
+            context->get_constant_mgr()
                 ->FindDeclaredConstant(
                     fact_manager.GetConstantsAvailableFromUniformsForType(
                         context.get(), type_int64_id)[0])
                 ->AsIntConstant()
                 ->GetS64());
-  ASSERT_EQ(1, context.get()
-                   ->get_constant_mgr()
+  ASSERT_EQ(1, context->get_constant_mgr()
                    ->FindDeclaredConstant(
                        fact_manager.GetConstantsAvailableFromUniformsForType(
                            context.get(), type_uint32_id)[0])
                    ->AsIntConstant()
                    ->GetU32());
   ASSERT_EQ(10.0f,
-            context.get()
-                ->get_constant_mgr()
+            context->get_constant_mgr()
                 ->FindDeclaredConstant(
                     fact_manager.GetConstantsAvailableFromUniformsForType(
                         context.get(), type_float_id)[0])
@@ -409,13 +408,11 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   const std::vector<uint32_t>& double_constant_ids =
       fact_manager.GetConstantsAvailableFromUniformsForType(context.get(),
                                                             type_double_id);
-  ASSERT_EQ(10.0, context.get()
-                      ->get_constant_mgr()
+  ASSERT_EQ(10.0, context->get_constant_mgr()
                       ->FindDeclaredConstant(double_constant_ids[0])
                       ->AsFloatConstant()
                       ->GetDouble());
-  ASSERT_EQ(20.0, context.get()
-                      ->get_constant_mgr()
+  ASSERT_EQ(20.0, context->get_constant_mgr()
                       ->FindDeclaredConstant(double_constant_ids[1])
                       ->AsFloatConstant()
                       ->GetDouble());

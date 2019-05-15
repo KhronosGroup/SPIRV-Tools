@@ -86,34 +86,21 @@ FactManager::ConstantUniformFacts::GetConstantsAvailableFromUniformsForType(
 
 const std::vector<protobufs::UniformBufferElementDescriptor>
 FactManager::ConstantUniformFacts::GetUniformDescriptorsForConstant(
-    opt::IRContext* /*ir_context*/, uint32_t /*constant_id*/) const {
+    opt::IRContext* ir_context, uint32_t constant_id) const {
   std::vector<protobufs::UniformBufferElementDescriptor> result;
-  assert(0);
-  //  auto registered_type = type_pool.find(constant.type());
-  //  if (registered_type == type_pool.end()) {
-  //    return nullptr;
-  //  }
-  //  const opt::analysis::ScalarConstant* registered_constant;
-  //  if (constant.AsFloatConstant()) {
-  //    opt::analysis::FloatConstant temp((*registered_type)->AsFloat(),
-  //                                      constant.words());
-  //    auto iterator = constant_pool.find(&temp);
-  //    if (iterator == constant_pool.end()) {
-  //      return nullptr;
-  //    }
-  //    registered_constant = *iterator;
-  //  } else if (constant.AsIntConstant()) {
-  //    opt::analysis::IntConstant temp((*registered_type)->AsInteger(),
-  //                                    constant.words());
-  //    auto iterator = constant_pool.find(&temp);
-  //    if (iterator == constant_pool.end()) {
-  //      return nullptr;
-  //    }
-  //    registered_constant = *iterator;
-  //  } else {
-  //    return nullptr;
-  //  }
-  //  return &constant_to_uniform_descriptors.find(registered_constant)->second;
+  auto constant_inst = ir_context->get_def_use_mgr()->GetDef(constant_id);
+  assert(constant_inst->opcode() == SpvOpConstant &&
+         "The given id must be that of a constant");
+  auto type_id = constant_inst->type_id();
+  for (auto& fact_and_type_id : facts_and_type_ids) {
+    if (fact_and_type_id.second != type_id) {
+      continue;
+    }
+    if (DataMatches(*constant_inst, fact_and_type_id.first)) {
+      result.emplace_back(
+          fact_and_type_id.first.uniform_buffer_element_descriptor());
+    }
+  }
   return result;
 }
 
