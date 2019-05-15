@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_spvtools_unittest(TARGET fuzz
+if (${SPIRV_BUILD_FUZZER})
+  add_spvtools_unittest(TARGET fuzz
         SRCS
         fuzz_test_util.h
 
@@ -32,8 +33,4 @@ add_spvtools_unittest(TARGET fuzz
         transformation_split_block_test.cpp
         LIBS SPIRV-Tools-fuzz
         )
-
-if(${COMPILER_IS_LIKE_GNU})
-    # protobuf header files have comparisons that lead to warnings.
-    target_compile_options(test_fuzz PRIVATE -Wno-conversion)
 endif()

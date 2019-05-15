@@ -17,7 +17,7 @@
 #ifndef SOURCE_FUZZ_FACT_MANAGER_H_
 #define SOURCE_FUZZ_FACT_MANAGER_H_
 
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/constants.h"
 
 namespace spvtools {

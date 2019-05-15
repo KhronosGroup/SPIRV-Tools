@@ -16,7 +16,7 @@
 #define SOURCE_FUZZ_TRANSFORMATION_H_
 
 #include "source/fuzz/fact_manager.h"
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {

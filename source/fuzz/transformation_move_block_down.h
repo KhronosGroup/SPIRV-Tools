@@ -17,7 +17,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_MOVE_BLOCK_DOWN_H_
 #define SOURCE_FUZZ_TRANSFORMATION_MOVE_BLOCK_DOWN_H_
 
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 
 namespace spvtools {

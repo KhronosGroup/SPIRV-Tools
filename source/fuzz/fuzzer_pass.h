@@ -17,7 +17,7 @@
 
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 
 namespace spvtools {
 namespace fuzz {

@@ -23,7 +23,7 @@
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/opt/build_module.h"
 #include "source/spirv_fuzzer_options.h"

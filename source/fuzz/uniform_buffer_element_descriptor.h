@@ -17,7 +17,7 @@
 #ifndef SOURCE_FUZZ_UNIFORM_BUFFER_ELEMENT_DESCRIPTOR_H_
 #define SOURCE_FUZZ_UNIFORM_BUFFER_ELEMENT_DESCRIPTOR_H_
 
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 
 namespace spvtools {
 namespace fuzz {
