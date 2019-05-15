@@ -29,6 +29,10 @@ git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv
 git clone --depth=1 https://github.com/google/googletest          external/googletest
 git clone --depth=1 https://github.com/google/effcee              external/effcee
 git clone --depth=1 https://github.com/google/re2                 external/re2
+git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
+pushd external\protobuf
+git checkout v3.7.1
+popd
 
 :: #########################################
 :: set up msvc build env
@@ -58,7 +62,7 @@ if "%KOKORO_GITHUB_COMMIT%." == "." (
   set BUILD_SHA=%KOKORO_GITHUB_COMMIT%
 )
 
-set CMAKE_FLAGS=-DCMAKE_INSTALL_PREFIX=%KOKORO_ARTIFACTS_DIR%\install -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe
+set CMAKE_FLAGS=-DCMAKE_INSTALL_PREFIX=%KOKORO_ARTIFACTS_DIR%\install -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DSPIRV_BUILD_FUZZER=ON
 
 :: Skip building tests for VS2013
 if %VS_VERSION% == 2013 (
