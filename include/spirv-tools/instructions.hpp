@@ -87,7 +87,7 @@ class Instruction {
     // three lines (which is how spvtools::val::Instruction did it) can be
     // removed as they are equivalent to the simpler size check below.
     const spv_parsed_operand_t& op = inst_.operands[pos];
-    (void *) op;
+    (void) op;
     assert(op.num_words * sizeof(uint32_t) == sizeof(T));
     assert(op.offset + op.num_words <= inst_.num_words);
 
