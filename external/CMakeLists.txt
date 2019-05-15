@@ -113,6 +113,7 @@ if(SPIRV_BUILD_FUZZER)
   set(PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
   if (IS_DIRECTORY ${PROTOBUF_DIR})
     set(protobuf_BUILD_TESTS OFF)
+    set(protobuf_MSVC_STATIC_RUNTIME OFF)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake EXCLUDE_FROM_ALL)
   else()
     message(FATAL_ERROR
