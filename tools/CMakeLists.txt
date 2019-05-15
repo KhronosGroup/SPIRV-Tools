@@ -84,9 +84,6 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
 
   if(SPIRV_BUILD_FUZZER)
     add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz ${SPIRV_TOOLS})
-    if(${COMPILER_IS_LIKE_GNU})
-      target_compile_options(spirv-fuzz PRIVATE -Wno-unused-parameter -Wno-conversion)
-    endif()
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-fuzz)
   endif(SPIRV_BUILD_FUZZER)
 

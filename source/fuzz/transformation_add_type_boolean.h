@@ -15,7 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_ADD_TYPE_BOOLEAN_H_
 #define SOURCE_FUZZ_TRANSFORMATION_ADD_TYPE_BOOLEAN_H_
 
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 
 namespace spvtools {

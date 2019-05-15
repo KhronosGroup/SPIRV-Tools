@@ -36,6 +36,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
         id_use_descriptor.h
+        protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
         replayer.h
@@ -95,9 +96,10 @@ add_library(SPIRV-Tools-fuzz ${SPIRV_TOOLS_FUZZ_SOURCES})
 spvtools_default_compile_options(SPIRV-Tools-fuzz)
 target_compile_definitions(SPIRV-Tools-fuzz PUBLIC -DGOOGLE_PROTOBUF_NO_RTTI -DGOOGLE_PROTOBUF_USE_UNALIGNED=0)
 
+# Compilation of the auto-generated protobuf source file will yield warnings,
+# which we have no control over and thus wish to ignore.
 if(${COMPILER_IS_LIKE_GNU})
-  # protobuf header files have comparisons that lead to warnings.
-  target_compile_options(SPIRV-Tools-fuzz PRIVATE -Wno-conversion)
+  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/spirvfuzz.pb.cc PROPERTIES COMPILE_FLAGS -w)
 endif()
 
 target_include_directories(SPIRV-Tools-fuzz

@@ -15,7 +15,7 @@
 #ifndef SOURCE_FUZZ_ID_USE_LOCATOR_H_
 #define SOURCE_FUZZ_ID_USE_LOCATOR_H_
 
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {

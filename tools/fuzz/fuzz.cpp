@@ -20,7 +20,7 @@
 #include <string>
 
 #include "source/fuzz/fuzzer.h"
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/replayer.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
@@ -29,8 +29,6 @@
 #include "source/util/string_utils.h"
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
-
-#include "google/protobuf/util/json_util.h"
 
 namespace {
 
