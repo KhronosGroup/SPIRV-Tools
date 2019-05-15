@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2019.4-dev 2019-05-15
+ - Start v2019.4-dev
+
 v2019.3 2019-05-14
  - General:
    - Require Python 3 since Python 2 will out of service soon.
