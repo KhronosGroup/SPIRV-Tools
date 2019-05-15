@@ -43,8 +43,8 @@ const spv_parsed_instruction_t& Instruction::c_inst() const {
   return inst_->c_inst();
 }
 
-void Instruction::RegisterUse(const Instruction* inst, uint32_t index) {
-  uses_.push_back(std::make_pair(inst, index));
+void Instruction::RegisterUse(const Instruction* i, uint32_t index) {
+  uses_.push_back(std::make_pair(i, index));
 }
 
 bool operator<(const Instruction& lhs, const Instruction& rhs) {
