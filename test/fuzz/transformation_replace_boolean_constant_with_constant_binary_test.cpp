@@ -437,7 +437,7 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
         context.get(), fact_manager));
   }
   if (std::numeric_limits<double>::has_infinity) {
-    float positive_infinity_double = std::numeric_limits<double>::infinity();
+    double positive_infinity_double = std::numeric_limits<double>::infinity();
     uint32_t words[2];
     memcpy(words, &positive_infinity_double, sizeof(double));
     opt::Instruction::OperandList operands = {
