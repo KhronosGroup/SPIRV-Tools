@@ -1952,7 +1952,7 @@ TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
 %funct   = OpTypeFunction %voidt
 %main    = OpFunction %voidt None %funct
 %loop    = OpLabel
-           OpLoopMerge %exit %exit None
+           OpLoopMerge %exit %loop None
            OpBranch %exit
 %exit    = OpLabel
            OpReturn
@@ -3026,6 +3026,240 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("block <ID> 9 branches to the loop construct, but not "
                         "to the loop header <ID> 7"));
+}
+
+TEST_F(ValidateCFG, LoopMergeMergeBlockNotLabel) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+OpLoopMerge %undef %2 None
+OpBranchConditional %undef %2 %2
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Merge Block 1[%undef] must be an OpLabel"));
+}
+
+TEST_F(ValidateCFG, LoopMergeContinueTargetNotLabel) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+OpLoopMerge %2 %undef None
+OpBranchConditional %undef %2 %2
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Continue Target 1[%undef] must be an OpLabel"));
+}
+
+TEST_F(ValidateCFG, LoopMergeMergeBlockContinueTargetSameLabel) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+OpLoopMerge %2 %2 None
+OpBranchConditional %undef %2 %2
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Merge Block and Continue Target must be different ids"));
+}
+
+TEST_F(ValidateCFG, LoopMergeUnrollAndDontUnroll) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%5 = OpLabel
+OpBranch %1
+%1 = OpLabel
+OpLoopMerge %2 %3 Unroll|DontUnroll
+OpBranchConditional %undef %2 %3
+%3 = OpLabel
+OpBranch %1
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Unroll and DontUnroll loop controls must not both be specified"));
+}
+
+TEST_F(ValidateCFG, LoopMergePeelCountAndDontUnroll) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%5 = OpLabel
+OpBranch %1
+%1 = OpLabel
+OpLoopMerge %2 %3 DontUnroll|PeelCount 1
+OpBranchConditional %undef %2 %3
+%3 = OpLabel
+OpBranch %1
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "PeelCount and DontUnroll loop controls must not both be specified"));
+}
+
+TEST_F(ValidateCFG, LoopMergePartialCountAndDontUnroll) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%5 = OpLabel
+OpBranch %1
+%1 = OpLabel
+OpLoopMerge %2 %3 DontUnroll|PartialCount 1
+OpBranchConditional %undef %2 %3
+%3 = OpLabel
+OpBranch %1
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("PartialCount and DontUnroll loop controls must not "
+                        "both be specified"));
+}
+
+TEST_F(ValidateCFG, LoopMergeIterationMultipleZero) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%5 = OpLabel
+OpBranch %1
+%1 = OpLabel
+OpLoopMerge %2 %3 IterationMultiple 0
+OpBranchConditional %undef %2 %3
+%3 = OpLabel
+OpBranch %1
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "IterationMultiple loop control operand must be greater than zero"));
+}
+
+TEST_F(ValidateCFG, LoopMergeIterationMultipleZeroMoreOperands) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %undef "undef"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%5 = OpLabel
+OpBranch %1
+%1 = OpLabel
+OpLoopMerge %2 %3 MaxIterations|IterationMultiple 4 0
+OpBranchConditional %undef %2 %3
+%3 = OpLabel
+OpBranch %1
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "IterationMultiple loop control operand must be greater than zero"));
 }
 
 /// TODO(umar): Nested CFG constructs
