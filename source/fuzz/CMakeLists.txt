@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/protobufs/spirvfuzz.proto)
+if(SPIRV_BUILD_FUZZER)
+  set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/protobufs/spirvfuzz.proto)
 
-add_custom_command(
+  add_custom_command(
         OUTPUT protobufs/spirvfuzz.pb.cc protobufs/spirvfuzz.pb.h
         COMMAND protobuf::protoc
         -I=${CMAKE_CURRENT_SOURCE_DIR}/protobufs
@@ -22,9 +23,9 @@ add_custom_command(
         ${PROTOBUF_SOURCE}
         DEPENDS ${PROTOBUF_SOURCE}
         COMMENT "Generate protobuf sources from proto definition file."
-)
+  )
 
-set(SPIRV_TOOLS_FUZZ_SOURCES
+  set(SPIRV_TOOLS_FUZZ_SOURCES
         fact_manager.h
         fuzzer.h
         fuzzer_context.h
@@ -84,42 +85,44 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spirvfuzz.pb.cc
         )
 
-if(MSVC)
+  if(MSVC)
     # Enable parallel builds across four cores for this lib
     add_definitions(/MP4)
-endif()
+  endif()
 
-spvtools_pch(SPIRV_TOOLS_FUZZ_SOURCES pch_source_fuzz)
+  spvtools_pch(SPIRV_TOOLS_FUZZ_SOURCES pch_source_fuzz)
 
-add_library(SPIRV-Tools-fuzz ${SPIRV_TOOLS_FUZZ_SOURCES})
+  add_library(SPIRV-Tools-fuzz ${SPIRV_TOOLS_FUZZ_SOURCES})
 
-spvtools_default_compile_options(SPIRV-Tools-fuzz)
-target_compile_definitions(SPIRV-Tools-fuzz PUBLIC -DGOOGLE_PROTOBUF_NO_RTTI -DGOOGLE_PROTOBUF_USE_UNALIGNED=0)
+  spvtools_default_compile_options(SPIRV-Tools-fuzz)
+  target_compile_definitions(SPIRV-Tools-fuzz PUBLIC -DGOOGLE_PROTOBUF_NO_RTTI -DGOOGLE_PROTOBUF_USE_UNALIGNED=0)
 
-# Compilation of the auto-generated protobuf source file will yield warnings,
-# which we have no control over and thus wish to ignore.
-if(${COMPILER_IS_LIKE_GNU})
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/spirvfuzz.pb.cc PROPERTIES COMPILE_FLAGS -w)
-endif()
+  # Compilation of the auto-generated protobuf source file will yield warnings,
+  # which we have no control over and thus wish to ignore.
+  if(${COMPILER_IS_LIKE_GNU})
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/spirvfuzz.pb.cc PROPERTIES COMPILE_FLAGS -w)
+  endif()
 
-target_include_directories(SPIRV-Tools-fuzz
+  target_include_directories(SPIRV-Tools-fuzz
         PUBLIC ${spirv-tools_SOURCE_DIR}/include
         PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
         PRIVATE ${spirv-tools_BINARY_DIR}
         PRIVATE ${CMAKE_BINARY_DIR})
 
-# The fuzzer reuses a lot of functionality from the SPIRV-Tools library.
-target_link_libraries(SPIRV-Tools-fuzz
+  # The fuzzer reuses a lot of functionality from the SPIRV-Tools library.
+  target_link_libraries(SPIRV-Tools-fuzz
         PUBLIC ${SPIRV_TOOLS}
         PUBLIC SPIRV-Tools-opt
         PUBLIC protobuf::libprotobuf)
 
-set_property(TARGET SPIRV-Tools-fuzz PROPERTY FOLDER "SPIRV-Tools libraries")
-spvtools_check_symbol_exports(SPIRV-Tools-fuzz)
+  set_property(TARGET SPIRV-Tools-fuzz PROPERTY FOLDER "SPIRV-Tools libraries")
+  spvtools_check_symbol_exports(SPIRV-Tools-fuzz)
 
-if(ENABLE_SPIRV_TOOLS_INSTALL)
-    install(TARGETS SPIRV-Tools-fuzz
+  if(ENABLE_SPIRV_TOOLS_INSTALL)
+      install(TARGETS SPIRV-Tools-fuzz
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(ENABLE_SPIRV_TOOLS_INSTALL)
+  endif(ENABLE_SPIRV_TOOLS_INSTALL)
+
+endif(SPIRV_BUILD_FUZZER)
