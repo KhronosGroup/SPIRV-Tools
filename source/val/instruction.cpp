@@ -20,8 +20,8 @@
 namespace spvtools {
 namespace val {
 
-Instruction::Instruction(const spv_parsed_instruction_t* inst)
-    : inst_(spvtools::Instruction::Make(inst)) {
+Instruction::Instruction(const spv_parsed_instruction_t* i)
+    : inst_(spvtools::Instruction::Make(i)) {
   assert(inst_);
 }
 
