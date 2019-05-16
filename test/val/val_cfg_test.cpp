@@ -3262,6 +3262,147 @@ OpFunctionEnd
           "IterationMultiple loop control operand must be greater than zero"));
 }
 
+TEST_F(ValidateCFG, InvalidSelectionExit) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantTrue %3
+%5 = OpTypeFunction %2
+%1 = OpFunction %2 None %5
+%6 = OpLabel
+OpSelectionMerge %7 None
+OpBranchConditional %4 %7 %8
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpBranchConditional %4 %10 %9
+%10 = OpLabel
+OpBranch %7
+%9 = OpLabel
+OpBranch %7
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("block <ID> 10[%10] exits the selection headed by <ID> "
+                        "8[%8], but not via a structured exit"));
+}
+
+TEST_F(ValidateCFG, InvalidLoopExit) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantTrue %3
+%5 = OpTypeFunction %2
+%1 = OpFunction %2 None %5
+%6 = OpLabel
+OpSelectionMerge %7 None
+OpBranchConditional %4 %7 %8
+%8 = OpLabel
+OpLoopMerge %9 %10 None
+OpBranchConditional %4 %9 %11
+%11 = OpLabel
+OpBranchConditional %4 %7 %10
+%10 = OpLabel
+OpBranch %8
+%9 = OpLabel
+OpBranch %7
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("block <ID> 11[%11] exits the loop headed by <ID> "
+                        "8[%8], but not via a structured exit"));
+}
+
+TEST_F(ValidateCFG, InvalidContinueExit) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantTrue %3
+%5 = OpTypeFunction %2
+%1 = OpFunction %2 None %5
+%6 = OpLabel
+OpSelectionMerge %7 None
+OpBranchConditional %4 %7 %8
+%8 = OpLabel
+OpLoopMerge %9 %10 None
+OpBranchConditional %4 %9 %10
+%10 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpBranchConditional %4 %8 %7
+%9 = OpLabel
+OpBranch %7
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("block <ID> 11[%11] exits the continue headed by <ID> "
+                        "10[%10], but not via a structured exit"));
+}
+
+TEST_F(ValidateCFG, InvalidSelectionExitBackedge) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeBool
+%3 = OpUndef %2
+%4 = OpTypeFunction %1
+%5 = OpFunction %1 None %4
+%6 = OpLabel
+OpBranch %7
+%7 = OpLabel
+OpLoopMerge %8 %9 None
+OpBranchConditional %3 %8 %9
+%9 = OpLabel
+OpSelectionMerge %10 None
+OpBranchConditional %3 %11 %12
+%11 = OpLabel
+OpBranch %13
+%12 = OpLabel
+OpBranch %13
+%13 = OpLabel
+OpBranch %7
+%10 = OpLabel
+OpUnreachable
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("block <ID> 13[%13] exits the selection headed by <ID> "
+                        "9[%9], but not via a structured exit"));
+}
+
 /// TODO(umar): Nested CFG constructs
 
 }  // namespace
