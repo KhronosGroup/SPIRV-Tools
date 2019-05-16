@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The SPIR-V Tools authors.
+// Copyright (c) 2019 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
