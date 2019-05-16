@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file is specifically named spvtools_fuzz.proto so that the string
+// 'spvtools_fuzz' appears in the names of global-scope symbols that protoc
+// generates when targeting C++.  This is to reduce the potential for name
+// clashes with other globally-scoped symbols.
+
 syntax = "proto3";
 
 package spvtools.fuzz.protobufs;

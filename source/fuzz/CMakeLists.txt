@@ -13,10 +13,10 @@
 # limitations under the License.
 
 if(SPIRV_BUILD_FUZZER)
-  set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/protobufs/spirvfuzz.proto)
+  set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/protobufs/spvtoolsfuzz.proto)
 
   add_custom_command(
-        OUTPUT protobufs/spirvfuzz.pb.cc protobufs/spirvfuzz.pb.h
+        OUTPUT protobufs/spvtoolsfuzz.pb.cc protobufs/spvtoolsfuzz.pb.h
         COMMAND protobuf::protoc
         -I=${CMAKE_CURRENT_SOURCE_DIR}/protobufs
         --cpp_out=protobufs
@@ -54,7 +54,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_constant_with_uniform.h
         transformation_split_block.h
         uniform_buffer_element_descriptor.h
-        ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spirvfuzz.pb.h
+        ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
         fact_manager.cpp
         fuzzer.cpp
@@ -82,7 +82,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_constant_with_uniform.cpp
         transformation_split_block.cpp
         uniform_buffer_element_descriptor.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spirvfuzz.pb.cc
+        ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
         )
 
   if(MSVC)
@@ -100,7 +100,7 @@ if(SPIRV_BUILD_FUZZER)
   # Compilation of the auto-generated protobuf source file will yield warnings,
   # which we have no control over and thus wish to ignore.
   if(${COMPILER_IS_LIKE_GNU})
-    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/spirvfuzz.pb.cc PROPERTIES COMPILE_FLAGS -w)
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc PROPERTIES COMPILE_FLAGS -w)
   endif()
 
   target_include_directories(SPIRV-Tools-fuzz
