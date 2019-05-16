@@ -28,6 +28,11 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4244)
+#endif
+
 // The following should be the only place in the project where protobuf files
 // are directly included.  This is so that they can be compiled in a manner
 // where warnings are ignored.
@@ -37,6 +42,10 @@
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(pop)
 #endif
 
 #endif  // SOURCE_FUZZ_SPIRVFUZZ_PROTOBUFS_H_

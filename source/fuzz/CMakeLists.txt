@@ -102,6 +102,9 @@ if(SPIRV_BUILD_FUZZER)
   if(${COMPILER_IS_LIKE_GNU})
     set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc PROPERTIES COMPILE_FLAGS -w)
   endif()
+  if(MSVC)
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc PROPERTIES COMPILE_FLAGS /w)
+  endif()
 
   target_include_directories(SPIRV-Tools-fuzz
         PUBLIC ${spirv-tools_SOURCE_DIR}/include
