@@ -33,7 +33,7 @@
 // where warnings are ignored.
 
 #include "google/protobuf/util/json_util.h"
-#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/protobufs/spvtoolsfuzz.pb.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
