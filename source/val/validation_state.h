@@ -679,19 +679,6 @@ class ValidationState_t {
   bool LogicallyMatch(const Instruction* lhs, const Instruction* rhs,
                       bool check_decorations);
 
-  // Returns true if the edge |source| -> |dest| is a structured exit of the
-  // construct headed by |header|.  Structured exits are one of:
-  //  * Branch to the nearest dominator of |source| containing a merge
-  //  instruction whose merge target does not dominate |source|
-  //  * Branch to the nearest dominator of |source| containing an OpLoopMerge
-  //  instruction whose merge target does not dominate |source|
-  //  * Branch to a Target or Default of an OpSwitch where that OpSwitch is the
-  //  terminator of the nearest dominator whose merge target does not dominate
-  //  |source|
-  //  * A loop back-edge
-  bool IsStructuredExitOf(const BasicBlock* header, const BasicBlock* source,
-                          const BasicBlock* dest);
-
  private:
   ValidationState_t(const ValidationState_t&);
 
