@@ -403,5 +403,5 @@ endif(ENABLE_SPIRV_TOOLS_INSTALL)
 if(MSVC)
   # Enable parallel builds across four cores for this lib
   add_definitions(/MP4)
-  add_compile_options(/bigobj)
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/instructions.cpp PROPERTIES COMPILE_FLAGS /bigobj)
 endif()
