@@ -96,7 +96,7 @@ std::shared_ptr<Instruction> Instruction::Make(const spv_parsed_instruction_t *i
 # To augment generated code, you can write {classname} derived from
 # {basename} by hand.
 instruction_template = '''struct {basename} : public Instruction {{
-  static constexpr SpvOp Opcode = SpvOp{name};
+  static const SpvOp Opcode = SpvOp{name};
   {basename}(const spv_parsed_instruction_t *i) : Instruction(i) {{}}
   {getters}
 }};'''
@@ -109,7 +109,7 @@ handler_template = 'virtual spv_result_t do_{name}(const {classname} &i, Args...
 
 dispatch_case_template = 'case SpvOp{name}: return do_{name}(*i->Get<{classname}>(), args...);'
 
-make_case_template = 'case ::SpvOp{name}: return std::make_shared<{classname}>(inst);'
+make_case_template = 'case SpvOp{name}: return std::make_shared<{classname}>(inst);'
 
 # Characters to strip out of operand names.
 strip = {ord(i):None for i in "' "}

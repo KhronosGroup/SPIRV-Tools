@@ -1,23 +1,23 @@
 // THIS FILE IS GENERATED
 
 struct INop : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpNop;
+  static const SpvOp Opcode = SpvOpNop;
   INop(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct IUndef : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUndef;
+  static const SpvOp Opcode = SpvOpUndef;
   IUndef(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISourceContinued : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSourceContinued;
+  static const SpvOp Opcode = SpvOpSourceContinued;
   ISourceContinued(const spv_parsed_instruction_t *i) : Instruction(i) {}
   const char * GetContinuedSource() const { return getstr(0); }
 };
 struct ISource : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSource;
+  static const SpvOp Opcode = SpvOpSource;
   ISource(const spv_parsed_instruction_t *i) : Instruction(i) {}
   SpvSourceLanguage GetSourceLanguage() const { return getval<SpvSourceLanguage>(0); }
 uint32_t GetVersion() const { return getval<uint32_t>(1); }
@@ -25,49 +25,49 @@ uint32_t GetFile() const { return getval<uint32_t>(2); }
 const char * GetSource() const { return getstr(3); }
 };
 struct ISourceExtension : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSourceExtension;
+  static const SpvOp Opcode = SpvOpSourceExtension;
   ISourceExtension(const spv_parsed_instruction_t *i) : Instruction(i) {}
   const char * GetExtension() const { return getstr(0); }
 };
 struct IName : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpName;
+  static const SpvOp Opcode = SpvOpName;
   IName(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetTarget() const { return getval<uint32_t>(0); }
 const char * GetName() const { return getstr(1); }
 };
 struct IMemberName : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMemberName;
+  static const SpvOp Opcode = SpvOpMemberName;
   IMemberName(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetType() const { return getval<uint32_t>(0); }
 uint32_t GetMember() const { return getval<uint32_t>(1); }
 const char * GetName() const { return getstr(2); }
 };
 struct IString : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpString;
+  static const SpvOp Opcode = SpvOpString;
   IString(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 const char * GetString() const { return getstr(1); }
 };
 struct ILine : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLine;
+  static const SpvOp Opcode = SpvOpLine;
   ILine(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetFile() const { return getval<uint32_t>(0); }
 uint32_t GetLine() const { return getval<uint32_t>(1); }
 uint32_t GetColumn() const { return getval<uint32_t>(2); }
 };
 struct IExtension : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpExtension;
+  static const SpvOp Opcode = SpvOpExtension;
   IExtension(const spv_parsed_instruction_t *i) : Instruction(i) {}
   const char * GetName() const { return getstr(0); }
 };
 struct IExtInstImport : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpExtInstImport;
+  static const SpvOp Opcode = SpvOpExtInstImport;
   IExtInstImport(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 const char * GetName() const { return getstr(1); }
 };
 struct IExtInst : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpExtInst;
+  static const SpvOp Opcode = SpvOpExtInst;
   IExtInst(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -76,13 +76,13 @@ uint32_t GetInstruction() const { return getval<uint32_t>(3); }
 const std::vector<uint32_t> GetOperands() const { return getvec<uint32_t>(4); }
 };
 struct IMemoryModel : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMemoryModel;
+  static const SpvOp Opcode = SpvOpMemoryModel;
   IMemoryModel(const spv_parsed_instruction_t *i) : Instruction(i) {}
   SpvAddressingModel GetAddressingModel() const { return getval<SpvAddressingModel>(0); }
 SpvMemoryModel GetMemoryModel() const { return getval<SpvMemoryModel>(1); }
 };
 struct IEntryPoint : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpEntryPoint;
+  static const SpvOp Opcode = SpvOpEntryPoint;
   IEntryPoint(const spv_parsed_instruction_t *i) : Instruction(i) {}
   SpvExecutionModel GetExecutionModel() const { return getval<SpvExecutionModel>(0); }
 uint32_t GetEntryPoint() const { return getval<uint32_t>(1); }
@@ -90,55 +90,55 @@ const char * GetName() const { return getstr(2); }
 const std::vector<uint32_t> GetInterface() const { return getvec<uint32_t>(3); }
 };
 struct IExecutionMode : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpExecutionMode;
+  static const SpvOp Opcode = SpvOpExecutionMode;
   IExecutionMode(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetEntryPoint() const { return getval<uint32_t>(0); }
 SpvExecutionMode GetMode() const { return getval<SpvExecutionMode>(1); }
 };
 struct ICapability : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCapability;
+  static const SpvOp Opcode = SpvOpCapability;
   ICapability(const spv_parsed_instruction_t *i) : Instruction(i) {}
   SpvCapability GetCapability() const { return getval<SpvCapability>(0); }
 };
 struct ITypeVoid : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeVoid;
+  static const SpvOp Opcode = SpvOpTypeVoid;
   ITypeVoid(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeBool : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeBool;
+  static const SpvOp Opcode = SpvOpTypeBool;
   ITypeBool(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeInt : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeInt;
+  static const SpvOp Opcode = SpvOpTypeInt;
   ITypeInt(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetWidth() const { return getval<uint32_t>(1); }
 uint32_t GetSignedness() const { return getval<uint32_t>(2); }
 };
 struct ITypeFloat : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeFloat;
+  static const SpvOp Opcode = SpvOpTypeFloat;
   ITypeFloat(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetWidth() const { return getval<uint32_t>(1); }
 };
 struct ITypeVector : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeVector;
+  static const SpvOp Opcode = SpvOpTypeVector;
   ITypeVector(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetComponentType() const { return getval<uint32_t>(1); }
 uint32_t GetComponentCount() const { return getval<uint32_t>(2); }
 };
 struct ITypeMatrix : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeMatrix;
+  static const SpvOp Opcode = SpvOpTypeMatrix;
   ITypeMatrix(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetColumnType() const { return getval<uint32_t>(1); }
 uint32_t GetColumnCount() const { return getval<uint32_t>(2); }
 };
 struct ITypeImage : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeImage;
+  static const SpvOp Opcode = SpvOpTypeImage;
   ITypeImage(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetSampledType() const { return getval<uint32_t>(1); }
@@ -151,115 +151,115 @@ SpvImageFormat GetImageFormat() const { return getval<SpvImageFormat>(7); }
 SpvAccessQualifier GetAccessQualifier() const { return getval<SpvAccessQualifier>(8); }
 };
 struct ITypeSampler : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeSampler;
+  static const SpvOp Opcode = SpvOpTypeSampler;
   ITypeSampler(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeSampledImage : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeSampledImage;
+  static const SpvOp Opcode = SpvOpTypeSampledImage;
   ITypeSampledImage(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetImageType() const { return getval<uint32_t>(1); }
 };
 struct ITypeArray : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeArray;
+  static const SpvOp Opcode = SpvOpTypeArray;
   ITypeArray(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetElementType() const { return getval<uint32_t>(1); }
 uint32_t GetLength() const { return getval<uint32_t>(2); }
 };
 struct ITypeRuntimeArray : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeRuntimeArray;
+  static const SpvOp Opcode = SpvOpTypeRuntimeArray;
   ITypeRuntimeArray(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetElementType() const { return getval<uint32_t>(1); }
 };
 struct ITypeStruct : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeStruct;
+  static const SpvOp Opcode = SpvOpTypeStruct;
   ITypeStruct(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 const std::vector<uint32_t> GetMembers() const { return getvec<uint32_t>(1); }
 };
 struct ITypeOpaque : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeOpaque;
+  static const SpvOp Opcode = SpvOpTypeOpaque;
   ITypeOpaque(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 const char * GetTypeName() const { return getstr(1); }
 };
 struct ITypePointer : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypePointer;
+  static const SpvOp Opcode = SpvOpTypePointer;
   ITypePointer(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 SpvStorageClass GetStorageClass() const { return getval<SpvStorageClass>(1); }
 uint32_t GetType() const { return getval<uint32_t>(2); }
 };
 struct ITypeFunction : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeFunction;
+  static const SpvOp Opcode = SpvOpTypeFunction;
   ITypeFunction(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetReturnType() const { return getval<uint32_t>(1); }
 const std::vector<uint32_t> GetParameterTypes() const { return getvec<uint32_t>(2); }
 };
 struct ITypeEvent : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeEvent;
+  static const SpvOp Opcode = SpvOpTypeEvent;
   ITypeEvent(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeDeviceEvent : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeDeviceEvent;
+  static const SpvOp Opcode = SpvOpTypeDeviceEvent;
   ITypeDeviceEvent(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeReserveId : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeReserveId;
+  static const SpvOp Opcode = SpvOpTypeReserveId;
   ITypeReserveId(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeQueue : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeQueue;
+  static const SpvOp Opcode = SpvOpTypeQueue;
   ITypeQueue(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypePipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypePipe;
+  static const SpvOp Opcode = SpvOpTypePipe;
   ITypePipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 SpvAccessQualifier GetQualifier() const { return getval<SpvAccessQualifier>(1); }
 };
 struct ITypeForwardPointer : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeForwardPointer;
+  static const SpvOp Opcode = SpvOpTypeForwardPointer;
   ITypeForwardPointer(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPointerType() const { return getval<uint32_t>(0); }
 SpvStorageClass GetStorageClass() const { return getval<SpvStorageClass>(1); }
 };
 struct IConstantTrue : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConstantTrue;
+  static const SpvOp Opcode = SpvOpConstantTrue;
   IConstantTrue(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct IConstantFalse : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConstantFalse;
+  static const SpvOp Opcode = SpvOpConstantFalse;
   IConstantFalse(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct IConstant : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConstant;
+  static const SpvOp Opcode = SpvOpConstant;
   IConstant(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetValue() const { return getval<uint32_t>(2); }
 };
 struct IConstantComposite : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConstantComposite;
+  static const SpvOp Opcode = SpvOpConstantComposite;
   IConstantComposite(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 const std::vector<uint32_t> GetConstituents() const { return getvec<uint32_t>(2); }
 };
 struct IConstantSampler : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConstantSampler;
+  static const SpvOp Opcode = SpvOpConstantSampler;
   IConstantSampler(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -268,46 +268,46 @@ uint32_t GetParam() const { return getval<uint32_t>(3); }
 SpvSamplerFilterMode GetSamplerFilterMode() const { return getval<SpvSamplerFilterMode>(4); }
 };
 struct IConstantNull : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConstantNull;
+  static const SpvOp Opcode = SpvOpConstantNull;
   IConstantNull(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISpecConstantTrue : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSpecConstantTrue;
+  static const SpvOp Opcode = SpvOpSpecConstantTrue;
   ISpecConstantTrue(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISpecConstantFalse : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSpecConstantFalse;
+  static const SpvOp Opcode = SpvOpSpecConstantFalse;
   ISpecConstantFalse(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISpecConstant : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSpecConstant;
+  static const SpvOp Opcode = SpvOpSpecConstant;
   ISpecConstant(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetValue() const { return getval<uint32_t>(2); }
 };
 struct ISpecConstantComposite : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSpecConstantComposite;
+  static const SpvOp Opcode = SpvOpSpecConstantComposite;
   ISpecConstantComposite(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 const std::vector<uint32_t> GetConstituents() const { return getvec<uint32_t>(2); }
 };
 struct ISpecConstantOp : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSpecConstantOp;
+  static const SpvOp Opcode = SpvOpSpecConstantOp;
   ISpecConstantOp(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOpcode() const { return getval<uint32_t>(2); }
 };
 struct IFunction : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFunction;
+  static const SpvOp Opcode = SpvOpFunction;
   IFunction(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -315,18 +315,18 @@ uint32_t GetFunctionControl() const { return getval<uint32_t>(2); }
 uint32_t GetFunctionType() const { return getval<uint32_t>(3); }
 };
 struct IFunctionParameter : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFunctionParameter;
+  static const SpvOp Opcode = SpvOpFunctionParameter;
   IFunctionParameter(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct IFunctionEnd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFunctionEnd;
+  static const SpvOp Opcode = SpvOpFunctionEnd;
   IFunctionEnd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct IFunctionCall : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFunctionCall;
+  static const SpvOp Opcode = SpvOpFunctionCall;
   IFunctionCall(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -334,7 +334,7 @@ uint32_t GetFunction() const { return getval<uint32_t>(2); }
 const std::vector<uint32_t> GetArguments() const { return getvec<uint32_t>(3); }
 };
 struct IVariable : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpVariable;
+  static const SpvOp Opcode = SpvOpVariable;
   IVariable(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -342,7 +342,7 @@ SpvStorageClass GetStorageClass() const { return getval<SpvStorageClass>(2); }
 uint32_t GetInitializer() const { return getval<uint32_t>(3); }
 };
 struct IImageTexelPointer : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageTexelPointer;
+  static const SpvOp Opcode = SpvOpImageTexelPointer;
   IImageTexelPointer(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -351,7 +351,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetSample() const { return getval<uint32_t>(4); }
 };
 struct ILoad : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLoad;
+  static const SpvOp Opcode = SpvOpLoad;
   ILoad(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -359,14 +359,14 @@ uint32_t GetPointer() const { return getval<uint32_t>(2); }
 uint32_t GetMemoryAccess() const { return getval<uint32_t>(3); }
 };
 struct IStore : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpStore;
+  static const SpvOp Opcode = SpvOpStore;
   IStore(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPointer() const { return getval<uint32_t>(0); }
 uint32_t GetObject() const { return getval<uint32_t>(1); }
 uint32_t GetMemoryAccess() const { return getval<uint32_t>(2); }
 };
 struct ICopyMemory : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCopyMemory;
+  static const SpvOp Opcode = SpvOpCopyMemory;
   ICopyMemory(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetTarget() const { return getval<uint32_t>(0); }
 uint32_t GetSource() const { return getval<uint32_t>(1); }
@@ -374,7 +374,7 @@ uint32_t GetMemoryAccess() const { return getval<uint32_t>(2); }
 uint32_t GetSourceMemoryAccess() const { return getval<uint32_t>(3); }
 };
 struct ICopyMemorySized : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCopyMemorySized;
+  static const SpvOp Opcode = SpvOpCopyMemorySized;
   ICopyMemorySized(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetTarget() const { return getval<uint32_t>(0); }
 uint32_t GetSource() const { return getval<uint32_t>(1); }
@@ -383,7 +383,7 @@ uint32_t GetMemoryAccess() const { return getval<uint32_t>(3); }
 uint32_t GetSourceMemoryAccess() const { return getval<uint32_t>(4); }
 };
 struct IAccessChain : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAccessChain;
+  static const SpvOp Opcode = SpvOpAccessChain;
   IAccessChain(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -391,7 +391,7 @@ uint32_t GetBase() const { return getval<uint32_t>(2); }
 const std::vector<uint32_t> GetIndexes() const { return getvec<uint32_t>(3); }
 };
 struct IInBoundsAccessChain : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpInBoundsAccessChain;
+  static const SpvOp Opcode = SpvOpInBoundsAccessChain;
   IInBoundsAccessChain(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -399,7 +399,7 @@ uint32_t GetBase() const { return getval<uint32_t>(2); }
 const std::vector<uint32_t> GetIndexes() const { return getvec<uint32_t>(3); }
 };
 struct IPtrAccessChain : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpPtrAccessChain;
+  static const SpvOp Opcode = SpvOpPtrAccessChain;
   IPtrAccessChain(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -408,7 +408,7 @@ uint32_t GetElement() const { return getval<uint32_t>(3); }
 const std::vector<uint32_t> GetIndexes() const { return getvec<uint32_t>(4); }
 };
 struct IArrayLength : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpArrayLength;
+  static const SpvOp Opcode = SpvOpArrayLength;
   IArrayLength(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -416,14 +416,14 @@ uint32_t GetStructure() const { return getval<uint32_t>(2); }
 uint32_t GetArraymember() const { return getval<uint32_t>(3); }
 };
 struct IGenericPtrMemSemantics : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGenericPtrMemSemantics;
+  static const SpvOp Opcode = SpvOpGenericPtrMemSemantics;
   IGenericPtrMemSemantics(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPointer() const { return getval<uint32_t>(2); }
 };
 struct IInBoundsPtrAccessChain : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpInBoundsPtrAccessChain;
+  static const SpvOp Opcode = SpvOpInBoundsPtrAccessChain;
   IInBoundsPtrAccessChain(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -432,37 +432,37 @@ uint32_t GetElement() const { return getval<uint32_t>(3); }
 const std::vector<uint32_t> GetIndexes() const { return getvec<uint32_t>(4); }
 };
 struct IDecorate : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDecorate;
+  static const SpvOp Opcode = SpvOpDecorate;
   IDecorate(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetTarget() const { return getval<uint32_t>(0); }
 SpvDecoration GetDecoration() const { return getval<SpvDecoration>(1); }
 };
 struct IMemberDecorate : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMemberDecorate;
+  static const SpvOp Opcode = SpvOpMemberDecorate;
   IMemberDecorate(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetStructureType() const { return getval<uint32_t>(0); }
 uint32_t GetMember() const { return getval<uint32_t>(1); }
 SpvDecoration GetDecoration() const { return getval<SpvDecoration>(2); }
 };
 struct IDecorationGroup : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDecorationGroup;
+  static const SpvOp Opcode = SpvOpDecorationGroup;
   IDecorationGroup(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct IGroupDecorate : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupDecorate;
+  static const SpvOp Opcode = SpvOpGroupDecorate;
   IGroupDecorate(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetDecorationGroup() const { return getval<uint32_t>(0); }
 const std::vector<uint32_t> GetTargets() const { return getvec<uint32_t>(1); }
 };
 struct IGroupMemberDecorate : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupMemberDecorate;
+  static const SpvOp Opcode = SpvOpGroupMemberDecorate;
   IGroupMemberDecorate(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetDecorationGroup() const { return getval<uint32_t>(0); }
 const std::vector<std::pair<uint32_t, uint32_t>> GetTargets() const { return getvec<std::pair<uint32_t, uint32_t>>(1); }
 };
 struct IVectorExtractDynamic : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpVectorExtractDynamic;
+  static const SpvOp Opcode = SpvOpVectorExtractDynamic;
   IVectorExtractDynamic(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -470,7 +470,7 @@ uint32_t GetVector() const { return getval<uint32_t>(2); }
 uint32_t GetIndex() const { return getval<uint32_t>(3); }
 };
 struct IVectorInsertDynamic : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpVectorInsertDynamic;
+  static const SpvOp Opcode = SpvOpVectorInsertDynamic;
   IVectorInsertDynamic(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -479,7 +479,7 @@ uint32_t GetComponent() const { return getval<uint32_t>(3); }
 uint32_t GetIndex() const { return getval<uint32_t>(4); }
 };
 struct IVectorShuffle : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpVectorShuffle;
+  static const SpvOp Opcode = SpvOpVectorShuffle;
   IVectorShuffle(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -488,14 +488,14 @@ uint32_t GetVector2() const { return getval<uint32_t>(3); }
 const std::vector<uint32_t> GetComponents() const { return getvec<uint32_t>(4); }
 };
 struct ICompositeConstruct : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCompositeConstruct;
+  static const SpvOp Opcode = SpvOpCompositeConstruct;
   ICompositeConstruct(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 const std::vector<uint32_t> GetConstituents() const { return getvec<uint32_t>(2); }
 };
 struct ICompositeExtract : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCompositeExtract;
+  static const SpvOp Opcode = SpvOpCompositeExtract;
   ICompositeExtract(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -503,7 +503,7 @@ uint32_t GetComposite() const { return getval<uint32_t>(2); }
 const std::vector<uint32_t> GetIndexes() const { return getvec<uint32_t>(3); }
 };
 struct ICompositeInsert : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCompositeInsert;
+  static const SpvOp Opcode = SpvOpCompositeInsert;
   ICompositeInsert(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -512,21 +512,21 @@ uint32_t GetComposite() const { return getval<uint32_t>(3); }
 const std::vector<uint32_t> GetIndexes() const { return getvec<uint32_t>(4); }
 };
 struct ICopyObject : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCopyObject;
+  static const SpvOp Opcode = SpvOpCopyObject;
   ICopyObject(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOperand() const { return getval<uint32_t>(2); }
 };
 struct ITranspose : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTranspose;
+  static const SpvOp Opcode = SpvOpTranspose;
   ITranspose(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetMatrix() const { return getval<uint32_t>(2); }
 };
 struct ISampledImage : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSampledImage;
+  static const SpvOp Opcode = SpvOpSampledImage;
   ISampledImage(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -534,7 +534,7 @@ uint32_t GetImage() const { return getval<uint32_t>(2); }
 uint32_t GetSampler() const { return getval<uint32_t>(3); }
 };
 struct IImageSampleImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleImplicitLod;
   IImageSampleImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -543,7 +543,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSampleExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleExplicitLod;
   IImageSampleExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -552,7 +552,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSampleDrefImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleDrefImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleDrefImplicitLod;
   IImageSampleDrefImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -562,7 +562,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSampleDrefExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleDrefExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleDrefExplicitLod;
   IImageSampleDrefExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -572,7 +572,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSampleProjImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleProjImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleProjImplicitLod;
   IImageSampleProjImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -581,7 +581,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSampleProjExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleProjExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleProjExplicitLod;
   IImageSampleProjExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -590,7 +590,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSampleProjDrefImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleProjDrefImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleProjDrefImplicitLod;
   IImageSampleProjDrefImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -600,7 +600,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSampleProjDrefExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleProjDrefExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSampleProjDrefExplicitLod;
   IImageSampleProjDrefExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -610,7 +610,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageFetch : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageFetch;
+  static const SpvOp Opcode = SpvOpImageFetch;
   IImageFetch(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -619,7 +619,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageGather : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageGather;
+  static const SpvOp Opcode = SpvOpImageGather;
   IImageGather(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -629,7 +629,7 @@ uint32_t GetComponent() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageDrefGather : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageDrefGather;
+  static const SpvOp Opcode = SpvOpImageDrefGather;
   IImageDrefGather(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -639,7 +639,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageRead : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageRead;
+  static const SpvOp Opcode = SpvOpImageRead;
   IImageRead(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -648,7 +648,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageWrite : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageWrite;
+  static const SpvOp Opcode = SpvOpImageWrite;
   IImageWrite(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetImage() const { return getval<uint32_t>(0); }
 uint32_t GetCoordinate() const { return getval<uint32_t>(1); }
@@ -656,28 +656,28 @@ uint32_t GetTexel() const { return getval<uint32_t>(2); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(3); }
 };
 struct IImage : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImage;
+  static const SpvOp Opcode = SpvOpImage;
   IImage(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetSampledImage() const { return getval<uint32_t>(2); }
 };
 struct IImageQueryFormat : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageQueryFormat;
+  static const SpvOp Opcode = SpvOpImageQueryFormat;
   IImageQueryFormat(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetImage() const { return getval<uint32_t>(2); }
 };
 struct IImageQueryOrder : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageQueryOrder;
+  static const SpvOp Opcode = SpvOpImageQueryOrder;
   IImageQueryOrder(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetImage() const { return getval<uint32_t>(2); }
 };
 struct IImageQuerySizeLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageQuerySizeLod;
+  static const SpvOp Opcode = SpvOpImageQuerySizeLod;
   IImageQuerySizeLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -685,14 +685,14 @@ uint32_t GetImage() const { return getval<uint32_t>(2); }
 uint32_t GetLevelofDetail() const { return getval<uint32_t>(3); }
 };
 struct IImageQuerySize : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageQuerySize;
+  static const SpvOp Opcode = SpvOpImageQuerySize;
   IImageQuerySize(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetImage() const { return getval<uint32_t>(2); }
 };
 struct IImageQueryLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageQueryLod;
+  static const SpvOp Opcode = SpvOpImageQueryLod;
   IImageQueryLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -700,119 +700,119 @@ uint32_t GetSampledImage() const { return getval<uint32_t>(2); }
 uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 };
 struct IImageQueryLevels : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageQueryLevels;
+  static const SpvOp Opcode = SpvOpImageQueryLevels;
   IImageQueryLevels(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetImage() const { return getval<uint32_t>(2); }
 };
 struct IImageQuerySamples : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageQuerySamples;
+  static const SpvOp Opcode = SpvOpImageQuerySamples;
   IImageQuerySamples(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetImage() const { return getval<uint32_t>(2); }
 };
 struct IConvertFToU : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConvertFToU;
+  static const SpvOp Opcode = SpvOpConvertFToU;
   IConvertFToU(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetFloatValue() const { return getval<uint32_t>(2); }
 };
 struct IConvertFToS : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConvertFToS;
+  static const SpvOp Opcode = SpvOpConvertFToS;
   IConvertFToS(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetFloatValue() const { return getval<uint32_t>(2); }
 };
 struct IConvertSToF : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConvertSToF;
+  static const SpvOp Opcode = SpvOpConvertSToF;
   IConvertSToF(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetSignedValue() const { return getval<uint32_t>(2); }
 };
 struct IConvertUToF : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConvertUToF;
+  static const SpvOp Opcode = SpvOpConvertUToF;
   IConvertUToF(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetUnsignedValue() const { return getval<uint32_t>(2); }
 };
 struct IUConvert : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUConvert;
+  static const SpvOp Opcode = SpvOpUConvert;
   IUConvert(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetUnsignedValue() const { return getval<uint32_t>(2); }
 };
 struct ISConvert : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSConvert;
+  static const SpvOp Opcode = SpvOpSConvert;
   ISConvert(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetSignedValue() const { return getval<uint32_t>(2); }
 };
 struct IFConvert : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFConvert;
+  static const SpvOp Opcode = SpvOpFConvert;
   IFConvert(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetFloatValue() const { return getval<uint32_t>(2); }
 };
 struct IQuantizeToF16 : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpQuantizeToF16;
+  static const SpvOp Opcode = SpvOpQuantizeToF16;
   IQuantizeToF16(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetValue() const { return getval<uint32_t>(2); }
 };
 struct IConvertPtrToU : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConvertPtrToU;
+  static const SpvOp Opcode = SpvOpConvertPtrToU;
   IConvertPtrToU(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPointer() const { return getval<uint32_t>(2); }
 };
 struct ISatConvertSToU : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSatConvertSToU;
+  static const SpvOp Opcode = SpvOpSatConvertSToU;
   ISatConvertSToU(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetSignedValue() const { return getval<uint32_t>(2); }
 };
 struct ISatConvertUToS : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSatConvertUToS;
+  static const SpvOp Opcode = SpvOpSatConvertUToS;
   ISatConvertUToS(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetUnsignedValue() const { return getval<uint32_t>(2); }
 };
 struct IConvertUToPtr : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConvertUToPtr;
+  static const SpvOp Opcode = SpvOpConvertUToPtr;
   IConvertUToPtr(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetIntegerValue() const { return getval<uint32_t>(2); }
 };
 struct IPtrCastToGeneric : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpPtrCastToGeneric;
+  static const SpvOp Opcode = SpvOpPtrCastToGeneric;
   IPtrCastToGeneric(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPointer() const { return getval<uint32_t>(2); }
 };
 struct IGenericCastToPtr : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGenericCastToPtr;
+  static const SpvOp Opcode = SpvOpGenericCastToPtr;
   IGenericCastToPtr(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPointer() const { return getval<uint32_t>(2); }
 };
 struct IGenericCastToPtrExplicit : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGenericCastToPtrExplicit;
+  static const SpvOp Opcode = SpvOpGenericCastToPtrExplicit;
   IGenericCastToPtrExplicit(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -820,28 +820,28 @@ uint32_t GetPointer() const { return getval<uint32_t>(2); }
 SpvStorageClass GetStorage() const { return getval<SpvStorageClass>(3); }
 };
 struct IBitcast : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitcast;
+  static const SpvOp Opcode = SpvOpBitcast;
   IBitcast(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOperand() const { return getval<uint32_t>(2); }
 };
 struct ISNegate : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSNegate;
+  static const SpvOp Opcode = SpvOpSNegate;
   ISNegate(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOperand() const { return getval<uint32_t>(2); }
 };
 struct IFNegate : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFNegate;
+  static const SpvOp Opcode = SpvOpFNegate;
   IFNegate(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOperand() const { return getval<uint32_t>(2); }
 };
 struct IIAdd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIAdd;
+  static const SpvOp Opcode = SpvOpIAdd;
   IIAdd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -849,7 +849,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFAdd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFAdd;
+  static const SpvOp Opcode = SpvOpFAdd;
   IFAdd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -857,7 +857,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IISub : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpISub;
+  static const SpvOp Opcode = SpvOpISub;
   IISub(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -865,7 +865,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFSub : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFSub;
+  static const SpvOp Opcode = SpvOpFSub;
   IFSub(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -873,7 +873,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IIMul : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIMul;
+  static const SpvOp Opcode = SpvOpIMul;
   IIMul(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -881,7 +881,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFMul : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFMul;
+  static const SpvOp Opcode = SpvOpFMul;
   IFMul(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -889,7 +889,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IUDiv : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUDiv;
+  static const SpvOp Opcode = SpvOpUDiv;
   IUDiv(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -897,7 +897,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISDiv : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSDiv;
+  static const SpvOp Opcode = SpvOpSDiv;
   ISDiv(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -905,7 +905,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFDiv : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFDiv;
+  static const SpvOp Opcode = SpvOpFDiv;
   IFDiv(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -913,7 +913,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IUMod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUMod;
+  static const SpvOp Opcode = SpvOpUMod;
   IUMod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -921,7 +921,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISRem : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSRem;
+  static const SpvOp Opcode = SpvOpSRem;
   ISRem(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -929,7 +929,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISMod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSMod;
+  static const SpvOp Opcode = SpvOpSMod;
   ISMod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -937,7 +937,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFRem : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFRem;
+  static const SpvOp Opcode = SpvOpFRem;
   IFRem(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -945,7 +945,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFMod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFMod;
+  static const SpvOp Opcode = SpvOpFMod;
   IFMod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -953,7 +953,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IVectorTimesScalar : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpVectorTimesScalar;
+  static const SpvOp Opcode = SpvOpVectorTimesScalar;
   IVectorTimesScalar(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -961,7 +961,7 @@ uint32_t GetVector() const { return getval<uint32_t>(2); }
 uint32_t GetScalar() const { return getval<uint32_t>(3); }
 };
 struct IMatrixTimesScalar : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMatrixTimesScalar;
+  static const SpvOp Opcode = SpvOpMatrixTimesScalar;
   IMatrixTimesScalar(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -969,7 +969,7 @@ uint32_t GetMatrix() const { return getval<uint32_t>(2); }
 uint32_t GetScalar() const { return getval<uint32_t>(3); }
 };
 struct IVectorTimesMatrix : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpVectorTimesMatrix;
+  static const SpvOp Opcode = SpvOpVectorTimesMatrix;
   IVectorTimesMatrix(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -977,7 +977,7 @@ uint32_t GetVector() const { return getval<uint32_t>(2); }
 uint32_t GetMatrix() const { return getval<uint32_t>(3); }
 };
 struct IMatrixTimesVector : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMatrixTimesVector;
+  static const SpvOp Opcode = SpvOpMatrixTimesVector;
   IMatrixTimesVector(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -985,7 +985,7 @@ uint32_t GetMatrix() const { return getval<uint32_t>(2); }
 uint32_t GetVector() const { return getval<uint32_t>(3); }
 };
 struct IMatrixTimesMatrix : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMatrixTimesMatrix;
+  static const SpvOp Opcode = SpvOpMatrixTimesMatrix;
   IMatrixTimesMatrix(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -993,7 +993,7 @@ uint32_t GetLeftMatrix() const { return getval<uint32_t>(2); }
 uint32_t GetRightMatrix() const { return getval<uint32_t>(3); }
 };
 struct IOuterProduct : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpOuterProduct;
+  static const SpvOp Opcode = SpvOpOuterProduct;
   IOuterProduct(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1001,7 +1001,7 @@ uint32_t GetVector1() const { return getval<uint32_t>(2); }
 uint32_t GetVector2() const { return getval<uint32_t>(3); }
 };
 struct IDot : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDot;
+  static const SpvOp Opcode = SpvOpDot;
   IDot(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1009,7 +1009,7 @@ uint32_t GetVector1() const { return getval<uint32_t>(2); }
 uint32_t GetVector2() const { return getval<uint32_t>(3); }
 };
 struct IIAddCarry : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIAddCarry;
+  static const SpvOp Opcode = SpvOpIAddCarry;
   IIAddCarry(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1017,7 +1017,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IISubBorrow : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpISubBorrow;
+  static const SpvOp Opcode = SpvOpISubBorrow;
   IISubBorrow(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1025,7 +1025,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IUMulExtended : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUMulExtended;
+  static const SpvOp Opcode = SpvOpUMulExtended;
   IUMulExtended(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1033,7 +1033,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISMulExtended : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSMulExtended;
+  static const SpvOp Opcode = SpvOpSMulExtended;
   ISMulExtended(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1041,56 +1041,56 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IAny : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAny;
+  static const SpvOp Opcode = SpvOpAny;
   IAny(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetVector() const { return getval<uint32_t>(2); }
 };
 struct IAll : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAll;
+  static const SpvOp Opcode = SpvOpAll;
   IAll(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetVector() const { return getval<uint32_t>(2); }
 };
 struct IIsNan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIsNan;
+  static const SpvOp Opcode = SpvOpIsNan;
   IIsNan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t Getx() const { return getval<uint32_t>(2); }
 };
 struct IIsInf : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIsInf;
+  static const SpvOp Opcode = SpvOpIsInf;
   IIsInf(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t Getx() const { return getval<uint32_t>(2); }
 };
 struct IIsFinite : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIsFinite;
+  static const SpvOp Opcode = SpvOpIsFinite;
   IIsFinite(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t Getx() const { return getval<uint32_t>(2); }
 };
 struct IIsNormal : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIsNormal;
+  static const SpvOp Opcode = SpvOpIsNormal;
   IIsNormal(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t Getx() const { return getval<uint32_t>(2); }
 };
 struct ISignBitSet : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSignBitSet;
+  static const SpvOp Opcode = SpvOpSignBitSet;
   ISignBitSet(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t Getx() const { return getval<uint32_t>(2); }
 };
 struct ILessOrGreater : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLessOrGreater;
+  static const SpvOp Opcode = SpvOpLessOrGreater;
   ILessOrGreater(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1098,7 +1098,7 @@ uint32_t Getx() const { return getval<uint32_t>(2); }
 uint32_t Gety() const { return getval<uint32_t>(3); }
 };
 struct IOrdered : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpOrdered;
+  static const SpvOp Opcode = SpvOpOrdered;
   IOrdered(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1106,7 +1106,7 @@ uint32_t Getx() const { return getval<uint32_t>(2); }
 uint32_t Gety() const { return getval<uint32_t>(3); }
 };
 struct IUnordered : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUnordered;
+  static const SpvOp Opcode = SpvOpUnordered;
   IUnordered(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1114,7 +1114,7 @@ uint32_t Getx() const { return getval<uint32_t>(2); }
 uint32_t Gety() const { return getval<uint32_t>(3); }
 };
 struct ILogicalEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLogicalEqual;
+  static const SpvOp Opcode = SpvOpLogicalEqual;
   ILogicalEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1122,7 +1122,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ILogicalNotEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLogicalNotEqual;
+  static const SpvOp Opcode = SpvOpLogicalNotEqual;
   ILogicalNotEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1130,7 +1130,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ILogicalOr : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLogicalOr;
+  static const SpvOp Opcode = SpvOpLogicalOr;
   ILogicalOr(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1138,7 +1138,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ILogicalAnd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLogicalAnd;
+  static const SpvOp Opcode = SpvOpLogicalAnd;
   ILogicalAnd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1146,14 +1146,14 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ILogicalNot : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLogicalNot;
+  static const SpvOp Opcode = SpvOpLogicalNot;
   ILogicalNot(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOperand() const { return getval<uint32_t>(2); }
 };
 struct ISelect : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSelect;
+  static const SpvOp Opcode = SpvOpSelect;
   ISelect(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1162,7 +1162,7 @@ uint32_t GetObject1() const { return getval<uint32_t>(3); }
 uint32_t GetObject2() const { return getval<uint32_t>(4); }
 };
 struct IIEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIEqual;
+  static const SpvOp Opcode = SpvOpIEqual;
   IIEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1170,7 +1170,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IINotEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpINotEqual;
+  static const SpvOp Opcode = SpvOpINotEqual;
   IINotEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1178,7 +1178,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IUGreaterThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUGreaterThan;
+  static const SpvOp Opcode = SpvOpUGreaterThan;
   IUGreaterThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1186,7 +1186,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISGreaterThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSGreaterThan;
+  static const SpvOp Opcode = SpvOpSGreaterThan;
   ISGreaterThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1194,7 +1194,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IUGreaterThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUGreaterThanEqual;
+  static const SpvOp Opcode = SpvOpUGreaterThanEqual;
   IUGreaterThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1202,7 +1202,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISGreaterThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSGreaterThanEqual;
+  static const SpvOp Opcode = SpvOpSGreaterThanEqual;
   ISGreaterThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1210,7 +1210,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IULessThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpULessThan;
+  static const SpvOp Opcode = SpvOpULessThan;
   IULessThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1218,7 +1218,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISLessThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSLessThan;
+  static const SpvOp Opcode = SpvOpSLessThan;
   ISLessThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1226,7 +1226,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IULessThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpULessThanEqual;
+  static const SpvOp Opcode = SpvOpULessThanEqual;
   IULessThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1234,7 +1234,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISLessThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSLessThanEqual;
+  static const SpvOp Opcode = SpvOpSLessThanEqual;
   ISLessThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1242,7 +1242,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFOrdEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFOrdEqual;
+  static const SpvOp Opcode = SpvOpFOrdEqual;
   IFOrdEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1250,7 +1250,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFUnordEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFUnordEqual;
+  static const SpvOp Opcode = SpvOpFUnordEqual;
   IFUnordEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1258,7 +1258,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFOrdNotEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFOrdNotEqual;
+  static const SpvOp Opcode = SpvOpFOrdNotEqual;
   IFOrdNotEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1266,7 +1266,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFUnordNotEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFUnordNotEqual;
+  static const SpvOp Opcode = SpvOpFUnordNotEqual;
   IFUnordNotEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1274,7 +1274,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFOrdLessThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFOrdLessThan;
+  static const SpvOp Opcode = SpvOpFOrdLessThan;
   IFOrdLessThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1282,7 +1282,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFUnordLessThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFUnordLessThan;
+  static const SpvOp Opcode = SpvOpFUnordLessThan;
   IFUnordLessThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1290,7 +1290,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFOrdGreaterThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFOrdGreaterThan;
+  static const SpvOp Opcode = SpvOpFOrdGreaterThan;
   IFOrdGreaterThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1298,7 +1298,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFUnordGreaterThan : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFUnordGreaterThan;
+  static const SpvOp Opcode = SpvOpFUnordGreaterThan;
   IFUnordGreaterThan(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1306,7 +1306,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFOrdLessThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFOrdLessThanEqual;
+  static const SpvOp Opcode = SpvOpFOrdLessThanEqual;
   IFOrdLessThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1314,7 +1314,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFUnordLessThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFUnordLessThanEqual;
+  static const SpvOp Opcode = SpvOpFUnordLessThanEqual;
   IFUnordLessThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1322,7 +1322,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFOrdGreaterThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFOrdGreaterThanEqual;
+  static const SpvOp Opcode = SpvOpFOrdGreaterThanEqual;
   IFOrdGreaterThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1330,7 +1330,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IFUnordGreaterThanEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFUnordGreaterThanEqual;
+  static const SpvOp Opcode = SpvOpFUnordGreaterThanEqual;
   IFUnordGreaterThanEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1338,7 +1338,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IShiftRightLogical : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpShiftRightLogical;
+  static const SpvOp Opcode = SpvOpShiftRightLogical;
   IShiftRightLogical(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1346,7 +1346,7 @@ uint32_t GetBase() const { return getval<uint32_t>(2); }
 uint32_t GetShift() const { return getval<uint32_t>(3); }
 };
 struct IShiftRightArithmetic : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpShiftRightArithmetic;
+  static const SpvOp Opcode = SpvOpShiftRightArithmetic;
   IShiftRightArithmetic(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1354,7 +1354,7 @@ uint32_t GetBase() const { return getval<uint32_t>(2); }
 uint32_t GetShift() const { return getval<uint32_t>(3); }
 };
 struct IShiftLeftLogical : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpShiftLeftLogical;
+  static const SpvOp Opcode = SpvOpShiftLeftLogical;
   IShiftLeftLogical(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1362,7 +1362,7 @@ uint32_t GetBase() const { return getval<uint32_t>(2); }
 uint32_t GetShift() const { return getval<uint32_t>(3); }
 };
 struct IBitwiseOr : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitwiseOr;
+  static const SpvOp Opcode = SpvOpBitwiseOr;
   IBitwiseOr(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1370,7 +1370,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IBitwiseXor : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitwiseXor;
+  static const SpvOp Opcode = SpvOpBitwiseXor;
   IBitwiseXor(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1378,7 +1378,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IBitwiseAnd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitwiseAnd;
+  static const SpvOp Opcode = SpvOpBitwiseAnd;
   IBitwiseAnd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1386,14 +1386,14 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct INot : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpNot;
+  static const SpvOp Opcode = SpvOpNot;
   INot(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOperand() const { return getval<uint32_t>(2); }
 };
 struct IBitFieldInsert : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitFieldInsert;
+  static const SpvOp Opcode = SpvOpBitFieldInsert;
   IBitFieldInsert(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1403,7 +1403,7 @@ uint32_t GetOffset() const { return getval<uint32_t>(4); }
 uint32_t GetCount() const { return getval<uint32_t>(5); }
 };
 struct IBitFieldSExtract : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitFieldSExtract;
+  static const SpvOp Opcode = SpvOpBitFieldSExtract;
   IBitFieldSExtract(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1412,7 +1412,7 @@ uint32_t GetOffset() const { return getval<uint32_t>(3); }
 uint32_t GetCount() const { return getval<uint32_t>(4); }
 };
 struct IBitFieldUExtract : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitFieldUExtract;
+  static const SpvOp Opcode = SpvOpBitFieldUExtract;
   IBitFieldUExtract(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1421,117 +1421,117 @@ uint32_t GetOffset() const { return getval<uint32_t>(3); }
 uint32_t GetCount() const { return getval<uint32_t>(4); }
 };
 struct IBitReverse : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitReverse;
+  static const SpvOp Opcode = SpvOpBitReverse;
   IBitReverse(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetBase() const { return getval<uint32_t>(2); }
 };
 struct IBitCount : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBitCount;
+  static const SpvOp Opcode = SpvOpBitCount;
   IBitCount(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetBase() const { return getval<uint32_t>(2); }
 };
 struct IDPdx : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDPdx;
+  static const SpvOp Opcode = SpvOpDPdx;
   IDPdx(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IDPdy : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDPdy;
+  static const SpvOp Opcode = SpvOpDPdy;
   IDPdy(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IFwidth : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFwidth;
+  static const SpvOp Opcode = SpvOpFwidth;
   IFwidth(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IDPdxFine : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDPdxFine;
+  static const SpvOp Opcode = SpvOpDPdxFine;
   IDPdxFine(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IDPdyFine : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDPdyFine;
+  static const SpvOp Opcode = SpvOpDPdyFine;
   IDPdyFine(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IFwidthFine : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFwidthFine;
+  static const SpvOp Opcode = SpvOpFwidthFine;
   IFwidthFine(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IDPdxCoarse : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDPdxCoarse;
+  static const SpvOp Opcode = SpvOpDPdxCoarse;
   IDPdxCoarse(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IDPdyCoarse : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDPdyCoarse;
+  static const SpvOp Opcode = SpvOpDPdyCoarse;
   IDPdyCoarse(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IFwidthCoarse : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFwidthCoarse;
+  static const SpvOp Opcode = SpvOpFwidthCoarse;
   IFwidthCoarse(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetP() const { return getval<uint32_t>(2); }
 };
 struct IEmitVertex : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpEmitVertex;
+  static const SpvOp Opcode = SpvOpEmitVertex;
   IEmitVertex(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct IEndPrimitive : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpEndPrimitive;
+  static const SpvOp Opcode = SpvOpEndPrimitive;
   IEndPrimitive(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct IEmitStreamVertex : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpEmitStreamVertex;
+  static const SpvOp Opcode = SpvOpEmitStreamVertex;
   IEmitStreamVertex(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetStream() const { return getval<uint32_t>(0); }
 };
 struct IEndStreamPrimitive : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpEndStreamPrimitive;
+  static const SpvOp Opcode = SpvOpEndStreamPrimitive;
   IEndStreamPrimitive(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetStream() const { return getval<uint32_t>(0); }
 };
 struct IControlBarrier : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpControlBarrier;
+  static const SpvOp Opcode = SpvOpControlBarrier;
   IControlBarrier(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetExecution() const { return getval<uint32_t>(0); }
 uint32_t GetMemory() const { return getval<uint32_t>(1); }
 uint32_t GetSemantics() const { return getval<uint32_t>(2); }
 };
 struct IMemoryBarrier : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMemoryBarrier;
+  static const SpvOp Opcode = SpvOpMemoryBarrier;
   IMemoryBarrier(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetMemory() const { return getval<uint32_t>(0); }
 uint32_t GetSemantics() const { return getval<uint32_t>(1); }
 };
 struct IAtomicLoad : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicLoad;
+  static const SpvOp Opcode = SpvOpAtomicLoad;
   IAtomicLoad(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1540,7 +1540,7 @@ uint32_t GetMemory() const { return getval<uint32_t>(3); }
 uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 };
 struct IAtomicStore : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicStore;
+  static const SpvOp Opcode = SpvOpAtomicStore;
   IAtomicStore(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPointer() const { return getval<uint32_t>(0); }
 uint32_t GetMemory() const { return getval<uint32_t>(1); }
@@ -1548,7 +1548,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(2); }
 uint32_t GetValue() const { return getval<uint32_t>(3); }
 };
 struct IAtomicExchange : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicExchange;
+  static const SpvOp Opcode = SpvOpAtomicExchange;
   IAtomicExchange(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1558,7 +1558,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicCompareExchange : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicCompareExchange;
+  static const SpvOp Opcode = SpvOpAtomicCompareExchange;
   IAtomicCompareExchange(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1570,7 +1570,7 @@ uint32_t GetValue() const { return getval<uint32_t>(6); }
 uint32_t GetComparator() const { return getval<uint32_t>(7); }
 };
 struct IAtomicCompareExchangeWeak : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicCompareExchangeWeak;
+  static const SpvOp Opcode = SpvOpAtomicCompareExchangeWeak;
   IAtomicCompareExchangeWeak(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1582,7 +1582,7 @@ uint32_t GetValue() const { return getval<uint32_t>(6); }
 uint32_t GetComparator() const { return getval<uint32_t>(7); }
 };
 struct IAtomicIIncrement : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicIIncrement;
+  static const SpvOp Opcode = SpvOpAtomicIIncrement;
   IAtomicIIncrement(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1591,7 +1591,7 @@ uint32_t GetMemory() const { return getval<uint32_t>(3); }
 uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 };
 struct IAtomicIDecrement : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicIDecrement;
+  static const SpvOp Opcode = SpvOpAtomicIDecrement;
   IAtomicIDecrement(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1600,7 +1600,7 @@ uint32_t GetMemory() const { return getval<uint32_t>(3); }
 uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 };
 struct IAtomicIAdd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicIAdd;
+  static const SpvOp Opcode = SpvOpAtomicIAdd;
   IAtomicIAdd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1610,7 +1610,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicISub : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicISub;
+  static const SpvOp Opcode = SpvOpAtomicISub;
   IAtomicISub(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1620,7 +1620,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicSMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicSMin;
+  static const SpvOp Opcode = SpvOpAtomicSMin;
   IAtomicSMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1630,7 +1630,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicUMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicUMin;
+  static const SpvOp Opcode = SpvOpAtomicUMin;
   IAtomicUMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1640,7 +1640,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicSMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicSMax;
+  static const SpvOp Opcode = SpvOpAtomicSMax;
   IAtomicSMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1650,7 +1650,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicUMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicUMax;
+  static const SpvOp Opcode = SpvOpAtomicUMax;
   IAtomicUMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1660,7 +1660,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicAnd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicAnd;
+  static const SpvOp Opcode = SpvOpAtomicAnd;
   IAtomicAnd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1670,7 +1670,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicOr : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicOr;
+  static const SpvOp Opcode = SpvOpAtomicOr;
   IAtomicOr(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1680,7 +1680,7 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IAtomicXor : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicXor;
+  static const SpvOp Opcode = SpvOpAtomicXor;
   IAtomicXor(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1690,37 +1690,37 @@ uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 uint32_t GetValue() const { return getval<uint32_t>(5); }
 };
 struct IPhi : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpPhi;
+  static const SpvOp Opcode = SpvOpPhi;
   IPhi(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 const std::vector<std::pair<uint32_t, uint32_t>> GetOptionalImageOperands() const { return getvec<std::pair<uint32_t, uint32_t>>(2); }
 };
 struct ILoopMerge : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLoopMerge;
+  static const SpvOp Opcode = SpvOpLoopMerge;
   ILoopMerge(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetMergeBlock() const { return getval<uint32_t>(0); }
 uint32_t GetContinueTarget() const { return getval<uint32_t>(1); }
 uint32_t GetLoopControl() const { return getval<uint32_t>(2); }
 };
 struct ISelectionMerge : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSelectionMerge;
+  static const SpvOp Opcode = SpvOpSelectionMerge;
   ISelectionMerge(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetMergeBlock() const { return getval<uint32_t>(0); }
 uint32_t GetSelectionControl() const { return getval<uint32_t>(1); }
 };
 struct ILabel : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLabel;
+  static const SpvOp Opcode = SpvOpLabel;
   ILabel(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct IBranch : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBranch;
+  static const SpvOp Opcode = SpvOpBranch;
   IBranch(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetTargetLabel() const { return getval<uint32_t>(0); }
 };
 struct IBranchConditional : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBranchConditional;
+  static const SpvOp Opcode = SpvOpBranchConditional;
   IBranchConditional(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetCondition() const { return getval<uint32_t>(0); }
 uint32_t GetTrueLabel() const { return getval<uint32_t>(1); }
@@ -1728,46 +1728,46 @@ uint32_t GetFalseLabel() const { return getval<uint32_t>(2); }
 const std::vector<uint32_t> GetBranchweights() const { return getvec<uint32_t>(3); }
 };
 struct ISwitch : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSwitch;
+  static const SpvOp Opcode = SpvOpSwitch;
   ISwitch(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetSelector() const { return getval<uint32_t>(0); }
 uint32_t GetDefault() const { return getval<uint32_t>(1); }
 const std::vector<std::pair<uint32_t, uint32_t>> GetTarget() const { return getvec<std::pair<uint32_t, uint32_t>>(2); }
 };
 struct IKill : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpKill;
+  static const SpvOp Opcode = SpvOpKill;
   IKill(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct IReturn : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReturn;
+  static const SpvOp Opcode = SpvOpReturn;
   IReturn(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct IReturnValue : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReturnValue;
+  static const SpvOp Opcode = SpvOpReturnValue;
   IReturnValue(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetValue() const { return getval<uint32_t>(0); }
 };
 struct IUnreachable : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpUnreachable;
+  static const SpvOp Opcode = SpvOpUnreachable;
   IUnreachable(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct ILifetimeStart : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLifetimeStart;
+  static const SpvOp Opcode = SpvOpLifetimeStart;
   ILifetimeStart(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPointer() const { return getval<uint32_t>(0); }
 uint32_t GetSize() const { return getval<uint32_t>(1); }
 };
 struct ILifetimeStop : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpLifetimeStop;
+  static const SpvOp Opcode = SpvOpLifetimeStop;
   ILifetimeStop(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPointer() const { return getval<uint32_t>(0); }
 uint32_t GetSize() const { return getval<uint32_t>(1); }
 };
 struct IGroupAsyncCopy : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupAsyncCopy;
+  static const SpvOp Opcode = SpvOpGroupAsyncCopy;
   IGroupAsyncCopy(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1779,14 +1779,14 @@ uint32_t GetStride() const { return getval<uint32_t>(6); }
 uint32_t GetEvent() const { return getval<uint32_t>(7); }
 };
 struct IGroupWaitEvents : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupWaitEvents;
+  static const SpvOp Opcode = SpvOpGroupWaitEvents;
   IGroupWaitEvents(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetExecution() const { return getval<uint32_t>(0); }
 uint32_t GetNumEvents() const { return getval<uint32_t>(1); }
 uint32_t GetEventsList() const { return getval<uint32_t>(2); }
 };
 struct IGroupAll : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupAll;
+  static const SpvOp Opcode = SpvOpGroupAll;
   IGroupAll(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1794,7 +1794,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetPredicate() const { return getval<uint32_t>(3); }
 };
 struct IGroupAny : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupAny;
+  static const SpvOp Opcode = SpvOpGroupAny;
   IGroupAny(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1802,7 +1802,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetPredicate() const { return getval<uint32_t>(3); }
 };
 struct IGroupBroadcast : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupBroadcast;
+  static const SpvOp Opcode = SpvOpGroupBroadcast;
   IGroupBroadcast(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1811,7 +1811,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetLocalId() const { return getval<uint32_t>(4); }
 };
 struct IGroupIAdd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupIAdd;
+  static const SpvOp Opcode = SpvOpGroupIAdd;
   IGroupIAdd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1820,7 +1820,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupFAdd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupFAdd;
+  static const SpvOp Opcode = SpvOpGroupFAdd;
   IGroupFAdd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1829,7 +1829,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupFMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupFMin;
+  static const SpvOp Opcode = SpvOpGroupFMin;
   IGroupFMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1838,7 +1838,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupUMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupUMin;
+  static const SpvOp Opcode = SpvOpGroupUMin;
   IGroupUMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1847,7 +1847,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupSMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupSMin;
+  static const SpvOp Opcode = SpvOpGroupSMin;
   IGroupSMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1856,7 +1856,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupFMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupFMax;
+  static const SpvOp Opcode = SpvOpGroupFMax;
   IGroupFMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1865,7 +1865,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupUMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupUMax;
+  static const SpvOp Opcode = SpvOpGroupUMax;
   IGroupUMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1874,7 +1874,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupSMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupSMax;
+  static const SpvOp Opcode = SpvOpGroupSMax;
   IGroupSMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1883,7 +1883,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IReadPipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReadPipe;
+  static const SpvOp Opcode = SpvOpReadPipe;
   IReadPipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1893,7 +1893,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(4); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(5); }
 };
 struct IWritePipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpWritePipe;
+  static const SpvOp Opcode = SpvOpWritePipe;
   IWritePipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1903,7 +1903,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(4); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(5); }
 };
 struct IReservedReadPipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReservedReadPipe;
+  static const SpvOp Opcode = SpvOpReservedReadPipe;
   IReservedReadPipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1915,7 +1915,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(6); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(7); }
 };
 struct IReservedWritePipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReservedWritePipe;
+  static const SpvOp Opcode = SpvOpReservedWritePipe;
   IReservedWritePipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1927,7 +1927,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(6); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(7); }
 };
 struct IReserveReadPipePackets : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReserveReadPipePackets;
+  static const SpvOp Opcode = SpvOpReserveReadPipePackets;
   IReserveReadPipePackets(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1937,7 +1937,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(4); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(5); }
 };
 struct IReserveWritePipePackets : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReserveWritePipePackets;
+  static const SpvOp Opcode = SpvOpReserveWritePipePackets;
   IReserveWritePipePackets(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1947,7 +1947,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(4); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(5); }
 };
 struct ICommitReadPipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCommitReadPipe;
+  static const SpvOp Opcode = SpvOpCommitReadPipe;
   ICommitReadPipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPipe() const { return getval<uint32_t>(0); }
 uint32_t GetReserveId() const { return getval<uint32_t>(1); }
@@ -1955,7 +1955,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(2); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(3); }
 };
 struct ICommitWritePipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCommitWritePipe;
+  static const SpvOp Opcode = SpvOpCommitWritePipe;
   ICommitWritePipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPipe() const { return getval<uint32_t>(0); }
 uint32_t GetReserveId() const { return getval<uint32_t>(1); }
@@ -1963,14 +1963,14 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(2); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(3); }
 };
 struct IIsValidReserveId : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIsValidReserveId;
+  static const SpvOp Opcode = SpvOpIsValidReserveId;
   IIsValidReserveId(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetReserveId() const { return getval<uint32_t>(2); }
 };
 struct IGetNumPipePackets : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetNumPipePackets;
+  static const SpvOp Opcode = SpvOpGetNumPipePackets;
   IGetNumPipePackets(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1979,7 +1979,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(3); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(4); }
 };
 struct IGetMaxPipePackets : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetMaxPipePackets;
+  static const SpvOp Opcode = SpvOpGetMaxPipePackets;
   IGetMaxPipePackets(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1988,7 +1988,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(3); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(4); }
 };
 struct IGroupReserveReadPipePackets : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupReserveReadPipePackets;
+  static const SpvOp Opcode = SpvOpGroupReserveReadPipePackets;
   IGroupReserveReadPipePackets(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -1999,7 +1999,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(5); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(6); }
 };
 struct IGroupReserveWritePipePackets : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupReserveWritePipePackets;
+  static const SpvOp Opcode = SpvOpGroupReserveWritePipePackets;
   IGroupReserveWritePipePackets(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2010,7 +2010,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(5); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(6); }
 };
 struct IGroupCommitReadPipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupCommitReadPipe;
+  static const SpvOp Opcode = SpvOpGroupCommitReadPipe;
   IGroupCommitReadPipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetExecution() const { return getval<uint32_t>(0); }
 uint32_t GetPipe() const { return getval<uint32_t>(1); }
@@ -2019,7 +2019,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(3); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(4); }
 };
 struct IGroupCommitWritePipe : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupCommitWritePipe;
+  static const SpvOp Opcode = SpvOpGroupCommitWritePipe;
   IGroupCommitWritePipe(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetExecution() const { return getval<uint32_t>(0); }
 uint32_t GetPipe() const { return getval<uint32_t>(1); }
@@ -2028,7 +2028,7 @@ uint32_t GetPacketSize() const { return getval<uint32_t>(3); }
 uint32_t GetPacketAlignment() const { return getval<uint32_t>(4); }
 };
 struct IEnqueueMarker : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpEnqueueMarker;
+  static const SpvOp Opcode = SpvOpEnqueueMarker;
   IEnqueueMarker(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2038,7 +2038,7 @@ uint32_t GetWaitEvents() const { return getval<uint32_t>(4); }
 uint32_t GetRetEvent() const { return getval<uint32_t>(5); }
 };
 struct IEnqueueKernel : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpEnqueueKernel;
+  static const SpvOp Opcode = SpvOpEnqueueKernel;
   IEnqueueKernel(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2055,7 +2055,7 @@ uint32_t GetParamAlign() const { return getval<uint32_t>(11); }
 const std::vector<uint32_t> GetLocalSize() const { return getvec<uint32_t>(12); }
 };
 struct IGetKernelNDrangeSubGroupCount : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetKernelNDrangeSubGroupCount;
+  static const SpvOp Opcode = SpvOpGetKernelNDrangeSubGroupCount;
   IGetKernelNDrangeSubGroupCount(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2066,7 +2066,7 @@ uint32_t GetParamSize() const { return getval<uint32_t>(5); }
 uint32_t GetParamAlign() const { return getval<uint32_t>(6); }
 };
 struct IGetKernelNDrangeMaxSubGroupSize : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetKernelNDrangeMaxSubGroupSize;
+  static const SpvOp Opcode = SpvOpGetKernelNDrangeMaxSubGroupSize;
   IGetKernelNDrangeMaxSubGroupSize(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2077,7 +2077,7 @@ uint32_t GetParamSize() const { return getval<uint32_t>(5); }
 uint32_t GetParamAlign() const { return getval<uint32_t>(6); }
 };
 struct IGetKernelWorkGroupSize : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetKernelWorkGroupSize;
+  static const SpvOp Opcode = SpvOpGetKernelWorkGroupSize;
   IGetKernelWorkGroupSize(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2087,7 +2087,7 @@ uint32_t GetParamSize() const { return getval<uint32_t>(4); }
 uint32_t GetParamAlign() const { return getval<uint32_t>(5); }
 };
 struct IGetKernelPreferredWorkGroupSizeMultiple : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetKernelPreferredWorkGroupSizeMultiple;
+  static const SpvOp Opcode = SpvOpGetKernelPreferredWorkGroupSizeMultiple;
   IGetKernelPreferredWorkGroupSizeMultiple(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2097,49 +2097,49 @@ uint32_t GetParamSize() const { return getval<uint32_t>(4); }
 uint32_t GetParamAlign() const { return getval<uint32_t>(5); }
 };
 struct IRetainEvent : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpRetainEvent;
+  static const SpvOp Opcode = SpvOpRetainEvent;
   IRetainEvent(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetEvent() const { return getval<uint32_t>(0); }
 };
 struct IReleaseEvent : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReleaseEvent;
+  static const SpvOp Opcode = SpvOpReleaseEvent;
   IReleaseEvent(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetEvent() const { return getval<uint32_t>(0); }
 };
 struct ICreateUserEvent : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCreateUserEvent;
+  static const SpvOp Opcode = SpvOpCreateUserEvent;
   ICreateUserEvent(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct IIsValidEvent : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIsValidEvent;
+  static const SpvOp Opcode = SpvOpIsValidEvent;
   IIsValidEvent(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetEvent() const { return getval<uint32_t>(2); }
 };
 struct ISetUserEventStatus : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSetUserEventStatus;
+  static const SpvOp Opcode = SpvOpSetUserEventStatus;
   ISetUserEventStatus(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetEvent() const { return getval<uint32_t>(0); }
 uint32_t GetStatus() const { return getval<uint32_t>(1); }
 };
 struct ICaptureEventProfilingInfo : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCaptureEventProfilingInfo;
+  static const SpvOp Opcode = SpvOpCaptureEventProfilingInfo;
   ICaptureEventProfilingInfo(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetEvent() const { return getval<uint32_t>(0); }
 uint32_t GetProfilingInfo() const { return getval<uint32_t>(1); }
 uint32_t GetValue() const { return getval<uint32_t>(2); }
 };
 struct IGetDefaultQueue : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetDefaultQueue;
+  static const SpvOp Opcode = SpvOpGetDefaultQueue;
   IGetDefaultQueue(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct IBuildNDRange : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpBuildNDRange;
+  static const SpvOp Opcode = SpvOpBuildNDRange;
   IBuildNDRange(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2148,7 +2148,7 @@ uint32_t GetLocalWorkSize() const { return getval<uint32_t>(3); }
 uint32_t GetGlobalWorkOffset() const { return getval<uint32_t>(4); }
 };
 struct IImageSparseSampleImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleImplicitLod;
   IImageSparseSampleImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2157,7 +2157,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSparseSampleExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleExplicitLod;
   IImageSparseSampleExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2166,7 +2166,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSparseSampleDrefImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleDrefImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleDrefImplicitLod;
   IImageSparseSampleDrefImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2176,7 +2176,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSparseSampleDrefExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleDrefExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleDrefExplicitLod;
   IImageSparseSampleDrefExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2186,7 +2186,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSparseSampleProjImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleProjImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleProjImplicitLod;
   IImageSparseSampleProjImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2195,7 +2195,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSparseSampleProjExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleProjExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleProjExplicitLod;
   IImageSparseSampleProjExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2204,7 +2204,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSparseSampleProjDrefImplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleProjDrefImplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleProjDrefImplicitLod;
   IImageSparseSampleProjDrefImplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2214,7 +2214,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSparseSampleProjDrefExplicitLod : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseSampleProjDrefExplicitLod;
+  static const SpvOp Opcode = SpvOpImageSparseSampleProjDrefExplicitLod;
   IImageSparseSampleProjDrefExplicitLod(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2224,7 +2224,7 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSparseFetch : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseFetch;
+  static const SpvOp Opcode = SpvOpImageSparseFetch;
   IImageSparseFetch(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2233,7 +2233,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct IImageSparseGather : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseGather;
+  static const SpvOp Opcode = SpvOpImageSparseGather;
   IImageSparseGather(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2243,7 +2243,7 @@ uint32_t GetComponent() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSparseDrefGather : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseDrefGather;
+  static const SpvOp Opcode = SpvOpImageSparseDrefGather;
   IImageSparseDrefGather(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2253,19 +2253,19 @@ uint32_t GetOptionalImageOperands() const { return getval<uint32_t>(4); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(5); }
 };
 struct IImageSparseTexelsResident : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseTexelsResident;
+  static const SpvOp Opcode = SpvOpImageSparseTexelsResident;
   IImageSparseTexelsResident(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetResidentCode() const { return getval<uint32_t>(2); }
 };
 struct INoLine : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpNoLine;
+  static const SpvOp Opcode = SpvOpNoLine;
   INoLine(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct IAtomicFlagTestAndSet : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicFlagTestAndSet;
+  static const SpvOp Opcode = SpvOpAtomicFlagTestAndSet;
   IAtomicFlagTestAndSet(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2274,14 +2274,14 @@ uint32_t GetMemory() const { return getval<uint32_t>(3); }
 uint32_t GetSemantics() const { return getval<uint32_t>(4); }
 };
 struct IAtomicFlagClear : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpAtomicFlagClear;
+  static const SpvOp Opcode = SpvOpAtomicFlagClear;
   IAtomicFlagClear(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPointer() const { return getval<uint32_t>(0); }
 uint32_t GetMemory() const { return getval<uint32_t>(1); }
 uint32_t GetSemantics() const { return getval<uint32_t>(2); }
 };
 struct IImageSparseRead : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSparseRead;
+  static const SpvOp Opcode = SpvOpImageSparseRead;
   IImageSparseRead(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2290,19 +2290,19 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(4); }
 };
 struct ISizeOf : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSizeOf;
+  static const SpvOp Opcode = SpvOpSizeOf;
   ISizeOf(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPointer() const { return getval<uint32_t>(2); }
 };
 struct ITypePipeStorage : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypePipeStorage;
+  static const SpvOp Opcode = SpvOpTypePipeStorage;
   ITypePipeStorage(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct IConstantPipeStorage : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpConstantPipeStorage;
+  static const SpvOp Opcode = SpvOpConstantPipeStorage;
   IConstantPipeStorage(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2311,14 +2311,14 @@ uint32_t GetPacketAlignment() const { return getval<uint32_t>(3); }
 uint32_t GetCapacity() const { return getval<uint32_t>(4); }
 };
 struct ICreatePipeFromPipeStorage : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCreatePipeFromPipeStorage;
+  static const SpvOp Opcode = SpvOpCreatePipeFromPipeStorage;
   ICreatePipeFromPipeStorage(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPipeStorage() const { return getval<uint32_t>(2); }
 };
 struct IGetKernelLocalSizeForSubgroupCount : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetKernelLocalSizeForSubgroupCount;
+  static const SpvOp Opcode = SpvOpGetKernelLocalSizeForSubgroupCount;
   IGetKernelLocalSizeForSubgroupCount(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2329,7 +2329,7 @@ uint32_t GetParamSize() const { return getval<uint32_t>(5); }
 uint32_t GetParamAlign() const { return getval<uint32_t>(6); }
 };
 struct IGetKernelMaxNumSubgroups : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGetKernelMaxNumSubgroups;
+  static const SpvOp Opcode = SpvOpGetKernelMaxNumSubgroups;
   IGetKernelMaxNumSubgroups(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2339,50 +2339,50 @@ uint32_t GetParamSize() const { return getval<uint32_t>(4); }
 uint32_t GetParamAlign() const { return getval<uint32_t>(5); }
 };
 struct ITypeNamedBarrier : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeNamedBarrier;
+  static const SpvOp Opcode = SpvOpTypeNamedBarrier;
   ITypeNamedBarrier(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct INamedBarrierInitialize : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpNamedBarrierInitialize;
+  static const SpvOp Opcode = SpvOpNamedBarrierInitialize;
   INamedBarrierInitialize(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetSubgroupCount() const { return getval<uint32_t>(2); }
 };
 struct IMemoryNamedBarrier : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMemoryNamedBarrier;
+  static const SpvOp Opcode = SpvOpMemoryNamedBarrier;
   IMemoryNamedBarrier(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetNamedBarrier() const { return getval<uint32_t>(0); }
 uint32_t GetMemory() const { return getval<uint32_t>(1); }
 uint32_t GetSemantics() const { return getval<uint32_t>(2); }
 };
 struct IModuleProcessed : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpModuleProcessed;
+  static const SpvOp Opcode = SpvOpModuleProcessed;
   IModuleProcessed(const spv_parsed_instruction_t *i) : Instruction(i) {}
   const char * GetProcess() const { return getstr(0); }
 };
 struct IExecutionModeId : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpExecutionModeId;
+  static const SpvOp Opcode = SpvOpExecutionModeId;
   IExecutionModeId(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetEntryPoint() const { return getval<uint32_t>(0); }
 SpvExecutionMode GetMode() const { return getval<SpvExecutionMode>(1); }
 };
 struct IDecorateId : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDecorateId;
+  static const SpvOp Opcode = SpvOpDecorateId;
   IDecorateId(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetTarget() const { return getval<uint32_t>(0); }
 SpvDecoration GetDecoration() const { return getval<SpvDecoration>(1); }
 };
 struct IGroupNonUniformElect : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformElect;
+  static const SpvOp Opcode = SpvOpGroupNonUniformElect;
   IGroupNonUniformElect(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetExecution() const { return getval<uint32_t>(2); }
 };
 struct IGroupNonUniformAll : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformAll;
+  static const SpvOp Opcode = SpvOpGroupNonUniformAll;
   IGroupNonUniformAll(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2390,7 +2390,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetPredicate() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformAny : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformAny;
+  static const SpvOp Opcode = SpvOpGroupNonUniformAny;
   IGroupNonUniformAny(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2398,7 +2398,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetPredicate() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformAllEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformAllEqual;
+  static const SpvOp Opcode = SpvOpGroupNonUniformAllEqual;
   IGroupNonUniformAllEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2406,7 +2406,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetValue() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformBroadcast : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBroadcast;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBroadcast;
   IGroupNonUniformBroadcast(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2415,7 +2415,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetId() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformBroadcastFirst : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBroadcastFirst;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBroadcastFirst;
   IGroupNonUniformBroadcastFirst(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2423,7 +2423,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetValue() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformBallot : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBallot;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBallot;
   IGroupNonUniformBallot(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2431,7 +2431,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetPredicate() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformInverseBallot : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformInverseBallot;
+  static const SpvOp Opcode = SpvOpGroupNonUniformInverseBallot;
   IGroupNonUniformInverseBallot(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2439,7 +2439,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetValue() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformBallotBitExtract : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBallotBitExtract;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBallotBitExtract;
   IGroupNonUniformBallotBitExtract(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2448,7 +2448,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetIndex() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformBallotBitCount : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBallotBitCount;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBallotBitCount;
   IGroupNonUniformBallotBitCount(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2457,7 +2457,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetValue() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformBallotFindLSB : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBallotFindLSB;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBallotFindLSB;
   IGroupNonUniformBallotFindLSB(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2465,7 +2465,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetValue() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformBallotFindMSB : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBallotFindMSB;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBallotFindMSB;
   IGroupNonUniformBallotFindMSB(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2473,7 +2473,7 @@ uint32_t GetExecution() const { return getval<uint32_t>(2); }
 uint32_t GetValue() const { return getval<uint32_t>(3); }
 };
 struct IGroupNonUniformShuffle : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformShuffle;
+  static const SpvOp Opcode = SpvOpGroupNonUniformShuffle;
   IGroupNonUniformShuffle(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2482,7 +2482,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetId() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformShuffleXor : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformShuffleXor;
+  static const SpvOp Opcode = SpvOpGroupNonUniformShuffleXor;
   IGroupNonUniformShuffleXor(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2491,7 +2491,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetMask() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformShuffleUp : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformShuffleUp;
+  static const SpvOp Opcode = SpvOpGroupNonUniformShuffleUp;
   IGroupNonUniformShuffleUp(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2500,7 +2500,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetDelta() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformShuffleDown : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformShuffleDown;
+  static const SpvOp Opcode = SpvOpGroupNonUniformShuffleDown;
   IGroupNonUniformShuffleDown(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2509,7 +2509,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetDelta() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformIAdd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformIAdd;
+  static const SpvOp Opcode = SpvOpGroupNonUniformIAdd;
   IGroupNonUniformIAdd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2519,7 +2519,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformFAdd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformFAdd;
+  static const SpvOp Opcode = SpvOpGroupNonUniformFAdd;
   IGroupNonUniformFAdd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2529,7 +2529,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformIMul : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformIMul;
+  static const SpvOp Opcode = SpvOpGroupNonUniformIMul;
   IGroupNonUniformIMul(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2539,7 +2539,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformFMul : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformFMul;
+  static const SpvOp Opcode = SpvOpGroupNonUniformFMul;
   IGroupNonUniformFMul(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2549,7 +2549,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformSMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformSMin;
+  static const SpvOp Opcode = SpvOpGroupNonUniformSMin;
   IGroupNonUniformSMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2559,7 +2559,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformUMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformUMin;
+  static const SpvOp Opcode = SpvOpGroupNonUniformUMin;
   IGroupNonUniformUMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2569,7 +2569,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformFMin : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformFMin;
+  static const SpvOp Opcode = SpvOpGroupNonUniformFMin;
   IGroupNonUniformFMin(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2579,7 +2579,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformSMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformSMax;
+  static const SpvOp Opcode = SpvOpGroupNonUniformSMax;
   IGroupNonUniformSMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2589,7 +2589,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformUMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformUMax;
+  static const SpvOp Opcode = SpvOpGroupNonUniformUMax;
   IGroupNonUniformUMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2599,7 +2599,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformFMax : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformFMax;
+  static const SpvOp Opcode = SpvOpGroupNonUniformFMax;
   IGroupNonUniformFMax(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2609,7 +2609,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformBitwiseAnd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBitwiseAnd;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBitwiseAnd;
   IGroupNonUniformBitwiseAnd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2619,7 +2619,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformBitwiseOr : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBitwiseOr;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBitwiseOr;
   IGroupNonUniformBitwiseOr(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2629,7 +2629,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformBitwiseXor : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformBitwiseXor;
+  static const SpvOp Opcode = SpvOpGroupNonUniformBitwiseXor;
   IGroupNonUniformBitwiseXor(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2639,7 +2639,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformLogicalAnd : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformLogicalAnd;
+  static const SpvOp Opcode = SpvOpGroupNonUniformLogicalAnd;
   IGroupNonUniformLogicalAnd(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2649,7 +2649,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformLogicalOr : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformLogicalOr;
+  static const SpvOp Opcode = SpvOpGroupNonUniformLogicalOr;
   IGroupNonUniformLogicalOr(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2659,7 +2659,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformLogicalXor : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformLogicalXor;
+  static const SpvOp Opcode = SpvOpGroupNonUniformLogicalXor;
   IGroupNonUniformLogicalXor(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2669,7 +2669,7 @@ uint32_t GetValue() const { return getval<uint32_t>(4); }
 uint32_t GetClusterSize() const { return getval<uint32_t>(5); }
 };
 struct IGroupNonUniformQuadBroadcast : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformQuadBroadcast;
+  static const SpvOp Opcode = SpvOpGroupNonUniformQuadBroadcast;
   IGroupNonUniformQuadBroadcast(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2678,7 +2678,7 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetIndex() const { return getval<uint32_t>(4); }
 };
 struct IGroupNonUniformQuadSwap : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformQuadSwap;
+  static const SpvOp Opcode = SpvOpGroupNonUniformQuadSwap;
   IGroupNonUniformQuadSwap(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2687,14 +2687,14 @@ uint32_t GetValue() const { return getval<uint32_t>(3); }
 uint32_t GetDirection() const { return getval<uint32_t>(4); }
 };
 struct ICopyLogical : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCopyLogical;
+  static const SpvOp Opcode = SpvOpCopyLogical;
   ICopyLogical(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetOperand() const { return getval<uint32_t>(2); }
 };
 struct IPtrEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpPtrEqual;
+  static const SpvOp Opcode = SpvOpPtrEqual;
   IPtrEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2702,7 +2702,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IPtrNotEqual : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpPtrNotEqual;
+  static const SpvOp Opcode = SpvOpPtrNotEqual;
   IPtrNotEqual(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2710,7 +2710,7 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct IPtrDiff : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpPtrDiff;
+  static const SpvOp Opcode = SpvOpPtrDiff;
   IPtrDiff(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2718,42 +2718,42 @@ uint32_t GetOperand1() const { return getval<uint32_t>(2); }
 uint32_t GetOperand2() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupBallotKHR : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupBallotKHR;
+  static const SpvOp Opcode = SpvOpSubgroupBallotKHR;
   ISubgroupBallotKHR(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPredicate() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupFirstInvocationKHR : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupFirstInvocationKHR;
+  static const SpvOp Opcode = SpvOpSubgroupFirstInvocationKHR;
   ISubgroupFirstInvocationKHR(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetValue() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAllKHR : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAllKHR;
+  static const SpvOp Opcode = SpvOpSubgroupAllKHR;
   ISubgroupAllKHR(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPredicate() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAnyKHR : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAnyKHR;
+  static const SpvOp Opcode = SpvOpSubgroupAnyKHR;
   ISubgroupAnyKHR(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPredicate() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAllEqualKHR : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAllEqualKHR;
+  static const SpvOp Opcode = SpvOpSubgroupAllEqualKHR;
   ISubgroupAllEqualKHR(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPredicate() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupReadInvocationKHR : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupReadInvocationKHR;
+  static const SpvOp Opcode = SpvOpSubgroupReadInvocationKHR;
   ISubgroupReadInvocationKHR(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2761,7 +2761,7 @@ uint32_t GetValue() const { return getval<uint32_t>(2); }
 uint32_t GetIndex() const { return getval<uint32_t>(3); }
 };
 struct IGroupIAddNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupIAddNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupIAddNonUniformAMD;
   IGroupIAddNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2770,7 +2770,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupFAddNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupFAddNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupFAddNonUniformAMD;
   IGroupFAddNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2779,7 +2779,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupFMinNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupFMinNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupFMinNonUniformAMD;
   IGroupFMinNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2788,7 +2788,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupUMinNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupUMinNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupUMinNonUniformAMD;
   IGroupUMinNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2797,7 +2797,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupSMinNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupSMinNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupSMinNonUniformAMD;
   IGroupSMinNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2806,7 +2806,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupFMaxNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupFMaxNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupFMaxNonUniformAMD;
   IGroupFMaxNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2815,7 +2815,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupUMaxNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupUMaxNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupUMaxNonUniformAMD;
   IGroupUMaxNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2824,7 +2824,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IGroupSMaxNonUniformAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupSMaxNonUniformAMD;
+  static const SpvOp Opcode = SpvOpGroupSMaxNonUniformAMD;
   IGroupSMaxNonUniformAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2833,7 +2833,7 @@ SpvGroupOperation GetOperation() const { return getval<SpvGroupOperation>(3); }
 uint32_t GetX() const { return getval<uint32_t>(4); }
 };
 struct IFragmentMaskFetchAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFragmentMaskFetchAMD;
+  static const SpvOp Opcode = SpvOpFragmentMaskFetchAMD;
   IFragmentMaskFetchAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2841,7 +2841,7 @@ uint32_t GetImage() const { return getval<uint32_t>(2); }
 uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 };
 struct IFragmentFetchAMD : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpFragmentFetchAMD;
+  static const SpvOp Opcode = SpvOpFragmentFetchAMD;
   IFragmentFetchAMD(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2850,7 +2850,7 @@ uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 uint32_t GetFragmentIndex() const { return getval<uint32_t>(4); }
 };
 struct IImageSampleFootprintNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpImageSampleFootprintNV;
+  static const SpvOp Opcode = SpvOpImageSampleFootprintNV;
   IImageSampleFootprintNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2861,20 +2861,20 @@ uint32_t GetCoarse() const { return getval<uint32_t>(5); }
 uint32_t GetImageOperands() const { return getval<uint32_t>(6); }
 };
 struct IGroupNonUniformPartitionNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpGroupNonUniformPartitionNV;
+  static const SpvOp Opcode = SpvOpGroupNonUniformPartitionNV;
   IGroupNonUniformPartitionNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetValue() const { return getval<uint32_t>(2); }
 };
 struct IWritePackedPrimitiveIndices4x8NV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpWritePackedPrimitiveIndices4x8NV;
+  static const SpvOp Opcode = SpvOpWritePackedPrimitiveIndices4x8NV;
   IWritePackedPrimitiveIndices4x8NV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIndexOffset() const { return getval<uint32_t>(0); }
 uint32_t GetPackedIndices() const { return getval<uint32_t>(1); }
 };
 struct IReportIntersectionNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpReportIntersectionNV;
+  static const SpvOp Opcode = SpvOpReportIntersectionNV;
   IReportIntersectionNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2882,17 +2882,17 @@ uint32_t GetHit() const { return getval<uint32_t>(2); }
 uint32_t GetHitKind() const { return getval<uint32_t>(3); }
 };
 struct IIgnoreIntersectionNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpIgnoreIntersectionNV;
+  static const SpvOp Opcode = SpvOpIgnoreIntersectionNV;
   IIgnoreIntersectionNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct ITerminateRayNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTerminateRayNV;
+  static const SpvOp Opcode = SpvOpTerminateRayNV;
   ITerminateRayNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   
 };
 struct ITraceNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTraceNV;
+  static const SpvOp Opcode = SpvOpTraceNV;
   ITraceNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetAccel() const { return getval<uint32_t>(0); }
 uint32_t GetRayFlags() const { return getval<uint32_t>(1); }
@@ -2907,18 +2907,18 @@ uint32_t GetRayTmax() const { return getval<uint32_t>(9); }
 uint32_t GetPayloadId() const { return getval<uint32_t>(10); }
 };
 struct ITypeAccelerationStructureNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAccelerationStructureNV;
+  static const SpvOp Opcode = SpvOpTypeAccelerationStructureNV;
   ITypeAccelerationStructureNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct IExecuteCallableNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpExecuteCallableNV;
+  static const SpvOp Opcode = SpvOpExecuteCallableNV;
   IExecuteCallableNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetSBTIndex() const { return getval<uint32_t>(0); }
 uint32_t GetCallableDataId() const { return getval<uint32_t>(1); }
 };
 struct ITypeCooperativeMatrixNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeCooperativeMatrixNV;
+  static const SpvOp Opcode = SpvOpTypeCooperativeMatrixNV;
   ITypeCooperativeMatrixNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetComponentType() const { return getval<uint32_t>(1); }
@@ -2927,7 +2927,7 @@ uint32_t GetRows() const { return getval<uint32_t>(3); }
 uint32_t GetColumns() const { return getval<uint32_t>(4); }
 };
 struct ICooperativeMatrixLoadNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCooperativeMatrixLoadNV;
+  static const SpvOp Opcode = SpvOpCooperativeMatrixLoadNV;
   ICooperativeMatrixLoadNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2937,7 +2937,7 @@ uint32_t GetColumnMajor() const { return getval<uint32_t>(4); }
 uint32_t GetMemoryAccess() const { return getval<uint32_t>(5); }
 };
 struct ICooperativeMatrixStoreNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCooperativeMatrixStoreNV;
+  static const SpvOp Opcode = SpvOpCooperativeMatrixStoreNV;
   ICooperativeMatrixStoreNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPointer() const { return getval<uint32_t>(0); }
 uint32_t GetObject() const { return getval<uint32_t>(1); }
@@ -2946,7 +2946,7 @@ uint32_t GetColumnMajor() const { return getval<uint32_t>(3); }
 uint32_t GetMemoryAccess() const { return getval<uint32_t>(4); }
 };
 struct ICooperativeMatrixMulAddNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCooperativeMatrixMulAddNV;
+  static const SpvOp Opcode = SpvOpCooperativeMatrixMulAddNV;
   ICooperativeMatrixMulAddNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2955,14 +2955,14 @@ uint32_t GetB() const { return getval<uint32_t>(3); }
 uint32_t GetC() const { return getval<uint32_t>(4); }
 };
 struct ICooperativeMatrixLengthNV : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpCooperativeMatrixLengthNV;
+  static const SpvOp Opcode = SpvOpCooperativeMatrixLengthNV;
   ICooperativeMatrixLengthNV(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetType() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupShuffleINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupShuffleINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupShuffleINTEL;
   ISubgroupShuffleINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2970,7 +2970,7 @@ uint32_t GetData() const { return getval<uint32_t>(2); }
 uint32_t GetInvocationId() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupShuffleDownINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupShuffleDownINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupShuffleDownINTEL;
   ISubgroupShuffleDownINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2979,7 +2979,7 @@ uint32_t GetNext() const { return getval<uint32_t>(3); }
 uint32_t GetDelta() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupShuffleUpINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupShuffleUpINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupShuffleUpINTEL;
   ISubgroupShuffleUpINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2988,7 +2988,7 @@ uint32_t GetCurrent() const { return getval<uint32_t>(3); }
 uint32_t GetDelta() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupShuffleXorINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupShuffleXorINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupShuffleXorINTEL;
   ISubgroupShuffleXorINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -2996,20 +2996,20 @@ uint32_t GetData() const { return getval<uint32_t>(2); }
 uint32_t GetValue() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupBlockReadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupBlockReadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupBlockReadINTEL;
   ISubgroupBlockReadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPtr() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupBlockWriteINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupBlockWriteINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupBlockWriteINTEL;
   ISubgroupBlockWriteINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetPtr() const { return getval<uint32_t>(0); }
 uint32_t GetData() const { return getval<uint32_t>(1); }
 };
 struct ISubgroupImageBlockReadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupImageBlockReadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupImageBlockReadINTEL;
   ISubgroupImageBlockReadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3017,14 +3017,14 @@ uint32_t GetImage() const { return getval<uint32_t>(2); }
 uint32_t GetCoordinate() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupImageBlockWriteINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupImageBlockWriteINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupImageBlockWriteINTEL;
   ISubgroupImageBlockWriteINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetImage() const { return getval<uint32_t>(0); }
 uint32_t GetCoordinate() const { return getval<uint32_t>(1); }
 uint32_t GetData() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupImageMediaBlockReadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupImageMediaBlockReadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupImageMediaBlockReadINTEL;
   ISubgroupImageMediaBlockReadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3034,7 +3034,7 @@ uint32_t GetWidth() const { return getval<uint32_t>(4); }
 uint32_t GetHeight() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupImageMediaBlockWriteINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupImageMediaBlockWriteINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupImageMediaBlockWriteINTEL;
   ISubgroupImageMediaBlockWriteINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetImage() const { return getval<uint32_t>(0); }
 uint32_t GetCoordinate() const { return getval<uint32_t>(1); }
@@ -3043,20 +3043,20 @@ uint32_t GetHeight() const { return getval<uint32_t>(3); }
 uint32_t GetData() const { return getval<uint32_t>(4); }
 };
 struct IDecorateString : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpDecorateString;
+  static const SpvOp Opcode = SpvOpDecorateString;
   IDecorateString(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetTarget() const { return getval<uint32_t>(0); }
 SpvDecoration GetDecoration() const { return getval<SpvDecoration>(1); }
 };
 struct IMemberDecorateString : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpMemberDecorateString;
+  static const SpvOp Opcode = SpvOpMemberDecorateString;
   IMemberDecorateString(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetStructType() const { return getval<uint32_t>(0); }
 uint32_t GetMember() const { return getval<uint32_t>(1); }
 SpvDecoration GetDecoration() const { return getval<SpvDecoration>(2); }
 };
 struct IVmeImageINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpVmeImageINTEL;
+  static const SpvOp Opcode = SpvOpVmeImageINTEL;
   IVmeImageINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3064,73 +3064,73 @@ uint32_t GetImageType() const { return getval<uint32_t>(2); }
 uint32_t GetSampler() const { return getval<uint32_t>(3); }
 };
 struct ITypeVmeImageINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeVmeImageINTEL;
+  static const SpvOp Opcode = SpvOpTypeVmeImageINTEL;
   ITypeVmeImageINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 uint32_t GetImageType() const { return getval<uint32_t>(1); }
 };
 struct ITypeAvcImePayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcImePayloadINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcImePayloadINTEL;
   ITypeAvcImePayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcRefPayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcRefPayloadINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcRefPayloadINTEL;
   ITypeAvcRefPayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcSicPayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcSicPayloadINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcSicPayloadINTEL;
   ITypeAvcSicPayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcMcePayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcMcePayloadINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcMcePayloadINTEL;
   ITypeAvcMcePayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcMceResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcMceResultINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcMceResultINTEL;
   ITypeAvcMceResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcImeResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcImeResultINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcImeResultINTEL;
   ITypeAvcImeResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcImeResultSingleReferenceStreamoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcImeResultSingleReferenceStreamoutINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcImeResultSingleReferenceStreamoutINTEL;
   ITypeAvcImeResultSingleReferenceStreamoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcImeResultDualReferenceStreamoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcImeResultDualReferenceStreamoutINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcImeResultDualReferenceStreamoutINTEL;
   ITypeAvcImeResultDualReferenceStreamoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcImeSingleReferenceStreaminINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcImeSingleReferenceStreaminINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcImeSingleReferenceStreaminINTEL;
   ITypeAvcImeSingleReferenceStreaminINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcImeDualReferenceStreaminINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcImeDualReferenceStreaminINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcImeDualReferenceStreaminINTEL;
   ITypeAvcImeDualReferenceStreaminINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcRefResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcRefResultINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcRefResultINTEL;
   ITypeAvcRefResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ITypeAvcSicResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpTypeAvcSicResultINTEL;
+  static const SpvOp Opcode = SpvOpTypeAvcSicResultINTEL;
   ITypeAvcSicResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResult() const { return getval<uint32_t>(0); }
 };
 struct ISubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL;
   ISubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3138,7 +3138,7 @@ uint32_t GetSliceType() const { return getval<uint32_t>(2); }
 uint32_t GetQp() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL;
   ISubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3146,7 +3146,7 @@ uint32_t GetReferenceBasePenalty() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceGetDefaultInterShapePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL;
   ISubgroupAvcMceGetDefaultInterShapePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3154,7 +3154,7 @@ uint32_t GetSliceType() const { return getval<uint32_t>(2); }
 uint32_t GetQp() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceSetInterShapePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetInterShapePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetInterShapePenaltyINTEL;
   ISubgroupAvcMceSetInterShapePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3162,7 +3162,7 @@ uint32_t GetPackedShapePenalty() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL;
   ISubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3170,7 +3170,7 @@ uint32_t GetSliceType() const { return getval<uint32_t>(2); }
 uint32_t GetQp() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceSetInterDirectionPenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetInterDirectionPenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetInterDirectionPenaltyINTEL;
   ISubgroupAvcMceSetInterDirectionPenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3178,7 +3178,7 @@ uint32_t GetDirectionCost() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL;
   ISubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3186,7 +3186,7 @@ uint32_t GetSliceType() const { return getval<uint32_t>(2); }
 uint32_t GetQp() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL;
   ISubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3194,25 +3194,25 @@ uint32_t GetSliceType() const { return getval<uint32_t>(2); }
 uint32_t GetQp() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL;
   ISubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL;
   ISubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL;
   ISubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISubgroupAvcMceSetMotionVectorCostFunctionINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetMotionVectorCostFunctionINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetMotionVectorCostFunctionINTEL;
   ISubgroupAvcMceSetMotionVectorCostFunctionINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3222,7 +3222,7 @@ uint32_t GetCostPrecision() const { return getval<uint32_t>(4); }
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL;
   ISubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3230,26 +3230,26 @@ uint32_t GetSliceType() const { return getval<uint32_t>(2); }
 uint32_t GetQp() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL;
   ISubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL;
   ISubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 };
 struct ISubgroupAvcMceSetAcOnlyHaarINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetAcOnlyHaarINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetAcOnlyHaarINTEL;
   ISubgroupAvcMceSetAcOnlyHaarINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL;
   ISubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3257,7 +3257,7 @@ uint32_t GetSourceFieldPolarity() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL;
   ISubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3265,7 +3265,7 @@ uint32_t GetReferenceFieldPolarity() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL;
   ISubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3274,105 +3274,105 @@ uint32_t GetBackwardReferenceFieldPolarity() const { return getval<uint32_t>(3);
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcMceConvertToImePayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceConvertToImePayloadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceConvertToImePayloadINTEL;
   ISubgroupAvcMceConvertToImePayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceConvertToImeResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceConvertToImeResultINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceConvertToImeResultINTEL;
   ISubgroupAvcMceConvertToImeResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceConvertToRefPayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceConvertToRefPayloadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceConvertToRefPayloadINTEL;
   ISubgroupAvcMceConvertToRefPayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceConvertToRefResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceConvertToRefResultINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceConvertToRefResultINTEL;
   ISubgroupAvcMceConvertToRefResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceConvertToSicPayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceConvertToSicPayloadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceConvertToSicPayloadINTEL;
   ISubgroupAvcMceConvertToSicPayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceConvertToSicResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceConvertToSicResultINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceConvertToSicResultINTEL;
   ISubgroupAvcMceConvertToSicResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetMotionVectorsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetMotionVectorsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetMotionVectorsINTEL;
   ISubgroupAvcMceGetMotionVectorsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetInterDistortionsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetInterDistortionsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetInterDistortionsINTEL;
   ISubgroupAvcMceGetInterDistortionsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetBestInterDistortionsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetBestInterDistortionsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetBestInterDistortionsINTEL;
   ISubgroupAvcMceGetBestInterDistortionsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetInterMajorShapeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetInterMajorShapeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetInterMajorShapeINTEL;
   ISubgroupAvcMceGetInterMajorShapeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetInterMinorShapeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetInterMinorShapeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetInterMinorShapeINTEL;
   ISubgroupAvcMceGetInterMinorShapeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetInterDirectionsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetInterDirectionsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetInterDirectionsINTEL;
   ISubgroupAvcMceGetInterDirectionsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetInterMotionVectorCountINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetInterMotionVectorCountINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetInterMotionVectorCountINTEL;
   ISubgroupAvcMceGetInterMotionVectorCountINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetInterReferenceIdsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetInterReferenceIdsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetInterReferenceIdsINTEL;
   ISubgroupAvcMceGetInterReferenceIdsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL;
   ISubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3381,7 +3381,7 @@ uint32_t GetPackedReferenceParameterFieldPolarities() const { return getval<uint
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeInitializeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeInitializeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeInitializeINTEL;
   ISubgroupAvcImeInitializeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3390,7 +3390,7 @@ uint32_t GetPartitionMask() const { return getval<uint32_t>(3); }
 uint32_t GetSADAdjustment() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeSetSingleReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeSetSingleReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeSetSingleReferenceINTEL;
   ISubgroupAvcImeSetSingleReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3399,7 +3399,7 @@ uint32_t GetSearchWindowConfig() const { return getval<uint32_t>(3); }
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeSetDualReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeSetDualReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeSetDualReferenceINTEL;
   ISubgroupAvcImeSetDualReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3409,7 +3409,7 @@ uint32_t GetSearchWindowConfig() const { return getval<uint32_t>(4); }
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcImeRefWindowSizeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeRefWindowSizeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeRefWindowSizeINTEL;
   ISubgroupAvcImeRefWindowSizeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3417,7 +3417,7 @@ uint32_t GetSearchWindowConfig() const { return getval<uint32_t>(2); }
 uint32_t GetDualRef() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeAdjustRefOffsetINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeAdjustRefOffsetINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeAdjustRefOffsetINTEL;
   ISubgroupAvcImeAdjustRefOffsetINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3427,14 +3427,14 @@ uint32_t GetRefWindowSize() const { return getval<uint32_t>(4); }
 uint32_t GetImageSize() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcImeConvertToMcePayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeConvertToMcePayloadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeConvertToMcePayloadINTEL;
   ISubgroupAvcImeConvertToMcePayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeSetMaxMotionVectorCountINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeSetMaxMotionVectorCountINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeSetMaxMotionVectorCountINTEL;
   ISubgroupAvcImeSetMaxMotionVectorCountINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3442,14 +3442,14 @@ uint32_t GetMaxMotionVectorCount() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeSetUnidirectionalMixDisableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeSetUnidirectionalMixDisableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeSetUnidirectionalMixDisableINTEL;
   ISubgroupAvcImeSetUnidirectionalMixDisableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeSetEarlySearchTerminationThresholdINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL;
   ISubgroupAvcImeSetEarlySearchTerminationThresholdINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3457,7 +3457,7 @@ uint32_t GetThreshold() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeSetWeightedSadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeSetWeightedSadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeSetWeightedSadINTEL;
   ISubgroupAvcImeSetWeightedSadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3465,7 +3465,7 @@ uint32_t GetPackedSadWeights() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeEvaluateWithSingleReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceINTEL;
   ISubgroupAvcImeEvaluateWithSingleReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3474,7 +3474,7 @@ uint32_t GetRefImage() const { return getval<uint32_t>(3); }
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeEvaluateWithDualReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceINTEL;
   ISubgroupAvcImeEvaluateWithDualReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3484,7 +3484,7 @@ uint32_t GetBwdRefImage() const { return getval<uint32_t>(4); }
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL;
   ISubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3494,7 +3494,7 @@ uint32_t GetPayload() const { return getval<uint32_t>(4); }
 uint32_t GetStreaminComponents() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL;
   ISubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3505,7 +3505,7 @@ uint32_t GetPayload() const { return getval<uint32_t>(5); }
 uint32_t GetStreaminComponents() const { return getval<uint32_t>(6); }
 };
 struct ISubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL;
   ISubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3514,7 +3514,7 @@ uint32_t GetRefImage() const { return getval<uint32_t>(3); }
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL;
   ISubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3524,7 +3524,7 @@ uint32_t GetBwdRefImage() const { return getval<uint32_t>(4); }
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL;
   ISubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3534,7 +3534,7 @@ uint32_t GetPayload() const { return getval<uint32_t>(4); }
 uint32_t GetStreaminComponents() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL;
   ISubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3545,42 +3545,42 @@ uint32_t GetPayload() const { return getval<uint32_t>(5); }
 uint32_t GetStreaminComponents() const { return getval<uint32_t>(6); }
 };
 struct ISubgroupAvcImeConvertToMceResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeConvertToMceResultINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeConvertToMceResultINTEL;
   ISubgroupAvcImeConvertToMceResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeGetSingleReferenceStreaminINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetSingleReferenceStreaminINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetSingleReferenceStreaminINTEL;
   ISubgroupAvcImeGetSingleReferenceStreaminINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeGetDualReferenceStreaminINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetDualReferenceStreaminINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetDualReferenceStreaminINTEL;
   ISubgroupAvcImeGetDualReferenceStreaminINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeStripSingleReferenceStreamoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeStripSingleReferenceStreamoutINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeStripSingleReferenceStreamoutINTEL;
   ISubgroupAvcImeStripSingleReferenceStreamoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeStripDualReferenceStreamoutINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeStripDualReferenceStreamoutINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeStripDualReferenceStreamoutINTEL;
   ISubgroupAvcImeStripDualReferenceStreamoutINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL;
   ISubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3588,7 +3588,7 @@ uint32_t GetPayload() const { return getval<uint32_t>(2); }
 uint32_t GetMajorShape() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL;
   ISubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3596,7 +3596,7 @@ uint32_t GetPayload() const { return getval<uint32_t>(2); }
 uint32_t GetMajorShape() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL;
   ISubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3604,7 +3604,7 @@ uint32_t GetPayload() const { return getval<uint32_t>(2); }
 uint32_t GetMajorShape() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL;
   ISubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3613,7 +3613,7 @@ uint32_t GetMajorShape() const { return getval<uint32_t>(3); }
 uint32_t GetDirection() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL;
   ISubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3622,7 +3622,7 @@ uint32_t GetMajorShape() const { return getval<uint32_t>(3); }
 uint32_t GetDirection() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL;
   ISubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3631,7 +3631,7 @@ uint32_t GetMajorShape() const { return getval<uint32_t>(3); }
 uint32_t GetDirection() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcImeGetBorderReachedINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetBorderReachedINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetBorderReachedINTEL;
   ISubgroupAvcImeGetBorderReachedINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3639,35 +3639,35 @@ uint32_t GetImageSelect() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcImeGetTruncatedSearchIndicationINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetTruncatedSearchIndicationINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetTruncatedSearchIndicationINTEL;
   ISubgroupAvcImeGetTruncatedSearchIndicationINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL;
   ISubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL;
   ISubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL;
   ISubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcFmeInitializeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcFmeInitializeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcFmeInitializeINTEL;
   ISubgroupAvcFmeInitializeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3680,7 +3680,7 @@ uint32_t GetPixelResolution() const { return getval<uint32_t>(7); }
 uint32_t GetSadAdjustment() const { return getval<uint32_t>(8); }
 };
 struct ISubgroupAvcBmeInitializeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcBmeInitializeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcBmeInitializeINTEL;
   ISubgroupAvcBmeInitializeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3694,28 +3694,28 @@ uint32_t GetBidirectionalWeight() const { return getval<uint32_t>(8); }
 uint32_t GetSadAdjustment() const { return getval<uint32_t>(9); }
 };
 struct ISubgroupAvcRefConvertToMcePayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefConvertToMcePayloadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefConvertToMcePayloadINTEL;
   ISubgroupAvcRefConvertToMcePayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcRefSetBidirectionalMixDisableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefSetBidirectionalMixDisableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefSetBidirectionalMixDisableINTEL;
   ISubgroupAvcRefSetBidirectionalMixDisableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcRefSetBilinearFilterEnableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefSetBilinearFilterEnableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefSetBilinearFilterEnableINTEL;
   ISubgroupAvcRefSetBilinearFilterEnableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcRefEvaluateWithSingleReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithSingleReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithSingleReferenceINTEL;
   ISubgroupAvcRefEvaluateWithSingleReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3724,7 +3724,7 @@ uint32_t GetRefImage() const { return getval<uint32_t>(3); }
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcRefEvaluateWithDualReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithDualReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithDualReferenceINTEL;
   ISubgroupAvcRefEvaluateWithDualReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3734,7 +3734,7 @@ uint32_t GetBwdRefImage() const { return getval<uint32_t>(4); }
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcRefEvaluateWithMultiReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithMultiReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithMultiReferenceINTEL;
   ISubgroupAvcRefEvaluateWithMultiReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3743,7 +3743,7 @@ uint32_t GetPackedReferenceIds() const { return getval<uint32_t>(3); }
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL;
   ISubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3753,21 +3753,21 @@ uint32_t GetPackedReferenceFieldPolarities() const { return getval<uint32_t>(4);
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcRefConvertToMceResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcRefConvertToMceResultINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcRefConvertToMceResultINTEL;
   ISubgroupAvcRefConvertToMceResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicInitializeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicInitializeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicInitializeINTEL;
   ISubgroupAvcSicInitializeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetSrcCoord() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicConfigureSkcINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicConfigureSkcINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicConfigureSkcINTEL;
   ISubgroupAvcSicConfigureSkcINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3779,7 +3779,7 @@ uint32_t GetSadAdjustment() const { return getval<uint32_t>(6); }
 uint32_t GetPayload() const { return getval<uint32_t>(7); }
 };
 struct ISubgroupAvcSicConfigureIpeLumaINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicConfigureIpeLumaINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicConfigureIpeLumaINTEL;
   ISubgroupAvcSicConfigureIpeLumaINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3793,7 +3793,7 @@ uint32_t GetSadAdjustment() const { return getval<uint32_t>(8); }
 uint32_t GetPayload() const { return getval<uint32_t>(9); }
 };
 struct ISubgroupAvcSicConfigureIpeLumaChromaINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicConfigureIpeLumaChromaINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicConfigureIpeLumaChromaINTEL;
   ISubgroupAvcSicConfigureIpeLumaChromaINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3810,7 +3810,7 @@ uint32_t GetSadAdjustment() const { return getval<uint32_t>(11); }
 uint32_t GetPayload() const { return getval<uint32_t>(12); }
 };
 struct ISubgroupAvcSicGetMotionVectorMaskINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetMotionVectorMaskINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetMotionVectorMaskINTEL;
   ISubgroupAvcSicGetMotionVectorMaskINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3818,14 +3818,14 @@ uint32_t GetSkipBlockPartitionType() const { return getval<uint32_t>(2); }
 uint32_t GetDirection() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcSicConvertToMcePayloadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicConvertToMcePayloadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicConvertToMcePayloadINTEL;
   ISubgroupAvcSicConvertToMcePayloadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicSetIntraLumaShapePenaltyINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL;
   ISubgroupAvcSicSetIntraLumaShapePenaltyINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3833,7 +3833,7 @@ uint32_t GetPackedShapePenalty() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcSicSetIntraLumaModeCostFunctionINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL;
   ISubgroupAvcSicSetIntraLumaModeCostFunctionINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3843,7 +3843,7 @@ uint32_t GetLumaPackedNonDcPenalty() const { return getval<uint32_t>(4); }
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcSicSetIntraChromaModeCostFunctionINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL;
   ISubgroupAvcSicSetIntraChromaModeCostFunctionINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3851,14 +3851,14 @@ uint32_t GetChromaModeBasePenalty() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcSicSetBilinearFilterEnableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicSetBilinearFilterEnableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicSetBilinearFilterEnableINTEL;
   ISubgroupAvcSicSetBilinearFilterEnableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicSetSkcForwardTransformEnableINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicSetSkcForwardTransformEnableINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicSetSkcForwardTransformEnableINTEL;
   ISubgroupAvcSicSetSkcForwardTransformEnableINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3866,7 +3866,7 @@ uint32_t GetPackedSadCoefficients() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcSicSetBlockBasedRawSkipSadINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL;
   ISubgroupAvcSicSetBlockBasedRawSkipSadINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3874,7 +3874,7 @@ uint32_t GetBlockBasedSkipType() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcSicEvaluateIpeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateIpeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateIpeINTEL;
   ISubgroupAvcSicEvaluateIpeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3882,7 +3882,7 @@ uint32_t GetSrcImage() const { return getval<uint32_t>(2); }
 uint32_t GetPayload() const { return getval<uint32_t>(3); }
 };
 struct ISubgroupAvcSicEvaluateWithSingleReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithSingleReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithSingleReferenceINTEL;
   ISubgroupAvcSicEvaluateWithSingleReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3891,7 +3891,7 @@ uint32_t GetRefImage() const { return getval<uint32_t>(3); }
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcSicEvaluateWithDualReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithDualReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithDualReferenceINTEL;
   ISubgroupAvcSicEvaluateWithDualReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3901,7 +3901,7 @@ uint32_t GetBwdRefImage() const { return getval<uint32_t>(4); }
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcSicEvaluateWithMultiReferenceINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithMultiReferenceINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithMultiReferenceINTEL;
   ISubgroupAvcSicEvaluateWithMultiReferenceINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3910,7 +3910,7 @@ uint32_t GetPackedReferenceIds() const { return getval<uint32_t>(3); }
 uint32_t GetPayload() const { return getval<uint32_t>(4); }
 };
 struct ISubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL;
   ISubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
@@ -3920,63 +3920,63 @@ uint32_t GetPackedReferenceFieldPolarities() const { return getval<uint32_t>(4);
 uint32_t GetPayload() const { return getval<uint32_t>(5); }
 };
 struct ISubgroupAvcSicConvertToMceResultINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicConvertToMceResultINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicConvertToMceResultINTEL;
   ISubgroupAvcSicConvertToMceResultINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetIpeLumaShapeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetIpeLumaShapeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetIpeLumaShapeINTEL;
   ISubgroupAvcSicGetIpeLumaShapeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetBestIpeLumaDistortionINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetBestIpeLumaDistortionINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetBestIpeLumaDistortionINTEL;
   ISubgroupAvcSicGetBestIpeLumaDistortionINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetBestIpeChromaDistortionINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetBestIpeChromaDistortionINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetBestIpeChromaDistortionINTEL;
   ISubgroupAvcSicGetBestIpeChromaDistortionINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetPackedIpeLumaModesINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetPackedIpeLumaModesINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetPackedIpeLumaModesINTEL;
   ISubgroupAvcSicGetPackedIpeLumaModesINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetIpeChromaModeINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetIpeChromaModeINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetIpeChromaModeINTEL;
   ISubgroupAvcSicGetIpeChromaModeINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL;
   ISubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL;
   ISubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
 uint32_t GetPayload() const { return getval<uint32_t>(2); }
 };
 struct ISubgroupAvcSicGetInterRawSadsINTEL : public Instruction {
-  static constexpr SpvOp Opcode = SpvOpSubgroupAvcSicGetInterRawSadsINTEL;
+  static const SpvOp Opcode = SpvOpSubgroupAvcSicGetInterRawSadsINTEL;
   ISubgroupAvcSicGetInterRawSadsINTEL(const spv_parsed_instruction_t *i) : Instruction(i) {}
   uint32_t GetIdResultType() const { return getval<uint32_t>(0); }
 uint32_t GetIdResult() const { return getval<uint32_t>(1); }
