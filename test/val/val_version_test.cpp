@@ -56,9 +56,10 @@ OpFunctionEnd
 )";
 
 const std::string opencl_spirv = R"(
+OpCapability Addresses
 OpCapability Kernel
 OpCapability Linkage
-OpMemoryModel Logical OpenCL
+OpMemoryModel Physical32 OpenCL
 )";
 
 std::string version(spv_target_env env) {
