@@ -56,6 +56,93 @@ TEST_F(ValidateOpenCL, NonOpenCLMemoryModelBad) {
                         "\n  OpMemoryModel Physical32 GLSL450\n"));
 }
 
+TEST_F(ValidateOpenCL, NonVoidSampledTypeImageBad) {
+  std::string spirv = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpMemoryModel Physical32 OpenCL
+    %1 = OpTypeInt 32 0
+    %2 = OpTypeImage %1 2D 0 0 0 0 Unknown ReadOnly
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Sampled Type must be OpTypeVoid in the OpenCL environment."
+                        "\n  %2 = OpTypeImage %uint 2D 0 0 0 0 Unknown ReadOnly\n"));
+}
+
+TEST_F(ValidateOpenCL, NonZeroMSImageBad) {
+  std::string spirv = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpMemoryModel Physical32 OpenCL
+    %1 = OpTypeVoid
+    %2 = OpTypeImage %1 2D 0 0 1 0 Unknown ReadOnly
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("MS must be 0 in the OpenCL environement."
+                        "\n  %2 = OpTypeImage %void 2D 0 0 1 0 Unknown ReadOnly\n"));
+}
+
+TEST_F(ValidateOpenCL, Non1D2DArrayedImageBad) {
+  std::string spirv = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpMemoryModel Physical32 OpenCL
+    %1 = OpTypeVoid
+    %2 = OpTypeImage %1 3D 0 1 0 0 Unknown ReadOnly
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In the OpenCL environment, Arrayed may only be set to 1 "
+                        "when Dim is either 1D or 2D."
+                        "\n  %2 = OpTypeImage %void 3D 0 1 0 0 Unknown ReadOnly\n"));
+}
+
+TEST_F(ValidateOpenCL, NonZeroSampledImageBad) {
+  std::string spirv = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpMemoryModel Physical32 OpenCL
+    %1 = OpTypeVoid
+    %2 = OpTypeImage %1 3D 0 0 0 1 Unknown ReadOnly
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Sampled must be 0 in the OpenCL environment."
+                        "\n  %2 = OpTypeImage %void 3D 0 0 0 1 Unknown ReadOnly\n"));
+}
+
+TEST_F(ValidateOpenCL, NoAccessQualifierImageBad) {
+  std::string spirv = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpMemoryModel Physical32 OpenCL
+    %1 = OpTypeVoid
+    %2 = OpTypeImage %1 3D 0 0 0 0 Unknown
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In the OpenCL environment, the optional "
+                        "Access Qualifier must be present."
+                        "\n  %2 = OpTypeImage %void 3D 0 0 0 0 Unknown\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
