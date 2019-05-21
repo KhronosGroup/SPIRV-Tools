@@ -747,8 +747,8 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (spvIsOpenCLEnv(_.context()->target_env)) {
-    if ((info.arrayed == 1) &&
-        (info.dim != SpvDim1D) && (info.dim != SpvDim2D)) {
+    if ((info.arrayed == 1) && (info.dim != SpvDim1D) &&
+        (info.dim != SpvDim2D)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "In the OpenCL environment, Arrayed may only be set to 1 "
              << "when Dim is either 1D or 2D.";

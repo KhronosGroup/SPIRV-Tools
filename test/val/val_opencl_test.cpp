@@ -68,9 +68,10 @@ TEST_F(ValidateOpenCL, NonVoidSampledTypeImageBad) {
   CompileSuccessfully(spirv);
 
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Sampled Type must be OpTypeVoid in the OpenCL environment."
-                        "\n  %2 = OpTypeImage %uint 2D 0 0 0 0 Unknown ReadOnly\n"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Sampled Type must be OpTypeVoid in the OpenCL environment."
+                "\n  %2 = OpTypeImage %uint 2D 0 0 0 0 Unknown ReadOnly\n"));
 }
 
 TEST_F(ValidateOpenCL, NonZeroMSImageBad) {
@@ -85,9 +86,10 @@ TEST_F(ValidateOpenCL, NonZeroMSImageBad) {
   CompileSuccessfully(spirv);
 
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("MS must be 0 in the OpenCL environement."
-                        "\n  %2 = OpTypeImage %void 2D 0 0 1 0 Unknown ReadOnly\n"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("MS must be 0 in the OpenCL environement."
+                "\n  %2 = OpTypeImage %void 2D 0 0 1 0 Unknown ReadOnly\n"));
 }
 
 TEST_F(ValidateOpenCL, Non1D2DArrayedImageBad) {
@@ -102,10 +104,11 @@ TEST_F(ValidateOpenCL, Non1D2DArrayedImageBad) {
   CompileSuccessfully(spirv);
 
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("In the OpenCL environment, Arrayed may only be set to 1 "
-                        "when Dim is either 1D or 2D."
-                        "\n  %2 = OpTypeImage %void 3D 0 1 0 0 Unknown ReadOnly\n"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("In the OpenCL environment, Arrayed may only be set to 1 "
+                "when Dim is either 1D or 2D."
+                "\n  %2 = OpTypeImage %void 3D 0 1 0 0 Unknown ReadOnly\n"));
 }
 
 TEST_F(ValidateOpenCL, NonZeroSampledImageBad) {
@@ -120,9 +123,10 @@ TEST_F(ValidateOpenCL, NonZeroSampledImageBad) {
   CompileSuccessfully(spirv);
 
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Sampled must be 0 in the OpenCL environment."
-                        "\n  %2 = OpTypeImage %void 3D 0 0 0 1 Unknown ReadOnly\n"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Sampled must be 0 in the OpenCL environment."
+                "\n  %2 = OpTypeImage %void 3D 0 0 0 1 Unknown ReadOnly\n"));
 }
 
 TEST_F(ValidateOpenCL, NoAccessQualifierImageBad) {
