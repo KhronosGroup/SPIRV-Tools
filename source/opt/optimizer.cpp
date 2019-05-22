@@ -472,6 +472,10 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateGenerateWebGPUInitializersPass());
   } else if (pass_name == "legalize-vector-shuffle") {
     RegisterPass(CreateLegalizeVectorShufflePass());
+  } else if (pass_name == "split-invalid-unreachable") {
+    RegisterPass(CreateLegalizeVectorShufflePass());
+  } else if (pass_name == "decompose-initialized-variables") {
+    RegisterPass(CreateDecomposeInitializedVariablesPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
