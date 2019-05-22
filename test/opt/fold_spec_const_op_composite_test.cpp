@@ -325,6 +325,19 @@ INSTANTIATE_TEST_SUITE_P(
                 "%inner = OpConstantComposite %inner_struct %bool_true %signed_one %undef",
                 "%outer = OpSpecConstantComposite %outer_struct %inner %signed_one",
               },
+            },
+            // Fold an QuantizetoF16 instruction
+            {
+              // original
+              {
+                "%float_1 = OpConstant %float 1",
+                "%quant_float = OpSpecConstantOp %float QuantizeToF16 %float_1",
+              },
+              // expected
+              {
+                "%float_1 = OpConstant %float 1",
+                "%quant_float = OpConstant %float 1",
+              },
             }
         // clang-format on
     })));
