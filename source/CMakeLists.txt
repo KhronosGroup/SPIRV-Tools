@@ -198,6 +198,7 @@ set_source_files_properties(
 
 add_subdirectory(opt)
 add_subdirectory(reduce)
+add_subdirectory(fuzz)
 add_subdirectory(link)
 
 set(SPIRV_SOURCES
@@ -233,6 +234,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_constant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_definition.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_fuzzer_options.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_optimizer_options.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_reducer_options.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.h
@@ -260,6 +262,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/print.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_fuzzer_options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_optimizer_options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_reducer_options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.cpp
