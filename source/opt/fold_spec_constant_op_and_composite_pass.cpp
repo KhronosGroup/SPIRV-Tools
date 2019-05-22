@@ -122,6 +122,7 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
     case SpvOp::SpvOpCompositeExtract:
     case SpvOp::SpvOpVectorShuffle:
     case SpvOp::SpvOpCompositeInsert:
+    case SpvOp::SpvOpQuantizeToF16:
       folded_inst = FoldWithInstructionFolder(pos);
       break;
     default:
