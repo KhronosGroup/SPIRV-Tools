@@ -35,6 +35,11 @@ git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv
 git clone --depth=1 https://github.com/google/googletest          external/googletest
 git clone --depth=1 https://github.com/google/effcee              external/effcee
 git clone --depth=1 https://github.com/google/re2                 external/re2
+git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
+pushd external/protobuf
+git fetch --all --tags --prune
+git checkout v3.7.1
+popd
 
 mkdir build && cd $SRC/build
 
@@ -49,6 +54,7 @@ cmake \
   -DCMAKE_C_COMPILER=clang \
   -DCMAKE_CXX_COMPILER=clang++ \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+  -DSPIRV_BUILD_FUZZER=ON \
   ..
 
 echo $(date): Build everything...
