@@ -3262,6 +3262,35 @@ OpFunctionEnd
           "IterationMultiple loop control operand must be greater than zero"));
 }
 
+TEST_F(ValidateCFG, LoopMergeTargetsHeader) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%fn = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %loop %continue None
+OpBranch %body
+%continue = OpLabel
+OpBranch %loop
+%body = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Merge Block may not be the block containing the OpLoopMerge"));
+}
+
 TEST_F(ValidateCFG, InvalidSelectionExit) {
   const std::string text = R"(
 OpCapability Shader
