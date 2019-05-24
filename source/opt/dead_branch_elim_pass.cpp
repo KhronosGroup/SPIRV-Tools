@@ -620,7 +620,8 @@ bool DeadBranchElimPass::SwitchHasNestedBreak(uint32_t switch_header_id) {
 
   StructuredCFGAnalysis* cfg_analysis = context()->GetStructuredCFGAnalysis();
   return !get_def_use_mgr()->WhileEachUser(
-      merge_block_id, [this, cfg_analysis, switch_header_id](Instruction* inst) {
+      merge_block_id,
+      [this, cfg_analysis, switch_header_id](Instruction* inst) {
         if (!inst->IsBranch()) {
           return true;
         }
