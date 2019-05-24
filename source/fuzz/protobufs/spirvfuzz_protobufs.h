@@ -21,14 +21,15 @@
 // of these header files without having to compromise on freedom from warnings
 // in the rest of the project.
 
-#ifdef __GNUC__
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
-#ifdef _MSC_VER
+#elif defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #endif
@@ -40,11 +41,11 @@
 #include "google/protobuf/util/json_util.h"
 #include "source/fuzz/protobufs/spvtoolsfuzz.pb.h"
 
-#ifdef __GNUC__
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
 #pragma GCC diagnostic pop
-#endif
-
-#ifdef _MSC_VER
+#elif defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 
