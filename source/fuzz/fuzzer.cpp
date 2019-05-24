@@ -33,6 +33,10 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+const uint32_t kIdBoundGap = 100;
+}
+
 struct Fuzzer::Impl {
   explicit Impl(spv_target_env env) : target_env(env) {}
 
@@ -59,7 +63,11 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   spvtools::SpirvTools tools(impl_->target_env);
-  assert(tools.IsValid() && "Failed to create SPIRV-Tools interface");
+  if (!tools.IsValid()) {
+    impl_->consumer(SPV_MSG_ERROR, nullptr, {},
+                    "Failed to create SPIRV-Tools interface; stopping.");
+    return Fuzzer::FuzzerResultStatus::kFailedToCreateSpirvToolsInterface;
+  }
 
   // Initial binary should be valid.
   if (!tools.Validate(&binary_in[0], binary_in.size())) {
@@ -83,8 +91,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // to this so that there is a sizeable gap between the ids used in the
   // original module and the ids used for fuzzing, as a readability aid.
   //
-  // TODO(2541) consider the case where the maximum id bound is reached.
-  auto minimum_fresh_id = ir_context->module()->id_bound() + 100;
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider the
+  //  case where the maximum id bound is reached.
+  auto minimum_fresh_id = ir_context->module()->id_bound() + kIdBoundGap;
   FuzzerContext fuzzer_context(&random_generator, minimum_fresh_id);
 
   FactManager fact_manager;
@@ -114,7 +123,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
                           transformation_sequence_out)
       .Apply();
 
-  // Write out the module as a binary.
+  // Encode the module as a binary.
   ir_context->module()->ToBinary(binary_out, false);
 
   return Fuzzer::FuzzerResultStatus::kComplete;
