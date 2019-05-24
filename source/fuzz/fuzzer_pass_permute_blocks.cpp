@@ -20,6 +20,14 @@ namespace fuzz {
 
 using opt::IRContext;
 
+FuzzerPassPermuteBlocks::FuzzerPassPermuteBlocks(
+    opt::IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformations)
+    : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
+
+FuzzerPassPermuteBlocks::~FuzzerPassPermuteBlocks() = default;
+
 void FuzzerPassPermuteBlocks::Apply() {
   // For now we do something very simple: we randomly decide whether to move a
   // block, and for each block that we do move, we push it down as far as we

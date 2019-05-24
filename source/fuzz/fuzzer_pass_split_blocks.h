@@ -26,10 +26,9 @@ class FuzzerPassSplitBlocks : public FuzzerPass {
  public:
   FuzzerPassSplitBlocks(opt::IRContext* ir_context, FactManager* fact_manager,
                         FuzzerContext* fuzzer_context,
-                        protobufs::TransformationSequence* transformations)
-      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations){};
+                        protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassSplitBlocks() override = default;
+  ~FuzzerPassSplitBlocks() override;
 
   void Apply() override;
 

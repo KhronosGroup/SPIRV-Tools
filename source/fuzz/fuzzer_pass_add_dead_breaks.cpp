@@ -21,6 +21,14 @@ namespace fuzz {
 
 using opt::IRContext;
 
+FuzzerPassAddDeadBreaks::FuzzerPassAddDeadBreaks(
+    opt::IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformations)
+    : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
+
+FuzzerPassAddDeadBreaks::~FuzzerPassAddDeadBreaks() = default;
+
 void FuzzerPassAddDeadBreaks::Apply() {
   // We first collect up lots of possibly-applicable transformations.
   std::vector<protobufs::TransformationAddDeadBreak> candidate_transformations;

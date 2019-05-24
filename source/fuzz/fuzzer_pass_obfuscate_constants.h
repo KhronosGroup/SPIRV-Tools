@@ -28,10 +28,9 @@ class FuzzerPassObfuscateConstants : public FuzzerPass {
   FuzzerPassObfuscateConstants(
       opt::IRContext* ir_context, FactManager* fact_manager,
       FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations)
-      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
+      protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassObfuscateConstants() override = default;
+  ~FuzzerPassObfuscateConstants() override;
 
   void Apply() override;
 

@@ -22,6 +22,14 @@ namespace fuzz {
 
 using opt::IRContext;
 
+FuzzerPassObfuscateConstants::FuzzerPassObfuscateConstants(
+    opt::IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformations)
+    : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
+
+FuzzerPassObfuscateConstants::~FuzzerPassObfuscateConstants() = default;
+
 void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
     uint32_t depth, const protobufs::IdUseDescriptor& bool_constant_use,
     const std::vector<SpvOp>& greater_than_opcodes,
@@ -100,7 +108,7 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
   auto transformation = transformation::
       MakeTransformationReplaceBooleanConstantWithConstantBinary(
           bool_constant_use, lhs_id, rhs_id, comparison_opcode,
-          GetFuzzerContext()->FreshId());
+          GetFuzzerContext()->GetFreshId());
   // The transformation should be applicable by construction.
   assert(transformation::IsApplicable(transformation, GetIRContext(),
                                       *GetFactManager()));
@@ -314,8 +322,9 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
                   (uint32_t)uniform_descriptors.size())];
       auto transformation =
           transformation::MakeTransformationReplaceConstantWithUniform(
-              constant_use, uniform_descriptor, GetFuzzerContext()->FreshId(),
-              GetFuzzerContext()->FreshId());
+              constant_use, uniform_descriptor,
+              GetFuzzerContext()->GetFreshId(),
+              GetFuzzerContext()->GetFreshId());
       // Transformation should be applicable by construction.
       assert(transformation::IsApplicable(transformation, GetIRContext(),
                                           *GetFactManager()));

@@ -25,10 +25,9 @@ class FuzzerPassAddDeadBreaks : public FuzzerPass {
  public:
   FuzzerPassAddDeadBreaks(opt::IRContext* ir_context, FactManager* fact_manager,
                           FuzzerContext* fuzzer_context,
-                          protobufs::TransformationSequence* transformations)
-      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
+                          protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassAddDeadBreaks() override = default;
+  ~FuzzerPassAddDeadBreaks();
 
   void Apply() override;
 

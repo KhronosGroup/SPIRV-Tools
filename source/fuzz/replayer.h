@@ -41,7 +41,6 @@ class Replayer {
   Replayer& operator=(const Replayer&) = delete;
   Replayer& operator=(Replayer&&) = delete;
 
-  // Destructs this instance.
   ~Replayer();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be

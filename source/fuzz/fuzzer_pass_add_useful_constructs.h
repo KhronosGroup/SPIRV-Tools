@@ -27,10 +27,9 @@ class FuzzerPassAddUsefulConstructs : public FuzzerPass {
   FuzzerPassAddUsefulConstructs(
       opt::IRContext* ir_context, FactManager* fact_manager,
       FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations)
-      : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations){};
+      protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassAddUsefulConstructs() override = default;
+  ~FuzzerPassAddUsefulConstructs() override;
 
   void Apply() override;
 
