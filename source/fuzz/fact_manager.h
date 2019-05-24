@@ -1,5 +1,3 @@
-#include <utility>
-
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +14,8 @@
 
 #ifndef SOURCE_FUZZ_FACT_MANAGER_H_
 #define SOURCE_FUZZ_FACT_MANAGER_H_
+
+#include <utility>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/constants.h"
@@ -36,7 +36,7 @@ class FactManager {
  public:
   FactManager();
 
-  virtual ~FactManager();
+  ~FactManager();
 
   // Adds all the facts from |facts|, checking them for validity with respect to
   // |context|. Returns true if and only if all facts are valid.

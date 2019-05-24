@@ -69,6 +69,7 @@ if(SPIRV_BUILD_FUZZER)
         id_use_descriptor.cpp
         pseudo_random_generator.cpp
         replayer.cpp
+        random_generator.cpp
         transformation.cpp
         transformation_add_constant_boolean.cpp
         transformation_add_constant_scalar.cpp

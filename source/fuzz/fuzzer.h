@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_FUZZER_H_
 #define SOURCE_FUZZ_FUZZER_H_
 
+#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "spirv-tools/libspirv.hpp"
 

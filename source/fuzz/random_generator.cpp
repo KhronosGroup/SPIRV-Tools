@@ -12,34 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_RANDOM_GENERATOR_H_
-#define SOURCE_FUZZ_RANDOM_GENERATOR_H_
-
-#include <stdint.h>
+#include "source/fuzz/random_generator.h"
 
 namespace spvtools {
 namespace fuzz {
 
-class RandomGenerator {
- public:
-  RandomGenerator();
+RandomGenerator::RandomGenerator() = default;
 
-  virtual ~RandomGenerator();
-
-  // Returns a value in the half-open interval [0, bound).
-  virtual uint32_t RandomUint32(uint32_t bound) = 0;
-
-  // Returns a value in the closed interval [0, 100].
-  virtual uint32_t RandomPercentage() = 0;
-
-  // Returns a boolean.
-  virtual bool RandomBool() = 0;
-
-  // Returns a double in the closed interval [0, 1]
-  virtual double RandomDouble() = 0;
-};
+RandomGenerator::~RandomGenerator() = default;
 
 }  // namespace fuzz
 }  // namespace spvtools
-
-#endif  // SOURCE_FUZZ_RANDOM_GENERATOR_H_
