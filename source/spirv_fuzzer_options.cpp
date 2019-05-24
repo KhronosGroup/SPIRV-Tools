@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cassert>
-#include <cstring>
-
 #include "source/spirv_fuzzer_options.h"
+
+spv_fuzzer_options_t::spv_fuzzer_options_t() = default;
 
 SPIRV_TOOLS_EXPORT spv_fuzzer_options spvFuzzerOptionsCreate() {
   return new spv_fuzzer_options_t();

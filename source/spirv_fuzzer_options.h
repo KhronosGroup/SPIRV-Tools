@@ -23,11 +23,11 @@
 // Manages command line options passed to the SPIR-V Fuzzer. New struct
 // members may be added for any new option.
 struct spv_fuzzer_options_t {
-  spv_fuzzer_options_t() : has_random_seed(false), random_seed(0) {}
+  spv_fuzzer_options_t();
 
   // See spvFuzzerOptionsSetRandomSeed.
-  bool has_random_seed;
-  uint32_t random_seed;
+  bool has_random_seed = false;
+  uint32_t random_seed = 0;
 };
 
 #endif  // SOURCE_SPIRV_FUZZER_OPTIONS_H_
