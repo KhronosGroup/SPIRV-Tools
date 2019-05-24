@@ -15,8 +15,8 @@
 #ifndef SOURCE_FUZZ_FUZZER_CONTEXT_H_
 #define SOURCE_FUZZ_FUZZER_CONTEXT_H_
 
-#include <source/opt/function.h>
 #include "source/fuzz/random_generator.h"
+#include "source/opt/function.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -30,14 +30,14 @@ class FuzzerContext {
   // value that can be used for fresh ids.
   FuzzerContext(RandomGenerator* random_generator, uint32_t min_fresh_id);
 
-  virtual ~FuzzerContext() = default;
+  ~FuzzerContext();
 
   // Provides the random generator used to control fuzzing.
   RandomGenerator* GetRandomGenerator();
 
   // Yields an id that is guaranteed not to be used in the module being fuzzed,
   // or to have been issued before.
-  uint32_t FreshId();
+  uint32_t GetFreshId();
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
