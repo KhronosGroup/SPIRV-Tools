@@ -20,7 +20,7 @@
 namespace spvtools {
 namespace fuzz {
 
-FactManager::FactManager() {}
+FactManager::FactManager() = default;
 
 FactManager::~FactManager() = default;
 
@@ -34,10 +34,8 @@ bool FactManager::AddFacts(const protobufs::FactSequence& initial_facts,
   return true;
 }
 
-bool FactManager::AddFact(const spvtools::fuzz::protobufs::Fact& fact,
-                          spvtools::opt::IRContext* context) {
-  (void)(fact);
-  (void)(context);
+bool FactManager::AddFact(const spvtools::fuzz::protobufs::Fact&,
+                          spvtools::opt::IRContext*) {
   assert(0 && "No facts are yet supported.");
   return true;
 }

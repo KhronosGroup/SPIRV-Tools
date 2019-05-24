@@ -15,6 +15,9 @@
 #ifndef SOURCE_FUZZ_FUZZER_H_
 #define SOURCE_FUZZ_FUZZER_H_
 
+#include <memory>
+#include <vector>
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "spirv-tools/libspirv.hpp"
 
@@ -26,7 +29,7 @@ namespace fuzz {
 class Fuzzer {
  public:
   // Possible statuses that can result from running the fuzzer.
-  enum FuzzerResultStatus {
+  enum class FuzzerResultStatus {
     kComplete,
     kInitialBinaryInvalid,
     kInitialFactsInvalid,
@@ -41,7 +44,6 @@ class Fuzzer {
   Fuzzer& operator=(const Fuzzer&) = delete;
   Fuzzer& operator=(Fuzzer&&) = delete;
 
-  // Destructs this instance.
   ~Fuzzer();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be

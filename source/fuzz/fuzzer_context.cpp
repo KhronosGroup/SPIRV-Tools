@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cmath>
-
 #include "source/fuzz/fuzzer_context.h"
 
 namespace spvtools {
@@ -23,7 +21,9 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
                              uint32_t min_fresh_id)
     : random_generator_(random_generator), next_fresh_id_(min_fresh_id) {}
 
-uint32_t FuzzerContext::FreshId() { return next_fresh_id_++; }
+FuzzerContext::~FuzzerContext() = default;
+
+uint32_t FuzzerContext::GetFreshId() { return next_fresh_id_++; }
 
 RandomGenerator* FuzzerContext::GetRandomGenerator() {
   return random_generator_;

@@ -19,13 +19,18 @@
 namespace spvtools {
 namespace fuzz {
 
+PseudoRandomGenerator::PseudoRandomGenerator(uint32_t seed) : mt_(seed) {}
+
+PseudoRandomGenerator::~PseudoRandomGenerator() = default;
+
 uint32_t PseudoRandomGenerator::RandomUint32(uint32_t bound) {
   assert(bound > 0 && "Bound must be positive");
-  return (uint32_t)std::uniform_int_distribution<>(0, bound - 1)(mt_);
+  return static_cast<uint32_t>(
+      std::uniform_int_distribution<>(0, bound - 1)(mt_));
 }
 
 bool PseudoRandomGenerator::RandomBool() {
-  return (bool)std::uniform_int_distribution<>(0, 1)(mt_);
+  return static_cast<bool>(std::uniform_int_distribution<>(0, 1)(mt_));
 }
 
 uint32_t PseudoRandomGenerator::RandomPercentage() {

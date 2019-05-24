@@ -25,9 +25,9 @@ namespace fuzz {
 // Generates random data from a pseudo-random number generator.
 class PseudoRandomGenerator : public RandomGenerator {
  public:
-  explicit PseudoRandomGenerator(uint32_t seed) : mt_(seed) {}
+  explicit PseudoRandomGenerator(uint32_t seed);
 
-  ~PseudoRandomGenerator() override = default;
+  ~PseudoRandomGenerator() override;
 
   uint32_t RandomUint32(uint32_t bound) override;
 

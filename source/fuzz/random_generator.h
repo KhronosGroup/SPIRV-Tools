@@ -22,9 +22,9 @@ namespace fuzz {
 
 class RandomGenerator {
  public:
-  RandomGenerator() = default;
+  RandomGenerator();
 
-  virtual ~RandomGenerator() = default;
+  virtual ~RandomGenerator();
 
   // Returns a value in the half-open interval [0, bound).
   virtual uint32_t RandomUint32(uint32_t bound) = 0;

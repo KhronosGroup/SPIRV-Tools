@@ -12,22 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_SPIRV_FUZZER_OPTIONS_H_
-#define SOURCE_SPIRV_FUZZER_OPTIONS_H_
+#include "source/fuzz/random_generator.h"
 
-#include "spirv-tools/libspirv.h"
+namespace spvtools {
+namespace fuzz {
 
-#include <string>
-#include <utility>
+RandomGenerator::RandomGenerator() = default;
 
-// Manages command line options passed to the SPIR-V Fuzzer. New struct
-// members may be added for any new option.
-struct spv_fuzzer_options_t {
-  spv_fuzzer_options_t();
+RandomGenerator::~RandomGenerator() = default;
 
-  // See spvFuzzerOptionsSetRandomSeed.
-  bool has_random_seed = false;
-  uint32_t random_seed = 0;
-};
-
-#endif  // SOURCE_SPIRV_FUZZER_OPTIONS_H_
+}  // namespace fuzz
+}  // namespace spvtools

@@ -40,6 +40,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_context.cpp
         fuzzer_pass.cpp
         pseudo_random_generator.cpp
+        random_generator.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
         )
 

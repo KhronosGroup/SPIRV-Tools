@@ -28,6 +28,10 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+const uint32_t kIdBoundGap = 100;
+}
+
 struct Fuzzer::Impl {
   explicit Impl(spv_target_env env) : target_env(env) {}
 
@@ -46,8 +50,7 @@ void Fuzzer::SetMessageConsumer(MessageConsumer c) {
 Fuzzer::FuzzerResultStatus Fuzzer::Run(
     const std::vector<uint32_t>& binary_in,
     const protobufs::FactSequence& initial_facts,
-    std::vector<uint32_t>* binary_out,
-    protobufs::TransformationSequence* transformation_sequence_out,
+    std::vector<uint32_t>* binary_out, protobufs::TransformationSequence*,
     spv_const_fuzzer_options options) const {
   // Check compatibility between the library version being linked with and the
   // header files being used.
@@ -78,8 +81,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // to this so that there is a sizeable gap between the ids used in the
   // original module and the ids used for fuzzing, as a readability aid.
   //
-  // TODO(2541) consider the case where the maximum id bound is reached.
-  auto minimum_fresh_id = ir_context->module()->id_bound() + 100;
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider the
+  //  case where the maximum id bound is reached.
+  auto minimum_fresh_id = ir_context->module()->id_bound() + kIdBoundGap;
   FuzzerContext fuzzer_context(&random_generator, minimum_fresh_id);
 
   FactManager fact_manager;
@@ -89,9 +93,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
 
   // Fuzzer passes will be created and applied here and will populate the
   // output sequence of transformations.  Currently there are no passes.
-  (void)(transformation_sequence_out);
+  // TODO(afd) Implement fuzzer passes and invoke them here.
 
-  // Write out the module as a binary.
+  // Encode the module as a binary.
   ir_context->module()->ToBinary(binary_out, false);
 
   return Fuzzer::FuzzerResultStatus::kComplete;
