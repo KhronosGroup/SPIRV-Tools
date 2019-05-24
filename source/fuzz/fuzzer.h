@@ -15,6 +15,9 @@
 #ifndef SOURCE_FUZZ_FUZZER_H_
 #define SOURCE_FUZZ_FUZZER_H_
 
+#include <memory>
+#include <vector>
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "spirv-tools/libspirv.hpp"
 
@@ -26,8 +29,9 @@ namespace fuzz {
 class Fuzzer {
  public:
   // Possible statuses that can result from running the fuzzer.
-  enum FuzzerResultStatus {
+  enum class FuzzerResultStatus {
     kComplete,
+    kFailedToCreateSpirvToolsInterface,
     kInitialBinaryInvalid,
     kInitialFactsInvalid,
   };
