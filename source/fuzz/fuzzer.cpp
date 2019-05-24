@@ -17,6 +17,7 @@
 #include <cassert>
 #include <sstream>
 
+#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
