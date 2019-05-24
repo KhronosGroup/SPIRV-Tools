@@ -28,6 +28,8 @@ bool FactManager::AddFacts(const protobufs::FactSequence& initial_facts,
                            opt::IRContext* context) {
   for (auto& fact : initial_facts.fact()) {
     if (!AddFact(fact, context)) {
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2621) Provide
+      //  information about the fact that could not be added.
       return false;
     }
   }
