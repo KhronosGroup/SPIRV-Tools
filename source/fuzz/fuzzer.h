@@ -45,7 +45,6 @@ class Fuzzer {
   Fuzzer& operator=(const Fuzzer&) = delete;
   Fuzzer& operator=(Fuzzer&&) = delete;
 
-  // Destructs this instance.
   ~Fuzzer();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be
