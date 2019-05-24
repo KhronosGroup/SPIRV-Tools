@@ -196,7 +196,6 @@ set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/pch_source.cpp
   PROPERTIES OBJECT_DEPENDS "${PCH_DEPENDS}")
 
-add_subdirectory(comp)
 add_subdirectory(opt)
 add_subdirectory(reduce)
 add_subdirectory(link)
@@ -221,7 +220,6 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.h
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.h
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/id_descriptor.h
   ${CMAKE_CURRENT_SOURCE_DIR}/instruction.h
   ${CMAKE_CURRENT_SOURCE_DIR}/latest_version_glsl_std_450_header.h
   ${CMAKE_CURRENT_SOURCE_DIR}/latest_version_opencl_std_header.h
@@ -254,7 +252,6 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/id_descriptor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/libspirv.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/name_mapper.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/opcode.cpp
