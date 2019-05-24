@@ -27,13 +27,9 @@ class FuzzerPass {
  public:
   FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
              FuzzerContext* fuzzer_context,
-             protobufs::TransformationSequence* transformations)
-      : ir_context_(ir_context),
-        fact_manager_(fact_manager),
-        fuzzer_context_(fuzzer_context),
-        transformations_(transformations) {}
+             protobufs::TransformationSequence* transformations);
 
-  virtual ~FuzzerPass() = default;
+  virtual ~FuzzerPass();
 
   // Applies the pass to the module |ir_context_|, assuming and updating
   // facts from |fact_manager_|, and using |fuzzer_context_| to guide the
@@ -42,10 +38,15 @@ class FuzzerPass {
   virtual void Apply() = 0;
 
  protected:
-  opt::IRContext* GetIRContext() const;
-  FactManager* GetFactManager() const;
-  FuzzerContext* GetFuzzerContext() const;
-  protobufs::TransformationSequence* GetTransformations() const;
+  opt::IRContext* GetIRContext() const { return ir_context_; }
+
+  FactManager* GetFactManager() const { return fact_manager_; }
+
+  FuzzerContext* GetFuzzerContext() const { return fuzzer_context_; }
+
+  protobufs::TransformationSequence* GetTransformations() const {
+    return transformations_;
+  }
 
  private:
   opt::IRContext* ir_context_;

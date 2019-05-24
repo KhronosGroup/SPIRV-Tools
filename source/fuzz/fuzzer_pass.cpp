@@ -17,15 +17,15 @@
 namespace spvtools {
 namespace fuzz {
 
-opt::IRContext* FuzzerPass::GetIRContext() const { return ir_context_; }
+FuzzerPass::FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
+                       FuzzerContext* fuzzer_context,
+                       protobufs::TransformationSequence* transformations)
+    : ir_context_(ir_context),
+      fact_manager_(fact_manager),
+      fuzzer_context_(fuzzer_context),
+      transformations_(transformations) {}
 
-FactManager* FuzzerPass::GetFactManager() const { return fact_manager_; }
-
-FuzzerContext* FuzzerPass::GetFuzzerContext() const { return fuzzer_context_; }
-
-protobufs::TransformationSequence* FuzzerPass::GetTransformations() const {
-  return transformations_;
-}
+FuzzerPass::~FuzzerPass() = default;
 
 }  // namespace fuzz
 }  // namespace spvtools
