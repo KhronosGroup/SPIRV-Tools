@@ -31,6 +31,7 @@ class Fuzzer {
   // Possible statuses that can result from running the fuzzer.
   enum class FuzzerResultStatus {
     kComplete,
+    kFailedToCreateSpirvToolsInterface,
     kInitialBinaryInvalid,
     kInitialFactsInvalid,
   };

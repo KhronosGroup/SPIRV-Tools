@@ -57,11 +57,15 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   spvtools::SpirvTools tools(impl_->target_env);
-  assert(tools.IsValid() && "Failed to create SPIRV-Tools interface");
+  if (!tools.IsValid()) {
+    impl_->consumer(SPV_MSG_ERROR, nullptr, {},
+                    "Failed to create SPIRV-Tools interface; stopping.");
+    return Fuzzer::FuzzerResultStatus::kFailedToCreateSpirvToolsInterface;
+  }
 
   // Initial binary should be valid.
   if (!tools.Validate(&binary_in[0], binary_in.size())) {
-    impl_->consumer(SPV_MSG_INFO, nullptr, {},
+    impl_->consumer(SPV_MSG_ERROR, nullptr, {},
                     "Initial binary is invalid; stopping.");
     return Fuzzer::FuzzerResultStatus::kInitialBinaryInvalid;
   }
