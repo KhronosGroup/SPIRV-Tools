@@ -27,11 +27,11 @@
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #elif defined(_MSC_VER)
 #pragma warning(push)
-// Currently no MSVC warnings need to be disabled; this is a placeholder to
-// indicate where they should be disabled should it prove necessary.
+#pragma warning(disable : 4244)
 #endif
 
 // The following should be the only place in the project where protobuf files
