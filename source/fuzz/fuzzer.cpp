@@ -71,7 +71,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
 
   // Initial binary should be valid.
   if (!tools.Validate(&binary_in[0], binary_in.size())) {
-    impl_->consumer(SPV_MSG_INFO, nullptr, {},
+    impl_->consumer(SPV_MSG_ERROR, nullptr, {},
                     "Initial binary is invalid; stopping.");
     return Fuzzer::FuzzerResultStatus::kInitialBinaryInvalid;
   }
