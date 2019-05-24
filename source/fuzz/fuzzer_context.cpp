@@ -53,7 +53,9 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {}
 
-uint32_t FuzzerContext::FreshId() { return next_fresh_id_++; }
+FuzzerContext::~FuzzerContext() = default;
+
+uint32_t FuzzerContext::GetFreshId() { return next_fresh_id_++; }
 
 RandomGenerator* FuzzerContext::GetRandomGenerator() {
   return random_generator_;
