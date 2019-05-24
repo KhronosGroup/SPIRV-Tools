@@ -27,9 +27,5 @@ FuzzerPass::FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
 
 FuzzerPass::~FuzzerPass() = default;
 
-protobufs::TransformationSequence* FuzzerPass::GetTransformations() const {
-  return transformations_;
-}
-
 }  // namespace fuzz
 }  // namespace spvtools

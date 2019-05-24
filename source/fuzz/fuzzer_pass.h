@@ -44,7 +44,9 @@ class FuzzerPass {
 
   FuzzerContext* GetFuzzerContext() const { return fuzzer_context_; }
 
-  protobufs::TransformationSequence* GetTransformations() const;
+  protobufs::TransformationSequence* GetTransformations() const {
+    return transformations_;
+  }
 
  private:
   opt::IRContext* ir_context_;
