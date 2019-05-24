@@ -613,23 +613,23 @@ void DeadBranchElimPass::AddBlocksWithBackEdge(
   }
 }
 
-bool DeadBranchElimPass::SwitchHasNestedBreak(uint32_t start_block_id) {
+bool DeadBranchElimPass::SwitchHasNestedBreak(uint32_t switch_header_id) {
   std::vector<BasicBlock*> block_in_construct;
-  BasicBlock* start_block = context()->get_instr_block(start_block_id);
+  BasicBlock* start_block = context()->get_instr_block(switch_header_id);
   uint32_t merge_block_id = start_block->MergeBlockIdIfAny();
 
   StructuredCFGAnalysis* cfg_analysis = context()->GetStructuredCFGAnalysis();
   return !get_def_use_mgr()->WhileEachUser(
-      merge_block_id, [this, cfg_analysis, start_block_id](Instruction* inst) {
+      merge_block_id, [this, cfg_analysis, switch_header_id](Instruction* inst) {
         if (!inst->IsBranch()) {
           return true;
         }
 
         BasicBlock* bb = context()->get_instr_block(inst);
-        if (bb->id() == start_block_id) {
+        if (bb->id() == switch_header_id) {
           return true;
         }
-        return (cfg_analysis->ContainingConstruct(inst) == start_block_id);
+        return (cfg_analysis->ContainingConstruct(inst) == switch_header_id);
       });
 }
 
