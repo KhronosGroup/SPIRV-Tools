@@ -21,34 +21,39 @@ namespace {
 using TypeMatch = spvtest::LinkerTest;
 
 // Basic types
-#define PartInt(N) N " = OpTypeInt 32 0"
-#define PartFloat(N) N " = OpTypeFloat 32"
-#define PartOpaque(N) N " = OpTypeOpaque \"bar\""
-#define PartSampler(N) N " = OpTypeSampler"
-#define PartEvent(N) N " = OpTypeEvent"
-#define PartDeviceEvent(N) N " = OpTypeDeviceEvent"
-#define PartReserveId(N) N " = OpTypeReserveId"
-#define PartQueue(N) N " = OpTypeQueue"
-#define PartPipe(N) N " = OpTypePipe ReadWrite"
-#define PartPipeStorage(N) N " = OpTypePipeStorage"
-#define PartNamedBarrier(N) N " = OpTypeNamedBarrier"
+#define PartInt(D, N) D(N) " = OpTypeInt 32 0"
+#define PartFloat(D, N) D(N) " = OpTypeFloat 32"
+#define PartOpaque(D, N) D(N) " = OpTypeOpaque \"bar\""
+#define PartSampler(D, N) D(N) " = OpTypeSampler"
+#define PartEvent(D, N) D(N) " = OpTypeEvent"
+#define PartDeviceEvent(D, N) D(N) " = OpTypeDeviceEvent"
+#define PartReserveId(D, N) D(N) " = OpTypeReserveId"
+#define PartQueue(D, N) D(N) " = OpTypeQueue"
+#define PartPipe(D, N) D(N) " = OpTypePipe ReadWrite"
+#define PartPipeStorage(D, N) D(N) " = OpTypePipeStorage"
+#define PartNamedBarrier(D, N) D(N) " = OpTypeNamedBarrier"
 
 // Compound types
-#define PartVector(N, T) N " = OpTypeVector " T " 3"
-#define PartMatrix(N, T) N " = OpTypeMatrix " T " 4"
-#define PartImage(N, T) N " = OpTypeImage " T " 2D 0 0 0 0 Rgba32f"
-#define PartSampledImage(N, T) N " = OpTypeSampledImage " T
-#define PartArray(N, T) N " = OpTypeArray " T " %const"
-#define PartRuntimeArray(N, T) N " = OpTypeRuntimeArray " T
-#define PartStruct(N, T) N " = OpTypeStruct " T " " T
-#define PartPointer(N, T) N " = OpTypePointer Workgroup " T
-#define PartFunction(N, T) N " = OpTypeFunction " T " " T
+#define PartVector(DR, DA, N, T) DR(N) " = OpTypeVector " DA(T) " 3"
+#define PartMatrix(DR, DA, N, T) DR(N) " = OpTypeMatrix " DA(T) " 4"
+#define PartImage(DR, DA, N, T) \
+  DR(N) " = OpTypeImage " DA(T) " 2D 0 0 0 0 Rgba32f"
+#define PartSampledImage(DR, DA, N, T) DR(N) " = OpTypeSampledImage " DA(T)
+#define PartArray(DR, DA, N, T) DR(N) " = OpTypeArray " DA(T) " " DA(const)
+#define PartRuntimeArray(DR, DA, N, T) DR(N) " = OpTypeRuntimeArray " DA(T)
+#define PartStruct(DR, DA, N, T) DR(N) " = OpTypeStruct " DA(T) " " DA(T)
+#define PartPointer(DR, DA, N, T) DR(N) " = OpTypePointer Workgroup " DA(T)
+#define PartFunction(DR, DA, N, T) DR(N) " = OpTypeFunction " DA(T) " " DA(T)
+
+#define CheckDecoRes(S) "[[" #S ":%\\w+]]"
+#define CheckDecoArg(S) "[[" #S "]]"
+#define InstDeco(S) "%" #S
 
 #define MatchPart1(F, N) \
-  "; CHECK: " Part##F("[[" #N ":%\\w+]]") "\n" Part##F("%" #N) "\n"
-#define MatchPart2(F, N, T)                                                 \
-  "; CHECK: " Part##F("[[" #N ":%\\w+]]", "[[" #T ":%\\w+]]") "\n" Part##F( \
-      "%" #N, "%" #T) "\n"
+  "; CHECK: " Part##F(CheckDecoRes, N) "\n" Part##F(InstDeco, N) "\n"
+#define MatchPart2(F, N, T)                                           \
+  "; CHECK: " Part##F(CheckDecoRes, CheckDecoArg, N, T) "\n" Part##F( \
+      InstDeco, InstDeco, N, T) "\n"
 
 #define MatchF(N, CODE)                                         \
   TEST_F(TypeMatch, N) {                                        \
@@ -98,47 +103,42 @@ Match3(Matrix, Vector, Float);
 Match2(Image, Float);
 
 // Unrestricted compound types
-// The following skip Array as it causes issues
 #define MatchCompounds1(A) \
   Match2(RuntimeArray, A); \
   Match2(Struct, A);       \
   Match2(Pointer, A);      \
   Match2(Function, A);     \
-// Match2(Array, A);  // Disabled as it fails currently
+  Match2(Array, A);
 #define MatchCompounds2(A, B) \
   Match3(RuntimeArray, A, B); \
   Match3(Struct, A, B);       \
   Match3(Pointer, A, B);      \
   Match3(Function, A, B);     \
-  // Match3(Array, A, B);  // Disabled as it fails currently
+  Match3(Array, A, B);
 
 MatchCompounds1(Float);
-// MatchCompounds2(Array, Float);
+MatchCompounds2(Array, Float);
 MatchCompounds2(RuntimeArray, Float);
 MatchCompounds2(Struct, Float);
 MatchCompounds2(Pointer, Float);
 MatchCompounds2(Function, Float);
 
 // ForwardPointer tests, which don't fit into the previous mold
-#define MatchFpF(N, CODE)                                                    \
-  MatchF(N,                                                                  \
-         "; CHECK: [[type:%\\w+]] = OpTypeForwardPointer [[pointer:%\\w+]] " \
-         "Workgroup\n"                                                       \
-         "%type = OpTypeForwardPointer %pointer Workgroup\n" CODE            \
-         "; CHECK: [[pointer]] = OpTypePointer Workgroup [[realtype]]\n"     \
-         "%pointer = OpTypePointer Workgroup %realtype\n")
+#define MatchFpF(N, CODE)                                             \
+  MatchF(N,                                                           \
+         "; CHECK: OpTypeForwardPointer [[type:%\\w+]] Workgroup\n"   \
+         "OpTypeForwardPointer %type Workgroup\n" CODE                \
+         "; CHECK: [[type]] = OpTypePointer Workgroup [[realtype]]\n" \
+         "%type = OpTypePointer Workgroup %realtype\n")
 #define MatchFp1(T) MatchFpF(ForwardPointerOf##T, MatchPart1(T, realtype))
 #define MatchFp2(T, A) \
   MatchFpF(ForwardPointerOf##T, MatchPart1(A, a) MatchPart2(T, realtype, a))
 
-// Disabled currently, causes assertion failures
-/*
 MatchFp1(Float);
 MatchFp2(Array, Float);
 MatchFp2(RuntimeArray, Float);
 MatchFp2(Struct, Float);
 MatchFp2(Function, Float);
-// */
 
 }  // namespace
 }  // namespace spvtools
