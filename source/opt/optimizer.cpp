@@ -397,7 +397,7 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   } else if (pass_name == "replace-invalid-opcode") {
     RegisterPass(CreateReplaceInvalidOpcodePass());
   } else if (pass_name == "inst-bindless-check") {
-    RegisterPass(CreateInstBindlessCheckPass(7, 23, true, true));
+    RegisterPass(CreateInstBindlessCheckPass(7, 23, true, true, 1));
     RegisterPass(CreateSimplificationPass());
     RegisterPass(CreateDeadBranchElimPass());
     RegisterPass(CreateBlockMergePass());
@@ -847,10 +847,12 @@ Optimizer::PassToken CreateUpgradeMemoryModelPass() {
 Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
                                                  uint32_t shader_id,
                                                  bool input_length_enable,
-                                                 bool input_init_enable) {
+                                                 bool input_init_enable,
+                                                 uint32_t version) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::InstBindlessCheckPass>(
-          desc_set, shader_id, input_length_enable, input_init_enable));
+      MakeUnique<opt::InstBindlessCheckPass>(desc_set, shader_id,
+                                             input_length_enable,
+                                             input_init_enable, version));
 }
 
 Optimizer::PassToken CreateCodeSinkingPass() {
