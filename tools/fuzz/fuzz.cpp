@@ -33,7 +33,7 @@
 namespace {
 
 // Status and actions to perform after parsing command-line arguments.
-enum FuzzActions { FUZZ_CONTINUE, FUZZ_REPLAY, FUZZ_STOP };
+enum class FuzzActions { CONTINUE, REPLAY, STOP };
 
 struct FuzzStatus {
   FuzzActions action;
@@ -92,10 +92,10 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
       if (0 == strcmp(cur_arg, "--version")) {
         spvtools::Logf(FuzzDiagnostic, SPV_MSG_INFO, nullptr, {}, "%s\n",
                        spvSoftwareVersionDetailsString());
-        return {FUZZ_STOP, 0};
+        return {FuzzActions::STOP, 0};
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         PrintUsage(argv[0]);
-        return {FUZZ_STOP, 0};
+        return {FuzzActions::STOP, 0};
       } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file =
@@ -113,7 +113,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
         // We do not support fuzzing from standard input.  We could support
         // this if there was a compelling use case.
         PrintUsage(argv[0]);
-        return {FUZZ_STOP, 0};
+        return {FuzzActions::STOP, 0};
       }
     } else if (positional_arg_index == 0) {
       // Binary input file name
@@ -128,25 +128,25 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
     } else {
       spvtools::Error(FuzzDiagnostic, nullptr, {},
                       "Too many positional arguments specified");
-      return {FUZZ_STOP, 1};
+      return {FuzzActions::STOP, 1};
     }
   }
 
   if (!*in_binary_file) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "No input file specified");
-    return {FUZZ_STOP, 1};
+    return {FuzzActions::STOP, 1};
   }
 
   if (!*in_facts_file) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "No facts file specified");
-    return {FUZZ_STOP, 1};
+    return {FuzzActions::STOP, 1};
   }
 
   if (*replay_transformations_file) {
-    return {FUZZ_REPLAY, 0};
+    return {FuzzActions::REPLAY, 0};
   }
 
-  return {FUZZ_CONTINUE, 0};
+  return {FuzzActions::CONTINUE, 0};
 }
 
 }  // namespace
@@ -164,7 +164,7 @@ int main(int argc, const char** argv) {
   FuzzStatus status = ParseFlags(argc, argv, &in_binary_file, &in_facts_file,
                                  &replay_transformations_file, &fuzzer_options);
 
-  if (status.action == FUZZ_STOP) {
+  if (status.action == FuzzActions::STOP) {
     return status.code;
   }
 
@@ -190,7 +190,7 @@ int main(int argc, const char** argv) {
   std::vector<uint32_t> binary_out;
   spvtools::fuzz::protobufs::TransformationSequence transformations_applied;
 
-  if (status.action == FUZZ_REPLAY) {
+  if (status.action == FuzzActions::REPLAY) {
     std::ifstream existing_transformations_file;
     existing_transformations_file.open(replay_transformations_file.get(),
                                        std::ios::in | std::ios::binary);
