@@ -168,6 +168,10 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
     return {FuzzActions::STOP, 1};
   }
 
+  if (*replay_transformations_file) {
+    return {FuzzActions::REPLAY, 0};
+  }
+
   return {FuzzActions::CONTINUE, 0};
 }
 
@@ -226,6 +230,8 @@ int main(int argc, const char** argv) {
         &existing_transformations_file);
     existing_transformations_file.close();
     if (!parse_success) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {},
+                      "Error reading transformations for replay");
       return 1;
     }
     spvtools::fuzz::Replayer replayer(target_env);
