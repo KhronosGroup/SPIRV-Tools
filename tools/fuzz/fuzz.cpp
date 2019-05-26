@@ -45,10 +45,15 @@ void PrintUsage(const char* program) {
   printf(
       R"(%s - Fuzzes an equivalent SPIR-V binary based on a given binary.
 
-USAGE: %s [options] <input> <facts>
+USAGE: %s [options] <input.spv> -o <output.spv>
 
-The SPIR-V binary is read from <input>.  Facts about the SPIR-V binary are read
-from <facts>
+The SPIR-V binary is read from <input.spv>, which must have extension .spv.  If
+<input.json> is also present, facts about the SPIR-V binary are read from this
+file.
+
+The transformed SPIR-V binary is written to <output.spv>.  Human-readable and
+binary representations of the transformations that were applied to obtain this
+binary are written to <output.json> and <output.transformations>, respectively.
 
 NOTE: The fuzzer is a work in progress.
 
@@ -80,8 +85,15 @@ void FuzzDiagnostic(spv_message_level_t level, const char* /*source*/,
   fprintf(stderr, "%s\n", message);
 }
 
-FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
-                      const char** in_facts_file,
+bool EndsWithSpv(const std::string& filename) {
+  std::string dot_spv = ".spv";
+  return filename.length() >= dot_spv.length() &&
+         0 == filename.compare(filename.length() - dot_spv.length(),
+                               filename.length(), dot_spv);
+}
+
+FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
+                      std::string* out_binary_file,
                       std::unique_ptr<char>* replay_transformations_file,
                       spvtools::FuzzerOptions* fuzzer_options) {
   uint32_t positional_arg_index = 0;
@@ -96,6 +108,13 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         PrintUsage(argv[0]);
         return {FuzzActions::STOP, 0};
+      } else if (0 == strcmp(cur_arg, "-o")) {
+        if (out_binary_file->empty() && argi + 1 < argc) {
+          *out_binary_file = std::string(argv[++argi]);
+        } else {
+          PrintUsage(argv[0]);
+          return {FuzzActions::STOP, 1};
+        }
       } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file =
@@ -117,13 +136,8 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
       }
     } else if (positional_arg_index == 0) {
       // Binary input file name
-      assert(!*in_binary_file);
-      *in_binary_file = cur_arg;
-      positional_arg_index++;
-    } else if (positional_arg_index == 1) {
-      // Facts input file name
-      assert(!*in_facts_file);
-      *in_facts_file = cur_arg;
+      assert(in_binary_file->empty());
+      *in_binary_file = std::string(cur_arg);
       positional_arg_index++;
     } else {
       spvtools::Error(FuzzDiagnostic, nullptr, {},
@@ -132,18 +146,26 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
     }
   }
 
-  if (!*in_binary_file) {
+  if (in_binary_file->empty()) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "No input file specified");
     return {FuzzActions::STOP, 1};
   }
 
-  if (!*in_facts_file) {
-    spvtools::Error(FuzzDiagnostic, nullptr, {}, "No facts file specified");
+  if (!EndsWithSpv(*in_binary_file)) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {},
+                    "Input filename must have extension .spv");
     return {FuzzActions::STOP, 1};
   }
 
-  if (*replay_transformations_file) {
-    return {FuzzActions::REPLAY, 0};
+  if (out_binary_file->empty()) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {}, "-o required");
+    return {FuzzActions::STOP, 1};
+  }
+
+  if (!EndsWithSpv(*out_binary_file)) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {},
+                    "Output filename must have extension .spv");
+    return {FuzzActions::STOP, 1};
   }
 
   return {FuzzActions::CONTINUE, 0};
@@ -154,14 +176,14 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_binary_file,
 const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_3;
 
 int main(int argc, const char** argv) {
-  const char* in_binary_file = nullptr;
-  const char* in_facts_file = nullptr;
+  std::string in_binary_file;
+  std::string out_binary_file;
   std::unique_ptr<char> replay_transformations_file = nullptr;
 
   spv_target_env target_env = kDefaultEnvironment;
   spvtools::FuzzerOptions fuzzer_options;
 
-  FuzzStatus status = ParseFlags(argc, argv, &in_binary_file, &in_facts_file,
+  FuzzStatus status = ParseFlags(argc, argv, &in_binary_file, &out_binary_file,
                                  &replay_transformations_file, &fuzzer_options);
 
   if (status.action == FuzzActions::STOP) {
@@ -169,13 +191,17 @@ int main(int argc, const char** argv) {
   }
 
   std::vector<uint32_t> binary_in;
-  if (!ReadFile<uint32_t>(in_binary_file, "rb", &binary_in)) {
+  if (!ReadFile<uint32_t>(in_binary_file.c_str(), "rb", &binary_in)) {
     return 1;
   }
 
   spvtools::fuzz::protobufs::FactSequence initial_facts;
-  {
-    std::ifstream facts_input(in_facts_file);
+  const std::string dot_spv(".spv");
+  std::string in_facts_file =
+      in_binary_file.substr(0, in_binary_file.length() - dot_spv.length()) +
+      ".json";
+  std::ifstream facts_input(in_facts_file);
+  if (facts_input) {
     std::string facts_json_string((std::istreambuf_iterator<char>(facts_input)),
                                   std::istreambuf_iterator<char>());
     facts_input.close();
@@ -224,14 +250,16 @@ int main(int argc, const char** argv) {
     }
   }
 
-  if (!WriteFile<uint32_t>("_spirvfuzzoutput.spv", "wb", binary_out.data(),
+  if (!WriteFile<uint32_t>(out_binary_file.c_str(), "wb", binary_out.data(),
                            binary_out.size())) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error writing out binary");
     return 1;
   }
 
+  std::string output_file_prefix =
+      out_binary_file.substr(0, out_binary_file.length() - dot_spv.length());
   std::ofstream transformations_file;
-  transformations_file.open("_spirvfuzzoutput.transformations",
+  transformations_file.open(output_file_prefix + ".transformations",
                             std::ios::out | std::ios::binary);
   bool success =
       transformations_applied.SerializeToOstream(&transformations_file);
@@ -253,7 +281,7 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  std::ofstream transformations_json_file("_spirvfuzzoutput.json");
+  std::ofstream transformations_json_file(output_file_prefix + ".json");
   transformations_json_file << json_string;
   transformations_json_file.close();
 }
