@@ -55,7 +55,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                     LIBS ${SPIRV_TOOLS})
   target_include_directories(spirv-cfg PRIVATE ${spirv-tools_SOURCE_DIR}
                                                ${SPIRV_HEADER_INCLUDE_DIR})
-  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt spirv-fuzz
+  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt
                             spirv-cfg spirv-link)
   if(NOT DEFINED IOS_PLATFORM)
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-reduce)
