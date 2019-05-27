@@ -3034,7 +3034,7 @@ TEST_F(DeadBranchElimTest, FoldSwitchWithNestedBreak) {
   SinglePassRunAndMatch<DeadBranchElimPass>(spirv, true);
 }
 
-TEST_F(DeadBranchElimTest, FoldBrachWithBreakToSwitch) {
+TEST_F(DeadBranchElimTest, FoldBranchWithBreakToSwitch) {
   const std::string spirv = R"(
 ; CHECK: OpSelectionMerge [[sel_merge:%\w+]]
 ; CHECK-NEXT: OpSwitch {{%\w+}} {{%\w+}} 3 [[bb:%\w+]]

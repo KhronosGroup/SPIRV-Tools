@@ -75,7 +75,7 @@ class StructuredCFGAnalysis {
 
   // Returns the id of the header of the innermost switch construct
   // that contains |bb_id| as long as there is no intervening loop.  Returns |0|
-  // if construct exists.
+  // if no such construct exists.
   uint32_t ContainingSwitch(uint32_t bb_id) {
     auto it = bb_to_construct_.find(bb_id);
     if (it == bb_to_construct_.end()) {

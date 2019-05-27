@@ -183,9 +183,9 @@ bool DeadBranchElimPass::MarkLiveBlocks(
           terminator->SetInOperands(std::move(new_operands));
           context()->UpdateDefUse(terminator);
         } else {
-          // Check if the merge instruction is still needed because of a non
-          // nested break from the construct.  More the merge instruction if it
-          // is still needed.
+          // Check if the merge instruction is still needed because of a
+          // non-nested break from the construct.  Move the merge instruction if
+          // it is still needed.
           Instruction* first_break = FindFirstExitFromSelectionMerge(
               live_lab_id, mergeInst->GetSingleWordInOperand(0),
               cfgAnalysis->LoopMergeBlock(live_lab_id),
