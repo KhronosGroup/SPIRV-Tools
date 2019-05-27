@@ -1,0 +1,38 @@
+// Copyright (c) 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file is specifically named spvtools_fuzz.proto so that the string
+// 'spvtools_fuzz' appears in the names of global-scope symbols that protoc
+// generates when targeting C++.  This is to reduce the potential for name
+// clashes with other globally-scoped symbols.
+
+syntax = "proto3";
+
+package spvtools.fuzz.protobufs;
+
+message FactSequence {
+  repeated Fact fact = 1;
+}
+
+message Fact {
+  // Currently there are no facts.
+}
+
+message TransformationSequence {
+  repeated Transformation transformation = 1;
+}
+
+message Transformation {
+  // Currently there are no transformations.
+}
