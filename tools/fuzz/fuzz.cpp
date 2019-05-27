@@ -250,4 +250,6 @@ int main(int argc, const char** argv) {
   std::ofstream transformations_json_file(output_file_prefix + ".json");
   transformations_json_file << json_string;
   transformations_json_file.close();
+
+  return 0;
 }
