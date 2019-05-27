@@ -61,6 +61,11 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-reduce)
   endif()
 
+  if(SPIRV_BUILD_FUZZER)
+    add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz ${SPIRV_TOOLS})
+    set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-fuzz)
+  endif(SPIRV_BUILD_FUZZER)
+
   if(ENABLE_SPIRV_TOOLS_INSTALL)
     install(TARGETS ${SPIRV_INSTALL_TARGETS}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
