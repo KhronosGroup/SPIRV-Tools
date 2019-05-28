@@ -34,5 +34,31 @@ message TransformationSequence {
 }
 
 message Transformation {
+  oneof transformation {
+    TransformationSplitBlock split_block = 1;
+  }
   // Currently there are no transformations.
+}
+
+message TransformationSplitBlock {
+
+  // A transformation that splits a basic block into two basic blocks.
+
+  // The result id of an instruction.
+  uint32 result_id = 1;
+
+  // An offset, such that the block containing |result_id_| should be split
+  // right before the instruction |offset_| instructions after |result_id_|.
+  uint32 offset = 2;
+
+  // An id that must not yet be used by the module to which this transformation
+  // is applied.  Rather than having the transformation choose a suitable id on
+  // application, we require the id to be given upfront in order to facilitate
+  // reducing fuzzed shaders by removing transformations.  The reason is that
+  // future transformations may refer to the fresh id introduced by this
+  // transformation, and if we end up changing what that id is, due to removing
+  // earlier transformations, it may inhibit later transformations from
+  // applying.
+  uint32 fresh_id = 3;
+
 }
