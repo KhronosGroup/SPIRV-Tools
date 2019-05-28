@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef TOOLS_COMP_MARKV_MODEL_FACTORY_H_
-#define TOOLS_COMP_MARKV_MODEL_FACTORY_H_
+#ifndef SOURCE_SPIRV_FUZZER_OPTIONS_H_
+#define SOURCE_SPIRV_FUZZER_OPTIONS_H_
 
-#include <memory>
+#include "spirv-tools/libspirv.h"
 
-#include "source/comp/markv_model.h"
+#include <string>
+#include <utility>
 
-namespace spvtools {
-namespace comp {
+// Manages command line options passed to the SPIR-V Fuzzer. New struct
+// members may be added for any new option.
+struct spv_fuzzer_options_t {
+  spv_fuzzer_options_t();
 
-enum MarkvModelType {
-  kMarkvModelUnknown = 0,
-  kMarkvModelShaderLite,
-  kMarkvModelShaderMid,
-  kMarkvModelShaderMax,
+  // See spvFuzzerOptionsSetRandomSeed.
+  bool has_random_seed = false;
+  uint32_t random_seed = 0;
 };
 
-std::unique_ptr<MarkvModel> CreateMarkvModel(MarkvModelType type);
-
-}  // namespace comp
-}  // namespace spvtools
-
-#endif  // TOOLS_COMP_MARKV_MODEL_FACTORY_H_
+#endif  // SOURCE_SPIRV_FUZZER_OPTIONS_H_

@@ -37,6 +37,7 @@ if (!build_with_chromium || use_fuzzing_engine) {
       ":spvtools_opt_legalization_fuzzer",
       ":spvtools_opt_performance_fuzzer",
       ":spvtools_opt_size_fuzzer",
+      ":spvtools_opt_webgputovulkan_fuzzer",
       ":spvtools_opt_vulkantowebgpu_fuzzer",
       ":spvtools_val_fuzzer",
     ]
@@ -88,6 +89,13 @@ spvtools_fuzzer("spvtools_opt_size_fuzzer_src") {
   ]
 }
 
+
+spvtools_fuzzer("spvtools_opt_webgputovulkan_fuzzer_src") {
+  sources = [
+    "spvtools_opt_webgputovulkan_fuzzer.cpp",
+  ]
+}
+
 spvtools_fuzzer("spvtools_opt_vulkantowebgpu_fuzzer_src") {
   sources = [
     "spvtools_opt_vulkantowebgpu_fuzzer.cpp",
@@ -130,6 +138,14 @@ if (!build_with_chromium || use_fuzzing_engine) {
     sources = []
     deps = [
       ":spvtools_opt_size_fuzzer_src",
+    ]
+    seed_corpus = "corpora/spv"
+  }
+
+  fuzzer_test("spvtools_opt_webgputovulkan_fuzzer") {
+    sources = []
+    deps = [
+      ":spvtools_opt_webgputovulkan_fuzzer_src",
     ]
     seed_corpus = "corpora/spv"
   }
