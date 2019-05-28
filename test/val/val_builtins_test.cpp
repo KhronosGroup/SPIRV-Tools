@@ -2785,6 +2785,85 @@ OpMemberDecorate %input_type 0 BuiltIn InstanceId
                         "AnyHitNV execution models"));
 }
 
+TEST_F(ValidateBuiltIns, ValidBuiltinsForMeshShader) {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
+  generator.capabilities_ += R"(
+OpCapability MeshShadingNV 
+)";
+
+  generator.extensions_ = R"(
+OpExtension "SPV_NV_mesh_shader"
+)";
+
+  generator.before_types_ = R"(
+OpDecorate %gl_PrimitiveID BuiltIn PrimitiveId
+OpDecorate %gl_PrimitiveID PerPrimitiveNV
+OpDecorate %gl_Layer BuiltIn Layer
+OpDecorate %gl_Layer PerPrimitiveNV
+OpDecorate %gl_ViewportIndex BuiltIn ViewportIndex
+OpDecorate %gl_ViewportIndex PerPrimitiveNV
+)";
+
+  generator.after_types_ = R"(
+%u32_81 = OpConstant %u32 81
+%_arr_int_uint_81 = OpTypeArray %i32 %u32_81
+%_ptr_Output__arr_int_uint_81 = OpTypePointer Output %_arr_int_uint_81
+%gl_PrimitiveID = OpVariable %_ptr_Output__arr_int_uint_81 Output
+%gl_Layer = OpVariable %_ptr_Output__arr_int_uint_81 Output
+%gl_ViewportIndex = OpVariable %_ptr_Output__arr_int_uint_81 Output
+)";
+
+  EntryPoint entry_point;
+  entry_point.name = "main_d_r";
+  entry_point.execution_model = "MeshNV";
+  entry_point.interfaces = "%gl_PrimitiveID %gl_Layer %gl_ViewportIndex";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBuiltIns, InvalidBuiltinsForMeshShader) {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
+  generator.capabilities_ += R"(
+OpCapability MeshShadingNV 
+)";
+
+  generator.extensions_ = R"(
+OpExtension "SPV_NV_mesh_shader"
+)";
+
+  generator.before_types_ = R"(
+OpDecorate %gl_PrimitiveID BuiltIn PrimitiveId
+OpDecorate %gl_PrimitiveID PerPrimitiveNV
+OpDecorate %gl_Layer BuiltIn Layer
+OpDecorate %gl_Layer PerPrimitiveNV
+OpDecorate %gl_ViewportIndex BuiltIn ViewportIndex
+OpDecorate %gl_ViewportIndex PerPrimitiveNV
+)";
+
+  generator.after_types_ = R"(
+%u32_81 = OpConstant %u32 81
+%_arr_float_uint_81 = OpTypeArray %f32 %u32_81
+%_ptr_Output__arr_float_uint_81 = OpTypePointer Output %_arr_float_uint_81
+%gl_PrimitiveID = OpVariable %_ptr_Output__arr_float_uint_81 Output
+%gl_Layer = OpVariable %_ptr_Output__arr_float_uint_81 Output
+%gl_ViewportIndex = OpVariable %_ptr_Output__arr_float_uint_81 Output
+)";
+
+  EntryPoint entry_point;
+  entry_point.name = "main_d_r";
+  entry_point.execution_model = "MeshNV";
+  entry_point.interfaces = "%gl_PrimitiveID %gl_Layer %gl_ViewportIndex";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("needs to be a 32-bit int scalar"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not an int scalar"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

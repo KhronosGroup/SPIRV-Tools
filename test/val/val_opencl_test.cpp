@@ -147,6 +147,43 @@ TEST_F(ValidateOpenCL, NoAccessQualifierImageBad) {
                         "\n  %2 = OpTypeImage %void 3D 0 0 0 0 Unknown\n"));
 }
 
+TEST_F(ValidateOpenCL, ImageWriteWithOptionalImageOperandsBad) {
+  std::string spirv = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpCapability ImageBasic
+    OpMemoryModel Physical64 OpenCL
+    OpEntryPoint Kernel %5 "test"
+    %uint = OpTypeInt 32 0
+    %uint_7 = OpConstant %uint 7
+    %uint_3 = OpConstant %uint 3
+    %uint_1 = OpConstant %uint 1
+    %uint_2 = OpConstant %uint 2
+    %uint_4 = OpConstant %uint 4
+    %void = OpTypeVoid
+    %3 = OpTypeImage %void 2D 0 0 0 0 Unknown WriteOnly
+    %4 = OpTypeFunction %void %3
+    %v2uint = OpTypeVector %uint 2
+    %v4uint = OpTypeVector %uint 4
+    %12 = OpConstantComposite %v2uint %uint_7 %uint_3
+    %17 = OpConstantComposite %v4uint %uint_1 %uint_2 %uint_3 %uint_4
+    %5 = OpFunction %void None %4
+    %img = OpFunctionParameter %3
+    %entry = OpLabel
+    OpImageWrite %img %12 %17 ConstOffset %12
+    OpReturn
+    OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Optional Image Operands are not allowed in the "
+                        "OpenCL environment."
+                        "\n  OpImageWrite %15 %13 %14 ConstOffset %13\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

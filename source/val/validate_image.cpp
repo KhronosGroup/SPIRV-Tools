@@ -1517,7 +1517,15 @@ spv_result_t ValidateImageWrite(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (inst->words().size() <= 4) return SPV_SUCCESS;
+  if (inst->words().size() <= 4) {
+    return SPV_SUCCESS;
+  } else {
+    if (spvIsOpenCLEnv(_.context()->target_env)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Optional Image Operands are not allowed in the OpenCL "
+             << "environment.";
+    }
+  }
 
   const uint32_t mask = inst->word(4);
   if (spv_result_t result =
