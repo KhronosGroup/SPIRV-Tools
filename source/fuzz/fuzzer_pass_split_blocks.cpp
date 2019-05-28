@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/fuzzer_pass_split_blocks.h"
+
 #include <utility>
 #include <vector>
 
-#include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/transformation_split_block.h"
 
 namespace spvtools {
 namespace fuzz {
-
-using opt::IRContext;
 
 FuzzerPassSplitBlocks::FuzzerPassSplitBlocks(
     opt::IRContext* ir_context, FactManager* fact_manager,
@@ -32,64 +31,58 @@ FuzzerPassSplitBlocks::FuzzerPassSplitBlocks(
 FuzzerPassSplitBlocks::~FuzzerPassSplitBlocks() = default;
 
 void FuzzerPassSplitBlocks::Apply() {
-  // Collect up all the blocks in the module.
-  std::vector<opt::BasicBlock*> available_blocks;
+  // Consider each block in the module.
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
-      available_blocks.push_back(&block);
-    }
-  }
-
-  while (!available_blocks.empty()) {
-    auto block_index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-        (uint32_t)available_blocks.size());
-    auto block = available_blocks[block_index];
-    available_blocks.erase(available_blocks.begin() + block_index);
-    if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
-        GetFuzzerContext()->GetChanceOfSplittingBlock()) {
-      continue;
-    }
-    // We are going to try to split this block.  We now need to choose where to
-    // split it.  We do this by finding a base instruction that has a result id,
-    // and an offset from that base instruction.  We would like offsets to be as
-    // small as possible and ideally 0 - we only need offsets because not all
-    // instructions can be identified by a result id.
-    std::vector<std::pair<uint32_t, uint32_t>> base_offset_pairs;
-    // The initial base instruction is the block label.
-    uint32_t base = block->id();
-    uint32_t offset = 0;
-    // Consider every instruction in the block.  The label is excluded: it is
-    // only necessary to consider it as a base in case the first instruction in
-    // the block does not have a result id.
-    for (auto& inst : *block) {
-      if (inst.HasResultId()) {
-        // In the case that the instruction has a result id, we use the
-        // instruction as its own base, with zero offset.
-        base = inst.result_id();
-        offset = 0;
-      } else {
-        // The instruction does not have a result id, so we need to identify it
-        // via the latest instruction that did have a result id (base), and an
-        // incremented offset.
-        offset++;
+      // Probabilistically decide whether to try to split this block.
+      if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
+          GetFuzzerContext()->GetChanceOfSplittingBlock()) {
+        continue;
       }
-      base_offset_pairs.emplace_back(base, offset);
-    }
-    // Having identified all the places we might be able to split the block, we
-    // choose one of them.
-    auto base_offset = base_offset_pairs
-        [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-            (uint32_t)base_offset_pairs.size())];
-    auto message = transformation::MakeTransformationSplitBlock(
-        base_offset.first, base_offset.second,
-        GetFuzzerContext()->GetFreshId());
-    // If the position we have chosen turns out to be a valid place to split the
-    // block, we apply the split. Otherwise the block just doesn't get split.
-    if (transformation::IsApplicable(message, GetIRContext(),
-                                     *GetFactManager())) {
-      transformation::Apply(message, GetIRContext(), GetFactManager());
-      *GetTransformations()->add_transformation()->mutable_split_block() =
-          message;
+      // We are going to try to split this block.  We now need to choose where
+      // to split it.  We do this by finding a base instruction that has a
+      // result id, and an offset from that base instruction.  We would like
+      // offsets to be as small as possible and ideally 0 - we only need offsets
+      // because not all instructions can be identified by a result id (e.g.
+      // OpStore instructions cannot).
+      std::vector<std::pair<uint32_t, uint32_t>> base_offset_pairs;
+      // The initial base instruction is the block label.
+      uint32_t base = block.id();
+      uint32_t offset = 0;
+      // Consider every instruction in the block.  The label is excluded: it is
+      // only necessary to consider it as a base in case the first instruction
+      // in the block does not have a result id.
+      for (auto& inst : block) {
+        if (inst.HasResultId()) {
+          // In the case that the instruction has a result id, we use the
+          // instruction as its own base, with zero offset.
+          base = inst.result_id();
+          offset = 0;
+        } else {
+          // The instruction does not have a result id, so we need to identify
+          // it via the latest instruction that did have a result id (base), and
+          // an incremented offset.
+          offset++;
+        }
+        base_offset_pairs.emplace_back(base, offset);
+      }
+      // Having identified all the places we might be able to split the block,
+      // we choose one of them.
+      auto base_offset = base_offset_pairs
+          [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
+              static_cast<uint32_t>(base_offset_pairs.size()))];
+      auto message = transformation::MakeTransformationSplitBlock(
+          base_offset.first, base_offset.second,
+          GetFuzzerContext()->GetFreshId());
+      // If the position we have chosen turns out to be a valid place to split
+      // the block, we apply the split. Otherwise the block just doesn't get
+      // split.
+      if (transformation::IsApplicable(message, GetIRContext(),
+                                       *GetFactManager())) {
+        transformation::Apply(message, GetIRContext(), GetFactManager());
+        *GetTransformations()->add_transformation()->mutable_split_block() =
+            message;
+      }
     }
   }
 }

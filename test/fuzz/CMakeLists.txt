@@ -13,12 +13,15 @@
 # limitations under the License.
 
 if (${SPIRV_BUILD_FUZZER})
-  add_spvtools_unittest(TARGET fuzz
-        SRCS
-        fuzz_test_util.h
 
-        fuzz_test_util.cpp
-        transformation_split_block_test.cpp
+  set(SOURCES
+          fuzz_test_util.h
+
+          fuzz_test_util.cpp
+          transformation_split_block_test.cpp)
+
+  add_spvtools_unittest(TARGET fuzz
+        SRCS ${SOURCES}
         LIBS SPIRV-Tools-fuzz
         )
 endif()

@@ -1,5 +1,3 @@
-#include <utility>
-
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +14,8 @@
 
 #ifndef SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 #define SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
+
+#include <utility>
 
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"

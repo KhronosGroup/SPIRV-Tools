@@ -24,7 +24,8 @@ bool IsFreshId(opt::IRContext* context, uint32_t id) {
 }
 
 void UpdateModuleIdBound(opt::IRContext* context, uint32_t id) {
-  // TODO(2541) consider the case where the maximum id bound is reached.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider the
+  //  case where the maximum id bound is reached.
   context->module()->SetIdBound(
       std::max(context->module()->id_bound(), id + 1));
 }

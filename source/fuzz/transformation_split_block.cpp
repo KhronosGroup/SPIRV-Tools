@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_split_block.h"
+
 #include <utility>
 
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/transformation_split_block.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {
@@ -151,6 +152,8 @@ void Apply(const protobufs::TransformationSplitBlock& message,
       // predecessor operand so that the block they used to be inside is now the
       // predecessor.
       new_bb->ForEachPhiInst([&block](Instruction* phi_inst) {
+        // The following assertion is a sanity check.  It is guaranteed to hold
+        // if IsApplicable holds.
         assert(phi_inst->NumInOperands() == 2 &&
                "We can only split a block before an OpPhi if block has exactly "
                "one predecessor.");
