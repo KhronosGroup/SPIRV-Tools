@@ -383,17 +383,46 @@ void SampledImage::GetExtraHashWords(
   image_type_->GetHashWords(words, seen);
 }
 
-Array::Array(Type* type, uint32_t length_id)
-    : Type(kArray), element_type_(type), length_id_(length_id) {
+Array::Array(Type* type, uint32_t length_id, uint32_t spec_id)
+    : Type(kArray),
+      element_type_(type),
+      length_id_(length_id),
+      length_spec_id_(spec_id),
+      length_constant_type_(nullptr),
+      length_constant_words_() {
   assert(!type->AsVoid());
+  assert(spec_id != 0u);
+}
+
+Array::Array(Type* type, uint32_t length_id, const Type* constant_type,
+             Operand::OperandData constant_words)
+    : Type(kArray),
+      element_type_(type),
+      length_id_(length_id),
+      length_spec_id_(0u),
+      length_constant_type_(constant_type),
+      length_constant_words_(constant_words) {
+  assert(!type->AsVoid());
+  assert(constant_type && constant_type->AsInteger());
 }
 
 bool Array::IsSameImpl(const Type* that, IsSameCache* seen) const {
   const Array* at = that->AsArray();
   if (!at) return false;
-  return length_id_ == at->length_id_ &&
-         element_type_->IsSameImpl(at->element_type_, seen) &&
-         HasSameDecorations(that);
+  bool is_same = element_type_->IsSameImpl(at->element_type_, seen) &&
+                 HasSameDecorations(that);
+  // If it is a specialized constant
+  if (length_spec_id_ != 0u) {
+    // ensure they have the same SpecId
+    is_same = is_same && length_spec_id_ == at->length_spec_id_;
+  } else {
+    // else, ensure they have the same length literal number.
+    is_same =
+        is_same &&
+        length_constant_type_->IsSameImpl(at->length_constant_type_, seen) &&
+        length_constant_words_ == at->length_constant_words_;
+  }
+  return is_same;
 }
 
 std::string Array::str() const {
@@ -405,7 +434,13 @@ std::string Array::str() const {
 void Array::GetExtraHashWords(std::vector<uint32_t>* words,
                               std::unordered_set<const Type*>* seen) const {
   element_type_->GetHashWords(words, seen);
-  words->push_back(length_id_);
+  if (length_spec_id_ != 0u) {
+    words->push_back(length_spec_id_);
+  } else {
+    length_constant_type_->GetHashWords(words, seen);
+    words->insert(words->end(), length_constant_words_.begin(),
+                  length_constant_words_.end());
+  }
 }
 
 void Array::ReplaceElementType(const Type* type) { element_type_ = type; }
@@ -609,7 +644,8 @@ void Pipe::GetExtraHashWords(std::vector<uint32_t>* words,
 bool ForwardPointer::IsSameImpl(const Type* that, IsSameCache*) const {
   const ForwardPointer* fpt = that->AsForwardPointer();
   if (!fpt) return false;
-  return target_id_ == fpt->target_id_ &&
+  return (pointer_ && fpt->pointer_ ? *pointer_ == *fpt->pointer_
+                                    : target_id_ == fpt->target_id_) &&
          storage_class_ == fpt->storage_class_ && HasSameDecorations(that);
 }
 

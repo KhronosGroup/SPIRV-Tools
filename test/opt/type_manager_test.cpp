@@ -117,10 +117,10 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new SampledImage(image2));
 
   // Array
-  types.emplace_back(new Array(f32, 100));
-  types.emplace_back(new Array(f32, 42));
+  types.emplace_back(new Array(f32, 100, 1u));
+  types.emplace_back(new Array(f32, 42, 2u));
   auto* a42f32 = types.back().get();
-  types.emplace_back(new Array(u64, 24));
+  types.emplace_back(new Array(u64, 24, s32, {42}));
 
   // RuntimeArray
   types.emplace_back(new RuntimeArray(v3f32));
