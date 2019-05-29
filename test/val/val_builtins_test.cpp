@@ -3273,7 +3273,8 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(SubgroupNumAndIdOk, ValidateVulkanSubgroupBuiltIns,
                          Combine(Values("SubgroupId", "NumSubgroups"),
-                                 Values("GLCompute"), Values("Input"), Values("%u32"),
+                                 Values("GLCompute"), Values("Input"),
+                                 Values("%u32"),
                                  Values(TestResult(SPV_SUCCESS, ""))));
 
 TEST_F(ValidateBuiltIns, SubgroupIdMemberDecorate) {
