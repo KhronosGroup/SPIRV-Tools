@@ -35,9 +35,18 @@ message TransformationSequence {
 
 message Transformation {
   oneof transformation {
-    TransformationSplitBlock split_block = 1;
+    TransformationMoveBlockDown move_block_down = 1;
+    TransformationSplitBlock split_block = 2;
   }
   // Currently there are no transformations.
+}
+
+message TransformationMoveBlockDown {
+  // A transformation that moves a basic block to be one position lower in
+  // program order.
+
+  // The id of the block to move down.
+  uint32 block_id = 1;
 }
 
 message TransformationSplitBlock {

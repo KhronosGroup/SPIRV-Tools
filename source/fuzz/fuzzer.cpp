@@ -19,6 +19,7 @@
 
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
+#include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
@@ -100,6 +101,13 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // Apply some semantics-preserving passes.
   FuzzerPassSplitBlocks(ir_context.get(), &fact_manager, &fuzzer_context,
                         transformation_sequence_out)
+      .Apply();
+
+  // TODO(afd) Various other passes will be added.
+
+  // Finally, give the blocks in the module a good shake-up.
+  FuzzerPassPermuteBlocks(ir_context.get(), &fact_manager, &fuzzer_context,
+                          transformation_sequence_out)
       .Apply();
 
   // Encode the module as a binary.
