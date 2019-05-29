@@ -30,8 +30,6 @@ class FuzzerPassAddDeadBreaks : public FuzzerPass {
   ~FuzzerPassAddDeadBreaks();
 
   void Apply() override;
-
- private:
 };
 
 }  // namespace fuzz

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cmath>
-
 #include "source/fuzz/fuzzer_context.h"
+
+#include <cmath>
 
 namespace spvtools {
 namespace fuzz {
@@ -36,7 +36,7 @@ const uint32_t kDefaultChanceOfSplittingBlock = 20;
 const std::function<bool(uint32_t, RandomGenerator*)>
     kDefaultGoDeeperInConstantObfuscation =
         [](uint32_t current_depth, RandomGenerator* random_generator) -> bool {
-  double chance = 1.0 / std::pow(3.0, (float)(current_depth + 1));
+  double chance = 1.0 / std::pow(3.0, static_cast<float>(current_depth + 1));
   return random_generator->RandomDouble() < chance;
 };
 

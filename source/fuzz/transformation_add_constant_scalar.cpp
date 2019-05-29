@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_constant_scalar.h"
+
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {
@@ -46,7 +47,7 @@ bool IsApplicable(const protobufs::TransformationAddConstantScalar& message,
 
   // The number of words provided by the transformation needs to match the
   // width of the type.
-  return (uint32_t)message.word().size() == words;
+  return static_cast<uint32_t>(message.word().size()) == words;
 }
 
 void Apply(const protobufs::TransformationAddConstantScalar& message,

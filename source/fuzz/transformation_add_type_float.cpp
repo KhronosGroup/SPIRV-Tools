@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_type_float.h"
+
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {

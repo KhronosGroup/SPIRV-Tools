@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/replayer.h"
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_dead_break.h"

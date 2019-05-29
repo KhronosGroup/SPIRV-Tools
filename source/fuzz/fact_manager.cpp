@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/fact_manager.h"
+
 #include <utility>
 
-#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "source/opt/ir_context.h"
 
@@ -205,7 +206,7 @@ bool FactManager::ConstantUniformFacts::AddFact(
                    ? final_element_type->AsFloat()->width()
                    : final_element_type->AsInteger()->width();
   auto required_words = (width + 32 - 1) / 32;
-  if ((uint32_t)fact.constant_word().size() != required_words) {
+  if (static_cast<uint32_t>(fact.constant_word().size()) != required_words) {
     return false;
   }
   facts_and_type_ids.emplace_back(

@@ -84,7 +84,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // Make a PRNG, either from a given seed or from a random device.
   PseudoRandomGenerator random_generator(
       options->has_random_seed ? options->random_seed
-                               : (uint32_t)std::random_device()());
+                               : static_cast<uint32_t>(std::random_device()()));
 
   // The fuzzer will introduce new ids into the module.  The module's id bound
   // gives the smallest id that can be used for this purpose.  We add an offset

@@ -15,6 +15,8 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_ADD_CONSTANT_SCALAR_H_
 #define SOURCE_FUZZ_TRANSFORMATION_ADD_CONSTANT_SCALAR_H_
 
+#include <vector>
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 

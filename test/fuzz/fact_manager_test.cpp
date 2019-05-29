@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "source/fuzz/fact_manager.h"
-#include "source/fuzz/uniform_buffer_element_descriptor.h"
 
+#include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {

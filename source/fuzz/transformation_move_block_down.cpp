@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_move_block_down.h"
+
 #include "source/opt/basic_block.h"
 
 namespace spvtools {

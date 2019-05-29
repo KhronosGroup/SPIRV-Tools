@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
+
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/opt/ir_context.h"
@@ -50,11 +51,11 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
   if (GetFuzzerContext()->GetRandomGenerator()->RandomBool()) {
     comparison_opcode = greater_than_opcodes
         [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-            (uint32_t)greater_than_opcodes.size())];
+            static_cast<uint32_t>(greater_than_opcodes.size()))];
   } else {
     comparison_opcode = less_than_opcodes
         [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-            (uint32_t)less_than_opcodes.size())];
+            static_cast<uint32_t>(less_than_opcodes.size()))];
   }
 
   // We now need to decide how to order constant_id_1 and constant_id_2 such
@@ -266,26 +267,26 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
           GetFactManager()->GetTypesForWhichUniformValuesAreKnown();
       auto chosen_type_id = available_types_with_uniforms
           [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-              (uint32_t)available_types_with_uniforms.size())];
+              static_cast<uint32_t>(available_types_with_uniforms.size()))];
       auto available_constants =
           GetFactManager()->GetConstantsAvailableFromUniformsForType(
               GetIRContext(), chosen_type_id);
       if (available_constants.size() == 1) {
-        // TODO: for now we only obfuscate a boolean if there are at least two
-        // constants available from uniforms, so that we can do a comparison
-        // between them. It would be good to be able to do the obfuscation even
-        // if there is only one such constant, if there is also another regular
-        // constant available.
+        // TODO(afd): for now we only obfuscate a boolean if there are at least
+        //  two constants available from uniforms, so that we can do a
+        //  comparison between them. It would be good to be able to do the
+        //  obfuscation even if there is only one such constant, if there is
+        //  also another regular constant available.
         return;
       }
       auto constant_index_1 =
           GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-              (uint32_t)available_constants.size());
+              static_cast<uint32_t>(available_constants.size()));
       uint32_t constant_index_2;
       do {
         constant_index_2 =
             GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-                (uint32_t)available_constants.size());
+                static_cast<uint32_t>(available_constants.size()));
       } while (constant_index_1 == constant_index_2);
       auto constant_id_1 = available_constants[constant_index_1];
       auto constant_id_2 = available_constants[constant_index_2];
@@ -319,7 +320,7 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
       protobufs::UniformBufferElementDescriptor uniform_descriptor =
           uniform_descriptors
               [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-                  (uint32_t)uniform_descriptors.size())];
+                  static_cast<uint32_t>(uniform_descriptors.size()))];
       auto transformation =
           transformation::MakeTransformationReplaceConstantWithUniform(
               constant_use, uniform_descriptor,
@@ -393,7 +394,7 @@ void FuzzerPassObfuscateConstants::Apply() {
 
   while (!candidate_constant_uses.empty()) {
     auto index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-        (uint32_t)candidate_constant_uses.size());
+        static_cast<uint32_t>(candidate_constant_uses.size()));
     auto constant_use = std::move(candidate_constant_uses[index]);
     candidate_constant_uses.erase(candidate_constant_uses.begin() + index);
     if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_constant_boolean.h"
+
 #include "source/fuzz/fuzzer_util.h"
 #include "source/opt/types.h"
 

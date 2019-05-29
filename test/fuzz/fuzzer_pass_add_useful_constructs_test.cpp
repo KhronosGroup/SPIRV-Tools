@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
+
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
-
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {

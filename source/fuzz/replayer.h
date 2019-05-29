@@ -15,6 +15,9 @@
 #ifndef SOURCE_FUZZ_REPLAYER_H_
 #define SOURCE_FUZZ_REPLAYER_H_
 
+#include <memory>
+#include <vector>
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "spirv-tools/libspirv.hpp"
 

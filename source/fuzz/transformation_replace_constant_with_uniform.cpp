@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
+
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {

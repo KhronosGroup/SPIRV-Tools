@@ -17,6 +17,9 @@
 #ifndef SOURCE_FUZZ_UNIFORM_BUFFER_ELEMENT_DESCRIPTOR_H_
 #define SOURCE_FUZZ_UNIFORM_BUFFER_ELEMENT_DESCRIPTOR_H_
 
+#include <algorithm>
+#include <vector>
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 
 namespace spvtools {
@@ -26,19 +29,6 @@ namespace fuzz {
 // id and list of indices.
 protobufs::UniformBufferElementDescriptor MakeUniformBufferElementDescriptor(
     uint32_t uniform_variable_id, std::vector<uint32_t>&& indices);
-
-// Hash function for uniform buffer element descriptors.
-struct UniformBufferElementDescriptorHash {
-  size_t operator()(
-      const protobufs::UniformBufferElementDescriptor* descriptor) const {
-    std::u32string data;
-    data.push_back(descriptor->uniform_variable_id());
-    for (auto id : descriptor->index()) {
-      data.push_back(id);
-    }
-    return std::hash<std::u32string>()(data);
-  }
-};
 
 // Equality function for uniform buffer element descriptors.
 struct UniformBufferElementDescriptorEquals {

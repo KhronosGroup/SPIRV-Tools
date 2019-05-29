@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
+
 #include <cmath>
 
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 
 namespace spvtools {
 namespace fuzz {

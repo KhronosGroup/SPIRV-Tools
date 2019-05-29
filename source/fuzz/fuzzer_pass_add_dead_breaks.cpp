@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
+
 #include "source/fuzz/transformation_add_dead_break.h"
 #include "source/opt/ir_context.h"
 
@@ -48,8 +49,9 @@ void FuzzerPassAddDeadBreaks::Apply() {
     // that turn out to be no good.
     for (auto& block : function) {
       for (auto merge_block_id : merge_block_ids) {
-        // TODO: right now we completely ignore OpPhi instructions at merge
-        // blocks.  This will lead to interesting opportunities being missed.
+        // TODO(afd): right now we completely ignore OpPhi instructions at
+        //  merge blocks.  This will lead to interesting opportunities being
+        //  missed.
         std::vector<uint32_t> phi_ids;
         auto candidate_transformation =
             transformation::MakeTransformationAddDeadBreak(
@@ -71,7 +73,7 @@ void FuzzerPassAddDeadBreaks::Apply() {
   // applying the still-applicable ones that are considered further.
   while (!candidate_transformations.empty()) {
     auto index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-        (uint32_t)candidate_transformations.size());
+        static_cast<uint32_t>(candidate_transformations.size()));
     auto message = std::move(candidate_transformations[index]);
     candidate_transformations.erase(candidate_transformations.begin() + index);
     if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >

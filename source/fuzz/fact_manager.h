@@ -15,7 +15,9 @@
 #ifndef SOURCE_FUZZ_FACT_MANAGER_H_
 #define SOURCE_FUZZ_FACT_MANAGER_H_
 
+#include <memory>
 #include <utility>
+#include <vector>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/constants.h"

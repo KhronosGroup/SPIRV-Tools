@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <iostream>
-
 #include "test/fuzz/fuzz_test_util.h"
+
+#include <iostream>
 
 namespace spvtools {
 namespace fuzz {

@@ -31,8 +31,6 @@ class FuzzerPassPermuteBlocks : public FuzzerPass {
   ~FuzzerPassPermuteBlocks() override;
 
   void Apply() override;
-
- private:
 };
 
 }  // namespace fuzz

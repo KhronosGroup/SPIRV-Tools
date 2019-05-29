@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
+
 #include "source/fuzz/transformation_split_block.h"
 
 namespace spvtools {
@@ -39,7 +40,7 @@ void FuzzerPassSplitBlocks::Apply() {
 
   while (!available_blocks.empty()) {
     auto block_index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-        (uint32_t)available_blocks.size());
+        static_cast<uint32_t>(available_blocks.size()));
     auto block = available_blocks[block_index];
     available_blocks.erase(available_blocks.begin() + block_index);
     if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
@@ -76,7 +77,7 @@ void FuzzerPassSplitBlocks::Apply() {
     // choose one of them.
     auto base_offset = base_offset_pairs
         [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-            (uint32_t)base_offset_pairs.size())];
+            static_cast<uint32_t>(base_offset_pairs.size()))];
     auto message = transformation::MakeTransformationSplitBlock(
         base_offset.first, base_offset.second,
         GetFuzzerContext()->GetFreshId());

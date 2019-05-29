@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_dead_break.h"
+
 #include "source/fuzz/fact_manager.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/ir_context.h"
@@ -64,7 +65,7 @@ bool PhiIdsOk(const protobufs::TransformationAddDeadBreak& message,
       // a non-OpPhi then we have seen them all.
       break;
     }
-    if (phi_index == (uint32_t)message.phi_id().size()) {
+    if (phi_index == static_cast<uint32_t>(message.phi_id().size())) {
       // Not enough phi ids have been provided to account for the OpPhi
       // instructions.
       return false;
@@ -100,7 +101,7 @@ bool PhiIdsOk(const protobufs::TransformationAddDeadBreak& message,
   // Reject the transformation if not all of the ids for extending OpPhi
   // instructions are needed. This might turn out to be stricter than necessary;
   // perhaps it would be OK just to not use the ids in this case.
-  return phi_index == (uint32_t)message.phi_id().size();
+  return phi_index == static_cast<uint32_t>(message.phi_id().size());
 }
 
 bool FromBlockIsInLoopContinueConstruct(
@@ -165,8 +166,9 @@ bool AddingBreakRespectsStructuredControlFlow(
     // continue construct to the loop's merge (except from the back-edge block),
     // so we need to check for this case.
     //
-    // TODO(2577): We do not currently allow a dead break from a back edge
-    //  block, but we could and ultimately should.
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2577): We do not
+    //  currently allow a dead break from a back edge block, but we could and
+    //  ultimately should.
     return !FromBlockIsInLoopContinueConstruct(message, context,
                                                containing_construct);
   }
@@ -279,13 +281,13 @@ void Apply(const protobufs::TransformationAddDeadBreak& message,
       if (inst.opcode() != SpvOpPhi) {
         break;
       }
-      assert(phi_index < (uint32_t)message.phi_id().size() &&
+      assert(phi_index < static_cast<uint32_t>(message.phi_id().size()) &&
              "There should be exactly one phi id per OpPhi instruction.");
       inst.AddOperand({SPV_OPERAND_TYPE_ID, {message.phi_id()[phi_index]}});
       inst.AddOperand({SPV_OPERAND_TYPE_ID, {message.from_block()}});
       phi_index++;
     }
-    assert(phi_index == (uint32_t)message.phi_id().size() &&
+    assert(phi_index == static_cast<uint32_t>(message.phi_id().size()) &&
            "There should be exactly one phi id per OpPhi instruction.");
   }
 

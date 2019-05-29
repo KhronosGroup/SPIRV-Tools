@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
+
 #include "source/fuzz/transformation_move_block_down.h"
 
 namespace spvtools {
@@ -32,10 +33,10 @@ void FuzzerPassPermuteBlocks::Apply() {
   // For now we do something very simple: we randomly decide whether to move a
   // block, and for each block that we do move, we push it down as far as we
   // legally can.
-  // TODO: it would be nice to randomly sample from the set of legal block
-  // permutations and then encode the chosen permutation via a series of
-  // move-block-down transformations.  This should be possible but will require
-  // some thought.
+  // TODO(afd): it would be nice to randomly sample from the set of legal
+  //  block permutations and then encode the chosen permutation via a series of
+  //  move-block-down transformations.  This should be possible but will
+  //  require some thought.
 
   for (auto& function : *GetIRContext()->module()) {
     std::vector<uint32_t> block_ids;

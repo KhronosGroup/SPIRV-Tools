@@ -15,6 +15,8 @@
 #ifndef SOURCE_FUZZ_FUZZER_CONTEXT_H_
 #define SOURCE_FUZZ_FUZZER_CONTEXT_H_
 
+#include <functional>
+
 #include "source/fuzz/random_generator.h"
 #include "source/opt/function.h"
 

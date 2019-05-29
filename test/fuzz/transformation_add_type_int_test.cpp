@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_type_int.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {

@@ -15,6 +15,8 @@
 #ifndef SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_
 #define SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_
 
+#include <vector>
+
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {

@@ -31,8 +31,6 @@ class FuzzerPassSplitBlocks : public FuzzerPass {
   ~FuzzerPassSplitBlocks() override;
 
   void Apply() override;
-
- private:
 };
 
 }  // namespace fuzz
