@@ -229,11 +229,13 @@ Optimizer& Optimizer::RegisterVulkanToWebGPUPasses() {
       .RegisterPass(CreateEliminateDeadConstantPass())
       .RegisterPass(CreateFlattenDecorationPass())
       .RegisterPass(CreateAggressiveDCEPass())
-      .RegisterPass(CreateDeadBranchElimPass());
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateCompactIdsPass());
 }
 
 Optimizer& Optimizer::RegisterWebGPUToVulkanPasses() {
-  return RegisterPass(CreateDecomposeInitializedVariablesPass());
+  return RegisterPass(CreateDecomposeInitializedVariablesPass())
+      .RegisterPass(CreateCompactIdsPass());
 }
 
 bool Optimizer::RegisterPassesFromFlags(const std::vector<std::string>& flags) {
