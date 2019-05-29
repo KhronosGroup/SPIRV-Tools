@@ -3258,25 +3258,23 @@ OpFunctionEnd
 
 INSTANTIATE_TEST_SUITE_P(
     SubgroupNumAndIdNotU32, ValidateVulkanSubgroupBuiltIns,
-    Combine(Values("SubgroupId", "NumSubgroups"),
-            Values("GLCompute"), Values("Input"), Values("%f32"),
+    Combine(Values("SubgroupId", "NumSubgroups"), Values("GLCompute"),
+            Values("Input"), Values("%f32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int"))));
 
 INSTANTIATE_TEST_SUITE_P(
     SubgroupNumAndIdNotInput, ValidateVulkanSubgroupBuiltIns,
-    Combine(Values("SubgroupId", "NumSubgroups"),
-            Values("GLCompute"), Values("Output", "Workgroup", "Private"),
-            Values("%u32"),
+    Combine(Values("SubgroupId", "NumSubgroups"), Values("GLCompute"),
+            Values("Output", "Workgroup", "Private"), Values("%u32"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class"))));
 
-INSTANTIATE_TEST_SUITE_P(
-    SubgroupNumAndIdOk, ValidateVulkanSubgroupBuiltIns,
-    Combine(Values("SubgroupId", "NumSubgroups"),
-            Values("GLCompute"), Values("Input"), Values("%u32"),
-            Values(TestResult(SPV_SUCCESS, ""))));
+INSTANTIATE_TEST_SUITE_P(SubgroupNumAndIdOk, ValidateVulkanSubgroupBuiltIns,
+                         Combine(Values("SubgroupId", "NumSubgroups"),
+                                 Values("GLCompute"), Values("Input"), Values("%u32"),
+                                 Values(TestResult(SPV_SUCCESS, ""))));
 
 TEST_F(ValidateBuiltIns, SubgroupIdMemberDecorate) {
   const std::string text = R"(
