@@ -1,5 +1,3 @@
-#include <utility>
-
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +15,9 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 #define SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 
+#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
-#include "source/fuzz/transformation.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -42,6 +41,7 @@ bool IsApplicable(const protobufs::TransformationSplitBlock& message,
 void Apply(const protobufs::TransformationSplitBlock& message,
            opt::IRContext* context, FactManager* fact_manager);
 
+// Creates a protobuf message representing a block-splitting transformation.
 protobufs::TransformationSplitBlock MakeTransformationSplitBlock(
     uint32_t result_id, uint32_t offset, uint32_t fresh_id);
 
