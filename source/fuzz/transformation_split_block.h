@@ -15,8 +15,6 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 #define SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 
-#include <utility>
-
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/ir_context.h"
