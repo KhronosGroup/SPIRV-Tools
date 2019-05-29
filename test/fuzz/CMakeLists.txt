@@ -18,6 +18,7 @@ if (${SPIRV_BUILD_FUZZER})
           fuzz_test_util.h
 
           fuzz_test_util.cpp
+          transformation_move_block_down_test.cpp
           transformation_split_block_test.cpp)
 
   add_spvtools_unittest(TARGET fuzz
