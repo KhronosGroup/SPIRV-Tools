@@ -30,17 +30,23 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer.h
         fuzzer_context.h
         fuzzer_pass.h
+        fuzzer_pass_split_blocks.h
+        fuzzer_util.h
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
+        transformation_split_block.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
         fact_manager.cpp
         fuzzer.cpp
         fuzzer_context.cpp
         fuzzer_pass.cpp
+        fuzzer_pass_split_blocks.cpp
+        fuzzer_util.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
+        transformation_split_block.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
         )
 

@@ -19,6 +19,7 @@
 
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
+#include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/opt/build_module.h"
@@ -50,7 +51,8 @@ void Fuzzer::SetMessageConsumer(MessageConsumer c) {
 Fuzzer::FuzzerResultStatus Fuzzer::Run(
     const std::vector<uint32_t>& binary_in,
     const protobufs::FactSequence& initial_facts,
-    std::vector<uint32_t>* binary_out, protobufs::TransformationSequence*,
+    std::vector<uint32_t>* binary_out,
+    protobufs::TransformationSequence* transformation_sequence_out,
     spv_const_fuzzer_options options) const {
   // Check compatibility between the library version being linked with and the
   // header files being used.
@@ -95,9 +97,10 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     return Fuzzer::FuzzerResultStatus::kInitialFactsInvalid;
   }
 
-  // Fuzzer passes will be created and applied here and will populate the
-  // output sequence of transformations.  Currently there are no passes.
-  // TODO(afd) Implement fuzzer passes and invoke them here.
+  // Apply some semantics-preserving passes.
+  FuzzerPassSplitBlocks(ir_context.get(), &fact_manager, &fuzzer_context,
+                        transformation_sequence_out)
+      .Apply();
 
   // Encode the module as a binary.
   ir_context->module()->ToBinary(binary_out, false);

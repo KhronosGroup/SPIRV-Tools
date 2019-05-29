@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cassert>
-
 #include "source/fuzz/pseudo_random_generator.h"
+
+#include <cassert>
 
 namespace spvtools {
 namespace fuzz {

@@ -17,9 +17,20 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+// Default probabilities for applying various transformations.
+// All values are percentages.
+// Keep them in alphabetical order.
+
+const uint32_t kDefaultChanceOfSplittingBlock = 20;
+
+}  // namespace
+
 FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
                              uint32_t min_fresh_id)
-    : random_generator_(random_generator), next_fresh_id_(min_fresh_id) {}
+    : random_generator_(random_generator),
+      next_fresh_id_(min_fresh_id),
+      chance_of_splitting_block_(kDefaultChanceOfSplittingBlock) {}
 
 FuzzerContext::~FuzzerContext() = default;
 

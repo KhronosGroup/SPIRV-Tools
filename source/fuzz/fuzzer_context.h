@@ -39,11 +39,19 @@ class FuzzerContext {
   // or to have been issued before.
   uint32_t GetFreshId();
 
+  // Probabilities associated with applying various transformations.
+  // Keep them in alphabetical order.
+  uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
+
  private:
   // The source of randomness.
   RandomGenerator* random_generator_;
   // The next fresh id to be issued.
   uint32_t next_fresh_id_;
+
+  // Probabilities associated with applying various transformations.
+  // Keep them in alphabetical order.
+  uint32_t chance_of_splitting_block_;
 };
 
 }  // namespace fuzz
