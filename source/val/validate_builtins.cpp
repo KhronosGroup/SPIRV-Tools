@@ -60,12 +60,22 @@ spv_result_t GetUnderlyingType(ValidationState_t& _,
                                const Instruction& inst,
                                uint32_t* underlying_type) {
   if (decoration.struct_member_index() != Decoration::kInvalidMember) {
-    assert(inst.opcode() == SpvOpTypeStruct);
+    if (inst.opcode() != SpvOpTypeStruct) {
+      return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+             << GetIdDesc(inst)
+             << "Attempted to get underlying data type via member index for "
+                "non-struct type.";
+    }
     *underlying_type = inst.word(decoration.struct_member_index() + 2);
     return SPV_SUCCESS;
   }
 
-  assert(inst.opcode() != SpvOpTypeStruct);
+  if (inst.opcode() == SpvOpTypeStruct) {
+    return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+           << GetIdDesc(inst)
+           << " did not find an member index to get underlying data type for "
+              "struct type.";
+  }
 
   if (spvOpcodeIsConstant(inst.opcode())) {
     *underlying_type = inst.type_id();

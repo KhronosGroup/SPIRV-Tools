@@ -2864,6 +2864,33 @@ OpDecorate %gl_ViewportIndex PerPrimitiveNV
   EXPECT_THAT(getDiagnosticString(), HasSubstr("is not an int scalar"));
 }
 
+TEST_F(ValidateBuiltIns, GetUnderlyingTypeNoAssert) {
+  std::string spirv = R"(
+                      OpCapability Shader
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint Fragment %4 "PSMa" %12 %17
+                      OpExecutionMode %4 OriginUpperLeft
+                      OpDecorate %gl_PointCoord BuiltIn PointCoord
+              %void = OpTypeVoid
+                 %3 = OpTypeFunction %void
+             %float = OpTypeFloat 32
+           %v4float = OpTypeVector %float 4
+       %gl_PointCoord = OpTypeStruct %v4float
+       %_ptr_Input_v4float = OpTypePointer Input %v4float
+       %_ptr_Output_v4float = OpTypePointer Output %v4float
+                %12 = OpVariable %_ptr_Input_v4float Input
+                %17 = OpVariable %_ptr_Output_v4float Output
+                 %4 = OpFunction %void None %3
+                %15 = OpLabel
+                      OpReturn
+                      OpFunctionEnd)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("did not find an member index to get underlying data "
+                        "type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
