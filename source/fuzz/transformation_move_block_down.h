@@ -1,5 +1,3 @@
-#include <utility>
-
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +15,9 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_MOVE_BLOCK_DOWN_H_
 #define SOURCE_FUZZ_TRANSFORMATION_MOVE_BLOCK_DOWN_H_
 
+#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
-#include "source/fuzz/transformation.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -35,6 +34,8 @@ bool IsApplicable(const protobufs::TransformationMoveBlockDown& message,
 // between it and the block that follows it is swapped.
 void Apply(const protobufs::TransformationMoveBlockDown& message,
            opt::IRContext* context, FactManager* fact_manager);
+
+// Creates a protobuf message to move down the block with id |id|.
 protobufs::TransformationMoveBlockDown MakeTransformationMoveBlockDown(
     uint32_t id);
 

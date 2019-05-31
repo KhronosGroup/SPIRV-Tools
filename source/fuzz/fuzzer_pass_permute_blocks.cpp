@@ -19,8 +19,6 @@
 namespace spvtools {
 namespace fuzz {
 
-using opt::IRContext;
-
 FuzzerPassPermuteBlocks::FuzzerPassPermuteBlocks(
     opt::IRContext* ir_context, FactManager* fact_manager,
     FuzzerContext* fuzzer_context,
@@ -33,10 +31,10 @@ void FuzzerPassPermuteBlocks::Apply() {
   // For now we do something very simple: we randomly decide whether to move a
   // block, and for each block that we do move, we push it down as far as we
   // legally can.
-  // TODO(afd): it would be nice to randomly sample from the set of legal
-  //  block permutations and then encode the chosen permutation via a series of
-  //  move-block-down transformations.  This should be possible but will
-  //  require some thought.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2635): it would be
+  //  nice to randomly sample from the set of legal block permutations and then
+  //  encode the chosen permutation via a series of move-block-down
+  //  transformations.  This should be possible but will require some thought.
 
   for (auto& function : *GetIRContext()->module()) {
     std::vector<uint32_t> block_ids;
