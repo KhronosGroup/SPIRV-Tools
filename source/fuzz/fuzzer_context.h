@@ -42,6 +42,7 @@ class FuzzerContext {
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
   uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
+  uint32_t GetChanceOfMovingBlockDown() { return chance_of_moving_block_down_; }
 
  private:
   // The source of randomness.
@@ -51,6 +52,7 @@ class FuzzerContext {
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
+  uint32_t chance_of_moving_block_down_;
   uint32_t chance_of_splitting_block_;
 };
 
