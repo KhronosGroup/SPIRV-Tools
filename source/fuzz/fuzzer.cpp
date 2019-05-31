@@ -103,7 +103,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // present, such as boolean constants.
   FuzzerPassAddUsefulConstructs(ir_context.get(), &fact_manager,
                                 &fuzzer_context, transformation_sequence_out)
-          .Apply();
+      .Apply();
 
   // Apply some semantics-preserving passes.
   FuzzerPassSplitBlocks(ir_context.get(), &fact_manager, &fuzzer_context,
