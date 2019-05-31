@@ -1114,6 +1114,17 @@ spv_result_t ValidateImageLod(ValidationState_t& _, const Instruction* inst) {
   }
 
   const uint32_t mask = inst->word(5);
+
+  if (spvIsOpenCLEnv(_.context()->target_env)) {
+    if (opcode == SpvOpImageSampleExplicitLod) {
+      if (mask & SpvImageOperandsConstOffsetMask) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "ConstOffset image operand not allowed "
+               << "in the OpenCL environment.";
+      }
+    }
+  }
+
   if (spv_result_t result =
           ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
     return result;
@@ -1440,6 +1451,15 @@ spv_result_t ValidateImageRead(ValidationState_t& _, const Instruction* inst) {
   if (inst->words().size() <= 5) return SPV_SUCCESS;
 
   const uint32_t mask = inst->word(5);
+
+  if (spvIsOpenCLEnv(_.context()->target_env)) {
+    if (mask & SpvImageOperandsConstOffsetMask) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "ConstOffset image operand not allowed "
+             << "in the OpenCL environment.";
+    }
+  }
+
   if (spv_result_t result =
           ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
     return result;
