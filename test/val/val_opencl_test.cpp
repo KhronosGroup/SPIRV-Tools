@@ -184,6 +184,89 @@ TEST_F(ValidateOpenCL, ImageWriteWithOptionalImageOperandsBad) {
                         "\n  OpImageWrite %15 %13 %14 ConstOffset %13\n"));
 }
 
+TEST_F(ValidateOpenCL, ImageReadWithConstOffsetBad) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability ImageBasic
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %5 "image_kernel"
+               OpName %img "img"
+               OpName %coord "coord"
+               OpName %call "call"
+       %uint = OpTypeInt 32 0
+     %uint_7 = OpConstant %uint 7
+     %uint_3 = OpConstant %uint 3
+       %void = OpTypeVoid
+          %3 = OpTypeImage %void 2D 0 0 0 0 Unknown ReadOnly
+          %4 = OpTypeFunction %void %3
+     %v4uint = OpTypeVector %uint 4
+     %v2uint = OpTypeVector %uint 2
+      %coord = OpConstantComposite %v2uint %uint_7 %uint_3
+          %5 = OpFunction %void None %4
+        %img = OpFunctionParameter %3
+      %entry = OpLabel
+       %call = OpImageRead %v4uint %img %coord ConstOffset %coord
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "ConstOffset image operand not allowed in the OpenCL environment."
+          "\n  %call = OpImageRead %v4uint %img %coord ConstOffset %coord\n"));
+}
+
+TEST_F(ValidateOpenCL, ImageSampleExplicitLodWithConstOffsetBad) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability ImageBasic
+               OpCapability LiteralSampler
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %5 "image_kernel"
+               OpName %img "img"
+               OpName %coord "coord"
+               OpName %call "call"
+       %uint = OpTypeInt 32 0
+     %uint_7 = OpConstant %uint 7
+     %uint_3 = OpConstant %uint 3
+       %void = OpTypeVoid
+          %3 = OpTypeImage %void 2D 0 0 0 0 Unknown ReadOnly
+          %4 = OpTypeFunction %void %3
+          %8 = OpTypeSampler
+         %10 = OpTypeSampledImage %3
+     %v4uint = OpTypeVector %uint 4
+     %v2uint = OpTypeVector %uint 2
+      %float = OpTypeFloat 32
+          %9 = OpConstantSampler %8 None 0 Nearest
+      %coord = OpConstantComposite %v2uint %uint_7 %uint_3
+    %float_0 = OpConstant %float 0
+          %5 = OpFunction %void None %4
+          %6 = OpFunctionParameter %3
+      %entry = OpLabel
+        %img = OpSampledImage %10 %6 %9
+       %call = OpImageSampleExplicitLod %v4uint %img %coord
+                                        Lod|ConstOffset %float_0 %coord
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "ConstOffset image operand not allowed in the OpenCL environment."
+          "\n  %call = OpImageSampleExplicitLod %v4uint %img "
+          "%coord Lod|ConstOffset %float_0 %coord\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
