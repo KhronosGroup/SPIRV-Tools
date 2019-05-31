@@ -19,6 +19,7 @@
 
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
+#include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
@@ -97,6 +98,12 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   if (!fact_manager.AddFacts(initial_facts, ir_context.get())) {
     return Fuzzer::FuzzerResultStatus::kInitialFactsInvalid;
   }
+
+  // Add some essential ingredients to the module if they are not already
+  // present, such as boolean constants.
+  FuzzerPassAddUsefulConstructs(ir_context.get(), &fact_manager,
+                                &fuzzer_context, transformation_sequence_out)
+          .Apply();
 
   // Apply some semantics-preserving passes.
   FuzzerPassSplitBlocks(ir_context.get(), &fact_manager, &fuzzer_context,

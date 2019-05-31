@@ -35,18 +35,86 @@ message TransformationSequence {
 
 message Transformation {
   oneof transformation {
-    TransformationMoveBlockDown move_block_down = 1;
-    TransformationSplitBlock split_block = 2;
+    TransformationAddConstantBoolean add_constant_boolean = 1;
+    TransformationAddConstantScalar add_constant_scalar = 2;
+    TransformationAddTypeBoolean add_type_boolean = 3;
+    TransformationAddTypeFloat add_type_float = 4;
+    TransformationAddTypeInt add_type_int = 5;
+    TransformationMoveBlockDown move_block_down = 6;
+    TransformationSplitBlock split_block = 7;
   }
   // Currently there are no transformations.
 }
 
+message TransformationAddConstantBoolean {
+
+  // Supports adding the constants true and false to a module, which may be
+  // necessary in order to enable other transformations if they are not present.
+
+  uint32 fresh_id = 1;
+  bool is_true = 2;
+
+}
+
+message TransformationAddConstantScalar {
+
+  // Adds a constant of the given scalar type
+
+  // Id for the constant
+  uint32 fresh_id = 1;
+
+  // Id for the scalar type of the constant
+  uint32 type_id = 2;
+
+  // Value of the constant
+  repeated uint32 word = 3;
+
+}
+
+message TransformationAddTypeBoolean {
+
+  // Adds OpTypeBool to the module
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+}
+
+message TransformationAddTypeFloat {
+
+  // Adds OpTypeFloat to the module with the given width
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+  // Floating-point width
+  uint32 width = 2;
+
+}
+
+message TransformationAddTypeInt {
+
+  // Adds OpTypeInt to the module with the given width and signedness
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+  // Integer width
+  uint32 width = 2;
+
+  // True if and only if this is a signed type
+  bool is_signed = 3;
+
+}
+
 message TransformationMoveBlockDown {
+
   // A transformation that moves a basic block to be one position lower in
   // program order.
 
   // The id of the block to move down.
   uint32 block_id = 1;
+
 }
 
 message TransformationSplitBlock {
