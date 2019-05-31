@@ -17,8 +17,9 @@
 
 #include <vector>
 
+#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
-#include "source/fuzz/transformation.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
