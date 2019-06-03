@@ -2810,7 +2810,11 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInWorldToObjectNV:
     case SpvBuiltInHitTNV:
     case SpvBuiltInHitKindNV:
-    case SpvBuiltInIncomingRayFlagsNV: {
+    case SpvBuiltInIncomingRayFlagsNV:
+    case SpvBuiltInWarpsPerSMNV:
+    case SpvBuiltInSMCountNV:
+    case SpvBuiltInWarpIDNV:
+    case SpvBuiltInSMIDNV: {
       // No validation rules (for the moment).
       break;
     }
