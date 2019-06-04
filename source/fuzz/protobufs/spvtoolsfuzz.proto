@@ -44,6 +44,7 @@ message Transformation {
     TransformationAddTypeBoolean add_type_boolean = 5;
     TransformationAddTypeFloat add_type_float = 6;
     TransformationAddTypeInt add_type_int = 7;
+    TransformationAddDeadBreak add_dead_break = 8;
     // Add additional option using the next available number.
   }
 }
@@ -72,6 +73,28 @@ message TransformationAddConstantScalar {
 
   // Value of the constant
   repeated uint32 word = 3;
+
+}
+
+message TransformationAddDeadBreak {
+
+  // A transformation that turns a basic block that unconditionally branches to
+  // its successor into a block that potentially breaks out of a structured
+  // control flow construct, but in such a manner that the break cannot actually
+  // be taken.
+
+  // The block to break from
+  uint32 from_block = 1;
+
+  // The merge block to break to
+  uint32 to_block = 2;
+
+  // Determines whether the break condition is true or false
+  bool break_condition_value = 3;
+
+  // A sequence of ids suitable for extending OpPhi instructions as a result of
+  // the new break edge
+  repeated uint32 phi_id = 4;
 
 }
 

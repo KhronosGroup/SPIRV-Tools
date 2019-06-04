@@ -31,6 +31,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_context.h
         fuzzer_pass.h
         fuzzer_pass_add_useful_constructs.h
+        fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
@@ -39,6 +40,7 @@ if(SPIRV_BUILD_FUZZER)
         random_generator.h
         transformation_add_constant_boolean.h
         transformation_add_constant_scalar.h
+        transformation_add_dead_break.h
         transformation_add_type_boolean.h
         transformation_add_type_float.h
         transformation_add_type_int.h
@@ -50,6 +52,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer.cpp
         fuzzer_context.cpp
         fuzzer_pass.cpp
+        fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_useful_constructs.cpp
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_split_blocks.cpp
@@ -58,6 +61,7 @@ if(SPIRV_BUILD_FUZZER)
         random_generator.cpp
         transformation_add_constant_boolean.cpp
         transformation_add_constant_scalar.cpp
+        transformation_add_dead_break.cpp
         transformation_add_type_boolean.cpp
         transformation_add_type_float.cpp
         transformation_add_type_int.cpp
