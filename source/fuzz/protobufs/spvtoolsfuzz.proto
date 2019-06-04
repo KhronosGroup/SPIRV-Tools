@@ -35,16 +35,20 @@ message TransformationSequence {
 
 message Transformation {
   oneof transformation {
-    TransformationAddConstantBoolean add_constant_boolean = 1;
-    TransformationAddConstantScalar add_constant_scalar = 2;
-    TransformationAddTypeBoolean add_type_boolean = 3;
-    TransformationAddTypeFloat add_type_float = 4;
-    TransformationAddTypeInt add_type_int = 5;
-    TransformationMoveBlockDown move_block_down = 6;
-    TransformationSplitBlock split_block = 7;
+    // Order the transformation options by numeric id (rather than
+    // alphabetically).
+    TransformationMoveBlockDown move_block_down = 1;
+    TransformationSplitBlock split_block = 2;
+    TransformationAddConstantBoolean add_constant_boolean = 3;
+    TransformationAddConstantScalar add_constant_scalar = 4;
+    TransformationAddTypeBoolean add_type_boolean = 5;
+    TransformationAddTypeFloat add_type_float = 6;
+    TransformationAddTypeInt add_type_int = 7;
+    // Add additional option using the next available number.
   }
-  // Currently there are no transformations.
 }
+
+// Keep transformation message types in alphabetical order:
 
 message TransformationAddConstantBoolean {
 
