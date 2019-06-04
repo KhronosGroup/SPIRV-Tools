@@ -75,15 +75,15 @@ void FuzzerPassAddUsefulConstructs::MaybeAddFloatConstant(
       "The relevant float type should have been added to the module already.");
   opt::analysis::FloatConstant float_constant(registered_float_type, data);
   if (!GetIRContext()->get_constant_mgr()->FindConstant(&float_constant)) {
-    protobufs::TransformationAddConstantScalar add_constant_int =
+    protobufs::TransformationAddConstantScalar add_constant_float =
         transformation::MakeTransformationAddConstantScalar(
             GetFuzzerContext()->GetFreshId(), float_type_id, data);
-    assert(transformation::IsApplicable(add_constant_int, GetIRContext(),
+    assert(transformation::IsApplicable(add_constant_float, GetIRContext(),
                                         *GetFactManager()) &&
            "Should be applicable by construction.");
-    transformation::Apply(add_constant_int, GetIRContext(), GetFactManager());
+    transformation::Apply(add_constant_float, GetIRContext(), GetFactManager());
     *GetTransformations()->add_transformation()->mutable_add_constant_scalar() =
-        add_constant_int;
+        add_constant_float;
   }
 }
 
