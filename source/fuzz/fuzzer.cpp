@@ -19,6 +19,7 @@
 
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
+#include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
@@ -82,7 +83,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // Make a PRNG, either from a given seed or from a random device.
   PseudoRandomGenerator random_generator(
       options->has_random_seed ? options->random_seed
-                               : (uint32_t)std::random_device()());
+                               : static_cast<uint32_t>(std::random_device()()));
 
   // The fuzzer will introduce new ids into the module.  The module's id bound
   // gives the smallest id that can be used for this purpose.  We add an offset
@@ -108,6 +109,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // Apply some semantics-preserving passes.
   FuzzerPassSplitBlocks(ir_context.get(), &fact_manager, &fuzzer_context,
                         transformation_sequence_out)
+      .Apply();
+  FuzzerPassAddDeadBreaks(ir_context.get(), &fact_manager, &fuzzer_context,
+                          transformation_sequence_out)
       .Apply();
 
   // TODO(afd) Various other passes will be added.

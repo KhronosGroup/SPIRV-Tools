@@ -22,6 +22,7 @@ namespace {
 // All values are percentages.
 // Keep them in alphabetical order.
 
+const uint32_t kDefaultChanceOfAddingDeadBreak = 20;
 const uint32_t kDefaultChanceOfMovingBlockDown = 25;
 const uint32_t kDefaultChanceOfSplittingBlock = 20;
 
@@ -31,6 +32,7 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
                              uint32_t min_fresh_id)
     : random_generator_(random_generator),
       next_fresh_id_(min_fresh_id),
+      chance_of_adding_dead_break_(kDefaultChanceOfAddingDeadBreak),
       chance_of_moving_block_down_(kDefaultChanceOfMovingBlockDown),
       chance_of_splitting_block_(kDefaultChanceOfSplittingBlock) {}
 
