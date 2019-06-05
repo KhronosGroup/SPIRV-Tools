@@ -215,7 +215,7 @@ TEST(FuzzerTest, Miscellaneous1) {
 }
 
 TEST(FuzzerTest, Miscellaneous2) {
-  // The SPIR-V came from this GLSL, which was then pushed through spirv-opt
+  // The SPIR-V came from this GLSL, which was then optimized using spirv-opt
   // with the -O argument:
   //
   // #version 310 es
