@@ -43,8 +43,8 @@ void FuzzerPassAddDeadBreaks::Apply() {
     }
     // We rather aggressively consider the possibility of adding a break from
     // every block in the function to every merge block.  Many of these will be
-    // inapplicable as they would be illegal.  That's OK - we discard the ones
-    // that turn out to be no good.
+    // inapplicable as they would be illegal.  That's OK - we later discard the
+    // ones that turn out to be no good.
     for (auto& block : function) {
       for (auto merge_block_id : merge_block_ids) {
         // TODO(afd): right now we completely ignore OpPhi instructions at
