@@ -557,8 +557,10 @@ bool Pointer::IsSameImpl(const Type* that, IsSameCache* seen) const {
 }
 
 std::string Pointer::str() const {
-  return pointee_type_->str() + " " +
-         std::to_string(static_cast<uint32_t>(storage_class_)) + "*";
+  std::ostringstream os;
+  os << pointee_type_->str() << " " << static_cast<uint32_t>(storage_class_)
+     << "*";
+  return os.str();
 }
 
 void Pointer::GetExtraHashWords(std::vector<uint32_t>* words,
