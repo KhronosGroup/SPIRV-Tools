@@ -18,6 +18,7 @@
 #include <cassert>
 #include <cstdint>
 #include <sstream>
+#include <string>
 #include <unordered_set>
 
 #include "source/util/make_unique.h"
