@@ -63,7 +63,7 @@ build_script:
   - ninja install
 
 test_script:
-  - ctest -C %CONFIGURATION% --output-on-failure --timeout 300
+  - ctest -C %CONFIGURATION% --output-on-failure --timeout 310
 
 after_test:
   # Zip build artifacts for uploading and deploying
