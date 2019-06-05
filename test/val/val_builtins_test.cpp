@@ -62,7 +62,10 @@ using ValidateVulkanCombineBuiltInArrayedVariable = spvtest::ValidateBase<
     std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
 using ValidateWebGPUCombineBuiltInArrayedVariable = spvtest::ValidateBase<
     std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
-
+using ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult =
+    spvtest::ValidateBase<
+        std::tuple<const char*, const char*, const char*, const char*,
+                   const char*, const char*, TestResult>>;
 
 bool InitializerRequired(spv_target_env env, const char* const storage_class) {
   return spvIsWebGPUEnv(env) && (strncmp(storage_class, "Output", 6) == 0 ||
@@ -74,10 +77,19 @@ CodeGenerator GetInMainCodeGenerator(spv_target_env env,
                                      const char* const built_in,
                                      const char* const execution_model,
                                      const char* const storage_class,
+                                     const char* const capabilities,
+                                     const char* const extensions,
                                      const char* const data_type) {
   CodeGenerator generator =
       spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
                           : CodeGenerator::GetDefaultShaderCodeGenerator();
+
+  if (capabilities) {
+    generator.capabilities_ += capabilities;
+  }
+  if (extensions) {
+    generator.extensions_ += extensions;
+  }
 
   generator.before_types_ = "OpMemberDecorate %built_in_type 0 BuiltIn ";
   generator.before_types_ += built_in;
@@ -144,8 +156,9 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InMain) {
   const char* const data_type = std::get<3>(GetParam());
   const TestResult& test_result = std::get<4>(GetParam());
 
-  CodeGenerator generator = GetInMainCodeGenerator(
-      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class, data_type);
+  CodeGenerator generator =
+      GetInMainCodeGenerator(SPV_ENV_VULKAN_1_0, built_in, execution_model,
+                             storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -165,8 +178,9 @@ TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, InMain) {
   const char* const data_type = std::get<3>(GetParam());
   const TestResult& test_result = std::get<4>(GetParam());
 
-  CodeGenerator generator = GetInMainCodeGenerator(
-      SPV_ENV_WEBGPU_0, built_in, execution_model, storage_class, data_type);
+  CodeGenerator generator =
+      GetInMainCodeGenerator(SPV_ENV_WEBGPU_0, built_in, execution_model,
+                             storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
   ASSERT_EQ(test_result.validation_result,
@@ -179,14 +193,49 @@ TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, InMain) {
   }
 }
 
+TEST_P(
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    InMain) {
+  const char* const built_in = std::get<0>(GetParam());
+  const char* const execution_model = std::get<1>(GetParam());
+  const char* const storage_class = std::get<2>(GetParam());
+  const char* const data_type = std::get<3>(GetParam());
+  const char* const capabilities = std::get<4>(GetParam());
+  const char* const extensions = std::get<5>(GetParam());
+  const TestResult& test_result = std::get<6>(GetParam());
+
+  CodeGenerator generator = GetInMainCodeGenerator(
+      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class,
+      capabilities, extensions, data_type);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  if (test_result.error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
+  }
+  if (test_result.error_str2) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
+  }
+}
+
 CodeGenerator GetInFunctionCodeGenerator(spv_target_env env,
                                          const char* const built_in,
                                          const char* const execution_model,
                                          const char* const storage_class,
+                                         const char* const capabilities,
+                                         const char* const extensions,
                                          const char* const data_type) {
   CodeGenerator generator =
       spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
                           : CodeGenerator::GetDefaultShaderCodeGenerator();
+
+  if (capabilities) {
+    generator.capabilities_ += capabilities;
+  }
+  if (extensions) {
+    generator.extensions_ += extensions;
+  }
 
   generator.before_types_ = "OpMemberDecorate %built_in_type 0 BuiltIn ";
   generator.before_types_ += built_in;
@@ -267,8 +316,9 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InFunction) {
   const char* const data_type = std::get<3>(GetParam());
   const TestResult& test_result = std::get<4>(GetParam());
 
-  CodeGenerator generator = GetInFunctionCodeGenerator(
-      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class, data_type);
+  CodeGenerator generator =
+      GetInFunctionCodeGenerator(SPV_ENV_VULKAN_1_0, built_in, execution_model,
+                                 storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -288,8 +338,9 @@ TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, InFunction) {
   const char* const data_type = std::get<3>(GetParam());
   const TestResult& test_result = std::get<4>(GetParam());
 
-  CodeGenerator generator = GetInFunctionCodeGenerator(
-      SPV_ENV_WEBGPU_0, built_in, execution_model, storage_class, data_type);
+  CodeGenerator generator =
+      GetInFunctionCodeGenerator(SPV_ENV_WEBGPU_0, built_in, execution_model,
+                                 storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
   ASSERT_EQ(test_result.validation_result,
@@ -302,14 +353,49 @@ TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, InFunction) {
   }
 }
 
+TEST_P(
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    InFunction) {
+  const char* const built_in = std::get<0>(GetParam());
+  const char* const execution_model = std::get<1>(GetParam());
+  const char* const storage_class = std::get<2>(GetParam());
+  const char* const data_type = std::get<3>(GetParam());
+  const char* const capabilities = std::get<4>(GetParam());
+  const char* const extensions = std::get<5>(GetParam());
+  const TestResult& test_result = std::get<6>(GetParam());
+
+  CodeGenerator generator = GetInFunctionCodeGenerator(
+      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class,
+      capabilities, extensions, data_type);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  if (test_result.error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
+  }
+  if (test_result.error_str2) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
+  }
+}
+
 CodeGenerator GetVariableCodeGenerator(spv_target_env env,
                                        const char* const built_in,
                                        const char* const execution_model,
                                        const char* const storage_class,
+                                       const char* const capabilities,
+                                       const char* const extensions,
                                        const char* const data_type) {
   CodeGenerator generator =
       spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
                           : CodeGenerator::GetDefaultShaderCodeGenerator();
+
+  if (capabilities) {
+    generator.capabilities_ += capabilities;
+  }
+  if (extensions) {
+    generator.extensions_ += extensions;
+  }
 
   generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
   generator.before_types_ += built_in;
@@ -373,8 +459,9 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, Variable) {
   const char* const data_type = std::get<3>(GetParam());
   const TestResult& test_result = std::get<4>(GetParam());
 
-  CodeGenerator generator = GetVariableCodeGenerator(
-      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class, data_type);
+  CodeGenerator generator =
+      GetVariableCodeGenerator(SPV_ENV_VULKAN_1_0, built_in, execution_model,
+                               storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -394,12 +481,39 @@ TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, Variable) {
   const char* const data_type = std::get<3>(GetParam());
   const TestResult& test_result = std::get<4>(GetParam());
 
-  CodeGenerator generator = GetVariableCodeGenerator(
-      SPV_ENV_WEBGPU_0, built_in, execution_model, storage_class, data_type);
+  CodeGenerator generator =
+      GetVariableCodeGenerator(SPV_ENV_WEBGPU_0, built_in, execution_model,
+                               storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_WEBGPU_0));
+  if (test_result.error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
+  }
+  if (test_result.error_str2) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
+  }
+}
+
+TEST_P(
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Variable) {
+  const char* const built_in = std::get<0>(GetParam());
+  const char* const execution_model = std::get<1>(GetParam());
+  const char* const storage_class = std::get<2>(GetParam());
+  const char* const data_type = std::get<3>(GetParam());
+  const char* const capabilities = std::get<4>(GetParam());
+  const char* const extensions = std::get<5>(GetParam());
+  const TestResult& test_result = std::get<6>(GetParam());
+
+  CodeGenerator generator = GetVariableCodeGenerator(
+      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class,
+      capabilities, extensions, data_type);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
   if (test_result.error_str) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
@@ -2027,6 +2141,81 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
                               "components are not float scalar"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsInputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability ShaderSMBuiltinsNV\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\n"),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsInputMeshSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+        Values("MeshNV", "TaskNV"), Values("Input"), Values("%u32"),
+        Values("OpCapability ShaderSMBuiltinsNV\nOpCapability MeshShadingNV\n"),
+        Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+               "\"SPV_NV_mesh_shader\"\n"),
+        Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsInputRaySuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+        Values("RayGenerationNV", "IntersectionNV", "AnyHitNV", "ClosestHitNV",
+               "MissNV", "CallableNV"),
+        Values("Input"), Values("%u32"),
+        Values("OpCapability ShaderSMBuiltinsNV\nOpCapability RayTracingNV\n"),
+        Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+               "\"SPV_NV_ray_tracing\"\n"),
+        Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability ShaderSMBuiltinsNV\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\n"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input storage class",
+                "uses storage class Output"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsNotIntScalar,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability ShaderSMBuiltinsNV\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\n"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsNotInt32,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Input"), Values("%u64"),
+            Values("OpCapability ShaderSMBuiltinsNV\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\n"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "has bit width 64"))));
 
 CodeGenerator GetWorkgroupSizeSuccessGenerator(spv_target_env env) {
   CodeGenerator generator =
