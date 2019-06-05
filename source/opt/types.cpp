@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/opt/types.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <sstream>
+#include <string>
 #include <unordered_set>
 
-#include "source/opt/types.h"
 #include "source/util/make_unique.h"
+#include "spirv/unified1/spirv.h"
 
 namespace spvtools {
 namespace opt {
@@ -383,64 +386,42 @@ void SampledImage::GetExtraHashWords(
   image_type_->GetHashWords(words, seen);
 }
 
-Array::Array(Type* type, uint32_t length_id, uint32_t spec_id)
-    : Type(kArray),
-      element_type_(type),
-      length_id_(length_id),
-      length_spec_id_(spec_id),
-      length_constant_type_(nullptr),
-      length_constant_words_() {
+Array::Array(const Type* type, const Array::LengthInfo& length_info_arg)
+    : Type(kArray), element_type_(type), length_info_(length_info_arg) {
+  assert(type != nullptr);
   assert(!type->AsVoid());
-  assert(spec_id != 0u);
-}
-
-Array::Array(Type* type, uint32_t length_id, const Type* constant_type,
-             Operand::OperandData constant_words)
-    : Type(kArray),
-      element_type_(type),
-      length_id_(length_id),
-      length_spec_id_(0u),
-      length_constant_type_(constant_type),
-      length_constant_words_(constant_words) {
-  assert(!type->AsVoid());
-  assert(constant_type && constant_type->AsInteger());
+  // We always have a word to say which case we're in, followed
+  // by at least one more word.
+  assert(length_info_arg.words.size() >= 2);
 }
 
 bool Array::IsSameImpl(const Type* that, IsSameCache* seen) const {
   const Array* at = that->AsArray();
   if (!at) return false;
-  bool is_same = element_type_->IsSameImpl(at->element_type_, seen) &&
-                 HasSameDecorations(that);
-  // If it is a specialized constant
-  if (length_spec_id_ != 0u) {
-    // ensure they have the same SpecId
-    is_same = is_same && length_spec_id_ == at->length_spec_id_;
-  } else {
-    // else, ensure they have the same length literal number.
-    is_same =
-        is_same &&
-        length_constant_type_->IsSameImpl(at->length_constant_type_, seen) &&
-        length_constant_words_ == at->length_constant_words_;
-  }
+  bool is_same = element_type_->IsSameImpl(at->element_type_, seen);
+  is_same = is_same && HasSameDecorations(that);
+  is_same = is_same && (length_info_.words == at->length_info_.words);
   return is_same;
 }
 
 std::string Array::str() const {
   std::ostringstream oss;
-  oss << "[" << element_type_->str() << ", id(" << length_id_ << ")]";
+  oss << "[" << element_type_->str() << ", id(" << LengthId() << "), words(";
+  const char* spacer = "";
+  for (auto w : length_info_.words) {
+    oss << spacer << w;
+    spacer = ",";
+  }
+  oss << ")]";
   return oss.str();
 }
 
 void Array::GetExtraHashWords(std::vector<uint32_t>* words,
                               std::unordered_set<const Type*>* seen) const {
   element_type_->GetHashWords(words, seen);
-  if (length_spec_id_ != 0u) {
-    words->push_back(length_spec_id_);
-  } else {
-    length_constant_type_->GetHashWords(words, seen);
-    words->insert(words->end(), length_constant_words_.begin(),
-                  length_constant_words_.end());
-  }
+  // This should mirror the logic in IsSameImpl
+  words->insert(words->end(), length_info_.words.begin(),
+                length_info_.words.end());
 }
 
 void Array::ReplaceElementType(const Type* type) { element_type_ = type; }
@@ -575,7 +556,12 @@ bool Pointer::IsSameImpl(const Type* that, IsSameCache* seen) const {
   return HasSameDecorations(that);
 }
 
-std::string Pointer::str() const { return pointee_type_->str() + "*"; }
+std::string Pointer::str() const {
+  std::ostringstream os;
+  os << pointee_type_->str() << " " << static_cast<uint32_t>(storage_class_)
+     << "*";
+  return os.str();
+}
 
 void Pointer::GetExtraHashWords(std::vector<uint32_t>* words,
                                 std::unordered_set<const Type*>* seen) const {

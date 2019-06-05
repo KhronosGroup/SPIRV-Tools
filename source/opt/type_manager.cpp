@@ -510,16 +510,8 @@ Type* TypeManager::RebuildType(const Type& type) {
     }
     case Type::kArray: {
       const Array* array_ty = type.AsArray();
-      const Type* ele_ty = array_ty->element_type();
-      if (array_ty->length_spec_id() != 0u)
-        rebuilt_ty =
-            MakeUnique<Array>(RebuildType(*ele_ty), array_ty->LengthId(),
-                              array_ty->length_spec_id());
-      else
-        rebuilt_ty =
-            MakeUnique<Array>(RebuildType(*ele_ty), array_ty->LengthId(),
-                              array_ty->length_constant_type(),
-                              array_ty->length_constant_words());
+      rebuilt_ty =
+          MakeUnique<Array>(array_ty->element_type(), array_ty->length_info());
       break;
     }
     case Type::kRuntimeArray: {
@@ -654,28 +646,45 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
       const Instruction* length_constant_inst = id_to_constant_inst_[length_id];
       assert(length_constant_inst);
 
-      // If it is a specialised constants, retrieve its SpecId.
+      // How will we distinguish one length value from another?
+      // Determine extra words required to distinguish this array length
+      // from another.
+      std::vector<uint32_t> extra_words{Array::LengthInfo::kDefiningId};
+      // If it is a specialised constant, retrieve its SpecId.
+      // Only OpSpecConstant has a SpecId.
       uint32_t spec_id = 0u;
-      Type* length_type = nullptr;
-      Operand::OperandData length_words;
-      if (spvOpcodeIsSpecConstant(length_constant_inst->opcode())) {
+      bool has_spec_id = false;
+      if (length_constant_inst->opcode() == SpvOpSpecConstant) {
         context()->get_decoration_mgr()->ForEachDecoration(
             length_id, SpvDecorationSpecId,
-            [&spec_id](const Instruction& decoration) {
+            [&spec_id, &has_spec_id](const Instruction& decoration) {
               assert(decoration.opcode() == SpvOpDecorate);
               spec_id = decoration.GetSingleWordOperand(2u);
+              has_spec_id = true;
             });
-      } else {
-        length_type = GetType(length_constant_inst->type_id());
-        length_words = length_constant_inst->GetOperand(2u).words;
       }
+      const auto opcode = length_constant_inst->opcode();
+      if (has_spec_id) {
+        extra_words.push_back(spec_id);
+      }
+      if ((opcode == SpvOpConstant) || (opcode == SpvOpSpecConstant)) {
+        // Always include the literal constant words.  In the spec constant
+        // case, the constant might not be overridden, so it's still
+        // significant.
+        extra_words.insert(extra_words.end(),
+                           length_constant_inst->GetOperand(2).words.begin(),
+                           length_constant_inst->GetOperand(2).words.end());
+        extra_words[0] = has_spec_id ? Array::LengthInfo::kConstantWithSpecId
+                                     : Array::LengthInfo::kConstant;
+      } else {
+        assert(extra_words[0] == Array::LengthInfo::kDefiningId);
+        extra_words.push_back(length_id);
+      }
+      assert(extra_words.size() >= 2);
+      Array::LengthInfo length_info{length_id, extra_words};
 
-      if (spec_id != 0u)
-        type = new Array(GetType(inst.GetSingleWordInOperand(0)), length_id,
-                         spec_id);
-      else
-        type = new Array(GetType(inst.GetSingleWordInOperand(0)), length_id,
-                         length_type, length_words);
+      type = new Array(GetType(inst.GetSingleWordInOperand(0)), length_info);
+
       if (id_to_incomplete_type_.count(inst.GetSingleWordInOperand(0))) {
         incomplete_types_.emplace_back(inst.result_id(), type);
         id_to_incomplete_type_[inst.result_id()] = type;
