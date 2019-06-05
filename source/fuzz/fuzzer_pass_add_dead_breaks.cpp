@@ -20,8 +20,6 @@
 namespace spvtools {
 namespace fuzz {
 
-using opt::IRContext;
-
 FuzzerPassAddDeadBreaks::FuzzerPassAddDeadBreaks(
     opt::IRContext* ir_context, FactManager* fact_manager,
     FuzzerContext* fuzzer_context,
@@ -45,8 +43,8 @@ void FuzzerPassAddDeadBreaks::Apply() {
     }
     // We rather aggressively consider the possibility of adding a break from
     // every block in the function to every merge block.  Many of these will be
-    // inapplicable as they would be illegal.  That's OK - we discard the ones
-    // that turn out to be no good.
+    // inapplicable as they would be illegal.  That's OK - we later discard the
+    // ones that turn out to be no good.
     for (auto& block : function) {
       for (auto merge_block_id : merge_block_ids) {
         // TODO(afd): right now we completely ignore OpPhi instructions at
@@ -71,20 +69,34 @@ void FuzzerPassAddDeadBreaks::Apply() {
   // Go through the candidate transformations that were accumulated,
   // probabilistically deciding whether to consider each one further and
   // applying the still-applicable ones that are considered further.
+  //
+  // We iterate through the candidate transformations in a random order by
+  // repeatedly removing a random candidate transformation from the sequence
+  // until no candidate transformations remain.  This is done because
+  // transformations can potentially disable one another, so that iterating
+  // through them in order would lead to a higher probability of
+  // transformations appearing early in the sequence being applied compared
+  // with later transformations.
   while (!candidate_transformations.empty()) {
+    // Choose a random index into the sequence of remaining candidate
+    // transformations.
     auto index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
         static_cast<uint32_t>(candidate_transformations.size()));
-    auto message = std::move(candidate_transformations[index]);
+    // Remove the transformation at the chosen index from the sequence.
+    auto transformation = std::move(candidate_transformations[index]);
     candidate_transformations.erase(candidate_transformations.begin() + index);
+    // Probabilistically decide whether to try to apply it vs. ignore it.
     if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
         GetFuzzerContext()->GetChanceOfAddingDeadBreak()) {
       continue;
     }
-    if (transformation::IsApplicable(message, GetIRContext(),
+    // If the transformation can be applied, apply it and add it to the
+    // sequence of transformations that have been applied.
+    if (transformation::IsApplicable(transformation, GetIRContext(),
                                      *GetFactManager())) {
-      transformation::Apply(message, GetIRContext(), GetFactManager());
+      transformation::Apply(transformation, GetIRContext(), GetFactManager());
       *GetTransformations()->add_transformation()->mutable_add_dead_break() =
-          message;
+          transformation;
     }
   }
 }

@@ -20,7 +20,6 @@ namespace spvtools {
 namespace fuzz {
 
 namespace {
-
 // Default probabilities for applying various transformations.
 // All values are percentages.
 // Keep them in alphabetical order.
@@ -59,27 +58,6 @@ uint32_t FuzzerContext::GetFreshId() { return next_fresh_id_++; }
 
 RandomGenerator* FuzzerContext::GetRandomGenerator() {
   return random_generator_;
-}
-
-uint32_t FuzzerContext::GetChanceOfAddingDeadBreak() {
-  return chance_of_adding_dead_break_;
-}
-
-uint32_t FuzzerContext::GetChanceOfMovingBlockDown() {
-  return chance_of_moving_block_down_;
-}
-
-uint32_t FuzzerContext::GetChanceOfObfuscatingConstant() {
-  return chance_of_obfuscating_constant_;
-}
-
-uint32_t FuzzerContext::GetChanceOfSplittingBlock() {
-  return chance_of_splitting_block_;
-}
-
-const std::function<bool(uint32_t, RandomGenerator*)>&
-FuzzerContext::GoDeeperInConstantObfuscation() {
-  return go_deeper_in_constant_obfuscation_;
 }
 
 }  // namespace fuzz

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_split_block.h"
-
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {

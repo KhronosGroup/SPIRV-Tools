@@ -135,6 +135,9 @@ bool AddingBreakRespectsStructuredControlFlow(
   //     |to_block| is the merge for the innermost loop containing
   //     |from_block|
   //
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2653) It may be
+  //   possible to be more aggressive in breaking from switch constructs.
+  //
   // The reason we need to distinguish between cases (1) and (2) is that the
   // structured CFG analysis does not deem a header to be part of the construct
   // that it heads.

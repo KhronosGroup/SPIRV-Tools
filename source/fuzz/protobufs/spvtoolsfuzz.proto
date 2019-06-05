@@ -105,17 +105,18 @@ message TransformationSequence {
 
 message Transformation {
   oneof transformation {
-    TransformationAddConstantBoolean add_constant_boolean = 1;
-    TransformationAddConstantScalar add_constant_scalar = 2;
-    TransformationAddDeadBreak add_dead_break = 3;
-    TransformationMoveBlockDown move_block_down = 4;
+    TransformationMoveBlockDown move_block_down = 1;
+    TransformationSplitBlock split_block = 2;
+    TransformationAddConstantBoolean add_constant_boolean = 3;
+    TransformationAddConstantScalar add_constant_scalar = 4;
     TransformationAddTypeBoolean add_type_boolean = 5;
     TransformationAddTypeFloat add_type_float = 6;
     TransformationAddTypeInt add_type_int = 7;
-    TransformationAddTypePointer add_type_pointer = 8;
-    TransformationReplaceBooleanConstantWithConstantBinary replace_boolean_constant_with_constant_binary = 9;
-    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 10;
-    TransformationSplitBlock split_block = 11;
+    TransformationAddDeadBreak add_dead_break = 8;
+    TransformationAddTypePointer add_type_pointer = 9;
+    TransformationReplaceBooleanConstantWithConstantBinary replace_boolean_constant_with_constant_binary = 10
+    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 11;
+    // Add additional option using the next available number.
   }
 }
 
@@ -216,8 +217,9 @@ message TransformationAddTypePointer {
 }
 
 message TransformationMoveBlockDown {
-  // A transformation that moves a basic block to be one position lower in program
-  // order.
+
+  // A transformation that moves a basic block to be one position lower in
+  // program order.
 
   // The id of the block to move down.
   uint32 block_id = 1;
