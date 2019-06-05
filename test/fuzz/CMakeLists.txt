@@ -17,6 +17,7 @@ if (${SPIRV_BUILD_FUZZER})
   set(SOURCES
           fuzz_test_util.h
 
+          fuzzer_test.cpp
           fuzz_test_util.cpp
           transformation_add_constant_boolean_test.cpp
           transformation_add_constant_scalar_test.cpp
