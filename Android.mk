@@ -13,7 +13,6 @@ SPVTOOLS_SRC_FILES := \
 		source/ext_inst.cpp \
 		source/enum_string_mapping.cpp \
 		source/extensions.cpp \
-		source/id_descriptor.cpp \
 		source/instructions.cpp \
 		source/libspirv.cpp \
 		source/name_mapper.cpp \
