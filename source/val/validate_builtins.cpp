@@ -208,6 +208,8 @@ class BuiltInsValidator {
   // Used for GlobalInvocationId, LocalInvocationId, NumWorkgroups, WorkgroupId.
   spv_result_t ValidateComputeShaderI32Vec3InputAtDefinition(
       const Decoration& decoration, const Instruction& inst);
+  spv_result_t ValidateSMBuiltinsAtDefinition(const Decoration& decoration,
+                                              const Instruction& inst);
 
   // The following section contains functions which are called when id defined
   // by |referenced_inst| is
@@ -328,6 +330,11 @@ class BuiltInsValidator {
 
   // Used for GlobalInvocationId, LocalInvocationId, NumWorkgroups, WorkgroupId.
   spv_result_t ValidateComputeShaderI32Vec3InputAtReference(
+      const Decoration& decoration, const Instruction& built_in_inst,
+      const Instruction& referenced_inst,
+      const Instruction& referenced_from_inst);
+
+  spv_result_t ValidateSMBuiltinsAtReference(
       const Decoration& decoration, const Instruction& built_in_inst,
       const Instruction& referenced_inst,
       const Instruction& referenced_from_inst);
@@ -2654,6 +2661,61 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtReference(
   return SPV_SUCCESS;
 }
 
+spv_result_t BuiltInsValidator::ValidateSMBuiltinsAtDefinition(
+    const Decoration& decoration, const Instruction& inst) {
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (spv_result_t error = ValidateI32(
+            decoration, inst,
+            [this, &inst,
+             &decoration](const std::string& message) -> spv_result_t {
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << "According to the "
+                     << spvLogStringForEnv(_.context()->target_env)
+                     << " spec BuiltIn "
+                     << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                                      decoration.params()[0])
+                     << " variable needs to be a 32-bit int scalar. "
+                     << message;
+            })) {
+      return error;
+    }
+  }
+
+  // Seed at reference checks with this built-in.
+  return ValidateSMBuiltinsAtReference(decoration, inst, inst, inst);
+}
+
+spv_result_t BuiltInsValidator::ValidateSMBuiltinsAtReference(
+    const Decoration& decoration, const Instruction& built_in_inst,
+    const Instruction& referenced_inst,
+    const Instruction& referenced_from_inst) {
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    const SpvStorageClass storage_class = GetStorageClass(referenced_from_inst);
+    if (storage_class != SpvStorageClassMax &&
+        storage_class != SpvStorageClassInput) {
+      return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
+             << spvLogStringForEnv(_.context()->target_env)
+             << " spec allows BuiltIn "
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                              decoration.params()[0])
+             << " to be only used for "
+                "variables with Input storage class. "
+             << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                 referenced_from_inst)
+             << " " << GetStorageClassDesc(referenced_from_inst);
+    }
+  }
+
+  if (function_id_ == 0) {
+    // Propagate this rule to all dependant ids in the global scope.
+    id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
+        &BuiltInsValidator::ValidateSMBuiltinsAtReference, this, decoration,
+        built_in_inst, referenced_from_inst, std::placeholders::_1));
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   const SpvBuiltIn label = SpvBuiltIn(decoration.params()[0]);
@@ -2748,6 +2810,12 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInLocalInvocationIndex: {
       return ValidateLocalInvocationIndexAtDefinition(decoration, inst);
     }
+    case SpvBuiltInWarpsPerSMNV:
+    case SpvBuiltInSMCountNV:
+    case SpvBuiltInWarpIDNV:
+    case SpvBuiltInSMIDNV: {
+      return ValidateSMBuiltinsAtDefinition(decoration, inst);
+    }
     case SpvBuiltInWorkDim:
     case SpvBuiltInGlobalSize:
     case SpvBuiltInEnqueuedWorkgroupSize:
@@ -2810,11 +2878,7 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInWorldToObjectNV:
     case SpvBuiltInHitTNV:
     case SpvBuiltInHitKindNV:
-    case SpvBuiltInIncomingRayFlagsNV:
-    case SpvBuiltInWarpsPerSMNV:
-    case SpvBuiltInSMCountNV:
-    case SpvBuiltInWarpIDNV:
-    case SpvBuiltInSMIDNV: {
+    case SpvBuiltInIncomingRayFlagsNV: {
       // No validation rules (for the moment).
       break;
     }
