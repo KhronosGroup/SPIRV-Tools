@@ -182,6 +182,7 @@ SPV_CORE11_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.1/spirv.core.grammar
 SPV_CORE12_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/spirv.core.grammar.json
 SPV_COREUNIFIED1_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/spirv.core.grammar.json
 SPV_CORELATEST_GRAMMAR=$(SPV_COREUNIFIED1_GRAMMAR)
+SPV_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/spirv.json
 SPV_GLSL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.glsl.std.450.grammar.json
 SPV_OPENCL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.opencl.std.100.grammar.json
 # TODO(dneto): I expect the DebugInfo grammar file to eventually migrate to SPIRV-Headers
@@ -327,6 +328,23 @@ $(1)/generators.inc: \
 $(LOCAL_PATH)/source/opcode.cpp: $(1)/generators.inc
 endef
 $(eval $(call gen_spvtools_generators_inc,$(SPVTOOLS_OUT_PATH)))
+
+define gen_spvtools_instruction_api
+$(call generate-file-dir,$(1)/dummy_filename)
+$(1)/instructions.$(2).inc: \
+        $(LOCAL_PATH)/utils/generate_instruction_api.py \
+        $(SPVHEADERS_LOCAL_PATH) \
+        $(SPV_GRAMMAR) \
+        $(SPV_COREUNIFIED1_GRAMMAR)
+		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_instruction_api.py \
+				$(SPV_GRAMMAR) \
+				$(SPV_COREUNIFIED1_GRAMMAR) \
+				$(2) \
+				> $(1)/instructions.$(2).inc
+		@echo "[$(TARGET_ARCH_ABI)] Generate       : instructions.$(2).inc <= spirv.json"
+endef
+$(eval $(call gen_spvtools_instruction_api,$(LOCAL_PATH)/include/spirv-tools,hpp))
+$(eval $(call gen_spvtools_instruction_api,$(LOCAL_PATH)/source,cpp))
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := SPIRV-Tools
