@@ -35,6 +35,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
+        id_use_descriptor.h
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
@@ -45,6 +46,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_float.h
         transformation_add_type_int.h
         transformation_move_block_down.h
+        transformation_replace_boolean_constant_with_constant_binary.h
         transformation_split_block.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
@@ -57,6 +59,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_split_blocks.cpp
         fuzzer_util.cpp
+        id_use_descriptor.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
         transformation_add_constant_boolean.cpp
@@ -66,6 +69,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_float.cpp
         transformation_add_type_int.cpp
         transformation_move_block_down.cpp
+        transformation_replace_boolean_constant_with_constant_binary.cpp
         transformation_split_block.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
         )

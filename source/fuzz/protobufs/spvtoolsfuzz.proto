@@ -21,6 +21,42 @@ syntax = "proto3";
 
 package spvtools.fuzz.protobufs;
 
+message IdUseDescriptor {
+
+  // Describes a use of an id as an input operand to an instruction in some block
+  // of a function.
+
+  // Example:
+  //   - id_of_interest = 42
+  //   - target_instruction_opcode = OpStore
+  //   - in_operand_index = 1
+  //   - base_instruction_result_id = 50
+  //   - num_opcodes_to_ignore = 7
+  // represents a use of id 42 as input operand 1 to an OpStore instruction,
+  // such that the OpStore instruction can be found in the same basic block as
+  // the instruction with result id 50, and in particular is the 8th OpStore
+  // instruction found from instruction 50 onwards (i.e. 7 OpStore
+  // instructions are skipped).
+
+  // An id that we would like to be able to find a use of.
+  uint32 id_of_interest = 1;
+
+  // The opcode for the instruction that uses the id.
+  uint32 target_instruction_opcode = 2;
+
+  // The input operand index at which the use is expected.
+  uint32 in_operand_index = 3;
+
+  // The id of an instruction after which the instruction that contains the use
+  // is believed to occur; it might be the using instruction itself.
+  uint32 base_instruction_result_id = 4;
+
+  // The number of matching opcodes to skip over when searching for the using
+  // instruction from the base instruction.
+  uint32 num_opcodes_to_ignore = 5;
+
+}
+
 message FactSequence {
   repeated Fact fact = 1;
 }
@@ -45,6 +81,7 @@ message Transformation {
     TransformationAddTypeFloat add_type_float = 6;
     TransformationAddTypeInt add_type_int = 7;
     TransformationAddDeadBreak add_dead_break = 8;
+    TransformationReplaceBooleanConstantWithConstantBinary replace_boolean_constant_with_constant_binary = 9;
     // Add additional option using the next available number.
   }
 }
@@ -141,6 +178,27 @@ message TransformationMoveBlockDown {
 
   // The id of the block to move down.
   uint32 block_id = 1;
+
+}
+
+message TransformationReplaceBooleanConstantWithConstantBinary {
+  // A transformation to capture replacing a use of a boolean constant with
+  // binary operation on two constant values
+
+  // A descriptor for the boolean constant id we would like to replace
+  IdUseDescriptor id_use_descriptor = 1;
+
+  // Id for the constant to be used on the LHS of the comparision
+  uint32 lhs_id = 2;
+
+  // Id for the constant to be used on the RHS of the comparision
+  uint32 rhs_id = 3;
+
+  // Opcode for binary operator
+  uint32 opcode = 4;
+
+  // Id that will store the result of the binary operation instruction
+  uint32 fresh_id_for_binary_operation = 5;
 
 }
 
