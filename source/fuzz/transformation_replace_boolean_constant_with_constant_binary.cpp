@@ -113,8 +113,7 @@ bool unsigned_int_binop_evaluates_to(T lhs, T rhs, SpvOp binop,
 bool IsApplicable(
     const protobufs::TransformationReplaceBooleanConstantWithConstantBinary&
         message,
-    spvtools::opt::IRContext* context,
-    const spvtools::fuzz::FactManager& /*unused*/) {
+    opt::IRContext* context, const FactManager& /*unused*/) {
   // The id for the binary result must be fresh
   if (!fuzzerutil::IsFreshId(context,
                              message.fresh_id_for_binary_operation())) {
@@ -162,6 +161,8 @@ bool IsApplicable(
       context->get_constant_mgr()->FindDeclaredConstant(message.rhs_id());
   bool expected_result = (boolean_constant->opcode() == SpvOpConstantTrue);
 
+  const SpvOp binary_opcode = static_cast<SpvOp>(message.opcode());
+
   // We consider the floating point, signed and unsigned integer cases
   // separately.  In each case the logic is very similar.
   if (lhs_constant->AsFloatConstant()) {
@@ -169,15 +170,15 @@ bool IsApplicable(
            "Both constants should be of the same type.");
     if (lhs_constant->type()->AsFloat()->width() == 32) {
       if (!float_binop_evaluates_to(lhs_constant->GetFloat(),
-                                    rhs_constant->GetFloat(),
-                                    (SpvOp)message.opcode(), expected_result)) {
+                                    rhs_constant->GetFloat(), binary_opcode,
+                                    expected_result)) {
         return false;
       }
     } else {
       assert(lhs_constant->type()->AsFloat()->width() == 64);
       if (!float_binop_evaluates_to(lhs_constant->GetDouble(),
-                                    rhs_constant->GetDouble(),
-                                    (SpvOp)message.opcode(), expected_result)) {
+                                    rhs_constant->GetDouble(), binary_opcode,
+                                    expected_result)) {
         return false;
       }
     }
@@ -187,31 +188,31 @@ bool IsApplicable(
            "Both constants should be of the same type.");
     if (lhs_constant->type()->AsInteger()->IsSigned()) {
       if (lhs_constant->type()->AsInteger()->width() == 32) {
-        if (!signed_int_binop_evaluates_to(
-                lhs_constant->GetS32(), rhs_constant->GetS32(),
-                (SpvOp)message.opcode(), expected_result)) {
+        if (!signed_int_binop_evaluates_to(lhs_constant->GetS32(),
+                                           rhs_constant->GetS32(),
+                                           binary_opcode, expected_result)) {
           return false;
         }
       } else {
         assert(lhs_constant->type()->AsInteger()->width() == 64);
-        if (!signed_int_binop_evaluates_to(
-                lhs_constant->GetS64(), rhs_constant->GetS64(),
-                (SpvOp)message.opcode(), expected_result)) {
+        if (!signed_int_binop_evaluates_to(lhs_constant->GetS64(),
+                                           rhs_constant->GetS64(),
+                                           binary_opcode, expected_result)) {
           return false;
         }
       }
     } else {
       if (lhs_constant->type()->AsInteger()->width() == 32) {
-        if (!unsigned_int_binop_evaluates_to(
-                lhs_constant->GetU32(), rhs_constant->GetU32(),
-                (SpvOp)message.opcode(), expected_result)) {
+        if (!unsigned_int_binop_evaluates_to(lhs_constant->GetU32(),
+                                             rhs_constant->GetU32(),
+                                             binary_opcode, expected_result)) {
           return false;
         }
       } else {
         assert(lhs_constant->type()->AsInteger()->width() == 64);
-        if (!unsigned_int_binop_evaluates_to(
-                lhs_constant->GetU64(), rhs_constant->GetU64(),
-                (SpvOp)message.opcode(), expected_result)) {
+        if (!unsigned_int_binop_evaluates_to(lhs_constant->GetU64(),
+                                             rhs_constant->GetU64(),
+                                             binary_opcode, expected_result)) {
           return false;
         }
       }
@@ -226,14 +227,13 @@ bool IsApplicable(
 opt::Instruction* Apply(
     const protobufs::TransformationReplaceBooleanConstantWithConstantBinary&
         message,
-    spvtools::opt::IRContext* context,
-    spvtools::fuzz::FactManager* /*unused*/) {
+    opt::IRContext* context, FactManager* /*unused*/) {
   opt::analysis::Bool bool_type;
   opt::Instruction::OperandList operands = {
       {SPV_OPERAND_TYPE_ID, {message.lhs_id()}},
       {SPV_OPERAND_TYPE_ID, {message.rhs_id()}}};
   auto binary_instruction = MakeUnique<opt::Instruction>(
-      context, (SpvOp)message.opcode(),
+      context, static_cast<SpvOp>(message.opcode()),
       context->get_type_mgr()->GetId(&bool_type),
       message.fresh_id_for_binary_operation(), operands);
   opt::Instruction* result = binary_instruction.get();
@@ -247,11 +247,9 @@ opt::Instruction* Apply(
   {
     opt::Instruction* previous_node =
         instruction_before_which_to_insert->PreviousNode();
-    if (previous_node) {
-      if (previous_node->opcode() == SpvOpLoopMerge ||
-          previous_node->opcode() == SpvOpSelectionMerge) {
-        instruction_before_which_to_insert = previous_node;
-      }
+    if (previous_node && (previous_node->opcode() == SpvOpLoopMerge ||
+                          previous_node->opcode() == SpvOpSelectionMerge)) {
+      instruction_before_which_to_insert = previous_node;
     }
   }
   instruction_before_which_to_insert->InsertBefore(

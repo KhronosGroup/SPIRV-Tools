@@ -22,9 +22,9 @@ namespace spvtools {
 namespace fuzz {
 namespace transformation {
 
-// Attempts to identify the instruction in |context| associated with the id use
-// represented by |descriptor|.  Returns |nullptr| if no such instruction can
-// be found.
+// Looks for an instruction in |context| such that the id use represented by
+// |descriptor| is one of the operands to said instruction.  Returns |nullptr|
+// if no such instruction can be found.
 opt::Instruction* FindInstruction(const protobufs::IdUseDescriptor& descriptor,
                                   opt::IRContext* context);
 
