@@ -342,6 +342,7 @@ $(1)/instructions.$(2).inc: \
 				$(2) \
 				> $(1)/instructions.$(2).inc
 		@echo "[$(TARGET_ARCH_ABI)] Generate       : instructions.$(2).inc <= spirv.json"
+$(LOCAL_PATH)/$(1)/instructions.$(2): $(LOCAL_PATH)/$(1)/instructions.$(2).inc
 endef
 $(eval $(call gen_spvtools_instruction_api,$(LOCAL_PATH)/include/spirv-tools,hpp))
 $(eval $(call gen_spvtools_instruction_api,$(LOCAL_PATH)/source,cpp))
