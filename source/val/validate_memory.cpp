@@ -811,10 +811,7 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
 
     if (spvIsVulkanEnv(_.context()->target_env) &&
         storage_class == SpvStorageClassUniform) {
-      auto base_ptr = pointer;
-      while (base_ptr->opcode() == SpvOpAccessChain) {
-        base_ptr = _.FindDef(base_ptr->GetOperandAs<uint32_t>(2u));
-      }
+      auto base_ptr = _.TracePointer(pointer);
       if (base_ptr->opcode() == SpvOpVariable) {
         // If it's not a variable a different check should catch the problem.
         auto base_type = _.FindDef(base_ptr->GetOperandAs<uint32_t>(0));

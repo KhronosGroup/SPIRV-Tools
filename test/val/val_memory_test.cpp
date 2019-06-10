@@ -3693,8 +3693,8 @@ OpDecorate %var Binding 0
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
-%gep1 = OpAccessChain %ptr_uniform_int4 %var %int_0 %int_0
-%gep2 = OpAccessChain %ptr_uniform_int %gep1 %int_0
+%gep1 = OpAccessChain %ptr_uniform_int %var %int_0 %int_0 %int_0
+%gep2 = OpCopyObject %ptr_uniform_int %gep1
 OpStore %gep2 %int_0
 OpReturn
 OpFunctionEnd
@@ -3734,7 +3734,7 @@ OpDecorate %var Binding 0
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
 %gep1 = OpAccessChain %ptr_uniform_int4 %var %int_0 %int_0
-%gep2 = OpAccessChain %ptr_uniform_int %gep1 %int_0
+%gep2 = OpInBoundsAccessChain %ptr_uniform_int %gep1 %int_0
 OpStore %gep2 %int_0
 OpReturn
 OpFunctionEnd
