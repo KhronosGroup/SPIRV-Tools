@@ -1213,7 +1213,8 @@ bool ValidationState_t::LogicallyMatch(const Instruction* lhs,
   return false;
 }
 
-const Instruction* ValidationState_t::TracePointer(const Instruction* inst) const {
+const Instruction* ValidationState_t::TracePointer(
+    const Instruction* inst) const {
   auto base_ptr = inst;
   while (base_ptr->opcode() == SpvOpAccessChain ||
          base_ptr->opcode() == SpvOpInBoundsAccessChain ||
