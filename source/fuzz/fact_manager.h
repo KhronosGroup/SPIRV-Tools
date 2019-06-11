@@ -63,10 +63,9 @@ class FactManager {
   // uniform element" fact is known.
   std::vector<uint32_t> GetTypesForWhichUniformValuesAreKnown() const;
 
-  // Provides the distinct constant ids with type |type_id| for which at least
-  // one "constant == uniform element" fact is known.  If multiple
-  // identically-valued constants are relevant, each will appear in the
-  // sequence.
+  // Provides distinct constant ids with type |type_id| for which at least one
+  // "constant == uniform element" fact is known.  If multiple identically-
+  // valued constants are relevant, only one will appear in the sequence.
   std::vector<uint32_t> GetConstantsAvailableFromUniformsForType(
       opt::IRContext* ir_context, uint32_t type_id) const;
 
@@ -78,7 +77,8 @@ class FactManager {
 
   // Returns the id of a constant whose value is known to match that of
   // |uniform_descriptor|, and whose type matches the type of the uniform
-  // element.  Returns 0 if no such constant id exists.
+  // element.  If multiple such constant is exist, the one that is returned
+  // is arbitrary.  Returns 0 if no such constant id exists.
   uint32_t GetConstantFromUniformDescriptor(
       opt::IRContext* context,
       const protobufs::UniformBufferElementDescriptor& uniform_descriptor)

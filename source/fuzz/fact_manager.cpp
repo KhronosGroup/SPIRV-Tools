@@ -52,9 +52,41 @@ struct FactManager::ConstantUniformFacts {
       const opt::Instruction& constant_instruction,
       const protobufs::FactConstantUniform& constant_uniform_fact) const;
 
+  // Yields the constant words associated with |constant_uniform_fact|.
+  std::vector<uint32_t> GetConstantWords(
+      const protobufs::FactConstantUniform& constant_uniform_fact) const;
+
+  // Yields the id of a constant of type |type_id| whose data matches the
+  // constant data in |constant_uniform_fact|, or 0 if no such constant is
+  // declared.
+  uint32_t GetConstantId(
+      opt::IRContext* context,
+      const protobufs::FactConstantUniform& constant_uniform_fact,
+      uint32_t type_id) const;
+
   std::vector<std::pair<protobufs::FactConstantUniform, uint32_t>>
       facts_and_type_ids;
 };
+
+uint32_t FactManager::ConstantUniformFacts::GetConstantId(
+    opt::IRContext* context,
+    const protobufs::FactConstantUniform& constant_uniform_fact,
+    uint32_t type_id) const {
+  auto type = context->get_type_mgr()->GetType(type_id);
+  assert(type != nullptr && "Unknown type id.");
+  auto constant = context->get_constant_mgr()->GetConstant(
+      type, GetConstantWords(constant_uniform_fact));
+  return context->get_constant_mgr()->FindDeclaredConstant(constant, type_id);
+}
+
+std::vector<uint32_t> FactManager::ConstantUniformFacts::GetConstantWords(
+    const protobufs::FactConstantUniform& constant_uniform_fact) const {
+  std::vector<uint32_t> result;
+  for (auto constant_word : constant_uniform_fact.constant_word()) {
+    result.push_back(constant_word);
+  }
+  return result;
+}
 
 bool FactManager::ConstantUniformFacts::DataMatches(
     const opt::Instruction& constant_instruction,
@@ -64,27 +96,23 @@ bool FactManager::ConstantUniformFacts::DataMatches(
   for (uint32_t i = 0; i < constant_instruction.NumInOperands(); i++) {
     data_in_constant.push_back(constant_instruction.GetSingleWordInOperand(i));
   }
-  std::vector<uint32_t> data_in_fact;
-  for (auto word : constant_uniform_fact.constant_word()) {
-    data_in_fact.push_back(word);
-  }
-  return data_in_constant == data_in_fact;
+  return data_in_constant == GetConstantWords(constant_uniform_fact);
 }
 
 std::vector<uint32_t>
 FactManager::ConstantUniformFacts::GetConstantsAvailableFromUniformsForType(
     opt::IRContext* ir_context, uint32_t type_id) const {
   std::vector<uint32_t> result;
-  for (auto& type_or_value : ir_context->module()->types_values()) {
-    if (type_or_value.opcode() == SpvOpConstant &&
-        type_or_value.type_id() == type_id) {
-      for (auto& fact_and_type_id : facts_and_type_ids) {
-        if (fact_and_type_id.second == type_id) {
-          if (DataMatches(type_or_value, fact_and_type_id.first)) {
-            result.push_back(type_or_value.result_id());
-            break;  // Having added it once, we don't want to add it again.
-          }
-        }
+  std::set<uint32_t> already_seen;
+  for (auto& fact_and_type_id : facts_and_type_ids) {
+    if (fact_and_type_id.second != type_id) {
+      continue;
+    }
+    if (auto constant_id =
+            GetConstantId(ir_context, fact_and_type_id.first, type_id)) {
+      if (already_seen.find(constant_id) == already_seen.end()) {
+        result.push_back(constant_id);
+        already_seen.insert(constant_id);
       }
     }
   }
@@ -114,20 +142,17 @@ FactManager::ConstantUniformFacts::GetUniformDescriptorsForConstant(
 uint32_t FactManager::ConstantUniformFacts::GetConstantFromUniformDescriptor(
     opt::IRContext* context,
     const protobufs::UniformBufferElementDescriptor& uniform_descriptor) const {
+  // Consider each fact.
   for (auto& fact_and_type : facts_and_type_ids) {
+    // Check whether the uniform descriptor associated with the fact matches
+    // |uniform_descriptor|.
     if (UniformBufferElementDescriptorEquals()(
             &uniform_descriptor,
             &fact_and_type.first.uniform_buffer_element_descriptor())) {
-      for (auto& type_or_value : context->module()->types_values()) {
-        if (type_or_value.opcode() == SpvOpConstant &&
-            type_or_value.type_id() == fact_and_type.second) {
-          if (DataMatches(type_or_value, fact_and_type.first)) {
-            return type_or_value.result_id();
-          }
-        }
-      }
+      return GetConstantId(context, fact_and_type.first, fact_and_type.second);
     }
   }
+  // No fact associated with the given uniform descriptor was found.
   return 0;
 }
 

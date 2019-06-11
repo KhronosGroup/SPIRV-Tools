@@ -359,26 +359,32 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
 
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 
-  ASSERT_EQ(3, fact_manager
+  // Constants 1 and int32_min are available.
+  ASSERT_EQ(2, fact_manager
                    .GetConstantsAvailableFromUniformsForType(context.get(),
                                                              type_int32_id)
                    .size());
+  // Constant int64_max is available.
   ASSERT_EQ(1, fact_manager
                    .GetConstantsAvailableFromUniformsForType(context.get(),
                                                              type_int64_id)
                    .size());
+  // Constant 1u is available.
   ASSERT_EQ(1, fact_manager
                    .GetConstantsAvailableFromUniformsForType(context.get(),
                                                              type_uint32_id)
                    .size());
+  // Constants 1u and uint64_max are available.
   ASSERT_EQ(2, fact_manager
                    .GetConstantsAvailableFromUniformsForType(context.get(),
                                                              type_uint64_id)
                    .size());
+  // Constant 10.0 is available.
   ASSERT_EQ(1, fact_manager
                    .GetConstantsAvailableFromUniformsForType(context.get(),
                                                              type_float_id)
                    .size());
+  // Constants 10.0 and 20.0 are available.
   ASSERT_EQ(2, fact_manager
                    .GetConstantsAvailableFromUniformsForType(context.get(),
                                                              type_double_id)
@@ -451,6 +457,76 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   ASSERT_EQ(double_constant_ids[0], constant_1_id);
 
   ASSERT_EQ(double_constant_ids[1], constant_2_id);
+}
+
+TEST(FactManagerTest, TwoConstantsWithSameValue) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %10 "buf"
+               OpMemberName %10 0 "a"
+               OpName %12 ""
+               OpDecorate %8 RelaxedPrecision
+               OpMemberDecorate %10 0 RelaxedPrecision
+               OpMemberDecorate %10 0 Offset 0
+               OpDecorate %10 Block
+               OpDecorate %12 DescriptorSet 0
+               OpDecorate %12 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %20 = OpConstant %6 1
+         %10 = OpTypeStruct %6
+         %11 = OpTypePointer Uniform %10
+         %12 = OpVariable %11 Uniform
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto uniform_buffer_element_descriptor =
+      MakeUniformBufferElementDescriptor(12, {0});
+
+  // 12[0] = int(1)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
+                            uniform_buffer_element_descriptor));
+  auto constants =
+      fact_manager.GetConstantsAvailableFromUniformsForType(context.get(), 6);
+  ASSERT_EQ(1, constants.size());
+  ASSERT_TRUE(constants[0] == 9 || constants[0] == 20);
+
+  auto constant = fact_manager.GetConstantFromUniformDescriptor(
+      context.get(), uniform_buffer_element_descriptor);
+  ASSERT_TRUE(constant == 9 || constant == 20);
+
+  // Because the constants with ids 9 and 20 are equal, we should get the same
+  // single uniform buffer element descriptor when we look up the descriptors
+  // for either one of them.
+  for (auto constant_id : {9u, 20u}) {
+    auto descriptors = fact_manager.GetUniformDescriptorsForConstant(
+        context.get(), constant_id);
+    ASSERT_EQ(1, descriptors.size());
+    ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
+        &uniform_buffer_element_descriptor, &descriptors[0]));
+  }
 }
 
 }  // namespace
