@@ -39,6 +39,7 @@ if(SPIRV_BUILD_FUZZER)
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
+        replayer.h
         transformation_add_constant_boolean.h
         transformation_add_constant_scalar.h
         transformation_add_dead_break.h
@@ -63,6 +64,7 @@ if(SPIRV_BUILD_FUZZER)
         id_use_descriptor.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
+        replayer.cpp
         transformation_add_constant_boolean.cpp
         transformation_add_constant_scalar.cpp
         transformation_add_dead_break.cpp
