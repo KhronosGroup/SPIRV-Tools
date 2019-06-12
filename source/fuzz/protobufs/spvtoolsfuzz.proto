@@ -133,6 +133,8 @@ message Transformation {
     TransformationAddTypeInt add_type_int = 7;
     TransformationAddDeadBreak add_dead_break = 8;
     TransformationReplaceBooleanConstantWithConstantBinary replace_boolean_constant_with_constant_binary = 9;
+    TransformationAddTypePointer add_type_pointer = 10;
+    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 11;
     // Add additional option using the next available number.
   }
 }
@@ -222,6 +224,22 @@ message TransformationAddTypeInt {
 
 }
 
+message TransformationAddTypePointer {
+
+  // Adds OpTypePointer to the module, with the given storage class and base
+  // type
+
+  // Id to be used for the type
+  uint32 fresh_id = 1;
+
+  // Pointer storage class
+  uint32 storage_class = 2;
+
+  // Id of the base type for the pointer
+  uint32 base_type_id = 3;
+
+}
+
 message TransformationMoveBlockDown {
 
   // A transformation that moves a basic block to be one position lower in
@@ -229,6 +247,24 @@ message TransformationMoveBlockDown {
 
   // The id of the block to move down.
   uint32 block_id = 1;
+}
+
+message TransformationReplaceConstantWithUniform {
+
+  // Replaces a use of a constant id with the the result of a load from an
+  // element of uniform buffer known to hold the same value as the constant
+
+  // A descriptor for the id we would like to replace
+  IdUseDescriptor id_use_descriptor = 1;
+
+  // Uniform descriptor to identify which uniform value to choose
+  UniformBufferElementDescriptor uniform_descriptor = 2;
+
+  // Id that will store the result of an access chain
+  uint32 fresh_id_for_access_chain = 3;
+
+  // Id that will store the result of a load
+  uint32 fresh_id_for_load = 4;
 
 }
 
