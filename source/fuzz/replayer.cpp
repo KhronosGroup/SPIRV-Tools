@@ -140,6 +140,8 @@ struct Replayer::Impl {
 
 Replayer::Replayer(spv_target_env env) : impl_(MakeUnique<Impl>(env)) {}
 
+Replayer::~Replayer() = default;
+
 void Replayer::SetMessageConsumer(MessageConsumer c) {
   impl_->consumer = std::move(c);
 }
