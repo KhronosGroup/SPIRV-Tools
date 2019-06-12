@@ -211,7 +211,7 @@ class BuiltInsValidator {
   spv_result_t ValidateSMBuiltinsAtDefinition(const Decoration& decoration,
                                               const Instruction& inst);
 
-  // Used for SubgroupEqMask, SubgroupGeMask, SubgroupGtMask, SubgroupGeMaask.
+  // Used for SubgroupEqMask, SubgroupGeMask, SubgroupLtMask, SubgroupLeMask.
   spv_result_t ValidateI32Vec4InputAtDefinition(const Decoration& decoration,
                                                 const Instruction& inst);
   // Used for SubgroupLocalInvocationId, SubgroupSize.
