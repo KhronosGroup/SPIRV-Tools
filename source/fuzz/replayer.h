@@ -45,8 +45,6 @@ class Replayer {
   Replayer& operator=(const Replayer&) = delete;
   Replayer& operator=(Replayer&&) = delete;
 
-  ~Replayer();
-
   // Sets the message consumer to the given |consumer|. The |consumer| will be
   // invoked once for each message communicated from the library.
   void SetMessageConsumer(MessageConsumer consumer);
