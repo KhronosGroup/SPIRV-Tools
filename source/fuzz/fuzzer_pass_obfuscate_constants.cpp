@@ -106,6 +106,9 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
     }
   }
 
+  // We can now make a transformation that will replace |bool_constant_use|
+  // with an expression of the form (written using infix notation):
+  // |lhs_id| |comparison_opcode| |rhs_id|
   auto transformation = transformation::
       MakeTransformationReplaceBooleanConstantWithConstantBinary(
           bool_constant_use, lhs_id, rhs_id, comparison_opcode,
@@ -114,15 +117,26 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
   assert(transformation::IsApplicable(transformation, GetIRContext(),
                                       *GetFactManager()));
 
+  // Applying this transformation yields a pointer to the new instruction that
+  // computes the result of the binary expression.
   auto binary_operator_instruction =
       transformation::Apply(transformation, GetIRContext(), GetFactManager());
 
+  // Add this transformation to the sequence of transformations that have been
+  // applied.
   *GetTransformations()
        ->add_transformation()
        ->mutable_replace_boolean_constant_with_constant_binary() =
       transformation;
 
+  // Having made a binary expression, there may now be opportunities to further
+  // obfuscate the constants used as the LHS and RHS of the expression (e.g. by
+  // replacing them with loads from known uniforms).
+  //
+  // We thus consider operands 0 and 1 (LHS and RHS in turn).
   for (uint32_t index : {0u, 1u}) {
+    // We randomly decide, based on the current depth of obfuscation, whether
+    // to further obfuscate this operand.
     if (GetFuzzerContext()->GoDeeperInConstantObfuscation()(
             depth, GetFuzzerContext()->GetRandomGenerator())) {
       auto in_operand_use = transformation::MakeIdUseDescriptor(
@@ -255,6 +269,106 @@ void FuzzerPassObfuscateConstants::
       first_constant_is_larger);
 }
 
+void FuzzerPassObfuscateConstants::ObfuscateBoolConstant(
+    uint32_t depth, const protobufs::IdUseDescriptor& constant_use) {
+  // We want to replace the boolean constant use with a binary expression over
+  // scalar constants, but only if we can then potentially replace the constants
+  // with uniforms of the same value.
+
+  auto available_types_with_uniforms =
+      GetFactManager()->GetTypesForWhichUniformValuesAreKnown();
+  if (available_types_with_uniforms.empty()) {
+    // Do not try to obfuscate if we do not have access to any uniform
+    // elements with known values.
+    return;
+  }
+  auto chosen_type_id = available_types_with_uniforms
+      [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
+          static_cast<uint32_t>(available_types_with_uniforms.size()))];
+  auto available_constants =
+      GetFactManager()->GetConstantsAvailableFromUniformsForType(
+          GetIRContext(), chosen_type_id);
+  if (available_constants.size() == 1) {
+    // TODO(afd): for now we only obfuscate a boolean if there are at least
+    //  two constants available from uniforms, so that we can do a
+    //  comparison between them. It would be good to be able to do the
+    //  obfuscation even if there is only one such constant, if there is
+    //  also another regular constant available.
+    return;
+  }
+
+  // We know we have at least two known-to-be-constant uniforms of the chosen
+  // type.  Pick one of them at random.
+  auto constant_index_1 =
+      GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
+          static_cast<uint32_t>(available_constants.size()));
+  uint32_t constant_index_2;
+
+  // Now choose another one distinct from the first one.
+  do {
+    constant_index_2 = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
+        static_cast<uint32_t>(available_constants.size()));
+  } while (constant_index_1 == constant_index_2);
+
+  auto constant_id_1 = available_constants[constant_index_1];
+  auto constant_id_2 = available_constants[constant_index_2];
+
+  assert(constant_id_1 != 0 && constant_id_2 != 0 &&
+         "We should not find an available constant with an id of 0.");
+
+  // Now perform the obfuscation, according to whether the type of the constants
+  // is float, signed int, or unsigned int.
+  auto chosen_type = GetIRContext()->get_type_mgr()->GetType(chosen_type_id);
+  if (chosen_type->AsFloat()) {
+    ObfuscateBoolConstantViaFloatConstantPair(depth, constant_use,
+                                              constant_id_1, constant_id_2);
+  } else {
+    assert(chosen_type->AsInteger() &&
+           "We should only have uniform facts about ints and floats.");
+    if (chosen_type->AsInteger()->IsSigned()) {
+      ObfuscateBoolConstantViaSignedIntConstantPair(
+          depth, constant_use, constant_id_1, constant_id_2);
+    } else {
+      ObfuscateBoolConstantViaUnsignedIntConstantPair(
+          depth, constant_use, constant_id_1, constant_id_2);
+    }
+  }
+}
+
+void FuzzerPassObfuscateConstants::ObfuscateScalarConstant(
+    uint32_t /*depth*/, const protobufs::IdUseDescriptor& constant_use) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2670): consider
+  //  additional ways to obfuscate scalar constants.
+
+  // Check whether we know that any uniforms are guaranteed to be equal to the
+  // scalar constant associated with |constant_use|.
+  auto uniform_descriptors = GetFactManager()->GetUniformDescriptorsForConstant(
+      GetIRContext(), constant_use.id_of_interest());
+  if (uniform_descriptors.empty()) {
+    // No relevant uniforms, so do not obfuscate.
+    return;
+  }
+
+  // Choose a random available uniform known to be equal to the constant.
+  protobufs::UniformBufferElementDescriptor uniform_descriptor =
+      uniform_descriptors
+          [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
+              static_cast<uint32_t>(uniform_descriptors.size()))];
+  // Create, apply and record a transformation to replace the constant use with
+  // the result of a load from the chosen uniform.
+  auto transformation =
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          constant_use, uniform_descriptor, GetFuzzerContext()->GetFreshId(),
+          GetFuzzerContext()->GetFreshId());
+  // Transformation should be applicable by construction.
+  assert(transformation::IsApplicable(transformation, GetIRContext(),
+                                      *GetFactManager()));
+  transformation::Apply(transformation, GetIRContext(), GetFactManager());
+  *GetTransformations()
+       ->add_transformation()
+       ->mutable_replace_constant_with_uniform() = transformation;
+}
+
 void FuzzerPassObfuscateConstants::ObfuscateConstant(
     uint32_t depth, const protobufs::IdUseDescriptor& constant_use) {
   switch (GetIRContext()
@@ -262,146 +376,114 @@ void FuzzerPassObfuscateConstants::ObfuscateConstant(
               ->GetDef(constant_use.id_of_interest())
               ->opcode()) {
     case SpvOpConstantTrue:
-    case SpvOpConstantFalse: {
-      auto available_types_with_uniforms =
-          GetFactManager()->GetTypesForWhichUniformValuesAreKnown();
-      if (available_types_with_uniforms.empty()) {
-        // Do not try to obfuscate if we do not have access to any uniform
-        // elements with known values.
-        return;
-      }
-      auto chosen_type_id = available_types_with_uniforms
-          [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-              static_cast<uint32_t>(available_types_with_uniforms.size()))];
-      auto available_constants =
-          GetFactManager()->GetConstantsAvailableFromUniformsForType(
-              GetIRContext(), chosen_type_id);
-      if (available_constants.size() == 1) {
-        // TODO(afd): for now we only obfuscate a boolean if there are at least
-        //  two constants available from uniforms, so that we can do a
-        //  comparison between them. It would be good to be able to do the
-        //  obfuscation even if there is only one such constant, if there is
-        //  also another regular constant available.
-        return;
-      }
-      auto constant_index_1 =
-          GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-              static_cast<uint32_t>(available_constants.size()));
-      uint32_t constant_index_2;
-      do {
-        constant_index_2 =
-            GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-                static_cast<uint32_t>(available_constants.size()));
-      } while (constant_index_1 == constant_index_2);
-      auto constant_id_1 = available_constants[constant_index_1];
-      auto constant_id_2 = available_constants[constant_index_2];
-      if (constant_id_1 == 0 || constant_id_2 == 0) {
-        return;
-      }
-      auto chosen_type =
-          GetIRContext()->get_type_mgr()->GetType(chosen_type_id);
-      if (chosen_type->AsFloat()) {
-        ObfuscateBoolConstantViaFloatConstantPair(depth, constant_use,
-                                                  constant_id_1, constant_id_2);
-      } else {
-        assert(chosen_type->AsInteger() &&
-               "We should only have uniform facts about ints and floats.");
-        if (chosen_type->AsInteger()->IsSigned()) {
-          ObfuscateBoolConstantViaSignedIntConstantPair(
-              depth, constant_use, constant_id_1, constant_id_2);
-        } else {
-          ObfuscateBoolConstantViaUnsignedIntConstantPair(
-              depth, constant_use, constant_id_1, constant_id_2);
-        }
-      }
-    } break;
-    case SpvOpConstant: {
-      auto uniform_descriptors =
-          GetFactManager()->GetUniformDescriptorsForConstant(
-              GetIRContext(), constant_use.id_of_interest());
-      if (uniform_descriptors.empty()) {
-        break;
-      }
-      protobufs::UniformBufferElementDescriptor uniform_descriptor =
-          uniform_descriptors
-              [GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-                  static_cast<uint32_t>(uniform_descriptors.size()))];
-      auto transformation =
-          transformation::MakeTransformationReplaceConstantWithUniform(
-              constant_use, uniform_descriptor,
-              GetFuzzerContext()->GetFreshId(),
-              GetFuzzerContext()->GetFreshId());
-      // Transformation should be applicable by construction.
-      assert(transformation::IsApplicable(transformation, GetIRContext(),
-                                          *GetFactManager()));
-      transformation::Apply(transformation, GetIRContext(), GetFactManager());
-      *GetTransformations()
-           ->add_transformation()
-           ->mutable_replace_constant_with_uniform() = transformation;
-    } break;
+    case SpvOpConstantFalse:
+      ObfuscateBoolConstant(depth, constant_use);
+      break;
+    case SpvOpConstant:
+      ObfuscateScalarConstant(depth, constant_use);
+      break;
     default:
       assert(false && "The opcode should be one of the above.");
       break;
   }
 }
 
-void FuzzerPassObfuscateConstants::Apply() {
-  std::vector<protobufs::IdUseDescriptor> candidate_constant_uses;
+void FuzzerPassObfuscateConstants::MaybeAddConstantIdUse(
+    const opt::Instruction& inst, uint32_t in_operand_index,
+    uint32_t base_instruction_result_id,
+    const std::map<SpvOp, uint32_t>& skipped_opcode_count,
+    std::vector<protobufs::IdUseDescriptor>* constant_uses) {
+  if (inst.GetInOperand(in_operand_index).type != SPV_OPERAND_TYPE_ID) {
+    // The operand is not an id, so it cannot be a constant id.
+    return;
+  }
+  auto operand_id = inst.GetSingleWordInOperand(in_operand_index);
+  auto operand_definition =
+      GetIRContext()->get_def_use_mgr()->GetDef(operand_id);
+  switch (operand_definition->opcode()) {
+    case SpvOpConstantFalse:
+    case SpvOpConstantTrue:
+    case SpvOpConstant: {
+      // The operand is a constant id, so make an id use descriptor and record
+      // it.
+      protobufs::IdUseDescriptor id_use_descriptor;
+      id_use_descriptor.set_id_of_interest(operand_id);
+      id_use_descriptor.set_target_instruction_opcode(inst.opcode());
+      id_use_descriptor.set_in_operand_index(in_operand_index);
+      id_use_descriptor.set_base_instruction_result_id(
+          base_instruction_result_id);
+      id_use_descriptor.set_num_opcodes_to_ignore(
+          skipped_opcode_count.find(inst.opcode()) == skipped_opcode_count.end()
+              ? 0
+              : skipped_opcode_count.at(inst.opcode()));
+      constant_uses->push_back(id_use_descriptor);
+    } break;
+    default:
+      break;
+  }
+}
 
+void FuzzerPassObfuscateConstants::Apply() {
+  // First, gather up all the constant uses available in the module, by going
+  // through each block in each function.
+  std::vector<protobufs::IdUseDescriptor> constant_uses;
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
+      // For each constant use we encounter we are going to make an id use
+      // descriptor. An id use is described with respect to a base instruction;
+      // if there are instructions at the start of the block without result ids,
+      // the base instruction will have to be the block's label.
       uint32_t base_instruction_result_id = block.id();
+
+      // An id use descriptor also records how many instructions of a particular
+      // opcode need to be skipped in order to find the instruction of interest
+      // from the base instruction. We maintain a mapping that records a skip
+      // count for each relevant opcode.
       std::map<SpvOp, uint32_t> skipped_opcode_count;
+
+      // Go through each instruction in the block.
       for (auto& inst : block) {
         if (inst.HasResultId()) {
+          // The instruction has a result id, so can be used as the base
+          // instruction from now on, until another instruction with a result id
+          // is encountered.
           base_instruction_result_id = inst.result_id();
+          // Opcode skip counts were with respect to the previous base
+          // instruction and are now irrelevant.
           skipped_opcode_count.clear();
         }
+
+        // Consider each operand of the instruction, and add a constant id use
+        // for the operand if relevant.
         for (uint32_t in_operand_index = 0;
              in_operand_index < inst.NumInOperands(); in_operand_index++) {
-          if (inst.GetInOperand(in_operand_index).type != SPV_OPERAND_TYPE_ID) {
-            continue;
-          }
-          auto operand_id = inst.GetSingleWordInOperand(in_operand_index);
-          auto operand_definition =
-              GetIRContext()->get_def_use_mgr()->GetDef(operand_id);
-          switch (operand_definition->opcode()) {
-            case SpvOpConstantFalse:
-            case SpvOpConstantTrue:
-            case SpvOpConstant: {
-              protobufs::IdUseDescriptor id_use_descriptor;
-              id_use_descriptor.set_id_of_interest(operand_id);
-              id_use_descriptor.set_target_instruction_opcode(inst.opcode());
-              id_use_descriptor.set_in_operand_index(in_operand_index);
-              id_use_descriptor.set_base_instruction_result_id(
-                  base_instruction_result_id);
-              id_use_descriptor.set_num_opcodes_to_ignore(
-                  skipped_opcode_count.find(inst.opcode()) ==
-                          skipped_opcode_count.end()
-                      ? 0
-                      : skipped_opcode_count[inst.opcode()]);
-              candidate_constant_uses.push_back(id_use_descriptor);
-            } break;
-            default:
-              break;
-          }
+          MaybeAddConstantIdUse(inst, in_operand_index,
+                                base_instruction_result_id,
+                                skipped_opcode_count, &constant_uses);
         }
+
         if (!inst.HasResultId()) {
+          // The instruction has no result id, so in order to identify future id
+          // uses for instructions with this opcode from the existing base
+          // instruction, we need to increase the skip count for this opcode.
           skipped_opcode_count[inst.opcode()] =
               skipped_opcode_count.find(inst.opcode()) ==
                       skipped_opcode_count.end()
-                  ? 0
+                  ? 1
                   : skipped_opcode_count[inst.opcode()] + 1;
         }
       }
     }
   }
 
-  while (!candidate_constant_uses.empty()) {
+  // Go through the constant uses in a random order by repeatedly pulling out a
+  // constant use at a random index.
+  while (!constant_uses.empty()) {
     auto index = GetFuzzerContext()->GetRandomGenerator()->RandomUint32(
-        static_cast<uint32_t>(candidate_constant_uses.size()));
-    auto constant_use = std::move(candidate_constant_uses[index]);
-    candidate_constant_uses.erase(candidate_constant_uses.begin() + index);
+        static_cast<uint32_t>(constant_uses.size()));
+    auto constant_use = std::move(constant_uses[index]);
+    constant_uses.erase(constant_uses.begin() + index);
+    // Decide probabilistically whether to skip or obfuscate this constant use.
     if (GetFuzzerContext()->GetRandomGenerator()->RandomPercentage() >
         GetFuzzerContext()->GetChanceOfObfuscatingConstant()) {
       continue;

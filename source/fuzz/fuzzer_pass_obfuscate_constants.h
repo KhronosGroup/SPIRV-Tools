@@ -43,6 +43,18 @@ class FuzzerPassObfuscateConstants : public FuzzerPass {
   void ObfuscateConstant(uint32_t depth,
                          const protobufs::IdUseDescriptor& constant_use);
 
+  // This method will try to turn |constant_use|, required to be a use of a
+  // boolean constant, into a binary expression on scalar constants, which may
+  // themselves be recursively obfuscated.
+  void ObfuscateBoolConstant(uint32_t depth,
+                             const protobufs::IdUseDescriptor& constant_use);
+
+  // This method will try to turn |constant_use|, required to be a use of a
+  // scalar constant, into the value loaded from a uniform known to have the
+  // same value as the constant (if one exists).
+  void ObfuscateScalarConstant(uint32_t depth,
+                               const protobufs::IdUseDescriptor& constant_use);
+
   // Applies a transformation to replace the boolean constant usage represented
   // by |bool_constant_use| with a binary expression involving
   // |float_constant_id_1| and |float_constant_id_2|, which must not be equal
@@ -77,6 +89,16 @@ class FuzzerPassObfuscateConstants : public FuzzerPass {
       const std::vector<SpvOp>& greater_than_opcodes,
       const std::vector<SpvOp>& less_than_opcodes, uint32_t constant_id_1,
       uint32_t constant_id_2, bool first_constant_is_larger);
+
+  // A helper method to determine whether input operand |in_operand_index| of
+  // |inst| is the id of a constant, and add an id use descriptor to
+  // |candidate_constant_uses| if so.  The other parameters are used for id use
+  // descriptor construction.
+  void MaybeAddConstantIdUse(
+      const opt::Instruction& inst, uint32_t in_operand_index,
+      uint32_t base_instruction_result_id,
+      const std::map<SpvOp, uint32_t>& skipped_opcode_count,
+      std::vector<protobufs::IdUseDescriptor>* constant_uses);
 };
 
 }  // namespace fuzz
