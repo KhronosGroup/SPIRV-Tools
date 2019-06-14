@@ -27,6 +27,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   composite.h
   const_folding_rules.h
   constants.h
+  convert_to_half_pass.h
   copy_prop_arrays.h
   dead_branch_elim_pass.h
   dead_insert_elim_pass.h
@@ -93,6 +94,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   redundancy_elimination.h
   reflect.h
   register_pressure.h
+  relax_float_ops_pass.h
   remove_duplicates_pass.h
   replace_invalid_opc.h
   scalar_analysis.h
@@ -132,6 +134,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   composite.cpp
   const_folding_rules.cpp
   constants.cpp
+  convert_to_half_pass.cpp
   copy_prop_arrays.cpp
   dead_branch_elim_pass.cpp
   dead_insert_elim_pass.cpp
@@ -196,6 +199,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   reduce_load_size.cpp
   redundancy_elimination.cpp
   register_pressure.cpp
+  relax_float_ops_pass.cpp
   remove_duplicates_pass.cpp
   replace_invalid_opc.cpp
   scalar_analysis.cpp
