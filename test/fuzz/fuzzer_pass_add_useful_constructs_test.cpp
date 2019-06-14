@@ -180,30 +180,30 @@ TEST(FuzzerPassAddUsefulConstructsTest,
 
   // buf.s.x == 200
   ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 200,
-                            MakeUniformBufferElementDescriptor(14, {0, 0})));
+                            MakeUniformBufferElementDescriptor(0, 0, {0, 0})));
 
   // buf.s.y == 0.5
   const float float_value = 0.5;
   uint32_t float_value_as_uint;
   memcpy(&float_value_as_uint, &float_value, sizeof(float_value));
   ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), float_value_as_uint,
-                            MakeUniformBufferElementDescriptor(14, {0, 1})));
+                            MakeUniformBufferElementDescriptor(0, 0, {0, 1})));
 
   // buf.s.z == 300
   ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 300,
-                            MakeUniformBufferElementDescriptor(14, {0, 2})));
+                            MakeUniformBufferElementDescriptor(0, 0, {0, 2})));
 
   // buf.s.w == 400
   ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 400,
-                            MakeUniformBufferElementDescriptor(14, {0, 3})));
+                            MakeUniformBufferElementDescriptor(0, 0, {0, 3})));
 
   // buf.w[6] = 22
   ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 22,
-                            MakeUniformBufferElementDescriptor(14, {1, 6})));
+                            MakeUniformBufferElementDescriptor(0, 0, {1, 6})));
 
   // buf.w[8] = 23
   ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), 23,
-                            MakeUniformBufferElementDescriptor(14, {1, 8})));
+                            MakeUniformBufferElementDescriptor(0, 0, {1, 8})));
 
   // Assert some things about the module that are not true prior to adding the
   // pass
