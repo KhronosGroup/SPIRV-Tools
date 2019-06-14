@@ -180,7 +180,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
 }
 
 bool Replay(const spv_target_env& target_env,
-            const std::vector<uint>& binary_in,
+            const std::vector<uint32_t>& binary_in,
             const spvtools::fuzz::protobufs::FactSequence& initial_facts,
             const std::string& replay_transformations_file,
             std::vector<uint32_t>* binary_out,
