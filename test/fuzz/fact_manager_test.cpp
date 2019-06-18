@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <limits>
+
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -526,6 +528,101 @@ TEST(FactManagerTest, TwoConstantsWithSameValue) {
     ASSERT_EQ(1, descriptors.size());
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &uniform_buffer_element_descriptor, &descriptors[0]));
+  }
+}
+
+TEST(FactManagerTest, NonFiniteFactsAreNotValid) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpCapability Float64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %7 "buf"
+               OpMemberName %7 0 "f"
+               OpMemberName %7 1 "d"
+               OpName %9 ""
+               OpMemberDecorate %7 0 Offset 0
+               OpMemberDecorate %7 1 Offset 8
+               OpDecorate %7 Block
+               OpDecorate %9 DescriptorSet 0
+               OpDecorate %9 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+         %10 = OpTypeFloat 64
+          %7 = OpTypeStruct %6 %10
+          %8 = OpTypePointer Uniform %7
+          %9 = OpVariable %8 Uniform
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto uniform_buffer_element_descriptor_f =
+      MakeUniformBufferElementDescriptor(9, {0});
+
+  auto uniform_buffer_element_descriptor_d =
+      MakeUniformBufferElementDescriptor(9, {1});
+
+  if (std::numeric_limits<float>::has_infinity) {
+    // f == +inf
+    float positive_infinity_float = std::numeric_limits<float>::infinity();
+    uint32_t words[1];
+    memcpy(words, &positive_infinity_float, sizeof(float));
+    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(), {words[0]},
+                               uniform_buffer_element_descriptor_f));
+    // f == -inf
+    float negative_infinity_float = std::numeric_limits<float>::infinity();
+    memcpy(words, &negative_infinity_float, sizeof(float));
+    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(), {words[0]},
+                               uniform_buffer_element_descriptor_f));
+  }
+
+  if (std::numeric_limits<float>::has_quiet_NaN) {
+    // f == NaN
+    float quiet_nan_float = std::numeric_limits<float>::quiet_NaN();
+    uint32_t words[1];
+    memcpy(words, &quiet_nan_float, sizeof(float));
+    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(), {words[0]},
+                               uniform_buffer_element_descriptor_f));
+  }
+
+  if (std::numeric_limits<double>::has_infinity) {
+    // d == +inf
+    double positive_infinity_double = std::numeric_limits<double>::infinity();
+    uint32_t words[2];
+    memcpy(words, &positive_infinity_double, sizeof(double));
+    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(),
+                               {words[0], words[1]},
+                               uniform_buffer_element_descriptor_d));
+    // d == -inf
+    double negative_infinity_double = -std::numeric_limits<double>::infinity();
+    memcpy(words, &negative_infinity_double, sizeof(double));
+    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(),
+                               {words[0], words[1]},
+                               uniform_buffer_element_descriptor_d));
+  }
+
+  if (std::numeric_limits<double>::has_quiet_NaN) {
+    // d == NaN
+    double quiet_nan_double = std::numeric_limits<double>::quiet_NaN();
+    uint32_t words[2];
+    memcpy(words, &quiet_nan_double, sizeof(double));
+    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(),
+                               {words[0], words[1]},
+                               uniform_buffer_element_descriptor_d));
   }
 }
 

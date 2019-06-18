@@ -14,14 +14,14 @@
 
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 
+#include <cmath>
+
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
-
-using opt::IRContext;
 
 FuzzerPassObfuscateConstants::FuzzerPassObfuscateConstants(
     opt::IRContext* ir_context, FactManager* fact_manager,
@@ -60,50 +60,21 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaConstantPair(
 
   // We now need to decide how to order constant_id_1 and constant_id_2 such
   // that 'constant_id_1 comparison_opcode constant_id_2' evaluates to the
-  // boolean constant.  The following considers the rather large number of
-  // cases in turn.  There might be a more compact representation.
+  // boolean constant.
+  const bool is_greater_than_opcode =
+      std::find(greater_than_opcodes.begin(), greater_than_opcodes.end(),
+                comparison_opcode) != greater_than_opcodes.end();
   uint32_t lhs_id;
   uint32_t rhs_id;
-  if (bool_constant_opcode == SpvOpConstantTrue) {
-    if (first_constant_is_larger) {
-      if (std::find(greater_than_opcodes.begin(), greater_than_opcodes.end(),
-                    comparison_opcode) != greater_than_opcodes.end()) {
-        lhs_id = constant_id_1;
-        rhs_id = constant_id_2;
-      } else {
-        lhs_id = constant_id_2;
-        rhs_id = constant_id_1;
-      }
-    } else {
-      if (std::find(greater_than_opcodes.begin(), greater_than_opcodes.end(),
-                    comparison_opcode) != greater_than_opcodes.end()) {
-        lhs_id = constant_id_2;
-        rhs_id = constant_id_1;
-      } else {
-        lhs_id = constant_id_1;
-        rhs_id = constant_id_2;
-      }
-    }
+  if ((bool_constant_opcode == SpvOpConstantTrue &&
+       first_constant_is_larger == is_greater_than_opcode) ||
+      (bool_constant_opcode == SpvOpConstantFalse &&
+       first_constant_is_larger != is_greater_than_opcode)) {
+    lhs_id = constant_id_1;
+    rhs_id = constant_id_2;
   } else {
-    if (first_constant_is_larger) {
-      if (std::find(greater_than_opcodes.begin(), greater_than_opcodes.end(),
-                    comparison_opcode) != greater_than_opcodes.end()) {
-        lhs_id = constant_id_2;
-        rhs_id = constant_id_1;
-      } else {
-        lhs_id = constant_id_1;
-        rhs_id = constant_id_2;
-      }
-    } else {
-      if (std::find(greater_than_opcodes.begin(), greater_than_opcodes.end(),
-                    comparison_opcode) != greater_than_opcodes.end()) {
-        lhs_id = constant_id_1;
-        rhs_id = constant_id_2;
-      } else {
-        lhs_id = constant_id_2;
-        rhs_id = constant_id_1;
-      }
-    }
+    lhs_id = constant_id_2;
+    rhs_id = constant_id_1;
   }
 
   // We can now make a transformation that will replace |bool_constant_use|
@@ -161,6 +132,10 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstantViaFloatConstantPair(
                               ->AsFloatConstant();
   assert(float_constant_1->words() != float_constant_2->words() &&
          "The constants should not be identical.");
+  assert(std::isfinite(float_constant_1->GetValueAsDouble()) &&
+         "The constants must be finite numbers.");
+  assert(std::isfinite(float_constant_2->GetValueAsDouble()) &&
+         "The constants must be finite numbers.");
   bool first_constant_is_larger;
   assert(float_constant_1->type()->AsFloat()->width() ==
              float_constant_2->type()->AsFloat()->width() &&
