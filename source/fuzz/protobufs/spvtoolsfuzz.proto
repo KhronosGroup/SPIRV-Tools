@@ -64,8 +64,9 @@ message UniformBufferElementDescriptor {
   // is contained, and (b) a series of indices that need to be followed to get
   // to the element (via fields and array/vector indices).
   //
-  // Example: suppose %42 is the id of a uniform variable, and that the uniform
-  // variable has the following type (using GLSL-like syntax):
+  // Example: suppose there is a uniform variable with descriptor set 7 and
+  // binding 9, and that the uniform variable has the following type (using
+  // GLSL-like syntax):
   //
   // struct S {
   //   float f;
@@ -74,16 +75,17 @@ message UniformBufferElementDescriptor {
   // };
   //
   // Then:
-  // - 42[0] describes the 'f' field.
-  // - 42[1,1] describes the y component of the 'g' field.
-  // - 42[2,7,3] describes the w component of element 7 of the 'h' field
+  // - (7, 9, [0]) describes the 'f' field.
+  // - (7, 9, [1,1]) describes the y component of the 'g' field.
+  // - (7, 9, [2,7,3]) describes the w component of element 7 of the 'h' field
 
-  // The result id of a uniform variable.
-  uint32 uniform_variable_id = 1;
+  // The descriptor set and binding associated with a uniform variable.
+  uint32 descriptor_set = 1;
+  uint32 binding = 2;
 
   // An ordered sequence of indices through composite structures in the
   // uniform buffer.
-  repeated uint32 index = 2;
+  repeated uint32 index = 3;
 
 }
 
