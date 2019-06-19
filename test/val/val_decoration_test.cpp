@@ -6400,6 +6400,8 @@ OpDecorate %1 BufferBlock
                         "requires SPIR-V version 1.3 or earlier"));
 }
 
+// Component
+
 TEST_F(ValidateDecorations, ComponentDecorationBadTarget) {
   std::string spirv = R"(
 OpCapability Shader
@@ -6670,6 +6672,41 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sequence of components starting with 2 "
                         "and ending with 4 gets larger than 3"));
+}
+
+TEST_F(ValidateDecorations, ComponentDecorationFunctionParameter) {
+  std::string spirv = R"(
+              OpCapability Shader
+              OpMemoryModel Logical GLSL450
+              OpEntryPoint Vertex %main "main"
+
+              OpDecorate %param_f Component 0
+
+      %void = OpTypeVoid
+   %void_fn = OpTypeFunction %void
+     %float = OpTypeFloat 32
+   %float_0 = OpConstant %float 0
+   %int     = OpTypeInt 32 0
+   %int_2   = OpConstant %int 2
+  %struct_b = OpTypeStruct %float
+
+%extra_fn = OpTypeFunction %void %float
+
+  %helper = OpFunction %void None %extra_fn
+ %param_f = OpFunctionParameter %float
+%helper_label = OpLabel
+            OpReturn
+            OpFunctionEnd
+
+    %main = OpFunction %void None %void_fn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 }  // namespace

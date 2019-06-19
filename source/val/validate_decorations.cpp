@@ -1405,16 +1405,19 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
   if (decoration.struct_member_index() == Decoration::kInvalidMember) {
     // The target must be a memory object declaration.
     const auto opcode = inst.opcode();
-    if (opcode != SpvOpVariable) {
+    if (opcode != SpvOpVariable && opcode != SpvOpFunctionParameter) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
              << "Target of Component decoration must be a memory object "
-                "declaration (a variable)";
+                "declaration (a variable or a function parameter)";
     }
 
     // Only valid for the Input and Output Storage Classes.
-    const auto storage_class = inst.GetOperandAs<SpvStorageClass>(2);
+    const auto storage_class = opcode == SpvOpVariable
+                                   ? inst.GetOperandAs<SpvStorageClass>(2)
+                                   : SpvStorageClassMax;
     if (storage_class != SpvStorageClassInput &&
-        storage_class != SpvStorageClassOutput) {
+        storage_class != SpvStorageClassOutput &&
+        storage_class != SpvStorageClassMax) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
              << "Target of Component decoration is invalid: must point to a "
                 "Storage Class of Input(1) or Output(3). Found Storage "
@@ -1422,9 +1425,11 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
              << storage_class;
     }
 
-    const auto pointer_type_id = inst.type_id();
-    const auto pointer = vstate.FindDef(pointer_type_id);
-    type_id = pointer->GetOperandAs<uint32_t>(2);
+    type_id = inst.type_id();
+    if (vstate.IsPointerType(type_id)) {
+      const auto pointer = vstate.FindDef(type_id);
+      type_id = pointer->GetOperandAs<uint32_t>(2);
+    }
   } else {
     if (inst.opcode() != SpvOpTypeStruct) {
       return vstate.diag(SPV_ERROR_INVALID_DATA, &inst)
