@@ -15,6 +15,7 @@
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/uniform_buffer_element_descriptor.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -28,10 +29,12 @@ std::unique_ptr<opt::Instruction> MakeAccessChainInstruction(
   // The input operands for the access chain.
   opt::Instruction::OperandList operands_for_access_chain;
 
+  opt::Instruction* uniform_variable =
+      FindUniformVariable(message.uniform_descriptor(), context, false);
+
   // The first input operand is the id of the uniform variable.
   operands_for_access_chain.push_back(
-      {SPV_OPERAND_TYPE_ID,
-       {message.uniform_descriptor().uniform_variable_id()}});
+      {SPV_OPERAND_TYPE_ID, {uniform_variable->result_id()}});
 
   // The other input operands are the ids of the constants used to index into
   // the uniform. The uniform buffer descriptor specifies a series of literals;

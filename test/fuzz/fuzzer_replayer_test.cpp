@@ -951,7 +951,7 @@ TEST(FuzzerReplayerTest, Miscellaneous3) {
   {
     protobufs::FactConstantUniform resolution_x_eq_250;
     *resolution_x_eq_250.mutable_uniform_buffer_element_descriptor() =
-        MakeUniformBufferElementDescriptor(24, {0, 0});
+        MakeUniformBufferElementDescriptor(0, 0, {0, 0});
     *resolution_x_eq_250.mutable_constant_word()->Add() = 250;
     protobufs::Fact temp;
     *temp.mutable_constant_uniform_fact() = resolution_x_eq_250;
@@ -960,7 +960,7 @@ TEST(FuzzerReplayerTest, Miscellaneous3) {
   {
     protobufs::FactConstantUniform resolution_y_eq_100;
     *resolution_y_eq_100.mutable_uniform_buffer_element_descriptor() =
-        MakeUniformBufferElementDescriptor(24, {0, 1});
+        MakeUniformBufferElementDescriptor(0, 0, {0, 1});
     *resolution_y_eq_100.mutable_constant_word()->Add() = 100;
     protobufs::Fact temp;
     *temp.mutable_constant_uniform_fact() = resolution_y_eq_100;

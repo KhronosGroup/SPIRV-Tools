@@ -201,20 +201,21 @@ bool FactManager::ConstantUniformFacts::FloatingPointValueIsSuitable(
 
 bool FactManager::ConstantUniformFacts::AddFact(
     const protobufs::FactConstantUniform& fact, opt::IRContext* context) {
-  auto should_be_uniform_variable = context->get_def_use_mgr()->GetDef(
-      fact.uniform_buffer_element_descriptor().uniform_variable_id());
-  if (!should_be_uniform_variable) {
+  // Try to find a unique instruction that declares a variable such that the
+  // variable is decorated with the descriptor set and binding associated with
+  // the constant uniform fact.
+  opt::Instruction* uniform_variable = FindUniformVariable(
+      fact.uniform_buffer_element_descriptor(), context, true);
+
+  if (!uniform_variable) {
     return false;
   }
-  if (SpvOpVariable != should_be_uniform_variable->opcode()) {
-    return false;
-  }
-  if (SpvStorageClassUniform !=
-      should_be_uniform_variable->GetSingleWordInOperand(0)) {
-    return false;
-  }
+
+  assert(SpvOpVariable == uniform_variable->opcode());
+  assert(SpvStorageClassUniform == uniform_variable->GetSingleWordInOperand(0));
+
   auto should_be_uniform_pointer_type =
-      context->get_type_mgr()->GetType(should_be_uniform_variable->type_id());
+      context->get_type_mgr()->GetType(uniform_variable->type_id());
   if (!should_be_uniform_pointer_type->AsPointer()) {
     return false;
   }
@@ -223,7 +224,7 @@ bool FactManager::ConstantUniformFacts::AddFact(
     return false;
   }
   auto should_be_uniform_pointer_instruction =
-      context->get_def_use_mgr()->GetDef(should_be_uniform_variable->type_id());
+      context->get_def_use_mgr()->GetDef(uniform_variable->type_id());
   auto element_type =
       should_be_uniform_pointer_instruction->GetSingleWordInOperand(1);
 
