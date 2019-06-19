@@ -1445,7 +1445,7 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
     // For 16-, and 32-bit types, it is invalid if this sequence of components
     // gets larger than 3.
     const auto bit_width = vstate.GetBitWidth(type_id);
-    if (bit_width != 16 || bit_width != 32) {
+    if (bit_width == 16 || bit_width == 32) {
       assert(decoration.params().size() == 1 &&
              "Grammar ensures Component has one parameter");
 
