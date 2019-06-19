@@ -36,6 +36,7 @@ bool UniformBufferElementDescriptorEquals::operator()(
     const protobufs::UniformBufferElementDescriptor* second) const {
   return first->descriptor_set() == second->descriptor_set() &&
          first->binding() == second->binding() &&
+         first->index().size() == second->index().size() &&
          std::equal(first->index().begin(), first->index().end(),
                     second->index().begin());
 }
