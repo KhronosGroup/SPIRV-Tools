@@ -6536,7 +6536,7 @@ TEST_F(ValidateDecorations, ComponentDecorationIntGood2Vulkan) {
 TEST_F(ValidateDecorations, ComponentDecorationIntGood3Vulkan) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv =
-      ShaderWithComponentDecoration("OpTypeInt 32 0", "Component 2");
+      ShaderWithComponentDecoration("OpTypeInt 32 0", "Component 3");
 
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
