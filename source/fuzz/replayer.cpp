@@ -43,8 +43,9 @@ bool IsApplicable(const protobufs::Transformation& transformation,
                   opt::IRContext* context, const FactManager& fact_manager) {
   switch (transformation.transformation_case()) {
     case protobufs::Transformation::TransformationCase::kAddConstantBoolean:
-      return transformation::IsApplicable(transformation.add_constant_boolean(),
-                                          context, fact_manager);
+      return TransformationAddConstantBoolean(
+                 transformation.add_constant_boolean())
+          .IsApplicable(context, fact_manager);
     case protobufs::Transformation::TransformationCase::kAddConstantScalar:
       return transformation::IsApplicable(transformation.add_constant_scalar(),
                                           context, fact_manager);
@@ -94,8 +95,8 @@ void Apply(const protobufs::Transformation& transformation,
            opt::IRContext* context, FactManager* fact_manager) {
   switch (transformation.transformation_case()) {
     case protobufs::Transformation::TransformationCase::kAddConstantBoolean:
-      transformation::Apply(transformation.add_constant_boolean(), context,
-                            fact_manager);
+      TransformationAddConstantBoolean(transformation.add_constant_boolean())
+          .Apply(context, fact_manager);
       break;
     case protobufs::Transformation::TransformationCase::kAddConstantScalar:
       transformation::Apply(transformation.add_constant_scalar(), context,

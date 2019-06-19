@@ -149,17 +149,14 @@ void FuzzerPassAddUsefulConstructs::Apply() {
     // Add OpConstantTrue/False if not already there.
     opt::analysis::BoolConstant bool_constant(bool_type, boolean_value);
     if (!GetIRContext()->get_constant_mgr()->FindConstant(&bool_constant)) {
-      protobufs::TransformationAddConstantBoolean add_constant_boolean =
-          transformation::MakeTransformationAddConstantBoolean(
-              GetFuzzerContext()->GetFreshId(), boolean_value);
-      assert(transformation::IsApplicable(add_constant_boolean, GetIRContext(),
-                                          *GetFactManager()) &&
+      TransformationAddConstantBoolean add_constant_boolean(
+          GetFuzzerContext()->GetFreshId(), boolean_value);
+      assert(add_constant_boolean.IsApplicable(GetIRContext(),
+                                               *GetFactManager()) &&
              "Should be applicable by construction.");
-      transformation::Apply(add_constant_boolean, GetIRContext(),
-                            GetFactManager());
-      *GetTransformations()
-           ->add_transformation()
-           ->mutable_add_constant_boolean() = add_constant_boolean;
+      add_constant_boolean.Apply(GetIRContext(), GetFactManager());
+      *GetTransformations()->add_transformation() =
+          add_constant_boolean.ToMessage();
     }
   }
 
