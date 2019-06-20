@@ -6491,8 +6491,7 @@ OpDecorate %entryPointOutput )" +
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %float = OpTypeFloat 32
-%vtype = )" +
-         type + R"(
+%vtype = )" + type + R"(
 %float_0 = OpConstant %float 0
 %_ptr_Output_vtype = OpTypePointer Output %vtype
 %entryPointOutput = OpVariable %_ptr_Output_vtype Output
