@@ -815,10 +815,11 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
       if (base_ptr->opcode() == SpvOpVariable) {
         // If it's not a variable a different check should catch the problem.
         auto base_type = _.FindDef(base_ptr->GetOperandAs<uint32_t>(0));
-        base_type = _.FindDef(base_type->GetOperandAs<uint32_t>(1u));
+        // Get the pointed-to type.
+        base_type = _.FindDef(base_type->GetOperandAs<uint32_t>(2u));
         if (base_type->opcode() == SpvOpTypeArray ||
             base_type->opcode() == SpvOpTypeRuntimeArray) {
-          base_type = _.FindDef(base_ptr->GetOperandAs<uint32_t>(0));
+          base_type = _.FindDef(base_type->GetOperandAs<uint32_t>(1u));
         }
         if (_.HasDecoration(base_type->id(), SpvDecorationBlock)) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
