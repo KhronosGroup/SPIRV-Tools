@@ -16,15 +16,64 @@
 
 #include <cassert>
 
+#include "source/util/make_unique.h"
+#include "transformation_add_constant_boolean.h"
+#include "transformation_add_constant_scalar.h"
+#include "transformation_add_dead_break.h"
+#include "transformation_add_type_boolean.h"
+#include "transformation_add_type_float.h"
+#include "transformation_add_type_int.h"
+#include "transformation_add_type_pointer.h"
+#include "transformation_move_block_down.h"
+#include "transformation_replace_boolean_constant_with_constant_binary.h"
+#include "transformation_replace_constant_with_uniform.h"
+#include "transformation_split_block.h"
+
 namespace spvtools {
 namespace fuzz {
 
 Transformation::~Transformation() = default;
 
 std::unique_ptr<Transformation> Transformation::FromMessage(
-    const protobufs::Transformation& /*message*/) {
-  assert(false && "Not yet implemented.");
-  return nullptr;
+    const protobufs::Transformation& message) {
+  switch (message.transformation_case()) {
+    case protobufs::Transformation::TransformationCase::kAddConstantBoolean:
+      return MakeUnique<TransformationAddConstantBoolean>(
+          message.add_constant_boolean());
+    case protobufs::Transformation::TransformationCase::kAddConstantScalar:
+      return MakeUnique<TransformationAddConstantScalar>(
+          message.add_constant_scalar());
+    case protobufs::Transformation::TransformationCase::kAddDeadBreak:
+      return MakeUnique<TransformationAddDeadBreak>(message.add_dead_break());
+    case protobufs::Transformation::TransformationCase::kAddTypeBoolean:
+      return MakeUnique<TransformationAddTypeBoolean>(
+          message.add_type_boolean());
+    case protobufs::Transformation::TransformationCase::kAddTypeFloat:
+      return MakeUnique<TransformationAddTypeFloat>(message.add_type_float());
+    case protobufs::Transformation::TransformationCase::kAddTypeInt:
+      return MakeUnique<TransformationAddTypeInt>(message.add_type_int());
+    case protobufs::Transformation::TransformationCase::kAddTypePointer:
+      return MakeUnique<TransformationAddTypePointer>(
+          message.add_type_pointer());
+    case protobufs::Transformation::TransformationCase::kMoveBlockDown:
+      return MakeUnique<TransformationMoveBlockDown>(message.move_block_down());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceBooleanConstantWithConstantBinary:
+      return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(
+          message.replace_boolean_constant_with_constant_binary());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceConstantWithUniform:
+      return MakeUnique<TransformationReplaceConstantWithUniform>(
+          message.replace_constant_with_uniform());
+    case protobufs::Transformation::TransformationCase::kSplitBlock:
+      return MakeUnique<TransformationSplitBlock>(message.split_block());
+    default:
+      assert(message.transformation_case() ==
+                 protobufs::Transformation::TRANSFORMATION_NOT_SET &&
+             "Unhandled transformation type.");
+      assert(false && "An unset transformation was encountered.");
+      return nullptr;
+  }
 }
 
 }  // namespace fuzz
