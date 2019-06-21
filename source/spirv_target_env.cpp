@@ -15,7 +15,6 @@
 #include "source/spirv_target_env.h"
 
 #include <cstring>
-#include <map>
 #include <string>
 
 #include "source/spirv_constant.h"
@@ -104,7 +103,7 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
   return SPV_SPIRV_VERSION_WORD(0, 0);
 }
 
-static const std::map<std::string, spv_target_env> spvTargetEnvNameMap = {
+static const std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] = {
     {"vulkan1.1spv1.4", SPV_ENV_VULKAN_1_1_SPIRV_1_4},
     {"vulkan1.0", SPV_ENV_VULKAN_1_0},
     {"vulkan1.1", SPV_ENV_VULKAN_1_1},
@@ -130,15 +129,16 @@ static const std::map<std::string, spv_target_env> spvTargetEnvNameMap = {
 };
 
 bool spvParseTargetEnv(const char* s, spv_target_env* env) {
-  std::string envstr;
-  if (s != nullptr) {
-    envstr = s;
-  }
-  if (spvTargetEnvNameMap.count(envstr) != 0) {
-    if (env) {
-      *env = spvTargetEnvNameMap.at(envstr);
+  auto match = [s](const char* b) {
+    return s && (0 == strncmp(s, b, strlen(b)));
+  };
+  for (auto& name_env : spvTargetEnvNameMap) {
+    if (match(name_env.first)) {
+      if (env) {
+        *env = name_env.second;
+      }
+      return true;
     }
-    return true;
   }
   if (env) *env = SPV_ENV_UNIVERSAL_1_0;
   return false;
@@ -282,8 +282,8 @@ std::string spvTargetEnvList(const int pad, const int wrap) {
   std::string line;
   std::string sep = "";
 
-  for (auto& env_name : spvTargetEnvNameMap) {
-    std::string word = sep + env_name.first;
+  for (auto& name_env : spvTargetEnvNameMap) {
+    std::string word = sep + name_env.first;
     if (line.length() + word.length() > max_line_len) {
       // Adding one word wouldn't fit, commit the line in progress and
       // start a new one.
