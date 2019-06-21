@@ -15,7 +15,6 @@
 #include "source/spirv_target_env.h"
 
 #include <cstring>
-#include <map>
 #include <string>
 
 #include "source/spirv_constant.h"
@@ -104,41 +103,43 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
   return SPV_SPIRV_VERSION_WORD(0, 0);
 }
 
-static const std::map<std::string, spv_target_env> spvTargetEnvNameMap = {
-    {"vulkan1.1spv1.4", SPV_ENV_VULKAN_1_1_SPIRV_1_4},
-    {"vulkan1.0", SPV_ENV_VULKAN_1_0},
-    {"vulkan1.1", SPV_ENV_VULKAN_1_1},
-    {"spv1.0", SPV_ENV_UNIVERSAL_1_0},
-    {"spv1.1", SPV_ENV_UNIVERSAL_1_1},
-    {"spv1.2", SPV_ENV_UNIVERSAL_1_2},
-    {"spv1.3", SPV_ENV_UNIVERSAL_1_3},
-    {"spv1.4", SPV_ENV_UNIVERSAL_1_4},
-    {"opencl1.2embedded", SPV_ENV_OPENCL_EMBEDDED_1_2},
-    {"opencl1.2", SPV_ENV_OPENCL_1_2},
-    {"opencl2.0embedded", SPV_ENV_OPENCL_EMBEDDED_2_0},
-    {"opencl2.0", SPV_ENV_OPENCL_2_0},
-    {"opencl2.1embedded", SPV_ENV_OPENCL_EMBEDDED_2_1},
-    {"opencl2.1", SPV_ENV_OPENCL_2_1},
-    {"opencl2.2embedded", SPV_ENV_OPENCL_EMBEDDED_2_2},
-    {"opencl2.2", SPV_ENV_OPENCL_2_2},
-    {"opengl4.0", SPV_ENV_OPENGL_4_0},
-    {"opengl4.1", SPV_ENV_OPENGL_4_1},
-    {"opengl4.2", SPV_ENV_OPENGL_4_2},
-    {"opengl4.3", SPV_ENV_OPENGL_4_3},
-    {"opengl4.5", SPV_ENV_OPENGL_4_5},
-    {"webgpu0", SPV_ENV_WEBGPU_0},
+static constexpr std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] =
+    {
+        {"vulkan1.1spv1.4", SPV_ENV_VULKAN_1_1_SPIRV_1_4},
+        {"vulkan1.0", SPV_ENV_VULKAN_1_0},
+        {"vulkan1.1", SPV_ENV_VULKAN_1_1},
+        {"spv1.0", SPV_ENV_UNIVERSAL_1_0},
+        {"spv1.1", SPV_ENV_UNIVERSAL_1_1},
+        {"spv1.2", SPV_ENV_UNIVERSAL_1_2},
+        {"spv1.3", SPV_ENV_UNIVERSAL_1_3},
+        {"spv1.4", SPV_ENV_UNIVERSAL_1_4},
+        {"opencl1.2embedded", SPV_ENV_OPENCL_EMBEDDED_1_2},
+        {"opencl1.2", SPV_ENV_OPENCL_1_2},
+        {"opencl2.0embedded", SPV_ENV_OPENCL_EMBEDDED_2_0},
+        {"opencl2.0", SPV_ENV_OPENCL_2_0},
+        {"opencl2.1embedded", SPV_ENV_OPENCL_EMBEDDED_2_1},
+        {"opencl2.1", SPV_ENV_OPENCL_2_1},
+        {"opencl2.2embedded", SPV_ENV_OPENCL_EMBEDDED_2_2},
+        {"opencl2.2", SPV_ENV_OPENCL_2_2},
+        {"opengl4.0", SPV_ENV_OPENGL_4_0},
+        {"opengl4.1", SPV_ENV_OPENGL_4_1},
+        {"opengl4.2", SPV_ENV_OPENGL_4_2},
+        {"opengl4.3", SPV_ENV_OPENGL_4_3},
+        {"opengl4.5", SPV_ENV_OPENGL_4_5},
+        {"webgpu0", SPV_ENV_WEBGPU_0},
 };
 
 bool spvParseTargetEnv(const char* s, spv_target_env* env) {
-  std::string envstr;
-  if (s != nullptr) {
-    envstr = s;
-  }
-  if (spvTargetEnvNameMap.count(envstr) != 0) {
-    if (env) {
-      *env = spvTargetEnvNameMap.at(envstr);
+  auto match = [s](const char* b) {
+    return s && (0 == strncmp(s, b, strlen(b)));
+  };
+  for (auto& name_env : spvTargetEnvNameMap) {
+    if (match(name_env.first)) {
+      if (env) {
+        *env = name_env.second;
+      }
+      return true;
     }
-    return true;
   }
   if (env) *env = SPV_ENV_UNIVERSAL_1_0;
   return false;
@@ -282,8 +283,8 @@ std::string spvTargetEnvList(const int pad, const int wrap) {
   std::string line;
   std::string sep = "";
 
-  for (auto& env_name : spvTargetEnvNameMap) {
-    std::string word = sep + env_name.first;
+  for (auto& name_env : spvTargetEnvNameMap) {
+    std::string word = sep + name_env.first;
     if (line.length() + word.length() > max_line_len) {
       // Adding one word wouldn't fit, commit the line in progress and
       // start a new one.
