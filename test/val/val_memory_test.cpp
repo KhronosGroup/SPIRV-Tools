@@ -19,12 +19,14 @@
 
 #include "gmock/gmock.h"
 #include "test/unit_spirv.h"
+#include "test/val/val_code_generator.h"
 #include "test/val/val_fixtures.h"
 
 namespace spvtools {
 namespace val {
 namespace {
 
+using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::Values;
@@ -3831,6 +3833,141 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
 }
+
+using ValidateSizedVariable = spvtest::ValidateBase<std::tuple<std::string, std::string, std::string>>;
+
+CodeGenerator GetSizedStorageCodeGenerator(bool is_8bit) {
+  CodeGenerator generator;
+    generator.capabilities_ = "OpCapability Shader\nOpCapability Linkage\n";
+    generator.extensions_ =
+        "OpExtension \"SPV_KHR_16bit_storage\"\nOpExtension "
+        "\"SPV_KHR_8bit_storage\"\n";
+    generator.memory_model_ = "OpMemoryModel Logical GLSL450\n";
+    if (is_8bit) {
+    generator.before_types_ = R"(OpDecorate %char_buffer_block BufferBlock
+OpMemberDecorate %char_buffer_block 0 Offset 0
+)";
+    generator.types_ = R"(%void = OpTypeVoid
+%char = OpTypeInt 8 0
+%char4 = OpTypeVector %char 4
+%char_buffer_block = OpTypeStruct %char
+)";
+    } else {
+    generator.before_types_ = R"(OpDecorate %half_buffer_block BufferBlock
+OpDecorate %short_buffer_block BufferBlock
+OpMemberDecorate %half_buffer_block 0 Offset 0
+OpMemberDecorate %short_buffer_block 0 Offset 0
+)";
+    generator.types_ = R"(%void = OpTypeVoid
+%short = OpTypeInt 16 0
+%half = OpTypeFloat 16
+%short4 = OpTypeVector %short 4
+%half4 = OpTypeVector %half 4
+%mat4x4 = OpTypeMatrix %half4 4
+%short_buffer_block = OpTypeStruct %short
+%half_buffer_block = OpTypeStruct %half
+)";
+    }
+    generator.after_types_ = R"(%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+)";
+    generator.add_at_the_end_ = "OpReturn\nOpFunctionEnd\n";
+  return generator;
+}
+
+TEST_P(ValidateSizedStorage, Capability) {
+  const std::string storage_class = std::get<0>(GetParam());
+  const std::string capability = std::get<1>(GetParam());
+  const std::string var_type = std::get<2>(GetParam());
+
+  bool type_8bit = false;
+  if (var_type == "%char" || var_type == "%char4" ||
+      var_type == "%char_buffer_block") {
+    type_8bit = true;
+  }
+
+  auto generator = GetSizedStorageCodeGenerator(type_8bit);
+  generator.types_ += "%ptr_type = OpTypePointer " + storage_class + " " +
+                      var_type + "\n%var = OpVariable %ptr_type " +
+                      storage_class + "\n";
+  generator.capabilities_ += "OpCapability " + capability + "\n";
+
+  bool capability_ok = false;
+  bool storage_class_ok = false;
+  if (storage_class == "Input" || storage_class == "Output") {
+    if (!type_8bit) {
+      capability_ok = capability == "StorageInputOutput16";
+      storage_class_ok = true;
+    }
+  } else if (storage_class == "StorageBuffer") {
+    if (type_8bit) {
+      capability_ok = capability == "StorageBuffer8BitAccess" ||
+                      capability == "UniformAndStorageBuffer8BitAccess";
+    } else {
+      capability_ok = capability == "StorageBuffer16BitAccess" ||
+                      capability == "UniformAndStorageBuffer16BitAccess";
+    }
+    storage_class_ok = true;
+  } else if (storage_class == "PushConstant") {
+    if (type_8bit) {
+      capability_ok = capability == "StoragePushConstant8";
+    } else {
+      capability_ok = capability == "StoragePushConstant16";
+    }
+    storage_class_ok = true;
+  } else if (storage_class == "Uniform") {
+    bool buffer_block = var_type.find("buffer_block") != std::string::npos;
+    if (type_8bit) {
+      capability_ok = capability == "UniformAndStorageBuffer8BitAccess" ||
+                      (capability == "StorageBuffer8BitAccess" && buffer_block);
+    } else {
+      capability_ok =
+          capability == "UniformAndStorageBuffer16BitAccess" ||
+          (capability == "StorageBuffer16BitAccess" && buffer_block);
+    }
+    storage_class_ok = true;
+  }
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_UNIVERSAL_1_3);
+  spv_result_t result = ValidateInstructions(SPV_ENV_UNIVERSAL_1_3);
+  if (capability_ok) {
+    EXPECT_EQ(SPV_SUCCESS, result);
+  } else {
+    EXPECT_EQ(SPV_ERROR_INVALID_ID, result);
+    if (storage_class_ok) {
+      std::string message = std::string("Allocating a variable containing a ") +
+                            (type_8bit ? "8" : "16") + "-bit element in " +
+                            storage_class +
+                            " storage class requires an additional capability";
+      EXPECT_THAT(getDiagnosticString(), HasSubstr(message));
+    } else {
+      std::string message =
+          std::string("Cannot allocate a variable containing a ") +
+          (type_8bit ? "8" : "16") + "-bit type in " + storage_class +
+          " storage class";
+      EXPECT_THAT(getDiagnosticString(), HasSubstr(message));
+    }
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Storage8, ValidateSizedVariable,
+    Combine(Values("UniformConstant", "Input", "Output", "Workgroup",
+                   "CrossWorkgroup", "Private", "StorageBuffer", "Uniform"),
+            Values("StorageBuffer8BitAccess",
+                   "UniformAndStorageBuffer8BitAccess", "StoragePushConstant8"),
+            Values("%char", "%char4", "%char_buffer_block")));
+
+INSTANTIATE_TEST_SUITE_P(
+    Storage16, ValidateSizedVariable,
+    Combine(Values("UniformConstant", "Input", "Output", "Workgroup",
+                   "CrossWorkgroup", "Private", "StorageBuffer", "Uniform"),
+            Values("StorageBuffer16BitAccess",
+                   "UniformAndStorageBuffer16BitAccess",
+                   "StoragePushConstant16", "StorageInputOutput16"),
+            Values("%short", "%half", "%short4", "%half4", "%mat4x4",
+                   "%short_buffer_block", "%half_buffer_block")));
 
 }  // namespace
 }  // namespace val

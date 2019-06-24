@@ -1228,7 +1228,7 @@ const Instruction* ValidationState_t::TracePointer(
 
 bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, SpvOp type,
                                                     uint32_t width) const {
-  if (type != SpvOpTypeInt || type != SpvOpTypeFloat) return false;
+  if (type != SpvOpTypeInt && type != SpvOpTypeFloat) return false;
 
   const auto inst = FindDef(id);
   if (!inst) return false;
