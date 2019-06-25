@@ -709,96 +709,100 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
               "parameters";
   }
 
-  // Don't allow variables containing 16-bit elements without the appropriate
-  // capabilities.
-  if ((!_.HasCapability(SpvCapabilityInt16) &&
-       _.ContainsSizedIntOrFloatType(value_id, SpvOpTypeInt, 16)) ||
-      (!_.HasCapability(SpvCapabilityFloat16) &&
-       _.ContainsSizedIntOrFloatType(value_id, SpvOpTypeFloat, 16))) {
-    bool storage_class_ok = true;
-    std::string sc_name = _.grammar().lookupOperandName(
-        SPV_OPERAND_TYPE_STORAGE_CLASS, storage_class);
-    switch (storage_class) {
-      case SpvStorageClassStorageBuffer:
-      case SpvStorageClassPhysicalStorageBufferEXT:
-        if (!_.HasCapability(SpvCapabilityStorageBuffer16BitAccess)) {
-          storage_class_ok = false;
-        }
-        break;
-      case SpvStorageClassUniform:
-        if (!_.HasCapability(SpvCapabilityUniformAndStorageBuffer16BitAccess)) {
-          if (value_type->opcode() == SpvOpTypeArray ||
-              value_type->opcode() == SpvOpTypeRuntimeArray) {
-            value_type = _.FindDef(value_type->GetOperandAs<uint32_t>(1u));
-          }
-          if (!_.HasCapability(SpvCapabilityStorageBuffer16BitAccess) ||
-              !_.HasDecoration(value_type->id(), SpvDecorationBufferBlock)) {
+  if (_.HasCapability(SpvCapabilityShader)) {
+    // Don't allow variables containing 16-bit elements without the appropriate
+    // capabilities.
+    if ((!_.HasCapability(SpvCapabilityInt16) &&
+         _.ContainsSizedIntOrFloatType(value_id, SpvOpTypeInt, 16)) ||
+        (!_.HasCapability(SpvCapabilityFloat16) &&
+         _.ContainsSizedIntOrFloatType(value_id, SpvOpTypeFloat, 16))) {
+      bool storage_class_ok = true;
+      std::string sc_name = _.grammar().lookupOperandName(
+          SPV_OPERAND_TYPE_STORAGE_CLASS, storage_class);
+      switch (storage_class) {
+        case SpvStorageClassStorageBuffer:
+        case SpvStorageClassPhysicalStorageBufferEXT:
+          if (!_.HasCapability(SpvCapabilityStorageBuffer16BitAccess)) {
             storage_class_ok = false;
           }
-        }
-        break;
-      case SpvStorageClassPushConstant:
-        if (!_.HasCapability(SpvCapabilityStoragePushConstant16)) {
-          storage_class_ok = false;
-        }
-        break;
-      case SpvStorageClassInput:
-      case SpvStorageClassOutput:
-        if (!_.HasCapability(SpvCapabilityStorageInputOutput16)) {
-          storage_class_ok = false;
-        }
-        break;
-      default:
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "Cannot allocate a variable containing a 16-bit type in "
-               << sc_name << " storage class";
-    }
-    if (!storage_class_ok) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Allocating a variable containing a 16-bit element in "
-             << sc_name << " storage class requires an additional capability";
-    }
-  }
-  // Don't allow variables containing 8-bit elements without the appropriate
-  // capabilities.
-  if (!_.HasCapability(SpvCapabilityInt8) &&
-      _.ContainsSizedIntOrFloatType(value_id, SpvOpTypeInt, 8)) {
-    bool storage_class_ok = true;
-    std::string sc_name = _.grammar().lookupOperandName(
-        SPV_OPERAND_TYPE_STORAGE_CLASS, storage_class);
-    switch (storage_class) {
-      case SpvStorageClassStorageBuffer:
-      case SpvStorageClassPhysicalStorageBufferEXT:
-        if (!_.HasCapability(SpvCapabilityStorageBuffer8BitAccess)) {
-          storage_class_ok = false;
-        }
-        break;
-      case SpvStorageClassUniform:
-        if (!_.HasCapability(SpvCapabilityUniformAndStorageBuffer8BitAccess)) {
-          if (value_type->opcode() == SpvOpTypeArray ||
-              value_type->opcode() == SpvOpTypeRuntimeArray) {
-            value_type = _.FindDef(value_type->GetOperandAs<uint32_t>(1u));
+          break;
+        case SpvStorageClassUniform:
+          if (!_.HasCapability(
+                  SpvCapabilityUniformAndStorageBuffer16BitAccess)) {
+            if (value_type->opcode() == SpvOpTypeArray ||
+                value_type->opcode() == SpvOpTypeRuntimeArray) {
+              value_type = _.FindDef(value_type->GetOperandAs<uint32_t>(1u));
+            }
+            if (!_.HasCapability(SpvCapabilityStorageBuffer16BitAccess) ||
+                !_.HasDecoration(value_type->id(), SpvDecorationBufferBlock)) {
+              storage_class_ok = false;
+            }
           }
-          if (!_.HasCapability(SpvCapabilityStorageBuffer8BitAccess) ||
-              !_.HasDecoration(value_type->id(), SpvDecorationBufferBlock)) {
+          break;
+        case SpvStorageClassPushConstant:
+          if (!_.HasCapability(SpvCapabilityStoragePushConstant16)) {
             storage_class_ok = false;
           }
-        }
-        break;
-      case SpvStorageClassPushConstant:
-        if (!_.HasCapability(SpvCapabilityStoragePushConstant8)) {
-          storage_class_ok = false;
-        }
-        break;
-      default:
+          break;
+        case SpvStorageClassInput:
+        case SpvStorageClassOutput:
+          if (!_.HasCapability(SpvCapabilityStorageInputOutput16)) {
+            storage_class_ok = false;
+          }
+          break;
+        default:
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "Cannot allocate a variable containing a 16-bit type in "
+                 << sc_name << " storage class";
+      }
+      if (!storage_class_ok) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "Cannot allocate a variable containing a 8-bit type in "
-               << sc_name << " storage class";
+               << "Allocating a variable containing a 16-bit element in "
+               << sc_name << " storage class requires an additional capability";
+      }
     }
-    if (!storage_class_ok) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Allocating a variable containing a 8-bit element in "
-             << sc_name << " storage class requires an additional capability";
+    // Don't allow variables containing 8-bit elements without the appropriate
+    // capabilities.
+    if (!_.HasCapability(SpvCapabilityInt8) &&
+        _.ContainsSizedIntOrFloatType(value_id, SpvOpTypeInt, 8)) {
+      bool storage_class_ok = true;
+      std::string sc_name = _.grammar().lookupOperandName(
+          SPV_OPERAND_TYPE_STORAGE_CLASS, storage_class);
+      switch (storage_class) {
+        case SpvStorageClassStorageBuffer:
+        case SpvStorageClassPhysicalStorageBufferEXT:
+          if (!_.HasCapability(SpvCapabilityStorageBuffer8BitAccess)) {
+            storage_class_ok = false;
+          }
+          break;
+        case SpvStorageClassUniform:
+          if (!_.HasCapability(
+                  SpvCapabilityUniformAndStorageBuffer8BitAccess)) {
+            if (value_type->opcode() == SpvOpTypeArray ||
+                value_type->opcode() == SpvOpTypeRuntimeArray) {
+              value_type = _.FindDef(value_type->GetOperandAs<uint32_t>(1u));
+            }
+            if (!_.HasCapability(SpvCapabilityStorageBuffer8BitAccess) ||
+                !_.HasDecoration(value_type->id(), SpvDecorationBufferBlock)) {
+              storage_class_ok = false;
+            }
+          }
+          break;
+        case SpvStorageClassPushConstant:
+          if (!_.HasCapability(SpvCapabilityStoragePushConstant8)) {
+            storage_class_ok = false;
+          }
+          break;
+        default:
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "Cannot allocate a variable containing a 8-bit type in "
+                 << sc_name << " storage class";
+      }
+      if (!storage_class_ok) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Allocating a variable containing a 8-bit element in "
+               << sc_name << " storage class requires an additional capability";
+      }
     }
   }
 
@@ -847,18 +851,20 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
 
   if (auto error = CheckMemoryAccess(_, inst, 3)) return error;
 
-  if ((!_.HasCapability(SpvCapabilityInt16) &&
-       _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 16)) ||
-      (!_.HasCapability(SpvCapabilityInt8) &&
-       _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 8)) ||
-      (!_.HasCapability(SpvCapabilityFloat16) &&
-       _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeFloat, 16))) {
-    if (result_type->opcode() != SpvOpTypeInt &&
-        result_type->opcode() != SpvOpTypeFloat &&
-        result_type->opcode() != SpvOpTypeVector &&
-        result_type->opcode() != SpvOpTypeMatrix) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "8- or 16-bit loads must be a scalar, vector or matrix type";
+  if (_.HasCapability(SpvCapabilityShader)) {
+    if ((!_.HasCapability(SpvCapabilityInt16) &&
+         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 16)) ||
+        (!_.HasCapability(SpvCapabilityInt8) &&
+         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 8)) ||
+        (!_.HasCapability(SpvCapabilityFloat16) &&
+         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeFloat, 16))) {
+      if (result_type->opcode() != SpvOpTypeInt &&
+          result_type->opcode() != SpvOpTypeFloat &&
+          result_type->opcode() != SpvOpTypeVector &&
+          result_type->opcode() != SpvOpTypeMatrix) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "8- or 16-bit loads must be a scalar, vector or matrix type";
+      }
     }
   }
 
@@ -969,18 +975,20 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
 
   if (auto error = CheckMemoryAccess(_, inst, 2)) return error;
 
-  if ((!_.HasCapability(SpvCapabilityInt16) &&
-       _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 16)) ||
-      (!_.HasCapability(SpvCapabilityInt8) &&
-       _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 8)) ||
-      (!_.HasCapability(SpvCapabilityFloat16) &&
-       _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeFloat, 16))) {
-    if (object_type->opcode() != SpvOpTypeInt &&
-        object_type->opcode() != SpvOpTypeFloat &&
-        object_type->opcode() != SpvOpTypeVector &&
-        object_type->opcode() != SpvOpTypeMatrix) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "8- or 16-bit stores must be a scalar, vector or matrix type";
+  if (_.HasCapability(SpvCapabilityShader)) {
+    if ((!_.HasCapability(SpvCapabilityInt16) &&
+         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 16)) ||
+        (!_.HasCapability(SpvCapabilityInt8) &&
+         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 8)) ||
+        (!_.HasCapability(SpvCapabilityFloat16) &&
+         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeFloat, 16))) {
+      if (object_type->opcode() != SpvOpTypeInt &&
+          object_type->opcode() != SpvOpTypeFloat &&
+          object_type->opcode() != SpvOpTypeVector &&
+          object_type->opcode() != SpvOpTypeMatrix) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "8- or 16-bit stores must be a scalar, vector or matrix type";
+      }
     }
   }
 
