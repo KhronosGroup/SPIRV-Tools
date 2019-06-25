@@ -17,11 +17,13 @@
 #include <cstring>
 #include <fstream>
 #include <functional>
+#include <sstream>
 #include <string>
 
 #include "source/fuzz/fuzzer.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/replayer.h"
+#include "source/fuzz/shrinker.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/log.h"
@@ -32,10 +34,29 @@
 
 namespace {
 
+// Check that the std::system function can actually be used.
+bool CheckExecuteCommand() {
+  int res = std::system(nullptr);
+  return res != 0;
+}
+
+// Execute a command using the shell.
+// Returns true if and only if the command's exit status was 0.
+bool ExecuteCommand(const std::string& command) {
+  errno = 0;
+  int status = std::system(command.c_str());
+  assert(errno == 0 && "failed to execute command");
+  // The result returned by 'system' is implementation-defined, but is
+  // usually the case that the returned value is 0 when the command's exit
+  // code was 0.  We are assuming that here, and that's all we depend on.
+  return status == 0;
+}
+
 // Status and actions to perform after parsing command-line arguments.
 enum class FuzzActions {
   FUZZ,    // Run the fuzzer to apply transformations in a randomized fashion.
   REPLAY,  // Replay an existing sequence of transformations.
+  SHRINK,  // Shrink an existing sequence of transformations with respect to an interestingness function.
   STOP     // Do nothing.
 };
 
@@ -71,6 +92,9 @@ Options (in lexicographical order):
   --seed
                Unsigned 32-bit integer seed to control random number
                generation.
+  --shrink
+               Path to an interestingness function: a script that returns 0 if
+               and only if a given binary is interesting.
   --version
                Display fuzzer version information.
 
@@ -99,6 +123,7 @@ bool EndsWithSpv(const std::string& filename) {
 FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
                       std::string* out_binary_file,
                       std::string* replay_transformations_file,
+                      std::string* interestingness_function_file,
                       spvtools::FuzzerOptions* fuzzer_options) {
   uint32_t positional_arg_index = 0;
 
@@ -122,6 +147,9 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
       } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file = std::string(split_flag.second);
+      } else if (0 == strncmp(cur_arg, "--shrink=", sizeof("--shrink=") - 1)) {
+        const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        *interestingness_function_file = std::string(split_flag.second);
       } else if (0 == strncmp(cur_arg, "--seed=", sizeof("--seed=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         char* end = nullptr;
@@ -173,10 +201,36 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
   if (!replay_transformations_file->empty()) {
     // A replay transformations file was given, thus the tool is being invoked
     // in replay mode.
+    if (!interestingness_function_file->empty()) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {},
+                      "The --replay and --shrink arguments are mutually exclusive.");
+      return {FuzzActions::STOP, 1};
+    }
     return {FuzzActions::REPLAY, 0};
   }
 
+  if (!interestingness_function_file->empty()) {
+    // An interestingness function was given, thus the tool is being invoked in
+    // shrink mode.
+    return {FuzzActions::SHRINK, 0};
+  }
+
   return {FuzzActions::FUZZ, 0};
+}
+
+bool ParseTransformations(const std::string& transformations_file, spvtools::fuzz::protobufs::TransformationSequence* transformations) {
+  std::ifstream transformations_stream;
+  transformations_stream.open(transformations_file,
+                              std::ios::in | std::ios::binary);
+  auto parse_success = transformations->ParseFromIstream(
+          &transformations_stream);
+  transformations_stream.close();
+  if (!parse_success) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {},
+                    ("Error reading transformations from file '" + transformations_file + "'").c_str());
+    return false;
+  }
+  return true;
 }
 
 bool Replay(const spv_target_env& target_env,
@@ -186,29 +240,60 @@ bool Replay(const spv_target_env& target_env,
             std::vector<uint32_t>* binary_out,
             spvtools::fuzz::protobufs::TransformationSequence*
                 transformations_applied) {
-  std::ifstream existing_transformations_file;
-  existing_transformations_file.open(replay_transformations_file,
-                                     std::ios::in | std::ios::binary);
   spvtools::fuzz::protobufs::TransformationSequence
-      existing_transformation_sequence;
-  auto parse_success = existing_transformation_sequence.ParseFromIstream(
-      &existing_transformations_file);
-  existing_transformations_file.close();
-  if (!parse_success) {
-    spvtools::Error(FuzzDiagnostic, nullptr, {},
-                    "Error reading transformations for replay");
+          transformation_sequence;
+  if (!ParseTransformations(replay_transformations_file, &transformation_sequence)) {
     return false;
   }
   spvtools::fuzz::Replayer replayer(target_env);
   replayer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
   auto replay_result_status =
-      replayer.Run(binary_in, initial_facts, existing_transformation_sequence,
+      replayer.Run(binary_in, initial_facts, transformation_sequence,
                    binary_out, transformations_applied);
-  if (replay_result_status !=
-      spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete) {
+  return !(replay_result_status !=
+           spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete);
+}
+
+bool Shrink(const spv_target_env& target_env,
+            const spvtools::FuzzerOptions& fuzzer_options,
+            const std::vector<uint32_t>& binary_in,
+            const spvtools::fuzz::protobufs::FactSequence& initial_facts,
+            const std::string& existing_transformations_file,
+            const std::string& interestingness_function_file,
+            std::vector<uint32_t>* binary_out,
+            spvtools::fuzz::protobufs::TransformationSequence*
+            transformations_applied) {
+  spvtools::fuzz::protobufs::TransformationSequence
+          transformation_sequence;
+  if (!ParseTransformations(existing_transformations_file, &transformation_sequence)) {
     return false;
   }
-  return true;
+  spvtools::fuzz::Shrinker shrinker(target_env);
+  shrinker.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
+
+  spvtools::fuzz::Shrinker::InterestingnessFunction interestingness_function =
+          [interestingness_function_file](std::vector<uint32_t> binary,
+                         uint32_t reductions_applied) -> bool {
+    std::stringstream ss;
+    ss << "temp_" << std::setw(4) << std::setfill('0') << reductions_applied
+       << ".spv";
+    const auto spv_file = ss.str();
+    const std::string command =
+            std::string(interestingness_function_file) + " " + spv_file;
+    auto write_file_succeeded =
+            WriteFile(spv_file.c_str(), "wb", &binary[0], binary.size());
+    (void)(write_file_succeeded);
+    assert(write_file_succeeded);
+    return ExecuteCommand(command);
+  };
+
+
+  auto shrink_result_status =
+          shrinker.Run(binary_in, initial_facts, transformation_sequence,
+                       interestingness_function, fuzzer_options,
+                       binary_out, transformations_applied);
+  return !(shrink_result_status !=
+           spvtools::fuzz::Shrinker::ShrinkerResultStatus::kComplete);
 }
 
 bool Fuzz(const spv_target_env& target_env,
@@ -220,8 +305,8 @@ bool Fuzz(const spv_target_env& target_env,
               transformations_applied) {
   spvtools::fuzz::Fuzzer fuzzer(target_env);
   fuzzer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
-  auto fuzz_result_status = fuzzer.Run(binary_in, initial_facts, binary_out,
-                                       transformations_applied, fuzzer_options);
+  auto fuzz_result_status = fuzzer.Run(binary_in, initial_facts, fuzzer_options, binary_out,
+                                       transformations_applied);
   if (fuzz_result_status !=
       spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error running fuzzer");
@@ -238,11 +323,14 @@ int main(int argc, const char** argv) {
   std::string in_binary_file;
   std::string out_binary_file;
   std::string replay_transformations_file;
+  std::string interestingness_function_file;
 
   spvtools::FuzzerOptions fuzzer_options;
 
   FuzzStatus status = ParseFlags(argc, argv, &in_binary_file, &out_binary_file,
-                                 &replay_transformations_file, &fuzzer_options);
+                                 &replay_transformations_file,
+                                 &interestingness_function_file,
+                                 &fuzzer_options);
 
   if (status.action == FuzzActions::STOP) {
     return status.code;
@@ -290,6 +378,20 @@ int main(int argc, const char** argv) {
         return 1;
       }
       break;
+    case FuzzActions::SHRINK: {
+      if (!CheckExecuteCommand()) {
+        std::cerr << "could not find shell interpreter for executing a command"
+                  << std::endl;
+        return 1;
+      }
+      std::string existing_transformations_file =
+              in_binary_file.substr(0, in_binary_file.length() - dot_spv.length()) +
+              ".transformations";
+      if (!Shrink(target_env, fuzzer_options, binary_in, initial_facts, existing_transformations_file, interestingness_function_file, &binary_out,
+                  &transformations_applied)) {
+        return 1;
+      }
+    } break;
     default:
       assert(false && "Unknown fuzzer action.");
       break;
