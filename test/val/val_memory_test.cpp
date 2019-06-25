@@ -3834,16 +3834,17 @@ OpFunctionEnd
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
 }
 
-using ValidateSizedVariable = spvtest::ValidateBase<std::tuple<std::string, std::string, std::string>>;
+using ValidateSizedVariable =
+    spvtest::ValidateBase<std::tuple<std::string, std::string, std::string>>;
 
-CodeGenerator GetSizedStorageCodeGenerator(bool is_8bit) {
+CodeGenerator GetSizedVariableCodeGenerator(bool is_8bit) {
   CodeGenerator generator;
-    generator.capabilities_ = "OpCapability Shader\nOpCapability Linkage\n";
-    generator.extensions_ =
-        "OpExtension \"SPV_KHR_16bit_storage\"\nOpExtension "
-        "\"SPV_KHR_8bit_storage\"\n";
-    generator.memory_model_ = "OpMemoryModel Logical GLSL450\n";
-    if (is_8bit) {
+  generator.capabilities_ = "OpCapability Shader\nOpCapability Linkage\n";
+  generator.extensions_ =
+      "OpExtension \"SPV_KHR_16bit_storage\"\nOpExtension "
+      "\"SPV_KHR_8bit_storage\"\n";
+  generator.memory_model_ = "OpMemoryModel Logical GLSL450\n";
+  if (is_8bit) {
     generator.before_types_ = R"(OpDecorate %char_buffer_block BufferBlock
 OpMemberDecorate %char_buffer_block 0 Offset 0
 )";
@@ -3852,7 +3853,7 @@ OpMemberDecorate %char_buffer_block 0 Offset 0
 %char4 = OpTypeVector %char 4
 %char_buffer_block = OpTypeStruct %char
 )";
-    } else {
+  } else {
     generator.before_types_ = R"(OpDecorate %half_buffer_block BufferBlock
 OpDecorate %short_buffer_block BufferBlock
 OpMemberDecorate %half_buffer_block 0 Offset 0
@@ -3867,16 +3868,16 @@ OpMemberDecorate %short_buffer_block 0 Offset 0
 %short_buffer_block = OpTypeStruct %short
 %half_buffer_block = OpTypeStruct %half
 )";
-    }
-    generator.after_types_ = R"(%void_fn = OpTypeFunction %void
+  }
+  generator.after_types_ = R"(%void_fn = OpTypeFunction %void
 %func = OpFunction %void None %void_fn
 %entry = OpLabel
 )";
-    generator.add_at_the_end_ = "OpReturn\nOpFunctionEnd\n";
+  generator.add_at_the_end_ = "OpReturn\nOpFunctionEnd\n";
   return generator;
 }
 
-TEST_P(ValidateSizedStorage, Capability) {
+TEST_P(ValidateSizedVariable, Capability) {
   const std::string storage_class = std::get<0>(GetParam());
   const std::string capability = std::get<1>(GetParam());
   const std::string var_type = std::get<2>(GetParam());
@@ -3887,7 +3888,7 @@ TEST_P(ValidateSizedStorage, Capability) {
     type_8bit = true;
   }
 
-  auto generator = GetSizedStorageCodeGenerator(type_8bit);
+  auto generator = GetSizedVariableCodeGenerator(type_8bit);
   generator.types_ += "%ptr_type = OpTypePointer " + storage_class + " " +
                       var_type + "\n%var = OpVariable %ptr_type " +
                       storage_class + "\n";
@@ -3968,6 +3969,164 @@ INSTANTIATE_TEST_SUITE_P(
                    "StoragePushConstant16", "StorageInputOutput16"),
             Values("%short", "%half", "%short4", "%half4", "%mat4x4",
                    "%short_buffer_block", "%half_buffer_block")));
+
+using ValidateSizedLoadStore =
+    spvtest::ValidateBase<std::tuple<std::string, uint32_t, std::string>>;
+
+CodeGenerator GetSizedLoadStoreCodeGenerator(const std::string& base_type,
+                                             uint32_t width) {
+  CodeGenerator generator;
+  generator.capabilities_ = "OpCapability Shader\nOpCapability Linkage\n";
+  if (width == 8) {
+    generator.capabilities_ +=
+        "OpCapability UniformAndStorageBuffer8BitAccess\n";
+    generator.extensions_ = "OpExtension \"SPV_KHR_8bit_storage\"\n";
+  } else {
+    generator.capabilities_ +=
+        "OpCapability UniformAndStorageBuffer16BitAccess\n";
+    generator.extensions_ = "OpExtension \"SPV_KHR_16bit_storage\"\n";
+  }
+  generator.memory_model_ = "OpMemoryModel Logical GLSL450\n";
+  generator.before_types_ = R"(OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %struct 0 Offset 0
+)";
+  generator.types_ = R"(%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+)";
+
+  if (width == 8) {
+    generator.types_ += R"(%scalar = OpTypeInt 8 0
+%vector = OpTypeVector %scalar 4
+%struct = OpTypeStruct %vector
+)";
+  } else if (base_type == "int") {
+    generator.types_ += R"(%scalar = OpTypeInt 16 0
+%vector = OpTypeVector %scalar 4
+%struct = OpTypeStruct %vector
+)";
+  } else {
+    generator.types_ += R"(%scalar = OpTypeFloat 16
+%vector = OpTypeVector %scalar 4
+%matrix = OpTypeMatrix %vector 4
+%struct = OpTypeStruct %matrix
+%ptr_ssbo_matrix = OpTypePointer StorageBuffer %matrix
+)";
+    generator.before_types_ += R"(OpMemberDecorate %struct 0 RowMajor
+OpMemberDecorate %struct 0 MatrixStride 16
+)";
+  }
+  generator.types_ += R"(%block = OpTypeStruct %struct
+%ptr_ssbo_block = OpTypePointer StorageBuffer %block
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %struct
+%ptr_ssbo_vector = OpTypePointer StorageBuffer %vector
+%ptr_ssbo_scalar = OpTypePointer StorageBuffer %scalar
+%ld_var = OpVariable %ptr_ssbo_block StorageBuffer
+%st_var = OpVariable %ptr_ssbo_block StorageBuffer
+)";
+
+  generator.after_types_ = R"(%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+)";
+  generator.add_at_the_end_ = "OpReturn\nOpFunctionEnd\n";
+  return generator;
+}
+
+TEST_P(ValidateSizedLoadStore, Load) {
+  std::string base_type = std::get<0>(GetParam());
+  uint32_t width = std::get<1>(GetParam());
+  std::string mem_type = std::get<2>(GetParam());
+
+  CodeGenerator generator = GetSizedLoadStoreCodeGenerator(base_type, width);
+  generator.after_types_ +=
+      "%ld_gep = OpAccessChain %ptr_ssbo_" + mem_type + " %ld_var %int_0";
+  if (mem_type != "struct") {
+    generator.after_types_ += " %int_0";
+    if (mem_type != "matrix" && base_type == "float") {
+      generator.after_types_ += " %int_0";
+    }
+    if (mem_type == "scalar") {
+      generator.after_types_ += " %int_0";
+    }
+  }
+  generator.after_types_ += "\n";
+  generator.after_types_ += "%ld = OpLoad %" + mem_type + " %ld_gep\n";
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_UNIVERSAL_1_3);
+  if (mem_type == "struct") {
+    EXPECT_EQ(SPV_ERROR_INVALID_ID,
+              ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+    EXPECT_THAT(
+        getDiagnosticString(),
+        HasSubstr(
+            "8- or 16-bit loads must be a scalar, vector or matrix type"));
+  } else {
+    EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  }
+}
+
+TEST_P(ValidateSizedLoadStore, Store) {
+  std::string base_type = std::get<0>(GetParam());
+  uint32_t width = std::get<1>(GetParam());
+  std::string mem_type = std::get<2>(GetParam());
+
+  CodeGenerator generator = GetSizedLoadStoreCodeGenerator(base_type, width);
+  generator.after_types_ +=
+      "%ld_gep = OpAccessChain %ptr_ssbo_" + mem_type + " %ld_var %int_0";
+  if (mem_type != "struct") {
+    generator.after_types_ += " %int_0";
+    if (mem_type != "matrix" && base_type == "float") {
+      generator.after_types_ += " %int_0";
+    }
+    if (mem_type == "scalar") {
+      generator.after_types_ += " %int_0";
+    }
+  }
+  generator.after_types_ += "\n";
+  generator.after_types_ += "%ld = OpLoad %" + mem_type + " %ld_gep\n";
+  generator.after_types_ +=
+      "%st_gep = OpAccessChain %ptr_ssbo_" + mem_type + " %st_var %int_0";
+  if (mem_type != "struct") {
+    generator.after_types_ += " %int_0";
+    if (mem_type != "matrix" && base_type == "float") {
+      generator.after_types_ += " %int_0";
+    }
+    if (mem_type == "scalar") {
+      generator.after_types_ += " %int_0";
+    }
+  }
+  generator.after_types_ += "\n";
+  generator.after_types_ += "OpStore %st_gep %ld\n";
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_UNIVERSAL_1_3);
+  if (mem_type == "struct") {
+    EXPECT_EQ(SPV_ERROR_INVALID_ID,
+              ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+    // Can only catch the load.
+    EXPECT_THAT(
+        getDiagnosticString(),
+        HasSubstr(
+            "8- or 16-bit loads must be a scalar, vector or matrix type"));
+  } else {
+    EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(LoadStoreInt8, ValidateSizedLoadStore,
+                         Combine(Values("int"), Values(8u),
+                                 Values("scalar", "vector", "struct")));
+INSTANTIATE_TEST_SUITE_P(LoadStoreInt16, ValidateSizedLoadStore,
+                         Combine(Values("int"), Values(16u),
+                                 Values("scalar", "vector", "struct")));
+INSTANTIATE_TEST_SUITE_P(LoadStoreFloat16, ValidateSizedLoadStore,
+                         Combine(Values("float"), Values(16u),
+                                 Values("scalar", "vector", "matrix",
+                                        "struct")));
 
 }  // namespace
 }  // namespace val
