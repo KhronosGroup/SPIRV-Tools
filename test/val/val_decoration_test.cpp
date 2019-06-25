@@ -6497,8 +6497,7 @@ OpDecorate %entryPointOutput )" +
 %uint_2 = OpConstant %uint 2
 %arr_v3float_uint_2 = OpTypeArray %v3float %uint_2
 %float_0 = OpConstant %float 0
-%_ptr_Output_type = OpTypePointer Output %)" +
-         type + R"(
+%_ptr_Output_type = OpTypePointer Output %)" + type + R"(
 %entryPointOutput = OpVariable %_ptr_Output_type Output
 %main = OpFunction %void None %3
 %5 = OpLabel
