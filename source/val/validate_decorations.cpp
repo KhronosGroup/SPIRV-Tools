@@ -1440,6 +1440,11 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
   }
 
   if (spvIsVulkanEnv(vstate.context()->target_env)) {
+    // Strip the array, if present.
+    if (vstate.GetIdOpcode(type_id) == SpvOpTypeArray) {
+      type_id = vstate.FindDef(type_id)->word(2u);
+    }
+
     if (!vstate.IsIntScalarOrVectorType(type_id) &&
         !vstate.IsFloatScalarOrVectorType(type_id)) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
