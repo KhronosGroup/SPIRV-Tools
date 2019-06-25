@@ -573,6 +573,8 @@ class ValidationState_t {
   // of |width| bits.
   bool ContainsSizedIntOrFloatType(uint32_t id, SpvOp type,
                                    uint32_t width) const;
+  // Returns true if |id| contains a 8- or 16-bit int or 16-bit float.
+  bool ContainsSmallIntOrFloatType(uint32_t id) const;
 
   // Gets value from OpConstant and OpSpecConstant as uint64.
   // Returns false on failure (no instruction, wrong instruction, not int).

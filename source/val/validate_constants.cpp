@@ -434,16 +434,11 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
   // Generally disallow creating 8- or 16-bit constants unless the full
   // capabilities are present.
   if (spvOpcodeIsConstant(inst->opcode()) &&
-      _.HasCapability(SpvCapabilityShader)) {
-    if ((!_.HasCapability(SpvCapabilityInt16) &&
-         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 16)) ||
-        (!_.HasCapability(SpvCapabilityInt8) &&
-         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeInt, 8)) ||
-        (!_.HasCapability(SpvCapabilityFloat16) &&
-         _.ContainsSizedIntOrFloatType(inst->type_id(), SpvOpTypeFloat, 16))) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Cannot form constants of 8- or 16-bit types";
-    }
+      _.HasCapability(SpvCapabilityShader) &&
+      !_.IsPointerType(inst->type_id()) &&
+      _.ContainsSmallIntOrFloatType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Cannot form constants of 8- or 16-bit types";
   }
 
   return SPV_SUCCESS;

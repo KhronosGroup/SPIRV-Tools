@@ -1263,5 +1263,17 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, SpvOp type,
   }
 }
 
+bool ValidationState_t::ContainsSmallIntOrFloatType(uint32_t id) const {
+  if ((!HasCapability(SpvCapabilityInt16) &&
+       ContainsSizedIntOrFloatType(id, SpvOpTypeInt, 16)) ||
+      (!HasCapability(SpvCapabilityInt8) &&
+       ContainsSizedIntOrFloatType(id, SpvOpTypeInt, 8)) ||
+      (!HasCapability(SpvCapabilityFloat16) &&
+       ContainsSizedIntOrFloatType(id, SpvOpTypeFloat, 16))) {
+    return true;
+  }
+  return false;
+}
+
 }  // namespace val
 }  // namespace spvtools
