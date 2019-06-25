@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import("//build_overrides/spirv_tools.gni")
-
-import("//testing/test.gni")
 import("//build_overrides/build.gni")
+if (build_with_chromium) {
+  import("//testing/test.gni")
+}
 
 spirv_headers = spirv_tools_spirv_headers_dir
 
@@ -379,9 +380,11 @@ static_library("spvtools") {
     ":spvtools_headers",
   ]
 
-  configs -= [ "//build/config/compiler:chromium_code" ]
+  if (build_with_chromium) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
   configs += [
-    "//build/config/compiler:no_chromium_code",
     ":spvtools_internal_config",
   ]
 }
@@ -438,9 +441,11 @@ static_library("spvtools_val") {
     ":spvtools_headers",
   ]
 
-  configs -= [ "//build/config/compiler:chromium_code" ]
+  if (build_with_chromium) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
   configs += [
-    "//build/config/compiler:no_chromium_code",
     ":spvtools_internal_config",
   ]
 }
@@ -655,9 +660,11 @@ static_library("spvtools_opt") {
     ":spvtools_headers",
   ]
 
-  configs -= [ "//build/config/compiler:chromium_code" ]
+  if (build_with_chromium) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
   configs += [
-    "//build/config/compiler:no_chromium_code",
     ":spvtools_internal_config",
   ]
 }
@@ -767,6 +774,22 @@ executable("spirv-as") {
   ]
   deps = [
     ":spvtools",
+    ":spvtools_build_version",
+  ]
+  configs += [ ":spvtools_internal_config" ]
+}
+
+executable("spirv-opt") {
+  sources = [
+    "source/software_version.cpp",
+    "tools/opt/opt.cpp",
+    "tools/util/cli_consumer.cpp",
+    "tools/util/cli_consumer.h",
+  ]
+  deps = [
+    ":spvtools",
+    ":spvtools_opt",
+    ":spvtools_val",
     ":spvtools_build_version",
   ]
   configs += [ ":spvtools_internal_config" ]
