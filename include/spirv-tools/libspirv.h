@@ -574,6 +574,15 @@ SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetValidatorOptions(
 SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetMaxIdBound(
     spv_optimizer_options options, uint32_t val);
 
+// Records whether all bindings within the module should be preserved.
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetPreserveBindings(
+    spv_optimizer_options options, bool val);
+
+// Records whether all specialization constants within the module
+// should be preserved.
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetPreserveSpecConstants(
+    spv_optimizer_options options, bool val);
+
 // Creates a reducer options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // |spvReducerOptionsDestroy|.
