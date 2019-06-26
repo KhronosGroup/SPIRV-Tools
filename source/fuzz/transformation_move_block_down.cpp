@@ -43,6 +43,11 @@ bool TransformationMoveBlockDown::IsApplicable(
         }
         // Record the block we would like to consider moving down.
         opt::BasicBlock* block_matching_id = &*block_it;
+        if (!context->GetDominatorAnalysis(&function)->IsReachable(
+                block_matching_id)) {
+          // The block is not reachable.  We are not allowed to move it down.
+          return false;
+        }
         // Now see whether there is some block following that block in program
         // order.
         ++block_it;

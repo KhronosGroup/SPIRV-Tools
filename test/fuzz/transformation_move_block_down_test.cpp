@@ -177,77 +177,6 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible4) {
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationMoveBlockDownTest, MovePossible) {
-  // Block 11 can be moved down as it does not dominate block 12 (both are
-  // unreachable).
-  std::string before_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpDecorate %8 RelaxedPrecision
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-          %7 = OpTypePointer Function %6
-          %9 = OpConstant %6 1
-         %10 = OpConstant %6 2
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-          %8 = OpVariable %7 Function
-               OpStore %8 %9
-               OpStore %8 %10
-               OpReturn
-         %11 = OpLabel
-               OpReturn
-         %12 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpDecorate %8 RelaxedPrecision
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-          %7 = OpTypePointer Function %6
-          %9 = OpConstant %6 1
-         %10 = OpConstant %6 2
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-          %8 = OpVariable %7 Function
-               OpStore %8 %9
-               OpStore %8 %10
-               OpReturn
-         %12 = OpLabel
-               OpReturn
-         %11 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context =
-      BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
-
-  FactManager fact_manager;
-
-  auto transformation = TransformationMoveBlockDown(11);
-  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
-  transformation.Apply(context.get(), &fact_manager);
-  ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-}
-
 TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   // The SPIR-V arising from this shader has lots of opportunities for moving
   // blocks around.
@@ -698,6 +627,42 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
   ASSERT_TRUE(move_down_15.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(move_down_20.IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationMoveBlockDownTest, DoNotMoveUnreachable) {
+  // Block 6 is unreachable, so cannot be moved down.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeInt 32 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+          %6 = OpLabel
+          %7 = OpUndef %10
+               OpBranch %8
+          %8 = OpLabel
+          %9 = OpCopyObject %10 %7
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto transformation = TransformationMoveBlockDown(6);
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
 }  // namespace
