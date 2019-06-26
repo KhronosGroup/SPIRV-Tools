@@ -81,9 +81,7 @@ Replayer::ReplayerResultStatus Replayer::Run(
   assert(ir_context);
 
   FactManager fact_manager;
-  if (!fact_manager.AddFacts(initial_facts, ir_context.get())) {
-    return Replayer::ReplayerResultStatus::kInitialFactsInvalid;
-  }
+  fact_manager.AddFacts(impl_->consumer, initial_facts, ir_context.get());
 
   // Consider the transformation proto messages in turn.
   for (auto& message : transformation_sequence_in.transformation()) {
