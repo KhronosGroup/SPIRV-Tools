@@ -34,6 +34,7 @@ class TransformationMoveBlockDown : public Transformation {
   // - b must not be the first nor last block appearing, in program order,
   //   in a function.
   // - b must not dominate the block that follows it in program order.
+  // - b must be reachable.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
