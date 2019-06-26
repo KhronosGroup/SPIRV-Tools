@@ -58,8 +58,7 @@ class Fuzzer {
   FuzzerResultStatus Run(
       const std::vector<uint32_t>& binary_in,
       const protobufs::FactSequence& initial_facts,
-      spv_const_fuzzer_options options,
-      std::vector<uint32_t>* binary_out,
+      spv_const_fuzzer_options options, std::vector<uint32_t>* binary_out,
       protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:

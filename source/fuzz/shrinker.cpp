@@ -38,13 +38,12 @@ void Shrinker::SetMessageConsumer(MessageConsumer c) {
 }
 
 Shrinker::ShrinkerResultStatus Shrinker::Run(
-        const std::vector<uint32_t>& binary_in,
-        const protobufs::FactSequence& initial_facts,
-        const protobufs::TransformationSequence& transformation_sequence_in,
-        const Shrinker::InterestingnessFunction& interestingness_function,
-        spv_const_fuzzer_options options,
-        std::vector<uint32_t>* binary_out,
-        protobufs::TransformationSequence* transformation_sequence_out) const {
+    const std::vector<uint32_t>& binary_in,
+    const protobufs::FactSequence& initial_facts,
+    const protobufs::TransformationSequence& transformation_sequence_in,
+    const Shrinker::InterestingnessFunction& interestingness_function,
+    spv_const_fuzzer_options options, std::vector<uint32_t>* binary_out,
+    protobufs::TransformationSequence* transformation_sequence_out) const {
   // Check compatibility between the library version being linked with and the
   // header files being used.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -65,8 +64,8 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
 
   // Make a PRNG, either from a given seed or from a random device.
   PseudoRandomGenerator random_generator(
-          options->has_random_seed ? options->random_seed
-                                   : static_cast<uint32_t>(std::random_device()()));
+      options->has_random_seed ? options->random_seed
+                               : static_cast<uint32_t>(std::random_device()()));
 
   Replayer replayer(impl_->target_env);
 
@@ -75,8 +74,9 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   std::vector<uint32_t> next_binary;
   protobufs::TransformationSequence next_transformation_sequence;
 
-  auto replayer_result = replayer.Run(binary_in, initial_facts, transformation_sequence_in,
-          &current_best_binary, &current_best_transformations);
+  auto replayer_result =
+      replayer.Run(binary_in, initial_facts, transformation_sequence_in,
+                   &current_best_binary, &current_best_transformations);
   if (replayer_result != Replayer::ReplayerResultStatus::kComplete) {
     return ShrinkerResultStatus::kReplayFailed;
   }
@@ -85,22 +85,31 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
     return ShrinkerResultStatus::kInitialBinaryNotInteresting;
   }
 
-  for (uint32_t i = 1; i < 100 && !current_best_transformations.transformation().empty(); i++) {
+  for (uint32_t i = 1;
+       i < 100 && !current_best_transformations.transformation().empty(); i++) {
     std::cout << "Attempt " << i << std::endl;
-    auto skipit = random_generator.RandomUint32(static_cast<uint32_t>(current_best_transformations.transformation().size()));
+    auto skipit = random_generator.RandomUint32(static_cast<uint32_t>(
+        current_best_transformations.transformation().size()));
     protobufs::TransformationSequence candidate_sequence;
     candidate_sequence.clear_transformation();
-    std::cout << "Remaining: " << current_best_transformations.transformation().size() << std::endl;
-    for (uint32_t j = 0; j < static_cast<uint32_t>(current_best_transformations.transformation().size()); j++) {
+    std::cout << "Remaining: "
+              << current_best_transformations.transformation().size()
+              << std::endl;
+    for (uint32_t j = 0;
+         j < static_cast<uint32_t>(
+                 current_best_transformations.transformation().size());
+         j++) {
       if (j == skipit) {
         continue;
       }
-      protobufs::Transformation transformation = current_best_transformations.transformation()[j];
+      protobufs::Transformation transformation =
+          current_best_transformations.transformation()[j];
       *candidate_sequence.mutable_transformation()->Add() = transformation;
     }
     next_transformation_sequence.clear_transformation();
     next_binary.clear();
-    replayer_result = replayer.Run(binary_in, initial_facts, candidate_sequence, &next_binary, &next_transformation_sequence);
+    replayer_result = replayer.Run(binary_in, initial_facts, candidate_sequence,
+                                   &next_binary, &next_transformation_sequence);
     if (replayer_result != Replayer::ReplayerResultStatus::kComplete) {
       return ShrinkerResultStatus::kReplayFailed;
     }

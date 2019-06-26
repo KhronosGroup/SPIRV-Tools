@@ -45,7 +45,7 @@ class Shrinker {
   // The notion of "interesting" depends on what properties of the binary or
   // tools that process the binary we are trying to maintain during shrinking.
   using InterestingnessFunction =
-  std::function<bool(const std::vector<uint32_t>&, uint32_t)>;
+      std::function<bool(const std::vector<uint32_t>&, uint32_t)>;
 
   // Constructs a shrinker from the given target environment.
   explicit Shrinker(spv_target_env env);
@@ -68,8 +68,7 @@ class Shrinker {
       const protobufs::FactSequence& initial_facts,
       const protobufs::TransformationSequence& transformation_sequence_in,
       const InterestingnessFunction& interestingness_function,
-      spv_const_fuzzer_options options,
-      std::vector<uint32_t>* binary_out,
+      spv_const_fuzzer_options options, std::vector<uint32_t>* binary_out,
       protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:

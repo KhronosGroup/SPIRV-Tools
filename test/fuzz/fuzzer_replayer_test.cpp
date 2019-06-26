@@ -43,9 +43,9 @@ void RunFuzzerAndReplayer(const std::string& shader,
     spvFuzzerOptionsSetRandomSeed(fuzzer_options, seed);
 
     Fuzzer fuzzer(env);
-    auto fuzzer_result_status =
-        fuzzer.Run(binary_in, initial_facts, fuzzer_options, `&fuzzer_binary_out,
-                   &fuzzer_transformation_sequence_out);
+    auto fuzzer_result_status = fuzzer.Run(binary_in, initial_facts,
+                                           fuzzer_options, `& fuzzer_binary_out,
+                                           &fuzzer_transformation_sequence_out);
     ASSERT_EQ(Fuzzer::FuzzerResultStatus::kComplete, fuzzer_result_status);
     ASSERT_TRUE(t.Validate(fuzzer_binary_out));
 
