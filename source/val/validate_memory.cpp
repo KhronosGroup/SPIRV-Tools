@@ -428,8 +428,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  auto storage_class =
-      inst->GetOperandAs<SpvStorageClass>(storage_class_index);
+  auto storage_class = inst->GetOperandAs<SpvStorageClass>(storage_class_index);
   if (storage_class != SpvStorageClassWorkgroup &&
       storage_class != SpvStorageClassCrossWorkgroup &&
       storage_class != SpvStorageClassPrivate &&
@@ -719,7 +718,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       auto underlying_type = value_type;
       while (underlying_type->opcode() == SpvOpTypePointer) {
         storage_class = underlying_type->GetOperandAs<SpvStorageClass>(1u);
-        underlying_type = _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));
+        underlying_type =
+            _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));
       }
       bool storage_class_ok = true;
       std::string sc_name = _.grammar().lookupOperandName(
@@ -773,7 +773,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       auto underlying_type = value_type;
       while (underlying_type->opcode() == SpvOpTypePointer) {
         storage_class = underlying_type->GetOperandAs<SpvStorageClass>(1u);
-        underlying_type = _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));
+        underlying_type =
+            _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));
       }
       bool storage_class_ok = true;
       std::string sc_name = _.grammar().lookupOperandName(
@@ -862,7 +863,7 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
   if (auto error = CheckMemoryAccess(_, inst, 3)) return error;
 
   if (_.HasCapability(SpvCapabilityShader) &&
-      _.ContainsSmallIntOrFloatType(inst->type_id()) &&
+      _.ContainsLimitedUseIntOrFloatType(inst->type_id()) &&
       result_type->opcode() != SpvOpTypePointer) {
     if (result_type->opcode() != SpvOpTypeInt &&
         result_type->opcode() != SpvOpTypeFloat &&
@@ -981,7 +982,7 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
   if (auto error = CheckMemoryAccess(_, inst, 2)) return error;
 
   if (_.HasCapability(SpvCapabilityShader) &&
-      _.ContainsSmallIntOrFloatType(inst->type_id()) &&
+      _.ContainsLimitedUseIntOrFloatType(inst->type_id()) &&
       object_type->opcode() != SpvOpTypePointer) {
     if (object_type->opcode() != SpvOpTypeInt &&
         object_type->opcode() != SpvOpTypeFloat &&

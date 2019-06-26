@@ -425,6 +425,23 @@ INSTANTIATE_TEST_SUITE_P(
            "%c = OpSpecConstantOp %short SConvert %int_0",
            "%c = OpSpecConstantOp %half FConvert %float_0"));
 
+TEST_F(ValidateConstant, NullPointerTo16BitStorageOk) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpCapability UniformAndStorageBuffer16BitAccess
+OpCapability Linkage
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+%half = OpTypeFloat 16
+%ptr_ssbo_half = OpTypePointer StorageBuffer %half
+%null_ptr = OpConstantNull %ptr_ssbo_half
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

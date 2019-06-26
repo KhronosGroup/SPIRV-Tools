@@ -1263,7 +1263,7 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, SpvOp type,
   }
 }
 
-bool ValidationState_t::ContainsSmallIntOrFloatType(uint32_t id) const {
+bool ValidationState_t::ContainsLimitedUseIntOrFloatType(uint32_t id) const {
   if ((!HasCapability(SpvCapabilityInt16) &&
        ContainsSizedIntOrFloatType(id, SpvOpTypeInt, 16)) ||
       (!HasCapability(SpvCapabilityInt8) &&
