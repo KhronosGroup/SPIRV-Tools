@@ -1247,6 +1247,7 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, SpvOp type,
       return ContainsSizedIntOrFloatType(inst->GetOperandAs<uint32_t>(1u), type,
                                          width);
     case SpvOpTypePointer:
+      if (IsForwardPointer(id)) return false;
       return ContainsSizedIntOrFloatType(inst->GetOperandAs<uint32_t>(2u), type,
                                          width);
     case SpvOpTypeFunction:
