@@ -42,6 +42,7 @@
 #include "source/opt/inline_exhaustive_pass.h"
 #include "source/opt/inline_opaque_pass.h"
 #include "source/opt/inst_bindless_check_pass.h"
+#include "source/opt/isolate_function_calls_pass.h"
 #include "source/opt/legalize_vector_shuffle_pass.h"
 #include "source/opt/licm_pass.h"
 #include "source/opt/local_access_chain_convert_pass.h"

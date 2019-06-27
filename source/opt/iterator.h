@@ -72,6 +72,7 @@ class UptrVectorIterator
 
   inline ptrdiff_t operator-(const UptrVectorIterator& that) const;
   inline bool operator<(const UptrVectorIterator& that) const;
+  inline UptrVectorIterator operator+(ptrdiff_t offset) const { return UptrVectorIterator(container_, iterator_ + offset); }
 
   // Inserts the given |value| to the position pointed to by this iterator
   // and returns an iterator to the newly iserted |value|.

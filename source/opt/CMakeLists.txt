@@ -60,6 +60,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   ir_builder.h
   ir_context.h
   ir_loader.h
+  isolate_function_calls_pass.h
   licm_pass.h
   local_access_chain_convert_pass.h
   local_redundancy_elimination.h
@@ -160,6 +161,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instrument_pass.cpp
   ir_context.cpp
   ir_loader.cpp
+  isolate_function_calls_pass.cpp
   legalize_vector_shuffle_pass.cpp
   licm_pass.cpp
   local_access_chain_convert_pass.cpp

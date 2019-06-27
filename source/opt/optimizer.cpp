@@ -646,6 +646,11 @@ Optimizer::PassToken CreateStrengthReductionPass() {
       MakeUnique<opt::StrengthReductionPass>());
 }
 
+Optimizer::PassToken CreateIsolateFunctionCallsPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::IsolateFunctionCallsPass>());
+}
+
 Optimizer::PassToken CreateBlockMergePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::BlockMergePass>());
