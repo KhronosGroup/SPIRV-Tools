@@ -1146,7 +1146,20 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
 
     if (auto error = CheckMemoryAccess(_, inst, 3)) return error;
   }
-  return ValidateCopyMemoryMemoryAccess(_, inst);
+  if (auto error = ValidateCopyMemoryMemoryAccess(_, inst)) return error;
+
+  // Get past the pointers to avoid checking a pointer copy.
+  auto sub_type = _.FindDef(target_pointer_type->GetOperandAs<uint32_t>(2));
+  while (sub_type->opcode() == SpvOpTypePointer) {
+    sub_type = _.FindDef(sub_type->GetOperandAs<uint32_t>(2));
+  }
+  if (_.HasCapability(SpvCapabilityShader) &&
+      _.ContainsLimitedUseIntOrFloatType(sub_type->id())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Cannot copy memory of objects containing 8- or 16-bit types";
+  }
+
+  return SPV_SUCCESS;
 }
 
 spv_result_t ValidateAccessChain(ValidationState_t& _,

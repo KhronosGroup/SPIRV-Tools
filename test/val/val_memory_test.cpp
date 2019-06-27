@@ -4128,6 +4128,99 @@ INSTANTIATE_TEST_SUITE_P(LoadStoreFloat16, ValidateSizedLoadStore,
                                  Values("scalar", "vector", "matrix",
                                         "struct")));
 
+TEST_F(ValidateMemory, SmallStorageCopyMemoryChar) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UniformAndStorageBuffer8BitAccess
+OpExtension "SPV_KHR_8bit_storage"
+OpMemoryModel Logical GLSL450
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%char = OpTypeInt 8 0
+%block = OpTypeStruct %char
+%ptr_ssbo_block = OpTypePointer StorageBuffer %block
+%in = OpVariable %ptr_ssbo_block StorageBuffer
+%out = OpVariable %ptr_ssbo_block StorageBuffer
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpCopyMemory %out %in
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
+}
+
+TEST_F(ValidateMemory, SmallStorageCopyMemoryShort) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UniformAndStorageBuffer16BitAccess
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%short = OpTypeInt 16 0
+%block = OpTypeStruct %short
+%ptr_ssbo_block = OpTypePointer StorageBuffer %block
+%in = OpVariable %ptr_ssbo_block StorageBuffer
+%out = OpVariable %ptr_ssbo_block StorageBuffer
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpCopyMemory %out %in
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
+}
+
+TEST_F(ValidateMemory, SmallStorageCopyMemoryHalf) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UniformAndStorageBuffer16BitAccess
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%half = OpTypeFloat 16
+%block = OpTypeStruct %half
+%ptr_ssbo_block = OpTypePointer StorageBuffer %block
+%in = OpVariable %ptr_ssbo_block StorageBuffer
+%out = OpVariable %ptr_ssbo_block StorageBuffer
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpCopyMemory %out %in
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
