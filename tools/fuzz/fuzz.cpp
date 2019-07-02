@@ -94,8 +94,16 @@ Options (in lexicographical order):
                Unsigned 32-bit integer seed to control random number
                generation.
   --shrink
-               Path to an interestingness function: a script that returns 0 if
-               and only if a given binary is interesting.
+               File from which to read a sequence of transformations to shrink
+               (instead of fuzzing)
+  --shrinker-step-limit
+               Unsigned 32-bit integer specifying maximum number of steps the
+               shrinker will take before giving up.  Ignored unless --shrink
+               is used.
+  --interestingness
+               Path to an interestingness function to guide shrinking: a script
+               that returns 0 if and only if a given binary is interesting.
+               Required if --shrink is provided; disallowed otherwise.
   --version
                Display fuzzer version information.
 
@@ -125,6 +133,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
                       std::string* out_binary_file,
                       std::string* replay_transformations_file,
                       std::string* interestingness_function_file,
+                      std::string* shrink_transformations_file,
                       spvtools::FuzzerOptions* fuzzer_options) {
   uint32_t positional_arg_index = 0;
 
@@ -148,9 +157,13 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
       } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file = std::string(split_flag.second);
-      } else if (0 == strncmp(cur_arg, "--shrink=", sizeof("--shrink=") - 1)) {
+      } else if (0 == strncmp(cur_arg, "--interestingness=",
+                              sizeof("--interestingness=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *interestingness_function_file = std::string(split_flag.second);
+      } else if (0 == strncmp(cur_arg, "--shrink=", sizeof("--shrink=") - 1)) {
+        const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        *shrink_transformations_file = std::string(split_flag.second);
       } else if (0 == strncmp(cur_arg, "--seed=", sizeof("--seed=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         char* end = nullptr;
@@ -159,6 +172,15 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
             static_cast<uint32_t>(strtol(split_flag.second.c_str(), &end, 10));
         assert(end != split_flag.second.c_str() && errno == 0);
         fuzzer_options->set_random_seed(seed);
+      } else if (0 == strncmp(cur_arg, "--shrinker-step-limit=",
+                              sizeof("--shrinker-step-limit=") - 1)) {
+        const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        char* end = nullptr;
+        errno = 0;
+        const auto step_limit =
+            static_cast<uint32_t>(strtol(split_flag.second.c_str(), &end, 10));
+        assert(end != split_flag.second.c_str() && errno == 0);
+        fuzzer_options->set_shrinker_step_limit(step_limit);
       } else if ('\0' == cur_arg[1]) {
         // We do not support fuzzing from standard input.  We could support
         // this if there was a compelling use case.
@@ -202,18 +224,34 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
   if (!replay_transformations_file->empty()) {
     // A replay transformations file was given, thus the tool is being invoked
     // in replay mode.
-    if (!interestingness_function_file->empty()) {
+    if (!shrink_transformations_file->empty()) {
       spvtools::Error(
           FuzzDiagnostic, nullptr, {},
           "The --replay and --shrink arguments are mutually exclusive.");
       return {FuzzActions::STOP, 1};
     }
+    if (!interestingness_function_file->empty()) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {},
+                      "The --replay and --interestingness arguments are "
+                      "mutually exclusive.");
+      return {FuzzActions::STOP, 1};
+    }
     return {FuzzActions::REPLAY, 0};
   }
 
-  if (!interestingness_function_file->empty()) {
-    // An interestingness function was given, thus the tool is being invoked in
-    // shrink mode.
+  if (!shrink_transformations_file->empty() ^
+      !interestingness_function_file->empty()) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {},
+                    "Both or neither of the --shrink and --interestingness "
+                    "arguments must be provided.");
+    return {FuzzActions::STOP, 1};
+  }
+
+  if (!shrink_transformations_file->empty()) {
+    // The tool is being invoked in shrink mode.
+    assert(!interestingness_function_file->empty() &&
+           "An error should have been raised if --shrink but not --interesting "
+           "was provided.");
     return {FuzzActions::SHRINK, 0};
   }
 
@@ -261,20 +299,21 @@ bool Replay(const spv_target_env& target_env,
 }
 
 bool Shrink(const spv_target_env& target_env,
-            const spvtools::FuzzerOptions& fuzzer_options,
+            spv_const_fuzzer_options fuzzer_options,
             const std::vector<uint32_t>& binary_in,
             const spvtools::fuzz::protobufs::FactSequence& initial_facts,
-            const std::string& existing_transformations_file,
+            const std::string& shrink_transformations_file,
             const std::string& interestingness_function_file,
             std::vector<uint32_t>* binary_out,
             spvtools::fuzz::protobufs::TransformationSequence*
                 transformations_applied) {
   spvtools::fuzz::protobufs::TransformationSequence transformation_sequence;
-  if (!ParseTransformations(existing_transformations_file,
+  if (!ParseTransformations(shrink_transformations_file,
                             &transformation_sequence)) {
     return false;
   }
-  spvtools::fuzz::Shrinker shrinker(target_env);
+  spvtools::fuzz::Shrinker shrinker(target_env,
+                                    fuzzer_options->shrinker_step_limit);
   shrinker.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   spvtools::fuzz::Shrinker::InterestingnessFunction interestingness_function =
@@ -293,12 +332,13 @@ bool Shrink(const spv_target_env& target_env,
     return ExecuteCommand(command);
   };
 
-  auto shrink_result_status =
-      shrinker.Run(binary_in, initial_facts, transformation_sequence,
-                   interestingness_function, fuzzer_options, binary_out,
-                   transformations_applied);
-  return !(shrink_result_status !=
-           spvtools::fuzz::Shrinker::ShrinkerResultStatus::kComplete);
+  auto shrink_result_status = shrinker.Run(
+      binary_in, initial_facts, transformation_sequence,
+      interestingness_function, binary_out, transformations_applied);
+  return spvtools::fuzz::Shrinker::ShrinkerResultStatus::kComplete ==
+             shrink_result_status ||
+         spvtools::fuzz::Shrinker::ShrinkerResultStatus::kStepLimitReached ==
+             shrink_result_status;
 }
 
 bool Fuzz(const spv_target_env& target_env,
@@ -329,13 +369,14 @@ int main(int argc, const char** argv) {
   std::string out_binary_file;
   std::string replay_transformations_file;
   std::string interestingness_function_file;
+  std::string shrink_transformations_file;
 
   spvtools::FuzzerOptions fuzzer_options;
 
   FuzzStatus status =
       ParseFlags(argc, argv, &in_binary_file, &out_binary_file,
                  &replay_transformations_file, &interestingness_function_file,
-                 &fuzzer_options);
+                 &shrink_transformations_file, &fuzzer_options);
 
   if (status.action == FuzzActions::STOP) {
     return status.code;
@@ -389,11 +430,8 @@ int main(int argc, const char** argv) {
                   << std::endl;
         return 1;
       }
-      std::string existing_transformations_file =
-          in_binary_file.substr(0, in_binary_file.length() - dot_spv.length()) +
-          ".transformations";
       if (!Shrink(target_env, fuzzer_options, binary_in, initial_facts,
-                  existing_transformations_file, interestingness_function_file,
+                  shrink_transformations_file, interestingness_function_file,
                   &binary_out, &transformations_applied)) {
         return 1;
       }

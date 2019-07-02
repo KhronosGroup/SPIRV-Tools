@@ -24,31 +24,33 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO
+// Shrinks a sequence of transformations that lead to an interesting SPIR-V
+// binary to yield a smaller sequence of transformations that still produce an
+// interesting binary.
 class Shrinker {
  public:
   // Possible statuses that can result from running the shrinker.
-  // TODO: maybe add step limit reached.
   enum ShrinkerResultStatus {
     kComplete,
     kFailedToCreateSpirvToolsInterface,
     kInitialBinaryInvalid,
     kInitialBinaryNotInteresting,
     kReplayFailed,
+    kStepLimitReached,
   };
 
-  // The type for a function that will take a binary and return true if and
-  // only if the binary is deemed interesting. (The function also takes an
-  // integer argument that will be incremented each time the function is
-  // called; this is for debugging purposes).
+  // The type for a function that will take a binary, |binary|, and return true
+  // if and only if the binary is deemed interesting. (The function also takes
+  // an integer argument, |counter|, that will be incremented each time the
+  // function is called; this is for debugging purposes).
   //
   // The notion of "interesting" depends on what properties of the binary or
   // tools that process the binary we are trying to maintain during shrinking.
-  using InterestingnessFunction =
-      std::function<bool(const std::vector<uint32_t>&, uint32_t)>;
+  using InterestingnessFunction = std::function<bool(
+      const std::vector<uint32_t>& binary, uint32_t counter)>;
 
   // Constructs a shrinker from the given target environment.
-  explicit Shrinker(spv_target_env env);
+  Shrinker(spv_target_env env, uint32_t step_limit);
 
   // Disables copy/move constructor/assignment operations.
   Shrinker(const Shrinker&) = delete;
@@ -62,13 +64,20 @@ class Shrinker {
   // invoked once for each message communicated from the library.
   void SetMessageConsumer(MessageConsumer consumer);
 
-  // TODO
+  // Requires that when |transformation_sequence_in| is applied to |binary_in|
+  // with initial facts |initial_facts|, the resulting binary is interesting
+  // according to |interestingness_function|.
+  //
+  // Produces, via |transformation_sequence_out|, a subsequence of
+  // |transformation_sequence_in| that, when applied with initial facts
+  // |initial_facts|, produces a binary (captured via |binary_out|) that is
+  // also interesting according to |interestingness_function|.
   ShrinkerResultStatus Run(
       const std::vector<uint32_t>& binary_in,
       const protobufs::FactSequence& initial_facts,
       const protobufs::TransformationSequence& transformation_sequence_in,
       const InterestingnessFunction& interestingness_function,
-      spv_const_fuzzer_options options, std::vector<uint32_t>* binary_out,
+      std::vector<uint32_t>* binary_out,
       protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:
