@@ -34,16 +34,15 @@ uint32_t NumRemainingTransformations(
 }
 
 // A helper to return a transformation sequence identical to |transformations|,
-// except that a chunk of size |granularity| starting from
-// (|transformations.size| - |index + 1| x |granularity|) is removed.
+// except that a chunk of size |chunk_size| starting from |chunk_index| x
+// |chunk_size| is removed (or as many transformations as available if the whole
+// chunk is not).
 protobufs::TransformationSequence RemoveChunk(
-    const protobufs::TransformationSequence& transformations, uint32_t index,
-    uint32_t granularity) {
-  uint32_t lower = static_cast<uint32_t>(std::max(
-      0, static_cast<int>(NumRemainingTransformations(transformations)) -
-             static_cast<int>((index + 1) * granularity)));
-  uint32_t upper =
-      NumRemainingTransformations(transformations) - index * granularity;
+    const protobufs::TransformationSequence& transformations,
+    uint32_t chunk_index, uint32_t chunk_size) {
+  uint32_t lower = chunk_index * chunk_size;
+  uint32_t upper = std::min((chunk_index + 1) * chunk_size,
+                            NumRemainingTransformations(transformations));
   assert(lower < upper);
   assert(upper <= NumRemainingTransformations(transformations));
   protobufs::TransformationSequence result;
@@ -128,7 +127,7 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   uint32_t attempt = 0;  // Keeps track of the number of shrink attempts that
                          // have been tried, whether successful or not.
 
-  uint32_t granularity =
+  uint32_t chunk_size =
       std::max(1u, NumRemainingTransformations(current_best_transformations) /
                        2);  // The number of contiguous transformations that the
                             // shrinker will try to remove in one go; starts
@@ -137,34 +136,47 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   // Keep shrinking until we:
   // - reach the step limit,
   // - run out of transformations to remove, or
-  // - cannot make the granularity of shrinking any finer.
+  // - cannot make the chunk size any smaller.
   while (attempt < impl_->step_limit &&
          !current_best_transformations.transformation().empty() &&
-         granularity > 0) {
+         chunk_size > 0) {
     bool progress_this_round =
-        false;  // Used to decide whether to make the granularity with which we
-                // remove transformations finer.  If we managed to remove at
-                // least one chunk of transformations at a particular
-                // granularity, we set this flag so that we do not yet decrease
-                // granularity.
+        false;  // Used to decide whether to make the chunk size with which we
+                // remove transformations smaller.  If we managed to remove at
+                // least one chunk of transformations at a particular chunk
+                // size, we set this flag so that we do not yet decrease the
+                // chunk size.
+
+    assert(chunk_size <=
+               NumRemainingTransformations(current_best_transformations) &&
+           "Chunk size should never exceed the number of transformations that "
+           "remain.");
+
+    // The number of chunks is the ceiling of (#remaining_transformations /
+    // chunk_size).
+    const uint32_t num_chunks =
+        (NumRemainingTransformations(current_best_transformations) +
+         chunk_size - 1) /
+        chunk_size;
+    assert(num_chunks >= 1 && "There should be at least one chunk.");
+    assert(num_chunks * chunk_size >=
+               NumRemainingTransformations(current_best_transformations) &&
+           "All transformations should be in some chunk.");
 
     // We go through the transformations in reverse, in chunks of size
-    // |granularity|. This is encoded here via an index, |index|, recording how
-    // many chunks of size |granularity| have been tried. The loop exits early
-    // if we reach the shrinking step limit.
-    for (uint32_t index = 0;
-         attempt < impl_->step_limit &&
-         index * granularity <
-             NumRemainingTransformations(current_best_transformations);) {
+    // |chunk_size|, using |chunk_index| to track which chunk to try removing
+    // next.  The loop exits early if we reach the shrinking step limit.
+    for (int chunk_index = num_chunks - 1;
+         attempt < impl_->step_limit && chunk_index >= 0; chunk_index--) {
       // Remove a chunk of transformations according to the current index and
-      // granularity.
+      // chunk size.
       auto transformations_with_chunk_removed =
-          RemoveChunk(current_best_transformations, index, granularity);
+          RemoveChunk(current_best_transformations, chunk_index, chunk_size);
 
       // Replay the smaller sequence of transformations to get a next binary and
       // transformation sequence. Note that the transformations arising from
       // replay might be even smaller than the transformations with the chunk
-      // removed, because removing those transformaitons might make further
+      // removed, because removing those transformations might make further
       // transformations inapplicable.
       std::vector<uint32_t> next_binary;
       protobufs::TransformationSequence next_transformation_sequence;
@@ -176,6 +188,11 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
         return ShrinkerResultStatus::kReplayFailed;
       }
 
+      assert(NumRemainingTransformations(next_transformation_sequence) >=
+                 chunk_index * chunk_size &&
+             "Removing this chunk of transformations should not have an effect "
+             "on earlier chunks.");
+
       if (interestingness_function(next_binary, attempt)) {
         // If the binary arising from the smaller transformation sequence is
         // interesting, this becomes our current best binary and transformation
@@ -183,21 +200,21 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
         current_best_binary = next_binary;
         current_best_transformations = next_transformation_sequence;
         progress_this_round = true;
-      } else {
-        // Otherwise, increase index so that we try another chunk.  Note that we
-        // only increase index when the binary was not interesting because
-        // otherwise removal of the chunk means that the current index refers to
-        // a fresh chunk to be considered.
-        index++;
       }
       // Either way, this was a shrink attempt, so increment our count of shrink
       // attempts.
       attempt++;
     }
     if (!progress_this_round) {
-      // If we didn't manage to remove any chunks at this granularity, try a
-      // smaller granularity.
-      granularity = granularity / 2;
+      // If we didn't manage to remove any chunks at this chunk size, try a
+      // smaller chunk size.
+      chunk_size /= 2;
+    }
+    // Decrease the chunk size until it becomes no larger than the number of
+    // remaining transformations.
+    while (chunk_size >
+           NumRemainingTransformations(current_best_transformations)) {
+      chunk_size /= 2;
     }
   }
 
