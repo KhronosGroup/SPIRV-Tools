@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "source/fuzz/fuzzer.h"
-#include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/shrinker.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -85,25 +84,23 @@ class PingPong : public InterestingnessTest {
   bool interesting_;
 };
 
-// A test that says a binary is interesting first time round, then randomly
-// decides whether the binary is interesting a certain number of times, then
-// says the binary is always interesting thereafter. This allows the logic of
-// the shrinker to be tested in a randomized way, but such that shrinking should
-// eventually eliminate all transformations (as long as the number of initial
-// transformations is non-trivial).
-class RandomThenAlwaysInteresting : public InterestingnessTest {
+// A test that says a binary is interesting first time round, then says that
+// it is interesting only occasionally a certain number of times, then says
+// it is always interesting thereafter.  This allows the logic of the shrinker
+// to be exercised a bit, but such that shrinking should eventually eliminate
+// all transformations (as long as the number of initial transformations is
+// non-trivial).
+class EventuallyAlwaysInteresting : public InterestingnessTest {
  public:
-  explicit RandomThenAlwaysInteresting(uint32_t limit, uint32_t seed)
-      : limit_(limit), number_of_times_asked_(0), random_generator_(seed) {}
+  explicit EventuallyAlwaysInteresting(uint32_t limit, uint32_t stride)
+      : limit_(limit), stride_(stride) {}
 
   bool Interesting(const std::vector<uint32_t>&, uint32_t) override {
     bool result;
-    if (number_of_times_asked_ == 0) {
+    if (number_of_times_asked_ >= limit_) {
       result = true;
-    } else if (number_of_times_asked_ < limit_) {
-      result = random_generator_.RandomBool();
     } else {
-      result = true;
+      result = (number_of_times_asked_ % stride_) == 0;
     }
     number_of_times_asked_++;
     return result;
@@ -111,8 +108,8 @@ class RandomThenAlwaysInteresting : public InterestingnessTest {
 
  private:
   const uint32_t limit_;
+  const uint32_t stride_;
   uint32_t number_of_times_asked_;
-  PseudoRandomGenerator random_generator_;
 };
 
 // |binary_in| and |initial_facts| are a SPIR-V binary and sequence of facts to
@@ -205,11 +202,11 @@ void RunFuzzerAndShrinker(const std::string& shader,
                         fuzzer_transformation_sequence_out,
                         PingPong().AsFunction(), {}, 0);
 
-    // With the RandomThenAlwaysInteresting test, we should eventually shrink to
+    // With the EventuallyAlwaysInteresting test, we should eventually shrink to
     // the original binary with no transformations remaining.
     RunAndCheckShrinker(
         env, binary_in, initial_facts, fuzzer_transformation_sequence_out,
-        RandomThenAlwaysInteresting(5, seed).AsFunction(), binary_in, 0);
+        EventuallyAlwaysInteresting(12, 3).AsFunction(), binary_in, 0);
   }
 }
 
