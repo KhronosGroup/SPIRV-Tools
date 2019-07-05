@@ -206,7 +206,7 @@ void RunFuzzerAndShrinker(const std::string& shader,
     // the original binary with no transformations remaining.
     RunAndCheckShrinker(
         env, binary_in, initial_facts, fuzzer_transformation_sequence_out,
-        EventuallyAlwaysInteresting(12, 3).AsFunction(), binary_in, 0);
+        EventuallyAlwaysInteresting(12, 3).AsFunction(), {}, 0);
   }
 }
 
