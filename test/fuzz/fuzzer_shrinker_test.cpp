@@ -138,6 +138,15 @@ void RunAndCheckShrinker(
   Shrinker::ShrinkerResultStatus shrinker_result_status =
       shrinker.Run(binary_in, initial_facts, transformation_sequence_in,
                    interestingness_function, &binary_out, &transformations_out);
+  ASSERT_FALSE(shrinker_result_status ==
+               Shrinker::ShrinkerResultStatus::kInitialBinaryInvalid);
+  ASSERT_FALSE(
+      shrinker_result_status ==
+      Shrinker::ShrinkerResultStatus::kFailedToCreateSpirvToolsInterface);
+  ASSERT_FALSE(shrinker_result_status ==
+               Shrinker::ShrinkerResultStatus::kInitialBinaryNotInteresting);
+  ASSERT_FALSE(shrinker_result_status ==
+               Shrinker::ShrinkerResultStatus::kReplayFailed);
   ASSERT_TRUE(Shrinker::ShrinkerResultStatus::kComplete ==
                   shrinker_result_status ||
               Shrinker::ShrinkerResultStatus::kStepLimitReached ==
@@ -204,9 +213,9 @@ void RunFuzzerAndShrinker(const std::string& shader,
 
     // With the EventuallyAlwaysInteresting test, we should eventually shrink to
     // the original binary with no transformations remaining.
-    RunAndCheckShrinker(
-        env, binary_in, initial_facts, fuzzer_transformation_sequence_out,
-        EventuallyAlwaysInteresting(12, 3).AsFunction(), {}, 0);
+    RunAndCheckShrinker(env, binary_in, initial_facts,
+                        fuzzer_transformation_sequence_out,
+                        EventuallyAlwaysInteresting(12, 3).AsFunction(), {}, 0);
   }
 }
 
@@ -622,7 +631,7 @@ TEST(FuzzerShrinkerTest, Miscellaneous2) {
 
   // Do 2 fuzzer runs, starting from an initial seed of 19 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndShrinker(shader, protobufs::FactSequence(), 19, 2);
+  RunFuzzerAndShrinker(shader, protobufs::FactSequence(), 19, 5);
 }
 
 TEST(FuzzerShrinkerTest, Miscellaneous3) {
@@ -1107,7 +1116,7 @@ TEST(FuzzerShrinkerTest, Miscellaneous3) {
 
   // Do 2 fuzzer runs, starting from an initial seed of 194 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndShrinker(shader, facts, 194, 2);
+  RunFuzzerAndShrinker(shader, facts, 194, 5);
 }
 
 }  // namespace
