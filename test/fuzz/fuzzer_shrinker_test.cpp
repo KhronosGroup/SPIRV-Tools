@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "source/fuzz/fuzzer.h"
+#include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/shrinker.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -84,32 +85,25 @@ class PingPong : public InterestingnessTest {
   bool interesting_;
 };
 
-// A test that says a binary is interesting first time round, then says that
-// it is interesting only occasionally a certain number of times, then says
-// it is always interesting thereafter.  This allows the logic of the shrinker
-// to be exercised a bit, but such that shrinking should eventually eliminate
-// all transformations (as long as the number of initial transformations is
-// non-trivial).
-class EventuallyAlwaysInteresting : public InterestingnessTest {
+// A test that says a binary is interesting first time round, thereafter
+// decides at random whether it is interesting.  This allows the logic of the
+// shrinker to be exercised quite a bit.
+class InterestingThenRandom : public InterestingnessTest {
  public:
-  explicit EventuallyAlwaysInteresting(uint32_t limit, uint32_t stride)
-      : limit_(limit), stride_(stride) {}
+  InterestingThenRandom(const PseudoRandomGenerator& random_generator)
+      : first_time_(true), random_generator_(random_generator) {}
 
   bool Interesting(const std::vector<uint32_t>&, uint32_t) override {
-    bool result;
-    if (number_of_times_asked_ >= limit_) {
-      result = true;
-    } else {
-      result = (number_of_times_asked_ % stride_) == 0;
+    if (first_time_) {
+      first_time_ = false;
+      return true;
     }
-    number_of_times_asked_++;
-    return result;
+    return random_generator_.RandomBool();
   }
 
  private:
-  const uint32_t limit_;
-  const uint32_t stride_;
-  uint32_t number_of_times_asked_;
+  bool first_time_;
+  PseudoRandomGenerator random_generator_;
 };
 
 // |binary_in| and |initial_facts| are a SPIR-V binary and sequence of facts to
@@ -138,15 +132,6 @@ void RunAndCheckShrinker(
   Shrinker::ShrinkerResultStatus shrinker_result_status =
       shrinker.Run(binary_in, initial_facts, transformation_sequence_in,
                    interestingness_function, &binary_out, &transformations_out);
-  ASSERT_FALSE(shrinker_result_status ==
-               Shrinker::ShrinkerResultStatus::kInitialBinaryInvalid);
-  ASSERT_FALSE(
-      shrinker_result_status ==
-      Shrinker::ShrinkerResultStatus::kFailedToCreateSpirvToolsInterface);
-  ASSERT_FALSE(shrinker_result_status ==
-               Shrinker::ShrinkerResultStatus::kInitialBinaryNotInteresting);
-  ASSERT_FALSE(shrinker_result_status ==
-               Shrinker::ShrinkerResultStatus::kReplayFailed);
   ASSERT_TRUE(Shrinker::ShrinkerResultStatus::kComplete ==
                   shrinker_result_status ||
               Shrinker::ShrinkerResultStatus::kStepLimitReached ==
@@ -156,9 +141,8 @@ void RunAndCheckShrinker(
   // result of shrinking and that the expected number of transformations remain.
   if (!expected_binary_out.empty()) {
     ASSERT_EQ(expected_binary_out, binary_out);
-    ASSERT_EQ(
-        expected_transformations_out_size,
-        static_cast<uint32_t>(transformations_out.transformation().size()));
+    ASSERT_EQ(expected_transformations_out_size,
+              static_cast<uint32_t>(transformations_out.transformation_size()));
   }
 }
 
@@ -211,11 +195,12 @@ void RunFuzzerAndShrinker(const std::string& shader,
                         fuzzer_transformation_sequence_out,
                         PingPong().AsFunction(), {}, 0);
 
-    // With the EventuallyAlwaysInteresting test, we should eventually shrink to
-    // the original binary with no transformations remaining.
-    RunAndCheckShrinker(env, binary_in, initial_facts,
-                        fuzzer_transformation_sequence_out,
-                        EventuallyAlwaysInteresting(12, 3).AsFunction(), {}, 0);
+    // The InterestingThenRandom test is unpredictable; passing an empty
+    // expected binary means that we do not check anything about shrinking
+    // results.
+    RunAndCheckShrinker(
+        env, binary_in, initial_facts, fuzzer_transformation_sequence_out,
+        InterestingThenRandom(PseudoRandomGenerator(seed)).AsFunction(), {}, 0);
   }
 }
 
@@ -631,7 +616,7 @@ TEST(FuzzerShrinkerTest, Miscellaneous2) {
 
   // Do 2 fuzzer runs, starting from an initial seed of 19 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndShrinker(shader, protobufs::FactSequence(), 19, 5);
+  RunFuzzerAndShrinker(shader, protobufs::FactSequence(), 19, 2);
 }
 
 TEST(FuzzerShrinkerTest, Miscellaneous3) {
@@ -1116,7 +1101,7 @@ TEST(FuzzerShrinkerTest, Miscellaneous3) {
 
   // Do 2 fuzzer runs, starting from an initial seed of 194 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndShrinker(shader, facts, 194, 5);
+  RunFuzzerAndShrinker(shader, facts, 194, 2);
 }
 
 }  // namespace
