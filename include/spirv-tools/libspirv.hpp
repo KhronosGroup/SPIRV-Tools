@@ -207,6 +207,11 @@ class FuzzerOptions {
     spvFuzzerOptionsSetRandomSeed(options_, seed);
   }
 
+  // See spvFuzzerOptionsSetShrinkerStepLimit.
+  void set_shrinker_step_limit(uint32_t shrinker_step_limit) {
+    spvFuzzerOptionsSetShrinkerStepLimit(options_, shrinker_step_limit);
+  }
+
  private:
   spv_fuzzer_options options_;
 };
