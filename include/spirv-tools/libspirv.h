@@ -607,6 +607,11 @@ SPIRV_TOOLS_EXPORT void spvFuzzerOptionsDestroy(spv_fuzzer_options options);
 SPIRV_TOOLS_EXPORT void spvFuzzerOptionsSetRandomSeed(
     spv_fuzzer_options options, uint32_t seed);
 
+// Sets the maximum number of steps that the shrinker should take before giving
+// up.
+SPIRV_TOOLS_EXPORT void spvFuzzerOptionsSetShrinkerStepLimit(
+    spv_fuzzer_options options, uint32_t shrinker_step_limit);
+
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
 // be stored into *binary. Any error will be written into *diagnostic if
