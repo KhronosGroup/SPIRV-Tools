@@ -174,13 +174,13 @@ class SENode {
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
-  DeclareCastMethod(SEConstantNode);
-  DeclareCastMethod(SERecurrentNode);
-  DeclareCastMethod(SEAddNode);
-  DeclareCastMethod(SEMultiplyNode);
-  DeclareCastMethod(SENegative);
-  DeclareCastMethod(SEValueUnknown);
-  DeclareCastMethod(SECantCompute);
+  DeclareCastMethod(SEConstantNode)
+  DeclareCastMethod(SERecurrentNode)
+  DeclareCastMethod(SEAddNode)
+  DeclareCastMethod(SEMultiplyNode)
+  DeclareCastMethod(SENegative)
+  DeclareCastMethod(SEValueUnknown)
+  DeclareCastMethod(SECantCompute)
 #undef DeclareCastMethod
 
   // Get the analysis which has this node in its cache.

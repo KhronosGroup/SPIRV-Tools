@@ -150,30 +150,30 @@ class Type {
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
-  DeclareCastMethod(Void);
-  DeclareCastMethod(Bool);
-  DeclareCastMethod(Integer);
-  DeclareCastMethod(Float);
-  DeclareCastMethod(Vector);
-  DeclareCastMethod(Matrix);
-  DeclareCastMethod(Image);
-  DeclareCastMethod(Sampler);
-  DeclareCastMethod(SampledImage);
-  DeclareCastMethod(Array);
-  DeclareCastMethod(RuntimeArray);
-  DeclareCastMethod(Struct);
-  DeclareCastMethod(Opaque);
-  DeclareCastMethod(Pointer);
-  DeclareCastMethod(Function);
-  DeclareCastMethod(Event);
-  DeclareCastMethod(DeviceEvent);
-  DeclareCastMethod(ReserveId);
-  DeclareCastMethod(Queue);
-  DeclareCastMethod(Pipe);
-  DeclareCastMethod(ForwardPointer);
-  DeclareCastMethod(PipeStorage);
-  DeclareCastMethod(NamedBarrier);
-  DeclareCastMethod(AccelerationStructureNV);
+  DeclareCastMethod(Void)
+  DeclareCastMethod(Bool)
+  DeclareCastMethod(Integer)
+  DeclareCastMethod(Float)
+  DeclareCastMethod(Vector)
+  DeclareCastMethod(Matrix)
+  DeclareCastMethod(Image)
+  DeclareCastMethod(Sampler)
+  DeclareCastMethod(SampledImage)
+  DeclareCastMethod(Array)
+  DeclareCastMethod(RuntimeArray)
+  DeclareCastMethod(Struct)
+  DeclareCastMethod(Opaque)
+  DeclareCastMethod(Pointer)
+  DeclareCastMethod(Function)
+  DeclareCastMethod(Event)
+  DeclareCastMethod(DeviceEvent)
+  DeclareCastMethod(ReserveId)
+  DeclareCastMethod(Queue)
+  DeclareCastMethod(Pipe)
+  DeclareCastMethod(ForwardPointer)
+  DeclareCastMethod(PipeStorage)
+  DeclareCastMethod(NamedBarrier)
+  DeclareCastMethod(AccelerationStructureNV)
 #undef DeclareCastMethod
 
   bool operator==(const Type& other) const;

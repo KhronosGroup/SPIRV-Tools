@@ -184,11 +184,11 @@ class Constraint {
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
-  DeclareCastMethod(DependenceLine);
-  DeclareCastMethod(DependenceDistance);
-  DeclareCastMethod(DependencePoint);
-  DeclareCastMethod(DependenceNone);
-  DeclareCastMethod(DependenceEmpty);
+  DeclareCastMethod(DependenceLine)
+  DeclareCastMethod(DependenceDistance)
+  DeclareCastMethod(DependencePoint)
+  DeclareCastMethod(DependenceNone)
+  DeclareCastMethod(DependenceEmpty)
 #undef DeclareCastMethod
 
  protected:
