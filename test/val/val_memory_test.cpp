@@ -4155,8 +4155,9 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
 }
 
 TEST_F(ValidateMemory, SmallStorageCopyMemoryShort) {
@@ -4186,8 +4187,9 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
 }
 
 TEST_F(ValidateMemory, SmallStorageCopyMemoryHalf) {
@@ -4217,8 +4219,9 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
 }
 
 TEST_F(ValidateMemory, SmallStorageVariableArrayBufferBlockShort) {
