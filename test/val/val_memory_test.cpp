@@ -4221,6 +4221,75 @@ OpFunctionEnd
               HasSubstr("Cannot copy memory of objects containing 8- or 16-bit types"));
 }
 
+TEST_F(ValidateMemory, SmallStorageVariableArrayBufferBlockShort) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpDecorate %block BufferBlock
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%short = OpTypeInt 16 0
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%block = OpTypeStruct %short
+%block_array = OpTypeArray %block %int_4
+%ptr_block_array = OpTypePointer Uniform %block_array
+%var = OpVariable %ptr_block_array Uniform
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, SmallStorageVariableArrayBufferBlockChar) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer8BitAccess
+OpExtension "SPV_KHR_8bit_storage"
+OpMemoryModel Logical GLSL450
+OpDecorate %block BufferBlock
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%char = OpTypeInt 8 0
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%block = OpTypeStruct %char
+%block_array = OpTypeArray %block %int_4
+%ptr_block_array = OpTypePointer Uniform %block_array
+%var = OpVariable %ptr_block_array Uniform
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, SmallStorageVariableArrayBufferBlockHalf) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpDecorate %block BufferBlock
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%half = OpTypeFloat 16
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%block = OpTypeStruct %half
+%block_array = OpTypeArray %block %int_4
+%ptr_block_array = OpTypePointer Uniform %block_array
+%var = OpVariable %ptr_block_array Uniform
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

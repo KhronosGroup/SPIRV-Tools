@@ -1244,6 +1244,7 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, SpvOp type,
     case SpvOpTypeMatrix:
     case SpvOpTypeImage:
     case SpvOpTypeSampledImage:
+    case SpvOpTypeCooperativeMatrixNV:
       return ContainsSizedIntOrFloatType(inst->GetOperandAs<uint32_t>(1u), type,
                                          width);
     case SpvOpTypePointer:

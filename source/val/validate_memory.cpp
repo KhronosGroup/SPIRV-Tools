@@ -734,12 +734,14 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         case SpvStorageClassUniform:
           if (!_.HasCapability(
                   SpvCapabilityUniformAndStorageBuffer16BitAccess)) {
-            if (value_type->opcode() == SpvOpTypeArray ||
-                value_type->opcode() == SpvOpTypeRuntimeArray) {
-              value_type = _.FindDef(value_type->GetOperandAs<uint32_t>(1u));
+            if (underlying_type->opcode() == SpvOpTypeArray ||
+                underlying_type->opcode() == SpvOpTypeRuntimeArray) {
+              underlying_type =
+                  _.FindDef(underlying_type->GetOperandAs<uint32_t>(1u));
             }
             if (!_.HasCapability(SpvCapabilityStorageBuffer16BitAccess) ||
-                !_.HasDecoration(value_type->id(), SpvDecorationBufferBlock)) {
+                !_.HasDecoration(underlying_type->id(),
+                                 SpvDecorationBufferBlock)) {
               storage_class_ok = false;
             }
           }
@@ -789,12 +791,14 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         case SpvStorageClassUniform:
           if (!_.HasCapability(
                   SpvCapabilityUniformAndStorageBuffer8BitAccess)) {
-            if (value_type->opcode() == SpvOpTypeArray ||
-                value_type->opcode() == SpvOpTypeRuntimeArray) {
-              value_type = _.FindDef(value_type->GetOperandAs<uint32_t>(1u));
+            if (underlying_type->opcode() == SpvOpTypeArray ||
+                underlying_type->opcode() == SpvOpTypeRuntimeArray) {
+              underlying_type =
+                  _.FindDef(underlying_type->GetOperandAs<uint32_t>(1u));
             }
             if (!_.HasCapability(SpvCapabilityStorageBuffer8BitAccess) ||
-                !_.HasDecoration(value_type->id(), SpvDecorationBufferBlock)) {
+                !_.HasDecoration(underlying_type->id(),
+                                 SpvDecorationBufferBlock)) {
               storage_class_ok = false;
             }
           }
