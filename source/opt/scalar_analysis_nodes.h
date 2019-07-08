@@ -171,6 +171,7 @@ class SENode {
   bool IsCantCompute() const { return GetType() == CanNotCompute; }
 
 // Implements a casting method for each type.
+// clang-format off
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
@@ -200,6 +201,7 @@ class SENode {
   // The number of nodes created.
   static uint32_t NumberOfNodes;
 };
+// clang-format on
 
 // Function object to handle the hashing of SENodes. Hashing algorithm hashes
 // the type (as a string), the literal value of any constants, and the child

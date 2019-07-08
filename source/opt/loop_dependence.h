@@ -181,6 +181,7 @@ class Constraint {
 
   bool operator!=(const Constraint& other) const;
 
+// clang-format off
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
@@ -194,6 +195,7 @@ class Constraint {
  protected:
   const Loop* loop_;
 };
+// clang-format on
 
 class DependenceLine : public Constraint {
  public:

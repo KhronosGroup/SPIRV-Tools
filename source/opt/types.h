@@ -145,8 +145,30 @@ class Type {
   // TODO(alanbaker): Update this if variable pointers become a core feature.
   bool IsUniqueType(bool allowVariablePointers = false) const;
 
+  bool operator==(const Type& other) const;
+
+  // Returns the hash value of this type.
+  size_t HashValue() const;
+
+  // Adds the necessary words to compute a hash value of this type to |words|.
+  void GetHashWords(std::vector<uint32_t>* words) const {
+    std::unordered_set<const Type*> seen;
+    GetHashWords(words, &seen);
+  }
+
+  // Adds the necessary words to compute a hash value of this type to |words|.
+  void GetHashWords(std::vector<uint32_t>* words,
+                    std::unordered_set<const Type*>* seen) const;
+
+  // Adds necessary extra words for a subtype to calculate a hash value into
+  // |words|.
+  virtual void GetExtraHashWords(
+      std::vector<uint32_t>* words,
+      std::unordered_set<const Type*>* pSet) const = 0;
+
 // A bunch of methods for casting this type to a given type. Returns this if the
 // cast can be done, nullptr otherwise.
+// clang-format off
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
@@ -176,27 +198,6 @@ class Type {
   DeclareCastMethod(AccelerationStructureNV)
 #undef DeclareCastMethod
 
-  bool operator==(const Type& other) const;
-
-  // Returns the hash value of this type.
-  size_t HashValue() const;
-
-  // Adds the necessary words to compute a hash value of this type to |words|.
-  void GetHashWords(std::vector<uint32_t>* words) const {
-    std::unordered_set<const Type*> seen;
-    GetHashWords(words, &seen);
-  }
-
-  // Adds the necessary words to compute a hash value of this type to |words|.
-  void GetHashWords(std::vector<uint32_t>* words,
-                    std::unordered_set<const Type*>* seen) const;
-
-  // Adds necessary extra words for a subtype to calculate a hash value into
-  // |words|.
-  virtual void GetExtraHashWords(
-      std::vector<uint32_t>* words,
-      std::unordered_set<const Type*>* pSet) const = 0;
-
  protected:
   // Decorations attached to this type. Each decoration is encoded as a vector
   // of uint32_t numbers. The first uint32_t number is the decoration value,
@@ -210,6 +211,7 @@ class Type {
 
   Kind kind_;
 };
+// clang-format on
 
 class Integer : public Type {
  public:
