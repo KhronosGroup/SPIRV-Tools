@@ -165,6 +165,13 @@ Instruction* IRContext::KillInst(Instruction* inst) {
     constant_mgr_->RemoveId(inst->result_id());
   }
 
+  if (AreAnalysesValid(kAnalysisStructuredCFG) &&
+      (inst->opcode() == SpvOpLoopMerge ||
+       inst->opcode() == SpvOpSelectionMerge ||
+       inst->opcode() == SpvOpSwitch)) {
+    InvalidateAnalyses(kAnalysisStructuredCFG);
+  }
+
   RemoveFromIdToName(inst);
 
   Instruction* next_instruction = nullptr;
