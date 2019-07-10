@@ -147,13 +147,6 @@ Options (in lexicographical order):)",
                around known issues with some Vulkan drivers for initialize
                variables.)");
   printf(R"(
-  --eliminate-common-uniform
-               Perform load/load elimination for duplicate uniform values.
-               Converts any constant index access chain uniform loads into
-               its equivalent load and extract. Some loads will be moved
-               to facilitate sharing. Performed only on entry point
-               call tree functions.)");
-  printf(R"(
   --eliminate-dead-branches
                Convert conditional branches with constant condition to the
                indicated unconditional brranch. Delete all resulting dead
