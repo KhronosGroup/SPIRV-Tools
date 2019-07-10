@@ -412,7 +412,7 @@ OpControlBarrier %device %workgroup %none
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ControlBarrier: in WebGPU environment Execution Scope "
-                        "is limited to Workgroup and Subgroup"));
+                        "is limited to Workgroup"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierVulkanMemoryScopeSubgroup) {
