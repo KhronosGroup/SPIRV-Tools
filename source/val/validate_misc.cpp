@@ -70,6 +70,25 @@ spv_result_t MiscPass(ValidationState_t& _, const Instruction* inst) {
             return true;
           });
       break;
+    case SpvOpDemoteToHelperInvocationEXT:
+      _.function(inst->function()->id())
+          ->RegisterExecutionModelLimitation(
+              SpvExecutionModelFragment,
+              "OpDemoteToHelperInvocationEXT requires Fragment execution "
+              "model");
+      break;
+    case SpvOpIsHelperInvocationEXT: {
+      const uint32_t result_type = inst->type_id();
+      _.function(inst->function()->id())
+          ->RegisterExecutionModelLimitation(
+              SpvExecutionModelFragment,
+              "OpIsHelperInvocationEXT requires Fragment execution model");
+      if (!_.IsBoolScalarType(result_type))
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected bool scalar type as Result Type: "
+               << spvOpcodeString(inst->opcode());
+      break;
+    }
     default:
       break;
   }
