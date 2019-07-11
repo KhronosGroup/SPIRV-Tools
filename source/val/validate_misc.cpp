@@ -22,8 +22,29 @@
 
 namespace spvtools {
 namespace val {
+namespace {
+
+spv_result_t ValidateUndef(ValidationState_t& _, const Instruction* inst) {
+  if (_.HasCapability(SpvCapabilityShader) &&
+      _.ContainsLimitedUseIntOrFloatType(inst->type_id()) &&
+      !_.IsPointerType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Cannot create undefined values with 8- or 16-bit types";
+  }
+
+  return SPV_SUCCESS;
+}
+
+}  // namespace
 
 spv_result_t MiscPass(ValidationState_t& _, const Instruction* inst) {
+  switch (inst->opcode()) {
+    case SpvOpUndef:
+      if (auto error = ValidateUndef(_, inst)) return error;
+      break;
+    default:
+      break;
+  }
   switch (inst->opcode()) {
     case SpvOpBeginInvocationInterlockEXT:
     case SpvOpEndInvocationInterlockEXT:
