@@ -469,8 +469,6 @@ static_library("spvtools_opt") {
     "source/opt/code_sink.h",
     "source/opt/combine_access_chains.cpp",
     "source/opt/combine_access_chains.h",
-    "source/opt/common_uniform_elim_pass.cpp",
-    "source/opt/common_uniform_elim_pass.h",
     "source/opt/compact_ids_pass.cpp",
     "source/opt/compact_ids_pass.h",
     "source/opt/composite.cpp",
