@@ -14,8 +14,6 @@
 # limitations under the License.
 """Generates language headers from a JSON grammar file"""
 
-from __future__ import print_function
-
 import errno
 import json
 import os.path

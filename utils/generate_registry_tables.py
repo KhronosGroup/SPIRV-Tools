@@ -14,8 +14,6 @@
 # limitations under the License.
 """Generates the vendor tool table from the SPIR-V XML registry."""
 
-from __future__ import print_function
-
 import distutils.dir_util
 import os.path
 import xml.etree.ElementTree

@@ -14,8 +14,6 @@
 # limitations under the License.
 """Generates various info tables from SPIR-V JSON grammar."""
 
-from __future__ import print_function
-
 import errno
 import json
 import os.path
