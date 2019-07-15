@@ -147,6 +147,15 @@ Options (in lexicographical order):)",
                around known issues with some Vulkan drivers for initialize
                variables.)");
   printf(R"(
+  --descriptor-scalar-replacement
+               Replaces every array variable |desc| that has a DescriptorSet
+               and Binding decorations with a new variable for each element of
+               the array.  Suppose |desc| was bound at binding |b|.  Then the
+               variable corresponding to |desc[i]| will have binding |b+i|.
+               The descriptor set will be the same.  All accesses to |desc|
+               must be in OpAccessChain instructions with a literal index for
+               the first index.)");
+  printf(R"(
   --eliminate-dead-branches
                Convert conditional branches with constant condition to the
                indicated unconditional brranch. Delete all resulting dead
