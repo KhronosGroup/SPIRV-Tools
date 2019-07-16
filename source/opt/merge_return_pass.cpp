@@ -663,13 +663,13 @@ void MergeReturnPass::AddNewPhiNodes() {
 }
 
 void MergeReturnPass::AddNewPhiNodes(BasicBlock* bb) {
-  // New phi nodes are needed for id whose definition use to dominate |bb|, but
-  // no longer dominates |bb|.  These are found by walking the dominator tree
-  // starting at the original immediate dominator of |bb| and ending at its
+  // New phi nodes are needed for any id whose definition used to dominate |bb|,
+  // but no longer dominates |bb|.  These are found by walking the dominator
+  // tree starting at the original immediate dominator of |bb| and ending at its
   // current dominator.
 
-  // Because are walking the updated dominator tree it is important that the new
-  // phi nodes for the original dominators of |bb| must have already been added.
+  // Because we are walking the updated dominator tree it is important that the
+  // new phi nodes for the original dominators of |bb| have already been added.
   // Otherwise some ids might be missed.  Consider the case where bb1 dominates
   // bb2, and bb2 dominates bb3.  Suppose there are changes such that bb1 no
   // longer dominates bb2 and the same for bb2 and bb3.  This algorithm will not
