@@ -44,6 +44,7 @@ add_spvtools_unittest(TARGET opt
        freeze_spec_const_test.cpp
        function_test.cpp
        generate_webgpu_initializers_test.cpp
+       graphics_robust_access_test.cpp
        if_conversion_test.cpp
        inline_opaque_test.cpp
        inline_test.cpp
