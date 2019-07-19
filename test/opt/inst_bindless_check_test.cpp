@@ -335,7 +335,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(before, before, true, true, 7u, 23u, false, false, 1u);
+  SinglePassRunAndCheck<InstBindlessCheckPass>(before, before, true, true, 7u,
+                                               23u, false, false, 1u);
 }
 
 TEST_F(InstBindlessTest, InstrumentMultipleInstructions) {
@@ -1903,8 +1904,8 @@ OpFunctionEnd
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<InstBindlessCheckPass>(
       defs_before + func1_before + func2_before,
-      defs_after + func1_after + func2_after + output_func, true, true,
-      7u, 23u, false, false, 1u);
+      defs_after + func1_after + func2_after + output_func, true, true, 7u, 23u,
+      false, false, 1u);
 }
 
 TEST_F(InstBindlessTest, RuntimeArray) {
@@ -2277,14 +2278,13 @@ OpFunctionEnd
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<InstBindlessCheckPass>(whole_file, whole_file, true,
-                                               true, 7u, 23u, false, false,
-                                               1u);
+                                               true, 7u, 23u, false, false, 1u);
 }
 
 TEST_F(InstBindlessTest, InstrumentInitCheckOnScalarDescriptor) {
   // This test verifies that the pass will correctly instrument vanilla
   // texture sample on a scalar descriptor with an initialization check if the
-  // input_init_enable argument is set to true. This can happen when the 
+  // input_init_enable argument is set to true. This can happen when the
   // descriptor indexing extension is enabled in the API but the SPIR-V
   // does not have the extension enabled because it does not contain a
   // runtime array. This is the same shader as NoInstrumentNonBindless.
@@ -6329,7 +6329,7 @@ OpFunctionEnd
 TEST_F(InstBindlessTest, InstrumentInitCheckOnScalarDescriptorV2) {
   // This test verifies that the pass will correctly instrument vanilla
   // texture sample on a scalar descriptor with an initialization check if the
-  // input_init_enable argument is set to true. This can happen when the 
+  // input_init_enable argument is set to true. This can happen when the
   // descriptor indexing extension is enabled in the API but the SPIR-V
   // does not have the extension enabled because it does not contain a
   // runtime array. This is the same shader as NoInstrumentNonBindless.
