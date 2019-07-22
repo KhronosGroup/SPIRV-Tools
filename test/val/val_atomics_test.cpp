@@ -501,8 +501,7 @@ TEST_F(ValidateAtomics, AtomicLoadWrongScopeType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicLoad: expected Memory Scope to be a 32-bit int\n  %42 = "
-                "OpAtomicLoad %float %28 %float_1 %uint_0_1\n"));
+      HasSubstr("AtomicLoad: expected Memory Scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongMemorySemanticsType) {
@@ -790,9 +789,7 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "AtomicExchange: expected Memory Scope to be a 32-bit int\n  %42 = "
-          "OpAtomicExchange %float %28 %float_1 %uint_0_1 %float_0\n"));
+      HasSubstr("AtomicExchange: expected Memory Scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongMemorySemanticsType) {
@@ -907,8 +904,7 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("AtomicCompareExchange: expected Memory Scope to be a 32-bit "
-                "int\n  %42 = OpAtomicCompareExchange %float %28 %float_1 "
-                "%uint_0_1 %uint_0_1 %float_0 %float_0\n"));
+                "int"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongMemorySemanticsType1) {
@@ -1089,8 +1085,7 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongScopeType) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "AtomicFlagTestAndSet: expected Memory Scope to be a 32-bit int\n  "
-          "%42 = OpAtomicFlagTestAndSet %bool %30 %ulong_1 %uint_0_1\n"));
+          "AtomicFlagTestAndSet: expected Memory Scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongMemorySemanticsType) {
@@ -1191,8 +1186,7 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicIIncrement: Memory Semantics can have at most "
                         "one of the following bits set: Acquire, Release, "
-                        "AcquireRelease or SequentiallyConsistent\n  %42 = "
-                        "OpAtomicIIncrement %uint %30 %uint_1_0 %uint_6\n"));
+                        "AcquireRelease or SequentiallyConsistent"));
 }
 
 TEST_F(ValidateAtomics, AtomicUniformMemorySemanticsShader) {

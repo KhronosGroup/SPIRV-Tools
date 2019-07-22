@@ -25,10 +25,9 @@
 #include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
-namespace spvtools {
-namespace val {
+namespace {
 
-static bool IsStorageClassAllowedByUniversalRules(uint32_t storage_class) {
+bool IsStorageClassAllowedByUniversalRules(uint32_t storage_class) {
   switch (storage_class) {
     case SpvStorageClassUniform:
     case SpvStorageClassStorageBuffer:
@@ -45,6 +44,11 @@ static bool IsStorageClassAllowedByUniversalRules(uint32_t storage_class) {
       return false;
   }
 }
+
+}  // namespace
+
+namespace spvtools {
+namespace val {
 
 // Validates correctness of atomic instructions.
 spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
