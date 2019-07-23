@@ -396,10 +396,19 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   } else if (pass_name == "replace-invalid-opcode") {
     RegisterPass(CreateReplaceInvalidOpcodePass());
   } else if (pass_name == "inst-bindless-check") {
+    RegisterPass(CreateInstBindlessCheckPass(7, 23, false, false, 2));
+    RegisterPass(CreateSimplificationPass());
+    RegisterPass(CreateDeadBranchElimPass());
+    RegisterPass(CreateBlockMergePass());
+    RegisterPass(CreateAggressiveDCEPass());
+  } else if (pass_name == "inst-desc-idx-check") {
     RegisterPass(CreateInstBindlessCheckPass(7, 23, true, true, 2));
     RegisterPass(CreateSimplificationPass());
     RegisterPass(CreateDeadBranchElimPass());
     RegisterPass(CreateBlockMergePass());
+    RegisterPass(CreateAggressiveDCEPass());
+  } else if (pass_name == "inst-buff-addr-check") {
+    RegisterPass(CreateInstBuffAddrCheckPass(7, 23, 2));
     RegisterPass(CreateAggressiveDCEPass());
   } else if (pass_name == "simplify-instructions") {
     RegisterPass(CreateSimplificationPass());
@@ -851,6 +860,13 @@ Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
       MakeUnique<opt::InstBindlessCheckPass>(desc_set, shader_id,
                                              input_length_enable,
                                              input_init_enable, version));
+}
+
+Optimizer::PassToken CreateInstBuffAddrCheckPass(uint32_t desc_set,
+                                                 uint32_t shader_id,
+                                                 uint32_t version) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::InstBuffAddrCheckPass>(desc_set, shader_id, version));
 }
 
 Optimizer::PassToken CreateCodeSinkingPass() {
