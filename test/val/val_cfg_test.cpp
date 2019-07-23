@@ -3703,6 +3703,52 @@ OpFunctionEnd
                         "10[%10], but not via a structured exit"));
 }
 
+TEST_F(ValidateCFG, ContinueFromNestedSelection) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%4 = OpFunction %void None %void_fn
+%5 = OpLabel
+OpBranch %48
+%48 = OpLabel
+OpLoopMerge %47 %50 None
+OpBranch %10
+%10 = OpLabel
+OpLoopMerge %12 %37 None
+OpBranchConditional %undef %11 %12
+%11 = OpLabel
+OpSelectionMerge %31 None
+OpBranchConditional %undef %30 %31
+%30 = OpLabel
+OpSelectionMerge %37 None
+OpBranchConditional %undef %36 %37
+%36 = OpLabel
+OpBranch %37
+%37 = OpLabel
+OpBranch %10
+%31 = OpLabel
+OpBranch %12
+%12 = OpLabel
+OpSelectionMerge %55 None
+OpBranchConditional %undef %47 %55
+%55 = OpLabel
+OpBranch %47
+%50 = OpLabel
+OpBranch %48
+%47 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 /// TODO(umar): Nested CFG constructs
 
 }  // namespace
