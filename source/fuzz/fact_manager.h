@@ -51,13 +51,12 @@ class FactManager {
   // fact manager.
   bool AddFact(const protobufs::Fact& fact, opt::IRContext* context);
 
-  // The fact manager will ultimately be responsible for managing a few distinct
-  // categories of facts. In principle there could be different fact managers
-  // for each kind of fact, but in practice providing one 'go to' place for
-  // facts will be convenient.  To keep some separation, the public methods of
-  // the fact manager should be grouped according to the kind of fact to which
-  // they relate.  At present we only have one kind of fact: facts about
-  // uniform variables.
+  // The fact manager is responsible for managing a few distinct categories of
+  // facts. In principle there could be different fact managers for each kind
+  // of fact, but in practice providing one 'go to' place for facts is
+  // convenient.  To keep some separation, the public methods of the fact
+  // manager should be grouped according to the kind of fact to which they
+  // relate.
 
   //==============================
   // Querying facts about uniform constants
@@ -94,6 +93,12 @@ class FactManager {
   GetConstantUniformFactsAndTypes() const;
 
   // End of uniform constant facts
+  //==============================
+
+  //==============================
+  // Querying facts about id synonyms
+
+  // End of id synonym facts
   //==============================
 
  private:
