@@ -33,6 +33,7 @@ void RunFuzzerAndReplayer(const std::string& shader,
 
   std::vector<uint32_t> binary_in;
   SpirvTools t(env);
+  t.SetMessageConsumer(kConsoleMessageConsumer);
   ASSERT_TRUE(t.Assemble(shader, &binary_in, kFuzzAssembleOption));
   ASSERT_TRUE(t.Validate(binary_in));
 
