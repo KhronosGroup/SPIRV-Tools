@@ -761,13 +761,6 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
               context()->KillInst(annotation);
               modified = true;
             }
-          } else {
-            /*
-            annotation->ForEachId([this](const uint32_t* iid) {
-              Instruction* use = get_def_use_mgr()->GetDef(*iid);
-              live_insts_.Set(use->unique_id());
-            });
-            */
           }
         }
         break;
