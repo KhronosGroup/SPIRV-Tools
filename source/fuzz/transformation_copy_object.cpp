@@ -17,5 +17,40 @@
 namespace spvtools {
 namespace fuzz {
 
+TransformationCopyObject::TransformationCopyObject(
+    const protobufs::TransformationCopyObject& message)
+    : message_(message) {}
+
+TransformationCopyObject::TransformationCopyObject(uint32_t fresh_id,
+                                                   uint32_t object,
+                                                   uint32_t insert_after_id,
+                                                   uint32_t offset) {
+  message_.set_fresh_id(fresh_id);
+  message_.set_object(object);
+  message_.set_insert_after_id(insert_after_id);
+  message_.set_offset(offset);
+}
+
+bool TransformationCopyObject::IsApplicable(
+    opt::IRContext* context, const FactManager& fact_manager) const {
+  (void)(context);
+  (void)(fact_manager);
+  assert(0 && "Not yet implemented.");
+  return false;
+}
+
+void TransformationCopyObject::Apply(opt::IRContext* context,
+                                     FactManager* fact_manager) const {
+  (void)(context);
+  (void)(fact_manager);
+  assert(0 && "Not yet implemented.");
+}
+
+protobufs::Transformation TransformationCopyObject::ToMessage() const {
+  protobufs::Transformation result;
+  *result.mutable_copy_object() = message_;
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

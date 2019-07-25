@@ -26,6 +26,7 @@ if(SPIRV_BUILD_FUZZER)
   )
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
+        data_descriptor.h
         fact_manager.h
         fuzzer.h
         fuzzer_context.h
@@ -60,6 +61,7 @@ if(SPIRV_BUILD_FUZZER)
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
+        data_descriptor.cpp
         fact_manager.cpp
         fuzzer.cpp
         fuzzer_context.cpp

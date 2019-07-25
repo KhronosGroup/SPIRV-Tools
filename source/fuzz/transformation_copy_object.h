@@ -26,9 +26,10 @@ namespace fuzz {
 class TransformationCopyObject : public Transformation {
  public:
   explicit TransformationCopyObject(
-          const protobufs::TransformationCopyObject& message);
+      const protobufs::TransformationCopyObject& message);
 
-  TransformationCopyObject(void);
+  TransformationCopyObject(uint32_t fresh_id, uint32_t object,
+                           uint32_t insert_after_id, uint32_t offset);
 
   // TODO
   bool IsApplicable(opt::IRContext* context,

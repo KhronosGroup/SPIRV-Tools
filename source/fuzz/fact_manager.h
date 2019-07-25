@@ -16,6 +16,7 @@
 #define SOURCE_FUZZ_FACT_MANAGER_H_
 
 #include <memory>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -98,6 +99,13 @@ class FactManager {
   //==============================
   // Querying facts about id synonyms
 
+  // TODO comment
+  const std::set<uint32_t>& GetIdsForWhichSynonymsAreKnown() const;
+
+  // TODO comment
+  const std::vector<protobufs::DataDescriptor>& GetSynonymsForId(
+      uint32_t id) const;
+
   // End of id synonym facts
   //==============================
 
@@ -109,6 +117,10 @@ class FactManager {
                                 // buffer elements.
   std::unique_ptr<ConstantUniformFacts>
       uniform_constant_facts_;  // Unique pointer to internal data.
+
+  struct IdSynonymFacts;  // Opaque struct for holding data about id synonyms.
+  std::unique_ptr<IdSynonymFacts>
+      id_synonym_facts_;  // Unique pointer to internal data.
 };
 
 }  // namespace fuzz

@@ -68,6 +68,9 @@ std::string ToString(const protobufs::Fact& fact) {
 
 }  // namespace
 
+//=======================
+// Constant uniform facts
+
 // The purpose of this struct is to group the fields and data used to represent
 // facts about uniform constants.
 struct FactManager::ConstantUniformFacts {
@@ -330,9 +333,29 @@ bool FactManager::ConstantUniformFacts::AddFact(
   return true;
 }
 
-FactManager::FactManager() {
-  uniform_constant_facts_ = MakeUnique<ConstantUniformFacts>();
-}
+// End of uniform constant facts
+//==============================
+
+//==============================
+// Id synonym facts
+
+// The purpose of this struct is to group the fields and data used to represent
+// facts about id synonyms.
+struct FactManager::IdSynonymFacts {
+  // A record of all the synonyms that are available.
+  std::map<uint32_t, std::vector<protobufs::DataDescriptor>> synonyms;
+
+  // The set of keys to the above map; useful if you just want to know which ids
+  // have synonyms.
+  std::set<uint32_t> ids_with_synonyms;
+};
+
+// End of id synonym facts
+//==============================
+
+FactManager::FactManager()
+    : uniform_constant_facts_(MakeUnique<ConstantUniformFacts>()),
+      id_synonym_facts_(MakeUnique<IdSynonymFacts>()) {}
 
 FactManager::~FactManager() = default;
 
@@ -387,6 +410,15 @@ std::vector<uint32_t> FactManager::GetTypesForWhichUniformValuesAreKnown()
 const std::vector<std::pair<protobufs::FactConstantUniform, uint32_t>>&
 FactManager::GetConstantUniformFactsAndTypes() const {
   return uniform_constant_facts_->facts_and_type_ids;
+}
+
+const std::set<uint32_t>& FactManager::GetIdsForWhichSynonymsAreKnown() const {
+  return id_synonym_facts_->ids_with_synonyms;
+}
+
+const std::vector<protobufs::DataDescriptor>& FactManager::GetSynonymsForId(
+    uint32_t id) const {
+  return id_synonym_facts_->synonyms.at(id);
 }
 
 }  // namespace fuzz
