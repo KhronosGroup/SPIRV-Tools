@@ -240,9 +240,9 @@ TEST(FuzzerReplayerTest, Miscellaneous1) {
                OpFunctionEnd
   )";
 
-  // Do 10 fuzzer runs, starting from an initial seed of 0 (seed value chosen
+  // Do 5 fuzzer runs, starting from an initial seed of 0 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 0, 10);
+  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 0, 5);
 }
 
 TEST(FuzzerReplayerTest, Miscellaneous2) {
@@ -485,9 +485,9 @@ TEST(FuzzerReplayerTest, Miscellaneous2) {
                OpFunctionEnd
   )";
 
-  // Do 10 fuzzer runs, starting from an initial seed of 10 (seed value chosen
+  // Do 5 fuzzer runs, starting from an initial seed of 10 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 10, 10);
+  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 10, 5);
 }
 
 TEST(FuzzerReplayerTest, Miscellaneous3) {
@@ -970,9 +970,9 @@ TEST(FuzzerReplayerTest, Miscellaneous3) {
     *facts.mutable_fact()->Add() = temp;
   }
 
-  // Do 10 fuzzer runs, starting from an initial seed of 94 (seed value chosen
+  // Do 5 fuzzer runs, starting from an initial seed of 94 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndReplayer(shader, facts, 94, 10);
+  RunFuzzerAndReplayer(shader, facts, 94, 5);
 }
 
 }  // namespace
