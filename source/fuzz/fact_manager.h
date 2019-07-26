@@ -99,10 +99,12 @@ class FactManager {
   //==============================
   // Querying facts about id synonyms
 
-  // TODO comment
+  // Returns every id for which a fact of the form "this id is synonymous
+  // with this piece of data" is known.
   const std::set<uint32_t>& GetIdsForWhichSynonymsAreKnown() const;
 
-  // TODO comment
+  // Requires that at least one synonym for |id| is known, and returns the
+  // sequence of all known synonyms.
   const std::vector<protobufs::DataDescriptor>& GetSynonymsForId(
       uint32_t id) const;
 

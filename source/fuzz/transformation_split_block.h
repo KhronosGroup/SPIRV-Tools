@@ -28,11 +28,11 @@ class TransformationSplitBlock : public Transformation {
   explicit TransformationSplitBlock(
       const protobufs::TransformationSplitBlock& message);
 
-  TransformationSplitBlock(uint32_t result_id, uint32_t offset,
+  TransformationSplitBlock(uint32_t base_instruction_id, uint32_t offset,
                            uint32_t fresh_id);
 
-  // - |message_.result_id| must be the result id of an instruction 'base' in
-  //   some block 'blk'.
+  // - |message_.base_instruction_id| must be the result id of an instruction
+  //   'base' in some block 'blk'.
   // - 'blk' must contain an instruction 'inst' located |message_.offset|
   //   instructions after 'base' (if |message_.offset| = 0 then 'inst' =
   //   'base').
@@ -52,13 +52,6 @@ class TransformationSplitBlock : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // TODO: re-comment
-  // Returns:
-  // - block->end() is in this block but inapplicable
-  // - an iterator for the relevant instruction otherwise
-  static opt::BasicBlock::iterator FindInstToSplitBefore(
-          opt::BasicBlock* block, const opt::Instruction* base_inst, uint32_t offset);
-
   protobufs::TransformationSplitBlock message_;
 };
 

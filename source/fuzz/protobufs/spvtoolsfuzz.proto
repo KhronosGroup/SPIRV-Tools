@@ -301,18 +301,18 @@ message TransformationCopyObject {
   // A transformation that introduces an OpCopyObject instruction to make a
   // copy of an object.
 
-  // A fresh id for the copied object
-  uint32 fresh_id = 1;
-
   // Id of the object to be copied
-  uint32 object = 2;
+  uint32 object = 1;
 
   // The id of an instruction in a block
-  uint32 insert_after_id = 3;
+  uint32 base_instruction_id = 2;
 
   // An offset, such that OpCopyObject instruction should be inserted right
-  // before the instruction |offset| instructions after |insert_after_id|
-  uint32 offset = 4;
+  // before the instruction |offset| instructions after |base_instruction_id|
+  uint32 offset = 3;
+
+  // A fresh id for the copied object
+  uint32 fresh_id = 4;
 
 }
 
@@ -371,10 +371,11 @@ message TransformationSplitBlock {
   // A transformation that splits a basic block into two basic blocks
 
   // The result id of an instruction
-  uint32 result_id = 1;
+  uint32 base_instruction_id = 1;
 
-  // An offset, such that the block containing |result_id| should be split
-  // right before the instruction |offset| instructions after |result_id|
+  // An offset, such that the block containing |base_instruction_id| should be
+  // split right before the instruction |offset| instructions after
+  // |base_instruction_id|
   uint32 offset = 2;
 
   // An id that must not yet be used by the module to which this transformation

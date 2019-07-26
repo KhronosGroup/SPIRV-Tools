@@ -36,7 +36,7 @@ class TransformationCopyObject : public Transformation {
   //   OpCopyObject.  In particular, it must be the id of an instruction that
   //   has a result type
   // - |message_.object| must not be the target of any decoration.
-  //   TODO(afdx): consider copying decorations along with objects.
+  //   TODO(afd): consider copying decorations along with objects.
   // - |message_.insert_after_id| must be the result id of an instruction
   //   'base' in some block 'blk'.
   // - 'blk' must contain an instruction 'inst' located |message_.offset|
