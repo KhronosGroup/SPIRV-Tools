@@ -311,7 +311,7 @@ message TransformationCopyObject {
   uint32 insert_after_id = 3;
 
   // An offset, such that OpCopyObject instruction should be inserted right
-  // after the instruction |offset| instructions after |insert_after_id|
+  // before the instruction |offset| instructions after |insert_after_id|
   uint32 offset = 4;
 
 }

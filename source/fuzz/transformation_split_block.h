@@ -34,7 +34,7 @@ class TransformationSplitBlock : public Transformation {
   // - |message_.result_id| must be the result id of an instruction 'base' in
   //   some block 'blk'.
   // - 'blk' must contain an instruction 'inst' located |message_.offset|
-  //   instructions after 'inst' (if |message_.offset| = 0 then 'inst' =
+  //   instructions after 'base' (if |message_.offset| = 0 then 'inst' =
   //   'base').
   // - Splitting 'blk' at 'inst', so that all instructions from 'inst' onwards
   //   appear in a new block that 'blk' directly jumps to must be valid.
@@ -52,13 +52,12 @@ class TransformationSplitBlock : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
+  // TODO: re-comment
   // Returns:
-  // - (true, block->end()) if the relevant instruction is in this block
-  //      but inapplicable
-  // - (true, it) if 'it' is an iterator for the relevant instruction
-  // - (false, _) otherwise.
-  std::pair<bool, opt::BasicBlock::iterator> FindInstToSplitBefore(
-      opt::BasicBlock* block) const;
+  // - block->end() is in this block but inapplicable
+  // - an iterator for the relevant instruction otherwise
+  static opt::BasicBlock::iterator FindInstToSplitBefore(
+          opt::BasicBlock* block, const opt::Instruction* base_inst, uint32_t offset);
 
   protobufs::TransformationSplitBlock message_;
 };

@@ -31,11 +31,29 @@ class TransformationCopyObject : public Transformation {
   TransformationCopyObject(uint32_t fresh_id, uint32_t object,
                            uint32_t insert_after_id, uint32_t offset);
 
-  // TODO
+  // - |message_.fresh_id| must not be used by the module.
+  // - |message_.object| must be a result id that is a legitimate operand for
+  //   OpCopyObject.  In particular, it must be the id of an instruction that
+  //   has a result type
+  // - |message_.object| must not be the target of any decoration.
+  //   TODO(afdx): consider copying decorations along with objects.
+  // - |message_.insert_after_id| must be the result id of an instruction
+  //   'base' in some block 'blk'.
+  // - 'blk' must contain an instruction 'inst' located |message_.offset|
+  //   instructions after 'base' (if |message_.offset| = 0 then 'inst' =
+  //   'base').
+  // - It must be legal to insert an OpCopyObject instruction directly
+  //   before 'inst'.
+  // - |message_object| must be available directly before 'inst'.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO
+  // - A new instruction,
+  //     %|message_.fresh_id| = OpCopyObject %ty %|message_.object|
+  //   is added directly before the instruction at |message_.insert_after_id| +
+  //   |message_|.offset, where %ty is the type of |message_.object|.
+  // - The fact that |message_.fresh_id| and |message_.object| are synonyms
+  //   is added to the fact manager.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
