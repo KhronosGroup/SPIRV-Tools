@@ -60,20 +60,21 @@ Pass::Status ScalarReplacementPass::ProcessFunction(Function* function) {
     Instruction* varInst = worklist.front();
     worklist.pop();
 
-    if (!ReplaceVariable(varInst, &worklist))
-      return Status::Failure;
-    else
-      status = Status::SuccessWithChange;
+    Status var_status = ReplaceVariable(varInst, &worklist);
+    if (var_status == Status::Failure)
+      return var_status;
+    else if (var_status == Status::SuccessWithChange)
+      status = var_status;
   }
 
   return status;
 }
 
-bool ScalarReplacementPass::ReplaceVariable(
+Pass::Status ScalarReplacementPass::ReplaceVariable(
     Instruction* inst, std::queue<Instruction*>* worklist) {
   std::vector<Instruction*> replacements;
   if (!CreateReplacementVariables(inst, &replacements)) {
-    return false;
+    return Status::Failure;
   }
 
   std::vector<Instruction*> dead;
@@ -108,6 +109,9 @@ bool ScalarReplacementPass::ReplaceVariable(
           }))
     dead.push_back(inst);
 
+  // If there are no dead instructions to clean up, return with no changes.
+  if (dead.empty()) return Status::SuccessWithoutChange;
+
   // Clean up some dead code.
   while (!dead.empty()) {
     Instruction* toKill = dead.back();
@@ -126,7 +130,7 @@ bool ScalarReplacementPass::ReplaceVariable(
     }
   }
 
-  return true;
+  return Status::SuccessWithChange;
 }
 
 void ScalarReplacementPass::ReplaceWholeLoad(

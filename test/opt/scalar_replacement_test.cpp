@@ -1668,11 +1668,8 @@ TEST_F(ScalarReplacementTest, OutOfBoundOpAccessChain) {
                OpExecutionMode %main OriginUpperLeft
                OpSource ESSL 310
                OpName %main "main"
-               OpName %i "i"
                OpName %a "a"
                OpName %_GLF_color "_GLF_color"
-               OpDecorate %i RelaxedPrecision
-               OpDecorate %19 RelaxedPrecision
                OpDecorate %_GLF_color Location 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
@@ -1689,11 +1686,8 @@ TEST_F(ScalarReplacementTest, OutOfBoundOpAccessChain) {
  %_GLF_color = OpVariable %_ptr_Output_float Output
        %main = OpFunction %void None %3
           %5 = OpLabel
-          %i = OpVariable %_ptr_Function_int Function
           %a = OpVariable %_ptr_Function__arr_float_uint_1 Function
-               OpStore %i %int_1
-         %19 = OpLoad %int %i
-         %21 = OpAccessChain %_ptr_Function_float %a %19
+         %21 = OpAccessChain %_ptr_Function_float %a %int_1
          %22 = OpLoad %float %21
                OpStore %_GLF_color %22
                OpReturn
