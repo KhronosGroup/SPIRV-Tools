@@ -1657,6 +1657,56 @@ OpFunctionEnd
   EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
 }
 
+// Test that replacements for OpAccessChain do not go out of bounds.
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/2609.
+TEST_F(ScalarReplacementTest, OutOfBoundOpAccessChain) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %_GLF_color
+               OpExecutionMode %main OriginUpperLeft
+               OpSource ESSL 310
+               OpName %main "main"
+               OpName %i "i"
+               OpName %a "a"
+               OpName %_GLF_color "_GLF_color"
+               OpDecorate %i RelaxedPrecision
+               OpDecorate %19 RelaxedPrecision
+               OpDecorate %_GLF_color Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_1 = OpConstant %int 1
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%_ptr_Function__arr_float_uint_1 = OpTypePointer Function %_arr_float_uint_1
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Output_float = OpTypePointer Output %float
+ %_GLF_color = OpVariable %_ptr_Output_float Output
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %i = OpVariable %_ptr_Function_int Function
+          %a = OpVariable %_ptr_Function__arr_float_uint_1 Function
+               OpStore %i %int_1
+         %19 = OpLoad %int %i
+         %21 = OpAccessChain %_ptr_Function_float %a %19
+         %22 = OpLoad %float %21
+               OpStore %_GLF_color %22
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  auto result =
+      SinglePassRunAndDisassemble<ScalarReplacementPass>(text, true, false);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

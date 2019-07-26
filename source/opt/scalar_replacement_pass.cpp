@@ -77,8 +77,7 @@ bool ScalarReplacementPass::ReplaceVariable(
   }
 
   std::vector<Instruction*> dead;
-  dead.push_back(inst);
-  if (!get_def_use_mgr()->WhileEachUser(
+  if (get_def_use_mgr()->WhileEachUser(
           inst, [this, &replacements, &dead](Instruction* user) {
             if (!IsAnnotationInst(user->opcode())) {
               switch (user->opcode()) {
@@ -92,8 +91,10 @@ bool ScalarReplacementPass::ReplaceVariable(
                   break;
                 case SpvOpAccessChain:
                 case SpvOpInBoundsAccessChain:
-                  if (!ReplaceAccessChain(user, replacements)) return false;
-                  dead.push_back(user);
+                  if (ReplaceAccessChain(user, replacements))
+                    dead.push_back(user);
+                  else
+                    return false;
                   break;
                 case SpvOpName:
                 case SpvOpMemberName:
@@ -105,7 +106,7 @@ bool ScalarReplacementPass::ReplaceVariable(
             }
             return true;
           }))
-    return false;
+    dead.push_back(inst);
 
   // Clean up some dead code.
   while (!dead.empty()) {
@@ -228,8 +229,9 @@ bool ScalarReplacementPass::ReplaceAccessChain(
   uint32_t indexId = chain->GetSingleWordInOperand(1u);
   const Instruction* index = get_def_use_mgr()->GetDef(indexId);
   uint64_t indexValue = GetConstantInteger(index);
-  if (indexValue > replacements.size()) {
-    // Out of bounds access, this is illegal IR.
+  if (indexValue >= replacements.size()) {
+    // Out of bounds access, this is illegal IR.  Notice that OpAccessChain
+    // indexing is 0-based, so we should also reject index == size-of-array.
     return false;
   } else {
     const Instruction* var = replacements[static_cast<size_t>(indexValue)];
