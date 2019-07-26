@@ -117,9 +117,12 @@ class ScalarReplacementPass : public Pass {
   // for element of the composite type. Uses of |inst| are updated as
   // appropriate. If the replacement variables are themselves scalarizable, they
   // get added to |worklist| for further processing. If any replacement
-  // variable ends up with no uses it is erased. Returns false if the variable
-  // could not be replaced.
-  bool ReplaceVariable(Instruction* inst, std::queue<Instruction*>* worklist);
+  // variable ends up with no uses it is erased. Returns
+  //  - Status::SuccessWithoutChange if the variable could not be replaced.
+  //  - Status::SuccessWithChange if it made replacements.
+  //  - Status::Failure if it couldn't create replacement variables.
+  Pass::Status ReplaceVariable(Instruction* inst,
+                               std::queue<Instruction*>* worklist);
 
   // Returns the underlying storage type for |inst|.
   //
