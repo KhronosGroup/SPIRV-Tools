@@ -57,36 +57,59 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   }
 
   if (spvIsWebGPUEnv(_.context()->target_env)) {
-    uint32_t valid_bits = SpvMemorySemanticsUniformMemoryMask |
-                          SpvMemorySemanticsWorkgroupMemoryMask |
-                          SpvMemorySemanticsImageMemoryMask |
-                          SpvMemorySemanticsOutputMemoryKHRMask |
-                          SpvMemorySemanticsMakeAvailableKHRMask |
-                          SpvMemorySemanticsMakeVisibleKHRMask;
-    if (!spvOpcodeIsAtomicOp(inst->opcode())) {
-      valid_bits |= SpvMemorySemanticsAcquireReleaseMask;
-    }
-
-    if (value & ~valid_bits) {
-      if (spvOpcodeIsAtomicOp(inst->opcode())) {
+    if (inst->opcode() == SpvOpControlBarrier) {
+      if (!(value & SpvMemorySemanticsAcquireReleaseMask)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "WebGPU spec disallows, for OpAtomic*, any bit masks in "
-                  "Memory Semantics that are not UniformMemory, "
-                  "WorkgroupMemory, ImageMemory, or OutputMemoryKHR";
-      } else {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "WebGPU spec disallows any bit masks in Memory Semantics "
-                  "that are not AcquireRelease, UniformMemory, "
-                  "WorkgroupMemory, ImageMemory, OutputMemoryKHR, "
-                  "MakeAvailableKHR, or MakeVisibleKHR";
+               << "For WebGPU, AcquireRelease must be set for Memory Semantics "
+                  "of OpControlBarrier.";
       }
-    }
 
-    if (!spvOpcodeIsAtomicOp(inst->opcode()) &&
-        !(value & SpvMemorySemanticsAcquireReleaseMask)) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "WebGPU spec requires AcquireRelease to set in Memory "
-                "Semantics.";
+      if (!(value & SpvMemorySemanticsWorkgroupMemoryMask)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "For WebGPU, WorkgroupMemory must be set for Memory "
+                  "Semantics of OpControlBarrier.";
+      }
+
+      uint32_t valid_bits = SpvMemorySemanticsAcquireReleaseMask |
+                            SpvMemorySemanticsWorkgroupMemoryMask;
+      if (value & ~valid_bits) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "For WebGPU only WorkgroupMemory and AcquireRelease may be "
+                  "set for Memory Semantics of OpControlBarrier.";
+      }
+    } else {
+      // TODO(2723): Rewrite this to be in the style of above and simplify.
+      uint32_t valid_bits = SpvMemorySemanticsUniformMemoryMask |
+                            SpvMemorySemanticsWorkgroupMemoryMask |
+                            SpvMemorySemanticsImageMemoryMask |
+                            SpvMemorySemanticsOutputMemoryKHRMask |
+                            SpvMemorySemanticsMakeAvailableKHRMask |
+                            SpvMemorySemanticsMakeVisibleKHRMask;
+      if (!spvOpcodeIsAtomicOp(inst->opcode())) {
+        valid_bits |= SpvMemorySemanticsAcquireReleaseMask;
+      }
+
+      if (value & ~valid_bits) {
+        if (spvOpcodeIsAtomicOp(inst->opcode())) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "WebGPU spec disallows, for OpAtomic*, any bit masks in "
+                    "Memory Semantics that are not UniformMemory, "
+                    "WorkgroupMemory, ImageMemory, or OutputMemoryKHR";
+        } else {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "WebGPU spec disallows any bit masks in Memory Semantics "
+                    "that are not AcquireRelease, UniformMemory, "
+                    "WorkgroupMemory, ImageMemory, OutputMemoryKHR, "
+                    "MakeAvailableKHR, or MakeVisibleKHR";
+        }
+      }
+
+      if (!spvOpcodeIsAtomicOp(inst->opcode()) &&
+          !(value & SpvMemorySemanticsAcquireReleaseMask)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "WebGPU spec requires AcquireRelease to set in Memory "
+                  "Semantics.";
+      }
     }
   }
 
