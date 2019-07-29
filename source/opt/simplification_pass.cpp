@@ -71,8 +71,19 @@ bool SimplificationPass::SimplifyFunction(Function* function) {
               }
             });
             if (inst->opcode() == SpvOpCopyObject) {
-              context()->ReplaceAllUsesWith(inst->result_id(),
-                                            inst->GetSingleWordInOperand(0));
+              const auto replacement = inst->GetSingleWordInOperand(0);
+              std::unordered_set<Instruction*> uses_to_update;
+              get_def_use_mgr()->ForEachUse(
+                  inst, [&uses_to_update, replacement](Instruction* user,
+                                                       uint32_t operand) {
+                    const auto opcode = user->opcode();
+                    if (!spvOpcodeIsDebug(opcode) &&
+                        !spvOpcodeIsDecoration(opcode)) {
+                      user->SetOperand(operand, {replacement});
+                      uses_to_update.insert(user);
+                    }
+                  });
+              for (auto user : uses_to_update) context()->AnalyzeUses(user);
               inst_to_kill.insert(inst);
               in_work_list.insert(inst);
             } else if (inst->opcode() == SpvOpNop) {
@@ -107,8 +118,18 @@ bool SimplificationPass::SimplifyFunction(Function* function) {
           });
 
       if (inst->opcode() == SpvOpCopyObject) {
-        context()->ReplaceAllUsesWith(inst->result_id(),
-                                      inst->GetSingleWordInOperand(0));
+        const auto replacement = inst->GetSingleWordInOperand(0);
+        std::unordered_set<Instruction*> uses_to_update;
+        get_def_use_mgr()->ForEachUse(
+            inst, [&uses_to_update, replacement](Instruction* user,
+                                                 uint32_t operand) {
+              const auto opcode = user->opcode();
+              if (!spvOpcodeIsDebug(opcode) && !spvOpcodeIsDecoration(opcode)) {
+                user->SetOperand(operand, {replacement});
+                uses_to_update.insert(user);
+              }
+            });
+        for (auto user : uses_to_update) context()->AnalyzeUses(user);
         inst_to_kill.insert(inst);
         in_work_list.insert(inst);
       } else if (inst->opcode() == SpvOpNop) {
