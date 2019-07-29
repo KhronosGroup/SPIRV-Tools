@@ -2985,12 +2985,12 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingT
     // Test case 13: https://github.com/KhronosGroup/SPIRV-Tools/issues/2608
     // Out of bounds access.  Do not fold.
     InstructionFoldingCase<uint32_t>(
-        Header() + R"(%main = OpFunction %void None %void_func
-            %main_lab = OpLabel
-            %2 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
-            %3 = OpCompositeExtract %float %2 4
-            OpReturn
-            OpFunctionEnd)",
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1\n" +
+            "%3 = OpCompositeExtract %float %2 4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
         22, 0)
 ));
 
