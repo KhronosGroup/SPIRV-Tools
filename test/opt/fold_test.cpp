@@ -2991,7 +2991,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingT
             "%3 = OpCompositeExtract %float %2 4\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        22, 0)
+        3, 0)
 ));
 
 INSTANTIATE_TEST_SUITE_P(CompositeConstructFoldingTest, GeneralInstructionFoldingTest,
