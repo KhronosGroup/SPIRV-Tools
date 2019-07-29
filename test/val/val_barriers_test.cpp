@@ -297,6 +297,18 @@ OpControlBarrier %workgroup %workgroup %acquire_release_uniform_workgroup
                 "for Memory Semantics of OpControlBarrier."));
 }
 
+TEST_F(ValidateBarriers, OpControlBarrierWebGPUReleaseFailure) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %workgroup %release_uniform_workgroup
+)";
+
+  CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For WebGPU, AcquireRelease must be set for Memory "
+                        "Semantics of OpControlBarrier"));
+}
+
 TEST_F(ValidateBarriers, OpControlBarrierExecutionModelFragmentSpirv12) {
   const std::string body = R"(
 OpControlBarrier %device %device %none
