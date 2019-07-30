@@ -466,7 +466,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         const auto index_value = index_constant->GetSignExtendedValue();
         if (index_value < 0 || index_value >= num_members) {
           Fail() << "Member index " << index_value
-                 << " is out of bounds struct type: "
+                 << " is out of bounds for struct type: "
                  << pointee_type->PrettyPrint(
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
                  << "\nin access chain: "

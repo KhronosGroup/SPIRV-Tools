@@ -868,7 +868,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructExcessFail) {
        %i = OpConstant %int 4
        )" << MainPrefix() << R"(
        %var = OpVariable %var_ty Function
-       ; CHECK: Member index 4 is too large for struct type:
+       ; CHECK: Member index 4 is out of bounds for struct type:
        ; CHECK-SAME: %struct = OpTypeStruct %float %float %float
        )"
             << ACCheckFail(ac, "%i", "%i") << MainSuffix();
@@ -887,7 +887,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructNegativeFail) {
        %i = OpConstant %int -1
        )" << MainPrefix() << R"(
        %var = OpVariable %var_ty Function
-       ; CHECK: Member index 18446744073709551615 is too large for struct type
+       ; CHECK: Member index -1 is out of bounds for struct type:
        ; CHECK-SAME: %struct = OpTypeStruct %float %float %float
        )"
             << ACCheckFail(ac, "%i", "%i") << MainSuffix();
