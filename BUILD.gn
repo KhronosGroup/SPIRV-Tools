@@ -521,6 +521,8 @@ static_library("spvtools_opt") {
     "source/opt/function.h",
     "source/opt/generate_webgpu_initializers_pass.cpp",
     "source/opt/generate_webgpu_initializers_pass.h",
+    "source/opt/graphics_robust_access_pass.cpp",
+    "source/opt/graphics_robust_access_pass.h",
     "source/opt/if_conversion.cpp",
     "source/opt/if_conversion.h",
     "source/opt/inline_exhaustive_pass.cpp",

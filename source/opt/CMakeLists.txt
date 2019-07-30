@@ -48,6 +48,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   freeze_spec_constant_value_pass.h
   function.h
   generate_webgpu_initializers_pass.h
+  graphics_robust_access_pass.h
   if_conversion.h
   inline_exhaustive_pass.h
   inline_opaque_pass.h
@@ -147,6 +148,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   function.cpp
+  graphics_robust_access_pass.cpp
   generate_webgpu_initializers_pass.cpp
   if_conversion.cpp
   inline_exhaustive_pass.cpp

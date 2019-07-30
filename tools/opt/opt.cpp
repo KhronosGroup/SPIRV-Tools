@@ -206,6 +206,11 @@ Options (in lexicographical order):)",
                Freeze the values of specialization constants to their default
                values.)");
   printf(R"(
+  --graphics-robust-access
+               Clamp indices used to access buffers and internal composite
+               values, providing guarantees that satisfy Vulkan's
+               robustBufferAccess rules.)");
+  printf(R"(
   --generate-webgpu-initializers
                Adds initial values to OpVariable instructions that are missing
                them, due to their storage type requiring them for WebGPU.)");
