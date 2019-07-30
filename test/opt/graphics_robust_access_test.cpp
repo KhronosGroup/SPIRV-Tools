@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
+#include <sstream>
+
 #include "gmock/gmock.h"
 #include "pass_fixture.h"
 #include "pass_utils.h"
@@ -97,12 +100,8 @@ OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
 
 // For the purposes of this pass, regular and in-bounds access chains are the
 // same.
-#if 0
 std::array<const char*, 2> kAccessChains = {"OpAccessChain",
                                             "OpInBoundsAccessChain"};
-                                            "OpInBoundsAccessChain"};
-#endif
-std::array<const char*, 1> kAccessChains = {"OpAccessChain"};
 
 std::string ShaderPreamble() {
   return R"(
