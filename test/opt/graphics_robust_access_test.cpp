@@ -14,6 +14,8 @@
 
 #include <array>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "pass_fixture.h"
@@ -98,10 +100,12 @@ OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
 
 // Test access chains
 
+// Returns the names of access chain instructions handled by the pass.
 // For the purposes of this pass, regular and in-bounds access chains are the
-// same.
-std::array<const char*, 2> kAccessChains{
-    {"OpAccessChain", "OpInBoundsAccessChain"}};
+// same.)
+std::vector<const char*> AccessChains() {
+  return {"OpAccessChain", "OpInBoundsAccessChain"};
+}
 
 std::string ShaderPreamble() {
   return R"(
@@ -226,7 +230,7 @@ std::string ACCheckFail(const std::string& access_chain_inst,
 //   TODO(dneto): RuntimeArray
 
 TEST_F(GraphicsRobustAccessTest, ACVectorLeastInboundConstantUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt() << R"(
        %uvec2 = OpTypeVector %uint 2
@@ -242,7 +246,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorLeastInboundConstantUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACVectorMostInboundConstantUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt() << R"(
        %v4uint = OpTypeVector %uint 4
@@ -258,7 +262,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorMostInboundConstantUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACVectorExcessConstantClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt() << R"(
        %v4uint = OpTypeVector %uint 4
@@ -274,7 +278,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorExcessConstantClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACVectorNegativeConstantClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt() << R"(
        %v4uint = OpTypeVector %uint 4
@@ -293,7 +297,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorNegativeConstantClamped) {
 // Like the previous test, but ensures the pass knows how to modify an index
 // which does not come first in the access chain.
 TEST_F(GraphicsRobustAccessTest, ACVectorInArrayNegativeConstantClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt() << R"(
        %v4uint = OpTypeVector %uint 4
@@ -313,7 +317,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorInArrayNegativeConstantClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACVectorGeneralClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt() << R"(
        %v4uint = OpTypeVector %uint 4
@@ -334,7 +338,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACVectorGeneralShortClamped) {
   // Show that signed 16 bit integers are clamped as well.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesShort() <<
@@ -359,7 +363,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralShortClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACVectorGeneralUShortClamped) {
   // Show that unsigned 16 bit integers are clamped as well.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesShort() <<
@@ -384,7 +388,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralUShortClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACVectorGeneralLongClamped) {
   // Show that signed 64 bit integers are clamped as well.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesLong() <<
@@ -409,7 +413,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralLongClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACVectorGeneralULongClamped) {
   // Show that unsigned 64 bit integers are clamped as well.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesLong() <<
@@ -433,7 +437,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralULongClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACMatrixLeastInboundConstantUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -452,7 +456,7 @@ TEST_F(GraphicsRobustAccessTest, ACMatrixLeastInboundConstantUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACMatrixMostInboundConstantUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -471,7 +475,7 @@ TEST_F(GraphicsRobustAccessTest, ACMatrixMostInboundConstantUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACMatrixExcessConstantClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -491,7 +495,7 @@ TEST_F(GraphicsRobustAccessTest, ACMatrixExcessConstantClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACMatrixNegativeConstantClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -510,7 +514,7 @@ TEST_F(GraphicsRobustAccessTest, ACMatrixNegativeConstantClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACMatrixGeneralClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -533,7 +537,7 @@ TEST_F(GraphicsRobustAccessTest, ACMatrixGeneralClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACArrayLeastInboundConstantUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -550,7 +554,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayLeastInboundConstantUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACArrayMostInboundConstantUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -567,7 +571,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayMostInboundConstantUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACArrayGeneralClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -590,7 +594,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACArrayGeneralShortIndexUIntBoundsClamped) {
   // Index is signed short, array bounds overflows the index type.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
@@ -615,7 +619,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralShortIndexUIntBoundsClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACArrayGeneralUShortIndexIntBoundsClamped) {
   // Index is unsigned short, array bounds overflows the index type.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
@@ -640,7 +644,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralUShortIndexIntBoundsClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACArrayGeneralUIntIndexShortBoundsClamped) {
   // Signed int index i is wider than the array bounds type.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
@@ -664,7 +668,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralUIntIndexShortBoundsClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACArrayGeneralIntIndexUShortBoundsClamped) {
   // Unsigned int index i is wider than the array bounds type.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
@@ -688,7 +692,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralIntIndexUShortBoundsClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACArrayGeneralLongIndexUIntBoundsClamped) {
   // Signed long index i is wider than the array bounds type.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
@@ -712,7 +716,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralLongIndexUIntBoundsClamped) {
 
 TEST_F(GraphicsRobustAccessTest, ACArrayGeneralULongIndexIntBoundsClamped) {
   // Unsigned long index i is wider than the array bounds type.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64\n"
             << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
@@ -735,7 +739,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralULongIndexIntBoundsClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACArraySpecIdSizedAlwaysClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"spec200"}) << R"(
        OpDecorate %spec200 SpecId 0 )" << TypesVoid() << TypesInt()
@@ -759,7 +763,7 @@ TEST_F(GraphicsRobustAccessTest, ACArraySpecIdSizedAlwaysClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACStructLeastUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -775,7 +779,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructLeastUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACStructMostUntouched) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -791,7 +795,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructMostUntouched) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACStructSpecConstantFail) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"struct", "spec200"})
             << "OpDecorate %spec200 SpecId 0\n"
@@ -813,7 +817,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructSpecConstantFail) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACStructFloatConstantFail) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"struct"}) <<
 
@@ -833,7 +837,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructFloatConstantFail) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACStructNonConstantFail) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"struct", "i"}) <<
 
@@ -854,7 +858,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructNonConstantFail) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACStructExcessFail) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"struct", "i"}) << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -873,7 +877,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructExcessFail) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACStructNegativeFail) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"struct", "i"}) << TypesVoid() << TypesInt()
             << TypesFloat() << R"(
@@ -892,7 +896,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructNegativeFail) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACRTArrayLeastInboundClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC() << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 "
             << DecoSSBO() << TypesVoid() << TypesInt() << TypesFloat() << R"(
@@ -917,7 +921,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayLeastInboundClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralShortIndexClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"})
@@ -947,7 +951,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralShortIndexClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUShortIndexClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"})
@@ -977,7 +981,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUShortIndexClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralIntIndexClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i"})
             << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
@@ -1003,7 +1007,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralIntIndexClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUIntIndexClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i"})
             << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
@@ -1029,7 +1033,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUIntIndexClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralLongIndexClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64" << ShaderPreambleAC({"i"})
             << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
@@ -1057,7 +1061,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralLongIndexClamped) {
 }
 
 TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralULongIndexClamped) {
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64" << ShaderPreambleAC({"i"})
             << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
@@ -1088,7 +1092,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayStructVectorElem) {
   // The point of this test is that the access chain can have indices past the
   // index into the runtime array.  For good measure, the index into the final
   // struct is out of bounds.  We have to clamp that index too.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i", "j"})
             << "OpMemberDecorate %ssbo_s 0 ArrayStride 32\n"
@@ -1124,7 +1128,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayStructVectorElem) {
 
 TEST_F(GraphicsRobustAccessTest, ACArrayRTArrayStructVectorElem) {
   // Now add an additional level of arrays around the Block-decorated struct.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i", "ssbo_s"})
             << "OpMemberDecorate %ssbo_s 0 ArrayStride 32\n"
@@ -1167,7 +1171,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayRTArrayStructVectorElem) {
 TEST_F(GraphicsRobustAccessTest, ACSplitACArrayRTArrayStructVectorElem) {
   // Split the address calculation across two access chains.  Force
   // the transform to walk up the access chains to find the base variable.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i", "j", "k", "ssbo_s", "ssbo_pty",
                                  "rtarr_pty", "ac_ssbo", "ac_rtarr"})
@@ -1229,7 +1233,7 @@ TEST_F(GraphicsRobustAccessTest,
   // This time, put the different access chains in different basic blocks.
   // This sanity checks that we keep the instruction-to-block mapping
   // consistent.
-  for (auto* ac : kAccessChains) {
+  for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i", "j", "k", "bb1", "bb2", "ssbo_s",
                                  "ssbo_pty", "rtarr_pty", "ac_ssbo",
