@@ -272,14 +272,13 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
   };
 
   // Replaces one of the OpAccesssChain index operands with a clamped value.
-  // Replace the operand at |operand_index| with
-  // the value computed from unsigned_max(%old_value_id, %max_value_id).
-  // It also Analyzes the definition and uses in the new instruction, and sets
-  // |merged| to true.
+  // Replace the operand at |operand_index| with the value computed from
+  // unsigned_clamp(%old_value, %min_value, %max_value).  It also analyzes
+  // the new instruction and records that them module is modified.
   auto clamp_index = [&inst, this, &replace_index](
-                         uint32_t operand_index, Instruction* min_value,
-                         Instruction* old_value, Instruction* max_value) {
-    auto* clamp_inst = MakeClampInst(min_value, old_value, max_value, &inst);
+                         uint32_t operand_index, Instruction* old_value,
+                         Instruction* min_value, Instruction* max_value) {
+    auto* clamp_inst = MakeClampInst(old_value, min_value, max_value, &inst);
     replace_index(operand_index, clamp_inst);
   };
 
@@ -351,7 +350,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         maxval_type = type_mgr->GetType(index_inst->type_id())->AsInteger();
       }
       // Finally, clamp the index.
-      clamp_index(operand_index, GetValueForType(0, maxval_type), index_inst,
+      clamp_index(operand_index, index_inst, GetValueForType(0, maxval_type),
                   GetValueForType(maxval, maxval_type));
     }
   };
@@ -406,7 +405,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
           &inst, SpvOpISub, type_mgr->GetId(wider_type), TakeNextId(),
           {{SPV_OPERAND_TYPE_ID, {count_inst->result_id()}},
            {SPV_OPERAND_TYPE_ID, {one->result_id()}}});
-      clamp_index(operand_index, GetValueForType(0, wider_type), index_inst,
+      clamp_index(operand_index, index_inst, GetValueForType(0, wider_type),
                   count_minus_1);
     }
   };
@@ -576,25 +575,25 @@ opt::Instruction* opt::GraphicsRobustAccessPass::WidenInteger(
   return conversion;
 }
 
-Instruction* GraphicsRobustAccessPass::MakeClampInst(Instruction* v0,
-                                                     Instruction* v1,
-                                                     Instruction* v2,
+Instruction* GraphicsRobustAccessPass::MakeClampInst(Instruction* x,
+                                                     Instruction* min,
+                                                     Instruction* max,
                                                      Instruction* where) {
   // Get IDs of instructions we'll be referencing. Evaluate them before calling
   // the function so we force a deterministic ordering in case both of them need
   // to take a new ID.
   const uint32_t glsl_insts_id = GetGlslInsts();
   uint32_t clamp_id = TakeNextId();
-  assert(v0->type_id() == v1->type_id());
-  assert(v0->type_id() == v2->type_id());
+  assert(x->type_id() == min->type_id());
+  assert(x->type_id() == max->type_id());
   auto* clamp_inst = InsertInst(
-      where, SpvOpExtInst, v0->type_id(), clamp_id,
+      where, SpvOpExtInst, x->type_id(), clamp_id,
       {
           {SPV_OPERAND_TYPE_ID, {glsl_insts_id}},
           {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {GLSLstd450UClamp}},
-          {SPV_OPERAND_TYPE_ID, {v0->result_id()}},
-          {SPV_OPERAND_TYPE_ID, {v1->result_id()}},
-          {SPV_OPERAND_TYPE_ID, {v2->result_id()}},
+          {SPV_OPERAND_TYPE_ID, {x->result_id()}},
+          {SPV_OPERAND_TYPE_ID, {min->result_id()}},
+          {SPV_OPERAND_TYPE_ID, {max->result_id()}},
       });
   return clamp_inst;
 }
@@ -934,7 +933,7 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
 
   // Clamp the coordinate
   auto* clamp_coord =
-      MakeClampInst(constant_mgr->GetDefiningInstruction(coordinate_0), coord,
+      MakeClampInst(coord, constant_mgr->GetDefiningInstruction(coordinate_0),
                     query_max_including_faces, image_texel_pointer);
   image_texel_pointer->SetInOperand(1, {clamp_coord->result_id()});
 
@@ -953,9 +952,9 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
                                    {{SPV_OPERAND_TYPE_ID, {query_samples_id}},
                                     {SPV_OPERAND_TYPE_ID, {component_1_id}}});
 
-    auto* clamp_samples =
-        MakeClampInst(constant_mgr->GetDefiningInstruction(coordinate_0),
-                      samples, max_samples, image_texel_pointer);
+    auto* clamp_samples = MakeClampInst(
+        samples, constant_mgr->GetDefiningInstruction(coordinate_0),
+        max_samples, image_texel_pointer);
     image_texel_pointer->SetInOperand(2, {clamp_samples->result_id()});
 
   } else {

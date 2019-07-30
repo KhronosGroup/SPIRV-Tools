@@ -90,11 +90,16 @@ class GraphicsRobustAccessPass : public Pass {
                             Instruction* value, Instruction* before_inst);
 
   // Returns a new instruction that invokes the UClamp GLSL.std.450 extended
-  // instruction with the three given operands.  The operands must all have
-  // the same scalar integer type.  The instruction is inserted before
-  // |where|.
-  opt::Instruction* MakeClampInst(Instruction* v0, Instruction* v1,
-                                  Instruction* v2, Instruction* where);
+  // instruction with the three given operands.  That is, the result of the
+  // instruction is:
+  //  - |min| if |x| is unsigned-less than |min|
+  //  - |max| if |x| is unsigned-more than |max|
+  //  - |x| otherwise.
+  // We assume that |min| is unsigned-less-or-equal to |max|, and that the
+  // operands all have the same scalar integer type.  The instruction is
+  // inserted before |where|.
+  opt::Instruction* MakeClampInst(Instruction* x, Instruction* min,
+                                  Instruction* max, Instruction* where);
 
   // Returns a new instruction which evaluates to the length the runtime array
   // referenced by the access chain at the specfied index.  The instruction is

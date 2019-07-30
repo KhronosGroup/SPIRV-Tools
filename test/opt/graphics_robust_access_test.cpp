@@ -329,7 +329,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralClamped) {
        ; CHECK-DAG: %int_0 = OpConstant %int 0
        ; CHECK-DAG: %int_3 = OpConstant %int 3
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %int_3
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %int_3
        %var = OpVariable %var_ty Function)" << ACCheck(ac, "%i", "%[[clamp]]")
             << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -354,7 +354,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralShortClamped) {
        ; CHECK-DAG: %short_3 = OpConstant %short 3
        ; CHECK-NOT: = OpTypeInt 32
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %short %[[GLSLSTD450]] UClamp %short_0 %i %short_3
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %short %[[GLSLSTD450]] UClamp %i %short_0 %short_3
        %var = OpVariable %var_ty Function)" << ACCheck(ac, "%i", "%[[clamp]]")
             << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -379,7 +379,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralUShortClamped) {
        ; CHECK-DAG: %ushort_3 = OpConstant %ushort 3
        ; CHECK-NOT: = OpTypeInt 32
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %ushort %[[GLSLSTD450]] UClamp %ushort_0 %i %ushort_3
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %ushort %[[GLSLSTD450]] UClamp %i %ushort_0 %ushort_3
        %var = OpVariable %var_ty Function)" << ACCheck(ac, "%i", "%[[clamp]]")
             << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -404,7 +404,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralLongClamped) {
        ; CHECK-DAG: %long_3 = OpConstant %long 3
        ; CHECK-NOT: = OpTypeInt 32
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %long %[[GLSLSTD450]] UClamp %long_0 %i %long_3
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %long %[[GLSLSTD450]] UClamp %i %long_0 %long_3
        %var = OpVariable %var_ty Function)" << ACCheck(ac, "%i", "%[[clamp]]")
             << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -429,7 +429,7 @@ TEST_F(GraphicsRobustAccessTest, ACVectorGeneralULongClamped) {
        ; CHECK-DAG: %ulong_3 = OpConstant %ulong 3
        ; CHECK-NOT: = OpTypeInt 32
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %ulong %[[GLSLSTD450]] UClamp %ulong_0 %i %ulong_3
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %ulong %[[GLSLSTD450]] UClamp %i %ulong_0 %ulong_3
        %var = OpVariable %var_ty Function)" << ACCheck(ac, "%i", "%[[clamp]]")
             << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -529,7 +529,7 @@ TEST_F(GraphicsRobustAccessTest, ACMatrixGeneralClamped) {
        ; CHECK-DAG: %int_0 = OpConstant %int 0
        ; CHECK-DAG: %int_3 = OpConstant %int 3
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %int_3
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %int_3
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i %uint_1", "%[[clamp]] %uint_1") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -585,7 +585,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralClamped) {
        ; CHECK-DAG: %int_0 = OpConstant %int 0
        ; CHECK-DAG: %int_199 = OpConstant %int 199
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %int_199
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %int_199
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -610,7 +610,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralShortIndexUIntBoundsClamped) {
        ; CHECK-DAG: %uint_69999 = OpConstant %uint 69999
        ; CHECK: OpLabel
        ; CHECK: %[[i_ext:\w+]] = OpSConvert %uint %i
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_0 %[[i_ext]] %uint_69999
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %[[i_ext]] %uint_0 %uint_69999
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -635,7 +635,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralUShortIndexIntBoundsClamped) {
        ; CHECK-DAG: %uint_69999 = OpConstant %uint 69999
        ; CHECK: OpLabel
        ; CHECK: %[[i_ext:\w+]] = OpUConvert %uint %i
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_0 %[[i_ext]] %uint_69999
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %[[i_ext]] %uint_0 %uint_69999
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -659,7 +659,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralUIntIndexShortBoundsClamped) {
        ; CHECK-DAG: %uint_0 = OpConstant %uint 0
        ; CHECK-DAG: %uint_199 = OpConstant %uint 199
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_0 %i %uint_199
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %i %uint_0 %uint_199
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -683,7 +683,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralIntIndexUShortBoundsClamped) {
        ; CHECK-DAG: %int_0 = OpConstant %int 0
        ; CHECK-DAG: %int_199 = OpConstant %int 199
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %int_199
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %int_199
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -707,7 +707,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralLongIndexUIntBoundsClamped) {
        ; CHECK-DAG: %long_0 = OpConstant %long 0
        ; CHECK-DAG: %long_199 = OpConstant %long 199
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %long %[[GLSLSTD450]] UClamp %long_0 %i %long_199
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %long %[[GLSLSTD450]] UClamp %i %long_0 %long_199
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -731,7 +731,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralULongIndexIntBoundsClamped) {
        ; CHECK-DAG: %ulong_0 = OpConstant %ulong 0
        ; CHECK-DAG: %ulong_199 = OpConstant %ulong 199
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %ulong %[[GLSLSTD450]] UClamp %ulong_0 %i %ulong_199
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %ulong %[[GLSLSTD450]] UClamp %i %ulong_0 %ulong_199
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -755,7 +755,7 @@ TEST_F(GraphicsRobustAccessTest, ACArraySpecIdSizedAlwaysClamped) {
        ; CHECK-DAG: %uint_1 = OpConstant %uint 1
        ; CHECK: OpLabel
        ; CHECK: %[[max:\w+]] = OpISub %uint %spec200 %uint_1
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_0 %uint_5 %[[max]]
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_5 %uint_0 %[[max]]
        %var = OpVariable %var_ty Function)"
             << ACCheck(ac, "%uint_5", "%[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -942,7 +942,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralShortIndexClamped) {
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK-DAG: %[[max:\w+]] = OpISub %uint %[[arrlen]] %uint_1
        ; CHECK-DAG: %[[i_ext:\w+]] = OpSConvert %uint %i
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_0 %[[i_ext]] %[[max]]
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %[[i_ext]] %uint_0 %[[max]]
        )"
             << MainPrefix() << ACCheck(ac, "%short_2 %i", "%short_2 %[[clamp]]")
             << MainSuffix();
@@ -972,7 +972,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUShortIndexClamped) {
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK-DAG: %[[max:\w+]] = OpISub %uint %[[arrlen]] %uint_1
        ; CHECK-DAG: %[[i_ext:\w+]] = OpSConvert %uint %i
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_0 %[[i_ext]] %[[max]]
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %[[i_ext]] %uint_0 %[[max]]
        )"
             << MainPrefix() << ACCheck(ac, "%short_2 %i", "%short_2 %[[clamp]]")
             << MainSuffix();
@@ -999,7 +999,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralIntIndexClamped) {
        ; CHECK: OpLabel
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK: %[[max:\w+]] = OpISub %int %[[arrlen]] %int_1
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %[[max]]
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %[[max]]
        )" << MainPrefix()
             << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -1025,7 +1025,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUIntIndexClamped) {
        ; CHECK: OpLabel
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK: %[[max:\w+]] = OpISub %uint %[[arrlen]] %uint_1
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %uint_0 %i %[[max]]
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %i %uint_0 %[[max]]
        )" << MainPrefix()
             << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]") << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
@@ -1052,7 +1052,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralLongIndexClamped) {
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK: %[[arrlen_ext:\w+]] = OpUConvert %ulong %[[arrlen]]
        ; CHECK: %[[max:\w+]] = OpISub %long %[[arrlen_ext]] %long_1
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %long %[[GLSLSTD450]] UClamp %long_0 %i %[[max]]
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %long %[[GLSLSTD450]] UClamp %i %long_0 %[[max]]
        )"
             << MainPrefix() << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]")
             << MainSuffix();
@@ -1080,7 +1080,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralULongIndexClamped) {
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK: %[[arrlen_ext:\w+]] = OpUConvert %ulong %[[arrlen]]
        ; CHECK: %[[max:\w+]] = OpISub %ulong %[[arrlen_ext]] %ulong_1
-       ; CHECK: %[[clamp:\w+]] = OpExtInst %ulong %[[GLSLSTD450]] UClamp %ulong_0 %i %[[max]]
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %ulong %[[GLSLSTD450]] UClamp %i %ulong_0 %[[max]]
        )"
             << MainPrefix() << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]")
             << MainSuffix();
@@ -1116,8 +1116,8 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayStructVectorElem) {
        ; CHECK: OpLabel
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK: %[[max:\w+]] = OpISub %int %[[arrlen]] %int_1
-       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %[[max]]
-       ; CHECK: %[[clamp_j:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %j %int_3
+       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %[[max]]
+       ; CHECK: %[[clamp_j:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %j %int_0 %int_3
        )" << MainPrefix()
             << ACCheck(ac, "%int_2 %i %int_1 %j",
                        "%int_2 %[[clamp_i]] %int_1 %[[clamp_j]]")
@@ -1159,7 +1159,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayRTArrayStructVectorElem) {
             << R"( %[[ssbo_p]] %var %int_9
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %[[ssbo_base]] 2
        ; CHECK: %[[max:\w+]] = OpISub %int %[[arrlen]] %int_1
-       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %[[max]]
+       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %[[max]]
        )" << MainPrefix()
             << ACCheck(ac, "%int_17 %int_2 %i %int_1 %int_2",
                        "%int_9 %int_2 %[[clamp_i]] %int_1 %int_2")
@@ -1200,7 +1200,7 @@ TEST_F(GraphicsRobustAccessTest, ACSplitACArrayRTArrayStructVectorElem) {
        ; CHECK-DAG: %int_9 = OpConstant %int 9
        ; CHECK-DAG: %int_3 = OpConstant %int 3
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %int_9
+       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %int_9
        ; CHECK: %ac_ssbo = )" << ac
             << R"( %ssbo_pty %var %[[clamp_i]]
        ; CHECK: %ac_rtarr = )"
@@ -1211,8 +1211,8 @@ TEST_F(GraphicsRobustAccessTest, ACSplitACArrayRTArrayStructVectorElem) {
        ; definition to find the base pointer %ac_ssbo.
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %ac_ssbo 2
        ; CHECK: %[[max:\w+]] = OpISub %int %[[arrlen]] %int_1
-       ; CHECK: %[[clamp_j:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %j %[[max]]
-       ; CHECK: %[[clamp_k:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %k %int_3
+       ; CHECK: %[[clamp_j:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %j %int_0 %[[max]]
+       ; CHECK: %[[clamp_k:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %k %int_0 %int_3
        ; CHECK: %ac = )" << ac
             << R"( %ptr_ty %ac_rtarr %[[clamp_j]] %int_1 %[[clamp_k]]
        ; CHECK-NOT: AccessChain
@@ -1263,7 +1263,7 @@ TEST_F(GraphicsRobustAccessTest,
        ; CHECK-DAG: %int_9 = OpConstant %int 9
        ; CHECK-DAG: %int_3 = OpConstant %int 3
        ; CHECK: OpLabel
-       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %i %int_9
+       ; CHECK: %[[clamp_i:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %int_9
        ; CHECK: %ac_ssbo = )" << ac
             << R"( %ssbo_pty %var %[[clamp_i]]
        ; CHECK: %bb1 = OpLabel
@@ -1276,8 +1276,8 @@ TEST_F(GraphicsRobustAccessTest,
        ; definition to find the base pointer %ac_ssbo.
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %ac_ssbo 2
        ; CHECK: %[[max:\w+]] = OpISub %int %[[arrlen]] %int_1
-       ; CHECK: %[[clamp_j:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %j %[[max]]
-       ; CHECK: %[[clamp_k:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %int_0 %k %int_3
+       ; CHECK: %[[clamp_j:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %j %int_0 %[[max]]
+       ; CHECK: %[[clamp_k:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %k %int_0 %int_3
        ; CHECK: %ac = )" << ac
             << R"( %ptr_ty %ac_rtarr %[[clamp_j]] %int_1 %[[clamp_k]]
        ; CHECK-NOT: AccessChain
