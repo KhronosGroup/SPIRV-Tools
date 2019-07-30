@@ -228,21 +228,32 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
 
   // WebGPU specific rules
   if (spvIsWebGPUEnv(_.context()->target_env)) {
-    if (inst->opcode() == SpvOpControlBarrier) {
-      if (value != SpvScopeWorkgroup) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << spvOpcodeString(opcode)
-               << ": in WebGPU environment Memory Scope is limited to "
-               << "Workgroup for OpControlBarrier";
-      }
-    } else {
-      if (value != SpvScopeWorkgroup && value != SpvScopeInvocation &&
-          value != SpvScopeQueueFamilyKHR) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << spvOpcodeString(opcode)
-               << ": in WebGPU environment Memory Scope is limited to "
-               << "Workgroup, Invocation, and QueueFamilyKHR";
-      }
+    switch (inst->opcode()) {
+      case SpvOpControlBarrier:
+        if (value != SpvScopeWorkgroup) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << spvOpcodeString(opcode)
+                 << ": in WebGPU environment Memory Scope is limited to "
+                 << "Workgroup for OpControlBarrier";
+        }
+        break;
+      case SpvOpMemoryBarrier:
+        if (value != SpvScopeWorkgroup) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << spvOpcodeString(opcode)
+                 << ": in WebGPU environment Memory Scope is limited to "
+                 << "Workgroup for OpMemoryBarrier";
+        }
+        break;
+      default:
+        if (value != SpvScopeWorkgroup && value != SpvScopeInvocation &&
+            value != SpvScopeQueueFamilyKHR) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << spvOpcodeString(opcode)
+                 << ": in WebGPU environment Memory Scope is limited to "
+                 << "Workgroup, Invocation, and QueueFamilyKHR";
+        }
+        break;
     }
   }
 
