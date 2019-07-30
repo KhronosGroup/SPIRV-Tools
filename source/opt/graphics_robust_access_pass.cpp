@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@
 //      indices contributing to address calculations.  As noted above, the
 //      valid ranges are either bound by the length of a runtime array, or
 //      by the type of the base pointer.  The length of a runtime array is
-//      the result of an OpArrayLength instruction acting on the poitner of
+//      the result of an OpArrayLength instruction acting on the pointer of
 //      the containing structure as noted above.
 //
 //    - TODO(dneto): OpImageTexelPointer:
@@ -459,7 +459,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         const auto num_members = pointee_type->NumInOperands();
         const auto* index_constant =
             constant_mgr->GetConstantFromInst(index_inst);
-        const auto index_value = GetUnsignedValueForConstant(index_constant);
+        const auto index_value = index_constant->GetValueAsU64();
         if (index_value >= num_members) {
           Fail() << "Member index " << index_value
                  << " is too large for struct type: "
@@ -538,27 +538,6 @@ opt::Instruction* opt::GraphicsRobustAccessPass::GetValueForType(
   const auto* constant = mgr->GetConstant(type, words);
   return mgr->GetDefiningInstruction(
       constant, context()->get_type_mgr()->GetTypeInstruction(type));
-}
-
-uint64_t opt::GraphicsRobustAccessPass::GetUnsignedValueForConstant(
-    const analysis::Constant* c) {
-  const auto* type = c->type()->AsInteger();
-  const auto width = type->width();
-  if (width > 64) {
-    Fail() << "Structure indexed by constant wider than 64 bits: " << width
-           << " bits";
-  }
-  uint64_t value = 0;
-  if (width <= 32) {
-    value = c->AsIntConstant()->GetU32BitValue();
-    // Sign extend it if the type is signed.
-    if (type->IsSigned() && (value & (uint32_t(1) << 31))) {
-      value |= (uint64_t(~uint32_t(0)) << 32);
-    }
-  } else {
-    value = c->AsIntConstant()->GetU64BitValue();
-  }
-  return value;
 }
 
 opt::Instruction* opt::GraphicsRobustAccessPass::WidenInteger(
@@ -674,7 +653,7 @@ Instruction* GraphicsRobustAccessPass::MakeRuntimeArrayLengthInst(
                     constant_mgr->GetConstantFromInst(index)) {
               // We only need 32 bits.
               index_for_type_calculation =
-                  uint32_t(GetUnsignedValueForConstant(index_constant));
+                  uint32_t(index_constant->GetValueAsU64());
             } else {
               // Indexing into a variably-sized thing like an array.  Use 0.
               index_for_type_calculation = 0;

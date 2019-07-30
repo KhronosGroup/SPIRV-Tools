@@ -103,6 +103,29 @@ int64_t Constant::GetS64() const {
   }
 }
 
+uint64_t Constant::GetValueAsU64() const {
+  const auto* int_type = type()->AsInteger();
+  assert(int_type != nullptr);
+  const auto width = type()->AsInteger()->width();
+  assert(width <= 64);
+
+  uint64_t value = 0;
+  if (const IntConstant* ic = AsIntConstant()) {
+    if (width <= 32) {
+      value = ic->GetU32BitValue();
+      // Sign extend it if the the type is signed.
+      if (int_type->IsSigned() && (value & (uint32_t(1) << 31))) {
+        value |= (uint64_t(~uint32_t(0)) << 32);
+      }
+    } else {
+      value = ic->GetU64BitValue();
+    }
+  } else {
+    assert(AsNullConstant() && "Must be an integer constant.");
+  }
+  return value;
+}
+
 ConstantManager::ConstantManager(IRContext* ctx) : ctx_(ctx) {
   // Populate the constant table with values from constant declarations in the
   // module.  The values of each OpConstant declaration is the identity

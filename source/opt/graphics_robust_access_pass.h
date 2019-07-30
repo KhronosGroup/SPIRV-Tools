@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,9 +62,9 @@ class GraphicsRobustAccessPass : public Pass {
   // if the module was modified.
   bool ProcessAFunction(opt::Function*);
 
-  // Clamps indices in address calculation instruction referenced by the
-  // instruction iterator.  Inserts instructions before the given instruction,
-  // and updates the given iterator.  Updates _.modified as required.
+  // Clamps indices in the OpAccessChain or OpInBoundsAccessChain instruction
+  // |access_chain|. Inserts instructions before the given instruction.  Updates
+  // analyses and records that the module is modified.
   void ClampIndicesForAccessChain(Instruction* access_chain);
 
   // Returns the id of the instruction importing the "GLSL.std.450" extended
@@ -109,9 +109,10 @@ class GraphicsRobustAccessPass : public Pass {
                                                uint32_t operand_index);
 
   // Clamps the coordinate for an OpImageTexelPointer so it stays within
-  // the bounds of the size of the image.  Returns a status code to indicate
-  // success or failure. If assumptions are not met, returns an error status
-  // code and emits a diagnostic.
+  // the bounds of the size of the image.  Updates analyses and records that
+  // the module is modified.  Returns a status code to indicate success
+  // or failure.  If assumptions are not met, returns an error status code
+  // and emits a diagnostic.
   spv_result_t ClampCoordinateForImageTexelPointer(opt::Instruction* itp);
 
   // Gets the instruction that defines the given id.
