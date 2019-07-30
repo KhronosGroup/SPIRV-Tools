@@ -100,8 +100,8 @@ OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
 
 // For the purposes of this pass, regular and in-bounds access chains are the
 // same.
-std::array<const char*, 2> kAccessChains = {"OpAccessChain",
-                                            "OpInBoundsAccessChain"};
+std::array<const char*, 2> kAccessChains{
+    {"OpAccessChain", "OpInBoundsAccessChain"}};
 
 std::string ShaderPreamble() {
   return R"(
