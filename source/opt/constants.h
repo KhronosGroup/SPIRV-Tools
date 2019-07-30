@@ -116,11 +116,13 @@ class Constant {
   // Integer type.
   int64_t GetS64() const;
 
-  // Returns the uint64_t representation of the constant. Must be an integral
-  // constant of at most 64 bits.  When the constant's type is narrower than
-  // 64 bits, then the value is sign-extended if a signed type, and
-  // zero-extended otherwise.
-  uint64_t GetValueAsU64() const;
+  // Returns the zero-extended representation of an integer constant. Must
+  // be an integral constant of at most 64 bits.
+  uint64_t GetZeroExtendedValue() const;
+
+  // Returns the sign-extended representation of an integer constant. Must
+  // be an integral constant of at most 64 bits.
+  int64_t GetSignExtendedValue() const;
 
   // Returns true if the constant is a zero or a composite containing 0s.
   virtual bool IsZero() const { return false; }

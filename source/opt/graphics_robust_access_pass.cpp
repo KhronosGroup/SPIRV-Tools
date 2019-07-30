@@ -301,8 +301,10 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
 
     const auto index_width = index_type->width();
 
-    // If the index is a constant this will be non-null. Since access chain
-    // indices must be scalar integers, this can't be a spec constant.
+    // If the index is a constant then |index_constant| will not be a null
+    // pointer.  (If index is an |OpConstantNull| then it |index_constant| will
+    // not be a null pointer.)  Since access chain indices must be scalar
+    // integers, this can't be a spec constant.
     if (auto* index_constant = constant_mgr->GetConstantFromInst(index_inst)) {
       auto* int_index_constant = index_constant->AsIntConstant();
       int64_t value = 0;
@@ -459,10 +461,12 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         const auto num_members = pointee_type->NumInOperands();
         const auto* index_constant =
             constant_mgr->GetConstantFromInst(index_inst);
-        const auto index_value = index_constant->GetValueAsU64();
-        if (index_value >= num_members) {
+        // Get the sign-extended value, since access index is always treated as
+        // signed.
+        const auto index_value = index_constant->GetSignExtendedValue();
+        if (index_value < 0 || index_value >= num_members) {
           Fail() << "Member index " << index_value
-                 << " is too large for struct type: "
+                 << " is out of bounds struct type: "
                  << pointee_type->PrettyPrint(
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
                  << "\nin access chain: "
@@ -476,7 +480,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
 
       case SpvOpTypeRuntimeArray: {
         auto* array_len = MakeRuntimeArrayLengthInst(&inst, idx);
-        if (!array_len) {  // We've alread signaled an error.
+        if (!array_len) {  // We've already signaled an error.
           return;
         }
         clamp_to_count(idx, array_len);
@@ -651,9 +655,11 @@ Instruction* GraphicsRobustAccessPass::MakeRuntimeArrayLengthInst(
                     first_index_operand + i));
             if (auto* index_constant =
                     constant_mgr->GetConstantFromInst(index)) {
-              // We only need 32 bits.
+              // We only need 32 bits. For the type calculation, it's sufficient
+              // to take the zero-extended value. It only matters for the struct
+              // case, and struct member indices are unsigned.
               index_for_type_calculation =
-                  uint32_t(index_constant->GetValueAsU64());
+                  uint32_t(index_constant->GetZeroExtendedValue());
             } else {
               // Indexing into a variably-sized thing like an array.  Use 0.
               index_for_type_calculation = 0;

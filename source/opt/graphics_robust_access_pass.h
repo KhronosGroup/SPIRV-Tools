@@ -81,11 +81,11 @@ class GraphicsRobustAccessPass : public Pass {
   // 64 bits wide.
   uint64_t GetUnsignedValueForConstant(const analysis::Constant* c);
 
-  // Converts an integer value to an unsigned wider integer wider type, using
-  // either sign extension or zero extension.  The new instruction is inserted
+  // Converts an integer value to an unsigned wider integer type, using either
+  // sign extension or zero extension.  The new instruction is inserted
   // immediately before |before_inst|, and is analyzed for definitions and uses.
   // Returns the newly inserted instruction.  Assumes the |value| is an integer
-  // scalar of a narrower type than |type|.
+  // scalar of a narrower type than |bitwidth| bits.
   Instruction* WidenInteger(bool sign_extend, uint32_t bitwidth,
                             Instruction* value, Instruction* before_inst);
 

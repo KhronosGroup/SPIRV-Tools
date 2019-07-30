@@ -103,22 +103,38 @@ int64_t Constant::GetS64() const {
   }
 }
 
-uint64_t Constant::GetValueAsU64() const {
+uint64_t Constant::GetZeroExtendedValue() const {
   const auto* int_type = type()->AsInteger();
   assert(int_type != nullptr);
-  const auto width = type()->AsInteger()->width();
+  const auto width = int_type->width();
   assert(width <= 64);
 
   uint64_t value = 0;
   if (const IntConstant* ic = AsIntConstant()) {
     if (width <= 32) {
       value = ic->GetU32BitValue();
-      // Sign extend it if the the type is signed.
-      if (int_type->IsSigned() && (value & (uint32_t(1) << 31))) {
-        value |= (uint64_t(~uint32_t(0)) << 32);
-      }
     } else {
       value = ic->GetU64BitValue();
+    }
+  } else {
+    assert(AsNullConstant() && "Must be an integer constant.");
+  }
+  return value;
+}
+
+int64_t Constant::GetSignExtendedValue() const {
+  const auto* int_type = type()->AsInteger();
+  assert(int_type != nullptr);
+  const auto width = int_type->width();
+  assert(width <= 64);
+
+  int64_t value = 0;
+  if (const IntConstant* ic = AsIntConstant()) {
+    if (width <= 32) {
+      // Let the C++ compiler do the sign extension.
+      value = int64_t(ic->GetS32BitValue());
+    } else {
+      value = ic->GetS64BitValue();
     }
   } else {
     assert(AsNullConstant() && "Must be an integer constant.");
