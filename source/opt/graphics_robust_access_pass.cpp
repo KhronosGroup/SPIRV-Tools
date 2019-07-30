@@ -371,13 +371,12 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
     assert(index_type);
     if (const auto* count_constant =
             constant_mgr->GetConstantFromInst(count_inst)) {
-      count_constant = count_constant->AsIntConstant();
       uint64_t value = 0;
       const auto width = count_constant->type()->AsInteger()->width();
       if (width <= 32) {
-        value = count_constant->GetU32();
+        value = count_constant->AsIntConstant()->GetU32BitValue();
       } else if (width <= 64) {
-        value = count_constant->GetU64();
+        value = count_constant->AsIntConstant()->GetU64BitValue();
       } else {
         this->Fail() << "Can't handle indices wider than 64 bits, found "
                         "constant index with "
@@ -552,13 +551,13 @@ uint64_t opt::GraphicsRobustAccessPass::GetUnsignedValueForConstant(
   }
   uint64_t value = 0;
   if (width <= 32) {
-    value = c->GetU32();
+    value = c->AsIntConstant()->GetU32BitValue();
     // Sign extend it if the type is signed.
     if (type->IsSigned() && (value & (uint32_t(1) << 31))) {
       value |= (uint64_t(~uint32_t(0)) << 32);
     }
   } else {
-    value = c->GetU64();
+    value = c->AsIntConstant()->GetU64BitValue();
   }
   return value;
 }
