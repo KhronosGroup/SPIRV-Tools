@@ -22,6 +22,7 @@
 
 #include <source/spirv_optimizer_options.h>
 #include "source/opt/build_module.h"
+#include "source/opt/graphics_robust_access_pass.h"
 #include "source/opt/log.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
@@ -472,6 +473,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateLegalizeVectorShufflePass());
   } else if (pass_name == "decompose-initialized-variables") {
     RegisterPass(CreateDecomposeInitializedVariablesPass());
+  } else if (pass_name == "graphics-robust-access") {
+    RegisterPass(CreateGraphicsRobustAccessPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -876,6 +879,11 @@ Optimizer::PassToken CreateDecomposeInitializedVariablesPass() {
 Optimizer::PassToken CreateSplitInvalidUnreachablePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::SplitInvalidUnreachablePass>());
+}
+
+Optimizer::PassToken CreateGraphicsRobustAccessPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::GraphicsRobustAccessPass>());
 }
 
 }  // namespace spvtools
