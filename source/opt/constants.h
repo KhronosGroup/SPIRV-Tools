@@ -522,7 +522,7 @@ class ConstantManager {
   // Gets or creates a Constant instance to hold the constant value of the given
   // instruction. It returns a pointer to a Constant instance or nullptr if it
   // could not create the constant.
-  const Constant* GetConstantFromInst(Instruction* inst);
+  const Constant* GetConstantFromInst(const Instruction* inst);
 
   // Gets or creates a constant defining instruction for the given Constant |c|.
   // If |c| had already been defined, it returns a pointer to the existing
