@@ -291,7 +291,7 @@ std::unique_ptr<Constant> ConstantManager::CreateConstant(
   }
 }
 
-const Constant* ConstantManager::GetConstantFromInst(Instruction* inst) {
+const Constant* ConstantManager::GetConstantFromInst(const Instruction* inst) {
   std::vector<uint32_t> literal_words_or_ids;
 
   // Collect the constant defining literals or component ids.

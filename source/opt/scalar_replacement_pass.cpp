@@ -232,8 +232,12 @@ bool ScalarReplacementPass::ReplaceAccessChain(
   // indexes) or a direct use of the replacement variable.
   uint32_t indexId = chain->GetSingleWordInOperand(1u);
   const Instruction* index = get_def_use_mgr()->GetDef(indexId);
-  uint64_t indexValue = GetConstantInteger(index);
-  if (indexValue >= replacements.size()) {
+  int64_t indexValue = context()
+                           ->get_constant_mgr()
+                           ->GetConstantFromInst(index)
+                           ->GetSignExtendedValue();
+  if (indexValue < 0 ||
+      static_cast<size_t>(indexValue) >= replacements.size()) {
     // Out of bounds access, this is illegal IR.  Notice that OpAccessChain
     // indexing is 0-based, so we should also reject index == size-of-array.
     return false;
@@ -269,7 +273,7 @@ bool ScalarReplacementPass::CreateReplacementVariables(
     Instruction* inst, std::vector<Instruction*>* replacements) {
   Instruction* type = GetStorageType(inst);
 
-  std::unique_ptr<std::unordered_set<uint64_t>> components_used =
+  std::unique_ptr<std::unordered_set<int64_t>> components_used =
       GetUsedComponents(inst);
 
   uint32_t elem = 0;
@@ -467,27 +471,16 @@ void ScalarReplacementPass::GetOrCreateInitialValue(Instruction* source,
   }
 }
 
-uint64_t ScalarReplacementPass::GetIntegerLiteral(const Operand& op) const {
-  assert(op.words.size() <= 2);
-  uint64_t len = 0;
-  for (uint32_t i = 0; i != op.words.size(); ++i) {
-    len |= (op.words[i] << (32 * i));
-  }
-  return len;
-}
-
 uint64_t ScalarReplacementPass::GetConstantInteger(
     const Instruction* constant) const {
   assert(get_def_use_mgr()->GetDef(constant->type_id())->opcode() ==
          SpvOpTypeInt);
   assert(constant->opcode() == SpvOpConstant ||
          constant->opcode() == SpvOpConstantNull);
-  if (constant->opcode() == SpvOpConstantNull) {
-    return 0;
-  }
-
-  const Operand& op = constant->GetInOperand(0u);
-  return GetIntegerLiteral(op);
+  return context()
+      ->get_constant_mgr()
+      ->GetConstantFromInst(constant)
+      ->GetZeroExtendedValue();
 }
 
 uint64_t ScalarReplacementPass::GetArrayLength(
@@ -734,10 +727,10 @@ bool ScalarReplacementPass::IsLargerThanSizeLimit(uint64_t length) const {
   return length > max_num_elements_;
 }
 
-std::unique_ptr<std::unordered_set<uint64_t>>
+std::unique_ptr<std::unordered_set<int64_t>>
 ScalarReplacementPass::GetUsedComponents(Instruction* inst) {
-  std::unique_ptr<std::unordered_set<uint64_t>> result(
-      new std::unordered_set<uint64_t>());
+  std::unique_ptr<std::unordered_set<int64_t>> result(
+      new std::unordered_set<int64_t>());
 
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
@@ -775,18 +768,8 @@ ScalarReplacementPass::GetUsedComponents(Instruction* inst) {
         const analysis::Constant* index_const =
             const_mgr->FindDeclaredConstant(index_id);
         if (index_const) {
-          const analysis::Integer* index_type =
-              index_const->type()->AsInteger();
-          assert(index_type);
-          if (index_type->width() == 32) {
-            result->insert(index_const->GetU32());
-            return true;
-          } else if (index_type->width() == 64) {
-            result->insert(index_const->GetU64());
-            return true;
-          }
-          result.reset(nullptr);
-          return false;
+          result->insert(index_const->GetSignExtendedValue());
+          return true;
         } else {
           // Could be any element.  Assuming all are used.
           result.reset(nullptr);
