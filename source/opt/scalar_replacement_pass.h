@@ -158,11 +158,6 @@ class ScalarReplacementPass : public Pass {
   bool CreateReplacementVariables(Instruction* inst,
                                   std::vector<Instruction*>* replacements);
 
-  // Returns the value of an OpConstant of integer type.
-  //
-  // |constant| must use two or fewer words to generate the value.
-  uint64_t GetConstantInteger(const Instruction* constant) const;
-
   // Returns the array length for |arrayInst|.
   uint64_t GetArrayLength(const Instruction* arrayInst) const;
 

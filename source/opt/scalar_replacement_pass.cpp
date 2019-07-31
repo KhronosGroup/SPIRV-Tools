@@ -471,24 +471,15 @@ void ScalarReplacementPass::GetOrCreateInitialValue(Instruction* source,
   }
 }
 
-uint64_t ScalarReplacementPass::GetConstantInteger(
-    const Instruction* constant) const {
-  assert(get_def_use_mgr()->GetDef(constant->type_id())->opcode() ==
-         SpvOpTypeInt);
-  assert(constant->opcode() == SpvOpConstant ||
-         constant->opcode() == SpvOpConstantNull);
-  return context()
-      ->get_constant_mgr()
-      ->GetConstantFromInst(constant)
-      ->GetZeroExtendedValue();
-}
-
 uint64_t ScalarReplacementPass::GetArrayLength(
     const Instruction* arrayType) const {
   assert(arrayType->opcode() == SpvOpTypeArray);
   const Instruction* length =
       get_def_use_mgr()->GetDef(arrayType->GetSingleWordInOperand(1u));
-  return GetConstantInteger(length);
+  return context()
+      ->get_constant_mgr()
+      ->GetConstantFromInst(length)
+      ->GetZeroExtendedValue();
 }
 
 uint64_t ScalarReplacementPass::GetNumElements(const Instruction* type) const {
