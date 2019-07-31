@@ -90,42 +90,16 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
         if (value & ~valid_bits) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "For WebGPU only ImageMemory may be set for Memory "
-                    "Semantics "
-                    "of OpMemoryBarrier.";
+                    "Semantics of OpMemoryBarrier.";
         }
         break;
       default:
-        // TODO(2723): Rewrite this to be in the style of above and simplify.
-        valid_bits = SpvMemorySemanticsUniformMemoryMask |
-                     SpvMemorySemanticsWorkgroupMemoryMask |
-                     SpvMemorySemanticsImageMemoryMask |
-                     SpvMemorySemanticsOutputMemoryKHRMask |
-                     SpvMemorySemanticsMakeAvailableKHRMask |
-                     SpvMemorySemanticsMakeVisibleKHRMask;
-        if (!spvOpcodeIsAtomicOp(inst->opcode())) {
-          valid_bits |= SpvMemorySemanticsAcquireReleaseMask;
-        }
-
-        if (value & ~valid_bits) {
-          if (spvOpcodeIsAtomicOp(inst->opcode())) {
+        if (spvOpcodeIsAtomicOp(inst->opcode())) {
+          if (value != 0) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << "WebGPU spec disallows, for OpAtomic*, any bit masks in "
-                      "Memory Semantics that are not UniformMemory, "
-                      "WorkgroupMemory, ImageMemory, or OutputMemoryKHR";
-          } else {
-            return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << "WebGPU spec disallows any bit masks in Memory Semantics "
-                      "that are not AcquireRelease, UniformMemory, "
-                      "WorkgroupMemory, ImageMemory, OutputMemoryKHR, "
-                      "MakeAvailableKHR, or MakeVisibleKHR";
+                   << "For WebGPU Memory no bits may be set for Memory "
+                      "Semantics of OpAtomic* instructions.";
           }
-        }
-
-        if (!spvOpcodeIsAtomicOp(inst->opcode()) &&
-            !(value & SpvMemorySemanticsAcquireReleaseMask)) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "WebGPU spec requires AcquireRelease to set in Memory "
-                    "Semantics.";
         }
         break;
     }
