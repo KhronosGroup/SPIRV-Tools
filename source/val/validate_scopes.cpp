@@ -246,6 +246,15 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
         }
         break;
       default:
+        if (spvOpcodeIsAtomicOp(inst->opcode())) {
+          if (value != SpvScopeQueueFamilyKHR) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << spvOpcodeString(opcode)
+                   << ": in WebGPU environment Memory Scope is limited to "
+                   << "QueueFamilyKHR for OpAtomic* operations";
+          }
+        }
+
         if (value != SpvScopeWorkgroup && value != SpvScopeInvocation &&
             value != SpvScopeQueueFamilyKHR) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
