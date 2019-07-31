@@ -237,7 +237,7 @@ bool ScalarReplacementPass::ReplaceAccessChain(
                            ->GetConstantFromInst(index)
                            ->GetSignExtendedValue();
   if (indexValue < 0 ||
-      static_cast<size_t>(indexValue) >= replacements.size()) {
+      indexValue >= static_cast<int64_t>(replacements.size())) {
     // Out of bounds access, this is illegal IR.  Notice that OpAccessChain
     // indexing is 0-based, so we should also reject index == size-of-array.
     return false;
