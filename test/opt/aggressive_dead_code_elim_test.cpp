@@ -6617,6 +6617,8 @@ OpFunctionEnd
 }
 
 TEST_F(AggressiveDCETest, NoEliminateForwardPointer) {
+  // clang-format off
+  //
   //  #version 450
   //  #extension GL_EXT_buffer_reference : enable
   //
@@ -6638,6 +6640,8 @@ TEST_F(AggressiveDCETest, NoEliminateForwardPointer) {
   //    b = b.next;
   //    b.x = 531;
   //  }
+  //
+  // clang-format on
 
   const std::string predefs1 =
       R"(OpCapability Shader
