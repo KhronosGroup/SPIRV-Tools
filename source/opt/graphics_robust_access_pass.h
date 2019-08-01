@@ -41,7 +41,7 @@ class GraphicsRobustAccessPass : public Pass {
            IRContext::kAnalysisInstrToBlockMapping |
            IRContext::kAnalysisConstants | IRContext::kAnalysisTypes |
            IRContext::kAnalysisIdToFuncMapping;
-  };
+  }
 
  private:
   // Records failure for the current module, and returns a stream
