@@ -6617,30 +6617,30 @@ OpFunctionEnd
 }
 
 TEST_F(AggressiveDCETest, NoEliminateForwardPointer) {
-//  #version 450
-//  #extension GL_EXT_buffer_reference : enable
-//
-//    // forward reference
-//    layout(buffer_reference) buffer blockType;
-//
-//  layout(buffer_reference, std430, buffer_reference_align = 16) buffer blockType {
-//    int x;
-//    blockType next;
-//  };
-//
-//  layout(std430) buffer rootBlock {
-//    blockType root;
-//  } r;
-//
-//  void main()
-//  {
-//    blockType b = r.root;
-//    b = b.next;
-//    b.x = 531;
-//  }
+  //  #version 450
+  //  #extension GL_EXT_buffer_reference : enable
+  //
+  //    // forward reference
+  //    layout(buffer_reference) buffer blockType;
+  //
+  //  layout(buffer_reference, std430, buffer_reference_align = 16) buffer blockType {
+  //    int x;
+  //    blockType next;
+  //  };
+  //
+  //  layout(std430) buffer rootBlock {
+  //    blockType root;
+  //  } r;
+  //
+  //  void main()
+  //  {
+  //    blockType b = r.root;
+  //    b = b.next;
+  //    b.x = 531;
+  //  }
 
   const std::string predefs1 =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 OpCapability PhysicalStorageBufferAddressesEXT
 OpExtension "SPV_EXT_physical_storage_buffer"
 OpExtension "SPV_KHR_storage_buffer_storage_class"
@@ -6653,7 +6653,7 @@ OpSourceExtension "GL_EXT_buffer_reference"
 )";
 
   const std::string names_before =
-    R"(OpName %main "main"
+      R"(OpName %main "main"
 OpName %blockType "blockType"
 OpMemberName %blockType 0 "x"
 OpMemberName %blockType 1 "next"
@@ -6672,7 +6672,7 @@ OpDecorate %r Binding 0
 )";
 
   const std::string names_after =
-    R"(OpName %main "main"
+      R"(OpName %main "main"
 OpName %blockType "blockType"
 OpMemberName %blockType 0 "x"
 OpMemberName %blockType 1 "next"
@@ -6689,7 +6689,7 @@ OpDecorate %r Binding 0
 )";
 
   const std::string predefs2_before =
-    R"(%void = OpTypeVoid
+      R"(%void = OpTypeVoid
 %3 = OpTypeFunction %void
 OpTypeForwardPointer %_ptr_PhysicalStorageBufferEXT_blockType PhysicalStorageBufferEXT
 %int = OpTypeInt 32 1
@@ -6708,7 +6708,7 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBufferEXT_blockType PhysicalStorageBuf
 )";
 
   const std::string predefs2_after =
-    R"(%void = OpTypeVoid
+      R"(%void = OpTypeVoid
 %8 = OpTypeFunction %void
 OpTypeForwardPointer %_ptr_PhysicalStorageBufferEXT_blockType PhysicalStorageBufferEXT
 %int = OpTypeInt 32 1
@@ -6726,7 +6726,7 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBufferEXT_blockType PhysicalStorageBuf
 )";
 
   const std::string func_before =
-    R"(%main = OpFunction %void None %3
+      R"(%main = OpFunction %void None %3
 %5 = OpLabel
 %b = OpVariable %_ptr_Function__ptr_PhysicalStorageBufferEXT_blockType Function
 %16 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBufferEXT_blockType %r %int_0
@@ -6741,7 +6741,7 @@ OpFunctionEnd
 )";
 
   const std::string func_after =
-    R"(%main = OpFunction %void None %8
+      R"(%main = OpFunction %void None %8
 %19 = OpLabel
 %20 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBufferEXT_blockType %r %int_0
 %21 = OpLoad %_ptr_PhysicalStorageBufferEXT_blockType %20
@@ -6754,8 +6754,8 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<AggressiveDCEPass>(
-    predefs1 + names_before + predefs2_before + func_before,
-    predefs1 + names_after + predefs2_after + func_after, true, true);
+      predefs1 + names_before + predefs2_before + func_before,
+      predefs1 + names_after + predefs2_after + func_after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
