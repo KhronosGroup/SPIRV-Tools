@@ -202,6 +202,7 @@ opt::BasicBlock::iterator GetIteratorForBaseInstructionAndOffset(
     }
   }
   assert(false && "The base instruction was not found.");
+  return nullptr;
 }
 
 }  // namespace fuzzerutil
