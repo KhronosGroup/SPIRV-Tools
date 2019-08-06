@@ -157,18 +157,18 @@ spvtools_pch(TEST_SOURCES pch_test)
 add_spvtools_unittest(
   TARGET spirv_unit_tests
   SRCS ${TEST_SOURCES}
-  LIBS ${SPIRV_TOOLS})
+  LIBS SPIRV-Tools)
 
 add_spvtools_unittest(
   TARGET c_interface
   SRCS c_interface_test.cpp
-  LIBS ${SPIRV_TOOLS})
+  LIBS SPIRV-Tools)
 
 add_spvtools_unittest(
   TARGET c_interface_shared
   SRCS c_interface_test.cpp
-  LIBS ${SPIRV_TOOLS}-shared
-  ENVIRONMENT PATH=$<TARGET_FILE_DIR:${SPIRV_TOOLS}-shared>)
+  LIBS SPIRV-Tools-shared
+  ENVIRONMENT PATH=$<TARGET_FILE_DIR:SPIRV-Tools-shared>)
 
 add_spvtools_unittest(
   TARGET cpp_interface
@@ -179,7 +179,7 @@ if (${SPIRV_TIMER_ENABLED})
 add_spvtools_unittest(
   TARGET timer
   SRCS timer_test.cpp
-  LIBS ${SPIRV_TOOLS})
+  LIBS SPIRV-Tools)
 endif()
 
 

@@ -31,28 +31,24 @@ function(add_spvtools_tool)
 
   add_executable(${ARG_TARGET} ${ARG_SRCS})
   spvtools_default_compile_options(${ARG_TARGET})
-  target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
-  target_include_directories(${ARG_TARGET} PRIVATE
-    ${spirv-tools_SOURCE_DIR}
-    ${spirv-tools_BINARY_DIR}
-  )
+  target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS} SPIRV-Tools-Headers)
   set_property(TARGET ${ARG_TARGET} PROPERTY FOLDER "SPIRV-Tools executables")
 endfunction()
 
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
-  add_spvtools_tool(TARGET spirv-as SRCS as/as.cpp LIBS ${SPIRV_TOOLS})
-  add_spvtools_tool(TARGET spirv-dis SRCS dis/dis.cpp LIBS ${SPIRV_TOOLS})
-  add_spvtools_tool(TARGET spirv-val SRCS val/val.cpp util/cli_consumer.cpp LIBS ${SPIRV_TOOLS})
-  add_spvtools_tool(TARGET spirv-opt SRCS opt/opt.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-opt ${SPIRV_TOOLS})
+  add_spvtools_tool(TARGET spirv-as SRCS as/as.cpp LIBS SPIRV-Tools)
+  add_spvtools_tool(TARGET spirv-dis SRCS dis/dis.cpp LIBS SPIRV-Tools)
+  add_spvtools_tool(TARGET spirv-val SRCS val/val.cpp util/cli_consumer.cpp LIBS SPIRV-Tools)
+  add_spvtools_tool(TARGET spirv-opt SRCS opt/opt.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-opt SPIRV-Tools)
   if (NOT DEFINED IOS_PLATFORM) # iOS does not allow std::system calls which spirv-reduce requires
-    add_spvtools_tool(TARGET spirv-reduce SRCS reduce/reduce.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-reduce ${SPIRV_TOOLS})
+    add_spvtools_tool(TARGET spirv-reduce SRCS reduce/reduce.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-reduce SPIRV-Tools)
   endif()
-  add_spvtools_tool(TARGET spirv-link SRCS link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS})
+  add_spvtools_tool(TARGET spirv-link SRCS link/linker.cpp LIBS SPIRV-Tools-link SPIRV-Tools)
   add_spvtools_tool(TARGET spirv-cfg
                     SRCS cfg/cfg.cpp
                          cfg/bin_to_dot.h
                          cfg/bin_to_dot.cpp
-                    LIBS ${SPIRV_TOOLS})
+                    LIBS SPIRV-Tools)
   target_include_directories(spirv-cfg PRIVATE ${spirv-tools_SOURCE_DIR}
                                                ${SPIRV_HEADER_INCLUDE_DIR})
   set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt
@@ -62,14 +58,12 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   endif()
 
   if(SPIRV_BUILD_FUZZER)
-    add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz ${SPIRV_TOOLS})
+    add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz SPIRV-Tools)
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-fuzz)
   endif(SPIRV_BUILD_FUZZER)
 
-  if(ENABLE_SPIRV_TOOLS_INSTALL)
-    install(TARGETS ${SPIRV_INSTALL_TARGETS}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-  endif(ENABLE_SPIRV_TOOLS_INSTALL)
+  install(TARGETS ${SPIRV_INSTALL_TARGETS} EXPORT SPIRV-Tools
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()

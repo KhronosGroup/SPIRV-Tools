@@ -24,25 +24,13 @@
 #
 # See https://github.com/KhronosGroup/SPIRV-Tools/issues/359
 
-# This is an absolute directory, and ignores CMAKE_INSTALL_PREFIX, or
-# it will not be found by emacs upon startup.  It is only installed if
-# both of the following are true:
-#   1. SPIRV_TOOLS_INSTALL_EMACS_HELPERS is defined
-#   2. The directory /etc/emacs/site-start.d already exists at the time of
-#      cmake invocation (not at the time of make install).  This is
-#      typically true if emacs is installed on the system.
-
 # Note that symbol IDs are not preserved through a load/edit/save operation.
 # This may change if the ability is added to spirv-as.
 
 option(SPIRV_TOOLS_INSTALL_EMACS_HELPERS
   "Install Emacs helper to disassemble/assemble SPIR-V binaries on file load/save."
-  ${SPIRV_TOOLS_INSTALL_EMACS_HELPERS})
-if (${SPIRV_TOOLS_INSTALL_EMACS_HELPERS})
-  if(EXISTS /etc/emacs/site-start.d)
-    if(ENABLE_SPIRV_TOOLS_INSTALL)
-      install(FILES 50spirv-tools.el DESTINATION /etc/emacs/site-start.d)
-    endif(ENABLE_SPIRV_TOOLS_INSTALL)
-  endif()
+  OFF)
+if(${SPIRV_TOOLS_INSTALL_EMACS_HELPERS})
+  install(FILES 50spirv-tools.el DESTINATION /etc/emacs/site-start.d
+  		  COMPONENT EmacsHelpers)
 endif()
-

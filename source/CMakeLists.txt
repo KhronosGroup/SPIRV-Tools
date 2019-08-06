@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+get_target_property(SPIRV_HEADER_INCLUDE_DIR SPIRV-Headers::SPIRV-Headers INTERFACE_INCLUDE_DIRECTORIES)
+
 set(GRAMMAR_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_grammar_tables.py")
 set(VIMSYNTAX_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_vim_syntax.py")
 set(XML_REGISTRY_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_registry_tables.py")
@@ -336,47 +338,40 @@ set_source_files_properties(
 
 spvtools_pch(SPIRV_SOURCES pch_source)
 
-add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
-spvtools_default_compile_options(${SPIRV_TOOLS})
-target_include_directories(${SPIRV_TOOLS}
-  PUBLIC ${spirv-tools_SOURCE_DIR}/include
-  PRIVATE ${spirv-tools_BINARY_DIR}
-  PRIVATE ${SPIRV_HEADER_INCLUDE_DIR}
-  )
-set_property(TARGET ${SPIRV_TOOLS} PROPERTY FOLDER "SPIRV-Tools libraries")
-spvtools_check_symbol_exports(${SPIRV_TOOLS})
-add_dependencies( ${SPIRV_TOOLS} core_tables enum_string_mapping extinst_tables )
+add_library(SPIRV-Tools ${SPIRV_SOURCES})
+spvtools_default_compile_options(SPIRV-Tools)
+target_link_libraries(SPIRV-Tools
+  PUBLIC SPIRV-Tools-Headers)
+set_property(TARGET SPIRV-Tools PROPERTY FOLDER "SPIRV-Tools libraries")
+spvtools_check_symbol_exports(SPIRV-Tools)
+add_dependencies( SPIRV-Tools core_tables enum_string_mapping extinst_tables )
 
-add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
-spvtools_default_compile_options(${SPIRV_TOOLS}-shared)
-target_include_directories(${SPIRV_TOOLS}-shared
-  PUBLIC ${spirv-tools_SOURCE_DIR}/include
-  PRIVATE ${spirv-tools_BINARY_DIR}
-  PRIVATE ${SPIRV_HEADER_INCLUDE_DIR}
-  )
-set_target_properties(${SPIRV_TOOLS}-shared PROPERTIES CXX_VISIBILITY_PRESET hidden)
-set_property(TARGET ${SPIRV_TOOLS}-shared PROPERTY FOLDER "SPIRV-Tools libraries")
-spvtools_check_symbol_exports(${SPIRV_TOOLS}-shared)
-target_compile_definitions(${SPIRV_TOOLS}-shared
+add_library(SPIRV-Tools-shared SHARED ${SPIRV_SOURCES})
+spvtools_default_compile_options(SPIRV-Tools-shared)
+target_link_libraries(SPIRV-Tools-shared
+  PUBLIC SPIRV-Tools-Headers)
+set_target_properties(SPIRV-Tools-shared PROPERTIES CXX_VISIBILITY_PRESET hidden)
+set_property(TARGET SPIRV-Tools-shared PROPERTY FOLDER "SPIRV-Tools libraries")
+spvtools_check_symbol_exports(SPIRV-Tools-shared)
+target_compile_definitions(SPIRV-Tools-shared
   PRIVATE SPIRV_TOOLS_IMPLEMENTATION
   PUBLIC SPIRV_TOOLS_SHAREDLIB
 )
-add_dependencies( ${SPIRV_TOOLS}-shared core_tables enum_string_mapping extinst_tables )
+add_dependencies( SPIRV-Tools-shared core_tables enum_string_mapping extinst_tables )
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   find_library(LIBRT rt)
   if(LIBRT)
-    target_link_libraries(${SPIRV_TOOLS} ${LIBRT})
-    target_link_libraries(${SPIRV_TOOLS}-shared ${LIBRT})
+    target_link_libraries(SPIRV-Tools PUBLIC ${LIBRT})
+    target_link_libraries(SPIRV-Tools-shared PUBLIC ${LIBRT})
   endif()
 endif()
 
-if(ENABLE_SPIRV_TOOLS_INSTALL)
-  install(TARGETS ${SPIRV_TOOLS} ${SPIRV_TOOLS}-shared
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(ENABLE_SPIRV_TOOLS_INSTALL)
+
+install(TARGETS SPIRV-Tools SPIRV-Tools-shared EXPORT SPIRV-Tools
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if(MSVC)
   # Enable parallel builds across four cores for this lib
