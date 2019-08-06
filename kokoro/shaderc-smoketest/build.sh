@@ -50,7 +50,7 @@ cd $SHADERC_DIR/build
 # Invoke the build.
 BUILD_SHA=${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
 echo $(date): Starting build...
-cmake -GNinja -DRE2_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+cmake -GNinja -DRE2_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSPIRV-Headers_SOURCE_DIR=$SHADERC_DIR/third_party/spirv-headers/include ..
 
 echo $(date): Build glslang...
 ninja glslangValidator
