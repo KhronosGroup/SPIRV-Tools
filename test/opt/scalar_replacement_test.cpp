@@ -1762,6 +1762,48 @@ OpFunctionEnd
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
+TEST_F(ScalarReplacementTest, RelaxedPrecisionMemberDecoration) {
+  const std::string text = R"(
+; CHECK: OpDecorate {{%\w+}} RelaxedPrecision
+; CHECK: OpDecorate [[new_var:%\w+]] RelaxedPrecision
+; CHECK: [[new_var]] = OpVariable %_ptr_Function_v3float Function
+; CHECK: OpLoad %v3float [[new_var]]
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "Draw2DTexCol_VS" %2 %3
+               OpSource HLSL 600
+               OpDecorate %2 Location 0
+               OpDecorate %3 Location 1
+               OpDecorate %3 RelaxedPrecision
+               OpMemberDecorate %_struct_4 1 RelaxedPrecision
+      %float = OpTypeFloat 32
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+    %v3float = OpTypeVector %float 3
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+       %void = OpTypeVoid
+         %11 = OpTypeFunction %void
+  %_struct_4 = OpTypeStruct %v3float %v3float
+%_ptr_Function__struct_4 = OpTypePointer Function %_struct_4
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+          %2 = OpVariable %_ptr_Input_v3float Input
+          %3 = OpVariable %_ptr_Input_v3float Input
+          %1 = OpFunction %void None %11
+         %14 = OpLabel
+         %15 = OpVariable %_ptr_Function__struct_4 Function
+         %16 = OpLoad %v3float %2
+         %17 = OpLoad %v3float %3
+         %18 = OpCompositeConstruct %_struct_4 %16 %17
+               OpStore %15 %18
+         %19 = OpAccessChain %_ptr_Function_v3float %15 %int_1
+         %20 = OpLoad %v3float %19
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
