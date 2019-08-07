@@ -364,6 +364,35 @@ void ScalarReplacementPass::CreateVariable(
   get_def_use_mgr()->AnalyzeInstDefUse(inst);
   context()->set_instr_block(inst, block);
 
+  // Copy decorations from the member to the new variable.
+  Instruction* typeInst = GetStorageType(varInst);
+  for (auto dec_inst :
+       get_decoration_mgr()->GetDecorationsFor(typeInst->result_id(), false)) {
+    uint32_t decoration;
+    if (dec_inst->opcode() != SpvOpMemberDecorate) {
+      continue;
+    }
+
+    if (dec_inst->GetSingleWordInOperand(1) != index) {
+      continue;
+    }
+
+    decoration = dec_inst->GetSingleWordInOperand(2u);
+    switch (decoration) {
+      case SpvDecorationRelaxedPrecision: {
+        std::unique_ptr<Instruction> new_dec_inst(
+            new Instruction(context(), SpvOpDecorate, 0, 0, {}));
+        new_dec_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {id}));
+        for (uint32_t i = 2; i < dec_inst->NumInOperandWords(); ++i) {
+          new_dec_inst->AddOperand(Operand(dec_inst->GetInOperand(i)));
+        }
+        context()->AddAnnotationInst(std::move(new_dec_inst));
+      } break;
+      default:
+        break;
+    }
+  }
+
   replacements->push_back(inst);
 }
 
@@ -515,25 +544,42 @@ bool ScalarReplacementPass::CanReplaceVariable(
   assert(varInst->opcode() == SpvOpVariable);
 
   // Can only replace function scope variables.
-  if (varInst->GetSingleWordInOperand(0u) != SpvStorageClassFunction)
+  if (varInst->GetSingleWordInOperand(0u) != SpvStorageClassFunction) {
     return false;
+  }
 
-  if (!CheckTypeAnnotations(get_def_use_mgr()->GetDef(varInst->type_id())))
+  if (!CheckTypeAnnotations(get_def_use_mgr()->GetDef(varInst->type_id()))) {
     return false;
+  }
 
   const Instruction* typeInst = GetStorageType(varInst);
-  return CheckType(typeInst) && CheckAnnotations(varInst) && CheckUses(varInst);
+  if (!CheckType(typeInst)) {
+    return false;
+  }
+
+  if (!CheckAnnotations(varInst)) {
+    return false;
+  }
+
+  if (!CheckUses(varInst)) {
+    return false;
+  }
+
+  return true;
 }
 
 bool ScalarReplacementPass::CheckType(const Instruction* typeInst) const {
-  if (!CheckTypeAnnotations(typeInst)) return false;
+  if (!CheckTypeAnnotations(typeInst)) {
+    return false;
+  }
 
   switch (typeInst->opcode()) {
     case SpvOpTypeStruct:
       // Don't bother with empty structs or very large structs.
       if (typeInst->NumInOperands() == 0 ||
-          IsLargerThanSizeLimit(typeInst->NumInOperands()))
+          IsLargerThanSizeLimit(typeInst->NumInOperands())) {
         return false;
+      }
       return true;
     case SpvOpTypeArray:
       if (IsSpecConstant(typeInst->GetSingleWordInOperand(1u))) {
@@ -582,6 +628,7 @@ bool ScalarReplacementPass::CheckTypeAnnotations(
       case SpvDecorationAlignment:
       case SpvDecorationAlignmentId:
       case SpvDecorationMaxByteOffset:
+      case SpvDecorationRelaxedPrecision:
         break;
       default:
         return false;
