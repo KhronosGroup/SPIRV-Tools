@@ -13,7 +13,9 @@
 // limitations under the License.
 
 #include "source/opt/desc_sroa.h"
+
 #include <source/util/string_utils.h>
+#include <string>
 
 namespace spvtools {
 namespace opt {
@@ -100,7 +102,8 @@ bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
             work_list.push_back(use);
             return true;
           default:
-            EmmitErrorMessage("Variable cannot be replaced: invalid instruction", use);
+            EmmitErrorMessage(
+                "Variable cannot be replaced: invalid instruction", use);
             return false;
         }
         return true;
