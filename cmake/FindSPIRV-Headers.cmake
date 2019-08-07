@@ -1,5 +1,5 @@
 find_path(SPIRV_INCLUDE_DIRS "spirv/unified1/spirv.h"
-  HINTS
+  PATHS
     ${SPIRV-Headers_SOURCE_DIR}
     "${PROJECT_SOURCE_DIR}/external/SPIRV-Headers/include"
     "${PROJECT_SOURCE_DIR}/external/spirv-headers/include")
