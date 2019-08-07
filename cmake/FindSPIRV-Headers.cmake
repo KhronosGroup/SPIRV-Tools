@@ -2,7 +2,8 @@ find_path(SPIRV_INCLUDE_DIRS "spirv/unified1/spirv.h"
   PATHS
     ${SPIRV-Headers_SOURCE_DIR}
     "${PROJECT_SOURCE_DIR}/external/SPIRV-Headers/include"
-    "${PROJECT_SOURCE_DIR}/external/spirv-headers/include")
+    "${PROJECT_SOURCE_DIR}/external/spirv-headers/include"
+    CMAKE_FIND_ROOT_PATH_BOTH)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SPIRV-Headers
