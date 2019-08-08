@@ -34,6 +34,7 @@ add_spvtools_unittest(TARGET opt
        decompose_initialized_variables_test.cpp
        decoration_manager_test.cpp
        def_use_test.cpp
+       desc_sroa_test.cpp
        eliminate_dead_const_test.cpp
        eliminate_dead_functions_test.cpp
        eliminate_dead_member_test.cpp

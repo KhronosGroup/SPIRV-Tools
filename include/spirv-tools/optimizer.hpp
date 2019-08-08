@@ -784,6 +784,17 @@ Optimizer::PassToken CreateSplitInvalidUnreachablePass();
 // wide.
 Optimizer::PassToken CreateGraphicsRobustAccessPass();
 
+// Create descriptor scalar replacement pass.
+// This pass replaces every array variable |desc| that has a DescriptorSet and
+// Binding decorations with a new variable for each element of the array.
+// Suppose |desc| was bound at binding |b|.  Then the variable corresponding to
+// |desc[i]| will have binding |b+i|.  The descriptor set will be the same.  It
+// is assumed that no other variable already has a binding that will used by one
+// of the new variables.  If not, the pass will generate invalid Spir-V.  All
+// accesses to |desc| must be OpAccessChain instructions with a literal index
+// for the first index.
+Optimizer::PassToken CreateDescriptorScalarReplacementPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
