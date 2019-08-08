@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2019.4-dev 2019-05-15
+v2019.4 2019-08-08
  - General:
    - Memory model support for SPIR-V 1.4
    - Add new spirv-fuzz tool
@@ -21,6 +21,7 @@ v2019.4-dev 2019-05-15
    - Add pass to inject code for robust-buffer-access semantics (#2771)
    - Treat access chain indexes as signed in SROA (#2776)
    - Handle RelaxedPrecision in SROA (#2788)
+   - Add descriptor array scalar replacement (#2742)
    Fixes:
    - Handle decorations better in some optimizations (#2716)
    - Change the order branches are simplified in dead branch elim (#2728)
