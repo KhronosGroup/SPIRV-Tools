@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2019.5-dev 2019-08-08
+ - Start v2019.5-dev
+
 v2019.4 2019-08-08
  - General:
    - Memory model support for SPIR-V 1.4
