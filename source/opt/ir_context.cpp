@@ -788,6 +788,42 @@ bool IRContext::ProcessCallTreeFromRoots(ProcessFunction& pfn,
   return modified;
 }
 
+void IRContext::EmitErrorMessage(std::string message, Instruction* inst) {
+  if (!consumer()) {
+    return;
+  }
+
+  Instruction* line_inst = inst;
+  while (line_inst != nullptr) {  // Stop at the beginning of the basic block.
+    if (!line_inst->dbg_line_insts().empty()) {
+      line_inst = &line_inst->dbg_line_insts().back();
+      if (line_inst->opcode() == SpvOpNoLine) {
+        line_inst = nullptr;
+      }
+      break;
+    }
+    line_inst = line_inst->PreviousNode();
+  }
+
+  uint32_t line_number = 0;
+  uint32_t col_number = 0;
+  char* source = nullptr;
+  if (line_inst != nullptr) {
+    Instruction* file_name =
+        get_def_use_mgr()->GetDef(line_inst->GetSingleWordInOperand(0));
+    source = reinterpret_cast<char*>(&file_name->GetInOperand(0).words[0]);
+
+    // Get the line number and column number.
+    line_number = line_inst->GetSingleWordInOperand(1);
+    col_number = line_inst->GetSingleWordInOperand(2);
+  }
+
+  message +=
+      "\n  " + inst->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  consumer()(SPV_MSG_ERROR, source, {line_number, col_number, 0},
+             message.c_str());
+}
+
 // Gets the dominator analysis for function |f|.
 DominatorAnalysis* IRContext::GetDominatorAnalysis(const Function* f) {
   if (!AreAnalysesValid(kAnalysisDominatorAnalysis)) {

@@ -61,10 +61,6 @@ class DescriptorScalarReplacement : public Pass {
   // |true| if successful.
   bool ReplaceAccessChain(Instruction* var, Instruction* use);
 
-  // Emmits a error message to the message consumer indicating the error
-  // described by |message| occurred in |inst|.
-  void EmmitErrorMessage(std::string message, Instruction* inst);
-
   // Returns the id of the variable that will be used to replace the |idx|th
   // element of |var|.  The variable is created if it has not already been
   // created.

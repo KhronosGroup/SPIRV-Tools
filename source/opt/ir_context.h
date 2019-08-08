@@ -556,6 +556,10 @@ class IRContext {
   bool ProcessCallTreeFromRoots(ProcessFunction& pfn,
                                 std::queue<uint32_t>* roots);
 
+  // Emmits a error message to the message consumer indicating the error
+  // described by |message| occurred in |inst|.
+  void EmitErrorMessage(std::string message, Instruction* inst);
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {

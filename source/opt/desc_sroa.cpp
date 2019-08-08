@@ -101,7 +101,7 @@ bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
             work_list.push_back(use);
             return true;
           default:
-            EmmitErrorMessage(
+            context()->EmitErrorMessage(
                 "Variable cannot be replaced: invalid instruction", use);
             return false;
         }
@@ -123,7 +123,8 @@ bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
 bool DescriptorScalarReplacement::ReplaceAccessChain(Instruction* var,
                                                      Instruction* use) {
   if (use->NumInOperands() <= 1) {
-    EmmitErrorMessage("Variable cannot be replaced: invalid instruction", use);
+    context()->EmitErrorMessage(
+        "Variable cannot be replaced: invalid instruction", use);
     return false;
   }
 
@@ -131,7 +132,8 @@ bool DescriptorScalarReplacement::ReplaceAccessChain(Instruction* var,
   const analysis::Constant* idx_const =
       context()->get_constant_mgr()->FindDeclaredConstant(idx_id);
   if (idx_const == nullptr) {
-    EmmitErrorMessage("Variable cannot be replaced: invalid index", use);
+    context()->EmitErrorMessage("Variable cannot be replaced: invalid index",
+                                use);
     return false;
   }
 
@@ -166,43 +168,6 @@ bool DescriptorScalarReplacement::ReplaceAccessChain(Instruction* var,
   use->ReplaceOperands(new_operands);
   context()->UpdateDefUse(use);
   return true;
-}
-
-void DescriptorScalarReplacement::EmmitErrorMessage(std::string message,
-                                                    Instruction* inst) {
-  if (!consumer()) {
-    return;
-  }
-
-  Instruction* line_inst = inst;
-  while (line_inst != nullptr) {  // Stop at the beginning of the basic block.
-    if (!line_inst->dbg_line_insts().empty()) {
-      line_inst = &line_inst->dbg_line_insts().back();
-      if (line_inst->opcode() == SpvOpNoLine) {
-        line_inst = nullptr;
-      }
-      break;
-    }
-    line_inst = line_inst->PreviousNode();
-  }
-
-  uint32_t line_number = 0;
-  uint32_t col_number = 0;
-  char* source = nullptr;
-  if (line_inst != nullptr) {
-    Instruction* file_name = context()->get_def_use_mgr()->GetDef(
-        line_inst->GetSingleWordInOperand(0));
-    source = reinterpret_cast<char*>(&file_name->GetInOperand(0).words[0]);
-
-    // Get the line number and column number.
-    line_number = line_inst->GetSingleWordInOperand(1);
-    col_number = line_inst->GetSingleWordInOperand(2);
-  }
-
-  message +=
-      "\n  " + inst->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  consumer()(SPV_MSG_ERROR, source, {line_number, col_number, 0},
-             message.c_str());
 }
 
 uint32_t DescriptorScalarReplacement::GetReplacementVariable(Instruction* var,
