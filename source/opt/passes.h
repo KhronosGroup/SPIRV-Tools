@@ -29,6 +29,7 @@
 #include "source/opt/dead_insert_elim_pass.h"
 #include "source/opt/dead_variable_elimination.h"
 #include "source/opt/decompose_initialized_variables_pass.h"
+#include "source/opt/desc_sroa.h"
 #include "source/opt/eliminate_dead_constant_pass.h"
 #include "source/opt/eliminate_dead_functions_pass.h"
 #include "source/opt/eliminate_dead_members_pass.h"

@@ -33,6 +33,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   decompose_initialized_variables_pass.h
   decoration_manager.h
   def_use_manager.h
+  desc_sroa.h
   dominator_analysis.h
   dominator_tree.h
   eliminate_dead_constant_pass.h
@@ -134,6 +135,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   decompose_initialized_variables_pass.cpp
   decoration_manager.cpp
   def_use_manager.cpp
+  desc_sroa.cpp
   dominator_analysis.cpp
   dominator_tree.cpp
   eliminate_dead_constant_pass.cpp

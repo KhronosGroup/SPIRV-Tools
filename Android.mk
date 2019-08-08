@@ -95,6 +95,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/decompose_initialized_variables_pass.cpp \
 		source/opt/decoration_manager.cpp \
 		source/opt/def_use_manager.cpp \
+		source/opt/desc_sroa.cpp \
 		source/opt/dominator_analysis.cpp \
 		source/opt/dominator_tree.cpp \
 		source/opt/eliminate_dead_constant_pass.cpp \

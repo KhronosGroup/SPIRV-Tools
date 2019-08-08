@@ -315,6 +315,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateCombineAccessChainsPass());
   } else if (pass_name == "convert-local-access-chains") {
     RegisterPass(CreateLocalAccessChainConvertPass());
+  } else if (pass_name == "descriptor-scalar-replacement") {
+    RegisterPass(CreateDescriptorScalarReplacementPass());
   } else if (pass_name == "eliminate-dead-code-aggressive") {
     RegisterPass(CreateAggressiveDCEPass());
   } else if (pass_name == "propagate-line-info") {
@@ -884,6 +886,11 @@ Optimizer::PassToken CreateSplitInvalidUnreachablePass() {
 Optimizer::PassToken CreateGraphicsRobustAccessPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::GraphicsRobustAccessPass>());
+}
+
+Optimizer::PassToken CreateDescriptorScalarReplacementPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DescriptorScalarReplacement>());
 }
 
 }  // namespace spvtools
