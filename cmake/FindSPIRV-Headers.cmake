@@ -1,8 +1,13 @@
+# This module's sole purpose is to support using the headers if they are checked
+# out in the directories listed below. System directories are not searched, as
+# installed SPIR-V Headers come with a Config module that should be preferred.
+
 find_path(SPIRV_INCLUDE_DIRS "spirv/unified1/spirv.h"
   PATHS
     ${SPIRV-Headers_SOURCE_DIR}
     "${PROJECT_SOURCE_DIR}/external/SPIRV-Headers/include"
     "${PROJECT_SOURCE_DIR}/external/spirv-headers/include"
+    NO_DEFAULT_PATH
     CMAKE_FIND_ROOT_PATH_BOTH)
 
 include(FindPackageHandleStandardArgs)

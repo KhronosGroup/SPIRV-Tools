@@ -176,9 +176,11 @@ endif()
 find_host_package(PythonInterp 3 REQUIRED)
 find_host_package(nosetests)
 
-find_package(SPIRV-Headers QUIET CONFIG)
+# First look for the headers in external/ using the FindSPIRV-Headers.cmake
+# then look for installed headers.
+find_package(SPIRV-Headers MODULE)
 if(NOT SPIRV-Headers_FOUND)
-  find_package(SPIRV-Headers REQUIRED)
+  find_package(SPIRV-Headers CONFIG)
 endif()
 
 # Check for symbol exports on Linux.
