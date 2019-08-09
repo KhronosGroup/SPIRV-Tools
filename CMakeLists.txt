@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.0)
-project(spirv-tools VERSION 2019.4 LANGUAGES CXX)
+project(spirv-tools VERSION 2019.5 LANGUAGES CXX)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
