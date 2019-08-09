@@ -700,6 +700,13 @@ uint32_t IRContext::GetBuiltinInputVarId(uint32_t builtin) {
         reg_type = type_mgr->GetRegisteredType(&v3uint_ty);
         break;
       }
+      case SpvBuiltInTessCoord: {
+        analysis::Float float_ty(32);
+        analysis::Type* reg_float_ty = type_mgr->GetRegisteredType(&float_ty);
+        analysis::Vector v3float_ty(reg_float_ty, 3);
+        reg_type = type_mgr->GetRegisteredType(&v3float_ty);
+        break;
+      }
       default: {
         assert(false && "unhandled builtin");
         return 0;
