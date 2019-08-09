@@ -795,6 +795,10 @@ Optimizer::PassToken CreateGraphicsRobustAccessPass();
 // for the first index.
 Optimizer::PassToken CreateDescriptorScalarReplacementPass();
 
+// Create a pass to replace all OpKill instruction with a function call to a
+// function that has a single OpKill.  This allows more code to be inlined.
+Optimizer::PassToken CreateWrapOpKillPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

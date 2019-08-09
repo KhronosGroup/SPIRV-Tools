@@ -650,6 +650,8 @@ static_library("spvtools_opt") {
     "source/opt/vector_dce.h",
     "source/opt/workaround1209.cpp",
     "source/opt/workaround1209.h",
+    "source/opt/wrap_opkill.cpp",
+    "source/opt/wrap_opkill.h",
   ]
 
   deps = [

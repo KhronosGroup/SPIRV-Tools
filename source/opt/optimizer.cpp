@@ -107,8 +107,10 @@ Optimizer& Optimizer::RegisterPass(PassToken&& p) {
 // or enable more copy propagation.
 Optimizer& Optimizer::RegisterLegalizationPasses() {
   return
-      // Remove unreachable block so that merge return works.
-      RegisterPass(CreateDeadBranchElimPass())
+      // Wrap OpKill instructions so all other code can be inlined.
+      RegisterPass(CreateWrapOpKillPass())
+          // Remove unreachable block so that merge return works.
+          .RegisterPass(CreateDeadBranchElimPass())
           // Merge the returns so we can inline.
           .RegisterPass(CreateMergeReturnPass())
           // Make sure uses and definitions are in the same function.
@@ -154,7 +156,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
-  return RegisterPass(CreateDeadBranchElimPass())
+  return RegisterPass(CreateWrapOpKillPass())
+      .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
@@ -190,7 +193,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
-  return RegisterPass(CreateDeadBranchElimPass())
+  return RegisterPass(CreateWrapOpKillPass())
+      .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
@@ -477,6 +481,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateDecomposeInitializedVariablesPass());
   } else if (pass_name == "graphics-robust-access") {
     RegisterPass(CreateGraphicsRobustAccessPass());
+  } else if (pass_name == "wrap-opkill") {
+    RegisterPass(CreateWrapOpKillPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -891,6 +897,10 @@ Optimizer::PassToken CreateGraphicsRobustAccessPass() {
 Optimizer::PassToken CreateDescriptorScalarReplacementPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::DescriptorScalarReplacement>());
+}
+
+Optimizer::PassToken CreateWrapOpKillPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::WrapOpKill>());
 }
 
 }  // namespace spvtools
