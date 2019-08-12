@@ -23,7 +23,7 @@ namespace opt {
 // Documented in optimizer.hpp
 class WrapOpKill : public Pass {
  public:
-  WrapOpKill() : opkill_func_id_(0), void_type_id_(0) {}
+  WrapOpKill() : void_type_id_(0) {}
 
   const char* name() const override { return "wrap-opkill"; }
 
@@ -54,13 +54,14 @@ class WrapOpKill : public Pass {
   // and contains a single instruction, which is an OpKill.
   uint32_t GetOpKillFuncId();
 
-  // The id of the function whose body is a single OpKill instruction.  If the
-  // id is 0, then the function has not been generated yet.
-  uint32_t opkill_func_id_;
-
   // The id of the void type.  If its value is 0, then the void type has not
   // been found or created yet.
   uint32_t void_type_id_;
+
+  // The function that is a single instruction, which is an OpKill.  The
+  // function has a void return type and takes no parameters. If the function is
+  // |nullptr|, then the function has not been generated.
+  std::unique_ptr<Function> opkill_function_;
 };
 
 }  // namespace opt

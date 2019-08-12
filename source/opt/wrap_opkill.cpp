@@ -31,6 +31,11 @@ Pass::Status WrapOpKill::Process() {
     });
   }
 
+  if (opkill_function_ != nullptr) {
+    assert(modified &&
+           "The function should only be generated if something was modified.");
+    context()->AddFunction(std::move(opkill_function_));
+  }
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 
@@ -67,24 +72,23 @@ uint32_t WrapOpKill::GetVoidFunctionTypeId() {
 }
 
 uint32_t WrapOpKill::GetOpKillFuncId() {
-  if (opkill_func_id_ != 0) {
-    return opkill_func_id_;
+  if (opkill_function_ != nullptr) {
+    return opkill_function_->result_id();
   }
 
-  opkill_func_id_ = TakeNextId();
+  uint32_t opkill_func_id = TakeNextId();
 
   // Generate the function start instruction
   std::unique_ptr<Instruction> func_start(new Instruction(
-      context(), SpvOpFunction, GetVoidTypeId(), opkill_func_id_, {}));
+      context(), SpvOpFunction, GetVoidTypeId(), opkill_func_id, {}));
   func_start->AddOperand({SPV_OPERAND_TYPE_FUNCTION_CONTROL, {0}});
   func_start->AddOperand({SPV_OPERAND_TYPE_ID, {GetVoidFunctionTypeId()}});
-  std::unique_ptr<Function> opkill_function(
-      new Function(std::move(func_start)));
+  opkill_function_.reset(new Function(std::move(func_start)));
 
   // Generate the function end instruction
   std::unique_ptr<Instruction> func_end(
       new Instruction(context(), SpvOpFunctionEnd, 0, 0, {}));
-  opkill_function->SetFunctionEnd(std::move(func_end));
+  opkill_function_->SetFunctionEnd(std::move(func_end));
 
   // Create the one basic block for the function.
   std::unique_ptr<Instruction> label_inst(
@@ -97,19 +101,16 @@ uint32_t WrapOpKill::GetOpKillFuncId() {
   bb->AddInstruction(std::move(kill_inst));
 
   // Add the bb to the function
-  opkill_function->AddBasicBlock(std::move(bb));
+  opkill_function_->AddBasicBlock(std::move(bb));
 
   // Add the function to the module.
-  auto func = opkill_function.get();
-  context()->AddFunction(std::move(opkill_function));
-
   if (context()->AreAnalysesValid(IRContext::kAnalysisDefUse)) {
-    func->ForEachInst(
+    opkill_function_->ForEachInst(
         [this](Instruction* inst) { context()->AnalyzeDefUse(inst); });
   }
 
   if (context()->AreAnalysesValid(IRContext::kAnalysisInstrToBlockMapping)) {
-    for (BasicBlock& basic_block : *func) {
+    for (BasicBlock& basic_block : *opkill_function_) {
       context()->set_instr_block(basic_block.GetLabelInst(), &basic_block);
       for (Instruction& inst : basic_block) {
         context()->set_instr_block(&inst, &basic_block);
@@ -117,7 +118,7 @@ uint32_t WrapOpKill::GetOpKillFuncId() {
     }
   }
 
-  return opkill_func_id_;
+  return opkill_function_->result_id();
 }
 
 }  // namespace opt
