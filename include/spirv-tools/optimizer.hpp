@@ -776,6 +776,11 @@ Optimizer::PassToken CreateDecomposeInitializedVariablesPass();
 // continue-targets to legalize for WebGPU.
 Optimizer::PassToken CreateSplitInvalidUnreachablePass();
 
+/* UE Change Begin: Implement a fused-multiply-add pass to reduce the possibility of reassociation. */
+// Create a pass that will fuse floating point multiply+add pairs to avoid reassociation of instructions.
+Optimizer::PassToken CreateFusedMultiplyAddPass();
+/* UE Change End: Implement a fused-multiply-add pass to reduce the possibility of reassociation. */
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
