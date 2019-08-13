@@ -733,7 +733,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
             uint32_t counter_buffer_id = annotation->GetSingleWordInOperand(2);
             Instruction* counter_buffer_inst =
                 get_def_use_mgr()->GetDef(counter_buffer_id);
-            if (IsDead(counter_buffer_inst)) {
+            if (counter_buffer_inst && IsDead(counter_buffer_inst)) {
               context()->KillInst(annotation);
               modified = true;
             }
