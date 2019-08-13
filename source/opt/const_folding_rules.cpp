@@ -311,9 +311,11 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
       return nullptr;
     }
 
-    if (constants[0] == nullptr || constants[1] == nullptr) {
+    /* UE Begin Change: Workraround a crash caused by DXC using null constants */
+    if (constants[0] == nullptr || constants[1] == nullptr || constants[0]->AsNullConstant() || constants[1]->AsNullConstant()) {
       return nullptr;
     }
+    /* UE End Change: Workraround a crash caused by DXC using null constants */
 
     if (vector_type != nullptr) {
       std::vector<const analysis::Constant*> a_components;
