@@ -320,11 +320,27 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
       std::vector<const analysis::Constant*> b_components;
       std::vector<const analysis::Constant*> results_components;
 
+      /* UE Begin Change: Workaround a crash caused by vector binOp(scalar, vector) somehow ending up in here */
+      if (constants[0]->AsVectorConstant()) {
       a_components = constants[0]->GetVectorComponents(const_mgr);
+      }
+      else if ((constants[0]->AsScalarConstant())) {
+        for (uint32_t i = 0; i < vector_type->element_count(); i++) {
+          a_components.push_back(constants[0]);
+        }
+      }
+      
+      if (constants[1]->AsVectorConstant()) {
       b_components = constants[1]->GetVectorComponents(const_mgr);
+      }
+      else if ((constants[1]->AsScalarConstant())) {
+        for (uint32_t i = 0; i < vector_type->element_count(); i++) {
+          b_components.push_back(constants[1]);
+        }
+      }
 
       // Fold each component of the vector.
-      for (uint32_t i = 0; i < a_components.size(); ++i) {
+      for (uint32_t i = 0; i < vector_type->element_count(); ++i) {
         results_components.push_back(scalar_rule(vector_type->element_type(),
                                                  a_components[i],
                                                  b_components[i], const_mgr));
@@ -332,6 +348,7 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
           return nullptr;
         }
       }
+      /* UE End Change: Workaround a crash caused by vector binOp(scalar, vector) somehow ending up in here */
 
       // Build the constant object and return it.
       std::vector<uint32_t> ids;
