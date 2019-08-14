@@ -171,7 +171,8 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/upgrade_memory_model.cpp \
 		source/opt/value_number_table.cpp \
 		source/opt/vector_dce.cpp \
-		source/opt/workaround1209.cpp
+		source/opt/workaround1209.cpp \
+		source/opt/wrap_opkill.cpp
 
 # Locations of grammar files.
 #
