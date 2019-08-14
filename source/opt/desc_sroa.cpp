@@ -14,7 +14,7 @@
 
 #include "source/opt/desc_sroa.h"
 
-#include <source/util/string_utils.h>
+#include "source/util/string_utils.h"
 
 namespace spvtools {
 namespace opt {
