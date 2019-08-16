@@ -329,6 +329,10 @@ void ScalarReplacementPass::TransferAnnotations(
     if (decoration == SpvDecorationInvariant ||
         decoration == SpvDecorationRestrict) {
       for (auto var : *replacements) {
+        if (var == nullptr) {
+          continue;
+        }
+
         std::unique_ptr<Instruction> annotation(
             new Instruction(context(), SpvOpDecorate, 0, 0,
                             std::initializer_list<Operand>{
@@ -350,6 +354,11 @@ void ScalarReplacementPass::CreateVariable(
     std::vector<Instruction*>* replacements) {
   uint32_t ptrId = GetOrCreatePointerType(typeId);
   uint32_t id = TakeNextId();
+
+  if (id == 0) {
+    replacements->push_back(nullptr);
+  }
+
   std::unique_ptr<Instruction> variable(new Instruction(
       context(), SpvOpVariable, ptrId, id,
       std::initializer_list<Operand>{

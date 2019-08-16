@@ -1621,7 +1621,7 @@ TEST_F(ScalarReplacementTest, TestAccessChainWithNoIndexes) {
 }
 
 // Test that id overflow is handled gracefully.
-TEST_F(ScalarReplacementTest, IdBoundOverflow) {
+TEST_F(ScalarReplacementTest, IdBoundOverflow1) {
   const std::string text = R"(
 OpCapability ImageQuery
 OpMemoryModel Logical GLSL450
@@ -1652,8 +1652,47 @@ OpFunctionEnd
       {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
       {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."}};
   SetMessageConsumer(GetTestMessageConsumer(messages));
-  auto result =
-      SinglePassRunAndDisassemble<ScalarReplacementPass>(text, true, false);
+  auto result = SinglePassRunToBinary<ScalarReplacementPass>(text, true, false);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+}
+
+// Test that id overflow is handled gracefully.
+TEST_F(ScalarReplacementTest, IdBoundOverflow2) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main" %17
+OpExecutionMode %4 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%6 = OpTypeFloat 32
+%7 = OpTypeVector %6 4
+%8 = OpTypeStruct %7
+%9 = OpTypePointer Function %8
+%16 = OpTypePointer Output %7
+%21 = OpTypeInt 32 1
+%22 = OpConstant %21 0
+%23 = OpTypePointer Function %7
+%17 = OpVariable %16 Output
+%4 = OpFunction %2 None %3
+%5 = OpLabel
+%4194300 = OpVariable %23 Function
+%10 = OpVariable %9 Function
+%4194301 = OpAccessChain %23 %10 %22
+%4194302 = OpLoad %7 %4194301
+OpStore %4194300 %4194302
+%15 = OpLoad %7 %4194300
+OpStore %17 %15
+OpReturn
+OpFunctionEnd
+  )";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+  auto result = SinglePassRunToBinary<ScalarReplacementPass>(text, true, false);
   EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
 }
 
