@@ -540,26 +540,24 @@ bool Optimizer::Run(const uint32_t* original_binary,
   impl_->pass_manager.SetTargetEnv(impl_->target_env);
   auto status = impl_->pass_manager.Run(context.get());
 
-  bool binary_changed = false;
-  if (status == opt::Pass::Status::SuccessWithChange) {
-    binary_changed = true;
-  } else if (status == opt::Pass::Status::SuccessWithoutChange) {
+  if (status == opt::Pass::Status::Failure) {
+    return false;
+  }
+
+  optimized_binary->clear();
+  context->module()->ToBinary(optimized_binary, /* skip_nop = */ true);
+
+  if (status == opt::Pass::Status::SuccessWithoutChange) {
     if (optimized_binary->size() != original_binary_size ||
         (memcmp(optimized_binary->data(), original_binary,
                 original_binary_size) != 0)) {
-      binary_changed = true;
       Log(consumer(), SPV_MSG_WARNING, nullptr, {},
           "Binary unexpectedly changed despite optimizer saying there was no "
           "change");
     }
   }
 
-  if (binary_changed) {
-    optimized_binary->clear();
-    context->module()->ToBinary(optimized_binary, /* skip_nop = */ true);
-  }
-
-  return status != opt::Pass::Status::Failure;
+  return true;
 }
 
 Optimizer& Optimizer::SetPrintAll(std::ostream* out) {
