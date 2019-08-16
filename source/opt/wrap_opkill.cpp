@@ -23,12 +23,19 @@ Pass::Status WrapOpKill::Process() {
   bool modified = false;
 
   for (auto& func : *get_module()) {
-    func.ForEachInst([this, &modified](Instruction* inst) {
+    bool successful = func.WhileEachInst([this, &modified](Instruction* inst) {
       if (inst->opcode() == SpvOpKill) {
         modified = true;
-        ReplaceWithFunctionCall(inst);
+        if (!ReplaceWithFunctionCall(inst)) {
+          return false;
+        }
       }
+      return true;
     });
+
+    if (!successful) {
+      return Status::Failure;
+    }
   }
 
   if (opkill_function_ != nullptr) {
@@ -39,15 +46,22 @@ Pass::Status WrapOpKill::Process() {
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 
-void WrapOpKill::ReplaceWithFunctionCall(Instruction* inst) {
+bool WrapOpKill::ReplaceWithFunctionCall(Instruction* inst) {
   assert(inst->opcode() == SpvOpKill &&
          "|inst| must be an OpKill instruction.");
   InstructionBuilder ir_builder(
       context(), inst,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
-  ir_builder.AddFunctionCall(GetVoidTypeId(), GetOpKillFuncId(), {});
+  uint32_t func_id = GetOpKillFuncId();
+  if (func_id == 0) {
+    return false;
+  }
+  if (ir_builder.AddFunctionCall(GetVoidTypeId(), func_id, {}) == nullptr) {
+    return false;
+  }
   ir_builder.AddUnreachable();
   context()->KillInst(inst);
+  return true;
 }
 
 uint32_t WrapOpKill::GetVoidTypeId() {
@@ -77,6 +91,9 @@ uint32_t WrapOpKill::GetOpKillFuncId() {
   }
 
   uint32_t opkill_func_id = TakeNextId();
+  if (opkill_func_id == 0) {
+    return 0;
+  }
 
   // Generate the function start instruction
   std::unique_ptr<Instruction> func_start(new Instruction(
@@ -91,8 +108,12 @@ uint32_t WrapOpKill::GetOpKillFuncId() {
   opkill_function_->SetFunctionEnd(std::move(func_end));
 
   // Create the one basic block for the function.
+  uint32_t lab_id = TakeNextId();
+  if (lab_id == 0) {
+    return 0;
+  }
   std::unique_ptr<Instruction> label_inst(
-      new Instruction(context(), SpvOpLabel, 0, TakeNextId(), {}));
+      new Instruction(context(), SpvOpLabel, 0, lab_id, {}));
   std::unique_ptr<BasicBlock> bb(new BasicBlock(std::move(label_inst)));
 
   // Add the OpKill to the basic block

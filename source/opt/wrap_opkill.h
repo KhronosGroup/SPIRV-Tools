@@ -41,8 +41,9 @@ class WrapOpKill : public Pass {
  private:
   // Replaces the OpKill instruction |inst| with a function call to a function
   // that contains a single instruction, which is OpKill.  An OpUnreachable
-  // instruction will be placed after the function call.
-  void ReplaceWithFunctionCall(Instruction* inst);
+  // instruction will be placed after the function call.  Return true if
+  // successful.
+  bool ReplaceWithFunctionCall(Instruction* inst);
 
   // Returns the id of the void type.
   uint32_t GetVoidTypeId();
@@ -50,8 +51,9 @@ class WrapOpKill : public Pass {
   // Returns the id of the function type for a void function with no parameters.
   uint32_t GetVoidFunctionTypeId();
 
-  // Return the id of a function that has return type void, no no parameters,
-  // and contains a single instruction, which is an OpKill.
+  // Return the id of a function that has return type void, has no parameters,
+  // and contains a single instruction, which is an OpKill.  Returns 0 if the
+  // function could not be generated.
   uint32_t GetOpKillFuncId();
 
   // The id of the void type.  If its value is 0, then the void type has not
