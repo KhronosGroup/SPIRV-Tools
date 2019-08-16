@@ -143,7 +143,8 @@ class ScalarReplacementPass : public Pass {
   bool CheckStore(const Instruction* inst, uint32_t index) const;
 
   // Creates a variable of type |typeId| from the |index|'th element of
-  // |varInst|. The new variable is added to |replacements|.
+  // |varInst|. The new variable is added to |replacements|.  If the variable
+  // could not be created, then |nullptr| is appended to |replacements|.
   void CreateVariable(uint32_t typeId, Instruction* varInst, uint32_t index,
                       std::vector<Instruction*>* replacements);
 
