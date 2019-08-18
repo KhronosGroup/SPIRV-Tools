@@ -193,6 +193,75 @@ TEST_F(WrapOpKillTest, MultipleOpKillInDifferentFunc) {
   SinglePassRunAndMatch<WrapOpKill>(text, true);
 }
 
+TEST_F(WrapOpKillTest, IdBoundOverflow1) {
+  const std::string text = R"(
+OpCapability GeometryStreams
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main"
+OpExecutionMode %4 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%4 = OpFunction %2 Pure|Const %3
+%4194302 = OpLabel
+OpKill
+OpFunctionEnd
+  )";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+  auto result = SinglePassRunToBinary<WrapOpKill>(text, true);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+}
+
+TEST_F(WrapOpKillTest, IdBoundOverflow2) {
+  const std::string text = R"(
+OpCapability GeometryStreams
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main"
+OpExecutionMode %4 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%4 = OpFunction %2 Pure|Const %3
+%4194301 = OpLabel
+OpKill
+OpFunctionEnd
+  )";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+  auto result = SinglePassRunToBinary<WrapOpKill>(text, true);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+}
+
+TEST_F(WrapOpKillTest, IdBoundOverflow3) {
+  const std::string text = R"(
+OpCapability GeometryStreams
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main"
+OpExecutionMode %4 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%4 = OpFunction %2 Pure|Const %3
+%4194300 = OpLabel
+OpKill
+OpFunctionEnd
+  )";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+  auto result = SinglePassRunToBinary<WrapOpKill>(text, true);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

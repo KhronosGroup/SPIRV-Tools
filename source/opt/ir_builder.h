@@ -473,9 +473,12 @@ class InstructionBuilder {
       operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
     }
 
-    std::unique_ptr<Instruction> new_inst(
-        new Instruction(GetContext(), SpvOpFunctionCall, result_type,
-                        GetContext()->TakeNextId(), operands));
+    uint32_t result_id = GetContext()->TakeNextId();
+    if (result_id == 0) {
+      return nullptr;
+    }
+    std::unique_ptr<Instruction> new_inst(new Instruction(
+        GetContext(), SpvOpFunctionCall, result_type, result_id, operands));
     return AddInstruction(std::move(new_inst));
   }
 
