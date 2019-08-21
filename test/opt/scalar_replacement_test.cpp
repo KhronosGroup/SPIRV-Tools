@@ -1696,6 +1696,62 @@ OpFunctionEnd
   EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
 }
 
+// Test that id overflow is handled gracefully.
+TEST_F(ScalarReplacementTest, IdBoundOverflow3) {
+  const std::string text = R"(
+OpCapability InterpolationFunction
+OpExtension "z"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main"
+OpExecutionMode %4 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%6 = OpTypeFloat 32
+%7 = OpTypeStruct %6 %6
+%9 = OpTypePointer Function %7
+%18 = OpTypeFunction %7 %9
+%21 = OpTypeInt 32 0
+%22 = OpConstant %21 4293000676
+%4194302 = OpConstantNull %6
+%4 = OpFunction %2 Inline|Pure %3
+%786464 = OpLabel
+%4194298 = OpVariable %9 Function
+%10 = OpVariable %9 Function
+%4194299 = OpUDiv %21 %22 %22
+%4194300 = OpLoad %7 %10
+%50959 = OpLoad %7 %4194298
+OpKill
+OpFunctionEnd
+%1 = OpFunction %7 None %18
+%19 = OpFunctionParameter %9
+%147667 = OpLabel
+%2044391 = OpUDiv %21 %22 %22
+%25 = OpLoad %7 %19
+OpReturnValue %25
+OpFunctionEnd
+%4194295 = OpFunction %2 None %3
+%4194296 = OpLabel
+OpKill
+OpFunctionEnd
+  )";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."},
+      {SPV_MSG_ERROR, "", 0, 0, "ID overflow. Try running compact-ids."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+  auto result = SinglePassRunToBinary<ScalarReplacementPass>(text, true, false);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+}
+
 // Test that replacements for OpAccessChain do not go out of bounds.
 // https://github.com/KhronosGroup/SPIRV-Tools/issues/2609.
 TEST_F(ScalarReplacementTest, OutOfBoundOpAccessChain) {
