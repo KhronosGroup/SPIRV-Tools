@@ -248,6 +248,24 @@ uint32_t DescriptorScalarReplacement::CreateReplacementVariable(
     context()->AddAnnotationInst(std::move(new_decoration));
   }
 
+  // Create a new OpName for the replacement variable.
+  for (auto p : context()->GetNames(var->result_id())) {
+    Instruction* name_inst = p.second;
+    std::string name_str = utils::MakeString(name_inst->GetOperand(1).words);
+    name_str += "[";
+    name_str += utils::ToString(idx);
+    name_str += "]";
+
+    std::unique_ptr<Instruction> new_name(new Instruction(
+        context(), SpvOpName, 0, 0,
+        std::initializer_list<Operand>{
+            {SPV_OPERAND_TYPE_ID, {id}},
+            {SPV_OPERAND_TYPE_LITERAL_STRING, utils::MakeVector(name_str)}}));
+    Instruction* new_name_inst = new_name.get();
+    context()->AddDebug2Inst(std::move(new_name));
+    get_def_use_mgr()->AnalyzeInstDefUse(new_name_inst);
+  }
+
   return id;
 }
 
