@@ -54,23 +54,51 @@ using ConstantFoldingRule = std::function<const analysis::Constant*(
 
 class ConstantFoldingRules {
  public:
-  ConstantFoldingRules();
+  ConstantFoldingRules(IRContext* ctx) : context_(ctx) {}
+  virtual ~ConstantFoldingRules() = default;
 
   // Returns true if there is at least 1 folding rule for |opcode|.
-  bool HasFoldingRule(SpvOp opcode) const { return rules_.count(opcode); }
+  bool HasFoldingRule(const Instruction* inst) const {
+    return !GetRulesForOpcode(inst).empty();
+  }
 
-  // Returns an vector of constant folding rules for |opcode|.
+  // Returns true if there is at least 1 folding rule for |inst|.
   const std::vector<ConstantFoldingRule>& GetRulesForOpcode(
-      SpvOp opcode) const {
-    auto it = rules_.find(opcode);
-    if (it != rules_.end()) {
-      return it->second;
+      const Instruction* inst) const {
+    if (inst->opcode() != SpvOpExtInst) {
+      auto it = rules_.find(inst->opcode());
+      if (it != rules_.end()) {
+        return it->second;
+      }
+    } else {
+      uint32_t ext_inst_id = inst->GetSingleWordInOperand(0);
+      uint32_t ext_opcode = inst->GetSingleWordInOperand(1);
+      auto it = ext_rules_.find({ext_inst_id, ext_opcode});
+      if (it != ext_rules_.end()) {
+        return it->second;
+      }
     }
     return empty_vector_;
   }
 
- private:
+  // Add the folding rules.
+  virtual void AddFoldingRules();
+
+ protected:
+  // |rules[opcode]| is the set of rules that can be applied to instructions
+  // with |opcode| as the opcode.
   std::unordered_map<uint32_t, std::vector<ConstantFoldingRule>> rules_;
+
+  // The folding rules for extended instructions.
+  std::map<std::pair<uint32_t, uint32_t>, std::vector<ConstantFoldingRule>>
+      ext_rules_;
+
+ private:
+  // The context that the instruction to be folded will be a part of.
+  IRContext* context_;
+
+  // The empty set of rules to be used as the default return value in
+  // |GetRulesForOpcode|.
   std::vector<ConstantFoldingRule> empty_vector_;
 };
 
