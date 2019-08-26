@@ -61,7 +61,8 @@ class FoldingRules {
   explicit FoldingRules(IRContext* ctx) : context_(ctx) {}
   virtual ~FoldingRules() = default;
 
-  const std::vector<FoldingRule>& GetRulesForOpcode(Instruction* inst) const {
+  const std::vector<FoldingRule>& GetRulesForInstruction(
+      Instruction* inst) const {
     if (inst->opcode() != SpvOpExtInst) {
       auto it = rules_.find(inst->opcode());
       if (it != rules_.end()) {
@@ -85,7 +86,7 @@ class FoldingRules {
 
  protected:
   // The folding rules for core instructions.
-  std::unordered_map<SpvOp, std::vector<FoldingRule>> rules_;
+  std::unordered_map<uint32_t, std::vector<FoldingRule>> rules_;
 
   // The folding rules for extended instructions.
   std::map<std::pair<uint32_t, uint32_t>, std::vector<FoldingRule>> ext_rules_;

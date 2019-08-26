@@ -238,7 +238,8 @@ bool InstructionFolder::FoldInstructionInternal(Instruction* inst) const {
   std::vector<const analysis::Constant*> constants =
       const_manager->GetOperandConstants(inst);
 
-  for (const FoldingRule& rule : GetFoldingRules().GetRulesForOpcode(inst)) {
+  for (const FoldingRule& rule :
+       GetFoldingRules().GetRulesForInstruction(inst)) {
     if (rule(context_, inst, constants)) {
       return true;
     }
@@ -640,7 +641,7 @@ Instruction* InstructionFolder::FoldInstructionToConstant(
   });
 
   const analysis::Constant* folded_const = nullptr;
-  for (auto rule : GetConstantFoldingRules().GetRulesForOpcode(inst)) {
+  for (auto rule : GetConstantFoldingRules().GetRulesForInstruction(inst)) {
     folded_const = rule(context_, inst, constants);
     if (folded_const != nullptr) {
       Instruction* const_inst =

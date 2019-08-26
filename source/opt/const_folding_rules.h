@@ -59,11 +59,11 @@ class ConstantFoldingRules {
 
   // Returns true if there is at least 1 folding rule for |opcode|.
   bool HasFoldingRule(const Instruction* inst) const {
-    return !GetRulesForOpcode(inst).empty();
+    return !GetRulesForInstruction(inst).empty();
   }
 
   // Returns true if there is at least 1 folding rule for |inst|.
-  const std::vector<ConstantFoldingRule>& GetRulesForOpcode(
+  const std::vector<ConstantFoldingRule>& GetRulesForInstruction(
       const Instruction* inst) const {
     if (inst->opcode() != SpvOpExtInst) {
       auto it = rules_.find(inst->opcode());
@@ -98,7 +98,7 @@ class ConstantFoldingRules {
   IRContext* context_;
 
   // The empty set of rules to be used as the default return value in
-  // |GetRulesForOpcode|.
+  // |GetRulesForInstruction|.
   std::vector<ConstantFoldingRule> empty_vector_;
 };
 
