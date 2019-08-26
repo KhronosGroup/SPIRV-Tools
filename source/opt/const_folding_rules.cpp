@@ -842,23 +842,23 @@ ConstantFoldingRule FoldFMix() {
                                    utils::FloatProxy<double>(1.0).GetWords());
     }
 
-    const analysis::Constant* t =
+    const analysis::Constant* temp1 =
         FOLD_FPARITH_OP(-)(constants[1]->type(), one, constants[3], const_mgr);
-    if (t == nullptr) {
+    if (temp1 == nullptr) {
       return nullptr;
     }
 
-    const analysis::Constant* a =
-        FOLD_FPARITH_OP(*)(constants[1]->type(), constants[1], t, const_mgr);
-    if (a == nullptr) {
+    const analysis::Constant* temp2 = FOLD_FPARITH_OP(*)(
+        constants[1]->type(), constants[1], temp1, const_mgr);
+    if (temp2 == nullptr) {
       return nullptr;
     }
-    const analysis::Constant* b = FOLD_FPARITH_OP(*)(
+    const analysis::Constant* temp3 = FOLD_FPARITH_OP(*)(
         constants[2]->type(), constants[2], constants[3], const_mgr);
-    if (b == nullptr) {
+    if (temp3 == nullptr) {
       return nullptr;
     }
-    return FOLD_FPARITH_OP(+)(a->type(), a, b, const_mgr);
+    return FOLD_FPARITH_OP(+)(temp2->type(), temp2, temp3, const_mgr);
   };
 }
 
