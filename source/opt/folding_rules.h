@@ -58,11 +58,12 @@ using FoldingRule = std::function<bool(
 
 class FoldingRules {
  public:
+  using FoldingRuleSet = std::vector<FoldingRule>;
+
   explicit FoldingRules(IRContext* ctx) : context_(ctx) {}
   virtual ~FoldingRules() = default;
 
-  const std::vector<FoldingRule>& GetRulesForInstruction(
-      Instruction* inst) const {
+  const FoldingRuleSet& GetRulesForInstruction(Instruction* inst) const {
     if (inst->opcode() != SpvOpExtInst) {
       auto it = rules_.find(inst->opcode());
       if (it != rules_.end()) {
@@ -86,14 +87,29 @@ class FoldingRules {
 
  protected:
   // The folding rules for core instructions.
-  std::unordered_map<uint32_t, std::vector<FoldingRule>> rules_;
+  std::unordered_map<uint32_t, FoldingRuleSet> rules_;
 
   // The folding rules for extended instructions.
-  std::map<std::pair<uint32_t, uint32_t>, std::vector<FoldingRule>> ext_rules_;
+  struct Key {
+    uint32_t instruction_set;
+    uint32_t opcode;
+  };
+
+  friend bool operator<(const Key& a, const Key& b) {
+    if (a.instruction_set < b.instruction_set) {
+      return true;
+    }
+    if (a.instruction_set > b.instruction_set) {
+      return false;
+    }
+    return a.opcode < b.opcode;
+  }
+
+  std::map<Key, FoldingRuleSet> ext_rules_;
 
  private:
   IRContext* context_;
-  std::vector<FoldingRule> empty_vector_;
+  FoldingRuleSet empty_vector_;
 };
 
 }  // namespace opt
