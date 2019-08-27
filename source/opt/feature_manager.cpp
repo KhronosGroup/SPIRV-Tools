@@ -71,6 +71,9 @@ void FeatureManager::AddExtInstImportIds(Module* module) {
 }
 
 bool operator==(const FeatureManager& a, const FeatureManager& b) {
+  // We check that the addresses of the grammars are the same because they
+  // are large objects, and this is faster.  It can be changed if needed as a
+  // later time.
   if (&a.grammar_ != &b.grammar_) {
     return false;
   }
