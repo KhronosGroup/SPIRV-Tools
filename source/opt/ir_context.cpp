@@ -156,13 +156,19 @@ Instruction* IRContext::KillInst(Instruction* inst) {
       decoration_mgr_->RemoveDecoration(inst);
     }
   }
-
   if (type_mgr_ && IsTypeInst(inst->opcode())) {
     type_mgr_->RemoveId(inst->result_id());
   }
-
   if (constant_mgr_ && IsConstantInst(inst->opcode())) {
     constant_mgr_->RemoveId(inst->result_id());
+  }
+  if (inst->opcode() == SpvOpCapability || inst->opcode() == SpvOpExtension) {
+    // We reset the feature manager, instead of updating it, because it is just
+    // as much work.  We would have to remove all capabilities implied by this
+    // capability that are not also implied by the remaining OpCapability
+    // instructions. We could update extensions, but we will see if it is
+    // needed.
+    ResetFeatureManager();
   }
 
   RemoveFromIdToName(inst);
@@ -283,6 +289,15 @@ bool IRContext::IsConsistent() {
     analysis::DecorationManager current(module());
 
     if (*dec_mgr != current) {
+      return false;
+    }
+  }
+
+  if (feature_mgr_ != nullptr) {
+    FeatureManager current(grammar_);
+    current.Analyze(module());
+
+    if (current != *feature_mgr_) {
       return false;
     }
   }
