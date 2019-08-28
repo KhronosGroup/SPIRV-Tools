@@ -487,6 +487,8 @@ class IRContext {
     return feature_mgr_.get();
   }
 
+  void ResetFeatureManager() { feature_mgr_.reset(nullptr); }
+
   // Returns the grammar for this context.
   const AssemblyGrammar& grammar() const { return grammar_; }
 
@@ -925,12 +927,19 @@ void IRContext::debug_clear() { module_->debug_clear(); }
 
 void IRContext::AddCapability(std::unique_ptr<Instruction>&& c) {
   AddCombinatorsForCapability(c->GetSingleWordInOperand(0));
+  if (feature_mgr_ != nullptr) {
+    feature_mgr_->AddCapability(
+        static_cast<SpvCapability>(c->GetSingleWordInOperand(0)));
+  }
   module()->AddCapability(std::move(c));
 }
 
 void IRContext::AddExtension(std::unique_ptr<Instruction>&& e) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->AnalyzeInstDefUse(e.get());
+  }
+  if (feature_mgr_ != nullptr) {
+    feature_mgr_->AddExtension(&*e);
   }
   module()->AddExtension(std::move(e));
 }
