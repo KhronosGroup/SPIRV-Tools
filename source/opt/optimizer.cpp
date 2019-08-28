@@ -14,6 +14,7 @@
 
 #include "spirv-tools/optimizer.hpp"
 
+#include <cassert>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -547,15 +548,16 @@ bool Optimizer::Run(const uint32_t* original_binary,
   optimized_binary->clear();
   context->module()->ToBinary(optimized_binary, /* skip_nop = */ true);
 
+#ifndef NDEBUG
   if (status == opt::Pass::Status::SuccessWithoutChange) {
-    if (optimized_binary->size() != original_binary_size ||
-        (memcmp(optimized_binary->data(), original_binary,
-                original_binary_size) != 0)) {
-      Log(consumer(), SPV_MSG_WARNING, nullptr, {},
-          "Binary unexpectedly changed despite optimizer saying there was no "
-          "change");
-    }
+    auto changed = optimized_binary->size() != original_binary_size ||
+                   memcmp(optimized_binary->data(), original_binary,
+                          original_binary_size) != 0;
+    assert(!changed &&
+           "Binary unexpectedly changed despite optimizer saying there was no "
+           "change");
   }
+#endif  // !NDEBUG
 
   return true;
 }
