@@ -450,6 +450,7 @@ typedef enum {
   SPV_ENV_UNIVERSAL_1_4,  // SPIR-V 1.4 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_1_SPIRV_1_4,  // Vulkan 1.1 with SPIR-V 1.4 binary.
   SPV_ENV_UNIVERSAL_1_5,  // SPIR-V 1.5 latest revision, no other restrictions.
+  SPV_ENV_VULKAN_1_2,     // Vulkan 1.2 latest revision.
 } spv_target_env;
 
 // SPIR-V Validator can be parameterized with the following Universal Limits.
