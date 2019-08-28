@@ -330,6 +330,12 @@ class ValidationState_t {
     return module_capabilities_.Contains(cap);
   }
 
+  /// Returns a reference to the set of capabilities in the module.
+  /// This is provided for debuggability.
+  const CapabilitySet& module_capabilities() const {
+    return module_capabilities_;
+  }
+
   /// Returns true if the extension is enabled in the module.
   bool HasExtension(Extension ext) const {
     return module_extensions_.Contains(ext);
