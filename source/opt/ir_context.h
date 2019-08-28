@@ -931,9 +931,9 @@ void IRContext::debug_clear() { module_->debug_clear(); }
 
 void IRContext::AddCapability(SpvCapability capability) {
   if (!get_feature_mgr()->HasCapability(capability)) {
-    std::unique_ptr<Instruction> capability_inst(
-        new Instruction(this, SpvOpCapability, 0, 0,
-                        {{SPV_OPERAND_TYPE_CAPABILITY, {capability}}}));
+    std::unique_ptr<Instruction> capability_inst(new Instruction(
+        this, SpvOpCapability, 0, 0,
+        {{SPV_OPERAND_TYPE_CAPABILITY, {static_cast<uint32_t>(capability)}}}));
     AddCapability(std::move(capability_inst));
   }
 }
