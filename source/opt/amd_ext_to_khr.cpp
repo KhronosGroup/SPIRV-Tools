@@ -51,8 +51,9 @@ FoldingRule ReplaceGroupNonuniformOperationOpCode(SpvOp new_opcode) {
     case SpvOpGroupNonUniformFMax:
       break;
     default:
-      assert(false &&
-             "Should replacing with a group non uniform arithmetic operation.");
+      assert(
+          false &&
+          "Should be replacing with a group non uniform arithmetic operation.");
   }
 
   return [new_opcode](IRContext* ctx, Instruction* inst,
@@ -69,7 +70,7 @@ FoldingRule ReplaceGroupNonuniformOperationOpCode(SpvOp new_opcode) {
         break;
       default:
         assert(false &&
-               "Should replacing a group non uniform arithmetic operation.");
+               "Should be replacing a group non uniform arithmetic operation.");
     }
 
     ctx->AddCapability(SpvCapabilityGroupNonUniformArithmetic);
