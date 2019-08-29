@@ -299,6 +299,9 @@ Pass::Status AmdExtensionToKhrPass::Process() {
     changed = true;
   }
 
+  // The replacements that take place use instructions that are missing before
+  // SPIR-V 1.3. If we changed something, we will have to make sure the version
+  // is at least SPIR-V 1.3 to make sure those instruction can be used.
   if (changed) {
     uint32_t version = get_module()->version();
     if (version < 0x00010300 /*1.3*/) {
