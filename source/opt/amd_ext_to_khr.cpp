@@ -98,8 +98,8 @@ FoldingRule NotImplementedYet() {
 // with
 //
 //     %id = OpLoad %uint %SubgroupLocalInvocationId
-//    %cmp = OpIEqual %bool %21 %invocation_index
-// %result = OpSelect %type %23 %write_value %input_value
+//    %cmp = OpIEqual %bool %id %invocation_index
+// %result = OpSelect %type %cmp %write_value %input_value
 //
 // Also adding the capabilities and builtins that are needed.
 FoldingRule ReplaceWriteInvocation() {
@@ -151,13 +151,13 @@ FoldingRule ReplaceWriteInvocation() {
 // AMD's shader compiler expects a 64-bit integer mask.
 //
 //     %var = OpLoad %v4uint %SubgroupLtMaskKHR
-// %shuffle = OpVectorShuffle %v2uint %24 %24 0 1
-//    %cast = OpBitcast %ulong %25
+// %shuffle = OpVectorShuffle %v2uint %var %var 0 1
+//    %cast = OpBitcast %ulong %shuffle
 //
 // Perform the mask and count the bits.
 //
-//     %and = OpBitwiseAnd %ulong %26 %mask
-//  %result = OpBitCount %uint %27
+//     %and = OpBitwiseAnd %ulong %cast %mask
+//  %result = OpBitCount %uint %and
 //
 // Also adding the capabilities and builtins that are needed.
 FoldingRule ReplaceMbcnt() {
