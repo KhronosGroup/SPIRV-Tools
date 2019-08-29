@@ -258,7 +258,6 @@ bool IRContext::IsConsistent() {
 #ifndef SPIRV_CHECK_CONTEXT
   return true;
 #endif
-
   if (AreAnalysesValid(kAnalysisDefUse)) {
     analysis::DefUseManager new_def_use(module());
     if (*get_def_use_mgr() != new_def_use) {
@@ -702,7 +701,8 @@ uint32_t IRContext::GetBuiltinInputVarId(uint32_t builtin) {
       case SpvBuiltInVertexIndex:
       case SpvBuiltInInstanceIndex:
       case SpvBuiltInPrimitiveId:
-      case SpvBuiltInInvocationId: {
+      case SpvBuiltInInvocationId:
+      case SpvBuiltInSubgroupLocalInvocationId: {
         analysis::Integer uint_ty(32, false);
         reg_type = type_mgr->GetRegisteredType(&uint_ty);
         break;
@@ -720,6 +720,13 @@ uint32_t IRContext::GetBuiltinInputVarId(uint32_t builtin) {
         analysis::Type* reg_float_ty = type_mgr->GetRegisteredType(&float_ty);
         analysis::Vector v3float_ty(reg_float_ty, 3);
         reg_type = type_mgr->GetRegisteredType(&v3float_ty);
+        break;
+      }
+      case SpvBuiltInSubgroupLtMask: {
+        analysis::Integer uint_ty(32, false);
+        analysis::Type* reg_uint_ty = type_mgr->GetRegisteredType(&uint_ty);
+        analysis::Vector v4uint_ty(reg_uint_ty, 4);
+        reg_type = type_mgr->GetRegisteredType(&v4uint_ty);
         break;
       }
       default: {

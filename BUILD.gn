@@ -451,6 +451,8 @@ static_library("spvtools_opt") {
   sources = [
     "source/opt/aggressive_dead_code_elim_pass.cpp",
     "source/opt/aggressive_dead_code_elim_pass.h",
+    "source/opt/amd_ext_to_khr.cpp",
+    "source/opt/amd_ext_to_khr.h",
     "source/opt/basic_block.cpp",
     "source/opt/basic_block.h",
     "source/opt/block_merge_pass.cpp",

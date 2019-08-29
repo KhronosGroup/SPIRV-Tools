@@ -493,6 +493,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateGraphicsRobustAccessPass());
   } else if (pass_name == "wrap-opkill") {
     RegisterPass(CreateWrapOpKillPass());
+  } else if (pass_name == "amd-ext-to-khr") {
+    RegisterPass(CreateAmdExtToKhrPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -917,6 +919,11 @@ Optimizer::PassToken CreateDescriptorScalarReplacementPass() {
 
 Optimizer::PassToken CreateWrapOpKillPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::WrapOpKill>());
+}
+
+Optimizer::PassToken CreateAmdExtToKhrPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::AmdExtensionToKhrPass>());
 }
 
 }  // namespace spvtools
