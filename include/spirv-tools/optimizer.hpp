@@ -824,7 +824,7 @@ Optimizer::PassToken CreateDescriptorScalarReplacementPass();
 Optimizer::PassToken CreateWrapOpKillPass();
 
 // Replaces the extensions VK_AMD_shader_ballot,VK_AMD_gcn_shader, and
-// VK_AMD_shader_trinary_minmax with equivalant code using core instructions and
+// VK_AMD_shader_trinary_minmax with equivalent code using core instructions and
 // capabilities.
 Optimizer::PassToken CreateAmdExtToKhrPass();
 

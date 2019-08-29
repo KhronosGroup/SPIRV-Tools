@@ -36,9 +36,42 @@ analysis::Type* GetUIntType(IRContext* ctx) {
   return ctx->get_type_mgr()->GetRegisteredType(&int_type);
 }
 
-FoldingRule ReplaceOpCode(SpvOp new_opcode) {
+// Returns a folding rule that will replace the opcode with |opcode| and add
+// the capabilities required.  The folding rule assumes it is folding an
+// OpGroup*NonUniformAMD instruction from the SPV_AMD_shader_ballot extension.
+FoldingRule ReplaceGroupNonuniformOperationOpCode(SpvOp new_opcode) {
+  switch (new_opcode) {
+    case SpvOpGroupNonUniformIAdd:
+    case SpvOpGroupNonUniformFAdd:
+    case SpvOpGroupNonUniformUMin:
+    case SpvOpGroupNonUniformSMin:
+    case SpvOpGroupNonUniformFMin:
+    case SpvOpGroupNonUniformUMax:
+    case SpvOpGroupNonUniformSMax:
+    case SpvOpGroupNonUniformFMax:
+      break;
+    default:
+      assert(false &&
+             "Should replacing with a group non uniform arithmetic operation.");
+  }
+
   return [new_opcode](IRContext* ctx, Instruction* inst,
                       const std::vector<const analysis::Constant*>&) {
+    switch (inst->opcode()) {
+      case SpvOpGroupIAddNonUniformAMD:
+      case SpvOpGroupFAddNonUniformAMD:
+      case SpvOpGroupUMinNonUniformAMD:
+      case SpvOpGroupSMinNonUniformAMD:
+      case SpvOpGroupFMinNonUniformAMD:
+      case SpvOpGroupUMaxNonUniformAMD:
+      case SpvOpGroupSMaxNonUniformAMD:
+      case SpvOpGroupFMaxNonUniformAMD:
+        break;
+      default:
+        assert(false &&
+               "Should replacing a group non uniform arithmetic operation.");
+    }
+
     ctx->AddCapability(SpvCapabilityGroupNonUniformArithmetic);
     inst->SetOpcode(new_opcode);
     return true;
@@ -53,6 +86,22 @@ FoldingRule NotImplementedYet() {
   };
 }
 
+// Returns a folding rule that will replace the WriteInvocationAMD extended
+// instruction in the SPV_AMD_shader_ballot extension.
+//
+// The instruction
+//
+// clang-format off
+//    %result = OpExtInst %type %1 WriteInvocationAMD %input_value %write_value %invocation_index
+// clang-format on
+//
+// with
+//
+//     %id = OpLoad %uint %SubgroupLocalInvocationId
+//    %cmp = OpIEqual %bool %21 %invocation_index
+// %result = OpSelect %type %23 %write_value %input_value
+//
+// Also adding the capabilities and builtins that are needed.
 FoldingRule ReplaceWriteInvocation() {
   return [](IRContext* ctx, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
@@ -89,6 +138,28 @@ FoldingRule ReplaceWriteInvocation() {
   };
 }
 
+// Returns a folding rule that will replace the MbcntAMD extended instruction in
+// the SPV_AMD_shader_ballot extension.
+//
+// The instruction
+//
+//  %result = OpExtInst %uint %1 MbcntAMD %mask
+//
+// with
+//
+// Get SubgroupLtMask and convert the first 64-bits into a uint64_t because
+// AMD's shader compiler expects a 64-bit integer mask.
+//
+//     %var = OpLoad %v4uint %SubgroupLtMaskKHR
+// %shuffle = OpVectorShuffle %v2uint %24 %24 0 1
+//    %cast = OpBitcast %ulong %25
+//
+// Perform the mask and count the bits.
+//
+//     %and = OpBitwiseAnd %ulong %26 %mask
+//  %result = OpBitCount %uint %27
+//
+// Also adding the capabilities and builtins that are needed.
 FoldingRule ReplaceMbcnt() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
@@ -143,21 +214,21 @@ class AmdExtFoldingRules : public FoldingRules {
  protected:
   virtual void AddFoldingRules() override {
     rules_[SpvOpGroupIAddNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformIAdd));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformIAdd));
     rules_[SpvOpGroupFAddNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformFAdd));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformFAdd));
     rules_[SpvOpGroupUMinNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformUMin));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformUMin));
     rules_[SpvOpGroupSMinNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformSMin));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformSMin));
     rules_[SpvOpGroupFMinNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformFMin));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformFMin));
     rules_[SpvOpGroupUMaxNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformUMax));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformUMax));
     rules_[SpvOpGroupSMaxNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformSMax));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformSMax));
     rules_[SpvOpGroupFMaxNonUniformAMD].push_back(
-        ReplaceOpCode(SpvOpGroupNonUniformFMax));
+        ReplaceGroupNonuniformOperationOpCode(SpvOpGroupNonUniformFMax));
 
     uint32_t extension_id =
         context()->module()->GetExtInstImportId("SPV_AMD_shader_ballot");

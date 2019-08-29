@@ -22,7 +22,7 @@
 namespace spvtools {
 namespace opt {
 
-// Replaces the extensions VK_AMD_shader_ballot,VK_AMD_gcn_shader, and
+// Replaces the extensions VK_AMD_shader_ballot, VK_AMD_gcn_shader, and
 // VK_AMD_shader_trinary_minmax with equivalant code using core instructions and
 // capabilities.
 class AmdExtensionToKhrPass : public Pass {

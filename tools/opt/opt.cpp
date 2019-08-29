@@ -110,7 +110,7 @@ Options (in lexicographical order):)",
       program, program);
   printf(R"(
   --amd-ext-to-khr
-               Replaces the extensions VK_AMD_shader_ballot,VK_AMD_gcn_shader,
+               Replaces the extensions VK_AMD_shader_ballot, VK_AMD_gcn_shader,
                and VK_AMD_shader_trinary_minmax with equivalant code using core
                instructions and capabilities.)");
   printf(R"(
