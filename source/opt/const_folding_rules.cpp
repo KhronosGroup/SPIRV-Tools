@@ -300,12 +300,12 @@ ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
 // |scalar_rule|.  If |result_type| is a vector, then |scalar_rule| is applied
 // per component.
 const analysis::Constant* FoldFPBinaryOp(
-    BinaryScalarFoldingRule scalar_rule, uint32_t result_type,
+    BinaryScalarFoldingRule scalar_rule, uint32_t result_type_id,
     const std::vector<const analysis::Constant*>& constants,
     IRContext* context) {
   analysis::ConstantManager* const_mgr = context->get_constant_mgr();
   analysis::TypeManager* type_mgr = context->get_type_mgr();
-  const analysis::Type* result_type = type_mgr->GetType(result_type);
+  const analysis::Type* result_type = type_mgr->GetType(result_type_id);
   const analysis::Vector* vector_type = result_type->AsVector();
 
   if (constants[0] == nullptr || constants[1] == nullptr) {
@@ -444,29 +444,33 @@ UnaryScalarFoldingRule FoldQuantizeToF16Scalar() {
 
 // This macro defines a |BinaryScalarFoldingRule| that applies |op|.  The
 // operator |op| must work for both float and double, and use syntax "f1 op f2".
-#define FOLD_FPARITH_OP(op)                                                \
-  [](const analysis::Type* result_type, const analysis::Constant* a,       \
-     const analysis::Constant* b,                                          \
-     analysis::ConstantManager* const_mgr_in_macro)                        \
-      -> const analysis::Constant* {                                       \
-    assert(result_type != nullptr && a != nullptr && b != nullptr);        \
-    assert(result_type == a->type() && result_type == b->type());          \
-    const analysis::Float* float_type_in_macro = result_type->AsFloat();   \
-    assert(float_type_in_macro != nullptr);                                \
-    if (float_type_in_macro->width() == 32) {                              \
-      float fa = a->GetFloat();                                            \
-      float fb = b->GetFloat();                                            \
-      utils::FloatProxy<float> result_in_macro(fa op fb);                  \
-      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
-      return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
-    } else if (float_type_in_macro->width() == 64) {                       \
-      double fa = a->GetDouble();                                          \
-      double fb = b->GetDouble();                                          \
-      utils::FloatProxy<double> result_in_macro(fa op fb);                 \
-      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
-      return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
-    }                                                                      \
-    return nullptr;                                                        \
+#define FOLD_FPARITH_OP(op)                                                   \
+  [](const analysis::Type* result_type_in_macro, const analysis::Constant* a, \
+     const analysis::Constant* b,                                             \
+     analysis::ConstantManager* const_mgr_in_macro)                           \
+      -> const analysis::Constant* {                                          \
+    assert(result_type_in_macro != nullptr && a != nullptr && b != nullptr);  \
+    assert(result_type_in_macro == a->type() &&                               \
+           result_type_in_macro == b->type());                                \
+    const analysis::Float* float_type_in_macro =                              \
+        result_type_in_macro->AsFloat();                                      \
+    assert(float_type_in_macro != nullptr);                                   \
+    if (float_type_in_macro->width() == 32) {                                 \
+      float fa = a->GetFloat();                                               \
+      float fb = b->GetFloat();                                               \
+      utils::FloatProxy<float> result_in_macro(fa op fb);                     \
+      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();      \
+      return const_mgr_in_macro->GetConstant(result_type_in_macro,            \
+                                             words_in_macro);                 \
+    } else if (float_type_in_macro->width() == 64) {                          \
+      double fa = a->GetDouble();                                             \
+      double fb = b->GetDouble();                                             \
+      utils::FloatProxy<double> result_in_macro(fa op fb);                    \
+      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();      \
+      return const_mgr_in_macro->GetConstant(result_type_in_macro,            \
+                                             words_in_macro);                 \
+    }                                                                         \
+    return nullptr;                                                           \
   }
 
 // Define the folding rule for conversion between floating point and integer
