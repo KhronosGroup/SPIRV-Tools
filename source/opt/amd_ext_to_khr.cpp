@@ -92,6 +92,124 @@ FoldingRule NotImplementedYet() {
 //
 // The instruction
 //
+//    %mask = OpConstantComposite %v3uint %uint_x %uint_y %uint_z
+//  %result = OpExtInst %uint %1 SwizzleInvocationsMaskedAMD %data %mask
+//
+// is replaced with
+//
+// potentially new constants and types
+//
+// clang-format off
+// %uint_mask_extend = OpConstant %uint 0xFFFFFFE0
+//         %uint_max = OpConstant %uint 0xFFFFFFFF
+//           %v4uint = OpTypeVector %uint 4
+//     %ballot_value = OpConstantComposite %v4uint %uint_max %uint_max %uint_max %uint_max
+// clang-format on
+//
+// and the following code in the function body
+//
+// clang-format off
+//         %id = OpLoad %uint %SubgroupLocalInvocationId
+//   %and_mask = OpBitwiseOr %uint %uint_x %uint_mask_extend
+//        %and = OpBitwiseAnd %uint %id %and_mask
+//         %or = OpBitwiseOr %uint %and %uint_y
+// %target_inv = OpBitwiseXor %uint %or %uint_z
+//  %is_active = OpGroupNonUniformBallotBitExtract %bool %uint_3 %ballot_value %target_inv
+//    %shuffle = OpGroupNonUniformShuffle %type %uint_3 %data %target_inv
+//     %result = OpSelect %type %is_active %shuffle %uint_0
+// clang-format on
+//
+// Also adding the capabilities and builtins that are needed.
+FoldingRule FoldSwizzleInvocationsMasked() {
+  return [](IRContext* ctx, Instruction* inst,
+            const std::vector<const analysis::Constant*>&) {
+    analysis::TypeManager* type_mgr = ctx->get_type_mgr();
+    analysis::DefUseManager* def_use_mgr = ctx->get_def_use_mgr();
+    analysis::ConstantManager* const_mgr = ctx->get_constant_mgr();
+
+    // ctx->AddCapability(SpvCapabilitySubgroupBallotKHR);
+    ctx->AddCapability(SpvCapabilityGroupNonUniformBallot);
+    ctx->AddCapability(SpvCapabilityGroupNonUniformShuffle);
+
+    InstructionBuilder ir_builder(
+        ctx, inst,
+        IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+
+    // Get the operands to inst, and the components of the mask
+    uint32_t data_id = inst->GetSingleWordInOperand(2);
+
+    Instruction* mask_inst =
+        def_use_mgr->GetDef(inst->GetSingleWordInOperand(3));
+    assert(mask_inst->opcode() == SpvOpConstantComposite &&
+           "The mask is suppose to be a vector constant.");
+    assert(mask_inst->NumInOperands() == 3 &&
+           "The mask is suppose to have 3 components.");
+
+    uint32_t uint_x = mask_inst->GetSingleWordInOperand(0);
+    uint32_t uint_y = mask_inst->GetSingleWordInOperand(1);
+    uint32_t uint_z = mask_inst->GetSingleWordInOperand(2);
+
+    // Get the subgroup invocation id.
+    uint32_t var_id =
+        ctx->GetBuiltinInputVarId(SpvBuiltInSubgroupLocalInvocationId);
+    ctx->AddExtension("SPV_KHR_shader_ballot");
+    assert(var_id != 0 && "Could not get SubgroupLocalInvocationId variable.");
+    Instruction* var_inst = ctx->get_def_use_mgr()->GetDef(var_id);
+    Instruction* var_ptr_type =
+        ctx->get_def_use_mgr()->GetDef(var_inst->type_id());
+    uint32_t uint_type_id = var_ptr_type->GetSingleWordInOperand(1);
+
+    Instruction* id = ir_builder.AddLoad(uint_type_id, var_id);
+
+    // Do the bitwise operations.
+    uint32_t mask_extended = ir_builder.GetUintConstantId(0xFFFFFFE0);
+    Instruction* and_mask = ir_builder.AddBinaryOp(uint_type_id, SpvOpBitwiseOr,
+                                                   uint_x, mask_extended);
+    Instruction* and_result = ir_builder.AddBinaryOp(
+        uint_type_id, SpvOpBitwiseAnd, id->result_id(), and_mask->result_id());
+    Instruction* or_result = ir_builder.AddBinaryOp(
+        uint_type_id, SpvOpBitwiseOr, and_result->result_id(), uint_y);
+    Instruction* target_inv = ir_builder.AddBinaryOp(
+        uint_type_id, SpvOpBitwiseXor, or_result->result_id(), uint_z);
+
+    // Do the group operations
+    uint32_t uint_max_id = ir_builder.GetUintConstantId(0xFFFFFFFF);
+    uint32_t subgroup_scope = ir_builder.GetUintConstantId(SpvScopeSubgroup);
+    const auto* ballot_value_const = const_mgr->GetConstant(
+        type_mgr->GetUIntVectorType(4),
+        {uint_max_id, uint_max_id, uint_max_id, uint_max_id});
+    Instruction* ballot_value =
+        const_mgr->GetDefiningInstruction(ballot_value_const);
+    Instruction* is_active = ir_builder.AddNaryOp(
+        type_mgr->GetBoolTypeId(), SpvOpGroupNonUniformBallotBitExtract,
+        {subgroup_scope, ballot_value->result_id(), target_inv->result_id()});
+    Instruction* shuffle = ir_builder.AddNaryOp(
+        inst->type_id(), SpvOpGroupNonUniformShuffle,
+        {subgroup_scope, data_id, target_inv->result_id()});
+
+    // Create the null constant to use in the select.
+    const auto* null = const_mgr->GetConstant(
+        type_mgr->GetType(inst->type_id()), std::vector<uint32_t>());
+    Instruction* null_inst = const_mgr->GetDefiningInstruction(null);
+
+    // Build the select.
+    inst->SetOpcode(SpvOpSelect);
+    Instruction::OperandList new_operands;
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {is_active->result_id()}});
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {shuffle->result_id()}});
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {null_inst->result_id()}});
+
+    inst->SetInOperands(std::move(new_operands));
+    ctx->UpdateDefUse(inst);
+    return true;
+  };
+}
+
+// Returns a folding rule that will replace the WriteInvocationAMD extended
+// instruction in the SPV_AMD_shader_ballot extension.
+//
+// The instruction
+//
 // clang-format off
 //    %result = OpExtInst %type %1 WriteInvocationAMD %input_value %write_value %invocation_index
 // clang-format on
@@ -237,7 +355,7 @@ class AmdExtFoldingRules : public FoldingRules {
     ext_rules_[{extension_id, AmdShaderBallotSwizzleInvocationsAMD}].push_back(
         NotImplementedYet());
     ext_rules_[{extension_id, AmdShaderBallotSwizzleInvocationsMaskedAMD}]
-        .push_back(NotImplementedYet());
+        .push_back(FoldSwizzleInvocationsMasked());
     ext_rules_[{extension_id, AmdShaderBallotWriteInvocationAMD}].push_back(
         ReplaceWriteInvocation());
     ext_rules_[{extension_id, AmdShaderBallotMbcntAMD}].push_back(
