@@ -135,6 +135,56 @@ TEST_F(AmdExtToKhrTest, ReplaceMbcntAMD) {
   SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
 }
 
+TEST_F(AmdExtToKhrTest, ReplaceSwizzleInvocationsMaskedAMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_ballot"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_ballot"
+; CHECK: OpDecorate [[var:%\w+]] BuiltIn SubgroupLocalInvocationId
+; CHECK: [[x:%\w+]] = OpConstant %uint 19
+; CHECK: [[y:%\w+]] = OpConstant %uint 12
+; CHECK: [[z:%\w+]] = OpConstant %uint 16
+; CHECK: [[var]] = OpVariable %_ptr_Input_uint Input
+; CHECK: [[mask_extend:%\w+]] = OpConstant %uint 4294967264
+; CHECK: [[uint_max:%\w+]] = OpConstant %uint 4294967295
+; CHECK: [[subgroup:%\w+]] = OpConstant %uint 3
+; CHECK: [[ballot_value:%\w+]] = OpConstantComposite %v4uint [[uint_max]] [[uint_max]] [[uint_max]] [[uint_max]]
+; CHECK: [[null:%\w+]] = OpConstantNull [[type:%\w+]]
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[data:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[id:%\w+]] = OpLoad %uint [[var]]
+; CHECK-NEXT: [[and_mask:%\w+]] = OpBitwiseOr %uint [[x]] [[mask_extend]]
+; CHECK-NEXT: [[and:%\w+]] = OpBitwiseAnd %uint [[id]] [[and_mask]]
+; CHECK-NEXT: [[or:%\w+]] = OpBitwiseOr %uint [[and]] [[y]]
+; CHECK-NEXT: [[target_inv:%\w+]] = OpBitwiseXor %uint [[or]] [[z]]
+; CHECK-NEXT: [[is_active:%\w+]] = OpGroupNonUniformBallotBitExtract %bool [[subgroup]] [[ballot_value]] [[target_inv]]
+; CHECK-NEXT: [[shuffle:%\w+]] = OpGroupNonUniformShuffle [[type]] [[subgroup]] [[data]] [[target_inv]]
+; CHECK-NEXT: [[result:%\w+]] = OpSelect [[type]] [[is_active]] [[shuffle]] [[null]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_ballot"
+        %ext = OpExtInstImport "SPV_AMD_shader_ballot"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_x = OpConstant %uint 19
+     %uint_y = OpConstant %uint 12
+     %uint_z = OpConstant %uint 16
+     %v3uint = OpTypeVector %uint 3
+       %mask = OpConstantComposite %v3uint %uint_x %uint_y %uint_z
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %data = OpUndef %uint
+          %9 = OpExtInst %uint %ext SwizzleInvocationsMaskedAMD %data %mask
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
 TEST_F(AmdExtToKhrTest, ReplaceWriteInvocationAMD) {
   const std::string text = R"(
 ; CHECK: OpCapability Shader
