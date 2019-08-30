@@ -79,7 +79,7 @@ FoldingRule ReplaceGroupNonuniformOperationOpCode(SpvOp new_opcode) {
   };
 }
 
-// Returns a folding rule that will replace the WriteInvocationAMD extended
+// Returns a folding rule that will replace the SwizzleInvocationsAMD extended
 // instruction in the SPV_AMD_shader_ballot extension.
 //
 // The instruction
@@ -191,8 +191,9 @@ FoldingRule ReplaceSwizzleInvocations() {
     return true;
   };
 }
-// Returns a folding rule that will replace the WriteInvocationAMD extended
-// instruction in the SPV_AMD_shader_ballot extension.
+
+// Returns a folding rule that will replace the SwizzleInvocationsMaskedAMD
+// extended instruction in the SPV_AMD_shader_ballot extension.
 //
 // The instruction
 //
