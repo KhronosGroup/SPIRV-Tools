@@ -660,6 +660,7 @@ static_library("spvtools_opt") {
 
   deps = [
     ":spvtools",
+    ":spvtools_vendor_tables_spv-amd-shader-ballot",
   ]
   public_deps = [
     ":spvtools_headers",
