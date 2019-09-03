@@ -116,6 +116,9 @@ class Pass {
   // float and |width|
   bool IsFloat(uint32_t ty_id, uint32_t width);
 
+  // Return the id of OpConstantNull of type |type_id|. Create if necessary.
+  uint32_t GetNullId(uint32_t type_id);
+
  protected:
   // Constructs a new pass.
   //
