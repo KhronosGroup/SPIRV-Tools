@@ -296,6 +296,51 @@ ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
   };
 }
 
+// Returns the result of folding the constants in |constants| according the
+// |scalar_rule|.  If |result_type| is a vector, then |scalar_rule| is applied
+// per component.
+const analysis::Constant* FoldFPBinaryOp(
+    BinaryScalarFoldingRule scalar_rule, uint32_t result_type_id,
+    const std::vector<const analysis::Constant*>& constants,
+    IRContext* context) {
+  analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+  analysis::TypeManager* type_mgr = context->get_type_mgr();
+  const analysis::Type* result_type = type_mgr->GetType(result_type_id);
+  const analysis::Vector* vector_type = result_type->AsVector();
+
+  if (constants[0] == nullptr || constants[1] == nullptr) {
+    return nullptr;
+  }
+
+  if (vector_type != nullptr) {
+    std::vector<const analysis::Constant*> a_components;
+    std::vector<const analysis::Constant*> b_components;
+    std::vector<const analysis::Constant*> results_components;
+
+    a_components = constants[0]->GetVectorComponents(const_mgr);
+    b_components = constants[1]->GetVectorComponents(const_mgr);
+
+    // Fold each component of the vector.
+    for (uint32_t i = 0; i < a_components.size(); ++i) {
+      results_components.push_back(scalar_rule(vector_type->element_type(),
+                                               a_components[i], b_components[i],
+                                               const_mgr));
+      if (results_components[i] == nullptr) {
+        return nullptr;
+      }
+    }
+
+    // Build the constant object and return it.
+    std::vector<uint32_t> ids;
+    for (const analysis::Constant* member : results_components) {
+      ids.push_back(const_mgr->GetDefiningInstruction(member)->result_id());
+    }
+    return const_mgr->GetConstant(vector_type, ids);
+  } else {
+    return scalar_rule(result_type, constants[0], constants[1], const_mgr);
+  }
+}
+
 // Returns a |ConstantFoldingRule| that folds floating point scalars using
 // |scalar_rule| and vectors of floating point by applying |scalar_rule| to the
 // elements of the vector.  The |ConstantFoldingRule| that is returned assumes
@@ -305,46 +350,10 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
   return [scalar_rule](IRContext* context, Instruction* inst,
                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
-    analysis::TypeManager* type_mgr = context->get_type_mgr();
-    const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
-    const analysis::Vector* vector_type = result_type->AsVector();
-
     if (!inst->IsFloatingPointFoldingAllowed()) {
       return nullptr;
     }
-
-    if (constants[0] == nullptr || constants[1] == nullptr) {
-      return nullptr;
-    }
-
-    if (vector_type != nullptr) {
-      std::vector<const analysis::Constant*> a_components;
-      std::vector<const analysis::Constant*> b_components;
-      std::vector<const analysis::Constant*> results_components;
-
-      a_components = constants[0]->GetVectorComponents(const_mgr);
-      b_components = constants[1]->GetVectorComponents(const_mgr);
-
-      // Fold each component of the vector.
-      for (uint32_t i = 0; i < a_components.size(); ++i) {
-        results_components.push_back(scalar_rule(vector_type->element_type(),
-                                                 a_components[i],
-                                                 b_components[i], const_mgr));
-        if (results_components[i] == nullptr) {
-          return nullptr;
-        }
-      }
-
-      // Build the constant object and return it.
-      std::vector<uint32_t> ids;
-      for (const analysis::Constant* member : results_components) {
-        ids.push_back(const_mgr->GetDefiningInstruction(member)->result_id());
-      }
-      return const_mgr->GetConstant(vector_type, ids);
-    } else {
-      return scalar_rule(result_type, constants[0], constants[1], const_mgr);
-    }
+    return FoldFPBinaryOp(scalar_rule, inst->type_id(), constants, context);
   };
 }
 
@@ -435,29 +444,33 @@ UnaryScalarFoldingRule FoldQuantizeToF16Scalar() {
 
 // This macro defines a |BinaryScalarFoldingRule| that applies |op|.  The
 // operator |op| must work for both float and double, and use syntax "f1 op f2".
-#define FOLD_FPARITH_OP(op)                                                \
-  [](const analysis::Type* result_type, const analysis::Constant* a,       \
-     const analysis::Constant* b,                                          \
-     analysis::ConstantManager* const_mgr_in_macro)                        \
-      -> const analysis::Constant* {                                       \
-    assert(result_type != nullptr && a != nullptr && b != nullptr);        \
-    assert(result_type == a->type() && result_type == b->type());          \
-    const analysis::Float* float_type_in_macro = result_type->AsFloat();   \
-    assert(float_type_in_macro != nullptr);                                \
-    if (float_type_in_macro->width() == 32) {                              \
-      float fa = a->GetFloat();                                            \
-      float fb = b->GetFloat();                                            \
-      utils::FloatProxy<float> result_in_macro(fa op fb);                  \
-      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
-      return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
-    } else if (float_type_in_macro->width() == 64) {                       \
-      double fa = a->GetDouble();                                          \
-      double fb = b->GetDouble();                                          \
-      utils::FloatProxy<double> result_in_macro(fa op fb);                 \
-      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
-      return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
-    }                                                                      \
-    return nullptr;                                                        \
+#define FOLD_FPARITH_OP(op)                                                   \
+  [](const analysis::Type* result_type_in_macro, const analysis::Constant* a, \
+     const analysis::Constant* b,                                             \
+     analysis::ConstantManager* const_mgr_in_macro)                           \
+      -> const analysis::Constant* {                                          \
+    assert(result_type_in_macro != nullptr && a != nullptr && b != nullptr);  \
+    assert(result_type_in_macro == a->type() &&                               \
+           result_type_in_macro == b->type());                                \
+    const analysis::Float* float_type_in_macro =                              \
+        result_type_in_macro->AsFloat();                                      \
+    assert(float_type_in_macro != nullptr);                                   \
+    if (float_type_in_macro->width() == 32) {                                 \
+      float fa = a->GetFloat();                                               \
+      float fb = b->GetFloat();                                               \
+      utils::FloatProxy<float> result_in_macro(fa op fb);                     \
+      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();      \
+      return const_mgr_in_macro->GetConstant(result_type_in_macro,            \
+                                             words_in_macro);                 \
+    } else if (float_type_in_macro->width() == 64) {                          \
+      double fa = a->GetDouble();                                             \
+      double fb = b->GetDouble();                                             \
+      utils::FloatProxy<double> result_in_macro(fa op fb);                    \
+      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();      \
+      return const_mgr_in_macro->GetConstant(result_type_in_macro,            \
+                                             words_in_macro);                 \
+    }                                                                         \
+    return nullptr;                                                           \
   }
 
 // Define the folding rule for conversion between floating point and integer
@@ -834,31 +847,49 @@ ConstantFoldingRule FoldFMix() {
     }
 
     const analysis::Constant* one;
-    if (constants[1]->type()->AsFloat()->width() == 32) {
-      one = const_mgr->GetConstant(constants[1]->type(),
+    bool is_vector = false;
+    const analysis::Type* result_type = constants[1]->type();
+    const analysis::Type* base_type = result_type;
+    if (base_type->AsVector()) {
+      is_vector = true;
+      base_type = base_type->AsVector()->element_type();
+    }
+    assert(base_type->AsFloat() != nullptr &&
+           "FMix is suppose to act on floats or vectors of floats.");
+
+    if (base_type->AsFloat()->width() == 32) {
+      one = const_mgr->GetConstant(base_type,
                                    utils::FloatProxy<float>(1.0f).GetWords());
     } else {
-      one = const_mgr->GetConstant(constants[1]->type(),
+      one = const_mgr->GetConstant(base_type,
                                    utils::FloatProxy<double>(1.0).GetWords());
     }
 
-    const analysis::Constant* temp1 =
-        FOLD_FPARITH_OP(-)(constants[1]->type(), one, constants[3], const_mgr);
+    if (is_vector) {
+      uint32_t one_id = const_mgr->GetDefiningInstruction(one)->result_id();
+      one =
+          const_mgr->GetConstant(result_type, std::vector<uint32_t>(4, one_id));
+    }
+
+    const analysis::Constant* temp1 = FoldFPBinaryOp(
+        FOLD_FPARITH_OP(-), inst->type_id(), {one, constants[3]}, context);
     if (temp1 == nullptr) {
       return nullptr;
     }
 
-    const analysis::Constant* temp2 = FOLD_FPARITH_OP(*)(
-        constants[1]->type(), constants[1], temp1, const_mgr);
+    const analysis::Constant* temp2 = FoldFPBinaryOp(
+        FOLD_FPARITH_OP(*), inst->type_id(), {constants[1], temp1}, context);
     if (temp2 == nullptr) {
       return nullptr;
     }
-    const analysis::Constant* temp3 = FOLD_FPARITH_OP(*)(
-        constants[2]->type(), constants[2], constants[3], const_mgr);
+    const analysis::Constant* temp3 =
+        FoldFPBinaryOp(FOLD_FPARITH_OP(*), inst->type_id(),
+                       {constants[2], constants[3]}, context);
     if (temp3 == nullptr) {
       return nullptr;
     }
-    return FOLD_FPARITH_OP(+)(temp2->type(), temp2, temp3, const_mgr);
+    return FoldFPBinaryOp(FOLD_FPARITH_OP(+), inst->type_id(), {temp2, temp3},
+                          context);
   };
 }
 
