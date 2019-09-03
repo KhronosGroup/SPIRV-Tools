@@ -232,7 +232,9 @@ OpName %main "main"
 %double_2 = OpConstant %double 2
 %double_3 = OpConstant %double 3
 %double_4 = OpConstant %double 4
+%double_5 = OpConstant %double 5
 %double_0p5 = OpConstant %double 0.5
+%double_0p2 = OpConstant %double 0.2
 %v2double_0_0 = OpConstantComposite %v2double %double_0 %double_0
 %v2double_2_2 = OpConstantComposite %v2double %double_2 %double_2
 %v2double_2_3 = OpConstantComposite %v2double %double_2 %double_3
@@ -558,7 +560,119 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
           "%2 = OpSNegate %int %int_min\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, std::numeric_limits<int32_t>::min())
+      2, std::numeric_limits<int32_t>::min()),
+  // Test case 30: fold UMin 3 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %uint %1 UMin %uint_3 %uint_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 3),
+  // Test case 31: fold UMin 4 2
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %uint %1 UMin %uint_4 %uint_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 2),
+  // Test case 32: fold SMin 3 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 UMin %int_3 %int_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 3),
+  // Test case 33: fold SMin 4 2
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 SMin %int_4 %int_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 2),
+  // Test case 34: fold UMax 3 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %uint %1 UMax %uint_3 %uint_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 4),
+  // Test case 35: fold UMax 3 2
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %uint %1 UMax %uint_3 %uint_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 3),
+  // Test case 36: fold SMax 3 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 UMax %int_3 %int_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 4),
+  // Test case 37: fold SMax 3 2
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 SMax %int_3 %int_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 3),
+  // Test case 38: fold UClamp 2 3 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %uint %1 UClamp %uint_2 %uint_3 %uint_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 3),
+  // Test case 39: fold UClamp 2 0 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %uint %1 UClamp %uint_2 %uint_0 %uint_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 2),
+  // Test case 40: fold UClamp 2 0 1
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %uint %1 UClamp %uint_2 %uint_0 %uint_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 1),
+  // Test case 41: fold SClamp 2 3 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 SClamp %int_2 %int_3 %int_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 3),
+  // Test case 42: fold SClamp 2 0 4
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 SClamp %int_2 %int_0 %int_4\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 2),
+  // Test case 43: fold SClamp 2 0 1
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 UClamp %int_2 %int_0 %int_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 1)
 ));
 // clang-format on
 
@@ -1526,7 +1640,63 @@ INSTANTIATE_TEST_SUITE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "%2 = OpExtInst %float %1 FMix %float_1 %float_4 %float_0p2\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 1.6f)
+        2, 1.6f),
+    // Test case 21: FMin 1.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMin %float_1 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f),
+    // Test case 22: FMin 4.0 0.2
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMin %float_4 %float_0p2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0.2f),
+    // Test case 21: FMax 1.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMax %float_1 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f),
+    // Test case 22: FMax 1.0 0.2
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMax %float_1 %float_0p2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f),
+    // Test case 23: FClamp 1.0 0.2 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_1 %float_0p2 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f),
+    // Test case 24: FClamp 0.2 2.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_0p2 %float_2 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 2.0f),
+    // Test case 25: FClamp 2049.0 2.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_2049 %float_2 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f)
 ));
 // clang-format on
 
@@ -1669,7 +1839,63 @@ INSTANTIATE_TEST_SUITE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest
                 "%2 = OpFNegate %double %double_2\n" +
                 "OpReturn\n" +
                 "OpFunctionEnd",
-            2, -2)
+            2, -2),
+        // Test case 12: FMin 1.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %double %1 FMin %double_1 %double_4\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 1.0),
+        // Test case 13: FMin 4.0 0.2
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %double %1 FMin %double_4 %double_0p2\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 0.2),
+        // Test case 14: FMax 1.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %double %1 FMax %double_1 %double_4\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 4.0),
+        // Test case 15: FMax 1.0 0.2
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %double %1 FMax %double_1 %double_0p2\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 1.0),
+        // Test case 16: FClamp 1.0 0.2 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %double %1 FClamp %double_1 %double_0p2 %double_4\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 1.0),
+        // Test case 17: FClamp 0.2 2.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %double %1 FClamp %double_0p2 %double_2 %double_4\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 2.0),
+        // Test case 18: FClamp 5.0 2.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %double %1 FClamp %double_5 %double_2 %double_4\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 4.0)
 ));
 // clang-format on
 
