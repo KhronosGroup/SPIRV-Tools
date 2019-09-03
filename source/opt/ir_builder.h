@@ -109,13 +109,13 @@ class InstructionBuilder {
     return AddInstruction(std::move(newQuadOp));
   }
 
-  Instruction* AddIdLiteralOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
-                              uint32_t operand2) {
+  Instruction* AddIdLiteralOp(uint32_t type_id, SpvOp opcode, uint32_t id,
+                              uint32_t uliteral) {
     // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newBinOp(new Instruction(
         GetContext(), opcode, type_id, GetContext()->TakeNextId(),
-        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
-         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {operand2}}}));
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {id}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {uliteral}}}));
     return AddInstruction(std::move(newBinOp));
   }
 
