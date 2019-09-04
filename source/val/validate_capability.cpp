@@ -57,7 +57,10 @@ bool IsSupportGuaranteedVulkan_1_1(uint32_t capability) {
 
 bool IsSupportGuaranteedVulkan_1_2(uint32_t capability) {
   if (IsSupportGuaranteedVulkan_1_1(capability)) return true;
-  // TODO(dneto): Check if any additional capability is required.
+  switch (capability) {
+    case SpvCapabilityShaderNonUniform:
+      return true;
+  }
   return false;
 }
 
@@ -129,7 +132,33 @@ bool IsSupportOptionalVulkan_1_1(uint32_t capability) {
 
 bool IsSupportOptionalVulkan_1_2(uint32_t capability) {
   if (IsSupportOptionalVulkan_1_1(capability)) return true;
-  // TODO(dneto): Check which additional capability is optional.
+
+  switch (capability) {
+    case SpvCapabilityDenormPreserve:
+    case SpvCapabilityDenormFlushToZero:
+    case SpvCapabilitySignedZeroInfNanPreserve:
+    case SpvCapabilityRoundingModeRTE:
+    case SpvCapabilityRoundingModeRTZ:
+    case SpvCapabilityVulkanMemoryModel:
+    case SpvCapabilityVulkanMemoryModelDeviceScope:
+    case SpvCapabilityStorageBuffer8BitAccess:
+    case SpvCapabilityUniformAndStorageBuffer8BitAccess:
+    case SpvCapabilityStoragePushConstant8:
+    case SpvCapabilityShaderViewportIndex:
+    case SpvCapabilityShaderLayer:
+    case SpvCapabilityPhysicalStorageBufferAddresses:
+    case SpvCapabilityRuntimeDescriptorArray:
+    case SpvCapabilityUniformTexelBufferArrayDynamicIndexing:
+    case SpvCapabilityStorageTexelBufferArrayDynamicIndexing:
+    case SpvCapabilityUniformBufferArrayNonUniformIndexing:
+    case SpvCapabilitySampledImageArrayNonUniformIndexing:
+    case SpvCapabilityStorageBufferArrayNonUniformIndexing:
+    case SpvCapabilityStorageImageArrayNonUniformIndexing:
+    case SpvCapabilityInputAttachmentArrayNonUniformIndexing:
+    case SpvCapabilityUniformTexelBufferArrayNonUniformIndexing:
+    case SpvCapabilityStorageTexelBufferArrayNonUniformIndexing:
+      return true;
+  }
   return false;
 }
 
