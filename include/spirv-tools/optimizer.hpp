@@ -68,6 +68,11 @@ class Optimizer {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
+  //
+  // For collections of passes that are meant to transform the input into
+  // another execution environment, then the source environment should be
+  // supplied. e.g. for VulkanToWebGPUPasses the environment should be
+  // SPV_ENV_VULKAN_1_1 not SPV_ENV_WEBGPU_0.
   explicit Optimizer(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
