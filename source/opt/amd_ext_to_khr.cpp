@@ -76,8 +76,8 @@ FoldingRule ReplaceTrinaryMinMax(GLSLstd450 opcode) {
 
     Instruction::OperandList new_operands;
     new_operands.push_back({SPV_OPERAND_TYPE_ID, {glsl405_ext_inst_id}});
-    new_operands.push_back(
-        {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {opcode}});
+    new_operands.push_back({SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+                            {static_cast<uint32_t>(opcode)}});
     new_operands.push_back({SPV_OPERAND_TYPE_ID, {temp->result_id()}});
     new_operands.push_back({SPV_OPERAND_TYPE_ID, {op3}});
 
@@ -112,14 +112,16 @@ FoldingRule ReplaceTrinaryMid(GLSLstd450 min_opcode, GLSLstd450 max_opcode,
     uint32_t op3 = inst->GetSingleWordInOperand(4);
 
     Instruction* min = ir_builder.AddNaryExtendedInstruction(
-        inst->type_id(), glsl405_ext_inst_id, min_opcode, {op2, op3});
+        inst->type_id(), glsl405_ext_inst_id, static_cast<uint32_t>(min_opcode),
+        {op2, op3});
     Instruction* max = ir_builder.AddNaryExtendedInstruction(
-        inst->type_id(), glsl405_ext_inst_id, max_opcode, {op2, op3});
+        inst->type_id(), glsl405_ext_inst_id, static_cast<uint32_t>(max_opcode),
+        {op2, op3});
 
     Instruction::OperandList new_operands;
     new_operands.push_back({SPV_OPERAND_TYPE_ID, {glsl405_ext_inst_id}});
-    new_operands.push_back(
-        {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {clamp_opcode}});
+    new_operands.push_back({SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+                            {static_cast<uint32_t>(clamp_opcode)}});
     new_operands.push_back({SPV_OPERAND_TYPE_ID, {op1}});
     new_operands.push_back({SPV_OPERAND_TYPE_ID, {min->result_id()}});
     new_operands.push_back({SPV_OPERAND_TYPE_ID, {max->result_id()}});
