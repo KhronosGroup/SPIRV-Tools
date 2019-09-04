@@ -233,6 +233,7 @@ TEST_F(AmdExtToKhrTest, ReplaceSwizzleInvocationsMaskedAMD) {
 
   SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
 }
+
 TEST_F(AmdExtToKhrTest, ReplaceWriteInvocationAMD) {
   const std::string text = R"(
 ; CHECK: OpCapability Shader
@@ -262,6 +263,438 @@ TEST_F(AmdExtToKhrTest, ReplaceWriteInvocationAMD) {
           %7 = OpUndef %uint
           %8 = OpUndef %uint
           %9 = OpExtInst %uint %ext WriteInvocationAMD %7 %8 %uint_3
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceFMin3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeFloat 32
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[temp:%\w+]] = OpExtInst [[type]] [[ext]] FMin [[x]] [[y]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] FMin [[temp]] [[z]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %float
+          %8 = OpUndef %float
+          %9 = OpUndef %float
+         %10 = OpExtInst %float %ext FMin3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceSMin3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeInt 32 1
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[temp:%\w+]] = OpExtInst [[type]] [[ext]] SMin [[x]] [[y]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] SMin [[temp]] [[z]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %int
+          %8 = OpUndef %int
+          %9 = OpUndef %int
+         %10 = OpExtInst %int %ext SMin3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceUMin3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeInt 32 0
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[temp:%\w+]] = OpExtInst [[type]] [[ext]] UMin [[x]] [[y]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] UMin [[temp]] [[z]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %uint
+          %8 = OpUndef %uint
+          %9 = OpUndef %uint
+         %10 = OpExtInst %uint %ext UMin3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceFMax3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeFloat 32
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[temp:%\w+]] = OpExtInst [[type]] [[ext]] FMax [[x]] [[y]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] FMax [[temp]] [[z]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %float
+          %8 = OpUndef %float
+          %9 = OpUndef %float
+         %10 = OpExtInst %float %ext FMax3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceSMax3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeInt 32 1
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[temp:%\w+]] = OpExtInst [[type]] [[ext]] SMax [[x]] [[y]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] SMax [[temp]] [[z]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %int
+          %8 = OpUndef %int
+          %9 = OpUndef %int
+         %10 = OpExtInst %int %ext SMax3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceUMax3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeInt 32 0
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[temp:%\w+]] = OpExtInst [[type]] [[ext]] UMax [[x]] [[y]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] UMax [[temp]] [[z]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %uint
+          %8 = OpUndef %uint
+          %9 = OpUndef %uint
+         %10 = OpExtInst %uint %ext UMax3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceVecUMax3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeVector
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[temp:%\w+]] = OpExtInst [[type]] [[ext]] UMax [[x]] [[y]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] UMax [[temp]] [[z]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %vec = OpTypeVector %uint 4
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %vec
+          %8 = OpUndef %vec
+          %9 = OpUndef %vec
+         %10 = OpExtInst %vec %ext UMax3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceFMid3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeFloat 32
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[min:%\w+]] = OpExtInst [[type]] [[ext]] FMin [[y]] [[z]]
+; CHECK-NEXT: [[max:%\w+]] = OpExtInst [[type]] [[ext]] FMax [[y]] [[z]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] FClamp [[x]] [[min]] [[max]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %float
+          %8 = OpUndef %float
+          %9 = OpUndef %float
+         %10 = OpExtInst %float %ext FMid3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceSMid3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeInt 32 1
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[min:%\w+]] = OpExtInst [[type]] [[ext]] SMin [[y]] [[z]]
+; CHECK-NEXT: [[max:%\w+]] = OpExtInst [[type]] [[ext]] SMax [[y]] [[z]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] SClamp [[x]] [[min]] [[max]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %int
+          %8 = OpUndef %int
+          %9 = OpUndef %int
+         %10 = OpExtInst %int %ext SMid3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceUMid3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeInt 32 0
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[min:%\w+]] = OpExtInst [[type]] [[ext]] UMin [[y]] [[z]]
+; CHECK-NEXT: [[max:%\w+]] = OpExtInst [[type]] [[ext]] UMax [[y]] [[z]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] UClamp [[x]] [[min]] [[max]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %uint
+          %8 = OpUndef %uint
+          %9 = OpUndef %uint
+         %10 = OpExtInst %uint %ext UMid3AMD %7 %8 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceVecUMid3AMD) {
+  const std::string text = R"(
+; CHECK: OpCapability Shader
+; CHECK-NOT: OpExtension "SPV_AMD_shader_trinary_minmax"
+; CHECK-NOT: OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+; CHECK: [[ext:%\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: [[type:%\w+]] = OpTypeVector
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: [[x:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[y:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[z:%\w+]] = OpUndef [[type]]
+; CHECK-NEXT: [[min:%\w+]] = OpExtInst [[type]] [[ext]] UMin [[y]] [[z]]
+; CHECK-NEXT: [[max:%\w+]] = OpExtInst [[type]] [[ext]] UMax [[y]] [[z]]
+; CHECK-NEXT: [[result:%\w+]] = OpExtInst [[type]] [[ext]] UClamp [[x]] [[min]] [[max]]
+               OpCapability Shader
+               OpExtension "SPV_AMD_shader_trinary_minmax"
+        %ext = OpExtInstImport "SPV_AMD_shader_trinary_minmax"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "func"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %vec = OpTypeVector %uint 3
+       %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+          %7 = OpUndef %vec
+          %8 = OpUndef %vec
+          %9 = OpUndef %vec
+         %10 = OpExtInst %vec %ext UMid3AMD %7 %8 %9
                OpReturn
                OpFunctionEnd
 )";

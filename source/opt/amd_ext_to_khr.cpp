@@ -24,16 +24,110 @@ namespace opt {
 
 namespace {
 
-enum ExtOpcodes {
+enum AmdShaderBallotExtOpcodes {
   AmdShaderBallotSwizzleInvocationsAMD = 1,
   AmdShaderBallotSwizzleInvocationsMaskedAMD = 2,
   AmdShaderBallotWriteInvocationAMD = 3,
   AmdShaderBallotMbcntAMD = 4
 };
 
+enum AmdShaderTrinaryMinMaxExtOpCodes {
+  FMin3AMD = 1,
+  UMin3AMD = 2,
+  SMin3AMD = 3,
+  FMax3AMD = 4,
+  UMax3AMD = 5,
+  SMax3AMD = 6,
+  FMid3AMD = 7,
+  UMid3AMD = 8,
+  SMid3AMD = 9
+};
+
 analysis::Type* GetUIntType(IRContext* ctx) {
   analysis::Integer int_type(32, false);
   return ctx->get_type_mgr()->GetRegisteredType(&int_type);
+}
+
+// Returns a folding rule that replaces |op(a,b,c)| by |op(op(a,b),c)|, where
+// |op| is either min or max. |opcode| is the binary opcode in the GLSLstd450
+// extended instruction set that corresponds to the trinary instruction being
+// replaced.
+FoldingRule ReplaceTrinaryMinMax(GLSLstd450 opcode) {
+  return [opcode](IRContext* ctx, Instruction* inst,
+                  const std::vector<const analysis::Constant*>&) {
+    uint32_t glsl405_ext_inst_id =
+        ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+    if (glsl405_ext_inst_id == 0) {
+      ctx->AddExtInstImport("GLSL.std.450");
+      glsl405_ext_inst_id =
+          ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+    }
+
+    InstructionBuilder ir_builder(
+        ctx, inst,
+        IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+
+    uint32_t op1 = inst->GetSingleWordInOperand(2);
+    uint32_t op2 = inst->GetSingleWordInOperand(3);
+    uint32_t op3 = inst->GetSingleWordInOperand(4);
+
+    Instruction* temp = ir_builder.AddNaryExtendedInstruction(
+        inst->type_id(), glsl405_ext_inst_id, opcode, {op1, op2});
+
+    Instruction::OperandList new_operands;
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {glsl405_ext_inst_id}});
+    new_operands.push_back(
+        {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {opcode}});
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {temp->result_id()}});
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {op3}});
+
+    inst->SetInOperands(std::move(new_operands));
+    ctx->UpdateDefUse(inst);
+    return true;
+  };
+}
+
+// Returns a folding rule that replaces |mid(a,b,c)| by |clamp(a, min(b,c),
+// max(b,c)|. The three parameters are the opcode that correspond to the min,
+// max, and clamp operations for the type of the instruction being replaced.
+FoldingRule ReplaceTrinaryMid(GLSLstd450 min_opcode, GLSLstd450 max_opcode,
+                              GLSLstd450 clamp_opcode) {
+  return [min_opcode, max_opcode, clamp_opcode](
+             IRContext* ctx, Instruction* inst,
+             const std::vector<const analysis::Constant*>&) {
+    uint32_t glsl405_ext_inst_id =
+        ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+    if (glsl405_ext_inst_id == 0) {
+      ctx->AddExtInstImport("GLSL.std.450");
+      glsl405_ext_inst_id =
+          ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+    }
+
+    InstructionBuilder ir_builder(
+        ctx, inst,
+        IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+
+    uint32_t op1 = inst->GetSingleWordInOperand(2);
+    uint32_t op2 = inst->GetSingleWordInOperand(3);
+    uint32_t op3 = inst->GetSingleWordInOperand(4);
+
+    Instruction* min = ir_builder.AddNaryExtendedInstruction(
+        inst->type_id(), glsl405_ext_inst_id, min_opcode, {op2, op3});
+    Instruction* max = ir_builder.AddNaryExtendedInstruction(
+        inst->type_id(), glsl405_ext_inst_id, max_opcode, {op2, op3});
+
+    Instruction::OperandList new_operands;
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {glsl405_ext_inst_id}});
+    new_operands.push_back(
+        {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {clamp_opcode}});
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {op1}});
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {min->result_id()}});
+    new_operands.push_back({SPV_OPERAND_TYPE_ID, {max->result_id()}});
+
+    inst->SetInOperands(std::move(new_operands));
+    ctx->UpdateDefUse(inst);
+    return true;
+  };
 }
 
 // Returns a folding rule that will replace the opcode with |opcode| and add
@@ -457,14 +551,40 @@ class AmdExtFoldingRules : public FoldingRules {
     uint32_t extension_id =
         context()->module()->GetExtInstImportId("SPV_AMD_shader_ballot");
 
-    ext_rules_[{extension_id, AmdShaderBallotSwizzleInvocationsAMD}].push_back(
-        ReplaceSwizzleInvocations());
-    ext_rules_[{extension_id, AmdShaderBallotSwizzleInvocationsMaskedAMD}]
-        .push_back(ReplaceSwizzleInvocationsMasked());
-    ext_rules_[{extension_id, AmdShaderBallotWriteInvocationAMD}].push_back(
-        ReplaceWriteInvocation());
-    ext_rules_[{extension_id, AmdShaderBallotMbcntAMD}].push_back(
-        ReplaceMbcnt());
+    if (extension_id != 0) {
+      ext_rules_[{extension_id, AmdShaderBallotSwizzleInvocationsAMD}]
+          .push_back(ReplaceSwizzleInvocations());
+      ext_rules_[{extension_id, AmdShaderBallotSwizzleInvocationsMaskedAMD}]
+          .push_back(ReplaceSwizzleInvocationsMasked());
+      ext_rules_[{extension_id, AmdShaderBallotWriteInvocationAMD}].push_back(
+          ReplaceWriteInvocation());
+      ext_rules_[{extension_id, AmdShaderBallotMbcntAMD}].push_back(
+          ReplaceMbcnt());
+    }
+
+    extension_id = context()->module()->GetExtInstImportId(
+        "SPV_AMD_shader_trinary_minmax");
+
+    if (extension_id != 0) {
+      ext_rules_[{extension_id, FMin3AMD}].push_back(
+          ReplaceTrinaryMinMax(GLSLstd450FMin));
+      ext_rules_[{extension_id, UMin3AMD}].push_back(
+          ReplaceTrinaryMinMax(GLSLstd450UMin));
+      ext_rules_[{extension_id, SMin3AMD}].push_back(
+          ReplaceTrinaryMinMax(GLSLstd450SMin));
+      ext_rules_[{extension_id, FMax3AMD}].push_back(
+          ReplaceTrinaryMinMax(GLSLstd450FMax));
+      ext_rules_[{extension_id, UMax3AMD}].push_back(
+          ReplaceTrinaryMinMax(GLSLstd450UMax));
+      ext_rules_[{extension_id, SMax3AMD}].push_back(
+          ReplaceTrinaryMinMax(GLSLstd450SMax));
+      ext_rules_[{extension_id, FMid3AMD}].push_back(
+          ReplaceTrinaryMid(GLSLstd450FMin, GLSLstd450FMax, GLSLstd450FClamp));
+      ext_rules_[{extension_id, UMid3AMD}].push_back(
+          ReplaceTrinaryMid(GLSLstd450UMin, GLSLstd450UMax, GLSLstd450UClamp));
+      ext_rules_[{extension_id, SMid3AMD}].push_back(
+          ReplaceTrinaryMid(GLSLstd450SMin, GLSLstd450SMax, GLSLstd450SClamp));
+    }
   }
 };
 
@@ -500,9 +620,14 @@ Pass::Status AmdExtensionToKhrPass::Process() {
   std::vector<Instruction*> to_be_killed;
   for (Instruction& inst : context()->module()->extensions()) {
     if (inst.opcode() == SpvOpExtension) {
-      if (!strcmp("SPV_AMD_shader_ballot",
-                  reinterpret_cast<const char*>(
-                      &(inst.GetInOperand(0).words[0])))) {
+      if (strcmp("SPV_AMD_shader_ballot",
+                 reinterpret_cast<const char*>(
+                     &(inst.GetInOperand(0).words[0]))) == 0) {
+        to_be_killed.push_back(&inst);
+      }
+      if (strcmp("SPV_AMD_shader_trinary_minmax",
+                 reinterpret_cast<const char*>(
+                     &(inst.GetInOperand(0).words[0]))) == 0) {
         to_be_killed.push_back(&inst);
       }
     }
@@ -510,9 +635,14 @@ Pass::Status AmdExtensionToKhrPass::Process() {
 
   for (Instruction& inst : context()->ext_inst_imports()) {
     if (inst.opcode() == SpvOpExtInstImport) {
-      if (!strcmp("SPV_AMD_shader_ballot",
-                  reinterpret_cast<const char*>(
-                      &(inst.GetInOperand(0).words[0])))) {
+      if (strcmp("SPV_AMD_shader_ballot",
+                 reinterpret_cast<const char*>(
+                     &(inst.GetInOperand(0).words[0]))) == 0) {
+        to_be_killed.push_back(&inst);
+      }
+      if (strcmp("SPV_AMD_shader_trinary_minmax",
+                 reinterpret_cast<const char*>(
+                     &(inst.GetInOperand(0).words[0]))) == 0) {
         to_be_killed.push_back(&inst);
       }
     }
