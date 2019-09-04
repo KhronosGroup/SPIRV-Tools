@@ -850,6 +850,8 @@ if (build_with_chromium) {
       "//testing/gmock",
       "//testing/gtest",
       "//testing/gtest:gtest_main",
+      "//third_party/googletest:gmock",
+      "//third_party/googletest:gtest",
     ]
 
     if (is_clang) {
