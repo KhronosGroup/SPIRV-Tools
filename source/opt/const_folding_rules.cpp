@@ -353,6 +353,10 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
     if (!inst->IsFloatingPointFoldingAllowed()) {
       return nullptr;
     }
+    if (inst->opcode() == SpvOpExtInst) {
+      return FoldFPBinaryOp(scalar_rule, inst->type_id(),
+                            {constants[1], constants[2]}, context);
+    }
     return FoldFPBinaryOp(scalar_rule, inst->type_id(), constants, context);
   };
 }
@@ -893,6 +897,179 @@ ConstantFoldingRule FoldFMix() {
   };
 }
 
+template <class IntType>
+IntType FoldIClamp(IntType x, IntType min_val, IntType max_val) {
+  if (x < min_val) {
+    x = min_val;
+  }
+  if (x > max_val) {
+    x = max_val;
+  }
+  return x;
+}
+
+const analysis::Constant* FoldMin(const analysis::Type* result_type,
+                                  const analysis::Constant* a,
+                                  const analysis::Constant* b,
+                                  analysis::ConstantManager*) {
+  if (const analysis::Integer* int_type = result_type->AsInteger()) {
+    if (int_type->width() == 32) {
+      if (int_type->IsSigned()) {
+        int32_t va = a->GetS32();
+        int32_t vb = b->GetS32();
+        return (va < vb ? a : b);
+      } else {
+        uint32_t va = a->GetU32();
+        uint32_t vb = b->GetU32();
+        return (va < vb ? a : b);
+      }
+    } else if (int_type->width() == 64) {
+      if (int_type->IsSigned()) {
+        int64_t va = a->GetS64();
+        int64_t vb = b->GetS64();
+        return (va < vb ? a : b);
+      } else {
+        uint64_t va = a->GetU64();
+        uint64_t vb = b->GetU64();
+        return (va < vb ? a : b);
+      }
+    }
+  } else if (const analysis::Float* float_type = result_type->AsFloat()) {
+    if (float_type->width() == 32) {
+      float va = a->GetFloat();
+      float vb = b->GetFloat();
+      return (va < vb ? a : b);
+    } else if (float_type->width() == 64) {
+      double va = a->GetDouble();
+      double vb = b->GetDouble();
+      return (va < vb ? a : b);
+    }
+  }
+  return nullptr;
+}
+
+const analysis::Constant* FoldMax(const analysis::Type* result_type,
+                                  const analysis::Constant* a,
+                                  const analysis::Constant* b,
+                                  analysis::ConstantManager*) {
+  if (const analysis::Integer* int_type = result_type->AsInteger()) {
+    if (int_type->width() == 32) {
+      if (int_type->IsSigned()) {
+        int32_t va = a->GetS32();
+        int32_t vb = b->GetS32();
+        return (va > vb ? a : b);
+      } else {
+        uint32_t va = a->GetU32();
+        uint32_t vb = b->GetU32();
+        return (va > vb ? a : b);
+      }
+    } else if (int_type->width() == 64) {
+      if (int_type->IsSigned()) {
+        int64_t va = a->GetS64();
+        int64_t vb = b->GetS64();
+        return (va > vb ? a : b);
+      } else {
+        uint64_t va = a->GetU64();
+        uint64_t vb = b->GetU64();
+        return (va > vb ? a : b);
+      }
+    }
+  } else if (const analysis::Float* float_type = result_type->AsFloat()) {
+    if (float_type->width() == 32) {
+      float va = a->GetFloat();
+      float vb = b->GetFloat();
+      return (va > vb ? a : b);
+    } else if (float_type->width() == 64) {
+      double va = a->GetDouble();
+      double vb = b->GetDouble();
+      return (va > vb ? a : b);
+    }
+  }
+  return nullptr;
+}
+
+// Fold an clamp instruction when all three operands are constant.
+const analysis::Constant* FoldClamp1(
+    IRContext* context, Instruction* inst,
+    const std::vector<const analysis::Constant*>& constants) {
+  assert(inst->opcode() == SpvOpExtInst &&
+         "Expecting an extended instruction.");
+  assert(inst->GetSingleWordInOperand(0) ==
+             context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
+         "Expecting a GLSLstd450 extended instruction.");
+
+  // Make sure all Clamp operands are constants.
+  for (uint32_t i = 1; i < 3; i++) {
+    if (constants[i] == nullptr) {
+      return nullptr;
+    }
+  }
+
+  const analysis::Constant* temp = FoldFPBinaryOp(
+      FoldMax, inst->type_id(), {constants[1], constants[2]}, context);
+  if (temp == nullptr) {
+    return nullptr;
+  }
+  return FoldFPBinaryOp(FoldMin, inst->type_id(), {temp, constants[3]},
+                        context);
+}
+
+// Fold a clamp instruction when |x >= min_val|.
+const analysis::Constant* FoldClamp2(
+    IRContext* context, Instruction* inst,
+    const std::vector<const analysis::Constant*>& constants) {
+  assert(inst->opcode() == SpvOpExtInst &&
+         "Expecting an extended instruction.");
+  assert(inst->GetSingleWordInOperand(0) ==
+             context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
+         "Expecting a GLSLstd450 extended instruction.");
+
+  const analysis::Constant* x = constants[1];
+  const analysis::Constant* min_val = constants[2];
+
+  if (x == nullptr || min_val == nullptr) {
+    return nullptr;
+  }
+
+  const analysis::Constant* temp =
+      FoldFPBinaryOp(FoldMax, inst->type_id(), {x, min_val}, context);
+  if (temp == min_val) {
+    // We can assume that |min_val| is less than |max_val|.  Therefore, if the
+    // result of the max operation is |min_val|, we know the result of the min
+    // operation, even if |max_val| is not a constant.
+    return min_val;
+  }
+  return nullptr;
+}
+
+// Fold a clamp instruction when |x >= max_val|.
+const analysis::Constant* FoldClamp3(
+    IRContext* context, Instruction* inst,
+    const std::vector<const analysis::Constant*>& constants) {
+  assert(inst->opcode() == SpvOpExtInst &&
+         "Expecting an extended instruction.");
+  assert(inst->GetSingleWordInOperand(0) ==
+             context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
+         "Expecting a GLSLstd450 extended instruction.");
+
+  const analysis::Constant* x = constants[1];
+  const analysis::Constant* max_val = constants[3];
+
+  if (x == nullptr || max_val == nullptr) {
+    return nullptr;
+  }
+
+  const analysis::Constant* temp =
+      FoldFPBinaryOp(FoldMin, inst->type_id(), {x, max_val}, context);
+  if (temp == max_val) {
+    // We can assume that |min_val| is less than |max_val|.  Therefore, if the
+    // result of the max operation is |min_val|, we know the result of the min
+    // operation, even if |max_val| is not a constant.
+    return max_val;
+  }
+  return nullptr;
+}
+
 }  // namespace
 
 void ConstantFoldingRules::AddFoldingRules() {
@@ -968,6 +1145,36 @@ void ConstantFoldingRules::AddFoldingRules() {
       feature_manager->GetExtInstImportId_GLSLstd450();
   if (ext_inst_glslstd450_id != 0) {
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FMix}].push_back(FoldFMix());
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SMin}].push_back(
+        FoldFPBinaryOp(FoldMin));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450UMin}].push_back(
+        FoldFPBinaryOp(FoldMin));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FMin}].push_back(
+        FoldFPBinaryOp(FoldMin));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SMax}].push_back(
+        FoldFPBinaryOp(FoldMax));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450UMax}].push_back(
+        FoldFPBinaryOp(FoldMax));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FMax}].push_back(
+        FoldFPBinaryOp(FoldMax));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450UClamp}].push_back(
+        FoldClamp1);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450UClamp}].push_back(
+        FoldClamp2);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450UClamp}].push_back(
+        FoldClamp3);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SClamp}].push_back(
+        FoldClamp1);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SClamp}].push_back(
+        FoldClamp2);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SClamp}].push_back(
+        FoldClamp3);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FClamp}].push_back(
+        FoldClamp1);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FClamp}].push_back(
+        FoldClamp2);
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FClamp}].push_back(
+        FoldClamp3);
   }
 }
 }  // namespace opt
