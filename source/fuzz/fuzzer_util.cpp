@@ -205,6 +205,86 @@ opt::BasicBlock::iterator GetIteratorForBaseInstructionAndOffset(
   return nullptr;
 }
 
+// Helper method to figure out whether there is a back-edge-free path from
+// |source| to |dest|.
+bool CanReachWithoutTraversingLoopBackEdge(opt::IRContext* context,
+                                           opt::BasicBlock* source,
+                                           opt::BasicBlock* dest) {
+  // First, check that the destination block occurs after the source block in
+  // the function.  If it does not, then it is certainly not possible for
+  // |source| to reach |dest| without going through a loop back edge.
+  bool dest_after_source = false;
+  for (auto iterator = source->GetParent()->FindBlock(source->id());
+       iterator != source->GetParent()->end(); ++iterator) {
+    if (&*iterator == dest) {
+      dest_after_source = true;
+      break;
+    }
+  }
+
+  if (!dest_after_source) {
+    return false;
+  }
+
+  // Search through the blocks that can be reached from |source|, looking for
+  // |dest|.
+  // TODO(afd): consider writing a "WhileEach" version of
+  //  "ForEachBlockInPostOrder" to allow for an early exit when a
+  //  match is found.
+  bool found = false;
+  context->cfg()->ForEachBlockInPostOrder(
+      source, [dest, &found](opt::BasicBlock* visited) {
+        if (visited == dest) {
+          found = true;
+        }
+      });
+  assert((source != dest || found) &&
+         "A block should be deemed to reach itself.");
+  return found;
+}
+
+bool NewEdgeLeavingConstructBodyRespectsUseDefDominance(
+    opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
+    opt::BasicBlock* construct_merge_block) {
+  // Check that the dominators for id uses in the loop's continue target are not
+  // spoiled by the new edge.
+  auto enclosing_function = bb_from->GetParent();
+  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
+  auto merge_block_iterator =
+      enclosing_function->FindBlock(construct_merge_block->id());
+  auto block_it = enclosing_function->FindBlock(bb_from->id());
+  assert(block_it != enclosing_function->end());
+  ++block_it;
+  for (; block_it != enclosing_function->end() &&
+         block_it != merge_block_iterator;
+       ++block_it) {
+    opt::BasicBlock* defining_block = &*block_it;
+    if (!CanReachWithoutTraversingLoopBackEdge(context, bb_from,
+                                               defining_block)) {
+      continue;
+    }
+    for (auto& inst : *defining_block) {
+      if (!context->get_def_use_mgr()->WhileEachUse(
+              &inst,
+              [context, bb_to, defining_block, dominator_analysis](
+                  opt::Instruction* user, uint32_t operand_index) -> bool {
+                opt::BasicBlock* use_block_or_phi_parent =
+                    user->opcode() == SpvOpPhi
+                        ? context->cfg()->block(
+                              user->GetSingleWordOperand(operand_index + 1))
+                        : context->get_instr_block(user);
+                return use_block_or_phi_parent == nullptr ||
+                       dominator_analysis->Dominates(bb_to, defining_block) ||
+                       !CanReachWithoutTraversingLoopBackEdge(
+                           context, bb_to, use_block_or_phi_parent);
+              })) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
