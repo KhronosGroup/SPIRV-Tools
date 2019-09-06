@@ -525,8 +525,9 @@ bool ReplaceMbcnt(IRContext* context, Instruction* inst,
   return true;
 }
 
-// Returns a folding rule that will replace the CubeFaceCoordAMD extended
-// instruction in the SPV_AMD_gcn_shader_ballot.
+// A folding rule that will replace the CubeFaceCoordAMD extended
+// instruction in the SPV_AMD_gcn_shader_ballot.  Returns true if the folding is
+// successful.
 //
 // The instruction
 //
@@ -685,8 +686,9 @@ bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
   return true;
 }
 
-// Returns a folding rule that will replace the CubeFaceCoordAMD extended
-// instruction in the SPV_AMD_gcn_shader_ballot.
+// A folding rule that will replace the CubeFaceCoordAMD extended
+// instruction in the SPV_AMD_gcn_shader_ballot.  Returns true if the folding
+// is successful.
 //
 // The instruction
 //
@@ -747,7 +749,7 @@ bool ReplaceCubeFaceIndex(IRContext* ctx, Instruction* inst,
   Instruction* y = ir_builder.AddCompositeExtract(float_type_id, input_id, {1});
   Instruction* z = ir_builder.AddCompositeExtract(float_type_id, input_id, {2});
 
-  // Get the abolsute values of the inputs.
+  // Get the absolute values of the inputs.
   Instruction* ax = ir_builder.AddNaryExtendedInstruction(
       float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {x->result_id()});
   Instruction* ay = ir_builder.AddNaryExtendedInstruction(
