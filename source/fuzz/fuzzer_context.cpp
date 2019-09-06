@@ -58,8 +58,11 @@ FuzzerContext::~FuzzerContext() = default;
 
 uint32_t FuzzerContext::GetFreshId() { return next_fresh_id_++; }
 
-RandomGenerator* FuzzerContext::GetRandomGenerator() {
-  return random_generator_;
+bool FuzzerContext::ChooseEven() { return random_generator_->RandomBool(); }
+
+bool FuzzerContext::ChoosePercentage(uint32_t percentage_chance) {
+  assert(percentage_chance <= 100);
+  return random_generator_->RandomPercentage() < percentage_chance;
 }
 
 }  // namespace fuzz
