@@ -565,7 +565,6 @@ bool ReplaceMbcnt(IRContext* context, Instruction* inst,
 //        %result = OpFAdd %v2float %div %const
 //
 // Also adding the capabilities and builtins that are needed.
-
 bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
                           const std::vector<const analysis::Constant*>&) {
   analysis::TypeManager* type_mgr = ctx->get_type_mgr();
@@ -686,6 +685,119 @@ bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
   return true;
 }
 
+// Returns a folding rule that will replace the CubeFaceCoordAMD extended
+// instruction in the SPV_AMD_gcn_shader_ballot.
+//
+// The instruction
+//
+//  %result = OpExtInst %v2float %1 CubeFaceCoordAMD %input
+//
+// with
+//
+//             %x = OpCompositeExtract %float %input 0
+//             %y = OpCompositeExtract %float %input 1
+//             %z = OpCompositeExtract %float %input 2
+//            %ax = OpExtInst %float %n_1 FAbs %x
+//            %ay = OpExtInst %float %n_1 FAbs %y
+//            %az = OpExtInst %float %n_1 FAbs %z
+//      %is_z_neg = OpFOrdLessThan %bool %z %float_0
+//      %is_y_neg = OpFOrdLessThan %bool %y %float_0
+//      %is_x_neg = OpFOrdLessThan %bool %x %float_0
+//      %amax_x_y = OpExtInst %float %n_1 FMax %ay %ax
+//      %is_z_max = OpFOrdGreaterThanEqual %bool %az %amax_x_y
+//        %y_gt_x = OpFOrdGreaterThanEqual %bool %ay %ax
+//        %case_z = OpSelect %float %is_z_neg %float_5 %float4
+//        %case_y = OpSelect %float %is_y_neg %float_3 %float2
+//        %case_x = OpSelect %float %is_x_neg %float_1 %float0
+//           %sel = OpSelect %float %y_gt_x %case_y %case_x
+//        %result = OpSelect %float %is_z_max %case_z %sel
+//
+// Also adding the capabilities and builtins that are needed.
+bool ReplaceCubeFaceIndex(IRContext* ctx, Instruction* inst,
+                          const std::vector<const analysis::Constant*>&) {
+  analysis::TypeManager* type_mgr = ctx->get_type_mgr();
+  analysis::ConstantManager* const_mgr = ctx->get_constant_mgr();
+
+  uint32_t float_type_id = type_mgr->GetFloatTypeId();
+  uint32_t bool_id = type_mgr->GetBoolTypeId();
+
+  InstructionBuilder ir_builder(
+      ctx, inst,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+
+  uint32_t input_id = inst->GetSingleWordInOperand(2);
+  uint32_t glsl405_ext_inst_id =
+      ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+  if (glsl405_ext_inst_id == 0) {
+    ctx->AddExtInstImport("GLSL.std.450");
+    glsl405_ext_inst_id =
+        ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+  }
+
+  // Get the constants that will be used.
+  uint32_t f0_const_id = const_mgr->GetFloatConst(0.0);
+  uint32_t f1_const_id = const_mgr->GetFloatConst(1.0);
+  uint32_t f2_const_id = const_mgr->GetFloatConst(2.0);
+  uint32_t f3_const_id = const_mgr->GetFloatConst(3.0);
+  uint32_t f4_const_id = const_mgr->GetFloatConst(4.0);
+  uint32_t f5_const_id = const_mgr->GetFloatConst(5.0);
+
+  // Extract the input values.
+  Instruction* x = ir_builder.AddCompositeExtract(float_type_id, input_id, {0});
+  Instruction* y = ir_builder.AddCompositeExtract(float_type_id, input_id, {1});
+  Instruction* z = ir_builder.AddCompositeExtract(float_type_id, input_id, {2});
+
+  // Get the abolsute values of the inputs.
+  Instruction* ax = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {x->result_id()});
+  Instruction* ay = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {y->result_id()});
+  Instruction* az = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {z->result_id()});
+
+  // Find which values are negative.  Used in later computations.
+  Instruction* is_z_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 z->result_id(), f0_const_id);
+  Instruction* is_y_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 y->result_id(), f0_const_id);
+  Instruction* is_x_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 x->result_id(), f0_const_id);
+
+  // Find the max value.
+  Instruction* amax_x_y = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FMax,
+      {ax->result_id(), ay->result_id()});
+  Instruction* is_z_max =
+      ir_builder.AddBinaryOp(bool_id, SpvOpFOrdGreaterThanEqual,
+                             az->result_id(), amax_x_y->result_id());
+  Instruction* y_gr_x = ir_builder.AddBinaryOp(
+      bool_id, SpvOpFOrdGreaterThanEqual, ay->result_id(), ax->result_id());
+
+  // Get the value for each case.
+  Instruction* case_z = ir_builder.AddSelect(
+      float_type_id, is_z_neg->result_id(), f5_const_id, f4_const_id);
+  Instruction* case_y = ir_builder.AddSelect(
+      float_type_id, is_y_neg->result_id(), f3_const_id, f2_const_id);
+  Instruction* case_x = ir_builder.AddSelect(
+      float_type_id, is_x_neg->result_id(), f1_const_id, f0_const_id);
+
+  // Select the correct case.
+  Instruction* sel =
+      ir_builder.AddSelect(float_type_id, y_gr_x->result_id(),
+                           case_y->result_id(), case_x->result_id());
+
+  // Get the final result by adding 0.5 to |div|.
+  inst->SetOpcode(SpvOpSelect);
+  Instruction::OperandList new_operands;
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {is_z_max->result_id()}});
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {case_z->result_id()}});
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {sel->result_id()}});
+
+  inst->SetInOperands(std::move(new_operands));
+  ctx->UpdateDefUse(inst);
+  return true;
+}
+
 class AmdExtFoldingRules : public FoldingRules {
  public:
   explicit AmdExtFoldingRules(IRContext* ctx) : FoldingRules(ctx) {}
@@ -753,7 +865,8 @@ class AmdExtFoldingRules : public FoldingRules {
     if (extension_id != 0) {
       ext_rules_[{extension_id, CubeFaceCoordAMD}].push_back(
           ReplaceCubeFaceCoord);
-      ext_rules_[{extension_id, CubeFaceIndexAMD}].push_back(NotImplementedYet);
+      ext_rules_[{extension_id, CubeFaceIndexAMD}].push_back(
+          ReplaceCubeFaceIndex);
       ext_rules_[{extension_id, TimeAMD}].push_back(NotImplementedYet);
     }
   }
