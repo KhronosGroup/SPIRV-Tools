@@ -246,37 +246,74 @@ bool CanReachWithoutTraversingLoopBackEdge(opt::IRContext* context,
 bool NewEdgeLeavingConstructBodyRespectsUseDefDominance(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     opt::BasicBlock* construct_merge_block) {
-  // Check that the dominators for id uses in the loop's continue target are not
-  // spoiled by the new edge.
   auto enclosing_function = bb_from->GetParent();
   auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
+
+  // We are concerned about definitions occurring in the construct being
+  // bypassed by an edge from |bb_from| to |bb_to|. We thus need to investigate
+  // all block from after |bb_from| until |construct_merge_block|.
+
   auto merge_block_iterator =
       enclosing_function->FindBlock(construct_merge_block->id());
   auto block_it = enclosing_function->FindBlock(bb_from->id());
   assert(block_it != enclosing_function->end());
   ++block_it;
+
+  // Iterate through blocks in module order until we find the merge block.  Due
+  // scenarios where the merge block may be unreachable, we cannot guarantee
+  // that we will find it, so check for the end of the function to be safe.
+  // (Stopping at the merge block is just an optimization.)
   for (; block_it != enclosing_function->end() &&
          block_it != merge_block_iterator;
        ++block_it) {
+    // We are interested in looking at troublesome definitions in this block.
     opt::BasicBlock* defining_block = &*block_it;
+
+    // If it's not possible to reach |defining_block| from |bb_from| then the
+    // edge to |bb_to| from |bb_from| has no impact on |defining_block|.
     if (!CanReachWithoutTraversingLoopBackEdge(context, bb_from,
                                                defining_block)) {
       continue;
     }
+
+    // If |bb_to| dominates |defining_block|, the definition will not be
+    // impacted by a new edge to |bb_to|.
+    if (dominator_analysis->Dominates(bb_to, defining_block)) {
+      continue;
+    }
+
+    // Look through all the uses of all instructions in |defining_block|.
     for (auto& inst : *defining_block) {
       if (!context->get_def_use_mgr()->WhileEachUse(
               &inst,
-              [context, bb_to, defining_block, dominator_analysis](
-                  opt::Instruction* user, uint32_t operand_index) -> bool {
+              [context, bb_to](opt::Instruction* user,
+                               uint32_t operand_index) -> bool {
+                // If this use is in an OpPhi, we need to check that dominance
+                // of the relevant *parent* block is not spoiled.  Otherwise we
+                // need to check that dominance of the block containing the use
+                // is not spoiled.
                 opt::BasicBlock* use_block_or_phi_parent =
                     user->opcode() == SpvOpPhi
                         ? context->cfg()->block(
                               user->GetSingleWordOperand(operand_index + 1))
                         : context->get_instr_block(user);
-                return use_block_or_phi_parent == nullptr ||
-                       dominator_analysis->Dominates(bb_to, defining_block) ||
-                       !CanReachWithoutTraversingLoopBackEdge(
-                           context, bb_to, use_block_or_phi_parent);
+
+                // There might not be any relevant block, e.g. if the use is in
+                // a decoration; in this case the new edge is unproblematic.
+                if (use_block_or_phi_parent == nullptr) {
+                  return true;
+                }
+
+                // If it is possible to get from |bb_to| to
+                // |use_block_or_phi_parent| (without going through a loop
+                // back-edge) then adding the edge would introduce a path
+                // involving |bb_from|->|bb_to|->|use_block_or_phi_parent| that
+                // does *not* go through |defining_block|; thus
+                // |use_block_or_phi_parent| would not be dominated by
+                // |defining_block|, which would be invalid.
+                return !CanReachWithoutTraversingLoopBackEdge(
+                    context, bb_to, use_block_or_phi_parent);
+
               })) {
         return false;
       }
