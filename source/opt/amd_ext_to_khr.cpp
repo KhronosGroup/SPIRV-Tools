@@ -14,6 +14,9 @@
 
 #include "source/opt/amd_ext_to_khr.h"
 
+#include <set>
+#include <string>
+
 #include "ir_builder.h"
 #include "source/opt/ir_context.h"
 #include "spv-amd-shader-ballot.insts.inc"
@@ -43,9 +46,17 @@ enum AmdShaderTrinaryMinMaxExtOpCodes {
   SMid3AMD = 9
 };
 
+enum AmdGcnShader { CubeFaceCoordAMD = 2, CubeFaceIndexAMD = 1, TimeAMD = 3 };
+
 analysis::Type* GetUIntType(IRContext* ctx) {
   analysis::Integer int_type(32, false);
   return ctx->get_type_mgr()->GetRegisteredType(&int_type);
+}
+
+bool NotImplementedYet(IRContext*, Instruction*,
+                       const std::vector<const analysis::Constant*>&) {
+  assert(false && "Not implemented.");
+  return false;
 }
 
 // Returns a folding rule that replaces |op(a,b,c)| by |op(op(a,b),c)|, where
@@ -322,7 +333,6 @@ bool ReplaceSwizzleInvocationsMasked(
   analysis::DefUseManager* def_use_mgr = ctx->get_def_use_mgr();
   analysis::ConstantManager* const_mgr = ctx->get_constant_mgr();
 
-  // ctx->AddCapability(SpvCapabilitySubgroupBallotKHR);
   ctx->AddCapability(SpvCapabilityGroupNonUniformBallot);
   ctx->AddCapability(SpvCapabilityGroupNonUniformShuffle);
 
@@ -515,6 +525,281 @@ bool ReplaceMbcnt(IRContext* context, Instruction* inst,
   return true;
 }
 
+// A folding rule that will replace the CubeFaceCoordAMD extended
+// instruction in the SPV_AMD_gcn_shader_ballot.  Returns true if the folding is
+// successful.
+//
+// The instruction
+//
+//  %result = OpExtInst %v2float %1 CubeFaceCoordAMD %input
+//
+// with
+//
+//             %x = OpCompositeExtract %float %input 0
+//             %y = OpCompositeExtract %float %input 1
+//             %z = OpCompositeExtract %float %input 2
+//            %nx = OpFNegate %float %x
+//            %ny = OpFNegate %float %y
+//            %nz = OpFNegate %float %z
+//            %ax = OpExtInst %float %n_1 FAbs %x
+//            %ay = OpExtInst %float %n_1 FAbs %y
+//            %az = OpExtInst %float %n_1 FAbs %z
+//      %amax_x_y = OpExtInst %float %n_1 FMax %ay %ax
+//          %amax = OpExtInst %float %n_1 FMax %az %amax_x_y
+//        %cubema = OpFMul %float %float_2 %amax
+//      %is_z_max = OpFOrdGreaterThanEqual %bool %az %amax_x_y
+//  %not_is_z_max = OpLogicalNot %bool %is_z_max
+//        %y_gt_x = OpFOrdGreaterThanEqual %bool %ay %ax
+//      %is_y_max = OpLogicalAnd %bool %not_is_z_max %y_gt_x
+//      %is_z_neg = OpFOrdLessThan %bool %z %float_0
+// %cubesc_case_1 = OpSelect %float %is_z_neg %nx %x
+//      %is_x_neg = OpFOrdLessThan %bool %x %float_0
+// %cubesc_case_2 = OpSelect %float %is_x_neg %z %nz
+//           %sel = OpSelect %float %is_y_max %x %cubesc_case_2
+//        %cubesc = OpSelect %float %is_z_max %cubesc_case_1 %sel
+//      %is_y_neg = OpFOrdLessThan %bool %y %float_0
+// %cubetc_case_1 = OpSelect %float %is_y_neg %nz %z
+//        %cubetc = OpSelect %float %is_y_max %cubetc_case_1 %ny
+//          %cube = OpCompositeConstruct %v2float %cubesc %cubetc
+//         %denom = OpCompositeConstruct %v2float %cubema %cubema
+//           %div = OpFDiv %v2float %cube %denom
+//        %result = OpFAdd %v2float %div %const
+//
+// Also adding the capabilities and builtins that are needed.
+bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
+                          const std::vector<const analysis::Constant*>&) {
+  analysis::TypeManager* type_mgr = ctx->get_type_mgr();
+  analysis::ConstantManager* const_mgr = ctx->get_constant_mgr();
+
+  uint32_t float_type_id = type_mgr->GetFloatTypeId();
+  const analysis::Type* v2_float_type = type_mgr->GetFloatVectorType(2);
+  uint32_t v2_float_type_id = type_mgr->GetId(v2_float_type);
+  uint32_t bool_id = type_mgr->GetBoolTypeId();
+
+  InstructionBuilder ir_builder(
+      ctx, inst,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+
+  uint32_t input_id = inst->GetSingleWordInOperand(2);
+  uint32_t glsl405_ext_inst_id =
+      ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+  if (glsl405_ext_inst_id == 0) {
+    ctx->AddExtInstImport("GLSL.std.450");
+    glsl405_ext_inst_id =
+        ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+  }
+
+  // Get the constants that will be used.
+  uint32_t f0_const_id = const_mgr->GetFloatConst(0.0);
+  uint32_t f2_const_id = const_mgr->GetFloatConst(2.0);
+  uint32_t f0_5_const_id = const_mgr->GetFloatConst(0.5);
+  const analysis::Constant* vec_const =
+      const_mgr->GetConstant(v2_float_type, {f0_5_const_id, f0_5_const_id});
+  uint32_t vec_const_id =
+      const_mgr->GetDefiningInstruction(vec_const)->result_id();
+
+  // Extract the input values.
+  Instruction* x = ir_builder.AddCompositeExtract(float_type_id, input_id, {0});
+  Instruction* y = ir_builder.AddCompositeExtract(float_type_id, input_id, {1});
+  Instruction* z = ir_builder.AddCompositeExtract(float_type_id, input_id, {2});
+
+  // Negate the input values.
+  Instruction* nx =
+      ir_builder.AddUnaryOp(float_type_id, SpvOpFNegate, x->result_id());
+  Instruction* ny =
+      ir_builder.AddUnaryOp(float_type_id, SpvOpFNegate, y->result_id());
+  Instruction* nz =
+      ir_builder.AddUnaryOp(float_type_id, SpvOpFNegate, z->result_id());
+
+  // Get the abolsute values of the inputs.
+  Instruction* ax = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {x->result_id()});
+  Instruction* ay = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {y->result_id()});
+  Instruction* az = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {z->result_id()});
+
+  // Find which values are negative.  Used in later computations.
+  Instruction* is_z_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 z->result_id(), f0_const_id);
+  Instruction* is_y_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 y->result_id(), f0_const_id);
+  Instruction* is_x_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 x->result_id(), f0_const_id);
+
+  // Compute cubema
+  Instruction* amax_x_y = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FMax,
+      {ax->result_id(), ay->result_id()});
+  Instruction* amax = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FMax,
+      {az->result_id(), amax_x_y->result_id()});
+  Instruction* cubema = ir_builder.AddBinaryOp(float_type_id, SpvOpFMul,
+                                               f2_const_id, amax->result_id());
+
+  // Do the comparisons needed for computing cubesc and cubetc.
+  Instruction* is_z_max =
+      ir_builder.AddBinaryOp(bool_id, SpvOpFOrdGreaterThanEqual,
+                             az->result_id(), amax_x_y->result_id());
+  Instruction* not_is_z_max =
+      ir_builder.AddUnaryOp(bool_id, SpvOpLogicalNot, is_z_max->result_id());
+  Instruction* y_gr_x = ir_builder.AddBinaryOp(
+      bool_id, SpvOpFOrdGreaterThanEqual, ay->result_id(), ax->result_id());
+  Instruction* is_y_max = ir_builder.AddBinaryOp(
+      bool_id, SpvOpLogicalAnd, not_is_z_max->result_id(), y_gr_x->result_id());
+
+  // Select the correct value for cubesc.
+  Instruction* cubesc_case_1 = ir_builder.AddSelect(
+      float_type_id, is_z_neg->result_id(), nx->result_id(), x->result_id());
+  Instruction* cubesc_case_2 = ir_builder.AddSelect(
+      float_type_id, is_x_neg->result_id(), z->result_id(), nz->result_id());
+  Instruction* sel =
+      ir_builder.AddSelect(float_type_id, is_y_max->result_id(), x->result_id(),
+                           cubesc_case_2->result_id());
+  Instruction* cubesc =
+      ir_builder.AddSelect(float_type_id, is_z_max->result_id(),
+                           cubesc_case_1->result_id(), sel->result_id());
+
+  // Select the correct value for cubetc.
+  Instruction* cubetc_case_1 = ir_builder.AddSelect(
+      float_type_id, is_y_neg->result_id(), nz->result_id(), z->result_id());
+  Instruction* cubetc =
+      ir_builder.AddSelect(float_type_id, is_y_max->result_id(),
+                           cubetc_case_1->result_id(), ny->result_id());
+
+  // Do the division
+  Instruction* cube = ir_builder.AddCompositeConstruct(
+      v2_float_type_id, {cubesc->result_id(), cubetc->result_id()});
+  Instruction* denom = ir_builder.AddCompositeConstruct(
+      v2_float_type_id, {cubema->result_id(), cubema->result_id()});
+  Instruction* div = ir_builder.AddBinaryOp(
+      v2_float_type_id, SpvOpFDiv, cube->result_id(), denom->result_id());
+
+  // Get the final result by adding 0.5 to |div|.
+  inst->SetOpcode(SpvOpFAdd);
+  Instruction::OperandList new_operands;
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {div->result_id()}});
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {vec_const_id}});
+
+  inst->SetInOperands(std::move(new_operands));
+  ctx->UpdateDefUse(inst);
+  return true;
+}
+
+// A folding rule that will replace the CubeFaceCoordAMD extended
+// instruction in the SPV_AMD_gcn_shader_ballot.  Returns true if the folding
+// is successful.
+//
+// The instruction
+//
+//  %result = OpExtInst %v2float %1 CubeFaceCoordAMD %input
+//
+// with
+//
+//             %x = OpCompositeExtract %float %input 0
+//             %y = OpCompositeExtract %float %input 1
+//             %z = OpCompositeExtract %float %input 2
+//            %ax = OpExtInst %float %n_1 FAbs %x
+//            %ay = OpExtInst %float %n_1 FAbs %y
+//            %az = OpExtInst %float %n_1 FAbs %z
+//      %is_z_neg = OpFOrdLessThan %bool %z %float_0
+//      %is_y_neg = OpFOrdLessThan %bool %y %float_0
+//      %is_x_neg = OpFOrdLessThan %bool %x %float_0
+//      %amax_x_y = OpExtInst %float %n_1 FMax %ay %ax
+//      %is_z_max = OpFOrdGreaterThanEqual %bool %az %amax_x_y
+//        %y_gt_x = OpFOrdGreaterThanEqual %bool %ay %ax
+//        %case_z = OpSelect %float %is_z_neg %float_5 %float4
+//        %case_y = OpSelect %float %is_y_neg %float_3 %float2
+//        %case_x = OpSelect %float %is_x_neg %float_1 %float0
+//           %sel = OpSelect %float %y_gt_x %case_y %case_x
+//        %result = OpSelect %float %is_z_max %case_z %sel
+//
+// Also adding the capabilities and builtins that are needed.
+bool ReplaceCubeFaceIndex(IRContext* ctx, Instruction* inst,
+                          const std::vector<const analysis::Constant*>&) {
+  analysis::TypeManager* type_mgr = ctx->get_type_mgr();
+  analysis::ConstantManager* const_mgr = ctx->get_constant_mgr();
+
+  uint32_t float_type_id = type_mgr->GetFloatTypeId();
+  uint32_t bool_id = type_mgr->GetBoolTypeId();
+
+  InstructionBuilder ir_builder(
+      ctx, inst,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+
+  uint32_t input_id = inst->GetSingleWordInOperand(2);
+  uint32_t glsl405_ext_inst_id =
+      ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+  if (glsl405_ext_inst_id == 0) {
+    ctx->AddExtInstImport("GLSL.std.450");
+    glsl405_ext_inst_id =
+        ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+  }
+
+  // Get the constants that will be used.
+  uint32_t f0_const_id = const_mgr->GetFloatConst(0.0);
+  uint32_t f1_const_id = const_mgr->GetFloatConst(1.0);
+  uint32_t f2_const_id = const_mgr->GetFloatConst(2.0);
+  uint32_t f3_const_id = const_mgr->GetFloatConst(3.0);
+  uint32_t f4_const_id = const_mgr->GetFloatConst(4.0);
+  uint32_t f5_const_id = const_mgr->GetFloatConst(5.0);
+
+  // Extract the input values.
+  Instruction* x = ir_builder.AddCompositeExtract(float_type_id, input_id, {0});
+  Instruction* y = ir_builder.AddCompositeExtract(float_type_id, input_id, {1});
+  Instruction* z = ir_builder.AddCompositeExtract(float_type_id, input_id, {2});
+
+  // Get the absolute values of the inputs.
+  Instruction* ax = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {x->result_id()});
+  Instruction* ay = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {y->result_id()});
+  Instruction* az = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FAbs, {z->result_id()});
+
+  // Find which values are negative.  Used in later computations.
+  Instruction* is_z_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 z->result_id(), f0_const_id);
+  Instruction* is_y_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 y->result_id(), f0_const_id);
+  Instruction* is_x_neg = ir_builder.AddBinaryOp(bool_id, SpvOpFOrdLessThan,
+                                                 x->result_id(), f0_const_id);
+
+  // Find the max value.
+  Instruction* amax_x_y = ir_builder.AddNaryExtendedInstruction(
+      float_type_id, glsl405_ext_inst_id, GLSLstd450FMax,
+      {ax->result_id(), ay->result_id()});
+  Instruction* is_z_max =
+      ir_builder.AddBinaryOp(bool_id, SpvOpFOrdGreaterThanEqual,
+                             az->result_id(), amax_x_y->result_id());
+  Instruction* y_gr_x = ir_builder.AddBinaryOp(
+      bool_id, SpvOpFOrdGreaterThanEqual, ay->result_id(), ax->result_id());
+
+  // Get the value for each case.
+  Instruction* case_z = ir_builder.AddSelect(
+      float_type_id, is_z_neg->result_id(), f5_const_id, f4_const_id);
+  Instruction* case_y = ir_builder.AddSelect(
+      float_type_id, is_y_neg->result_id(), f3_const_id, f2_const_id);
+  Instruction* case_x = ir_builder.AddSelect(
+      float_type_id, is_x_neg->result_id(), f1_const_id, f0_const_id);
+
+  // Select the correct case.
+  Instruction* sel =
+      ir_builder.AddSelect(float_type_id, y_gr_x->result_id(),
+                           case_y->result_id(), case_x->result_id());
+
+  // Get the final result by adding 0.5 to |div|.
+  inst->SetOpcode(SpvOpSelect);
+  Instruction::OperandList new_operands;
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {is_z_max->result_id()}});
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {case_z->result_id()}});
+  new_operands.push_back({SPV_OPERAND_TYPE_ID, {sel->result_id()}});
+
+  inst->SetInOperands(std::move(new_operands));
+  ctx->UpdateDefUse(inst);
+  return true;
+}
+
 class AmdExtFoldingRules : public FoldingRules {
  public:
   explicit AmdExtFoldingRules(IRContext* ctx) : FoldingRules(ctx) {}
@@ -575,6 +860,17 @@ class AmdExtFoldingRules : public FoldingRules {
       ext_rules_[{extension_id, SMid3AMD}].push_back(
           ReplaceTrinaryMid<GLSLstd450SMin, GLSLstd450SMax, GLSLstd450SClamp>);
     }
+
+    extension_id =
+        context()->module()->GetExtInstImportId("SPV_AMD_gcn_shader");
+
+    if (extension_id != 0) {
+      ext_rules_[{extension_id, CubeFaceCoordAMD}].push_back(
+          ReplaceCubeFaceCoord);
+      ext_rules_[{extension_id, CubeFaceIndexAMD}].push_back(
+          ReplaceCubeFaceIndex);
+      ext_rules_[{extension_id, TimeAMD}].push_back(NotImplementedYet);
+    }
   }
 };
 
@@ -607,17 +903,15 @@ Pass::Status AmdExtensionToKhrPass::Process() {
 
   // Now that instruction that require the extensions have been removed, we can
   // remove the extension instructions.
+  std::set<std::string> ext_to_remove = {"SPV_AMD_shader_ballot",
+                                         "SPV_AMD_shader_trinary_minmax",
+                                         "SPV_AMD_gcn_shader"};
+
   std::vector<Instruction*> to_be_killed;
   for (Instruction& inst : context()->module()->extensions()) {
     if (inst.opcode() == SpvOpExtension) {
-      if (strcmp("SPV_AMD_shader_ballot",
-                 reinterpret_cast<const char*>(
-                     &(inst.GetInOperand(0).words[0]))) == 0) {
-        to_be_killed.push_back(&inst);
-      }
-      if (strcmp("SPV_AMD_shader_trinary_minmax",
-                 reinterpret_cast<const char*>(
-                     &(inst.GetInOperand(0).words[0]))) == 0) {
+      if (ext_to_remove.count(reinterpret_cast<const char*>(
+              &(inst.GetInOperand(0).words[0]))) != 0) {
         to_be_killed.push_back(&inst);
       }
     }
@@ -625,14 +919,8 @@ Pass::Status AmdExtensionToKhrPass::Process() {
 
   for (Instruction& inst : context()->ext_inst_imports()) {
     if (inst.opcode() == SpvOpExtInstImport) {
-      if (strcmp("SPV_AMD_shader_ballot",
-                 reinterpret_cast<const char*>(
-                     &(inst.GetInOperand(0).words[0]))) == 0) {
-        to_be_killed.push_back(&inst);
-      }
-      if (strcmp("SPV_AMD_shader_trinary_minmax",
-                 reinterpret_cast<const char*>(
-                     &(inst.GetInOperand(0).words[0]))) == 0) {
+      if (ext_to_remove.count(reinterpret_cast<const char*>(
+              &(inst.GetInOperand(0).words[0]))) != 0) {
         to_be_killed.push_back(&inst);
       }
     }

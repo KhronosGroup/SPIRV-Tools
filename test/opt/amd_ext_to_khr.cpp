@@ -702,6 +702,153 @@ TEST_F(AmdExtToKhrTest, ReplaceVecUMid3AMD) {
   SinglePassRunAndMatch<AmdExtensionToKhrPass>(text, true);
 }
 
+TEST_F(AmdExtToKhrTest, ReplaceCubeFaceCoordAMD) {
+  // Sorry for the Check test.  The code sequence is so long, I do not think
+  // that a match test would be anymore legible.  This tests the replacement of
+  // the CubeFaceCoordAMD instruction.
+  const std::string before = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpExtension "SPV_AMD_gcn_shader"
+          %1 = OpExtInstImport "SPV_AMD_gcn_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+    %v3float = OpTypeVector %float 3
+          %2 = OpFunction %void None %4
+          %8 = OpLabel
+          %9 = OpUndef %v3float
+         %10 = OpExtInst %v2float %1 CubeFaceCoordAMD %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const std::string after = R"(OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+%12 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "main"
+OpExecutionMode %2 LocalSize 1 1 1
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v3float = OpTypeVector %float 3
+%bool = OpTypeBool
+%float_0 = OpConstant %float 0
+%float_2 = OpConstant %float 2
+%float_0_5 = OpConstant %float 0.5
+%16 = OpConstantComposite %v2float %float_0_5 %float_0_5
+%2 = OpFunction %void None %4
+%8 = OpLabel
+%9 = OpUndef %v3float
+%17 = OpCompositeExtract %float %9 0
+%18 = OpCompositeExtract %float %9 1
+%19 = OpCompositeExtract %float %9 2
+%20 = OpFNegate %float %17
+%21 = OpFNegate %float %18
+%22 = OpFNegate %float %19
+%23 = OpExtInst %float %12 FAbs %17
+%24 = OpExtInst %float %12 FAbs %18
+%25 = OpExtInst %float %12 FAbs %19
+%26 = OpFOrdLessThan %bool %19 %float_0
+%27 = OpFOrdLessThan %bool %18 %float_0
+%28 = OpFOrdLessThan %bool %17 %float_0
+%29 = OpExtInst %float %12 FMax %23 %24
+%30 = OpExtInst %float %12 FMax %25 %29
+%31 = OpFMul %float %float_2 %30
+%32 = OpFOrdGreaterThanEqual %bool %25 %29
+%33 = OpLogicalNot %bool %32
+%34 = OpFOrdGreaterThanEqual %bool %24 %23
+%35 = OpLogicalAnd %bool %33 %34
+%36 = OpSelect %float %26 %20 %17
+%37 = OpSelect %float %28 %19 %22
+%38 = OpSelect %float %35 %17 %37
+%39 = OpSelect %float %32 %36 %38
+%40 = OpSelect %float %27 %22 %19
+%41 = OpSelect %float %35 %40 %21
+%42 = OpCompositeConstruct %v2float %39 %41
+%43 = OpCompositeConstruct %v2float %31 %31
+%44 = OpFDiv %v2float %42 %43
+%10 = OpFAdd %v2float %44 %16
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<AmdExtensionToKhrPass>(before, after, true);
+}
+
+TEST_F(AmdExtToKhrTest, ReplaceCubeFaceIndexAMD) {
+  // Sorry for the Check test.  The code sequence is so long, I do not think
+  // that a match test would be anymore legible.  This tests the replacement of
+  // the CubeFaceIndexAMD instruction.
+  const std::string before = R"(OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_AMD_gcn_shader"
+%1 = OpExtInstImport "SPV_AMD_gcn_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "main"
+OpExecutionMode %2 LocalSize 1 1 1
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v3float = OpTypeVector %float 3
+%2 = OpFunction %void None %4
+%7 = OpLabel
+%8 = OpUndef %v3float
+%9 = OpExtInst %float %1 CubeFaceIndexAMD %8
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after = R"(OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+%11 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "main"
+OpExecutionMode %2 LocalSize 1 1 1
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v3float = OpTypeVector %float 3
+%bool = OpTypeBool
+%float_0 = OpConstant %float 0
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%float_4 = OpConstant %float 4
+%float_5 = OpConstant %float 5
+%2 = OpFunction %void None %4
+%7 = OpLabel
+%8 = OpUndef %v3float
+%18 = OpCompositeExtract %float %8 0
+%19 = OpCompositeExtract %float %8 1
+%20 = OpCompositeExtract %float %8 2
+%21 = OpExtInst %float %11 FAbs %18
+%22 = OpExtInst %float %11 FAbs %19
+%23 = OpExtInst %float %11 FAbs %20
+%24 = OpFOrdLessThan %bool %20 %float_0
+%25 = OpFOrdLessThan %bool %19 %float_0
+%26 = OpFOrdLessThan %bool %18 %float_0
+%27 = OpExtInst %float %11 FMax %21 %22
+%28 = OpFOrdGreaterThanEqual %bool %23 %27
+%29 = OpFOrdGreaterThanEqual %bool %22 %21
+%30 = OpSelect %float %24 %float_5 %float_4
+%31 = OpSelect %float %25 %float_3 %float_2
+%32 = OpSelect %float %26 %float_1 %float_0
+%33 = OpSelect %float %29 %31 %32
+%9 = OpSelect %float %28 %30 %33
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<AmdExtensionToKhrPass>(before, after, true);
+}
+
 TEST_F(AmdExtToKhrTest, SetVersion) {
   const std::string text = R"(
                OpCapability Shader
