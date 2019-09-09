@@ -380,7 +380,11 @@ class ValidationState_t {
 
   /// Registers the decoration for the given <id>
   void RegisterDecorationForId(uint32_t id, const Decoration& dec) {
-    id_decorations_[id].push_back(dec);
+    auto& dec_list = id_decorations_[id];
+    auto lb = std::find(dec_list.begin(), dec_list.end(), dec);
+    if (lb == dec_list.end()) {
+      dec_list.push_back(dec);
+    }
   }
 
   /// Registers the list of decorations for the given <id>
