@@ -30,7 +30,6 @@ class FuzzerPassCopyObjects : public FuzzerPass {
   ~FuzzerPassCopyObjects();
 
   void Apply() override;
-
 };
 
 }  // namespace fuzz

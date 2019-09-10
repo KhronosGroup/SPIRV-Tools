@@ -28,16 +28,15 @@ FuzzerPassCopyObjects::FuzzerPassCopyObjects(
 FuzzerPassCopyObjects::~FuzzerPassCopyObjects() = default;
 
 void FuzzerPassCopyObjects::Apply() {
-
   // Consider every block in every function.
-  for (auto &function : *GetIRContext()->module()) {
-    for (auto &block : function) {
-      // We now consider every instruction in the block, randomly deciding whether to add an object copy before the
-      // instruction.
+  for (auto& function : *GetIRContext()->module()) {
+    for (auto& block : function) {
+      // We now consider every instruction in the block, randomly deciding
+      // whether to add an object copy before the instruction.
 
       // TODO: got here - write comment.
-      // In order to insert object copy instructions, we need to identify where in the block we...
-
+      // In order to insert object copy instructions, we need to identify where
+      // in the block we...
 
       // The initial base instruction is the block label.
       uint32_t base = block.id();
@@ -63,13 +62,16 @@ void FuzzerPassCopyObjects::Apply() {
         }
 
         // Randomly decide whether to try inserting an object copy here.
-        if(!GetFuzzerContext()->ChoosePercentage(GetFuzzerContext()->GetChanceOfCopyingObject())) {
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfCopyingObject())) {
           continue;
         }
 
         // Populate list of potential instructions that can be copied.
-        // TODO(afd) The following is (relatively) simple, but may end up being prohibitively
-        //  inefficient, as it walks the whole dominator tree for every copy that is added.
+        // TODO(afd) The following is (relatively) simple, but may end up being
+        // prohibitively
+        //  inefficient, as it walks the whole dominator tree for every copy
+        //  that is added.
 
         std::vector<opt::Instruction*> copyable_instructions;
 
@@ -81,51 +83,63 @@ void FuzzerPassCopyObjects::Apply() {
         }
 
         // Consider all previous instructions in this block
-        for (auto prev_inst_it = block.begin(); prev_inst_it != inst_it; ++prev_inst_it) {
-          if (TransformationCopyObject::IsCopyable(GetIRContext(), &*prev_inst_it)) {
+        for (auto prev_inst_it = block.begin(); prev_inst_it != inst_it;
+             ++prev_inst_it) {
+          if (TransformationCopyObject::IsCopyable(GetIRContext(),
+                                                   &*prev_inst_it)) {
             copyable_instructions.push_back(&*prev_inst_it);
           }
         }
 
-        // Walk the dominator tree to consider all instructions from dominating blocks
-        auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(&function);
-        for (auto next_dominator = dominator_analysis->ImmediateDominator(&block);
+        // Walk the dominator tree to consider all instructions from dominating
+        // blocks
+        auto dominator_analysis =
+            GetIRContext()->GetDominatorAnalysis(&function);
+        for (auto next_dominator =
+                 dominator_analysis->ImmediateDominator(&block);
              next_dominator != nullptr;
-             next_dominator = dominator_analysis->ImmediateDominator(next_dominator)) {
+             next_dominator =
+                 dominator_analysis->ImmediateDominator(next_dominator)) {
           for (auto& dominating_inst : *next_dominator) {
-            if (TransformationCopyObject::IsCopyable(GetIRContext(), &dominating_inst)) {
+            if (TransformationCopyObject::IsCopyable(GetIRContext(),
+                                                     &dominating_inst)) {
               copyable_instructions.push_back(&dominating_inst);
             }
           }
         }
 
-        // At this point, |copyable_instructions| contains all the instructions we might
-        // think of copying.
+        // At this point, |copyable_instructions| contains all the instructions
+        // we might think of copying.
 
         if (!copyable_instructions.empty()) {
-          uint32_t index = GetFuzzerContext()->RandomIndex(copyable_instructions);
+          uint32_t index =
+              GetFuzzerContext()->RandomIndex(copyable_instructions);
           TransformationCopyObject transformation(
-                  copyable_instructions[index]->result_id(),
-                  base, offset, GetFuzzerContext()->GetFreshId());
-          assert(transformation.IsApplicable(GetIRContext(), *GetFactManager()) && "This transformation should be applicable by construction.");
+              copyable_instructions[index]->result_id(), base, offset,
+              GetFuzzerContext()->GetFreshId());
+          assert(
+              transformation.IsApplicable(GetIRContext(), *GetFactManager()) &&
+              "This transformation should be applicable by construction.");
           transformation.Apply(GetIRContext(), GetFactManager());
-          *GetTransformations()->add_transformation() = transformation.ToMessage();
+          *GetTransformations()->add_transformation() =
+              transformation.ToMessage();
 
           if (!inst_it->HasResultId()) {
-            // We have inserted a new instruction before the current instruction, and we are tracking the current
-            // id-less instruction via an offset (offset) from a previous instruction (base) that has an id.
-            // We increment |offset| to reflect the newly-inserted instruction.
+            // We have inserted a new instruction before the current
+            // instruction, and we are tracking the current id-less instruction
+            // via an offset (offset) from a previous instruction (base) that
+            // has an id. We increment |offset| to reflect the newly-inserted
+            // instruction.
             //
-            // This is slightly preferable to the alternative of setting |base| to be the result id of the new
-            // instruction, since on replay we might end up eliminating this copy but keeping a subsequent copy.
+            // This is slightly preferable to the alternative of setting |base|
+            // to be the result id of the new instruction, since on replay we
+            // might end up eliminating this copy but keeping a subsequent copy.
             offset++;
           }
-
         }
       }
     }
   }
-
 }
 
 }  // namespace fuzz
