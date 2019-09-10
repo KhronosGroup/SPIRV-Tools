@@ -34,16 +34,16 @@ void FuzzerPassCopyObjects::Apply() {
       // We now consider every instruction in the block, randomly deciding
       // whether to add an object copy before the instruction.
 
-      // TODO: got here - write comment.
-      // In order to insert object copy instructions, we need to identify where
-      // in the block we...
+      // In order to insert an object copy instruction, we need to be able to
+      // identify the instruction a copy should be inserted before.  We do this
+      // by tracking a base instruction, which must generate a result id, and an
+      // offset (to allow us to identify instructions that do not generate
+      // result ids).
 
       // The initial base instruction is the block label.
       uint32_t base = block.id();
       uint32_t offset = 0;
-      // Consider every instruction in the block.  The label is excluded: it is
-      // only necessary to consider it as a base in case the first instruction
-      // in the block does not have a result id.
+      // Consider every instruction in the block.
       for (auto inst_it = block.begin(); inst_it != block.end(); ++inst_it) {
         if (inst_it->HasResultId()) {
           // In the case that the instruction has a result id, we use the
@@ -57,6 +57,8 @@ void FuzzerPassCopyObjects::Apply() {
           offset++;
         }
 
+        // Check whether it is legitimate to insert a copy before this
+        // instruction.
         if (!TransformationCopyObject::CanInsertCopyBefore(inst_it)) {
           continue;
         }
@@ -69,10 +71,8 @@ void FuzzerPassCopyObjects::Apply() {
 
         // Populate list of potential instructions that can be copied.
         // TODO(afd) The following is (relatively) simple, but may end up being
-        // prohibitively
-        //  inefficient, as it walks the whole dominator tree for every copy
-        //  that is added.
-
+        //  prohibitively inefficient, as it walks the whole dominator tree for
+        //  every copy that is added.
         std::vector<opt::Instruction*> copyable_instructions;
 
         // Consider all global declarations
@@ -112,6 +112,8 @@ void FuzzerPassCopyObjects::Apply() {
         // we might think of copying.
 
         if (!copyable_instructions.empty()) {
+          // Choose a copyable instruction at random, and create and apply an
+          // object copying transformation based on it.
           uint32_t index =
               GetFuzzerContext()->RandomIndex(copyable_instructions);
           TransformationCopyObject transformation(
