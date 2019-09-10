@@ -2454,6 +2454,111 @@ TEST(TransformationAddDeadBreakTest, RespectDominanceRules6) {
   ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
 }
 
+TEST(TransformationAddDeadBreakTest, RespectDominanceRules7) {
+  // This example - a variation on an earlier test - captures the following
+  // idiom:
+  //
+  //   loop {
+  // L1:
+  //   }
+  //   definition;
+  // L2:
+  //   use;
+  //
+  // Adding a dead jump from L1 to L2 would lead to 'definition' no longer
+  // dominating 'use', and so is not allowed.
+  //
+  // This version of the test captures the case where L1 appears after the
+  // loop merge (which SPIR-V dominance rules allow).
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeBool
+         %11 = OpConstantFalse %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %104 None
+               OpBranchConditional %11 %102 %103
+        %103 = OpLabel
+        %200 = OpCopyObject %10 %11
+               OpBranch %101
+        %101 = OpLabel
+        %201 = OpCopyObject %10 %200
+               OpReturn
+        %102 = OpLabel
+               OpBranch %103
+        %104 = OpLabel
+               OpBranch %100
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto bad_transformation = TransformationAddDeadBreak(102, 101, false, {});
+  ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationAddDeadBreakTest, RespectDominanceRules8) {
+  // A variation of RespectDominanceRules8 where the defining block appears
+  // in the loop, but after the definition of interest.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeBool
+         %11 = OpConstantFalse %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %104 None
+               OpBranchConditional %11 %102 %103
+        %103 = OpLabel
+        %200 = OpCopyObject %10 %11
+               OpBranch %101
+        %102 = OpLabel
+               OpBranch %103
+        %101 = OpLabel
+        %201 = OpCopyObject %10 %200
+               OpReturn
+        %104 = OpLabel
+               OpBranch %100
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto bad_transformation = TransformationAddDeadBreak(102, 101, false, {});
+  ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
