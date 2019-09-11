@@ -59,6 +59,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_move_block_down.h
         transformation_replace_boolean_constant_with_constant_binary.h
         transformation_replace_constant_with_uniform.h
+          transformation_replace_id_with_synonym.h
         transformation_split_block.h
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
@@ -95,6 +96,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_move_block_down.cpp
         transformation_replace_boolean_constant_with_constant_binary.cpp
         transformation_replace_constant_with_uniform.cpp
+        transformation_replace_id_with_synonym.cpp
         transformation_split_block.cpp
         uniform_buffer_element_descriptor.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc

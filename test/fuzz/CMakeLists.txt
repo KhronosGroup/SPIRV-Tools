@@ -34,6 +34,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_move_block_down_test.cpp
           transformation_replace_boolean_constant_with_constant_binary_test.cpp
           transformation_replace_constant_with_uniform_test.cpp
+          transformation_replace_id_with_synonym_test.cpp
           transformation_split_block_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
 
