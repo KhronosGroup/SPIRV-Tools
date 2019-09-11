@@ -273,7 +273,8 @@ TEST_P(VulkanToWebGPUPassTest, Ran) {
   std::vector<uint32_t> optimized;
   class ValidatorOptions validator_options;
   ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
-                      validator_options, true));
+                      validator_options, true))
+      << GetParam().input << "\n";
   std::string disassembly;
   {
     SpirvTools tools(SPV_ENV_WEBGPU_0);
@@ -412,7 +413,7 @@ INSTANTIATE_TEST_SUITE_P(
          "%void_f = OpTypeFunction %void\n"
          "%func = OpFunction %void None %void_f\n"
          "%label = OpLabel\n"
-         "%val0 = OpAtomicStore %u32_var %cross_device "
+         "        OpAtomicStore %u32_var %cross_device "
          "%acquire_release_atomic_counter_workgroup %u32_1\n"
          "%val1 = OpAtomicIIncrement %u32 %u32_var %cross_device "
          "%acquire_release_atomic_counter_workgroup\n"
