@@ -248,6 +248,8 @@ OpMemoryModel Physical32 OpenCL
 %f64vec4_0123 = OpConstantComposite %f64vec4 %f64_0 %f64_1 %f64_2 %f64_3
 %f64vec4_1234 = OpConstantComposite %f64vec4 %f64_1 %f64_2 %f64_3 %f64_4
 
+%u64vec2_01 = OpConstantComposite %u64vec2 %u64_0 %u64_1
+
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
 
@@ -1200,6 +1202,8 @@ TEST_F(ValidateConversion, BitcastSuccess) {
 %val7 = OpBitcast %f32vec2 %u64_1
 %val8 = OpBitcast %f64 %u32vec2_12
 %val9 = OpBitcast %f32vec4 %f64vec2_12
+%val10 = OpBitcast %u32ptr_func %u32vec2_01
+%val11 = OpBitcast %u32vec2 %ptr
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -1249,10 +1253,21 @@ TEST_F(ValidateConversion, BitcastPtrWrongInputType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected input to be a pointer or int scalar if Result Type "
-                "is pointer: Bitcast"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be a pointer, int scalar or 32-bit "
+                        "int vector if Result Type is pointer: Bitcast"));
+}
+
+TEST_F(ValidateConversion, BitcastPtrWrongInputTypeIntVector) {
+  const std::string body = R"(
+%val = OpBitcast %u32ptr_func %u64vec2_01
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be a pointer, int scalar or 32-bit "
+                        "int vector if Result Type is pointer: Bitcast"));
 }
 
 TEST_F(ValidateConversion, BitcastPtrWrongResultType) {
@@ -1262,11 +1277,21 @@ TEST_F(ValidateConversion, BitcastPtrWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Pointer can only be converted to another pointer or int scalar: "
-          "Bitcast"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Pointer can only be converted to another pointer, int "
+                        "scalar or 32-bit int vector: Bitcast"));
+}
+
+TEST_F(ValidateConversion, BitcastPtrWrongResultTypeIntVector) {
+  const std::string body = R"(
+%val = OpBitcast %u64vec2 %f32inp
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Pointer can only be converted to another pointer, int "
+                        "scalar or 32-bit int vector: Bitcast"));
 }
 
 TEST_F(ValidateConversion, BitcastDifferentTotalBitWidth) {
