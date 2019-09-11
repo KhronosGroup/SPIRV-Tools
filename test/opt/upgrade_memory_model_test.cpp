@@ -92,7 +92,7 @@ OpMemoryModel Logical GLSL450
 %func = OpFunction %void None %func_ty
 %1 = OpLabel
 %ld = OpLoad %int %var
-%st = OpStore %var %ld
+OpStore %var %ld
 OpReturn
 OpFunctionEnd
 )";
@@ -116,7 +116,7 @@ OpMemoryModel Logical GLSL450
 %param = OpFunctionParameter %ptr_int_Workgroup
 %1 = OpLabel
 %ld = OpLoad %int %param
-%st = OpStore %param %ld
+OpStore %param %ld
 OpReturn
 OpFunctionEnd
 )";
