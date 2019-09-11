@@ -22,7 +22,9 @@ namespace {
 TEST(TransformationReplaceIdWithSynonymTest, IllegalTransformations) {
   // Synonym does not dominate use.
   // Id in use is not synonymous
-  assert(0);
+  // Synonym use is not in synonym definition (%174 = OpCopyObject %int %174)
+  // Not allowed to replace an access chain index into a structure
+  FAIL();
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
@@ -30,7 +32,13 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
   // Synonym of global variable
   // Synonym of local expr
   // Synonym of local variable
-  assert(0);
+  // Allowed to replace an access chain index into a vector
+  FAIL();
+}
+
+TEST(TransformationReplaceIdWithSynonymTest, OpPhi) {
+  // Transformation should affect parent block
+  FAIL();
 }
 
 }  // namespace

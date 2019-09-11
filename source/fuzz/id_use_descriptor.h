@@ -39,7 +39,7 @@ protobufs::IdUseDescriptor MakeIdUseDescriptor(
 // the input operand index |in_operand_index| associated with the usage, returns
 // an IdUseDescriptor that represents the use.
 protobufs::IdUseDescriptor MakeIdUseDescriptorFromUse(
-    opt::Instruction* inst, uint32_t in_operand_index);
+    opt::IRContext* context, opt::Instruction* inst, uint32_t in_operand_index);
 
 }  // namespace transformation
 }  // namespace fuzz

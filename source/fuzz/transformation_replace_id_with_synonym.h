@@ -34,7 +34,15 @@ class TransformationReplaceIdWithSynonym : public Transformation {
       const protobufs::DataDescriptor data_descriptor,
       uint32_t fresh_id_for_temporary);
 
-  // TODO write comment
+  // - The fact manager must know that the id identified by
+  // |message_.id_use_descriptor| is synonomous with
+  //   |message_.data_descriptor|.
+  // - Replacing the id in |message_.id_use_descriptor| by the synonym in
+  // |message_.data_descriptor| must
+  //   respect SPIR-V's rules about uses being dominated by their definitions.
+  // - |fresh_id_for_temporary| must be 0.
+  // TODO file issue for the fact that we want to be able to do other synonyms,
+  // which will necessitate a non-zero id here.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
@@ -42,6 +50,10 @@ class TransformationReplaceIdWithSynonym : public Transformation {
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  static bool ReplacingUseWithSynonymIsOk(
+      opt::IRContext* context, opt::Instruction* use_instruction,
+      uint32_t use_in_operand_index, const protobufs::DataDescriptor& synonym);
 
  private:
   protobufs::TransformationReplaceIdWithSynonym message_;

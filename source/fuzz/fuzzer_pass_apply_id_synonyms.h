@@ -17,6 +17,8 @@
 
 #include "source/fuzz/fuzzer_pass.h"
 
+#include "source/opt/ir_context.h"
+
 namespace spvtools {
 namespace fuzz {
 

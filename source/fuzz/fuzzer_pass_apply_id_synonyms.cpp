@@ -14,7 +14,8 @@
 
 #include "source/fuzz/fuzzer_pass_apply_id_synonyms.h"
 
-#include "source/opt/ir_context.h"
+#include "source/fuzz/id_use_descriptor.h"
+#include "source/fuzz/transformation_replace_id_with_synonym.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -28,23 +29,13 @@ FuzzerPassApplyIdSynonyms::FuzzerPassApplyIdSynonyms(
 FuzzerPassApplyIdSynonyms::~FuzzerPassApplyIdSynonyms() = default;
 
 void FuzzerPassApplyIdSynonyms::Apply() {
+  std::vector<TransformationReplaceIdWithSynonym> transformations_to_apply;
+
   for (auto id_with_known_synonyms :
        GetFactManager()->GetIdsForWhichSynonymsAreKnown()) {
-    // A nullptr |dominator_analysis| is used to indicate that the id for which
-    // synonyms are known is defined at global scope.  Otherwise
-    // |dominator_analysis| provides access to dominance information for the
-    // function in which this id is defined.
-    opt::DominatorAnalysis* dominator_analysis = nullptr;
-    auto block_containing_id =
-        GetIRContext()->get_instr_block(id_with_known_synonyms);
-    if (block_containing_id) {
-      dominator_analysis = GetIRContext()->GetDominatorAnalysis(
-          block_containing_id->GetParent());
-    }
-
     GetIRContext()->get_def_use_mgr()->ForEachUse(
         id_with_known_synonyms,
-        [this, dominator_analysis, id_with_known_synonyms](
+        [this, id_with_known_synonyms, &transformations_to_apply](
             opt::Instruction* use_inst, uint32_t use_index) -> void {
           auto block_containing_use = GetIRContext()->get_instr_block(use_inst);
           // The use might not be in a block; e.g. it could be a decoration.
@@ -55,6 +46,7 @@ void FuzzerPassApplyIdSynonyms::Apply() {
                   GetFuzzerContext()->GetChanceOfReplacingIdWithSynonym())) {
             return;
           }
+
           std::vector<const protobufs::DataDescriptor*> synonyms_to_try;
           for (auto& data_descriptor :
                GetFactManager()->GetSynonymsForId(id_with_known_synonyms)) {
@@ -68,17 +60,45 @@ void FuzzerPassApplyIdSynonyms::Apply() {
             assert(synonym_to_try->index().size() == 0 &&
                    "Right now we only support id == id synonyms; supporting "
                    "e.g. id == index-into-vector will come later");
-            auto inst_defining_synonym =
-                GetIRContext()->get_def_use_mgr()->GetDef(
-                    synonym_to_try->object());
-            if (!dominator_analysis || dominator_analysis->Dominates(
-                                           inst_defining_synonym, use_inst)) {
-              assert(0);
+
+            if (!TransformationReplaceIdWithSynonym::
+                    ReplacingUseWithSynonymIsOk(GetIRContext(), use_inst,
+                                                use_index, *synonym_to_try)) {
+              continue;
             }
-            (void)(use_index);
+
+            // TODO: this deserves a comment.
+            uint32_t number_of_non_input_operands =
+                use_inst->NumOperands() - use_inst->NumInOperands();
+            TransformationReplaceIdWithSynonym replace_id_transformation(
+                transformation::MakeIdUseDescriptorFromUse(
+                    GetIRContext(), use_inst,
+                    use_index - number_of_non_input_operands),
+                *synonym_to_try, 0);
+            // The transformation should be applicable by construction.
+            assert(replace_id_transformation.IsApplicable(GetIRContext(),
+                                                          *GetFactManager()));
+            // We cannot actually apply the transformation here, as this would
+            // change the analysis results that are being depended on for usage
+            // iteration.  We instead store them up and apply them at the end of
+            // the method.
+            transformations_to_apply.push_back(replace_id_transformation);
+            break;
           }
         });
-    (void)(id_with_known_synonyms);
+  }
+
+  for (auto& replace_id_transformation : transformations_to_apply) {
+    // Even though replacing id uses with synonyms may lead to new instructions
+    // (to compute indices into composites), as these instructions will generate
+    // ids, their presence should not affect the id use descriptors that were
+    // computed during the creation of transformations. Thus transformations
+    // should not disable one another.
+    assert(replace_id_transformation.IsApplicable(GetIRContext(),
+                                                  *GetFactManager()));
+    replace_id_transformation.Apply(GetIRContext(), GetFactManager());
+    *GetTransformations()->add_transformation() =
+        replace_id_transformation.ToMessage();
   }
 }
 
