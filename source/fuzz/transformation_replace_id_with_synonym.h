@@ -23,30 +23,37 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO top level class comment
 class TransformationReplaceIdWithSynonym : public Transformation {
  public:
   explicit TransformationReplaceIdWithSynonym(
       const protobufs::TransformationReplaceIdWithSynonym& message);
 
   TransformationReplaceIdWithSynonym(
-      const protobufs::IdUseDescriptor id_use_descriptor,
-      const protobufs::DataDescriptor data_descriptor,
+      protobufs::IdUseDescriptor id_use_descriptor,
+      protobufs::DataDescriptor data_descriptor,
       uint32_t fresh_id_for_temporary);
 
   // - The fact manager must know that the id identified by
-  // |message_.id_use_descriptor| is synonomous with
+  //   |message_.id_use_descriptor| is synonomous with
   //   |message_.data_descriptor|.
   // - Replacing the id in |message_.id_use_descriptor| by the synonym in
-  // |message_.data_descriptor| must
-  //   respect SPIR-V's rules about uses being dominated by their definitions.
+  //   |message_.data_descriptor| must respect SPIR-V's rules about uses being
+  //   dominated by their definitions.
+  // - The id must not be an index into an access chain whose base object has
+  //   struct type, as such indices must be constants.
   // - |fresh_id_for_temporary| must be 0.
-  // TODO file issue for the fact that we want to be able to do other synonyms,
-  // which will necessitate a non-zero id here.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2855): the
+  //  motivation for the temporary is to support the case where an id is
+  //  synonymous with an element of a composite.  Until support for that is
+  //  implemented, 0 records that no temporary is needed.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO write comment
+  // Replaces the use identified by |message_.id_use_descriptor| with the
+  // synonymous id identified by |message_.data_descriptor|.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2855): in due
+  //  course it will also be necessary to add an additional instruction to pull
+  //  the synonym out of a composite.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

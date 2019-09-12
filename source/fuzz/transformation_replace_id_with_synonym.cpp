@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
 
+#include <algorithm>
+
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/id_use_descriptor.h"
@@ -27,8 +29,8 @@ TransformationReplaceIdWithSynonym::TransformationReplaceIdWithSynonym(
     : message_(message) {}
 
 TransformationReplaceIdWithSynonym::TransformationReplaceIdWithSynonym(
-    const protobufs::IdUseDescriptor id_use_descriptor,
-    const protobufs::DataDescriptor data_descriptor,
+    protobufs::IdUseDescriptor id_use_descriptor,
+    protobufs::DataDescriptor data_descriptor,
     uint32_t fresh_id_for_temporary) {
   assert(fresh_id_for_temporary == 0 && data_descriptor.index().size() == 0 &&
          "At present we do not support making an id synonymous with an index "
@@ -50,21 +52,11 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
   }
 
   auto available_synonyms = fact_manager.GetSynonymsForId(id_of_interest);
-  // TODO header for std::find
-  // TODO: replace with std::find with comparator
-  //  if (std::find(available_synonyms.begin(), available_synonyms.end(),
-  //  message_.data_descriptor())
-  //  == available_synonyms.end()) {
-  //    return false;
-  //  }
-  bool found = false;
-  for (auto& dd : available_synonyms) {
-    if (DataDescriptorEquals()(&dd, &message_.data_descriptor())) {
-      found = true;
-      break;
-    }
-  }
-  if (!found) {
+  if (std::find_if(available_synonyms.begin(), available_synonyms.end(),
+                   [this](protobufs::DataDescriptor dd) -> bool {
+                     return DataDescriptorEquals()(&dd,
+                                                   &message_.data_descriptor());
+                   }) == available_synonyms.end()) {
     return false;
   }
 
@@ -96,7 +88,6 @@ void TransformationReplaceIdWithSynonym::Apply(
   instruction_to_change->SetInOperand(
       message_.id_use_descriptor().in_operand_index(),
       {message_.data_descriptor().object()});
-  // TODO: consider keeping dominator analysis and CFG valid here.
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 
@@ -114,7 +105,12 @@ bool TransformationReplaceIdWithSynonym::ReplacingUseWithSynonymIsOk(
       context->get_def_use_mgr()->GetDef(synonym.object());
 
   if (use_instruction == defining_instruction) {
-    // TODO: comment
+    // If we have an instruction:
+    //   %a = OpCopyObject %t %b
+    // then we know %a and %b are synonymous, but we do *not* want to turn
+    // this into:
+    //   %a = OpCopyObject %t %a
+    // We require this special case because an instruction dominates itself.
     return false;
   }
 
@@ -136,11 +132,15 @@ bool TransformationReplaceIdWithSynonym::ReplacingUseWithSynonymIsOk(
   auto dominator_analysis = context->GetDominatorAnalysis(
       context->get_instr_block(use_instruction)->GetParent());
   if (use_instruction->opcode() == SpvOpPhi) {
-    auto parent_block = use_instruction->GetSingleWordInOperand(use_in_operand_index + 1);
-    if (!dominator_analysis->Dominates(context->get_instr_block(defining_instruction)->id(), parent_block)) {
+    auto parent_block =
+        use_instruction->GetSingleWordInOperand(use_in_operand_index + 1);
+    if (!dominator_analysis->Dominates(
+            context->get_instr_block(defining_instruction)->id(),
+            parent_block)) {
       return false;
     }
-  } else if (!dominator_analysis->Dominates(defining_instruction, use_instruction)) {
+  } else if (!dominator_analysis->Dominates(defining_instruction,
+                                            use_instruction)) {
     return false;
   }
   return true;

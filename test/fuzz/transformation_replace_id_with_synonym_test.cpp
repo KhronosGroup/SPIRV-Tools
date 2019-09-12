@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_replace_id_with_synonym.h"
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/id_use_descriptor.h"
-#include "source/fuzz/transformation_replace_id_with_synonym.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
 
-// The following shader was obtained from this GLSL, which was then optimized with spirv-opt -O and
-// manually edited to include some uses of OpCopyObject (to introduce id synonyms).
+// The following shader was obtained from this GLSL, which was then optimized
+// with spirv-opt -O and manually edited to include some uses of OpCopyObject
+// (to introduce id synonyms).
 //
 // #version 310 es
 //
@@ -209,91 +210,113 @@ void SetUpIdSynonyms(FactManager* fact_manager, opt::IRContext* context) {
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, IllegalTransformations) {
-
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
+  const auto context =
+      BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   SetUpIdSynonyms(&fact_manager, context.get());
 
-  // %202 cannot replace %15 as in-operand 0 of %300, since %202 does not dominate %300.
+  // %202 cannot replace %15 as in-operand 0 of %300, since %202 does not
+  // dominate %300.
   auto synonym_does_not_dominate_use = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(15, SpvOpIAdd, 0, 300, 0), MakeDataDescriptor(202, {}), 0);
-  ASSERT_FALSE(synonym_does_not_dominate_use.IsApplicable(context.get(), fact_manager));
+      transformation::MakeIdUseDescriptor(15, SpvOpIAdd, 0, 300, 0),
+      MakeDataDescriptor(202, {}), 0);
+  ASSERT_FALSE(
+      synonym_does_not_dominate_use.IsApplicable(context.get(), fact_manager));
 
-  // %202 cannot replace %15 as in-operand 2 of %301, since this is the OpPhi's incoming value for block
-  // %72, and %202 does not dominate %72.
-  auto synonym_does_not_dominate_use_op_phi = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(15, SpvOpPhi, 2, 301, 0), MakeDataDescriptor(202, {}), 0);
-  ASSERT_FALSE(synonym_does_not_dominate_use_op_phi.IsApplicable(context.get(), fact_manager));
+  // %202 cannot replace %15 as in-operand 2 of %301, since this is the OpPhi's
+  // incoming value for block %72, and %202 does not dominate %72.
+  auto synonym_does_not_dominate_use_op_phi =
+      TransformationReplaceIdWithSynonym(
+          transformation::MakeIdUseDescriptor(15, SpvOpPhi, 2, 301, 0),
+          MakeDataDescriptor(202, {}), 0);
+  ASSERT_FALSE(synonym_does_not_dominate_use_op_phi.IsApplicable(context.get(),
+                                                                 fact_manager));
 
   // %200 is not a synonym for %84
   auto id_in_use_is_not_synonymous = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(84, SpvOpSGreaterThan, 0, 67, 0), MakeDataDescriptor(200, {}), 0);
-  ASSERT_FALSE(id_in_use_is_not_synonymous.IsApplicable(context.get(), fact_manager));
+      transformation::MakeIdUseDescriptor(84, SpvOpSGreaterThan, 0, 67, 0),
+      MakeDataDescriptor(200, {}), 0);
+  ASSERT_FALSE(
+      id_in_use_is_not_synonymous.IsApplicable(context.get(), fact_manager));
 
   // %86 is not a synonym for anything (and in particular not for %74)
   auto id_has_no_synonyms = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(86, SpvOpPhi, 2, 84, 0), MakeDataDescriptor(74, {}), 0);
+      transformation::MakeIdUseDescriptor(86, SpvOpPhi, 2, 84, 0),
+      MakeDataDescriptor(74, {}), 0);
   ASSERT_FALSE(id_has_no_synonyms.IsApplicable(context.get(), fact_manager));
 
   // This would lead to %207 = 'OpCopyObject %type %207' if it were allowed
-  auto synonym_use_is_in_synonym_definition = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(84, SpvOpCopyObject, 0, 207, 0), MakeDataDescriptor(207, {}), 0);
-  ASSERT_FALSE(synonym_use_is_in_synonym_definition.IsApplicable(context.get(), fact_manager));
+  auto synonym_use_is_in_synonym_definition =
+      TransformationReplaceIdWithSynonym(
+          transformation::MakeIdUseDescriptor(84, SpvOpCopyObject, 0, 207, 0),
+          MakeDataDescriptor(207, {}), 0);
+  ASSERT_FALSE(synonym_use_is_in_synonym_definition.IsApplicable(context.get(),
+                                                                 fact_manager));
 
-  // The id use descriptor does not lead to a use (%84 is not used in the definition of %207)
+  // The id use descriptor does not lead to a use (%84 is not used in the
+  // definition of %207)
   auto bad_id_use_descriptor = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(84, SpvOpCopyObject, 0, 200, 0), MakeDataDescriptor(207, {}), 0);
+      transformation::MakeIdUseDescriptor(84, SpvOpCopyObject, 0, 200, 0),
+      MakeDataDescriptor(207, {}), 0);
   ASSERT_FALSE(bad_id_use_descriptor.IsApplicable(context.get(), fact_manager));
 
-  // This replacement would lead to an access chain into a struct using a non-constant index.
+  // This replacement would lead to an access chain into a struct using a
+  // non-constant index.
   auto bad_access_chain = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(12, SpvOpAccessChain, 1, 14, 0), MakeDataDescriptor(209, {}), 0);
+      transformation::MakeIdUseDescriptor(12, SpvOpAccessChain, 1, 14, 0),
+      MakeDataDescriptor(209, {}), 0);
   ASSERT_FALSE(bad_access_chain.IsApplicable(context.get(), fact_manager));
-
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
-
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
+  const auto context =
+      BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
   SetUpIdSynonyms(&fact_manager, context.get());
 
   auto global_constant_synonym = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(19, SpvOpStore, 1, 47, 0), MakeDataDescriptor(210, {}), 0);
-  ASSERT_TRUE(global_constant_synonym.IsApplicable(context.get(), fact_manager));
+      transformation::MakeIdUseDescriptor(19, SpvOpStore, 1, 47, 0),
+      MakeDataDescriptor(210, {}), 0);
+  ASSERT_TRUE(
+      global_constant_synonym.IsApplicable(context.get(), fact_manager));
   global_constant_synonym.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto replace_vector_access_chain_index = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(54, SpvOpAccessChain, 1, 55, 0), MakeDataDescriptor(204, {}), 0);
-  ASSERT_TRUE(replace_vector_access_chain_index.IsApplicable(context.get(), fact_manager));
+      transformation::MakeIdUseDescriptor(54, SpvOpAccessChain, 1, 55, 0),
+      MakeDataDescriptor(204, {}), 0);
+  ASSERT_TRUE(replace_vector_access_chain_index.IsApplicable(context.get(),
+                                                             fact_manager));
   replace_vector_access_chain_index.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // This is an interesting case because it replaces something that is being copied with something that
-  // is already a synonym.
+  // This is an interesting case because it replaces something that is being
+  // copied with something that is already a synonym.
   auto regular_replacement = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(15, SpvOpCopyObject, 0, 202, 0), MakeDataDescriptor(201, {}), 0);
+      transformation::MakeIdUseDescriptor(15, SpvOpCopyObject, 0, 202, 0),
+      MakeDataDescriptor(201, {}), 0);
   ASSERT_TRUE(regular_replacement.IsApplicable(context.get(), fact_manager));
   regular_replacement.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto regular_replacement2 = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(55, SpvOpStore, 0, 203, 0), MakeDataDescriptor(203, {}), 0);
+      transformation::MakeIdUseDescriptor(55, SpvOpStore, 0, 203, 0),
+      MakeDataDescriptor(203, {}), 0);
   ASSERT_TRUE(regular_replacement2.IsApplicable(context.get(), fact_manager));
   regular_replacement2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto good_op_phi = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(74, SpvOpPhi, 2, 86, 0), MakeDataDescriptor(205, {}), 0);
+      transformation::MakeIdUseDescriptor(74, SpvOpPhi, 2, 86, 0),
+      MakeDataDescriptor(205, {}), 0);
   ASSERT_TRUE(good_op_phi.IsApplicable(context.get(), fact_manager));
   good_op_phi.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -421,7 +444,6 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
-
   // The following SPIR-V comes from this GLSL, with object copies added:
   //
   // #version 310 es
@@ -477,7 +499,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   // Replace %10 with %100 in:
   // %11 = OpLoad %6 %10
   auto replacement1 = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(10, SpvOpLoad, 0, 11, 0), MakeDataDescriptor(100, {}), 0);
+      transformation::MakeIdUseDescriptor(10, SpvOpLoad, 0, 11, 0),
+      MakeDataDescriptor(100, {}), 0);
   ASSERT_TRUE(replacement1.IsApplicable(context.get(), fact_manager));
   replacement1.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -485,7 +508,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   // Replace %8 with %101 in:
   // OpStore %8 %11
   auto replacement2 = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(8, SpvOpStore, 0, 11, 0), MakeDataDescriptor(101, {}), 0);
+      transformation::MakeIdUseDescriptor(8, SpvOpStore, 0, 11, 0),
+      MakeDataDescriptor(101, {}), 0);
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), fact_manager));
   replacement2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -493,7 +517,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   // Replace %8 with %101 in:
   // %12 = OpLoad %6 %8
   auto replacement3 = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(8, SpvOpLoad, 0, 12, 0), MakeDataDescriptor(101, {}), 0);
+      transformation::MakeIdUseDescriptor(8, SpvOpLoad, 0, 12, 0),
+      MakeDataDescriptor(101, {}), 0);
   ASSERT_TRUE(replacement3.IsApplicable(context.get(), fact_manager));
   replacement3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -501,7 +526,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   // Replace %10 with %100 in:
   // OpStore %10 %12
   auto replacement4 = TransformationReplaceIdWithSynonym(
-          transformation::MakeIdUseDescriptor(10, SpvOpStore, 0, 12, 0), MakeDataDescriptor(100, {}), 0);
+      transformation::MakeIdUseDescriptor(10, SpvOpStore, 0, 12, 0),
+      MakeDataDescriptor(100, {}), 0);
   ASSERT_TRUE(replacement4.IsApplicable(context.get(), fact_manager));
   replacement4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));

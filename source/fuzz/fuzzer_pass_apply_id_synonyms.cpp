@@ -67,7 +67,9 @@ void FuzzerPassApplyIdSynonyms::Apply() {
               continue;
             }
 
-            // TODO: this deserves a comment.
+            // |use_index| is the absolute index of the operand.  We require
+            // the index of the operand restricted to input operands only, so
+            // we subtract the number of non-input operands from |use_index|.
             uint32_t number_of_non_input_operands =
                 use_inst->NumOperands() - use_inst->NumInOperands();
             TransformationReplaceIdWithSynonym replace_id_transformation(
@@ -80,8 +82,8 @@ void FuzzerPassApplyIdSynonyms::Apply() {
                                                           *GetFactManager()));
             // We cannot actually apply the transformation here, as this would
             // change the analysis results that are being depended on for usage
-            // iteration.  We instead store them up and apply them at the end of
-            // the method.
+            // iteration.  We instead store them up and apply them at the end
+            // of the method.
             transformations_to_apply.push_back(replace_id_transformation);
             break;
           }
