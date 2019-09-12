@@ -135,8 +135,12 @@ bool TransformationReplaceIdWithSynonym::ReplacingUseWithSynonymIsOk(
 
   auto dominator_analysis = context->GetDominatorAnalysis(
       context->get_instr_block(use_instruction)->GetParent());
-  // TODO: if the use is OpPhi, check dominance for the parent.
-  if (!dominator_analysis->Dominates(defining_instruction, use_instruction)) {
+  if (use_instruction->opcode() == SpvOpPhi) {
+    auto parent_block = use_instruction->GetSingleWordInOperand(use_in_operand_index + 1);
+    if (!dominator_analysis->Dominates(context->get_instr_block(defining_instruction)->id(), parent_block)) {
+      return false;
+    }
+  } else if (!dominator_analysis->Dominates(defining_instruction, use_instruction)) {
     return false;
   }
   return true;
