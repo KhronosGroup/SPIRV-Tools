@@ -538,8 +538,10 @@ INSTANTIATE_TEST_SUITE_P(
         Values(SPV_ENV_UNIVERSAL_1_5),
         ValuesIn(std::vector<EnumCapabilityCase>{
             // SPIR-V 1.5 adds new capabilities to enable these two builtins.
-            CASE3(BUILT_IN, BuiltInLayer, Geometry, ShaderLayer, ShaderViewportIndexLayerEXT),
-            CASE3(BUILT_IN, BuiltInViewportIndex, MultiViewport, ShaderViewportIndex, ShaderViewportIndexLayerEXT),
+            CASE3(BUILT_IN, BuiltInLayer, Geometry, ShaderLayer,
+                  ShaderViewportIndexLayerEXT),
+            CASE3(BUILT_IN, BuiltInViewportIndex, MultiViewport,
+                  ShaderViewportIndex, ShaderViewportIndexLayerEXT),
         })));
 
 // See SPIR-V Section 3.22 Selection Control
