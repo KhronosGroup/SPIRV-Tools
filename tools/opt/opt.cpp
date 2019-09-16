@@ -59,7 +59,7 @@ std::string GetListOfPassesAsString(const spvtools::Optimizer& optimizer) {
   return ss.str();
 }
 
-const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_4;
+const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
 
 std::string GetLegalizationPasses() {
   spvtools::Optimizer optimizer(kDefaultEnvironment);
@@ -80,13 +80,13 @@ std::string GetSizePasses() {
 }
 
 std::string GetVulkanToWebGPUPasses() {
-  spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
+  spvtools::Optimizer optimizer(SPV_ENV_VULKAN_1_1);
   optimizer.RegisterVulkanToWebGPUPasses();
   return GetListOfPassesAsString(optimizer);
 }
 
 std::string GetWebGPUToVulkanPasses() {
-  spvtools::Optimizer optimizer(SPV_ENV_VULKAN_1_1);
+  spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
   optimizer.RegisterWebGPUToVulkanPasses();
   return GetListOfPassesAsString(optimizer);
 }
@@ -792,7 +792,7 @@ OptStatus ParseFlags(int argc, const char** argv,
           return {OPT_STOP, 1};
         }
 
-        optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
+        optimizer->SetTargetEnv(SPV_ENV_VULKAN_1_1);
         optimizer->RegisterVulkanToWebGPUPasses();
       } else if (0 == strcmp(cur_arg, "--webgpu-to-vulkan")) {
         webgpu_to_vulkan_set = true;
@@ -810,7 +810,7 @@ OptStatus ParseFlags(int argc, const char** argv,
           return {OPT_STOP, 1};
         }
 
-        optimizer->SetTargetEnv(SPV_ENV_VULKAN_1_1);
+        optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
         optimizer->RegisterWebGPUToVulkanPasses();
       } else if (0 == strcmp(cur_arg, "--validate-after-all")) {
         optimizer->SetValidateAfterAll(true);

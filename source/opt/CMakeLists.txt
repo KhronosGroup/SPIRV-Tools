@@ -69,7 +69,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   local_redundancy_elimination.h
   local_single_block_elim_pass.h
   local_single_store_elim_pass.h
-  local_ssa_elim_pass.h
   log.h
   loop_dependence.h
   loop_descriptor.h
@@ -176,7 +175,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   local_redundancy_elimination.cpp
   local_single_block_elim_pass.cpp
   local_single_store_elim_pass.cpp
-  local_ssa_elim_pass.cpp
   loop_dependence.cpp
   loop_dependence_helpers.cpp
   loop_descriptor.cpp
@@ -235,8 +233,12 @@ add_library(SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SOURCES})
 
 spvtools_default_compile_options(SPIRV-Tools-opt)
 target_include_directories(SPIRV-Tools-opt
-  PUBLIC ${spirv-tools_SOURCE_DIR}/include
-  PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
+  PUBLIC
+	$<BUILD_INTERFACE:${spirv-tools_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include>
+  PUBLIC
+	$<BUILD_INTERFACE:${SPIRV_HEADER_INCLUDE_DIR}>
+	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE ${spirv-tools_BINARY_DIR}
 )
 # We need the assembling and disassembling functionalities in the main library.
@@ -247,8 +249,9 @@ set_property(TARGET SPIRV-Tools-opt PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-opt)
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  install(TARGETS SPIRV-Tools-opt
+  install(TARGETS SPIRV-Tools-opt EXPORT SPIRV-Tools-optTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(EXPORT SPIRV-Tools-optTargets DESTINATION lib/cmake)
 endif(ENABLE_SPIRV_TOOLS_INSTALL)

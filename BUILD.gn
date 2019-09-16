@@ -565,8 +565,6 @@ static_library("spvtools_opt") {
     "source/opt/local_single_block_elim_pass.h",
     "source/opt/local_single_store_elim_pass.cpp",
     "source/opt/local_single_store_elim_pass.h",
-    "source/opt/local_ssa_elim_pass.cpp",
-    "source/opt/local_ssa_elim_pass.h",
     "source/opt/log.h",
     "source/opt/loop_dependence.cpp",
     "source/opt/loop_dependence.h",
@@ -850,6 +848,8 @@ if (build_with_chromium) {
       "//testing/gmock",
       "//testing/gtest",
       "//testing/gtest:gtest_main",
+      "//third_party/googletest:gmock",
+      "//third_party/googletest:gtest",
     ]
 
     if (is_clang) {

@@ -73,6 +73,17 @@ bool Pass::IsFloat(uint32_t ty_id, uint32_t width) {
   return ty_inst->GetSingleWordInOperand(0) == width;
 }
 
+uint32_t Pass::GetNullId(uint32_t type_id) {
+  if (IsFloat(type_id, 16)) context()->AddCapability(SpvCapabilityFloat16);
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
+  const analysis::Type* type = type_mgr->GetType(type_id);
+  const analysis::Constant* null_const = const_mgr->GetConstant(type, {});
+  Instruction* null_inst =
+      const_mgr->GetDefiningInstruction(null_const, type_id);
+  return null_inst->result_id();
+}
+
 uint32_t Pass::GenerateCopy(Instruction* object_to_copy, uint32_t new_type_id,
                             Instruction* insertion_position) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
