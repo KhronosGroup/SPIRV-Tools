@@ -33,9 +33,9 @@ The above will generate a `o.sva` file in the current directory.
 
 ## Update spirv.data.json
 
-If there is a new spirv-headers release update the _DEPS_ file and then:
+If there is a new spirv-headers release update the externals folder checkout
+and then:
 
 ```shell
-./tools git-sync-deps
 ./tools/process_grammar.rb > src/spirv.data.json
 ```
