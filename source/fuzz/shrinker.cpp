@@ -109,7 +109,7 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   // succeeds, (b) get the binary that results from running these
   // transformations, and (c) get the subsequence of the initial transformations
   // that actually apply (in principle this could be a strict subsequence).
-  if (Replayer(impl_->target_env)
+  if (Replayer(impl_->target_env, false)
           .Run(binary_in, initial_facts, transformation_sequence_in,
                &current_best_binary, &current_best_transformations) !=
       Replayer::ReplayerResultStatus::kComplete) {
@@ -180,7 +180,7 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
       // transformations inapplicable.
       std::vector<uint32_t> next_binary;
       protobufs::TransformationSequence next_transformation_sequence;
-      if (Replayer(impl_->target_env)
+      if (Replayer(impl_->target_env, false)
               .Run(binary_in, initial_facts, transformations_with_chunk_removed,
                    &next_binary, &next_transformation_sequence) !=
           Replayer::ReplayerResultStatus::kComplete) {

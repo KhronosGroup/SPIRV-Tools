@@ -104,6 +104,10 @@ Options (in lexicographical order):
                Path to an interestingness function to guide shrinking: a script
                that returns 0 if and only if a given binary is interesting.
                Required if --shrink is provided; disallowed otherwise.
+  --replay-validation
+               Run the validator after applying each transformation during
+               replay.  Aborts if an invalid binary is created.  Useful for
+               debugging spirv-fuzz.
   --version
                Display fuzzer version information.
 
@@ -161,6 +165,9 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
                               sizeof("--interestingness=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *interestingness_function_file = std::string(split_flag.second);
+      } else if (0 == strncmp(cur_arg, "--replay-validation",
+                              sizeof("--replay-validation") - 1)) {
+        fuzzer_options->enable_replay_validation();
       } else if (0 == strncmp(cur_arg, "--shrink=", sizeof("--shrink=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *shrink_transformations_file = std::string(split_flag.second);
@@ -221,6 +228,15 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
     return {FuzzActions::STOP, 1};
   }
 
+  if (replay_transformations_file->empty() &&
+      static_cast<spv_const_fuzzer_options>(*fuzzer_options)
+          ->replay_validation_enabled) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {},
+                    "The --replay-validation argument can only be used with "
+                    "the --replay arguments.");
+    return {FuzzActions::STOP, 1};
+  }
+
   if (!replay_transformations_file->empty()) {
     // A replay transformations file was given, thus the tool is being invoked
     // in replay mode.
@@ -278,6 +294,7 @@ bool ParseTransformations(
 }
 
 bool Replay(const spv_target_env& target_env,
+            spv_const_fuzzer_options fuzzer_options,
             const std::vector<uint32_t>& binary_in,
             const spvtools::fuzz::protobufs::FactSequence& initial_facts,
             const std::string& replay_transformations_file,
@@ -289,7 +306,8 @@ bool Replay(const spv_target_env& target_env,
                             &transformation_sequence)) {
     return false;
   }
-  spvtools::fuzz::Replayer replayer(target_env);
+  spvtools::fuzz::Replayer replayer(target_env,
+                                    fuzzer_options->replay_validation_enabled);
   replayer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
   auto replay_result_status =
       replayer.Run(binary_in, initial_facts, transformation_sequence,
@@ -362,6 +380,23 @@ bool Fuzz(const spv_target_env& target_env,
 
 }  // namespace
 
+// Dumps |binary| to file |filename|. Useful for interactive debugging.
+void DumpShader(const std::vector<uint32_t>& binary, const char* filename) {
+  auto write_file_succeeded =
+      WriteFile(filename, "wb", &binary[0], binary.size());
+  if (!write_file_succeeded) {
+    std::cerr << "Failed to dump shader" << std::endl;
+  }
+}
+
+// Dumps the SPIRV-V module in |context| to file |filename|. Useful for
+// interactive debugging.
+void DumpShader(spvtools::opt::IRContext* context, const char* filename) {
+  std::vector<uint32_t> binary;
+  context->module()->ToBinary(&binary, false);
+  DumpShader(binary, filename);
+}
+
 const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_3;
 
 int main(int argc, const char** argv) {
@@ -418,7 +453,7 @@ int main(int argc, const char** argv) {
       }
       break;
     case FuzzActions::REPLAY:
-      if (!Replay(target_env, binary_in, initial_facts,
+      if (!Replay(target_env, fuzzer_options, binary_in, initial_facts,
                   replay_transformations_file, &binary_out,
                   &transformations_applied)) {
         return 1;
