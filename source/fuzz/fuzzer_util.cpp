@@ -293,15 +293,15 @@ void FindBypassedBlocks(opt::IRContext* context, opt::BasicBlock* bb_from,
   opt::BasicBlock* entry_block = enclosing_function->entry().get();
   dfs_stack.push_back({entry_block, false, 0});
   while (!dfs_stack.empty()) {
-    FindBypassedBlocksDfsStackNode* node = &dfs_stack.back();
+    auto node_index = dfs_stack.size() - 1;
 
     // First make sure we search the merge block associated ith this block, if
     // there is one.
-    if (!node->handled_merge) {
-      node->handled_merge = true;
-      if (node->block->MergeBlockIdIfAny()) {
-        opt::BasicBlock* merge_block =
-            context->cfg()->block(node->block->MergeBlockIdIfAny());
+    if (!dfs_stack[node_index].handled_merge) {
+      dfs_stack[node_index].handled_merge = true;
+      if (dfs_stack[node_index].block->MergeBlockIdIfAny()) {
+        opt::BasicBlock* merge_block = context->cfg()->block(
+            dfs_stack[node_index].block->MergeBlockIdIfAny());
         // A block can only be the merge block for one header, so this block
         // should only be in |visited| if it is |bb_to|, which we put into
         // |visited| in advance.
@@ -317,22 +317,23 @@ void FindBypassedBlocks(opt::IRContext* context, opt::BasicBlock* bb_from,
     // If we find |bb_from|, we are interested in grabbing previously unseen
     // successor blocks (by this point we will have already searched the merge
     // block associated with |bb_from|, if there is one.
-    if (node->block == bb_from) {
+    if (dfs_stack[node_index].block == bb_from) {
       new_blocks_will_be_bypassed = true;
     }
 
     // Consider the next unexplored successor.
-    auto successors = GetSuccessors(node->block);
-    if (node->next_successor < successors.size()) {
+    auto successors = GetSuccessors(dfs_stack[node_index].block);
+    if (dfs_stack[node_index].next_successor < successors.size()) {
       HandleSuccessorDuringSearchForBypassedBlocks(
-          context->cfg()->block(successors[node->next_successor]),
+          context->cfg()->block(
+              successors[dfs_stack[node_index].next_successor]),
           new_blocks_will_be_bypassed, &already_visited, bypassed_blocks,
           &dfs_stack);
-      node->next_successor++;
+      dfs_stack[node_index].next_successor++;
     } else {
       // We have finished exploring |node|.  If it is |bb_from|, we can
       // terminate search -- we have grabbed all the relevant blocks.
-      if (node->block == bb_from) {
+      if (dfs_stack[node_index].block == bb_from) {
         break;
       }
       dfs_stack.pop_back();
