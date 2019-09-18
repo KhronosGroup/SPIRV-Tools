@@ -45,7 +45,7 @@ class FuzzerContext {
   // method, and which must be non-empty.  Typically 'HasSizeMethod' will be an
   // std::vector.
   template <typename HasSizeMethod>
-  uint32_t RandomIndex(HasSizeMethod sequence) {
+  uint32_t RandomIndex(const HasSizeMethod& sequence) {
     assert(sequence.size() > 0);
     return random_generator_->RandomUint32(
         static_cast<uint32_t>(sequence.size()));
