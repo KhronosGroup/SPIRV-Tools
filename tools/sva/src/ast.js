@@ -121,6 +121,9 @@ class Operand {
 
   rawValue() { return this.value_; }
 
+  // This method should only be called on ResultId's after the full parse is
+  // complete. This is because the AST will only have the maximum seen numeric
+  // ResultId when the parse is done.
   value() {
     if (this.value_ === undefined) {
       this.value_ = this.module_.getId(this.name_);

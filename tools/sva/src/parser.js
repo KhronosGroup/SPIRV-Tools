@@ -167,6 +167,9 @@ export default class Parser {
     let kind = undefined;
     let value = undefined;
     let params = [];
+
+    // TODO(dsinclair): There are a bunch of missing types here. See
+    // https://github.com/KhronosGroup/SPIRV-Tools/blob/master/source/text.cpp#L210
     if (data.kind === "IdResult" || data.kind === "IdRef"
         || data.kind === "IdResultType") {
       if (t.type !== TokenType.kResultId) {
