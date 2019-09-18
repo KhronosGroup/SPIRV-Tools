@@ -16,7 +16,7 @@
 #include "function.h"
 #include "ir_context.h"
 
-#include <source/util/bit_vector.h>
+#include "source/util/bit_vector.h"
 #include <ostream>
 #include <sstream>
 
