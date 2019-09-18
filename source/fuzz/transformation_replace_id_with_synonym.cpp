@@ -129,9 +129,14 @@ bool TransformationReplaceIdWithSynonym::ReplacingUseWithSynonymIsOk(
     }
   }
 
+  // We now need to check that replacing the use with the synonym will respect
+  // dominance rules - i.e. the synonym needs to dominate the use.
   auto dominator_analysis = context->GetDominatorAnalysis(
       context->get_instr_block(use_instruction)->GetParent());
   if (use_instruction->opcode() == SpvOpPhi) {
+    // In the case where the use is an operand to OpPhi, it is actually the
+    // *parent* block associated with the operand that must be dominated by the
+    // synonym.
     auto parent_block =
         use_instruction->GetSingleWordInOperand(use_in_operand_index + 1);
     if (!dominator_analysis->Dominates(

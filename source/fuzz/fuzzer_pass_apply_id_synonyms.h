@@ -22,8 +22,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// An initial pass for adding useful ingredients to the module, such as boolean
-// constants, if they are not present.
+// A pass that replaces ids with other ids, or accesses into structures, that
+// are known to hold the same values.
 class FuzzerPassApplyIdSynonyms : public FuzzerPass {
  public:
   FuzzerPassApplyIdSynonyms(opt::IRContext* ir_context,
