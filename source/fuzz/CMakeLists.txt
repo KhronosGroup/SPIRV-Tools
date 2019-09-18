@@ -13,6 +13,9 @@
 # limitations under the License.
 
 if(SPIRV_BUILD_FUZZER)
+
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/protobufs)
+
   set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/protobufs/spvtoolsfuzz.proto)
 
   add_custom_command(
