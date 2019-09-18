@@ -1,4 +1,4 @@
-// Copyright 2019 The Khronos Group Inc.
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -330,10 +330,25 @@ export default class Lexer {
       return undefined;
 
     this.cur_pos_ += 1;
+    let str = "";
     while (this.cur_pos_ <= this.len_) {
-      if (this.is("\"")) {
-        if (this.input_[this.cur_pos_ - 1] !== "\\")
-          break;
+      if (this.is("\""))
+        break;
+
+      if (this.is("\\")) {
+        this.cur_pos_ += 1;
+        if (this.cur_pos_ >= this.len_)
+          return undefined;
+
+        if (this.is("\\")) {
+          str += "\\";
+        } else if (this.is("\"")) {
+          str += '"';
+        } else {
+          str += this.input_[this.cur_pos_];
+        }
+      } else {
+        str += this.input_[this.cur_pos_];
       }
       this.cur_pos_ += 1;
     }
@@ -343,7 +358,6 @@ export default class Lexer {
 
     this.cur_pos_ += 1;
 
-    return new Token(TokenType.kStringLiteral, this.cur_line_,
-      this.input_.substr(start + 1, this.cur_pos_ - start - 2));
+    return new Token(TokenType.kStringLiteral, this.cur_line_, str);
   }
 }

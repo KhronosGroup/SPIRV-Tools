@@ -1,4 +1,4 @@
-// Copyright 2019 The Khronos Group Inc.
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ describe("assembler", () => {
 
     let a = new Assembler(ast);
     let res = a.assemble();
-    assert.equal(0x07230203, res[0]);
+    assert.equal(res[0], 0x07230203);
   });
 
   it("assembles enumerant params", () => {
@@ -62,12 +62,12 @@ describe("assembler", () => {
     let res = a.assemble();
 
     assert.lengthOf(res, 11);
-    assert.equal((6 /* word count */ << 16) | 16 /* opcode */, res[5]);
-    assert.equal(1 /* %main */, res[6]);
-    assert.equal(17 /* LocalSize */, res[7]);
-    assert.equal(2, res[8]);
-    assert.equal(3, res[9]);
-    assert.equal(4, res[10]);
+    assert.equal(res[5], (6 /* word count */ << 16) | 16 /* opcode */);
+    assert.equal(res[6], 1 /* %main */);
+    assert.equal(res[7], 17 /* LocalSize */);
+    assert.equal(res[8], 2);
+    assert.equal(res[9], 3);
+    assert.equal(res[10], 4);
   });
 
   it("assembles float 32 values", () => {
@@ -83,9 +83,83 @@ describe("assembler", () => {
     let res = a.assemble();
 
     assert.lengthOf(res, 12);
-    assert.equal((4 /* word count */ << 16) | 43 /* opcode */, res[8]);
-    assert.equal(1 /* %float */, res[9]);
-    assert.equal(2 /* %float */, res[10]);
-    assert.equal(0x3ecccccd /* 0.400000006 */, res[11]);
+    assert.equal(res[8], (4 /* word count */ << 16) | 43 /* opcode */);
+    assert.equal(res[9], 1 /* %float */);
+    assert.equal(res[10], 2 /* %float */);
+    assert.equal(res[11], 0x3ecccccd /* 0.400000006 */);
+  });
+
+  describe("strings", () => {
+    it("assembles 'abcd'", () => {
+      let input = `OpName %mains "abcd"`;
+      let l = new Lexer(input);
+      let p = new Parser(grammar, l);
+
+      let ast = p.parse();
+      assert.exists(ast, p.error);
+
+      let a = new Assembler(ast);
+      let res = a.assemble();
+
+      assert.lengthOf(res, 9);
+      assert.equal(res[5], (4 /* word count */ << 16) | 5 /* opcode */);
+      assert.equal(res[6], 1 /* %mains */);
+      assert.equal(res[7], 0x64636261 /* food */);
+      assert.equal(res[8], 0x00000000 /* null byte */);
+    });
+
+    it("assembles 'abcde'", () => {
+      let input = `OpName %mains "abcde"`;
+      let l = new Lexer(input);
+      let p = new Parser(grammar, l);
+
+      let ast = p.parse();
+      assert.exists(ast, p.error);
+
+      let a = new Assembler(ast);
+      let res = a.assemble();
+
+      assert.lengthOf(res, 9);
+      assert.equal(res[5], (4 /* word count */ << 16) | 5 /* opcode */);
+      assert.equal(res[6], 1 /* %mains */);
+      assert.equal(res[7], 0x64636261 /* abcd */);
+      assert.equal(res[8], 0x00000065 /* e */);
+    });
+
+    it("assembles 'abcdef'", () => {
+      let input = `OpName %mains "abcdef"`;
+      let l = new Lexer(input);
+      let p = new Parser(grammar, l);
+
+      let ast = p.parse();
+      assert.exists(ast, p.error);
+
+      let a = new Assembler(ast);
+      let res = a.assemble();
+
+      assert.lengthOf(res, 9);
+      assert.equal(res[5], (4 /* word count */ << 16) | 5 /* opcode */);
+      assert.equal(res[6], 1 /* %mains */);
+      assert.equal(res[7], 0x64636261 /* abcd */);
+      assert.equal(res[8], 0x00006665 /* ef */);
+    });
+
+    it("assembles 'abcdefg'", () => {
+      let input = `OpName %mains "abcdefg"`;
+      let l = new Lexer(input);
+      let p = new Parser(grammar, l);
+
+      let ast = p.parse();
+      assert.exists(ast, p.error);
+
+      let a = new Assembler(ast);
+      let res = a.assemble();
+
+      assert.lengthOf(res, 9);
+      assert.equal(res[5], (4 /* word count */ << 16) | 5 /* opcode */);
+      assert.equal(res[6], 1 /* %mains */);
+      assert.equal(res[7], 0x64636261 /* abcd */);
+      assert.equal(res[8], 0x00676665 /* efg */);
+    });
   });
 });

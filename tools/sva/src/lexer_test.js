@@ -1,4 +1,4 @@
-// Copyright 2019 The Khronos Group Inc.
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,8 +69,8 @@ OpKill ; end of line comment
           `expected ${results[idx]} === ${t.data}`);
 
         t = l.next();
-        assert.equal(TokenType.kEOF, t.type);
-        assert.equal(undefined, t.data);
+        assert.equal(t.type, TokenType.kEOF);
+        assert.equal(t.data, undefined);
       });
     });
 
@@ -146,15 +146,12 @@ OpKill ; end of line comment
 
   describe("strings", () => {
     it("matches strings", () => {
-      let input = "\"GLSL.std.450\" \"GL\\\"embed\\\"quote\"";
-      let results = ["GLSL.std.450", "GL\\\"embed\\\"quote"];
+      let input = "\"GLSL.std.450\"";
 
       let l = new Lexer(input);
-      for (let i = 0; i < results.length; ++i) {
-        let t = l.next();
-        assert.equal(t.type, TokenType.kStringLiteral, results[i]);
-        assert.equal(t.data, results[i]);
-      }
+      let t = l.next();
+      assert.equal(t.type, TokenType.kStringLiteral);
+      assert.equal(t.data, "GLSL.std.450");
     });
 
     it("handles unfinished strings", () => {
@@ -163,6 +160,20 @@ OpKill ; end of line comment
       let l = new Lexer(input);
       let t = l.next();
       assert.equal(t.type, TokenType.kError);
+    });
+
+    it("handles escapes", () => {
+      let input = `"embedded\\"quote"
+"embedded\\\\slash"
+"embedded\\nchar"`;
+      let results = [`embedded\"quote`, `embedded\\slash`, `embeddednchar`];
+
+      let l = new Lexer(input);
+      for (let i = 0; i < results.length; ++i) {
+        let t = l.next();
+        assert.equal(t.type, TokenType.kStringLiteral, results[i]);
+        assert.equal(t.data, results[i]);
+      }
     });
   });
 

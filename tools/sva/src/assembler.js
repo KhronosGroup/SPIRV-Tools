@@ -1,4 +1,4 @@
-// Copyright 2019 The Khronos Group Inc.
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,13 +73,9 @@ export default class Assembler {
         }
       }
       // Make sure either the terminating 0 byte is written or the last
-      // partial byte is written.
-      if (len === 0) {
-        u[idx++] = 0;
-      } else {
-        v = v << ((4 - len) * 8);
-        u[idx++] = v;
-      }
+      // partial word is written.
+      u[idx++] = v;
+
     } else if (op.type() === "float") {
       // TODO(dsinclair): Handle 64 bit floats ...
       let b = new ArrayBuffer(4);

@@ -1,4 +1,4 @@
-// Copyright 2019 The Khronos Group Inc.
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,18 @@ class Module {
     this.instructions_ = [];
     this.next_id_ = 1;
 
+    /**
+     * Maps {string, hash} where the string is the type name and the hash is:
+     *   type- 'float' or 'int'
+     *   width- number of bits needed to store number
+     *   signed- the sign of the number
+     */
     this.types_ = {};
+
+    /**
+     * Maps {string, number} where the string is the type name and the number is
+     * the id value.
+     */
     this.assigned_ids_ = {};
   }
 
@@ -30,10 +41,12 @@ class Module {
 
     // Record type information
     if (inst.name() === "OpTypeInt" || inst.name() === "OpTypeFloat") {
+      let is_int = inst.name() === "OpTypeInt";
+
       this.types_[inst.operand(0).name()] = {
-        type: inst.name() === "OpTypeInt" ? "int" : "float",
+        type: is_int ? "int" : "float",
         width: inst.operand(1).value(),
-        signed: inst.operands().length === 3 ? inst.operand(2).value() : 1
+        signed: is_int ? inst.operand(2).value() : 1
       };
     }
 
@@ -59,7 +72,7 @@ class Module {
     return next;
   }
 
-  getIdBounds() { return this.next_id_ - 1; }
+  getIdBounds() { return this.next_id_; }
 }
 
 class Instruction {

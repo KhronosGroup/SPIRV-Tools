@@ -1,4 +1,4 @@
-// Copyright 2019 The Khronos Group Inc.
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ describe("parser", () => {
     assert.lengthOf(ast.instructions(), 1);
 
     let inst = ast.instruction(0);
-    assert.equal("OpKill", inst.name());
-    assert.equal(252, inst.opcode());
+    assert.equal(inst.name(), "OpKill");
+    assert.equal(inst.opcode(), 252);
     assert.lengthOf(inst.operands, 0);
   });
 
@@ -43,14 +43,14 @@ describe("parser", () => {
     assert.lengthOf(ast.instructions(), 1);
 
     let inst = ast.instruction(0);
-    assert.equal("OpCapability", inst.name());
-    assert.equal(17, inst.opcode());
+    assert.equal(inst.name(), "OpCapability");
+    assert.equal(inst.opcode(), 17);
     assert.lengthOf(inst.operands(), 1);
 
     let op = inst.operand(0);
-    assert.equal("Shader", op.name());
-    assert.equal("ValueEnum", op.type());
-    assert.equal(1, op.value());
+    assert.equal(op.name(), "Shader");
+    assert.equal(op.type(), "ValueEnum");
+    assert.equal(op.value(), 1);
   });
 
   it("parses an opcode with a result", () => {
@@ -63,13 +63,13 @@ describe("parser", () => {
     assert.lengthOf(ast.instructions(), 1);
 
     let inst = ast.instruction(0);
-    assert.equal("OpTypeVoid", inst.name());
-    assert.equal(19, inst.opcode());
+    assert.equal(inst.name(), "OpTypeVoid");
+    assert.equal(inst.opcode(), 19);
     assert.lengthOf(inst.operands(), 1);
 
     let op = inst.operand(0);
-    assert.equal("void", op.name());
-    assert.equal(1, op.value());
+    assert.equal(op.name(), "void");
+    assert.equal(op.value(), 1);
   });
 
   it("sets module bounds based on numeric result", () => {
@@ -80,7 +80,7 @@ describe("parser", () => {
 
     let ast = p.parse();
     assert.exists(ast);
-    assert.equal(4, ast.getId("next"));
+    assert.equal(ast.getId("next"), 4);
   });
 
   it("returns the same value for a named result_id", () => {
@@ -95,12 +95,12 @@ describe("parser", () => {
 
     let inst = ast.instruction(0);
     let op1 = inst.operand(1);
-    assert.equal("int", op1.name());
-    assert.equal(4, op1.value());
+    assert.equal(op1.name(), "int");
+    assert.equal(op1.value(), 4);
 
     let op2 = inst.operand(2);
-    assert.equal("int", op2.name());
-    assert.equal(4, op2.value());
+    assert.equal(op2.name(), "int");
+    assert.equal(op2.value(), 4);
   });
 
   it("parses an opcode with a string", () => {
@@ -115,8 +115,8 @@ describe("parser", () => {
 
     let inst = ast.instruction(0);
     let op = inst.operand(2);
-    assert.equal("main", op.name());
-    assert.equal("main", op.value());
+    assert.equal(op.name(), "main");
+    assert.equal(op.value(), "main");
   });
 
   describe("numerics", () => {
@@ -133,13 +133,13 @@ describe("parser", () => {
 
         let inst = ast.instruction(0);
         let op0 = inst.operand(0);
-        assert.equal("GLSL", op0.name());
-        assert.equal("ValueEnum", op0.type());
-        assert.equal(2, op0.value());
+        assert.equal(op0.name(), "GLSL");
+        assert.equal(op0.type(), "ValueEnum");
+        assert.equal(op0.value(), 2);
 
         let op1 = inst.operand(1);
-        assert.equal("440", op1.name());
-        assert.equal(440, op1.value());
+        assert.equal(op1.name(), "440");
+        assert.equal(op1.value(), 440);
       });
 
       it("parses an opcode with a hex integer", () => {
@@ -154,13 +154,13 @@ describe("parser", () => {
 
         let inst = ast.instruction(0);
         let op0 = inst.operand(0);
-        assert.equal("GLSL", op0.name());
-        assert.equal("ValueEnum", op0.type());
-        assert.equal(2, op0.value());
+        assert.equal(op0.name(), "GLSL");
+        assert.equal(op0.type(), "ValueEnum");
+        assert.equal(op0.value(), 2);
 
         let op1 = inst.operand(1);
-        assert.equal("1088", op1.name());
-        assert.equal(0x440, op1.value());
+        assert.equal(op1.name(), "1088");
+        assert.equal(op1.value(), 0x440);
       });
 
       it.skip("parses immediate integers", () => {
@@ -182,7 +182,7 @@ describe("parser", () => {
 
         let inst = ast.instruction(1);
         let op2 = inst.operand(2);
-        assert.equal(0.400000006, op2.value());
+        assert.equal(op2.value(), 0.400000006);
       });
 
       // TODO(dsinclair): Make hex encoded floats parse ...
@@ -206,7 +206,7 @@ describe("parser", () => {
         for (const idx in results) {
           let inst = ast.instruction(idx);
           let op2 = inst.operand(2);
-          assert.equal(results[idx], op2.value());
+          assert.equal(op2.value(), results[idx]);
         }
       });
 
@@ -223,8 +223,8 @@ describe("parser", () => {
 
         let inst = ast.instruction(1);
         let op2 = inst.operand(2);
-        assert.equal(1, op2.value());
-        assert.equal("float", op2.type());
+        assert.equal(op2.value(), 1);
+        assert.equal(op2.type(), "float");
       });
     });
   });
@@ -250,19 +250,19 @@ describe("parser", () => {
       let inst = ast.instruction(1);
       for (let idx in vals) {
         let op = inst.operand(idx);
-        assert.equal(vals[idx].name, op.name());
-        assert.equal(vals[idx].val, op.value());
+        assert.equal(op.name(), vals[idx].name);
+        assert.equal(op.value(), vals[idx].val);
       }
 
       // BitEnum
       let params = inst.operand(4).params();
       assert.lengthOf(params, 3);
-      assert.equal("22", params[0].name());
-      assert.equal(22, params[0].value());
-      assert.equal("24", params[1].name());
-      assert.equal(24, params[1].value());
-      assert.equal("29", params[2].name());
-      assert.equal(29, params[2].value());
+      assert.equal(params[0].name(), "22");
+      assert.equal(params[0].value(), 22);
+      assert.equal(params[1].name(), "24");
+      assert.equal(params[1].value(), 24);
+      assert.equal(params[2].name(), "29");
+      assert.equal(params[2].value(), 29);
     });
 
     it("parses enumerants with parameters", () => {
@@ -276,16 +276,16 @@ describe("parser", () => {
       assert.lengthOf(ast.instructions(), 1);
 
       let inst = ast.instruction(0);
-      assert.equal("OpExecutionMode", inst.name());
+      assert.equal(inst.name(), "OpExecutionMode");
       assert.lengthOf(inst.operands(), 2);
-      assert.equal("main", inst.operand(0).name());
-      assert.equal("LocalSize", inst.operand(1).name());
+      assert.equal(inst.operand(0).name(), "main");
+      assert.equal(inst.operand(1).name(), "LocalSize");
 
       let params = inst.operand(1).params();
       assert.lengthOf(params, 3);
-      assert.equal("2", params[0].name());
-      assert.equal("3", params[1].name());
-      assert.equal("4", params[2].name());
+      assert.equal(params[0].name(), "2");
+      assert.equal(params[1].name(), "3");
+      assert.equal(params[2].name(), "4");
     });
   });
 
@@ -300,21 +300,21 @@ describe("parser", () => {
     assert.lengthOf(ast.instructions(), 2);
 
     let inst = ast.instruction(1);
-    assert.equal("OpConstant", inst.name());
-    assert.equal(43, inst.opcode());
+    assert.equal(inst.name(), "OpConstant");
+    assert.equal(inst.opcode(), 43);
     assert.lengthOf(inst.operands(), 3);
 
     let op0 = inst.operand(0);
-    assert.equal("int", op0.name());
-    assert.equal(1, op0.value());
+    assert.equal(op0.name(), "int");
+    assert.equal(op0.value(), 1);
 
     let op1 = inst.operand(1);
-    assert.equal("int_3", op1.name());
-    assert.equal(2, op1.value());
+    assert.equal(op1.name(), "int_3");
+    assert.equal(op1.value(), 2);
 
     let op2 = inst.operand(2);
-    assert.equal("3", op2.name());
-    assert.equal(3, op2.value());
+    assert.equal(op2.name(), "3");
+    assert.equal(op2.value(), 3);
   });
 
   describe("quantifiers", () => {
@@ -330,7 +330,7 @@ OpKill`;
         assert.lengthOf(ast.instructions(), 2);
 
         let inst = ast.instruction(0);
-        assert.equal("OpImageWrite", inst.name());
+        assert.equal(inst.name(), "OpImageWrite");
         assert.lengthOf(inst.operands(), 3);
       });
 
@@ -344,7 +344,7 @@ OpKill`;
         assert.lengthOf(ast.instructions(), 1);
 
         let inst = ast.instruction(0);
-        assert.equal("OpImageWrite", inst.name());
+        assert.equal(inst.name(), "OpImageWrite");
         assert.lengthOf(inst.operands(), 3);
       });
 
@@ -359,9 +359,9 @@ OpKill`;
         assert.lengthOf(ast.instructions(), 2);
 
         let inst = ast.instruction(0);
-        assert.equal("OpImageWrite", inst.name());
+        assert.equal(inst.name(), "OpImageWrite");
         assert.lengthOf(inst.operands(), 4);
-        assert.equal("ConstOffset", inst.operand(3).name());
+        assert.equal(inst.operand(3).name(), "ConstOffset");
       });
     });
 
@@ -378,9 +378,9 @@ OpKill`;
         assert.lengthOf(ast.instructions(), 2);
 
         let inst = ast.instruction(0);
-        assert.equal("OpEntryPoint", inst.name());
+        assert.equal(inst.name(), "OpEntryPoint");
         assert.lengthOf(inst.operands(), 3);
-        assert.equal("main", inst.operand(2).name());
+        assert.equal(inst.operand(2).name(), "main");
       });
 
       it("extracts one if available", () => {
@@ -395,9 +395,9 @@ OpKill`;
         assert.lengthOf(ast.instructions(), 2);
 
         let inst = ast.instruction(0);
-        assert.equal("OpEntryPoint", inst.name());
+        assert.equal(inst.name(), "OpEntryPoint");
         assert.lengthOf(inst.operands(), 4);
-        assert.equal("2", inst.operand(3).name());
+        assert.equal(inst.operand(3).name(), "2");
       });
 
       it("extracts multiple if available", () => {
@@ -412,12 +412,12 @@ OpKill`;
         assert.lengthOf(ast.instructions(), 2);
 
         let inst = ast.instruction(0);
-        assert.equal("OpEntryPoint", inst.name());
+        assert.equal(inst.name(), "OpEntryPoint");
         assert.lengthOf(inst.operands(), 7);
-        assert.equal("2", inst.operand(3).name());
-        assert.equal("3", inst.operand(4).name());
-        assert.equal("4", inst.operand(5).name());
-        assert.equal("5", inst.operand(6).name());
+        assert.equal(inst.operand(3).name(), "2");
+        assert.equal(inst.operand(4).name(), "3");
+        assert.equal(inst.operand(5).name(), "4");
+        assert.equal(inst.operand(6).name(), "5");
       });
     });
   });
@@ -445,14 +445,20 @@ OpKill`;
 
       let inst = ast.instruction(1);
       assert.lengthOf(inst.operands(), 5);
-      assert.equal(31, inst.operand(3).value());
-      assert.equal("Sqrt", inst.operand(3).name());
-      assert.equal(43, inst.operand(4).value());
-      assert.equal("43", inst.operand(4).name());
+      assert.equal(inst.operand(3).value(), 31);
+      assert.equal(inst.operand(3).name(), "Sqrt");
+      assert.equal(inst.operand(4).value(), 43);
+      assert.equal(inst.operand(4).name(), "43");
     });
   });
 
   it.skip("handles spec constant ops", () => {
     // let input = "%sum = OpSpecConstantOp %i32 IAdd %a %b";
+  });
+
+  it.skip("handles OpCopyMemory", () => {
+    // let input = "OpCopyMemory %1 %2 " +
+    //             "Volatile|Nontemporal|MakePointerVisible %3 " +
+    //             "Aligned|MakePointerAvailable|NonPrivatePointer 16 %4";
   });
 });
