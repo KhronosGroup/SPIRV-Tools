@@ -456,9 +456,34 @@ OpKill`;
     // let input = "%sum = OpSpecConstantOp %i32 IAdd %a %b";
   });
 
-  it.skip("handles OpCopyMemory", () => {
-    // let input = "OpCopyMemory %1 %2 " +
-    //             "Volatile|Nontemporal|MakePointerVisible %3 " +
-    //             "Aligned|MakePointerAvailable|NonPrivatePointer 16 %4";
+  it("handles OpCopyMemory", () => {
+    let input = "OpCopyMemory %1 %2 " +
+                "Volatile|Nontemporal|MakePointerVisible %3 " +
+                "Aligned|MakePointerAvailable|NonPrivatePointer 16 %4";
+
+    let l = new Lexer(input);
+    let p = new Parser(grammar, l);
+
+    let ast = p.parse();
+    assert.exists(ast, p.error);
+    assert.lengthOf(ast.instructions(), 1);
+
+    let inst = ast.instruction(0);
+    assert.lengthOf(inst.operands(), 4);
+    assert.equal(inst.operand(0).value(), 1);
+    assert.equal(inst.operand(1).value(), 2);
+
+    assert.equal(inst.operand(2).name(),
+        "Volatile|Nontemporal|MakePointerVisible");
+    assert.equal(inst.operand(2).value(), 21);
+    assert.lengthOf(inst.operand(2).params(), 1);
+    assert.equal(inst.operand(2).params()[0].value(), 3);
+
+    assert.equal(inst.operand(3).name(),
+        "Aligned|MakePointerAvailable|NonPrivatePointer");
+    assert.equal(inst.operand(3).value(), 42);
+    assert.lengthOf(inst.operand(3).params(), 2);
+    assert.equal(inst.operand(3).params()[0].value(), 16);
+    assert.equal(inst.operand(3).params()[1].value(), 4);
   });
 });

@@ -170,8 +170,14 @@ export default class Parser {
 
     // TODO(dsinclair): There are a bunch of missing types here. See
     // https://github.com/KhronosGroup/SPIRV-Tools/blob/master/source/text.cpp#L210
+    //
+    // LiteralSpecConstantOpInteger
+    // PairLiteralIntegerIdRef
+    // PairIdRefLiteralInteger
+    // PairIdRefIdRef
     if (data.kind === "IdResult" || data.kind === "IdRef"
-        || data.kind === "IdResultType") {
+        || data.kind === "IdResultType" || data.kind === "IdScope"
+        || data.kind === "IdMemorySemantics") {
       if (t.type !== TokenType.kResultId) {
         this.error_ = t.line + ": expected result id";
         return undefined;
