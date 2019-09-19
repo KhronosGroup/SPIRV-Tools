@@ -350,7 +350,7 @@ message TransformationReplaceBooleanConstantWithConstantBinary {
 
 message TransformationReplaceConstantWithUniform {
 
-  // Replaces a use of a constant id with the the result of a load from an
+  // Replaces a use of a constant id with the result of a load from an
   // element of uniform buffer known to hold the same value as the constant
 
   // A descriptor for the id we would like to replace
