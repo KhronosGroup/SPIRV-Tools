@@ -85,11 +85,11 @@ Replayer::ReplayerResultStatus Replayer::Run(
       impl_->target_env, impl_->consumer, binary_in.data(), binary_in.size());
   assert(ir_context);
 
-  std::vector<uint32_t> last_good_binary;
-  std::vector<uint32_t> first_bad_binary;
-
+  // For replay validation, we track the last valid SPIR-V binary that was
+  // observed. Initially this is the input binary.
+  std::vector<uint32_t> last_valid_binary;
   if (impl_->validate_during_replay) {
-    ir_context->module()->ToBinary(&last_good_binary, false);
+    last_valid_binary = binary_in;
   }
 
   FactManager fact_manager;
@@ -110,7 +110,7 @@ Replayer::ReplayerResultStatus Replayer::Run(
         std::vector<uint32_t> binary_to_validate;
         ir_context->module()->ToBinary(&binary_to_validate, false);
 
-        // Check whether the last transformation led to a valid binary.
+        // Check whether the latest transformation led to a valid binary.
         if (!tools.Validate(&binary_to_validate[0],
                             binary_to_validate.size())) {
           impl_->consumer(SPV_MSG_INFO, nullptr, {},
@@ -118,8 +118,9 @@ Replayer::ReplayerResultStatus Replayer::Run(
                           "breakpoint to inspect); stopping.");
           return Replayer::ReplayerResultStatus::kReplayValidationFailure;
         }
-        last_good_binary = std::move(binary_to_validate);
-        ir_context->module()->ToBinary(&last_good_binary, false);
+
+        // The binary was valid, so it is now the latest valid binary.
+        last_valid_binary = std::move(binary_to_validate);
       }
     }
   }

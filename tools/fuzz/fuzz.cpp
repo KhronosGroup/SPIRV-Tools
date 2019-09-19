@@ -106,8 +106,9 @@ Options (in lexicographical order):
                Required if --shrink is provided; disallowed otherwise.
   --replay-validation
                Run the validator after applying each transformation during
-               replay.  Aborts if an invalid binary is created.  Useful for
-               debugging spirv-fuzz.
+               replay (including the replay that occurs during shrinking).
+               Aborts if an invalid binary is created.  Useful for debugging
+               spirv-fuzz.
   --version
                Display fuzzer version information.
 
@@ -229,11 +230,12 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
   }
 
   if (replay_transformations_file->empty() &&
+      shrink_transformations_file->empty() &&
       static_cast<spv_const_fuzzer_options>(*fuzzer_options)
           ->replay_validation_enabled) {
     spvtools::Error(FuzzDiagnostic, nullptr, {},
                     "The --replay-validation argument can only be used with "
-                    "the --replay arguments.");
+                    "one of the --replay or --shrink arguments.");
     return {FuzzActions::STOP, 1};
   }
 
@@ -331,7 +333,8 @@ bool Shrink(const spv_target_env& target_env,
     return false;
   }
   spvtools::fuzz::Shrinker shrinker(target_env,
-                                    fuzzer_options->shrinker_step_limit);
+                                    fuzzer_options->shrinker_step_limit,
+                                    fuzzer_options->replay_validation_enabled);
   shrinker.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   spvtools::fuzz::Shrinker::InterestingnessFunction interestingness_function =
