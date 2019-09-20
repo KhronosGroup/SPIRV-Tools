@@ -99,8 +99,9 @@ class FuzzerContext {
   const std::function<bool(uint32_t, RandomGenerator*)>&
       go_deeper_in_constant_obfuscation_;
 
+  // Requires |min_max.first| <= |min_max.second|, and returns a value in the
+  // range [ |min_max.first|, |min_max.second| ]
   uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t>& min_max);
-
 };
 
 }  // namespace fuzz
