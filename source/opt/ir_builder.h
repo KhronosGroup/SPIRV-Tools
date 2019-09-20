@@ -95,8 +95,7 @@ class InstructionBuilder {
       }
     }
     std::unique_ptr<Instruction> newBinOp(new Instruction(
-        GetContext(), opcode, type_id,
-        opcode == SpvOpStore ? 0 : result_id,
+        GetContext(), opcode, type_id, opcode == SpvOpStore ? 0 : result_id,
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand2}}}));
     return AddInstruction(std::move(newBinOp));
