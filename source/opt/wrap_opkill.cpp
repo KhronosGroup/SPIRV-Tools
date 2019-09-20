@@ -59,14 +59,7 @@ bool WrapOpKill::ReplaceWithFunctionCall(Instruction* inst) {
   if (ir_builder.AddFunctionCall(GetVoidTypeId(), func_id, {}) == nullptr) {
     return false;
   }
-
-  uint32_t return_type_id = GetOwningFunctionsReturnType(inst);
-  if (return_type_id != GetVoidTypeId()) {
-    Instruction* undef = ir_builder.AddNullaryOp(return_type_id, SpvOpUndef);
-    ir_builder.AddUnaryOp(0, SpvOpReturnValue, undef->result_id());
-  } else {
-    ir_builder.AddNullaryOp(0, SpvOpReturn);
-  }
+  ir_builder.AddUnreachable();
   context()->KillInst(inst);
   return true;
 }
@@ -152,16 +145,6 @@ uint32_t WrapOpKill::GetOpKillFuncId() {
   }
 
   return opkill_function_->result_id();
-}
-
-uint32_t WrapOpKill::GetOwningFunctionsReturnType(Instruction* inst) {
-  BasicBlock* bb = context()->get_instr_block(inst);
-  if (bb == nullptr) {
-    return 0;
-  }
-
-  Function* func = bb->GetParent();
-  return func->type_id();
 }
 
 }  // namespace opt

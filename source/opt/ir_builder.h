@@ -59,44 +59,27 @@ class InstructionBuilder {
                            preserved_analyses) {}
 
   Instruction* AddNullaryOp(uint32_t type_id, SpvOp opcode) {
-    uint32_t result_id = 0;
-    if (type_id != 0) {
-      result_id = GetContext()->TakeNextId();
-      if (result_id == 0) {
-        return nullptr;
-      }
-    }
-    std::unique_ptr<Instruction> new_inst(
-        new Instruction(GetContext(), opcode, type_id, result_id, {}));
-    return AddInstruction(std::move(new_inst));
+    // TODO(1841): Handle id overflow.
+    std::unique_ptr<Instruction> newUnOp(new Instruction(
+        GetContext(), opcode, type_id,
+        opcode == SpvOpReturn ? 0 : GetContext()->TakeNextId(), {}));
+    return AddInstruction(std::move(newUnOp));
   }
 
   Instruction* AddUnaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1) {
-    uint32_t result_id = 0;
-    if (type_id != 0) {
-      result_id = GetContext()->TakeNextId();
-      if (result_id == 0) {
-        return nullptr;
-      }
-    }
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newUnOp(new Instruction(
-        GetContext(), opcode, type_id, result_id,
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}}}));
     return AddInstruction(std::move(newUnOp));
   }
 
   Instruction* AddBinaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
                            uint32_t operand2) {
-    uint32_t result_id = 0;
-    if (type_id != 0) {
-      result_id = GetContext()->TakeNextId();
-      if (result_id == 0) {
-        return nullptr;
-      }
-    }
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newBinOp(new Instruction(
         GetContext(), opcode, type_id,
-        opcode == SpvOpStore ? 0 : result_id,
+        opcode == SpvOpStore ? 0 : GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand2}}}));
     return AddInstruction(std::move(newBinOp));
@@ -104,15 +87,9 @@ class InstructionBuilder {
 
   Instruction* AddTernaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
                             uint32_t operand2, uint32_t operand3) {
-    uint32_t result_id = 0;
-    if (type_id != 0) {
-      result_id = GetContext()->TakeNextId();
-      if (result_id == 0) {
-        return nullptr;
-      }
-    }
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newTernOp(new Instruction(
-        GetContext(), opcode, type_id, result_id,
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand2}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand3}}}));
@@ -122,15 +99,9 @@ class InstructionBuilder {
   Instruction* AddQuadOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
                          uint32_t operand2, uint32_t operand3,
                          uint32_t operand4) {
-    uint32_t result_id = 0;
-    if (type_id != 0) {
-      result_id = GetContext()->TakeNextId();
-      if (result_id == 0) {
-        return nullptr;
-      }
-    }
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newQuadOp(new Instruction(
-        GetContext(), opcode, type_id, result_id,
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand2}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand3}},
@@ -140,15 +111,9 @@ class InstructionBuilder {
 
   Instruction* AddIdLiteralOp(uint32_t type_id, SpvOp opcode, uint32_t id,
                               uint32_t uliteral) {
-    uint32_t result_id = 0;
-    if (type_id != 0) {
-      result_id = GetContext()->TakeNextId();
-      if (result_id == 0) {
-        return nullptr;
-      }
-    }
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newBinOp(new Instruction(
-        GetContext(), opcode, type_id, result_id,
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {id}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {uliteral}}}));
     return AddInstruction(std::move(newBinOp));
