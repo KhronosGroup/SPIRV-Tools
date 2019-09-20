@@ -119,7 +119,7 @@ Replayer::ReplayerResultStatus Replayer::Run(
           return Replayer::ReplayerResultStatus::kReplayValidationFailure;
         }
 
-        // The binary was valid, so it is now the latest valid binary.
+        // The binary was valid, so it becomes the latest valid binary.
         last_valid_binary = std::move(binary_to_validate);
       }
     }
