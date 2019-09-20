@@ -42,7 +42,7 @@ if (${SPIRV_BUILD_FUZZER})
     # spirv-fuzz bugs in changes that are totally unrelated to spirv-fuzz,
     # which would be counfounding.  Instead, they should be run regularly but
     # separately.
-    set(SOURCES
+    set(SOURCES ${SOURCES}
             fuzzer_replayer_test.cpp
             fuzzer_shrinker_test.cpp)
   endif()
