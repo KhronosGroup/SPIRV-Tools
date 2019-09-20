@@ -40,6 +40,10 @@ namespace fuzz {
 namespace {
 const uint32_t kIdBoundGap = 100;
 
+const uint32_t kTransformationLimit = 500;
+
+const uint32_t kChanceOfApplyingAnotherPass = 85;
+
 template <typename T>
 void MaybeAddPass(
     std::vector<std::unique_ptr<FuzzerPass>>* passes,
@@ -149,7 +153,10 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   }
 
   bool is_first = true;
-  while (is_first || fuzzer_context.ChoosePercentage(85)) {
+  while (transformation_sequence_out->transformation_size() <
+             kTransformationLimit &&
+         (is_first ||
+          fuzzer_context.ChoosePercentage(kChanceOfApplyingAnotherPass))) {
     is_first = false;
     passes[fuzzer_context.RandomIndex(passes)]->Apply();
   }
