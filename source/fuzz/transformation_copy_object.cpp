@@ -91,13 +91,6 @@ bool TransformationCopyObject::IsApplicable(
 
 void TransformationCopyObject::Apply(opt::IRContext* context,
                                      FactManager* fact_manager) const {
-  // - A new instruction,
-  //     %|message_.fresh_id| = OpCopyObject %ty %|message_.object|
-  //   is added directly before the instruction at |message_.insert_after_id| +
-  //   |message_|.offset, where %ty is the type of |message_.object|.
-  // - The fact that |message_.fresh_id| and |message_.object| are synonyms
-  //   is added to the fact manager.
-  // The id of the object to be copied must exist
   auto object_inst = context->get_def_use_mgr()->GetDef(message_.object());
   assert(object_inst && "The object to be copied must exist.");
   auto base_instruction =

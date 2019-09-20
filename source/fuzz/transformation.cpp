@@ -25,6 +25,7 @@
 #include "transformation_add_type_float.h"
 #include "transformation_add_type_int.h"
 #include "transformation_add_type_pointer.h"
+#include "transformation_construct_composite.h"
 #include "transformation_copy_object.h"
 #include "transformation_move_block_down.h"
 #include "transformation_replace_boolean_constant_with_constant_binary.h"
@@ -62,6 +63,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddTypePointer:
       return MakeUnique<TransformationAddTypePointer>(
           message.add_type_pointer());
+    case protobufs::Transformation::TransformationCase::kConstructComposite:
+      return MakeUnique<TransformationConstructComposite>(
+          message.construct_composite());
     case protobufs::Transformation::TransformationCase::kCopyObject:
       return MakeUnique<TransformationCopyObject>(message.copy_object());
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
