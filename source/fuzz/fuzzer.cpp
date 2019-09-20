@@ -153,7 +153,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   }
 
   bool is_first = true;
-  while (transformation_sequence_out->transformation_size() <
+  while (static_cast<uint32_t>(
+             transformation_sequence_out->transformation_size()) <
              kTransformationLimit &&
          (is_first ||
           fuzzer_context.ChoosePercentage(kChanceOfApplyingAnotherPass))) {
