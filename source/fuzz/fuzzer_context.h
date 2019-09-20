@@ -16,6 +16,7 @@
 #define SOURCE_FUZZ_FUZZER_CONTEXT_H_
 
 #include <functional>
+#include <utility>
 
 #include "source/fuzz/random_generator.h"
 #include "source/opt/function.h"
@@ -97,6 +98,9 @@ class FuzzerContext {
   // or mutating constructs recursively.
   const std::function<bool(uint32_t, RandomGenerator*)>&
       go_deeper_in_constant_obfuscation_;
+
+  uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t>& min_max);
+
 };
 
 }  // namespace fuzz
