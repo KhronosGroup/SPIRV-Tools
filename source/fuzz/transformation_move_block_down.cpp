@@ -84,13 +84,11 @@ void TransformationMoveBlockDown::Apply(opt::IRContext* context,
                "To be able to move a block down, it needs to have a "
                "program-order successor.");
         function.MoveBasicBlockToAfter(message_.block_id(), &*block_it);
-        // It is prudent to invalidate analyses after changing block ordering in
-        // case any of them depend on it, but the ones that definitely do not
-        // depend on ordering can be preserved. These include the following,
-        // which can likely be extended.
+        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2889):
+        //  revisit whether it would be OK to avoid invalidating the dominator
+        //  analysis (and perhaps other analyses).
         context->InvalidateAnalysesExceptFor(
-            opt::IRContext::Analysis::kAnalysisDefUse |
-            opt::IRContext::Analysis::kAnalysisDominatorAnalysis);
+            opt::IRContext::Analysis::kAnalysisDefUse);
 
         return;
       }
