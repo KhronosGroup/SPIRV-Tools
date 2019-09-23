@@ -1388,6 +1388,73 @@ TEST(TransformationAddDeadContinueTest, Miscellaneous1) {
   ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
 }
 
+TEST(TransformationAddDeadContinueTest, Miscellaneous2) {
+  // A miscellaneous test that exposed a bug in spirv-fuzz.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %51 = OpTypeBool
+        %395 = OpConstantTrue %51
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %389
+        %389 = OpLabel
+               OpLoopMerge %388 %391 None
+               OpBranch %339
+        %339 = OpLabel
+               OpSelectionMerge %396 None
+               OpBranchConditional %395 %388 %396
+        %396 = OpLabel
+               OpBranch %1552
+       %1552 = OpLabel
+               OpLoopMerge %1553 %1554 None
+               OpBranch %1556
+       %1556 = OpLabel
+               OpLoopMerge %1557 %1570 None
+               OpBranchConditional %395 %1562 %1557
+       %1562 = OpLabel
+               OpSelectionMerge %1570 None
+               OpBranchConditional %395 %1571 %1570
+       %1571 = OpLabel
+               OpBranch %1557
+       %1570 = OpLabel
+               OpBranch %1556
+       %1557 = OpLabel
+               OpSelectionMerge %1586 None
+               OpBranchConditional %395 %1553 %1586
+       %1586 = OpLabel
+               OpBranch %1553
+       %1554 = OpLabel
+               OpBranch %1552
+       %1553 = OpLabel
+               OpBranch %388
+        %391 = OpLabel
+               OpBranch %389
+        %388 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  // This transformation would introduce a branch from a continue target to
+  // itself.
+  auto bad_transformation = TransformationAddDeadContinue(1554, true, {});
+  ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
