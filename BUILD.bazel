@@ -141,9 +141,10 @@ cc_library(
         "include/spirv-tools/libspirv.h",
         "include/spirv-tools/libspirv.hpp",
     ],
-    copts = COMMON_COPTS + [
-        "-Wno-implicit-fallthrough",
-    ],
+    copts = COMMON_COPTS + select({
+        "@bazel_tools//src/conditions:windows": [""],
+        "//conditions:default": ["-Wno-implicit-fallthrough"],
+    }),
     includes = ["include"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
@@ -428,6 +429,7 @@ cc_library(
         "test/cpp_interface_test.cpp",
         "test/log_test.cpp",
         "test/pch_test.cpp",
+        "test/timer_test.cpp",
     ],
 )]
 
@@ -503,7 +505,10 @@ val_test(
     size = "large",
     timeout = "long",
     srcs = ["test/val/val_capability_test.cpp"],
-    copts = ["-O3"],
+    copts = select({
+        "@bazel_tools//src/conditions:windows": [""],
+        "//conditions:default": ["-O3"],
+    }),
 )
 
 val_test(
@@ -511,5 +516,8 @@ val_test(
     size = "large",
     timeout = "long",
     srcs = ["test/val/val_limits_test.cpp"],
-    copts = ["-O3"],
+    copts = select({
+        "@bazel_tools//src/conditions:windows": [""],
+        "//conditions:default": ["-O3"],
+    }),
 )

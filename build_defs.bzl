@@ -1,30 +1,37 @@
 COMMON_COPTS = [
-    "-DSPIRV_LINUX",
-    "-DSPIRV_CHECK_CONTEXT",
-    "-DSPIRV_COLOR_TERMINAL",
-    "-DSPIRV_TIMER_ENABLED",
-    "-Wall",
-    "-Wextra",
-    "-Wnon-virtual-dtor",
-    "-Wno-missing-field-initializers",
-    "-Werror",
-    "-std=c++11",
-    "-fvisibility=hidden",
-    "-fno-exceptions",
-    "-fno-rtti",
-    "-Wno-long-long",
-    "-Wshadow",
-    "-Wundef",
-    "-Wconversion",
-    "-Wno-sign-conversion",
-]
+        "-DSPIRV_CHECK_CONTEXT",
+        "-DSPIRV_COLOR_TERMINAL",
+    ] + select({
+    "@bazel_tools//src/conditions:windows": [""],
+    "//conditions:default": [
+        "-DSPIRV_LINUX",
+        "-DSPIRV_TIMER_ENABLED",
+        "-Wall",
+        "-Wextra",
+        "-Wnon-virtual-dtor",
+        "-Wno-missing-field-initializers",
+        "-Werror",
+        "-std=c++11",
+        "-fvisibility=hidden",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Wno-long-long",
+        "-Wshadow",
+        "-Wundef",
+        "-Wconversion",
+        "-Wno-sign-conversion",
+    ],
+})
 
-TEST_COPTS = COMMON_COPTS + [
-    "-Wno-undef",
-    "-Wno-self-assign",
-    "-Wno-shadow",
-    "-Wno-unused-parameter",
-]
+TEST_COPTS = COMMON_COPTS + select({
+    "@bazel_tools//src/conditions:windows": [""],
+    "//conditions:default": [
+        "-Wno-undef",
+        "-Wno-self-assign",
+        "-Wno-shadow",
+        "-Wno-unused-parameter"
+    ],
+})
 
 DEBUGINFO_GRAMMAR_JSON_FILE = "source/extinst.debuginfo.grammar.json"
 
