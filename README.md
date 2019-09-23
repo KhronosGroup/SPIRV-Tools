@@ -255,9 +255,9 @@ Those binaries are automatically uploaded by the buildbots after successful
 testing and they always reflect the current top of the tree of the master
 branch.
 
-The project uses [CMake][cmake] to generate platform-specific build
-configurations. Assume that `<spirv-dir>` is the root directory of the checked
-out code:
+In order to build the code, you first need to sync the external repositories
+that it depends on. Assume that `<spirv-dir>` is the root directory of the
+checked out code:
 
 ```sh
 cd <spirv-dir>
@@ -266,16 +266,31 @@ git clone https://github.com/google/effcee.git external/effcee
 git clone https://github.com/google/re2.git external/re2
 git clone https://github.com/google/googletest.git external/googletest # optional
 
-mkdir build && cd build
-cmake [-G <platform-generator>] <spirv-dir>
 ```
 
 *Note*:
 The script `utils/git-sync-deps` can be used to checkout and/or update the
 contents of the repos under `external/` instead of manually maintaining them.
 
+### Build using CMake
+You can build The project using [CMake][cmake] to generate platform-specific
+build configurations.
+
+```sh
+cd <spirv-dir>
+mkdir build && cd build
+cmake [-G <platform-generator>] <spirv-dir>
+```
+
 Once the build files have been generated, build using your preferred
 development environment.
+
+### Build using Bazel
+You can also use [Bazel](https://bazel.build/) to build the project.
+```sh
+cd <spirv-dir>
+bazel build :all
+```
 
 ### Tools you'll need
 
@@ -286,6 +301,8 @@ installed regardless of your OS:
   2.8.12 or later.
 - [Python 3](http://www.python.org/): for utility scripts and running the test
 suite.
+- [Bazel](https://baze.build/) (optional): if building the source with Bazel,
+you need to install Bazel on your machine.
 
 SPIRV-Tools is regularly tested with the the following compilers:
 
