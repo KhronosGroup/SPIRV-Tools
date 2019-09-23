@@ -877,6 +877,7 @@ source_set("spvtools_util_cli_consumer") {
     "tools/util/cli_consumer.cpp",
     "tools/util/cli_consumer.h",
   ]
+  deps = [ ":spvtools_headers" ]
   configs += [ ":spvtools_internal_config" ]
 }
 
