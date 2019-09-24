@@ -629,15 +629,26 @@ TEST_F(ValidateData, specialize_boolean) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateData, specialize_boolean_to_int) {
+TEST_F(ValidateData, specialize_boolean_true_to_int) {
   std::string str = header + R"(
 %2 = OpTypeInt 32 1
-%3 = OpSpecConstantTrue %2
+%3 = OpSpecConstantTrue %2)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantTrue Result Type <id> '1[%int]' is not "
+                        "a boolean type"));
+}
+
+TEST_F(ValidateData, specialize_boolean_false_to_int) {
+  std::string str = header + R"(
+%2 = OpTypeInt 32 1
 %4 = OpSpecConstantFalse %2)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Specialization constant must be a boolean"));
+              HasSubstr("OpSpecConstantFalse Result Type <id> '1[%int]' is not "
+                        "a boolean type"));
 }
 
 TEST_F(ValidateData, missing_forward_pointer_decl) {
@@ -647,8 +658,9 @@ TEST_F(ValidateData, missing_forward_pointer_decl) {
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must first be declared using OpTypeForwardPointer"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The following forward referenced IDs have not been defined:"));
 }
 
 TEST_F(ValidateData, missing_forward_pointer_decl_self_reference) {
@@ -659,7 +671,7 @@ TEST_F(ValidateData, missing_forward_pointer_decl_self_reference) {
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must first be declared using OpTypeForwardPointer"));
+              HasSubstr("Structure members may not be self references"));
 }
 
 TEST_F(ValidateData, forward_pointer_missing_definition) {
@@ -698,9 +710,7 @@ OpTypeForwardPointer %_ptr_Generic_struct_A Generic
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("A forward reference operand in an OpTypeStruct must "
-                        "be an OpTypePointer that points to an OpTypeStruct. "
-                        "Found OpTypePointer that points to OpTypeInt."));
+              HasSubstr("Forward pointers must point to a structure"));
 }
 
 TEST_F(ValidateData, struct_forward_pointer_good) {
@@ -932,23 +942,6 @@ TEST_F(ValidateData, webgpu_RTA_not_at_end_of_struct) {
               HasSubstr("In WebGPU, OpTypeRuntimeArray must only be used for "
                         "the last member of an OpTypeStruct\n  %_struct_3 = "
                         "OpTypeStruct %_runtimearr_uint %uint\n"));
-}
-
-TEST_F(ValidateData, invalid_forward_reference_in_array) {
-  std::string str = R"(
-               OpCapability Shader
-               OpCapability Linkage
-               OpMemoryModel Logical GLSL450
-       %uint = OpTypeInt 32 0
-%uint_1 = OpConstant %uint 1
-%_arr_3_uint_1 = OpTypeArray %_arr_3_uint_1 %uint_1
-)";
-
-  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_3);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Forward reference operands in an OpTypeArray must "
-                        "first be declared using OpTypeForwardPointer."));
 }
 
 }  // namespace
