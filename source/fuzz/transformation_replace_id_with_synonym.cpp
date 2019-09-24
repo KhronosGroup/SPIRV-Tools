@@ -129,6 +129,28 @@ bool TransformationReplaceIdWithSynonym::ReplacingUseWithSynonymIsOk(
     }
   }
 
+  if (use_instruction->opcode() == SpvOpFunctionCall &&
+      use_in_operand_index > 0) {
+    // This is a function call argument.  It is not allowed to have pointer
+    // type.
+
+    // Get the definition of the function being called.
+    auto function = context->get_def_use_mgr()->GetDef(
+        use_instruction->GetSingleWordInOperand(0));
+    // From the function definition, get the function type.
+    auto function_type =
+        context->get_def_use_mgr()->GetDef(function->GetSingleWordInOperand(1));
+    // OpTypeFunction's 0-th input operand is the function return type, and the
+    // function argument types follow. Because the arguments to OpFunctionCall
+    // start from input operand 1, we can use |use_in_operand_index| to get the
+    // type associated with this function argument.
+    auto parameter_type = context->get_type_mgr()->GetType(
+        function_type->GetSingleWordInOperand(use_in_operand_index));
+    if (parameter_type->AsPointer()) {
+      return false;
+    }
+  }
+
   // We now need to check that replacing the use with the synonym will respect
   // dominance rules - i.e. the synonym needs to dominate the use.
   auto dominator_analysis = context->GetDominatorAnalysis(
