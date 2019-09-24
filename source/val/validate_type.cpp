@@ -352,15 +352,6 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
              << " contains structure <id> " << _.getIdName(member_type_id)
              << ".";
     }
-    if (_.IsForwardPointer(member_type_id)) {
-      const auto inst_index = inst - &_.ordered_instructions()[0];
-      const auto member_index = inst - &_.ordered_instructions()[0];
-      if (inst_index < member_index) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "Forward reference operands in an OpTypeStruct must first be "
-                  "declared using OpTypeForwardPointer.";
-      }
-    }
 
     if (spvIsVulkanOrWebGPUEnv(_.context()->target_env) &&
         member_type->opcode() == SpvOpTypeRuntimeArray) {
