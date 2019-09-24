@@ -170,8 +170,12 @@ def generate_extinst_lang_headers(name, grammar = None):
     )
 
 def base_test(name, srcs, deps = []):
+    if srcs == []:
+        return
+    if name[-5:] != "_test":
+        name = name + "_test"
     native.cc_test(
-        name = "base_" + name + "_test",
+        name = "base_" + name,
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
@@ -185,8 +189,10 @@ def base_test(name, srcs, deps = []):
     )
 
 def link_test(name, srcs, deps = []):
+    if name[-5:] != "_test":
+        name = name + "_test"
     native.cc_test(
-        name = "link_" + name + "_test",
+        name = "link_" + name,
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
@@ -200,8 +206,10 @@ def link_test(name, srcs, deps = []):
     )
 
 def opt_test(name, srcs, deps = []):
+    if name[-5:] != "_test":
+        name = name + "_test"
     native.cc_test(
-        name = "opt_" + name + "_test",
+        name = "opt_" + name,
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
@@ -215,8 +223,10 @@ def opt_test(name, srcs, deps = []):
     )
 
 def reduce_test(name, srcs, deps = []):
+    if name[-5:] != "_test":
+        name = name + "_test"
     native.cc_test(
-        name = "reduce_" + name + "_test",
+        name = "reduce_" + name,
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
@@ -231,8 +241,10 @@ def reduce_test(name, srcs, deps = []):
     )
 
 def util_test(name, srcs, deps = []):
+    if name[-5:] != "_test":
+        name = name + "_test"
     native.cc_test(
-        name = "util_" + name + "_test",
+        name = "util_" + name,
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
@@ -246,8 +258,12 @@ def util_test(name, srcs, deps = []):
     )
 
 def val_test(name, srcs = [], size = "small", copts = [], deps = [], **kwargs):
+    if name[-5:] != "_test":
+        name = name + "_test"
+    if name[:4] != "val_":
+        name = "val_" + name
     native.cc_test(
-        name = "val_" + name + "_test",
+        name = name,
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS + copts,

@@ -420,28 +420,35 @@ cc_library(
     deps = [":test_common"],
 )
 
+# PCH (precompiled header) tests only work when using CMake and MSVC on Windows,
+# so they will be skipped in the Bazel builds.
+
 [base_test(
-    name = f[5:-9],  # strip test/, _test.cpp
+    name = f[5:-4],  # strip test/, .cpp
     srcs = [f],
 ) for f in glob(
-    ["test/*_test.cpp"],
+    ["test/*.cpp"],
     exclude = [
-        "test/cpp_interface_test.cpp",
-        "test/log_test.cpp",
-        "test/pch_test.cpp",
-        "test/timer_test.cpp",
+        "test/cpp_interface_test.cpp", # has its own base_test below.
+        "test/log_test.cpp", # has its own base_test below.
+        "test/pch_test.cpp", # pch tests are skipped.
+        "test/timer_test.cpp", # has its own base_test below.
     ],
 )]
+
+# This test uses unistd.h and does not run on Windows.
+base_test(
+    name = "timer_test",
+    srcs = select({
+        "@bazel_tools//src/conditions:windows": [],
+        "//conditions:default": ["test/timer_test.cpp"],
+    }),
+)
 
 base_test(
     name = "cpp_interface_test",
     srcs = ["test/cpp_interface_test.cpp"],
     deps = [":spirv_tools_opt"],
-)
-
-base_test(
-    name = "ilist_test",
-    srcs = ["test/util/ilist_test.cpp"],
 )
 
 base_test(
@@ -451,23 +458,27 @@ base_test(
 )
 
 [link_test(
-    name = f[10:-9],  # strip test/link/, _test.cpp
+    name = f[10:-4],  # strip test/link/, .cpp
     srcs = [f],
 ) for f in glob(
-    ["test/link/*_test.cpp"],
-    exclude = ["test/link/type_match_test.cpp"],
+    ["test/link/*.cpp"],
 )]
 
 [opt_test(
-    name = f[9:-9],  # strip test/opt/, _test.cpp
+    name = f[9:-4],  # strip test/opt/, .cpp
     srcs = [f],
-) for f in glob(["test/opt/*_test.cpp"])]
+) for f in glob(
+    ["test/opt/*.cpp"],
+    # pch tests are skipped.
+    exclude = ["test/opt/pch_test_opt.cpp"],
+)]
 
 [opt_test(
     name = "dom_tree_" + f[24:-4],  # strip test/opt/dominator_tree/, .cpp
     srcs = [f],
 ) for f in glob(
     ["test/opt/dominator_tree/*.cpp"],
+    # pch tests are skipped.
     exclude = ["test/opt/dominator_tree/pch_test_opt_dom.cpp"],
 )]
 
@@ -476,48 +487,40 @@ base_test(
     srcs = [f],
 ) for f in glob(
     ["test/opt/loop_optimizations/*.cpp"],
+    # pch tests are skipped.
     exclude = ["test/opt/loop_optimizations/pch_test_opt_loop.cpp"],
 )]
 
 [reduce_test(
-    name = f[12:-9],  # strip test/reduce/, _test.cpp
+    name = f[12:-4],  # strip test/reduce/, .cpp
     srcs = [f],
-) for f in glob(["test/reduce/*_test.cpp"])]
+) for f in glob(["test/reduce/*.cpp"])]
 
 [util_test(
-    name = f[10:-9],  # strip test/util/, _test.cpp
+    name = f[10:-4],  # strip test/util/, .cpp
     srcs = [f],
-) for f in glob(["test/util/*_test.cpp"])]
+) for f in glob(["test/util/*.cpp"])]
 
 [val_test(
-    name = f[13:-9],  # strip test/val/val_, _test.cpp
+    name = f[9:-4],  # strip test/val/, .cpp
     srcs = [f],
 ) for f in glob(
-    ["test/val/val_*_test.cpp"],
+    ["test/val/*.cpp"],
     exclude = [
-        "test/val/val_capability_test.cpp",
-        "test/val/val_limits_test.cpp",
+        "test/val/val_capability_test.cpp", # has its own val_test below.
+        "test/val/val_limits_test.cpp", # has its own val_test below.
+        "test/val/pch_test_val.cpp", # pch tests are skipped.
     ],
 )]
 
 val_test(
     name = "capability",
     size = "large",
-    timeout = "long",
     srcs = ["test/val/val_capability_test.cpp"],
-    copts = select({
-        "@bazel_tools//src/conditions:windows": [""],
-        "//conditions:default": ["-O3"],
-    }),
 )
 
 val_test(
     name = "limits",
     size = "large",
-    timeout = "long",
     srcs = ["test/val/val_limits_test.cpp"],
-    copts = select({
-        "@bazel_tools//src/conditions:windows": [""],
-        "//conditions:default": ["-O3"],
-    }),
 )
