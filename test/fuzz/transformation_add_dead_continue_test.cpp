@@ -1575,6 +1575,57 @@ TEST(TransformationAddDeadContinueTest, Miscellaneous4) {
   ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
 }
 
+TEST(TransformationAddDeadContinueTest, Miscellaneous5) {
+  // A miscellaneous test that exposed a bug in spirv-fuzz.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpTypePointer Function %6
+          %9 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %98
+         %98 = OpLabel
+               OpLoopMerge %100 %101 None
+               OpBranch %99
+         %99 = OpLabel
+               OpSelectionMerge %111 None
+               OpBranchConditional %9 %110 %111
+        %110 = OpLabel
+               OpBranch %100
+        %111 = OpLabel
+        %200 = OpCopyObject %6 %9
+               OpBranch %101
+        %101 = OpLabel
+        %201 = OpCopyObject %6 %200
+               OpBranchConditional %9 %98 %100
+        %100 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto bad_transformation = TransformationAddDeadContinue(110, true, {});
+
+  // The continue edge would lead to the use of %200 in block %101 no longer
+  // being dominated by its definition in block %111.
+  ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

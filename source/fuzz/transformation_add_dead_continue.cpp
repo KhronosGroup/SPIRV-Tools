@@ -109,7 +109,7 @@ bool TransformationAddDeadContinue::IsApplicable(
 
   // Check that adding the continue would not violate the property that a
   // definition must dominate all of its uses.
-  if (!fuzzerutil::NewEdgeLeavingConstructBodyRespectsUseDefDominance(
+  if (!fuzzerutil::NewEdgeRespectsUseDefDominance(
           context, bb_from, context->cfg()->block(continue_block))) {
     return false;
   }
