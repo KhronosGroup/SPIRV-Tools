@@ -1455,6 +1455,126 @@ TEST(TransformationAddDeadContinueTest, Miscellaneous2) {
   ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
 }
 
+TEST(TransformationAddDeadContinueTest, Miscellaneous3) {
+  // A miscellaneous test that exposed a bug in spirv-fuzz.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %85 = OpTypeBool
+        %434 = OpConstantFalse %85
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %234
+        %234 = OpLabel
+               OpLoopMerge %235 %236 None
+               OpBranch %259
+        %259 = OpLabel
+               OpLoopMerge %260 %274 None
+               OpBranchConditional %434 %265 %260
+        %265 = OpLabel
+               OpBranch %275
+        %275 = OpLabel
+               OpBranch %260
+        %274 = OpLabel
+               OpBranch %259
+        %260 = OpLabel
+               OpSelectionMerge %298 None
+               OpBranchConditional %434 %299 %300
+        %300 = OpLabel
+               OpBranch %235
+        %298 = OpLabel
+               OpUnreachable
+        %236 = OpLabel
+               OpBranch %234
+        %299 = OpLabel
+               OpBranch %235
+        %235 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto bad_transformation = TransformationAddDeadContinue(299, false, {});
+
+  // The continue edge would connect %299 to the previously-unreachable %236,
+  // making %299 dominate %236, and breaking the rule that block ordering must
+  // respect dominance.
+  ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationAddDeadContinueTest, Miscellaneous4) {
+  // A miscellaneous test that exposed a bug in spirv-fuzz.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+        %100 = OpConstantFalse %17
+         %21 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %13 = OpLabel
+         %20 = OpLoad %6 %8
+         %22 = OpIAdd %6 %20 %21
+               OpStore %8 %22
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  auto bad_transformation = TransformationAddDeadContinue(10, false, {});
+
+  // The continue edge would connect %10 to the previously-unreachable %13,
+  // making %10 dominate %13, and breaking the rule that block ordering must
+  // respect dominance.
+  ASSERT_FALSE(bad_transformation.IsApplicable(context.get(), fact_manager));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
