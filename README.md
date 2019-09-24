@@ -297,12 +297,13 @@ bazel build :all
 For building and testing SPIRV-Tools, the following tools should be
 installed regardless of your OS:
 
-- [CMake](http://www.cmake.org/): for generating compilation targets.  Version
-  2.8.12 or later.
+- [CMake](http://www.cmake.org/): if using CMake for generating compilation
+targets, you need to install CMake Version 2.8.12 or later.
 - [Python 3](http://www.python.org/): for utility scripts and running the test
 suite.
 - [Bazel](https://baze.build/) (optional): if building the source with Bazel,
-you need to install Bazel on your machine.
+you need to install Bazel Version 0.29.1 on your machine. Other versions may
+also work, but are not verified.
 
 SPIRV-Tools is regularly tested with the the following compilers:
 
