@@ -1476,7 +1476,8 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantTrueBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Specialization constant must be a boolean type."));
+              HasSubstr("OpSpecConstantTrue Result Type <id> '1[%void]' is not "
+                        "a boolean type"));
 }
 
 TEST_F(ValidateIdWithMessage, OpSpecConstantFalseGood) {
@@ -1492,8 +1493,10 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantFalseBad) {
 %2 = OpSpecConstantFalse %1)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Specialization constant must be a boolean type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpSpecConstantFalse Result Type <id> '1[%void]' is not "
+                "a boolean type"));
 }
 
 TEST_F(ValidateIdWithMessage, OpSpecConstantGood) {
@@ -5175,9 +5178,9 @@ TEST_F(ValidateIdWithMessage, UndefinedTypeId) {
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Forward reference operands in an OpTypeStruct must "
-                        "first be declared using OpTypeForwardPointer."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The following forward referenced IDs have not been defined"));
 }
 
 TEST_F(ValidateIdWithMessage, UndefinedIdScope) {
