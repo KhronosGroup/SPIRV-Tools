@@ -32,9 +32,11 @@ chmod +x bazel-0.29.1-linux-x86_64
 alias bazel=bazel-0.29.1-linux-x86_64
 
 echo $(date): Build everything...
-bazel build :all
+./bazel-0.29.1-linux-x86_64 build :all
 echo $(date): Build completed.
 
 echo $(date): Starting ctest...
-bazel test :all
+./bazel-0.29.1-linux-x86_64 test :all
 echo $(date): ctest completed.
+
+bazel --version
