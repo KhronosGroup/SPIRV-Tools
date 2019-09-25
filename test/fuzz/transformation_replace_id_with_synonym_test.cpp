@@ -630,7 +630,6 @@ TEST(TransformationReplaceIdWithSynonymTest,
       transformation::MakeIdUseDescriptor(14, SpvOpFunctionCall, 1, 16, 0),
       MakeDataDescriptor(100, {}), 0);
   ASSERT_FALSE(replacement.IsApplicable(context.get(), fact_manager));
-
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
