@@ -41,14 +41,8 @@ cd %SRC%
 :: #########################################
 echo "Build everything... %DATE% %TIME%"
 
-if "%KOKORO_GITHUB_COMMIT%." == "." (
-  set BUILD_SHA=%KOKORO_GITHUB_PULL_REQUEST_COMMIT%
-) else (
-  set BUILD_SHA=%KOKORO_GITHUB_COMMIT%
-)
-
 gsutil cp gs://bazel/0.29.1/release/bazel-0.29.1-windows-x86_64.exe .
-
+chmod +x bazel-0.29.1-windows-x86_64.exe
 bazel-0.29.1-windows-x86_64.exe build :all
 
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
