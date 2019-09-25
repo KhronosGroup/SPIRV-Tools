@@ -5178,9 +5178,8 @@ TEST_F(ValidateIdWithMessage, UndefinedTypeId) {
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("The following forward referenced IDs have not been defined"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 2[%2] requires a previous definition"));
 }
 
 TEST_F(ValidateIdWithMessage, UndefinedIdScope) {
@@ -6465,6 +6464,26 @@ TEST_F(ValidateIdWithMessage, OpTypeForwardPointerWrongStorageClass) {
                 "pointer definition.\n  OpTypeForwardPointer "
                 "%_ptr_Function_int CrossWorkgroup"));
 }
+
+TEST_F(ValidateIdWithMessage, MissingForwardPointer) {
+  const std::string spirv = R"(
+               OpCapability Linkage
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+      %float = OpTypeFloat 32
+  %_struct_9 = OpTypeStruct %float %_ptr_Uniform__struct_9
+%_ptr_Uniform__struct_9 = OpTypePointer Uniform %_struct_9
+       %1278 = OpVariable %_ptr_Uniform__struct_9 Uniform
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Operand 3[%_ptr_Uniform__struct_2] requires a previous definition"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
