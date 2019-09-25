@@ -30,10 +30,7 @@ cd $SRC
 # Get bazel 0.29.1.
 curl -L -k -O -s https://github.com/bazelbuild/bazel/releases/download/0.29.1/bazel-0.29.1-installer-darwin-x86_64.sh
 mkdir bazel
-sh bazel-0.25.1-installer-darwin-x86_64.sh --prefix=$SRC/bazel
-
-gsutil cp gs://bazel/0.29.1/release/bazel-0.29.1-darwin-x86_64 .
-chmod +x bazel-0.29.1-darwin-x86_64
+sh bazel-0.29.1-installer-darwin-x86_64.sh --prefix=$SRC/bazel
 
 echo $(date): Build everything...
 $SRC/bazel/bin/bazel build :all
