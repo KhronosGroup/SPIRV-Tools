@@ -216,20 +216,28 @@ bool NewEdgeRespectsUseDefDominance(opt::IRContext* context,
     return true;
   }
 
+  // Let us assume that the module being manipulated is valid according to the
+  // rules of the SPIR-V language.
+  //
   // Suppose that some block Y is dominated by |bb_to| (which includes the case
-  // where X = |bb_to|).
+  // where Y = |bb_to|).
   //
   // Suppose that Y uses an id i that is defined in some other block X.
   //
-  // It must therefore be the case that X dominates Y.
+  // Because the module is valid, X must dominate Y.  We are concerned about
+  // whether an edge from |bb_from| to |bb_to| could *stop* X from dominating
+  // Y.
   //
-  // Now let us assume that X actually dominates |bb_to|, so that we have:
+  // Because |bb_to| dominates Y, a new edge from |bb_from| to |bb_to| can
+  // only affect whether X dominates Y if X dominates |bb_to|.
+  //
+  // So let us assume that X does dominate |bb_to|, so that we have:
   //
   //   (X defines i) dominates |bb_to| dominates (Y uses i)
   //
-  // We would have a problem if adding an edge from |bb_from| to |bb_to| would
-  // stop X from dominating |bb_to|, because this would stop the definition of
-  // i in X from dominating the use of i in Y.
+  // The new edge from |bb_from| to |bb_to| will stop the definition of i in X
+  // from dominating the use of i in Y exactly when the new edge will stop X
+  // from dominating |bb_to|.
   //
   // Now, the block X that we are worried about cannot dominate |bb_from|,
   // because in that case X would still dominate |bb_to| after we add an edge
