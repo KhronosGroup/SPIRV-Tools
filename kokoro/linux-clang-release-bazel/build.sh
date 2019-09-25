@@ -29,7 +29,6 @@ cd $SRC
 
 gsutil cp gs://bazel/0.29.1/release/bazel-0.29.1-linux-x86_64 .
 chmod +x bazel-0.29.1-linux-x86_64
-alias bazel=bazel-0.29.1-linux-x86_64
 
 echo $(date): Build everything...
 ./bazel-0.29.1-linux-x86_64 build :all
@@ -38,5 +37,3 @@ echo $(date): Build completed.
 echo $(date): Starting ctest...
 ./bazel-0.29.1-linux-x86_64 test :all
 echo $(date): ctest completed.
-
-bazel --version
