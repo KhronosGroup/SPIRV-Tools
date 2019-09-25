@@ -28,14 +28,13 @@ cd $SRC
 ./utils/git-sync-deps
 
 # Get bazel 0.29.1.
-curl -L -k -O -s https://github.com/bazelbuild/bazel/releases/download/0.29.1/bazel-0.29.1-installer-darwin-x86_64.sh
-mkdir bazel
-sh bazel-0.29.1-installer-darwin-x86_64.sh --prefix=$SRC/bazel
+gsutil cp gs://bazel/0.29.1/release/bazel-0.29.1-darwin-x86_64 .
+chmod +x bazel-0.29.1-darwin-x86_64
 
 echo $(date): Build everything...
-$SRC/bazel/bin/bazel build :all
+./bazel-0.29.1-darwin-x86_64 build :all
 echo $(date): Build completed.
 
 echo $(date): Starting ctest...
-$SRC/bazel/bin/bazel test :all
+./bazel-0.29.1-darwin-x86_64 test :all
 echo $(date): ctest completed.
