@@ -16,10 +16,7 @@
 
 @echo on
 
-set BUILD_ROOT=%cd%
 set SRC=%cd%\github\SPIRV-Tools
-set BUILD_TYPE=%1
-set VS_VERSION=%2
 
 :: Force usage of python 3.6
 set PATH=C:\python36;%PATH%
