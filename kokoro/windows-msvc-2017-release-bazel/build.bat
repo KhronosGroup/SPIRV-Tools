@@ -44,12 +44,6 @@ git clone --depth=1 https://github.com/google/re2                 external/re2
 git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
 
 :: #########################################
-:: set up msvc build env
-:: #########################################
-call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
-echo "Using VS 2017..."
-
-:: #########################################
 :: Start building.
 :: #########################################
 echo "Build everything... %DATE% %TIME%"
