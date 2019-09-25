@@ -564,6 +564,74 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationReplaceIdWithSynonymTest,
+     SynonymOfVariableNoGoodInFunctionCall) {
+  // The following SPIR-V comes from this GLSL, with an object copy added:
+  //
+  // #version 310 es
+  //
+  // precision highp int;
+  //
+  // void foo(int x) { }
+  //
+  // void main() {
+  //   int a;
+  //   a = 2;
+  //   foo(a);
+  // }
+  const std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "foo(i1;"
+               OpName %9 "x"
+               OpName %12 "a"
+               OpName %14 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %12 = OpVariable %7 Function
+         %14 = OpVariable %7 Function
+               OpStore %12 %13
+         %15 = OpLoad %6 %12
+               OpStore %14 %15
+        %100 = OpCopyObject %7 %14
+         %16 = OpFunctionCall %2 %10 %14
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  fact_manager.AddFact(MakeFact(14, 100), context.get());
+
+  // Replace %14 with %100 in:
+  // %16 = OpFunctionCall %2 %10 %14
+  auto replacement = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(14, SpvOpFunctionCall, 1, 16, 0),
+      MakeDataDescriptor(100, {}), 0);
+  ASSERT_FALSE(replacement.IsApplicable(context.get(), fact_manager));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
