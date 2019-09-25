@@ -658,9 +658,8 @@ TEST_F(ValidateData, missing_forward_pointer_decl) {
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("The following forward referenced IDs have not been defined:"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 3[%3] requires a previous definition"));
 }
 
 TEST_F(ValidateData, missing_forward_pointer_decl_self_reference) {
@@ -670,8 +669,9 @@ TEST_F(ValidateData, missing_forward_pointer_decl_self_reference) {
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Structure members may not be self references"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Operand 2[%_struct_2] requires a previous definition"));
 }
 
 TEST_F(ValidateData, forward_pointer_missing_definition) {
