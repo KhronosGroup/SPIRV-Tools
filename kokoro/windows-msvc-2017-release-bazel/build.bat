@@ -43,6 +43,14 @@ git clone --depth=1 https://github.com/google/re2                 external/re2
 git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
 
 choco install bazel --version 0.29.1 -y
+
+set BAZEL_SH=c:\tools\msys64\usr\bin\bash.exe
+set BAZEL_PYTHON=c:\tools\python2\python.exe
+
+bazel --version
+C:\ProgramData\chocolatey\lib\bazel --version
+
+
 :: %SRC%\bazel.exe --version
 
 :: #########################################
