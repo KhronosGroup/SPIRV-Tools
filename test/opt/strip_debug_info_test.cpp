@@ -113,6 +113,43 @@ TEST_F(StripDebugStringTest, OpDecorateRemoved) {
                                               /* do_validation */ false);
 }
 
+TEST_F(StripDebugStringTest, OpNameRemoved) {
+    std::vector<const char*> input {
+      // clang-format off
+                     "OpCapability Shader",
+                "%1 = OpExtInstImport \"GLSL.std.450\"",
+                     "OpMemoryModel Logical GLSL450",
+                     "OpEntryPoint Vertex %2 \"main\"",
+                "%3 = OpString \"minimal.vert\"",
+                     "OpName %3 \"bob\"",
+             "%void = OpTypeVoid",
+                "%5 = OpTypeFunction %void",
+                "%2 = OpFunction %void None %5",
+                "%6 = OpLabel",
+                     "OpReturn",
+                     "OpFunctionEnd",
+      // clang-format on
+    };
+    std::vector<const char*> output {
+      // clang-format off
+                     "OpCapability Shader",
+                "%1 = OpExtInstImport \"GLSL.std.450\"",
+                     "OpMemoryModel Logical GLSL450",
+                     "OpEntryPoint Vertex %2 \"main\"",
+             "%void = OpTypeVoid",
+                "%5 = OpTypeFunction %void",
+                "%2 = OpFunction %void None %5",
+                "%6 = OpLabel",
+                     "OpReturn",
+                     "OpFunctionEnd",
+      // clang-format on
+    };
+    SinglePassRunAndCheck<StripDebugInfoPass>(JoinAllInsts(input),
+                                              JoinAllInsts(output),
+                                              /* skip_nop = */ false,
+                                              /* do_validation */ false);
+}
+
 using StripDebugInfoTest = PassTest<::testing::TestWithParam<const char*>>;
 
 TEST_P(StripDebugInfoTest, Kind) {
