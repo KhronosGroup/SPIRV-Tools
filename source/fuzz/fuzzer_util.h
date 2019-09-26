@@ -82,6 +82,11 @@ bool NewEdgeRespectsUseDefDominance(opt::IRContext* context,
                                     opt::BasicBlock* bb_from,
                                     opt::BasicBlock* bb_to);
 
+// Returns true if and only if there is a path to |bb| from the entry block of
+// the function that contains |bb|.
+bool BlockIsReachableInItsFunction(opt::IRContext* context,
+                                   opt::BasicBlock* bb);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

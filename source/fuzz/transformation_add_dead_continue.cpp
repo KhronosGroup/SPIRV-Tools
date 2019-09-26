@@ -85,10 +85,9 @@ bool TransformationAddDeadContinue::IsApplicable(
 
   auto continue_block = context->cfg()->block(loop_header)->ContinueBlockId();
 
-  if (!context->GetDominatorAnalysis(bb_from->GetParent())
-           ->Dominates(loop_header, continue_block)) {
-    // If the loop's continue block is not dominated by the loop header, the
-    // continue block is unreachable. In that case, we conservatively do not
+  if (!fuzzerutil::BlockIsReachableInItsFunction(
+          context, context->cfg()->block(continue_block))) {
+    // If the loop's continue block is unreachable, we conservatively do not
     // allow adding a dead continue, to avoid the compilations that arise due to
     // the lack of sensible dominance information for unreachable blocks.
     return false;
