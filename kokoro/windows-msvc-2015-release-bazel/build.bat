@@ -21,37 +21,21 @@ set SRC=%cd%\github\SPIRV-Tools
 :: Force usage of python 3.6
 set PATH=C:\python36;%PATH%
 
+:: Get dependencies
 cd %SRC%
-
-:: REM Fix up the MSYS environment.
-:: wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-7.3.0-2-any.pkg.tar.xz
-:: wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-7.3.0-2-any.pkg.tar.xz
-:: c:\tools\msys64\usr\bin\bash --login -c "pacman -R --noconfirm catgets libcatgets"
-:: c:\tools\msys64\usr\bin\bash --login -c "pacman -Syu --noconfirm"
-:: c:\tools\msys64\usr\bin\bash --login -c "pacman -Sy --noconfirm mingw-w64-x86_64-crt-git patch"
-:: c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc*-7.3.0-2-any.pkg.tar.xz"
-:: set PATH=c:\tools\msys64\mingw64\bin;c:\tools\msys64\usr\bin;%PATH%
-:: set BAZEL_SH=C:\tools\msys64\usr\bin\bash.exe
-:: REM Install Bazel.
-:: wget -q https://github.com/bazelbuild/bazel/releases/download/0.29.1/bazel-0.29.1-windows-x86_64.zip
-:: unzip -q bazel-0.29.1-windows-x86_64.zip
-
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
 git clone --depth=1 https://github.com/google/googletest          external/googletest
 git clone --depth=1 https://github.com/google/effcee              external/effcee
 git clone --depth=1 https://github.com/google/re2                 external/re2
-git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
 
-choco install bazel --version 0.29.1 -y
+:: REM Install Bazel.
+wget -q https://github.com/bazelbuild/bazel/releases/download/0.29.1/bazel-0.29.1-windows-x86_64.zip
+unzip -q bazel-0.29.1-windows-x86_64.zip
 
-set BAZEL_SH=c:\tools\msys64\usr\bin\bash.exe
-set BAZEL_PYTHON=c:\tools\python2\python.exe
-
-bazel --version
-C:\ProgramData\chocolatey\lib\bazel --version
-
-
-:: %SRC%\bazel.exe --version
+:: Set up MSVC
+call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
+set BAZEL_VS=C:\Program Files (x86)\Microsoft Visual Studio 14.0
+set BAZEL_VC=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC
 
 :: #########################################
 :: Start building.

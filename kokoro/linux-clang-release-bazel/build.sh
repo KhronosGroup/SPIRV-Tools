@@ -25,7 +25,10 @@ CXX=clang++
 SRC=$PWD/github/SPIRV-Tools
 
 cd $SRC
-./utils/git-sync-deps
+git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
+git clone --depth=1 https://github.com/google/googletest          external/googletest
+git clone --depth=1 https://github.com/google/effcee              external/effcee
+git clone --depth=1 https://github.com/google/re2                 external/re2
 
 gsutil cp gs://bazel/0.29.1/release/bazel-0.29.1-linux-x86_64 .
 chmod +x bazel-0.29.1-linux-x86_64
