@@ -1302,6 +1302,7 @@ bool ValidationState_t::IsValidStorageClass(
       case SpvStorageClassPushConstant:
       case SpvStorageClassPhysicalStorageBuffer:
       case SpvStorageClassRayPayloadNV:
+      case SpvStorageClassIncomingRayPayloadNV:
       case SpvStorageClassHitAttributeNV:
       case SpvStorageClassCallableDataNV:
       case SpvStorageClassIncomingCallableDataNV:
