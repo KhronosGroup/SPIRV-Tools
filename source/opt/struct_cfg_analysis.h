@@ -16,6 +16,7 @@
 #define SOURCE_OPT_STRUCT_CFG_ANALYSIS_H_
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include "source/opt/function.h"
 #include "source/util/bit_vector.h"
@@ -88,8 +89,22 @@ class StructuredCFGAnalysis {
   // if no such block exists.
   uint32_t SwitchMergeBlock(uint32_t bb_id);
 
+  // Returns true if |bb_id| is the continue block for a loop.
   bool IsContinueBlock(uint32_t bb_id);
+
+  // Returns true if |bb_id| is in the continue construct for its inner most containing
+  // loop.
+  bool IsInContainingLoopsContinueConstruct(uint32_t bb_id);
+
+  // Returns true if |bb_id| is in the continue construct for any loop in its function.
+  bool IsInContinueConstruct(uint32_t bb_id);
+
+  // Return true if |bb_id| is the merge block for a construct.
   bool IsMergeBlock(uint32_t bb_id);
+
+  // Returns the set of function ids that are called directly or indirectly from
+  // a continue construct.
+  std::unordered_set<uint32_t> FindFuncsCalledFromContinue();
 
  private:
   // Struct used to hold the information for a basic block.
@@ -103,6 +118,7 @@ class StructuredCFGAnalysis {
     uint32_t containing_construct;
     uint32_t containing_loop;
     uint32_t containing_switch;
+    bool in_continue;
   };
 
   // Populates |bb_to_construct_| with the innermost containing merge and loop
