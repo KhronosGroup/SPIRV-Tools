@@ -42,7 +42,7 @@ git clone --depth=1 https://github.com/google/effcee              external/effce
 git clone --depth=1 https://github.com/google/re2                 external/re2
 git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
 
-choco install bazel -y
+choco install bazel --version 0.29.1 -y
 :: %SRC%\bazel.exe --version
 
 :: #########################################
