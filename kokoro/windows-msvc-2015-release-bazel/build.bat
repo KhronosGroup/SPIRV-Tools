@@ -36,6 +36,8 @@ unzip -q bazel-0.29.1-windows-x86_64.zip
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
 set BAZEL_VS=C:\Program Files (x86)\Microsoft Visual Studio 14.0
 set BAZEL_VC=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC
+set BAZEL_SH=c:\tools\msys64\usr\bin\bash.exe
+set BAZEL_PYTHON=c:\tools\python2\python.exe
 
 :: #########################################
 :: Start building.
