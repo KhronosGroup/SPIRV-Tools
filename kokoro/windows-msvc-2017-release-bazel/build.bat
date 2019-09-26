@@ -23,19 +23,18 @@ set PATH=C:\python36;%PATH%
 
 cd %SRC%
 
-REM Fix up the MSYS environment.
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-7.3.0-2-any.pkg.tar.xz
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-7.3.0-2-any.pkg.tar.xz
-c:\tools\msys64\usr\bin\bash --login -c "pacman -R --noconfirm catgets libcatgets"
-c:\tools\msys64\usr\bin\bash --login -c "pacman -Syu --noconfirm"
-c:\tools\msys64\usr\bin\bash --login -c "pacman -Sy --noconfirm mingw-w64-x86_64-crt-git patch"
-c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc*-7.3.0-2-any.pkg.tar.xz"
-set PATH=c:\tools\msys64\mingw64\bin;c:\tools\msys64\usr\bin;%PATH%
-set BAZEL_SH=C:\tools\msys64\usr\bin\bash.exe
-
-REM Install Bazel.
-wget -q https://github.com/bazelbuild/bazel/releases/download/0.29.1/bazel-0.29.1-windows-x86_64.zip
-unzip -q bazel-0.29.1-windows-x86_64.zip
+:: REM Fix up the MSYS environment.
+:: wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-7.3.0-2-any.pkg.tar.xz
+:: wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-7.3.0-2-any.pkg.tar.xz
+:: c:\tools\msys64\usr\bin\bash --login -c "pacman -R --noconfirm catgets libcatgets"
+:: c:\tools\msys64\usr\bin\bash --login -c "pacman -Syu --noconfirm"
+:: c:\tools\msys64\usr\bin\bash --login -c "pacman -Sy --noconfirm mingw-w64-x86_64-crt-git patch"
+:: c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc*-7.3.0-2-any.pkg.tar.xz"
+:: set PATH=c:\tools\msys64\mingw64\bin;c:\tools\msys64\usr\bin;%PATH%
+:: set BAZEL_SH=C:\tools\msys64\usr\bin\bash.exe
+:: REM Install Bazel.
+:: wget -q https://github.com/bazelbuild/bazel/releases/download/0.29.1/bazel-0.29.1-windows-x86_64.zip
+:: unzip -q bazel-0.29.1-windows-x86_64.zip
 
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
 git clone --depth=1 https://github.com/google/googletest          external/googletest
@@ -43,13 +42,14 @@ git clone --depth=1 https://github.com/google/effcee              external/effce
 git clone --depth=1 https://github.com/google/re2                 external/re2
 git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
 
-%SRC%\bazel.exe --version
+choco install bazel -y
+:: %SRC%\bazel.exe --version
 
 :: #########################################
 :: Start building.
 :: #########################################
 echo "Build everything... %DATE% %TIME%"
-%SRC%\bazel.exe build :all
+bazel.exe build :all
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 echo "Build Completed %DATE% %TIME%"
 
@@ -57,7 +57,7 @@ echo "Build Completed %DATE% %TIME%"
 :: Run the tests
 :: ##############
 echo "Running Tests... %DATE% %TIME%"
-%SRC%\bazel.exe test :all
+bazel.exe test :all
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 echo "Tests Completed %DATE% %TIME%"
 
