@@ -22,14 +22,11 @@ Pass::Status StripDebugInfoPass::Process() {
   bool modified = !context()->debugs1().empty() ||
                   !context()->debugs2().empty() ||
                   !context()->debugs3().empty();
-  for (auto& dbg : context()->debugs1())
-    context()->KillNamesAndDecorates(&dbg);
+  for (auto& dbg : context()->debugs1()) context()->KillNamesAndDecorates(&dbg);
 
-  for (auto& dbg : context()->debugs2())
-    context()->KillNamesAndDecorates(&dbg);
+  for (auto& dbg : context()->debugs2()) context()->KillNamesAndDecorates(&dbg);
 
-  for (auto& dbg : context()->debugs3())
-    context()->KillNamesAndDecorates(&dbg);
+  for (auto& dbg : context()->debugs3()) context()->KillNamesAndDecorates(&dbg);
 
   context()->debug_clear();
 
