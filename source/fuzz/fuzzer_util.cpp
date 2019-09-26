@@ -300,6 +300,13 @@ bool NewEdgeRespectsUseDefDominance(opt::IRContext* context,
   return true;
 }
 
+bool BlockIsReachableInItsFunction(opt::IRContext* context,
+                                   opt::BasicBlock* bb) {
+  auto enclosing_function = bb->GetParent();
+  return context->GetDominatorAnalysis(enclosing_function)
+      ->Dominates(enclosing_function->entry().get(), bb);
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
