@@ -92,11 +92,12 @@ class StructuredCFGAnalysis {
   // Returns true if |bb_id| is the continue block for a loop.
   bool IsContinueBlock(uint32_t bb_id);
 
-  // Returns true if |bb_id| is in the continue construct for its inner most containing
-  // loop.
+  // Returns true if |bb_id| is in the continue construct for its inner most
+  // containing loop.
   bool IsInContainingLoopsContinueConstruct(uint32_t bb_id);
 
-  // Returns true if |bb_id| is in the continue construct for any loop in its function.
+  // Returns true if |bb_id| is in the continue construct for any loop in its
+  // function.
   bool IsInContinueConstruct(uint32_t bb_id);
 
   // Return true if |bb_id| is the merge block for a construct.
