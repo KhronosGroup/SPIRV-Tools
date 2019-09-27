@@ -245,6 +245,19 @@ class Module {
   // Gets the associated context for this module
   IRContext* context() const { return context_; }
 
+  // Sets the trailing debug line info to |dbg_line_info|.
+  void SetTrailingDbgLineInfo(std::vector<Instruction>&& dbg_line_info) {
+    trailing_dbg_line_info_ = std::move(dbg_line_info);
+  }
+
+  std::vector<Instruction>& trailing_dbg_line_info() {
+    return trailing_dbg_line_info_;
+  }
+
+  const std::vector<Instruction>& trailing_dbg_line_info() const {
+    return trailing_dbg_line_info_;
+  }
+
  private:
   ModuleHeader header_;  // Module header
 
@@ -265,6 +278,10 @@ class Module {
   // Type declarations, constants, and global variable declarations.
   InstructionList types_values_;
   std::vector<std::unique_ptr<Function>> functions_;
+
+  // If the module ends with Op*Line instruction, they will not be attached to
+  // any instruction.  We record them here, so they will not be lost.
+  std::vector<Instruction> trailing_dbg_line_info_;
 };
 
 // Pretty-prints |module| to |str|. Returns |str|.
