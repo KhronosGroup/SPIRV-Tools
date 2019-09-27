@@ -91,7 +91,6 @@ characters are optional but denote that all arguments that follow are
 positional arguments and thus will be forwarded to the interestingness script,
 and not parsed by %s.
 
-
 NOTE: The fuzzer is a work in progress.
 
 Options (in lexicographical order):
