@@ -110,7 +110,7 @@ TEST_F(StripDebugStringTest, OpDecorateRemoved) {
   SinglePassRunAndCheck<StripDebugInfoPass>(JoinAllInsts(input),
                                             JoinAllInsts(output),
                                             /* skip_nop = */ false,
-                                            /* do_validation */ false);
+                                            /* do_validation */ true);
 }
 
 TEST_F(StripDebugStringTest, OpNameRemoved) {
@@ -147,7 +147,7 @@ TEST_F(StripDebugStringTest, OpNameRemoved) {
   SinglePassRunAndCheck<StripDebugInfoPass>(JoinAllInsts(input),
                                             JoinAllInsts(output),
                                             /* skip_nop = */ false,
-                                            /* do_validation */ false);
+                                            /* do_validation */ true);
 }
 
 using StripDebugInfoTest = PassTest<::testing::TestWithParam<const char*>>;

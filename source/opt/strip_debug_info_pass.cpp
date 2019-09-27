@@ -22,19 +22,16 @@ Pass::Status StripDebugInfoPass::Process() {
   bool modified = !context()->debugs1().empty() ||
                   !context()->debugs2().empty() ||
                   !context()->debugs3().empty();
-  for (auto& dbg : context()->debugs1()) context()->KillNamesAndDecorates(&dbg);
 
-  for (auto& dbg : context()->debugs2()) context()->KillNamesAndDecorates(&dbg);
+  std::unordered_set<Instruction*> to_kill;
+  for (auto& dbg : context()->debugs1()) to_kill.insert(&dbg);
+  for (auto& dbg : context()->debugs2()) to_kill.insert(&dbg);
+  for (auto& dbg : context()->debugs3()) to_kill.insert(&dbg);
 
-  for (auto& dbg : context()->debugs3()) context()->KillNamesAndDecorates(&dbg);
+  for (auto* inst : to_kill) context()->KillInst(inst);
 
-  context()->debug_clear();
-
-  context()->module()->ForEachInst([&modified, this](Instruction* inst) {
+  context()->module()->ForEachInst([&modified](Instruction* inst) {
     modified |= !inst->dbg_line_insts().empty();
-    for (auto& dbg : inst->dbg_line_insts())
-      this->context()->KillNamesAndDecorates(&dbg);
-
     inst->dbg_line_insts().clear();
   });
 
