@@ -498,10 +498,12 @@ inline Operand& Instruction::GetOperand(uint32_t index) {
   return operands_[index];
 }
 
+// DNS: Remove this logging before merging.
+#include <iostream>
 inline const Operand& Instruction::GetOperand(uint32_t index) const {
-  fprintf(stderr, "index = %u\n", index);
-  fprintf(stderr, "size = %lu\n", operands_.size());
-  fflush(stderr);
+  std::cerr << "index = " << index << std::endl;
+  std::cerr << "size = " << operands_.size() << std::endl;
+  std::cerr << std::flush;
   assert(index < operands_.size() && "operand index out of bound");
   return operands_[index];
 }
