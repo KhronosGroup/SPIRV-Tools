@@ -51,6 +51,8 @@ TEST_F(StripLineDebugInfoTest, LineNoLine) {
                "OpLine %3 4 4",
                "OpNoLine",
                "OpFunctionEnd",
+               "OpNoLine",
+               "OpLine %3 4 5"
       // clang-format on
   };
   SinglePassRunAndCheck<StripDebugInfoPass>(JoinAllInsts(text),

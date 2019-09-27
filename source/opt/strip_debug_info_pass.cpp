@@ -45,6 +45,11 @@ Pass::Status StripDebugInfoPass::Process() {
     inst->dbg_line_insts().clear();
   });
 
+  if (!get_module()->trailing_dbg_line_info().empty()) {
+    modified = true;
+    get_module()->trailing_dbg_line_info().clear();
+  }
+
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
