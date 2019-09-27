@@ -37,14 +37,14 @@ class TransformationCopyObject : public Transformation {
   //   has a result type
   // - |message_.object| must not be the target of any decoration.
   //   TODO(afd): consider copying decorations along with objects.
-  // - |message_.insert_after_id| must be the result id of an instruction
+  // - |message_.base_instruction_id| must be the result id of an instruction
   //   'base' in some block 'blk'.
   // - 'blk' must contain an instruction 'inst' located |message_.offset|
   //   instructions after 'base' (if |message_.offset| = 0 then 'inst' =
   //   'base').
   // - It must be legal to insert an OpCopyObject instruction directly
   //   before 'inst'.
-  // - |message_object| must be available directly before 'inst'.
+  // - |message_.object| must be available directly before 'inst'.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 

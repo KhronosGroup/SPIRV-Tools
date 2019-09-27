@@ -33,11 +33,30 @@ class TransformationConstructComposite : public Transformation {
                                    uint32_t base_instruction_id,
                                    uint32_t offset, uint32_t fresh_id);
 
-  // TODO write
+  // - |message_.fresh_id| must not be used by the module.
+  // - |message_.composite_type_id| must be the id of a composite type
+  // - The elements of |message_.component| must be result ids that are
+  //   suitable for constructing an element of the given composite type, in
+  //   order
+  // - The elements of |message_.component| must not be the target of any
+  //   decorations.
+  // - |message_.base_instruction_id| must be the result id of an instruction
+  //   'base' in some block 'blk'.
+  // - 'blk' must contain an instruction 'inst' located |message_.offset|
+  //   instructions after 'base' (if |message_.offset| = 0 then 'inst' =
+  //   'base').
+  // - It must be legal to insert an OpCompositeConstruct instruction directly
+  //   before 'inst'.
+  // - Each element of |message_.component| must be available directly before
+  //   'inst'.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO write
+  // Inserts a new OpCompositeConstruct instruction, with id
+  // |message_.fresh_id|, directly before the instruction identified by
+  // |message_.base_instruction_id| and |message_.offset|.  The instruction
+  // creates a composite of type |message_.composite_type_id| using the ids of
+  // |message_.component|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

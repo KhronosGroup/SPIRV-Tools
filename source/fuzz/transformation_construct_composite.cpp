@@ -63,14 +63,103 @@ bool TransformationConstructComposite::IsApplicable(
     return false;
   }
 
-  assert(0);
+  auto composite_type =
+      context->get_type_mgr()->GetType(message_.composite_type_id());
+
+  if (composite_type == nullptr) {
+    // The composite type was not found
+    return false;
+  }
+
+  if (composite_type->AsVector()) {
+    uint32_t base_element_count = 0;
+    auto element_type = composite_type->AsVector()->element_type();
+    for (auto& component_id : message_.component()) {
+      auto inst = context->get_def_use_mgr()->GetDef(component_id);
+      if (inst == nullptr || !inst->type_id()) {
+        // The component does not correspond to an instruction with a result
+        // type.
+        return false;
+      }
+      auto component_type = context->get_type_mgr()->GetType(inst->type_id());
+      assert(component_type);
+      if (component_type == element_type) {
+        base_element_count++;
+      } else if (component_type->AsVector() &&
+                 component_type->AsVector()->element_type() == element_type) {
+        base_element_count += component_type->AsVector()->element_count();
+      } else {
+        // The component was not appropriate; e.g. no type corresponding to the
+        // given id was found, or the type that was found was not compatible
+        // with the vector being constructed.
+        return false;
+      }
+    }
+    if (base_element_count != composite_type->AsVector()->element_count()) {
+      // The number of components provided (when vector components are flattened
+      // out) does not match the length of the vector being constructed.
+      return false;
+    }
+  } else if (composite_type->AsMatrix()) {
+    assert(false && "Not handled yet.");
+  } else if (composite_type->AsArray()) {
+    assert(false && "Not handled yet.");
+  } else if (composite_type->AsStruct()) {
+    assert(false && "Not handled yet.");
+  } else {
+    // The type is not a composite
+    return false;
+  }
+
+  // Now check whether every component being used to initialize the composite is
+  // available at the desired program point.
+  for (auto& component : message_.component()) {
+    auto component_inst = context->get_def_use_mgr()->GetDef(component);
+    if (!context->get_instr_block(component)) {
+      // The component does not have a block; that means it is in global scope,
+      // which is OK. (Whether the component actually corresponds to an
+      // instruction is checked above when determining whether types are
+      // suitable.)
+      continue;
+    }
+    // Check whether the component is available.
+    if (insert_before->HasResultId() &&
+        insert_before->result_id() == component) {
+      // This constitutes trying to use an id right before it is defined.  The
+      // special case is needed due to an instruction always dominating itself.
+      return false;
+    }
+    if (!context
+             ->GetDominatorAnalysis(
+                 context->get_instr_block(&*insert_before)->GetParent())
+             ->Dominates(component_inst, &*insert_before)) {
+      // The instruction defining the component must dominate the instruction we
+      // wish to insert the composite before.
+      return false;
+    }
+  }
 
   return true;
 }
 
 void TransformationConstructComposite::Apply(
-    opt::IRContext* /*context*/, FactManager* /*fact_manager*/) const {
-  assert(false);
+    opt::IRContext* context, FactManager* /*fact_manager*/) const {
+  auto base_instruction =
+      context->get_def_use_mgr()->GetDef(message_.base_instruction_id());
+  auto destination_block = context->get_instr_block(base_instruction);
+  auto insert_before = fuzzerutil::GetIteratorForBaseInstructionAndOffset(
+      destination_block, base_instruction, message_.offset());
+
+  opt::Instruction::OperandList in_operands;
+  for (auto& component_id : message_.component()) {
+    in_operands.push_back({SPV_OPERAND_TYPE_ID, {component_id}});
+  }
+
+  insert_before.InsertBefore(MakeUnique<opt::Instruction>(
+      context, SpvOpCompositeConstruct, message_.composite_type_id(),
+      message_.fresh_id(), in_operands));
+  fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
+  context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationConstructComposite::ToMessage() const {
