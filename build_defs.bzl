@@ -24,7 +24,13 @@ COMMON_COPTS = [
 })
 
 TEST_COPTS = COMMON_COPTS + select({
-    "@bazel_tools//src/conditions:windows": [""],
+    "@bazel_tools//src/conditions:windows": [
+        # Disable C4503 "decorated name length exceeded" warning,
+        # triggered by some heavily templated types.
+        # We don't care much about that in test code.
+        # Important to do since we have warnings-as-errors.
+        "/wd4503"
+    ],
     "//conditions:default": [
         "-Wno-undef",
         "-Wno-self-assign",
