@@ -192,22 +192,6 @@ class Module {
   inline IteratorRange<inst_iterator> execution_modes();
   inline IteratorRange<const_inst_iterator> execution_modes() const;
 
-  // Clears all debug instructions (excluding OpLine & OpNoLine).
-  void debug_clear() {
-    debug1_clear();
-    debug2_clear();
-    debug3_clear();
-  }
-
-  // Clears all debug 1 instructions (excluding OpLine & OpNoLine).
-  void debug1_clear() { debugs1_.clear(); }
-
-  // Clears all debug 2 instructions (excluding OpLine & OpNoLine).
-  void debug2_clear() { debugs2_.clear(); }
-
-  // Clears all debug 3 instructions (excluding OpLine & OpNoLine).
-  void debug3_clear() { debugs3_.clear(); }
-
   // Iterators for annotation instructions contained in this module.
   inline inst_iterator annotation_begin();
   inline inst_iterator annotation_end();

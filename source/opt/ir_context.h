@@ -187,9 +187,6 @@ class IRContext {
   inline IteratorRange<Module::inst_iterator> debugs3();
   inline IteratorRange<Module::const_inst_iterator> debugs3() const;
 
-  // Clears all debug instructions (excluding OpLine & OpNoLine).
-  inline void debug_clear();
-
   // Add |capability| to the module, if it is not already enabled.
   inline void AddCapability(SpvCapability capability);
 
@@ -927,8 +924,6 @@ IteratorRange<Module::inst_iterator> IRContext::debugs3() {
 IteratorRange<Module::const_inst_iterator> IRContext::debugs3() const {
   return ((const Module*)module_.get())->debugs3();
 }
-
-void IRContext::debug_clear() { module_->debug_clear(); }
 
 void IRContext::AddCapability(SpvCapability capability) {
   if (!get_feature_mgr()->HasCapability(capability)) {
