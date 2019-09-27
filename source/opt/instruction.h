@@ -499,6 +499,9 @@ inline Operand& Instruction::GetOperand(uint32_t index) {
 }
 
 inline const Operand& Instruction::GetOperand(uint32_t index) const {
+  fprintf(stderr, "index = %u\n", index);
+  fprintf(stderr, "size = %lu\n", operands_.size());
+  fflush(stderr);
   assert(index < operands_.size() && "operand index out of bound");
   return operands_[index];
 }
