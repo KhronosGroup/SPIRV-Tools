@@ -13,11 +13,26 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_construct_composite.h"
+#include "source/fuzz/data_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
+
+bool SynonymFactHolds(const FactManager& fact_manager, uint32_t id,
+                      uint32_t synonym_base_id,
+                      std::vector<uint32_t>&& synonym_indices) {
+  if (fact_manager.GetIdsForWhichSynonymsAreKnown().count(id) == 0) {
+    return false;
+  }
+  auto synonyms = fact_manager.GetSynonymsForId(id);
+  auto temp = MakeDataDescriptor(synonym_base_id, std::move(synonym_indices));
+  return std::find_if(synonyms.begin(), synonyms.end(),
+                      [&temp](protobufs::DataDescriptor dd) -> bool {
+                        return DataDescriptorEquals()(&dd, &temp);
+                      }) != synonyms.end();
+}
 
 TEST(TransformationConstructCompositeTest, ConstructVectors) {
   std::string shader = R"(
@@ -218,6 +233,8 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_vec2_bad.IsApplicable(context.get(), fact_manager));
   make_vec2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 17, 200, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 11, 200, {1}));
 
   TransformationConstructComposite make_vec3(25, {12, 32}, 35, 0, 201);
   // Bad: too much data for a vec3
@@ -226,6 +243,8 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_vec3_bad.IsApplicable(context.get(), fact_manager));
   make_vec3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 12, 201, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 32, 201, {2}));
 
   TransformationConstructComposite make_vec4(44, {32, 32, 10, 11}, 75, 0, 202);
   // Bad: id 48 is not available at the insertion points
@@ -235,6 +254,10 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_vec4_bad.IsApplicable(context.get(), fact_manager));
   make_vec4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 32, 202, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 32, 202, {1}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 10, 202, {2}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 11, 202, {3}));
 
   TransformationConstructComposite make_ivec2(51, {126, 120}, 128, 0, 203);
   // Bad: if 128 is not available at the instruction that defines 128
@@ -243,6 +266,8 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_ivec2_bad.IsApplicable(context.get(), fact_manager));
   make_ivec2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 126, 203, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 120, 203, {1}));
 
   TransformationConstructComposite make_ivec3(114, {56, 117, 56}, 66, 1, 204);
   // Bad because 1300 is not an id
@@ -252,6 +277,9 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_ivec3_bad.IsApplicable(context.get(), fact_manager));
   make_ivec3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 56, 204, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 117, 204, {1}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 56, 204, {2}));
 
   TransformationConstructComposite make_ivec4(122, {56, 117, 117, 117}, 66, 0,
                                               205);
@@ -262,6 +290,10 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_ivec4_bad.IsApplicable(context.get(), fact_manager));
   make_ivec4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 56, 205, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 117, 205, {1}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 117, 205, {2}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 117, 205, {3}));
 
   TransformationConstructComposite make_uvec2(86, {18, 38}, 133, 2, 206);
   TransformationConstructComposite make_uvec2_bad(86, {18, 38}, 133, 200, 206);
@@ -269,6 +301,8 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_uvec2_bad.IsApplicable(context.get(), fact_manager));
   make_uvec2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 18, 206, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 38, 206, {1}));
 
   TransformationConstructComposite make_uvec3(59, {14, 18, 136}, 137, 2, 207);
   // Bad because 1300 is not an id
@@ -278,6 +312,9 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_uvec3_bad.IsApplicable(context.get(), fact_manager));
   make_uvec3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 14, 207, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 18, 207, {1}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 136, 207, {2}));
 
   TransformationConstructComposite make_uvec4(131, {14, 18, 136, 136}, 137, 0,
                                               208);
@@ -288,6 +325,10 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_uvec4_bad.IsApplicable(context.get(), fact_manager));
   make_uvec4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 14, 208, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 18, 208, {1}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 136, 208, {2}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 136, 208, {3}));
 
   TransformationConstructComposite make_bvec2(102,
                                               {
@@ -306,6 +347,8 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_bvec2_bad.IsApplicable(context.get(), fact_manager));
   make_bvec2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 111, 209, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 41, 209, {1}));
 
   TransformationConstructComposite make_bvec3(93, {108, 73}, 108, 1, 210);
   // Bad because there are too many components for a bvec3
@@ -314,6 +357,8 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_bvec3_bad.IsApplicable(context.get(), fact_manager));
   make_bvec3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 108, 210, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 73, 210, {2}));
 
   TransformationConstructComposite make_bvec4(70, {108, 108}, 108, 3, 211);
   // Bad because 21 is a type, not a result id
@@ -322,6 +367,8 @@ TEST(TransformationConstructCompositeTest, ConstructVectors) {
   ASSERT_FALSE(make_bvec4_bad.IsApplicable(context.get(), fact_manager));
   make_bvec4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 108, 211, {0}));
+  ASSERT_TRUE(SynonymFactHolds(fact_manager, 108, 211, {2}));
 
   std::string after_transformation = R"(
                OpCapability Shader

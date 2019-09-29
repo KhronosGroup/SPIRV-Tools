@@ -142,8 +142,8 @@ bool TransformationConstructComposite::IsApplicable(
   return true;
 }
 
-void TransformationConstructComposite::Apply(
-    opt::IRContext* context, FactManager* /*fact_manager*/) const {
+void TransformationConstructComposite::Apply(opt::IRContext* context,
+                                             FactManager* fact_manager) const {
   auto base_instruction =
       context->get_def_use_mgr()->GetDef(message_.base_instruction_id());
   auto destination_block = context->get_instr_block(base_instruction);
@@ -158,6 +158,34 @@ void TransformationConstructComposite::Apply(
   insert_before.InsertBefore(MakeUnique<opt::Instruction>(
       context, SpvOpCompositeConstruct, message_.composite_type_id(),
       message_.fresh_id(), in_operands));
+
+  auto composite_type =
+      context->get_type_mgr()->GetType(message_.composite_type_id());
+  uint32_t index = 0;
+  for (auto component : message_.component()) {
+    protobufs::Fact fact;
+    fact.mutable_id_synonym_fact()->set_id(component);
+    fact.mutable_id_synonym_fact()->mutable_data_descriptor()->set_object(
+        message_.fresh_id());
+    fact.mutable_id_synonym_fact()->mutable_data_descriptor()->add_index(index);
+    fact_manager->AddFact(fact, context);
+    if (composite_type->AsVector()) {
+      auto component_type = context->get_type_mgr()->GetType(
+          context->get_def_use_mgr()->GetDef(component)->type_id());
+      if (component_type->AsVector()) {
+        assert(component_type->AsVector()->element_type() ==
+               composite_type->AsVector()->element_type());
+        index += component_type->AsVector()->element_count();
+      } else {
+        assert(component_type == composite_type->AsVector()->element_type());
+        index++;
+      }
+    } else {
+      assert(false &&
+             "Not implemented yet: increment indices for other types.");
+    }
+  }
+
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
