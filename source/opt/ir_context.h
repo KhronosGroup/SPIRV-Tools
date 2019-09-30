@@ -543,7 +543,7 @@ class IRContext {
     return GetFunction(inst->result_id());
   }
 
-  // Add to |todo| all ids of functions called in |func|.
+  // Add to |todo| all ids of functions called directly from |func|.
   void AddCalls(const Function* func, std::queue<uint32_t>* todo);
 
   // Applies |pfn| to every function in the call trees that are rooted at the

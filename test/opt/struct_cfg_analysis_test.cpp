@@ -1351,6 +1351,11 @@ TEST_F(StructCFGAnalysisTest, FuncCallInContinueIndirect) {
                OpFunctionEnd
          %16 = OpFunction %void None %7
          %18 = OpLabel
+         %20 = OpFunctionCall %void %21
+               OpReturn
+               OpFunctionEnd
+         %21 = OpFunction %void None %7
+         %22 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -1362,7 +1367,7 @@ TEST_F(StructCFGAnalysisTest, FuncCallInContinueIndirect) {
   StructuredCFGAnalysis analysis(context.get());
 
   auto c = analysis.FindFuncsCalledFromContinue();
-  EXPECT_THAT(c, UnorderedElementsAre(14u, 16u));
+  EXPECT_THAT(c, UnorderedElementsAre(14u, 16u, 21u));
 }
 }  // namespace
 }  // namespace opt
