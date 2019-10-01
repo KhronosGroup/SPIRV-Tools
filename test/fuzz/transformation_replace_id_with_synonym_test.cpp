@@ -1272,6 +1272,7 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(good_replacement_1.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_1.IsApplicable(context.get(), fact_manager));
   good_replacement_1.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %13 with %100[1] in 'OpStore %15 %13'
   auto good_replacement_2 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(13, SpvOpStore, 1, 100, 0), MakeDataDescriptor(100, {1}), 103);
@@ -1280,6 +1281,7 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(good_replacement_2.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_2.IsApplicable(context.get(), fact_manager));
   good_replacement_2.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %22 with %100[2] in '%23 = OpConvertSToF %16 %22'
   auto good_replacement_3 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(22, SpvOpConvertSToF, 0, 23, 0), MakeDataDescriptor(100, {2}), 104);
@@ -1288,6 +1290,7 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(good_replacement_3.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_3.IsApplicable(context.get(), fact_manager));
   good_replacement_3.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %28 with %101[0] in 'OpStore %33 %28'
   auto good_replacement_4 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(28, SpvOpStore, 1, 33, 0), MakeDataDescriptor(101, {0}), 105);
@@ -1296,6 +1299,7 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(good_replacement_4.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_4.IsApplicable(context.get(), fact_manager));
   good_replacement_4.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %23 with %101[1] in '%50 = OpCopyObject %16 %23'
   auto good_replacement_5 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 50, 0), MakeDataDescriptor(101, {1}), 106);
@@ -1304,6 +1308,7 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(good_replacement_5.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_5.IsApplicable(context.get(), fact_manager));
   good_replacement_5.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %32 with %101[2] in 'OpStore %33 %32'
   auto good_replacement_6 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(32, SpvOpStore, 1, 33, 1), MakeDataDescriptor(101, {2}), 107);
@@ -1312,6 +1317,7 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(good_replacement_6.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_6.IsApplicable(context.get(), fact_manager));
   good_replacement_6.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %23 with %101[3] in '%51 = OpCopyObject %16 %23'
   auto good_replacement_7 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 51, 0), MakeDataDescriptor(101, {3}), 108);
@@ -1320,6 +1326,91 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(good_replacement_7.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_7.IsApplicable(context.get(), fact_manager));
   good_replacement_7.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  const std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %11 "A"
+               OpName %20 "B"
+               OpName %31 "g"
+               OpName %35 "h"
+               OpDecorate %11 RelaxedPrecision
+               OpDecorate %22 RelaxedPrecision
+               OpDecorate %27 RelaxedPrecision
+               OpDecorate %35 RelaxedPrecision
+               OpDecorate %36 RelaxedPrecision
+               OpDecorate %40 RelaxedPrecision
+               OpDecorate %41 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeInt 32 0
+          %8 = OpConstant %7 3
+          %9 = OpTypeArray %6 %8
+         %10 = OpTypePointer Function %9
+         %12 = OpConstant %6 0
+         %13 = OpConstant %6 3
+         %14 = OpTypePointer Function %6
+         %16 = OpTypeFloat 32
+         %17 = OpConstant %7 4
+         %18 = OpTypeArray %16 %17
+         %19 = OpTypePointer Function %18
+         %24 = OpTypePointer Function %16
+         %28 = OpConstant %16 42
+         %30 = OpConstant %6 2
+         %34 = OpConstant %6 1
+         %38 = OpConstant %6 42
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpVariable %10 Function
+         %20 = OpVariable %19 Function
+         %31 = OpVariable %24 Function
+         %35 = OpVariable %14 Function
+         %15 = OpAccessChain %14 %11 %12
+         %21 = OpAccessChain %14 %11 %12
+         %22 = OpLoad %6 %21
+        %100 = OpCompositeConstruct %9 %12 %13 %22
+        %103 = OpCompositeExtract %6 %100 1
+               OpStore %15 %103
+        %104 = OpCompositeExtract %6 %100 2
+         %23 = OpConvertSToF %16 %104
+        %102 = OpCompositeExtract %6 %100 0
+         %25 = OpAccessChain %24 %20 %102
+               OpStore %25 %23
+         %26 = OpAccessChain %14 %11 %12
+         %27 = OpLoad %6 %26
+         %29 = OpAccessChain %24 %20 %27
+               OpStore %29 %28
+         %32 = OpLoad %16 %31
+        %101 = OpCompositeConstruct %18 %28 %23 %32 %23
+        %106 = OpCompositeExtract %16 %101 1
+         %50 = OpCopyObject %16 %106
+        %108 = OpCompositeExtract %16 %101 3
+         %51 = OpCopyObject %16 %108
+         %33 = OpAccessChain %24 %20 %30
+        %105 = OpCompositeExtract %16 %101 0
+               OpStore %33 %105
+        %107 = OpCompositeExtract %16 %101 2
+               OpStore %33 %107
+         %36 = OpLoad %6 %35
+         %37 = OpAccessChain %14 %11 %34
+               OpStore %37 %36
+         %39 = OpAccessChain %14 %11 %12
+         %40 = OpLoad %6 %39
+         %41 = OpIAdd %6 %38 %40
+         %42 = OpAccessChain %14 %11 %30
+               OpStore %42 %41
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 
 }
 

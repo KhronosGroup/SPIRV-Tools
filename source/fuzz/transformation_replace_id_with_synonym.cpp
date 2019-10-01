@@ -101,12 +101,14 @@ void TransformationReplaceIdWithSynonym::Apply(
 
   if (message_.fresh_id_for_temporary()) {
     opt::Instruction::OperandList extract_operands = {
-            { SPV_OPERAND_TYPE_ID, { message_.data_descriptor().object() } }, { SPV_OPERAND_TYPE_ID, { message_.data_descriptor().index(0) } }
+            { SPV_OPERAND_TYPE_ID, { message_.data_descriptor().object() } }, { SPV_OPERAND_TYPE_LITERAL_INTEGER, {
+              message_.data_descriptor().index(0) } }
     };
     instruction_to_change->InsertBefore(MakeUnique<opt::Instruction>(context, SpvOpCompositeExtract,
                                                                      context->get_def_use_mgr()->GetDef(message_.id_use_descriptor().id_of_interest())->type_id(),
                                                                      message_.fresh_id_for_temporary(), extract_operands));
     replacement_id = message_.fresh_id_for_temporary();
+    fuzzerutil::UpdateModuleIdBound(context, replacement_id);
   } else {
     replacement_id = message_.data_descriptor().object();
   }

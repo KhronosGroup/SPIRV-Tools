@@ -65,6 +65,7 @@ class TransformationReplaceIdWithSynonym : public Transformation {
       uint32_t use_in_operand_index, const protobufs::DataDescriptor& synonym);
 
  private:
+
   protobufs::TransformationReplaceIdWithSynonym message_;
 };
 
