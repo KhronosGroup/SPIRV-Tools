@@ -75,9 +75,8 @@ USAGE: %s [options] <input.spv> -o <output.spv>
 USAGE: %s [options] <input.spv> -o <output.spv> \
   --shrink=<input.transformations> -- <interestingness_function> <args...>
 
-The SPIR-V binary is read from <input.spv>, which must have extension .spv.  If
-<input.facts> is also present, facts about the SPIR-V binary are read from this
-file.
+The SPIR-V binary is read from <input.spv>.  If <input.facts> is also present,
+facts about the SPIR-V binary are read from this file.
 
 The transformed SPIR-V binary is written to <output.spv>.  Human-readable and
 binary representations of the transformations that were applied are written to
