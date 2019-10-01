@@ -350,6 +350,10 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context,
           .empty();
 }
 
+bool IsCompositeType(const opt::analysis::Type* type) {
+  return type && (type->AsArray() || type->AsMatrix() || type->AsStruct() || type->AsVector());
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

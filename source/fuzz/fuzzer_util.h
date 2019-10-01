@@ -95,6 +95,9 @@ bool CanInsertOpcodeBeforeInstruction(SpvOp opcode,
 // Determines whether it is OK to make a synonym of |inst|.
 bool CanMakeSynonymOf(opt::IRContext* ir_context, opt::Instruction* inst);
 
+// TODO comment
+bool IsCompositeType(const opt::analysis::Type* type);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

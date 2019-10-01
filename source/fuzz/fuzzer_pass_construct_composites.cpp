@@ -36,7 +36,7 @@ void FuzzerPassConstructComposites::Apply() {
 
   std::vector<uint32_t> composite_type_ids;
   for (auto& inst : GetIRContext()->types_values()) {
-    if (IsCompositeType(GetIRContext()->get_type_mgr()->GetType(inst.result_id()))) {
+    if (fuzzerutil::IsCompositeType(GetIRContext()->get_type_mgr()->GetType(inst.result_id()))) {
       composite_type_ids.push_back(inst.result_id());
     }
   }
@@ -198,10 +198,6 @@ void FuzzerPassConstructComposites::RecordAvailableInstruction(opt::Instruction*
     (*type_id_to_available_instructions)[inst->type_id()] = {};
   }
   type_id_to_available_instructions->at(inst->type_id()).push_back(inst);
-}
-
-bool FuzzerPassConstructComposites::IsCompositeType(const opt::analysis::Type* type) {
-  return type && (type->AsArray() || type->AsMatrix() || type->AsStruct() || type->AsVector());
 }
 
 std::unique_ptr<std::vector<uint32_t>> FuzzerPassConstructComposites::TryConstructingArrayComposite(const opt::analysis::Array& array_type,

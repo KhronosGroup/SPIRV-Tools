@@ -66,48 +66,23 @@ bool TransformationConstructComposite::IsApplicable(
   auto composite_type =
       context->get_type_mgr()->GetType(message_.composite_type_id());
 
-  if (composite_type == nullptr) {
-    // The composite type was not found
+  if (!fuzzerutil::IsCompositeType(composite_type)) {
     return false;
   }
 
-  if (composite_type->AsVector()) {
-    uint32_t base_element_count = 0;
-    auto element_type = composite_type->AsVector()->element_type();
-    for (auto& component_id : message_.component()) {
-      auto inst = context->get_def_use_mgr()->GetDef(component_id);
-      if (inst == nullptr || !inst->type_id()) {
-        // The component does not correspond to an instruction with a result
-        // type.
-        return false;
-      }
-      auto component_type = context->get_type_mgr()->GetType(inst->type_id());
-      assert(component_type);
-      if (component_type == element_type) {
-        base_element_count++;
-      } else if (component_type->AsVector() &&
-                 component_type->AsVector()->element_type() == element_type) {
-        base_element_count += component_type->AsVector()->element_count();
-      } else {
-        // The component was not appropriate; e.g. no type corresponding to the
-        // given id was found, or the type that was found was not compatible
-        // with the vector being constructed.
-        return false;
-      }
-    }
-    if (base_element_count != composite_type->AsVector()->element_count()) {
-      // The number of components provided (when vector components are flattened
-      // out) does not match the length of the vector being constructed.
-      return false;
-    }
-  } else if (composite_type->AsMatrix()) {
-    assert(false && "Not handled yet.");
-  } else if (composite_type->AsArray()) {
-    assert(false && "Not handled yet.");
-  } else if (composite_type->AsStruct()) {
-    assert(false && "Not handled yet.");
-  } else {
-    // The type is not a composite
+  if (composite_type->AsArray() && !ComponentsForArrayConstructionAreOK(context, *composite_type->AsArray())) {
+    return false;
+  }
+
+  if (composite_type->AsMatrix() && !ComponentsForMatrixConstructionAreOK(context, *composite_type->AsMatrix())) {
+    return false;
+  }
+
+  if (composite_type->AsStruct() && !ComponentsForStructConstructionAreOK(context, *composite_type->AsStruct())) {
+    return false;
+  }
+
+  if (composite_type->AsVector() && !ComponentsForVectorConstructionAreOK(context, *composite_type->AsVector())) {
     return false;
   }
 
@@ -181,13 +156,122 @@ void TransformationConstructComposite::Apply(opt::IRContext* context,
         index++;
       }
     } else {
-      assert(false &&
-             "Not implemented yet: increment indices for other types.");
+      // The non-vector cases are all easy: the constructor has exactly the same number of arguments as the number
+      // of sub-components, so we can just increment the index.
+      index++;
     }
   }
 
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+}
+
+bool TransformationConstructComposite::ComponentsForArrayConstructionAreOK(opt::IRContext* context, const opt::analysis::Array& array_type) const {
+  if (array_type.length_info().words[0] != opt::analysis::Array::LengthInfo::kConstant) {
+    // We only handle constant-sized arrays.
+    return false;
+  }
+  if (array_type.length_info().words.size() != 2) {
+    // We only handle the case where the array size can be captured in a single word.
+    return false;
+  }
+  // Get the array size.
+  auto array_size = array_type.length_info().words[1];
+  if (static_cast<uint32_t>(message_.component().size()) != array_size) {
+    // The number of components must match the array size.
+    return false;
+  }
+  // Check that each component is the result id of an instruction whose type is the array's element type.
+  for (auto component_id : message_.component()) {
+    auto inst = context->get_def_use_mgr()->GetDef(component_id);
+    if (inst == nullptr || !inst->type_id()) {
+      // The component does not correspond to an instruction with a result
+      // type.
+      return false;
+    }
+    auto component_type = context->get_type_mgr()->GetType(inst->type_id());
+    assert(component_type);
+    if (component_type != array_type.element_type()) {
+      // The component's type does not match the array's element type.
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TransformationConstructComposite::ComponentsForMatrixConstructionAreOK(opt::IRContext* context, const opt::analysis::Matrix& matrix_type) const {
+  if (static_cast<uint32_t>(message_.component().size()) != matrix_type.element_count()) {
+    // The number of components must match the number of columns of the matrix.
+    return false;
+  }
+  // Check that each component is the result id of an instruction whose type is the matrix's column type.
+  for (auto component_id : message_.component()) {
+    auto inst = context->get_def_use_mgr()->GetDef(component_id);
+    if (inst == nullptr || !inst->type_id()) {
+      // The component does not correspond to an instruction with a result
+      // type.
+      return false;
+    }
+    auto component_type = context->get_type_mgr()->GetType(inst->type_id());
+    assert(component_type);
+    if (component_type != matrix_type.element_type()) {
+      // The component's type does not match the matrix's column type.
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TransformationConstructComposite::ComponentsForStructConstructionAreOK(opt::IRContext* context, const opt::analysis::Struct& struct_type) const {
+  if (static_cast<uint32_t>(message_.component().size()) != struct_type.element_types().size()) {
+    // The number of components must match the number of fields of the struct.
+    return false;
+  }
+  // Check that each component is the result id of an instruction those type matches the associated field type.
+  for (uint32_t field_index = 0; field_index < struct_type.element_types().size(); field_index++) {
+    auto inst = context->get_def_use_mgr()->GetDef(message_.component()[field_index]);
+    if (inst == nullptr || !inst->type_id()) {
+      // The component does not correspond to an instruction with a result
+      // type.
+      return false;
+    }
+    auto component_type = context->get_type_mgr()->GetType(inst->type_id());
+    assert(component_type);
+    if (component_type != struct_type.element_types()[field_index]) {
+      // The component's type does not match the corresponding field type.
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TransformationConstructComposite::ComponentsForVectorConstructionAreOK(opt::IRContext* context, const opt::analysis::Vector& vector_type) const {
+  uint32_t base_element_count = 0;
+  auto element_type = vector_type.element_type();
+  for (auto& component_id : message_.component()) {
+    auto inst = context->get_def_use_mgr()->GetDef(component_id);
+    if (inst == nullptr || !inst->type_id()) {
+      // The component does not correspond to an instruction with a result
+      // type.
+      return false;
+    }
+    auto component_type = context->get_type_mgr()->GetType(inst->type_id());
+    assert(component_type);
+    if (component_type == element_type) {
+      base_element_count++;
+    } else if (component_type->AsVector() &&
+               component_type->AsVector()->element_type() == element_type) {
+      base_element_count += component_type->AsVector()->element_count();
+    } else {
+      // The component was not appropriate; e.g. no type corresponding to the
+      // given id was found, or the type that was found was not compatible
+      // with the vector being constructed.
+      return false;
+    }
+  }
+  // The number of components provided (when vector components are flattened
+  // out) needs to match the length of the vector being constructed.
+  return base_element_count == vector_type.element_count();
 }
 
 protobufs::Transformation TransformationConstructComposite::ToMessage() const {

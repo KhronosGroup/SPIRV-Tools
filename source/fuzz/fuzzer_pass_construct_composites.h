@@ -43,9 +43,6 @@ class FuzzerPassConstructComposites : public FuzzerPass {
   void RecordAvailableInstruction(opt::Instruction* inst, TypeIdToInstructions* type_id_to_available_instructions);
 
   // TODO comment
-  bool IsCompositeType(const opt::analysis::Type* type);
-
-  // TODO comment
   std::unique_ptr<std::vector<uint32_t>> TryConstructingArrayComposite(const opt::analysis::Array& array_type,
                                                                        const TypeIdToInstructions& type_id_to_available_instructions);
 

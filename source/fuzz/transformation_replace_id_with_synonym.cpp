@@ -20,6 +20,7 @@
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/id_use_descriptor.h"
 #include "source/opt/types.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -33,9 +34,6 @@ TransformationReplaceIdWithSynonym::TransformationReplaceIdWithSynonym(
     protobufs::IdUseDescriptor id_use_descriptor,
     protobufs::DataDescriptor data_descriptor,
     uint32_t fresh_id_for_temporary) {
-  assert(fresh_id_for_temporary == 0 && data_descriptor.index().size() == 0 &&
-         "At present we do not support making an id that is synonymous with an "
-         "index into a composite.");
   *message_.mutable_id_use_descriptor() = std::move(id_use_descriptor);
   *message_.mutable_data_descriptor() = std::move(data_descriptor);
   message_.set_fresh_id_for_temporary(fresh_id_for_temporary);
@@ -74,8 +72,21 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
     return false;
   }
 
-  assert(message_.fresh_id_for_temporary() == 0);
-  assert(message_.data_descriptor().index().empty());
+  if (message_.fresh_id_for_temporary() == 0) {
+    if (!message_.data_descriptor().index().empty()) {
+      // If we have no id to use as a temporary variable, we should not have any indices to extract from.
+      return false;
+    }
+  } else {
+    if (!fuzzerutil::IsFreshId(context, message_.fresh_id_for_temporary())) {
+      // The id to be used as a temporary needs to be fresh.
+      return false;
+    }
+    if (message_.data_descriptor().index_size() != 1) {
+      // At present we support just a single index to allow extracting directly from a composite.
+      return false;
+    }
+  }
 
   return true;
 }
@@ -83,12 +94,26 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
 void TransformationReplaceIdWithSynonym::Apply(
     spvtools::opt::IRContext* context,
     spvtools::fuzz::FactManager* /*unused*/) const {
-  assert(message_.data_descriptor().index().empty());
   auto instruction_to_change =
       transformation::FindInstruction(message_.id_use_descriptor(), context);
+
+  uint32_t replacement_id;
+
+  if (message_.fresh_id_for_temporary()) {
+    opt::Instruction::OperandList extract_operands = {
+            { SPV_OPERAND_TYPE_ID, { message_.data_descriptor().object() } }, { SPV_OPERAND_TYPE_ID, { message_.data_descriptor().index(0) } }
+    };
+    instruction_to_change->InsertBefore(MakeUnique<opt::Instruction>(context, SpvOpCompositeExtract,
+                                                                     context->get_def_use_mgr()->GetDef(message_.id_use_descriptor().id_of_interest())->type_id(),
+                                                                     message_.fresh_id_for_temporary(), extract_operands));
+    replacement_id = message_.fresh_id_for_temporary();
+  } else {
+    replacement_id = message_.data_descriptor().object();
+  }
+
   instruction_to_change->SetInOperand(
       message_.id_use_descriptor().in_operand_index(),
-      {message_.data_descriptor().object()});
+      {replacement_id});
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 
