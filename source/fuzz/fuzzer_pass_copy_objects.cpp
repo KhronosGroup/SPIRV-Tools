@@ -14,6 +14,7 @@
 
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_copy_object.h"
 
 namespace spvtools {
@@ -59,7 +60,7 @@ void FuzzerPassCopyObjects::Apply() {
 
         // Check whether it is legitimate to insert a copy before this
         // instruction.
-        if (!TransformationCopyObject::CanInsertCopyBefore(inst_it)) {
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyObject, inst_it)) {
           continue;
         }
 
@@ -77,7 +78,7 @@ void FuzzerPassCopyObjects::Apply() {
 
         // Consider all global declarations
         for (auto& global : GetIRContext()->module()->types_values()) {
-          if (TransformationCopyObject::IsCopyable(GetIRContext(), &global)) {
+          if (fuzzerutil::CanMakeSynonymOf(GetIRContext(), &global)) {
             copyable_instructions.push_back(&global);
           }
         }
@@ -85,7 +86,7 @@ void FuzzerPassCopyObjects::Apply() {
         // Consider all previous instructions in this block
         for (auto prev_inst_it = block.begin(); prev_inst_it != inst_it;
              ++prev_inst_it) {
-          if (TransformationCopyObject::IsCopyable(GetIRContext(),
+          if (fuzzerutil::CanMakeSynonymOf(GetIRContext(),
                                                    &*prev_inst_it)) {
             copyable_instructions.push_back(&*prev_inst_it);
           }
@@ -101,7 +102,7 @@ void FuzzerPassCopyObjects::Apply() {
              next_dominator =
                  dominator_analysis->ImmediateDominator(next_dominator)) {
           for (auto& dominating_inst : *next_dominator) {
-            if (TransformationCopyObject::IsCopyable(GetIRContext(),
+            if (fuzzerutil::CanMakeSynonymOf(GetIRContext(),
                                                      &dominating_inst)) {
               copyable_instructions.push_back(&dominating_inst);
             }

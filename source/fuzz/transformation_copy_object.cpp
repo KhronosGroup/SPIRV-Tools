@@ -46,7 +46,7 @@ bool TransformationCopyObject::IsApplicable(
   if (!object_inst) {
     return false;
   }
-  if (!IsCopyable(context, object_inst)) {
+  if (!fuzzerutil::CanMakeSynonymOf(context, object_inst)) {
     return false;
   }
 
@@ -71,7 +71,7 @@ bool TransformationCopyObject::IsApplicable(
     return false;
   }
 
-  if (!CanInsertCopyBefore(insert_before)) {
+  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyObject, insert_before)) {
     return false;
   }
 
@@ -123,44 +123,6 @@ protobufs::Transformation TransformationCopyObject::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_copy_object() = message_;
   return result;
-}
-
-bool TransformationCopyObject::IsCopyable(opt::IRContext* ir_context,
-                                          opt::Instruction* inst) {
-  if (!inst->HasResultId()) {
-    // We can only apply OpCopyObject to instructions that generate ids.
-    return false;
-  }
-  if (!inst->type_id()) {
-    // We can only apply OpCopyObject to instructions that have types.
-    return false;
-  }
-  // We do not copy objects that have decorations: if the copy is not
-  // decorated analogously, using the original object vs. its copy may not be
-  // equivalent.
-  // TODO(afd): it would be possible to make the copy but not add an id
-  // synonym.
-  return ir_context->get_decoration_mgr()
-      ->GetDecorationsFor(inst->result_id(), true)
-      .empty();
-}
-
-bool TransformationCopyObject::CanInsertCopyBefore(
-    const opt::BasicBlock::iterator& instruction_in_block) {
-  if (instruction_in_block->PreviousNode() &&
-      (instruction_in_block->PreviousNode()->opcode() == SpvOpLoopMerge ||
-       instruction_in_block->PreviousNode()->opcode() == SpvOpSelectionMerge)) {
-    // We cannot insert a copy directly after a merge instruction.
-    return false;
-  }
-  if (instruction_in_block->opcode() == SpvOpVariable) {
-    // We cannot insert a copy directly before a variable; variables in a
-    // function must be contiguous in the entry block.
-    return false;
-  }
-  // We cannot insert a copy directly before OpPhi, because OpPhi instructions
-  // need to be contiguous at the start of a block.
-  return instruction_in_block->opcode() != SpvOpPhi;
 }
 
 }  // namespace fuzz

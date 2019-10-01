@@ -34,6 +34,57 @@ bool SynonymFactHolds(const FactManager& fact_manager, uint32_t id,
                       }) != synonyms.end();
 }
 
+TEST(TransformationConstructCompositeTest, ConstructArrays) {
+  std::string shader = R"(
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  std::string after_transformation = R"(
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationConstructCompositeTest, ConstructMatrices) {
+  std::string shader = R"(
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  std::string after_transformation = R"(
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationConstructCompositeTest, ConstructStructs) {
+  std::string shader = R"(
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  std::string after_transformation = R"(
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 TEST(TransformationConstructCompositeTest, ConstructVectors) {
   std::string shader = R"(
                OpCapability Shader

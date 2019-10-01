@@ -58,14 +58,6 @@ class TransformationCopyObject : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
-  // Determines whether it is OK to make a copy of |inst|.
-  static bool IsCopyable(opt::IRContext* ir_context, opt::Instruction* inst);
-
-  // Determines whether it is OK to insert a copy instruction before the given
-  // instruction.
-  static bool CanInsertCopyBefore(
-      const opt::BasicBlock::iterator& instruction_in_block);
-
  private:
   protobufs::TransformationCopyObject message_;
 };

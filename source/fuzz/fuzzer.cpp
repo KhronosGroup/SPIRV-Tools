@@ -25,6 +25,7 @@
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
 #include "source/fuzz/fuzzer_pass_adjust_selection_controls.h"
 #include "source/fuzz/fuzzer_pass_apply_id_synonyms.h"
+#include "source/fuzz/fuzzer_pass_construct_composites.h"
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
@@ -139,6 +140,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassApplyIdSynonyms>(&passes, ir_context.get(),
                                             &fact_manager, &fuzzer_context,
                                             transformation_sequence_out);
+    MaybeAddPass<FuzzerPassConstructComposites>(&passes, ir_context.get(),
+                                                &fact_manager, &fuzzer_context,
+                                                transformation_sequence_out);
     MaybeAddPass<FuzzerPassCopyObjects>(&passes, ir_context.get(),
                                         &fact_manager, &fuzzer_context,
                                         transformation_sequence_out);
