@@ -75,9 +75,8 @@ USAGE: %s [options] <input.spv> -o <output.spv>
 USAGE: %s [options] <input.spv> -o <output.spv> \
   --shrink=<input.transformations> -- <interestingness_function> <args...>
 
-The SPIR-V binary is read from <input.spv>, which must have extension .spv.  If
-<input.facts> is also present, facts about the SPIR-V binary are read from this
-file.
+The SPIR-V binary is read from <input.spv>.  If <input.facts> is also present,
+facts about the SPIR-V binary are read from this file.
 
 The transformed SPIR-V binary is written to <output.spv>.  Human-readable and
 binary representations of the transformations that were applied are written to
@@ -110,6 +109,12 @@ Options (in lexicographical order):
                Unsigned 32-bit integer specifying maximum number of steps the
                shrinker will take before giving up.  Ignored unless --shrink
                is used.
+  --shrinker-temp-file-prefix
+               Specifies a temporary file prefix that will be used to output
+               temporary shader files during shrinking.  A number and .spv
+               extension will be added.  The default is "temp_", which will
+               cause files like "temp_0001.spv" to be output to the current
+               directory.  Ignored unless --shrink is used.
   --replay-validation
                Run the validator after applying each transformation during
                replay (including the replay that occurs during shrinking).
@@ -133,18 +138,12 @@ void FuzzDiagnostic(spv_message_level_t level, const char* /*source*/,
   fprintf(stderr, "%s\n", message);
 }
 
-bool EndsWithSpv(const std::string& filename) {
-  std::string dot_spv = ".spv";
-  return filename.length() >= dot_spv.length() &&
-         0 == filename.compare(filename.length() - dot_spv.length(),
-                               filename.length(), dot_spv);
-}
-
 FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
                       std::string* out_binary_file,
                       std::string* replay_transformations_file,
                       std::vector<std::string>* interestingness_function,
                       std::string* shrink_transformations_file,
+                      std::string* shrink_temp_file_prefix,
                       spvtools::FuzzerOptions* fuzzer_options) {
   uint32_t positional_arg_index = 0;
   bool only_positional_arguments_remain = false;
@@ -192,6 +191,10 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
             static_cast<uint32_t>(strtol(split_flag.second.c_str(), &end, 10));
         assert(end != split_flag.second.c_str() && errno == 0);
         fuzzer_options->set_shrinker_step_limit(step_limit);
+      } else if (0 == strncmp(cur_arg, "--shrinker-temp-file-prefix=",
+                              sizeof("--shrinker-temp-file-prefix=") - 1)) {
+        const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        *shrink_temp_file_prefix = std::string(split_flag.second);
       } else if (0 == strcmp(cur_arg, "--")) {
         only_positional_arguments_remain = true;
       } else if ('\0' == cur_arg[1]) {
@@ -215,20 +218,8 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
     return {FuzzActions::STOP, 1};
   }
 
-  if (!EndsWithSpv(*in_binary_file)) {
-    spvtools::Error(FuzzDiagnostic, nullptr, {},
-                    "Input filename must have extension .spv");
-    return {FuzzActions::STOP, 1};
-  }
-
   if (out_binary_file->empty()) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "-o required");
-    return {FuzzActions::STOP, 1};
-  }
-
-  if (!EndsWithSpv(*out_binary_file)) {
-    spvtools::Error(FuzzDiagnostic, nullptr, {},
-                    "Output filename must have extension .spv");
     return {FuzzActions::STOP, 1};
   }
 
@@ -329,6 +320,7 @@ bool Shrink(const spv_target_env& target_env,
             const std::vector<uint32_t>& binary_in,
             const spvtools::fuzz::protobufs::FactSequence& initial_facts,
             const std::string& shrink_transformations_file,
+            const std::string& shrink_temp_file_prefix,
             const std::vector<std::string>& interestingness_command,
             std::vector<uint32_t>* binary_out,
             spvtools::fuzz::protobufs::TransformationSequence*
@@ -354,11 +346,11 @@ bool Shrink(const spv_target_env& target_env,
   std::string interestingness_command_joined = joined.str();
 
   spvtools::fuzz::Shrinker::InterestingnessFunction interestingness_function =
-      [interestingness_command_joined](std::vector<uint32_t> binary,
-                                       uint32_t reductions_applied) -> bool {
+      [interestingness_command_joined, shrink_temp_file_prefix](
+          std::vector<uint32_t> binary, uint32_t reductions_applied) -> bool {
     std::stringstream ss;
-    ss << "temp_" << std::setw(4) << std::setfill('0') << reductions_applied
-       << ".spv";
+    ss << shrink_temp_file_prefix << std::setw(4) << std::setfill('0')
+       << reductions_applied << ".spv";
     const auto spv_file = ss.str();
     const std::string command = interestingness_command_joined + " " + spv_file;
     auto write_file_succeeded =
@@ -423,13 +415,14 @@ int main(int argc, const char** argv) {
   std::string replay_transformations_file;
   std::vector<std::string> interestingness_function;
   std::string shrink_transformations_file;
+  std::string shrink_temp_file_prefix = "temp_";
 
   spvtools::FuzzerOptions fuzzer_options;
 
-  FuzzStatus status =
-      ParseFlags(argc, argv, &in_binary_file, &out_binary_file,
-                 &replay_transformations_file, &interestingness_function,
-                 &shrink_transformations_file, &fuzzer_options);
+  FuzzStatus status = ParseFlags(
+      argc, argv, &in_binary_file, &out_binary_file,
+      &replay_transformations_file, &interestingness_function,
+      &shrink_transformations_file, &shrink_temp_file_prefix, &fuzzer_options);
 
   if (status.action == FuzzActions::STOP) {
     return status.code;
@@ -441,10 +434,12 @@ int main(int argc, const char** argv) {
   }
 
   spvtools::fuzz::protobufs::FactSequence initial_facts;
-  const std::string dot_spv(".spv");
-  std::string in_facts_file =
-      in_binary_file.substr(0, in_binary_file.length() - dot_spv.length()) +
-      ".facts";
+
+  // If not found, dot_pos will be std::string::npos, which can be used in
+  // substr to mean "the end of the string"; there is no need to check the
+  // result.
+  size_t dot_pos = in_binary_file.rfind('.');
+  std::string in_facts_file = in_binary_file.substr(0, dot_pos) + ".facts";
   std::ifstream facts_input(in_facts_file);
   if (facts_input) {
     std::string facts_json_string((std::istreambuf_iterator<char>(facts_input)),
@@ -484,8 +479,9 @@ int main(int argc, const char** argv) {
         return 1;
       }
       if (!Shrink(target_env, fuzzer_options, binary_in, initial_facts,
-                  shrink_transformations_file, interestingness_function,
-                  &binary_out, &transformations_applied)) {
+                  shrink_transformations_file, shrink_temp_file_prefix,
+                  interestingness_function, &binary_out,
+                  &transformations_applied)) {
         return 1;
       }
     } break;
@@ -500,8 +496,11 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  std::string output_file_prefix =
-      out_binary_file.substr(0, out_binary_file.length() - dot_spv.length());
+  // If not found, dot_pos will be std::string::npos, which can be used in
+  // substr to mean "the end of the string"; there is no need to check the
+  // result.
+  dot_pos = out_binary_file.rfind('.');
+  std::string output_file_prefix = out_binary_file.substr(0, dot_pos);
   std::ofstream transformations_file;
   transformations_file.open(output_file_prefix + ".transformations",
                             std::ios::out | std::ios::binary);
