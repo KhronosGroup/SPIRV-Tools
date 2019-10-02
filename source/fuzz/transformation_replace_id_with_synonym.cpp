@@ -100,13 +100,35 @@ void TransformationReplaceIdWithSynonym::Apply(
   uint32_t replacement_id;
 
   if (message_.fresh_id_for_temporary()) {
-    opt::Instruction::OperandList extract_operands = {
-            { SPV_OPERAND_TYPE_ID, { message_.data_descriptor().object() } }, { SPV_OPERAND_TYPE_LITERAL_INTEGER, {
-              message_.data_descriptor().index(0) } }
-    };
-    instruction_to_change->InsertBefore(MakeUnique<opt::Instruction>(context, SpvOpCompositeExtract,
-                                                                     context->get_def_use_mgr()->GetDef(message_.id_use_descriptor().id_of_interest())->type_id(),
-                                                                     message_.fresh_id_for_temporary(), extract_operands));
+    auto type_id_of_id_to_be_replaced = context->get_def_use_mgr()->GetDef(message_.id_use_descriptor().id_of_interest())->type_id();
+    auto type_of_id_to_be_replaced = context->get_type_mgr()->GetType(type_id_of_id_to_be_replaced);
+    auto type_of_composite = context->get_type_mgr()->GetType(context->get_def_use_mgr()->GetDef(message_.data_descriptor().object())->type_id());
+    std::unique_ptr<opt::Instruction> new_instruction;
+    if (type_of_composite->AsVector() && type_of_composite->AsVector()->element_type() != type_of_id_to_be_replaced) {
+      assert(type_of_id_to_be_replaced->AsVector());
+      assert(type_of_id_to_be_replaced->AsVector()->element_type() == type_of_composite->AsVector()->element_type());
+      opt::Instruction::OperandList shuffle_operands = {
+              {SPV_OPERAND_TYPE_ID,              {message_.data_descriptor().object()}},
+              {SPV_OPERAND_TYPE_ID,              {message_.data_descriptor().object()}}
+      };
+      for (uint32_t i = 0; i < type_of_id_to_be_replaced->AsVector()->element_count(); i++) {
+        shuffle_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {
+                message_.data_descriptor().index(0) + i}});
+      }
+      new_instruction = MakeUnique<opt::Instruction>(context, SpvOpVectorShuffle,
+                                                     type_id_of_id_to_be_replaced,
+                                                     message_.fresh_id_for_temporary(), shuffle_operands);
+    } else {
+      opt::Instruction::OperandList extract_operands = {
+              {SPV_OPERAND_TYPE_ID,              {message_.data_descriptor().object()}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {
+                                                  message_.data_descriptor().index(0)}}
+      };
+      new_instruction = MakeUnique<opt::Instruction>(context, SpvOpCompositeExtract,
+                                                          type_id_of_id_to_be_replaced,
+                                                          message_.fresh_id_for_temporary(), extract_operands);
+    }
+    instruction_to_change->InsertBefore(std::move(new_instruction));
     replacement_id = message_.fresh_id_for_temporary();
     fuzzerutil::UpdateModuleIdBound(context, replacement_id);
   } else {
