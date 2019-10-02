@@ -63,9 +63,6 @@ void FuzzerPassApplyIdSynonyms::Apply() {
                 GetFuzzerContext()->RandomIndex(synonyms_to_try);
             auto synonym_to_try = synonyms_to_try[synonym_index];
             synonyms_to_try.erase(synonyms_to_try.begin() + synonym_index);
-            assert(synonym_to_try->index().empty() &&
-                   "Right now we only support id == id synonyms; supporting "
-                   "e.g. id == index-into-vector will come later");
 
             if (!TransformationReplaceIdWithSynonym::
                     ReplacingUseWithSynonymIsOk(GetIRContext(), use_inst,

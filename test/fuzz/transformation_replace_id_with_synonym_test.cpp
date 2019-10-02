@@ -1533,7 +1533,216 @@ TEST(TransformationReplaceIdWithSynonymTest, MatrixCompositeSynonyms) {
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, StructCompositeSynonyms) {
-  FAIL();
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "Inner"
+               OpMemberName %9 0 "a"
+               OpMemberName %9 1 "b"
+               OpName %11 "i1"
+               OpName %17 "i2"
+               OpName %31 "Point"
+               OpMemberName %31 0 "x"
+               OpMemberName %31 1 "y"
+               OpMemberName %31 2 "z"
+               OpName %32 "Outer"
+               OpMemberName %32 0 "c"
+               OpMemberName %32 1 "d"
+               OpName %34 "o1"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFloat 32
+          %8 = OpTypeVector %7 2
+          %9 = OpTypeStruct %6 %8
+         %10 = OpTypePointer Function %9
+         %12 = OpConstant %6 1
+         %13 = OpConstant %7 2
+         %14 = OpConstant %7 3
+         %15 = OpConstantComposite %8 %13 %14
+         %16 = OpConstantComposite %9 %12 %15
+         %18 = OpConstant %6 0
+         %19 = OpTypePointer Function %6
+         %24 = OpTypePointer Function %8
+         %27 = OpConstant %7 4
+         %31 = OpTypeStruct %7 %7 %7
+         %32 = OpTypeStruct %9 %31
+         %33 = OpTypePointer Function %32
+         %36 = OpConstant %7 10
+         %37 = OpTypeInt 32 0
+         %38 = OpConstant %37 0
+         %39 = OpTypePointer Function %7
+         %42 = OpConstant %37 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpVariable %10 Function
+         %17 = OpVariable %10 Function
+         %34 = OpVariable %33 Function
+        %101 = OpCompositeConstruct %31 %27 %36 %27
+               OpStore %11 %16
+         %20 = OpAccessChain %19 %11 %18
+         %21 = OpLoad %6 %20
+         %22 = OpIAdd %6 %21 %12
+        %102 = OpCompositeConstruct %9 %22 %15
+         %23 = OpAccessChain %19 %17 %18
+               OpStore %23 %22
+         %25 = OpAccessChain %24 %17 %12
+         %26 = OpLoad %8 %25
+         %28 = OpCompositeConstruct %8 %27 %27
+         %29 = OpFAdd %8 %26 %28
+         %30 = OpAccessChain %24 %17 %12
+               OpStore %30 %29
+         %35 = OpLoad %9 %11
+         %40 = OpAccessChain %39 %11 %12 %38
+         %41 = OpLoad %7 %40
+         %43 = OpAccessChain %39 %11 %12 %42
+         %44 = OpLoad %7 %43
+         %45 = OpCompositeConstruct %31 %36 %41 %44
+        %100 = OpCompositeConstruct %32 %16 %45
+         %46 = OpCompositeConstruct %32 %35 %45
+               OpStore %34 %46
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  fact_manager.AddFact(MakeSynonymFact(16, 100, { 0 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(45, 100, { 1 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(27, 101, { 0 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(36, 101, { 1 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(27, 101, { 2 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(22, 102, { 0 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(15, 102, { 1 }), context.get());
+
+  // Replace %45 with %100[1] in '%46 = OpCompositeConstruct %32 %35 %45'
+  auto replacement_1 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
+          45, SpvOpCompositeConstruct, 1, 46, 0), MakeDataDescriptor(100, {1}), 201);
+  ASSERT_TRUE(replacement_1.IsApplicable(context.get(), fact_manager));
+  replacement_1.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Replace second occurrence of %27 with %101[0] in '%28 = OpCompositeConstruct %8 %27 %27'
+  auto replacement_2 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
+          27, SpvOpCompositeConstruct, 1, 28, 0), MakeDataDescriptor(101, {0}), 202);
+  ASSERT_TRUE(replacement_2.IsApplicable(context.get(), fact_manager));
+  replacement_2.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Replace %36 with %101[1] in '%45 = OpCompositeConstruct %31 %36 %41 %44'
+  auto replacement_3 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
+          36, SpvOpCompositeConstruct, 0, 45, 0), MakeDataDescriptor(101, {1}), 203);
+  ASSERT_TRUE(replacement_3.IsApplicable(context.get(), fact_manager));
+  replacement_3.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Replace first occurrence of %27 with %101[2] in '%28 = OpCompositeConstruct %8 %27 %27'
+  auto replacement_4 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
+          27, SpvOpCompositeConstruct, 0, 28, 0), MakeDataDescriptor(101, {2}), 204);
+  ASSERT_TRUE(replacement_4.IsApplicable(context.get(), fact_manager));
+  replacement_4.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Replace %22 with %102[0] in 'OpStore %23 %22'
+  auto replacement_5 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
+          22, SpvOpStore, 1, 23, 0), MakeDataDescriptor(102, {0}), 205);
+  ASSERT_TRUE(replacement_5.IsApplicable(context.get(), fact_manager));
+  replacement_5.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  const std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "Inner"
+               OpMemberName %9 0 "a"
+               OpMemberName %9 1 "b"
+               OpName %11 "i1"
+               OpName %17 "i2"
+               OpName %31 "Point"
+               OpMemberName %31 0 "x"
+               OpMemberName %31 1 "y"
+               OpMemberName %31 2 "z"
+               OpName %32 "Outer"
+               OpMemberName %32 0 "c"
+               OpMemberName %32 1 "d"
+               OpName %34 "o1"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFloat 32
+          %8 = OpTypeVector %7 2
+          %9 = OpTypeStruct %6 %8
+         %10 = OpTypePointer Function %9
+         %12 = OpConstant %6 1
+         %13 = OpConstant %7 2
+         %14 = OpConstant %7 3
+         %15 = OpConstantComposite %8 %13 %14
+         %16 = OpConstantComposite %9 %12 %15
+         %18 = OpConstant %6 0
+         %19 = OpTypePointer Function %6
+         %24 = OpTypePointer Function %8
+         %27 = OpConstant %7 4
+         %31 = OpTypeStruct %7 %7 %7
+         %32 = OpTypeStruct %9 %31
+         %33 = OpTypePointer Function %32
+         %36 = OpConstant %7 10
+         %37 = OpTypeInt 32 0
+         %38 = OpConstant %37 0
+         %39 = OpTypePointer Function %7
+         %42 = OpConstant %37 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpVariable %10 Function
+         %17 = OpVariable %10 Function
+         %34 = OpVariable %33 Function
+        %101 = OpCompositeConstruct %31 %27 %36 %27
+               OpStore %11 %16
+         %20 = OpAccessChain %19 %11 %18
+         %21 = OpLoad %6 %20
+         %22 = OpIAdd %6 %21 %12
+        %102 = OpCompositeConstruct %9 %22 %15
+         %23 = OpAccessChain %19 %17 %18
+        %205 = OpCompositeExtract %6 %102 0
+               OpStore %23 %205
+         %25 = OpAccessChain %24 %17 %12
+         %26 = OpLoad %8 %25
+        %202 = OpCompositeExtract %7 %101 0
+        %204 = OpCompositeExtract %7 %101 2
+         %28 = OpCompositeConstruct %8 %204 %202
+         %29 = OpFAdd %8 %26 %28
+         %30 = OpAccessChain %24 %17 %12
+               OpStore %30 %29
+         %35 = OpLoad %9 %11
+         %40 = OpAccessChain %39 %11 %12 %38
+         %41 = OpLoad %7 %40
+         %43 = OpAccessChain %39 %11 %12 %42
+         %44 = OpLoad %7 %43
+        %203 = OpCompositeExtract %7 %101 1
+         %45 = OpCompositeConstruct %31 %203 %41 %44
+        %100 = OpCompositeConstruct %32 %16 %45
+        %201 = OpCompositeExtract %31 %100 1
+         %46 = OpCompositeConstruct %32 %35 %201
+               OpStore %34 %46
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, VectorCompositeSynonyms) {
