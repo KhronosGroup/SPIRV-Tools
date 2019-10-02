@@ -608,10 +608,12 @@ OpReturn
 OpFunctionEnd
 )";
 
+  // Issue #2929: cannot use OpConstantNull of a physical storage buffer
+  // pointer.
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<InstBuffAddrCheckPass>(
       defs_before + func_before, defs_after + func_after + new_funcs, true,
-      true, 7u, 23u, 2u);
+      false, 7u, 23u, 2u);
 }
 
 }  // namespace
