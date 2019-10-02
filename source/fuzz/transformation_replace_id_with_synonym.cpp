@@ -34,6 +34,7 @@ TransformationReplaceIdWithSynonym::TransformationReplaceIdWithSynonym(
     protobufs::IdUseDescriptor id_use_descriptor,
     protobufs::DataDescriptor data_descriptor,
     uint32_t fresh_id_for_temporary) {
+  assert((fresh_id_for_temporary == 0) == (data_descriptor.index().empty()));
   *message_.mutable_id_use_descriptor() = std::move(id_use_descriptor);
   *message_.mutable_data_descriptor() = std::move(data_descriptor);
   message_.set_fresh_id_for_temporary(fresh_id_for_temporary);
