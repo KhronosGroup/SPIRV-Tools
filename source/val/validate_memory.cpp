@@ -1590,8 +1590,8 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
            << "Operand type must be a pointer";
   }
 
+  SpvStorageClass sc = op1_type->GetOperandAs<SpvStorageClass>(1u);
   if (_.addressing_model() == SpvAddressingModelLogical) {
-    SpvStorageClass sc = op1_type->GetOperandAs<SpvStorageClass>(1u);
     if (sc != SpvStorageClassWorkgroup && sc != SpvStorageClassStorageBuffer) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Invalid pointer storage class";
@@ -1602,6 +1602,9 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
              << "Workgroup storage class pointer requires VariablePointers "
                 "capability to be specified";
     }
+  } else if (sc == SpvStorageClassPhysicalStorageBuffer) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Cannot use a pointer in the PhysicalStorageBuffer storage class";
   }
 
   return SPV_SUCCESS;
