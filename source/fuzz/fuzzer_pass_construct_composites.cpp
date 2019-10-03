@@ -93,37 +93,9 @@ void FuzzerPassConstructComposites::Apply() {
         // strictly dominates the program point).
         TypeIdToInstructions type_id_to_available_instructions;
 
-        // Consider all global declarations
-        for (auto& global : GetIRContext()->module()->types_values()) {
-          if (fuzzerutil::CanMakeSynonymOf(GetIRContext(), &global)) {
-            RecordAvailableInstruction(&global, &type_id_to_available_instructions);
-          }
-        }
-
-        // Consider all previous instructions in this block
-        for (auto prev_inst_it = block.begin(); prev_inst_it != inst_it;
-             ++prev_inst_it) {
-          if (fuzzerutil::CanMakeSynonymOf(GetIRContext(),
-                                                   &*prev_inst_it)) {
-            RecordAvailableInstruction(&*prev_inst_it, &type_id_to_available_instructions);
-          }
-        }
-
-        // Walk the dominator tree to consider all instructions from dominating
-        // blocks
-        auto dominator_analysis =
-                GetIRContext()->GetDominatorAnalysis(&function);
-        for (auto next_dominator =
-                dominator_analysis->ImmediateDominator(&block);
-             next_dominator != nullptr;
-             next_dominator =
-                     dominator_analysis->ImmediateDominator(next_dominator)) {
-          for (auto& dominating_inst : *next_dominator) {
-            if (fuzzerutil::CanMakeSynonymOf(GetIRContext(),
-                                                     &dominating_inst)) {
-              RecordAvailableInstruction(&dominating_inst, &type_id_to_available_instructions);
-            }
-          }
+        for (auto instruction : FindAvailableInstructions(function, &block, inst_it,
+                                                          fuzzerutil::CanMakeSynonymOf)) {
+          RecordAvailableInstruction(instruction, &type_id_to_available_instructions);
         }
 
         // At this point, |composite_type_ids| captures all the composite types we could

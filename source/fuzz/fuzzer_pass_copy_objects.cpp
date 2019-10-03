@@ -70,55 +70,18 @@ void FuzzerPassCopyObjects::Apply() {
           continue;
         }
 
-        // Populate list of potential instructions that can be copied.
-        // TODO(afd) The following is (relatively) simple, but may end up being
-        //  prohibitively inefficient, as it walks the whole dominator tree for
-        //  every copy that is added.
-        std::vector<opt::Instruction*> copyable_instructions;
+        std::vector<opt::Instruction*> relevant_instructions = FindAvailableInstructions(function, &block, inst_it,
+                                                                                         fuzzerutil::CanMakeSynonymOf);
 
-        // Consider all global declarations
-        for (auto& global : GetIRContext()->module()->types_values()) {
-          if (fuzzerutil::CanMakeSynonymOf(GetIRContext(), &global)) {
-            copyable_instructions.push_back(&global);
-          }
-        }
-
-        // Consider all previous instructions in this block
-        for (auto prev_inst_it = block.begin(); prev_inst_it != inst_it;
-             ++prev_inst_it) {
-          if (fuzzerutil::CanMakeSynonymOf(GetIRContext(),
-                                                   &*prev_inst_it)) {
-            copyable_instructions.push_back(&*prev_inst_it);
-          }
-        }
-
-        // Walk the dominator tree to consider all instructions from dominating
-        // blocks
-        auto dominator_analysis =
-            GetIRContext()->GetDominatorAnalysis(&function);
-        for (auto next_dominator =
-                 dominator_analysis->ImmediateDominator(&block);
-             next_dominator != nullptr;
-             next_dominator =
-                 dominator_analysis->ImmediateDominator(next_dominator)) {
-          for (auto& dominating_inst : *next_dominator) {
-            if (fuzzerutil::CanMakeSynonymOf(GetIRContext(),
-                                                     &dominating_inst)) {
-              copyable_instructions.push_back(&dominating_inst);
-            }
-          }
-        }
-
-        // At this point, |copyable_instructions| contains all the instructions
+        // At this point, |relevant_instructions| contains all the instructions
         // we might think of copying.
-
-        if (!copyable_instructions.empty()) {
+        if (!relevant_instructions.empty()) {
           // Choose a copyable instruction at random, and create and apply an
           // object copying transformation based on it.
           uint32_t index =
-              GetFuzzerContext()->RandomIndex(copyable_instructions);
+              GetFuzzerContext()->RandomIndex(relevant_instructions);
           TransformationCopyObject transformation(
-              copyable_instructions[index]->result_id(), base, offset,
+              relevant_instructions[index]->result_id(), base, offset,
               GetFuzzerContext()->GetFreshId());
           assert(
               transformation.IsApplicable(GetIRContext(), *GetFactManager()) &&

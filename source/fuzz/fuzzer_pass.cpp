@@ -27,5 +27,52 @@ FuzzerPass::FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
 
 FuzzerPass::~FuzzerPass() = default;
 
+std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
+        const opt::Function& function,
+        opt::BasicBlock* block,
+        opt::BasicBlock::iterator inst_it,
+        std::function<bool(opt::IRContext*, opt::Instruction*)> instruction_is_relevant) {
+
+  // Populate list of available instructions that satisfy |instruction_is_relevant|.
+  // TODO(afd) The following is (relatively) simple, but may end up being
+  //  prohibitively inefficient, as it walks the whole dominator tree for
+  //  every copy that is added.
+
+  std::vector<opt::Instruction*> result;
+  // Consider all global declarations
+  for (auto& global : GetIRContext()->module()->types_values()) {
+    if (instruction_is_relevant(GetIRContext(), &global)) {
+      result.push_back(&global);
+    }
+  }
+
+  // Consider all previous instructions in this block
+  for (auto prev_inst_it = block->begin(); prev_inst_it != inst_it;
+       ++prev_inst_it) {
+    if (instruction_is_relevant(GetIRContext(),
+                                &*prev_inst_it)) {
+      result.push_back(&*prev_inst_it);
+    }
+  }
+
+  // Walk the dominator tree to consider all instructions from dominating
+  // blocks
+  auto dominator_analysis =
+          GetIRContext()->GetDominatorAnalysis(&function);
+  for (auto next_dominator =
+          dominator_analysis->ImmediateDominator(block);
+       next_dominator != nullptr;
+       next_dominator =
+               dominator_analysis->ImmediateDominator(next_dominator)) {
+    for (auto& dominating_inst : *next_dominator) {
+      if (instruction_is_relevant(GetIRContext(),
+                                  &dominating_inst)) {
+        result.push_back(&dominating_inst);
+      }
+    }
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

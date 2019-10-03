@@ -15,8 +15,12 @@
 #ifndef SOURCE_FUZZ_FUZZER_PASS_H_
 #define SOURCE_FUZZ_FUZZER_PASS_H_
 
+#include <functional>
+#include <vector>
+
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
+#include "source/opt/ir_context.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 
 namespace spvtools {
@@ -47,6 +51,13 @@ class FuzzerPass {
   protobufs::TransformationSequence* GetTransformations() const {
     return transformations_;
   }
+
+  // TODO comment
+  std::vector<opt::Instruction*> FindAvailableInstructions(
+          const opt::Function& function,
+          opt::BasicBlock* block,
+          opt::BasicBlock::iterator inst_it,
+          std::function<bool(opt::IRContext*, opt::Instruction*)> instruction_is_relevant);
 
  private:
   opt::IRContext* ir_context_;
