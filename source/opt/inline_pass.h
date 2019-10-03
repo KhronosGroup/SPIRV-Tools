@@ -164,6 +164,10 @@ class InlinePass : public Pass {
 
   // result id for OpConstantFalse
   uint32_t false_id_;
+
+  // Set of functions that are originally called directly or indirectly from a
+  // continue construct.
+  std::unordered_set<uint32_t> funcs_called_from_continue_;
 };
 
 }  // namespace opt
