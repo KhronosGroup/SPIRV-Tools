@@ -73,7 +73,7 @@ void PrintUsage(const char* program) {
 
 USAGE: %s [options] <input.spv> -o <output.spv>
 USAGE: %s [options] <input.spv> -o <output.spv> \
-  --shrink=<input.transformations> -- <interestingness_function> <args...>
+  --shrink=<input.transformations> -- <interestingness_test> [args...]
 
 The SPIR-V binary is read from <input.spv>.  If <input.facts> is also present,
 facts about the SPIR-V binary are read from this file.
@@ -82,11 +82,11 @@ The transformed SPIR-V binary is written to <output.spv>.  Human-readable and
 binary representations of the transformations that were applied are written to
 <output.transformations_json> and <output.transformations>, respectively.
 
-When passing --shrink=<input.transformations> an <interestingness_function>
+When passing --shrink=<input.transformations> an <interestingness_test>
 must also be provided; this is the path to a script that returns 0 if and only
 if a given SPIR-V binary is interesting.  The SPIR-V binary will be passed to
-the script as an argument after any other provided arguments.  The "--"
-characters are optional but denote that all arguments that follow are
+the script as an argument after any other provided arguments [args...].  The
+"--" characters are optional but denote that all arguments that follow are
 positional arguments and thus will be forwarded to the interestingness script,
 and not parsed by %s.
 
@@ -99,17 +99,17 @@ Options (in lexicographical order):
   --replay
                File from which to read a sequence of transformations to replay
                (instead of fuzzing)
-  --seed
+  --seed=
                Unsigned 32-bit integer seed to control random number
                generation.
-  --shrink
+  --shrink=
                File from which to read a sequence of transformations to shrink
                (instead of fuzzing)
-  --shrinker-step-limit
+  --shrinker-step-limit=
                Unsigned 32-bit integer specifying maximum number of steps the
                shrinker will take before giving up.  Ignored unless --shrink
                is used.
-  --shrinker-temp-file-prefix
+  --shrinker-temp-file-prefix=
                Specifies a temporary file prefix that will be used to output
                temporary shader files during shrinking.  A number and .spv
                extension will be added.  The default is "temp_", which will
@@ -141,7 +141,7 @@ void FuzzDiagnostic(spv_message_level_t level, const char* /*source*/,
 FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
                       std::string* out_binary_file,
                       std::string* replay_transformations_file,
-                      std::vector<std::string>* interestingness_function,
+                      std::vector<std::string>* interestingness_test,
                       std::string* shrink_transformations_file,
                       std::string* shrink_temp_file_prefix,
                       spvtools::FuzzerOptions* fuzzer_options) {
@@ -197,11 +197,12 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
         *shrink_temp_file_prefix = std::string(split_flag.second);
       } else if (0 == strcmp(cur_arg, "--")) {
         only_positional_arguments_remain = true;
-      } else if ('\0' == cur_arg[1]) {
-        // We do not support fuzzing from standard input.  We could support
-        // this if there was a compelling use case.
+      } else {
+        std::stringstream ss;
+        ss << "Unrecognized argument: " << cur_arg << std::endl;
+        spvtools::Error(FuzzDiagnostic, nullptr, {}, ss.str().c_str());
         PrintUsage(argv[0]);
-        return {FuzzActions::STOP, 0};
+        return {FuzzActions::STOP, 1};
       }
     } else if (positional_arg_index == 0) {
       // Binary input file name
@@ -209,7 +210,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
       *in_binary_file = std::string(cur_arg);
       positional_arg_index++;
     } else {
-      interestingness_function->push_back(std::string(cur_arg));
+      interestingness_test->push_back(std::string(cur_arg));
     }
   }
 
@@ -233,8 +234,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
     return {FuzzActions::STOP, 1};
   }
 
-  if (shrink_transformations_file->empty() &&
-      !interestingness_function->empty()) {
+  if (shrink_transformations_file->empty() && !interestingness_test->empty()) {
     spvtools::Error(FuzzDiagnostic, nullptr, {},
                     "Too many positional arguments specified; extra positional "
                     "arguments are used as the interestingness function, which "
@@ -242,8 +242,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
     return {FuzzActions::STOP, 1};
   }
 
-  if (!shrink_transformations_file->empty() &&
-      interestingness_function->empty()) {
+  if (!shrink_transformations_file->empty() && interestingness_test->empty()) {
     spvtools::Error(
         FuzzDiagnostic, nullptr, {},
         "The --shrink option requires an interestingness function.");
@@ -264,9 +263,9 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
 
   if (!shrink_transformations_file->empty()) {
     // The tool is being invoked in shrink mode.
-    assert(!interestingness_function->empty() &&
+    assert(!interestingness_test->empty() &&
            "An error should have been raised if --shrink was provided without "
-           "an interestingness function.");
+           "an interestingness test.");
     return {FuzzActions::SHRINK, 0};
   }
 
@@ -413,7 +412,7 @@ int main(int argc, const char** argv) {
   std::string in_binary_file;
   std::string out_binary_file;
   std::string replay_transformations_file;
-  std::vector<std::string> interestingness_function;
+  std::vector<std::string> interestingness_test;
   std::string shrink_transformations_file;
   std::string shrink_temp_file_prefix = "temp_";
 
@@ -421,7 +420,7 @@ int main(int argc, const char** argv) {
 
   FuzzStatus status = ParseFlags(
       argc, argv, &in_binary_file, &out_binary_file,
-      &replay_transformations_file, &interestingness_function,
+      &replay_transformations_file, &interestingness_test,
       &shrink_transformations_file, &shrink_temp_file_prefix, &fuzzer_options);
 
   if (status.action == FuzzActions::STOP) {
@@ -480,7 +479,7 @@ int main(int argc, const char** argv) {
       }
       if (!Shrink(target_env, fuzzer_options, binary_in, initial_facts,
                   shrink_transformations_file, shrink_temp_file_prefix,
-                  interestingness_function, &binary_out,
+                  interestingness_test, &binary_out,
                   &transformations_applied)) {
         return 1;
       }
