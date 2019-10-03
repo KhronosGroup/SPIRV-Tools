@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 
+#include "source/fuzz/force_render_red.h"
 #include "source/fuzz/fuzzer.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/replayer.h"
@@ -54,6 +55,8 @@ bool ExecuteCommand(const std::string& command) {
 
 // Status and actions to perform after parsing command-line arguments.
 enum class FuzzActions {
+  FORCE_RENDER_RED,  // Turn the shader into a form such that it is guaranteed
+                     // to render a red image.
   FUZZ,    // Run the fuzzer to apply transformations in a randomized fashion.
   REPLAY,  // Replay an existing sequence of transformations.
   SHRINK,  // Shrink an existing sequence of transformations with respect to an
@@ -96,6 +99,13 @@ Options (in lexicographical order):
 
   -h, --help
                Print this help.
+  --force-render-red
+               Transforms the input shader into a shader that writes red to the
+               output buffer, and then captures the original shader as the body
+               of a conditional with a dynamically false guard.  Exploits input
+               facts to make the guard non-obviously false.  This option is a
+               helper for massaging crash-inducing tests into a runnable
+               format; it does not perform any fuzzing.
   --replay
                File from which to read a sequence of transformations to replay
                (instead of fuzzing)
@@ -147,6 +157,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
                       spvtools::FuzzerOptions* fuzzer_options) {
   uint32_t positional_arg_index = 0;
   bool only_positional_arguments_remain = false;
+  bool force_render_red = false;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -165,6 +176,9 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
           PrintUsage(argv[0]);
           return {FuzzActions::STOP, 1};
         }
+      } else if (0 == strncmp(cur_arg, "--force-render-red",
+                              sizeof("--force-render-red") - 1)) {
+        force_render_red = true;
       } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file = std::string(split_flag.second);
@@ -222,6 +236,20 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
   if (out_binary_file->empty()) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "-o required");
     return {FuzzActions::STOP, 1};
+  }
+
+  auto const_fuzzer_options =
+      static_cast<spv_const_fuzzer_options>(*fuzzer_options);
+  if (force_render_red) {
+    if (!replay_transformations_file->empty() ||
+        !shrink_transformations_file->empty() ||
+        const_fuzzer_options->replay_validation_enabled) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {},
+                      "The --force-render-red argument cannot be used with any "
+                      "other arguments except -o.");
+      return {FuzzActions::STOP, 1};
+    }
+    return {FuzzActions::FORCE_RENDER_RED, 0};
   }
 
   if (replay_transformations_file->empty() &&
@@ -458,6 +486,12 @@ int main(int argc, const char** argv) {
   spv_target_env target_env = kDefaultEnvironment;
 
   switch (status.action) {
+    case FuzzActions::FORCE_RENDER_RED:
+      if (!spvtools::fuzz::ForceRenderRed(target_env, binary_in, initial_facts,
+                                          &binary_out)) {
+        return 1;
+      }
+      break;
     case FuzzActions::FUZZ:
       if (!Fuzz(target_env, fuzzer_options, binary_in, initial_facts,
                 &binary_out, &transformations_applied)) {
@@ -495,38 +529,40 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  // If not found, dot_pos will be std::string::npos, which can be used in
-  // substr to mean "the end of the string"; there is no need to check the
-  // result.
-  dot_pos = out_binary_file.rfind('.');
-  std::string output_file_prefix = out_binary_file.substr(0, dot_pos);
-  std::ofstream transformations_file;
-  transformations_file.open(output_file_prefix + ".transformations",
-                            std::ios::out | std::ios::binary);
-  bool success =
-      transformations_applied.SerializeToOstream(&transformations_file);
-  transformations_file.close();
-  if (!success) {
-    spvtools::Error(FuzzDiagnostic, nullptr, {},
-                    "Error writing out transformations binary");
-    return 1;
-  }
+  if (status.action != FuzzActions::FORCE_RENDER_RED) {
+    // If not found, dot_pos will be std::string::npos, which can be used in
+    // substr to mean "the end of the string"; there is no need to check the
+    // result.
+    dot_pos = out_binary_file.rfind('.');
+    std::string output_file_prefix = out_binary_file.substr(0, dot_pos);
+    std::ofstream transformations_file;
+    transformations_file.open(output_file_prefix + ".transformations",
+                              std::ios::out | std::ios::binary);
+    bool success =
+        transformations_applied.SerializeToOstream(&transformations_file);
+    transformations_file.close();
+    if (!success) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {},
+                      "Error writing out transformations binary");
+      return 1;
+    }
 
-  std::string json_string;
-  auto json_options = google::protobuf::util::JsonOptions();
-  json_options.add_whitespace = true;
-  auto json_generation_status = google::protobuf::util::MessageToJsonString(
-      transformations_applied, &json_string, json_options);
-  if (json_generation_status != google::protobuf::util::Status::OK) {
-    spvtools::Error(FuzzDiagnostic, nullptr, {},
-                    "Error writing out transformations in JSON format");
-    return 1;
-  }
+    std::string json_string;
+    auto json_options = google::protobuf::util::JsonOptions();
+    json_options.add_whitespace = true;
+    auto json_generation_status = google::protobuf::util::MessageToJsonString(
+        transformations_applied, &json_string, json_options);
+    if (json_generation_status != google::protobuf::util::Status::OK) {
+      spvtools::Error(FuzzDiagnostic, nullptr, {},
+                      "Error writing out transformations in JSON format");
+      return 1;
+    }
 
-  std::ofstream transformations_json_file(output_file_prefix +
-                                          ".transformations_json");
-  transformations_json_file << json_string;
-  transformations_json_file.close();
+    std::ofstream transformations_json_file(output_file_prefix +
+                                            ".transformations_json");
+    transformations_json_file << json_string;
+    transformations_json_file.close();
+  }
 
   return 0;
 }
