@@ -185,7 +185,8 @@ const std::string kComplexShader = R"(
                OpFunctionEnd
 )";
 
-protobufs::Fact MakeSynonymFact(uint32_t id, uint32_t synonym_object, std::vector<uint32_t> indices = {}) {
+protobufs::Fact MakeSynonymFact(uint32_t id, uint32_t synonym_object,
+                                std::vector<uint32_t> indices = {}) {
   protobufs::FactIdSynonym id_synonym_fact;
   id_synonym_fact.set_id(id);
   id_synonym_fact.mutable_data_descriptor()->set_object(synonym_object);
@@ -1175,7 +1176,6 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
-
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1257,72 +1257,100 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
-  fact_manager.AddFact(MakeSynonymFact(12, 100, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(13, 100, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(22, 100, { 2 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(28, 101, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(23, 101, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(32, 101, { 2 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(23, 101, { 3 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(12, 100, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(13, 100, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(22, 100, {2}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(28, 101, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(23, 101, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(32, 101, {2}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(23, 101, {3}), context.get());
 
   // Replace %12 with %100[0] in '%25 = OpAccessChain %24 %20 %12'
-  auto good_replacement_1 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(12, SpvOpAccessChain, 1, 25, 0), MakeDataDescriptor(100, {0}), 102);
+  auto good_replacement_1 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(12, SpvOpAccessChain, 1, 25, 0),
+      MakeDataDescriptor(100, {0}), 102);
   // Bad: id already in use
-  auto bad_replacement_1 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(12, SpvOpAccessChain, 1, 25, 0), MakeDataDescriptor(100, {0}), 25);
+  auto bad_replacement_1 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(12, SpvOpAccessChain, 1, 25, 0),
+      MakeDataDescriptor(100, {0}), 25);
   ASSERT_TRUE(good_replacement_1.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_1.IsApplicable(context.get(), fact_manager));
   good_replacement_1.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %13 with %100[1] in 'OpStore %15 %13'
-  auto good_replacement_2 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(13, SpvOpStore, 1, 100, 0), MakeDataDescriptor(100, {1}), 103);
+  auto good_replacement_2 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(13, SpvOpStore, 1, 100, 0),
+      MakeDataDescriptor(100, {1}), 103);
   // Bad: too many indices
-  auto bad_replacement_2 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(13, SpvOpStore, 1, 100, 0), MakeDataDescriptor(100, {1, 0}), 103);
+  auto bad_replacement_2 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(13, SpvOpStore, 1, 100, 0),
+      MakeDataDescriptor(100, {1, 0}), 103);
   ASSERT_TRUE(good_replacement_2.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_2.IsApplicable(context.get(), fact_manager));
   good_replacement_2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %22 with %100[2] in '%23 = OpConvertSToF %16 %22'
-  auto good_replacement_3 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(22, SpvOpConvertSToF, 0, 23, 0), MakeDataDescriptor(100, {2}), 104);
+  auto good_replacement_3 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(22, SpvOpConvertSToF, 0, 23, 0),
+      MakeDataDescriptor(100, {2}), 104);
   // Bad: wrong input operand index
-  auto bad_replacement_3 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(22, SpvOpConvertSToF, 1, 23, 0), MakeDataDescriptor(100, {2}), 104);
+  auto bad_replacement_3 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(22, SpvOpConvertSToF, 1, 23, 0),
+      MakeDataDescriptor(100, {2}), 104);
   ASSERT_TRUE(good_replacement_3.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_3.IsApplicable(context.get(), fact_manager));
   good_replacement_3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %28 with %101[0] in 'OpStore %33 %28'
-  auto good_replacement_4 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(28, SpvOpStore, 1, 33, 0), MakeDataDescriptor(101, {0}), 105);
+  auto good_replacement_4 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(28, SpvOpStore, 1, 33, 0),
+      MakeDataDescriptor(101, {0}), 105);
   // Bad: id use descriptor does not identify an appropriate instruction
-  auto bad_replacement_4 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(28, SpvOpCopyObject, 1, 33, 0), MakeDataDescriptor(101, {0}), 105);
+  auto bad_replacement_4 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(28, SpvOpCopyObject, 1, 33, 0),
+      MakeDataDescriptor(101, {0}), 105);
   ASSERT_TRUE(good_replacement_4.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_4.IsApplicable(context.get(), fact_manager));
   good_replacement_4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %23 with %101[1] in '%50 = OpCopyObject %16 %23'
-  auto good_replacement_5 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 50, 0), MakeDataDescriptor(101, {1}), 106);
+  auto good_replacement_5 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 50, 0),
+      MakeDataDescriptor(101, {1}), 106);
   // Bad: wrong synonym fact being used
-  auto bad_replacement_5 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 50, 0), MakeDataDescriptor(101, {0}), 106);
+  auto bad_replacement_5 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 50, 0),
+      MakeDataDescriptor(101, {0}), 106);
   ASSERT_TRUE(good_replacement_5.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_5.IsApplicable(context.get(), fact_manager));
   good_replacement_5.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %32 with %101[2] in 'OpStore %33 %32'
-  auto good_replacement_6 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(32, SpvOpStore, 1, 33, 1), MakeDataDescriptor(101, {2}), 107);
+  auto good_replacement_6 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(32, SpvOpStore, 1, 33, 1),
+      MakeDataDescriptor(101, {2}), 107);
   // Bad: id 1001 does not exist
-  auto bad_replacement_6 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(32, SpvOpStore, 1, 33, 1), MakeDataDescriptor(1001, {2}), 107);
+  auto bad_replacement_6 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(32, SpvOpStore, 1, 33, 1),
+      MakeDataDescriptor(1001, {2}), 107);
   ASSERT_TRUE(good_replacement_6.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_6.IsApplicable(context.get(), fact_manager));
   good_replacement_6.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %23 with %101[3] in '%51 = OpCopyObject %16 %23'
-  auto good_replacement_7 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 51, 0), MakeDataDescriptor(101, {3}), 108);
+  auto good_replacement_7 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(23, SpvOpCopyObject, 0, 51, 0),
+      MakeDataDescriptor(101, {3}), 108);
   // Bad: id 0 is invalid
-  auto bad_replacement_7 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(0, SpvOpCopyObject, 0, 51, 0), MakeDataDescriptor(101, {3}), 108);
+  auto bad_replacement_7 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(0, SpvOpCopyObject, 0, 51, 0),
+      MakeDataDescriptor(101, {3}), 108);
   ASSERT_TRUE(good_replacement_7.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(bad_replacement_7.IsApplicable(context.get(), fact_manager));
   good_replacement_7.Apply(context.get(), &fact_manager);
@@ -1411,7 +1439,6 @@ TEST(TransformationReplaceIdWithSynonymTest, ArrayCompositeSynonyms) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, MatrixCompositeSynonyms) {
@@ -1465,20 +1492,22 @@ TEST(TransformationReplaceIdWithSynonymTest, MatrixCompositeSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
-  fact_manager.AddFact(MakeSynonymFact(23, 100, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(25, 100, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(50, 100, { 2 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(23, 100, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(25, 100, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(50, 100, {2}), context.get());
 
   // Replace %23 with %100[0] in '%26 = OpFAdd %7 %23 %25'
-  auto replacement_1 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          23, SpvOpFAdd, 0, 26, 0), MakeDataDescriptor(100, {0}), 101);
+  auto replacement_1 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(23, SpvOpFAdd, 0, 26, 0),
+      MakeDataDescriptor(100, {0}), 101);
   ASSERT_TRUE(replacement_1.IsApplicable(context.get(), fact_manager));
   replacement_1.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %25 with %100[1] in '%26 = OpFAdd %7 %23 %25'
-  auto replacement_2 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          25, SpvOpFAdd, 1, 26, 0), MakeDataDescriptor(100, {1}), 102);
+  auto replacement_2 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(25, SpvOpFAdd, 1, 26, 0),
+      MakeDataDescriptor(100, {1}), 102);
   ASSERT_TRUE(replacement_2.IsApplicable(context.get(), fact_manager));
   replacement_2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -1617,45 +1646,56 @@ TEST(TransformationReplaceIdWithSynonymTest, StructCompositeSynonyms) {
 
   FactManager fact_manager;
 
-  fact_manager.AddFact(MakeSynonymFact(16, 100, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(45, 100, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(27, 101, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(36, 101, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(27, 101, { 2 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(22, 102, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(15, 102, { 1 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(16, 100, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(45, 100, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(27, 101, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(36, 101, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(27, 101, {2}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(22, 102, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(15, 102, {1}), context.get());
 
   // Replace %45 with %100[1] in '%46 = OpCompositeConstruct %32 %35 %45'
-  auto replacement_1 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          45, SpvOpCompositeConstruct, 1, 46, 0), MakeDataDescriptor(100, {1}), 201);
+  auto replacement_1 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(45, SpvOpCompositeConstruct, 1, 46,
+                                          0),
+      MakeDataDescriptor(100, {1}), 201);
   ASSERT_TRUE(replacement_1.IsApplicable(context.get(), fact_manager));
   replacement_1.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Replace second occurrence of %27 with %101[0] in '%28 = OpCompositeConstruct %8 %27 %27'
-  auto replacement_2 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          27, SpvOpCompositeConstruct, 1, 28, 0), MakeDataDescriptor(101, {0}), 202);
+  // Replace second occurrence of %27 with %101[0] in '%28 =
+  // OpCompositeConstruct %8 %27 %27'
+  auto replacement_2 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(27, SpvOpCompositeConstruct, 1, 28,
+                                          0),
+      MakeDataDescriptor(101, {0}), 202);
   ASSERT_TRUE(replacement_2.IsApplicable(context.get(), fact_manager));
   replacement_2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %36 with %101[1] in '%45 = OpCompositeConstruct %31 %36 %41 %44'
-  auto replacement_3 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          36, SpvOpCompositeConstruct, 0, 45, 0), MakeDataDescriptor(101, {1}), 203);
+  auto replacement_3 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(36, SpvOpCompositeConstruct, 0, 45,
+                                          0),
+      MakeDataDescriptor(101, {1}), 203);
   ASSERT_TRUE(replacement_3.IsApplicable(context.get(), fact_manager));
   replacement_3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Replace first occurrence of %27 with %101[2] in '%28 = OpCompositeConstruct %8 %27 %27'
-  auto replacement_4 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          27, SpvOpCompositeConstruct, 0, 28, 0), MakeDataDescriptor(101, {2}), 204);
+  // Replace first occurrence of %27 with %101[2] in '%28 = OpCompositeConstruct
+  // %8 %27 %27'
+  auto replacement_4 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(27, SpvOpCompositeConstruct, 0, 28,
+                                          0),
+      MakeDataDescriptor(101, {2}), 204);
   ASSERT_TRUE(replacement_4.IsApplicable(context.get(), fact_manager));
   replacement_4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %22 with %102[0] in 'OpStore %23 %22'
-  auto replacement_5 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          22, SpvOpStore, 1, 23, 0), MakeDataDescriptor(102, {0}), 205);
+  auto replacement_5 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(22, SpvOpStore, 1, 23, 0),
+      MakeDataDescriptor(102, {0}), 205);
   ASSERT_TRUE(replacement_5.IsApplicable(context.get(), fact_manager));
   replacement_5.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -1860,99 +1900,113 @@ TEST(TransformationReplaceIdWithSynonymTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
-  fact_manager.AddFact(MakeSynonymFact(20, 100, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(54, 100, { 3 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(15, 101, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(19, 101, { 2 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(27, 102, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(15, 102, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(33, 103, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(47, 103, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(42, 104, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(45, 104, { 1 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(38, 105, { 0 }), context.get());
-  fact_manager.AddFact(MakeSynonymFact(46, 105, { 2 }), context.get());
+  fact_manager.AddFact(MakeSynonymFact(20, 100, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(54, 100, {3}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(15, 101, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(19, 101, {2}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(27, 102, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(15, 102, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(33, 103, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(47, 103, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(42, 104, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(45, 104, {1}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(38, 105, {0}), context.get());
+  fact_manager.AddFact(MakeSynonymFact(46, 105, {2}), context.get());
 
   // Replace %20 with %100[0] in '%80 = OpCopyObject %16 %20'
-  auto replacement_1 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          20, SpvOpCopyObject, 0, 80, 0), MakeDataDescriptor(100, {0}), 200);
+  auto replacement_1 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(20, SpvOpCopyObject, 0, 80, 0),
+      MakeDataDescriptor(100, {0}), 200);
   ASSERT_TRUE(replacement_1.IsApplicable(context.get(), fact_manager));
   replacement_1.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %54 with %100[3] in '%56 = OpFOrdNotEqual %30 %54 %55'
-  auto replacement_2 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          54, SpvOpFOrdNotEqual, 0, 56, 0), MakeDataDescriptor(100, {3}), 201);
+  auto replacement_2 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(54, SpvOpFOrdNotEqual, 0, 56, 0),
+      MakeDataDescriptor(100, {3}), 201);
   ASSERT_TRUE(replacement_2.IsApplicable(context.get(), fact_manager));
   replacement_2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %15 with %101[0] in 'OpStore %12 %15'
-  auto replacement_3 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          15, SpvOpStore, 1, 64, 0), MakeDataDescriptor(101, {0}), 202);
+  auto replacement_3 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(15, SpvOpStore, 1, 64, 0),
+      MakeDataDescriptor(101, {0}), 202);
   ASSERT_TRUE(replacement_3.IsApplicable(context.get(), fact_manager));
   replacement_3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %19 with %101[2] in '%81 = OpVectorShuffle %16 %19 %19 0 0 1'
-  auto replacement_4 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          19, SpvOpVectorShuffle, 0, 81, 0), MakeDataDescriptor(101, {2}), 203);
+  auto replacement_4 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(19, SpvOpVectorShuffle, 0, 81, 0),
+      MakeDataDescriptor(101, {2}), 203);
   ASSERT_TRUE(replacement_4.IsApplicable(context.get(), fact_manager));
   replacement_4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Replace %27 with %102[0] in '%82 = OpCompositeConstruct %21 %26 %27 %28 %25'
-  auto replacement_5 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          27, SpvOpCompositeConstruct, 1, 82, 0), MakeDataDescriptor(102, {0}), 204);
+  // Replace %27 with %102[0] in '%82 = OpCompositeConstruct %21 %26 %27 %28
+  // %25'
+  auto replacement_5 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(27, SpvOpCompositeConstruct, 1, 82,
+                                          0),
+      MakeDataDescriptor(102, {0}), 204);
   ASSERT_TRUE(replacement_5.IsApplicable(context.get(), fact_manager));
   replacement_5.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %15 with %102[1] in '%83 = OpCopyObject %10 %15'
-  auto replacement_6 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          15, SpvOpCopyObject, 0, 83, 0), MakeDataDescriptor(102, {1}), 205);
+  auto replacement_6 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(15, SpvOpCopyObject, 0, 83, 0),
+      MakeDataDescriptor(102, {1}), 205);
   ASSERT_TRUE(replacement_6.IsApplicable(context.get(), fact_manager));
   replacement_6.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %33 with %103[0] in '%86 = OpCopyObject %30 %33'
-  auto replacement_7 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          33, SpvOpCopyObject, 0, 86, 0), MakeDataDescriptor(103, {0}), 206);
+  auto replacement_7 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(33, SpvOpCopyObject, 0, 86, 0),
+      MakeDataDescriptor(103, {0}), 206);
   ASSERT_TRUE(replacement_7.IsApplicable(context.get(), fact_manager));
   replacement_7.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %47 with %103[1] in '%84 = OpCopyObject %39 %47'
-  auto replacement_8 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          47, SpvOpCopyObject, 0, 84, 0), MakeDataDescriptor(103, {1}), 207);
+  auto replacement_8 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(47, SpvOpCopyObject, 0, 84, 0),
+      MakeDataDescriptor(103, {1}), 207);
   ASSERT_TRUE(replacement_8.IsApplicable(context.get(), fact_manager));
   replacement_8.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %42 with %104[0] in '%85 = OpCopyObject %30 %42'
-  auto replacement_9 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          42, SpvOpCopyObject, 0, 85, 0), MakeDataDescriptor(104, {0}), 208);
+  auto replacement_9 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(42, SpvOpCopyObject, 0, 85, 0),
+      MakeDataDescriptor(104, {0}), 208);
   ASSERT_TRUE(replacement_9.IsApplicable(context.get(), fact_manager));
   replacement_9.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %45 with %104[1] in '%63 = OpLogicalOr %30 %45 %46'
-  auto replacement_10 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          45, SpvOpLogicalOr, 0, 63, 0), MakeDataDescriptor(104, {1}), 209);
+  auto replacement_10 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(45, SpvOpLogicalOr, 0, 63, 0),
+      MakeDataDescriptor(104, {1}), 209);
   ASSERT_TRUE(replacement_10.IsApplicable(context.get(), fact_manager));
   replacement_10.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %38 with %105[0] in 'OpStore %36 %38'
-  auto replacement_11 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          38, SpvOpStore, 1, 85, 0), MakeDataDescriptor(105, {0}), 210);
+  auto replacement_11 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(38, SpvOpStore, 1, 85, 0),
+      MakeDataDescriptor(105, {0}), 210);
   ASSERT_TRUE(replacement_11.IsApplicable(context.get(), fact_manager));
   replacement_11.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %46 with %105[2] in '%62 = OpLogicalAnd %30 %45 %46'
-  auto replacement_12 = TransformationReplaceIdWithSynonym(transformation::MakeIdUseDescriptor(
-          46, SpvOpLogicalAnd, 1, 62, 0), MakeDataDescriptor(105, {2}), 211);
+  auto replacement_12 = TransformationReplaceIdWithSynonym(
+      transformation::MakeIdUseDescriptor(46, SpvOpLogicalAnd, 1, 62, 0),
+      MakeDataDescriptor(105, {2}), 211);
   ASSERT_TRUE(replacement_12.IsApplicable(context.get(), fact_manager));
   replacement_12.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -2079,7 +2133,6 @@ TEST(TransformationReplaceIdWithSynonymTest, VectorCompositeSynonyms) {
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
-
 
 }  // namespace
 }  // namespace fuzz

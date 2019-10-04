@@ -62,15 +62,22 @@ class TransformationConstructComposite : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
+  // Helper to decide whether the components of the transformation are suitable
+  // for constructing an array of the given type.
+  bool ComponentsForArrayConstructionAreOK(
+      opt::IRContext* context, const opt::analysis::Array& array_type) const;
 
-  bool ComponentsForArrayConstructionAreOK(opt::IRContext* context, const opt::analysis::Array& array_type) const;
+  // Similar, but for matrices.
+  bool ComponentsForMatrixConstructionAreOK(
+      opt::IRContext* context, const opt::analysis::Matrix& matrix_type) const;
 
-  bool ComponentsForMatrixConstructionAreOK(opt::IRContext* context, const opt::analysis::Matrix& matrix_type) const;
+  // Similar, but for structs.
+  bool ComponentsForStructConstructionAreOK(
+      opt::IRContext* context, const opt::analysis::Struct& struct_type) const;
 
-  bool ComponentsForStructConstructionAreOK(opt::IRContext* context, const opt::analysis::Struct& struct_type) const;
-
-  bool ComponentsForVectorConstructionAreOK(opt::IRContext* context, const opt::analysis::Vector& vector_type) const;
-
+  // Similar, but for vectors.
+  bool ComponentsForVectorConstructionAreOK(
+      opt::IRContext* context, const opt::analysis::Vector& vector_type) const;
 
   protobufs::TransformationConstructComposite message_;
 };

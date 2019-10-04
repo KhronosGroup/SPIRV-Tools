@@ -144,19 +144,15 @@ TEST(TransformationConstructCompositeTest, ConstructArrays) {
   FactManager fact_manager;
 
   // Make a vec2[3]
-  TransformationConstructComposite make_vec2_array_length_3(37,
-                                                            { 41, 45, 27 },
-                                                            46,
-                                                            0,
-                                                            200);
+  TransformationConstructComposite make_vec2_array_length_3(37, {41, 45, 27},
+                                                            46, 0, 200);
   // Bad: there are too many components
-  TransformationConstructComposite make_vec2_array_length_3_bad(37,
-                                                            { 41, 45, 27, 27 },
-                                                            46,
-                                                            0,
-                                                            200);
-  ASSERT_TRUE(make_vec2_array_length_3.IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(make_vec2_array_length_3_bad.IsApplicable(context.get(), fact_manager));
+  TransformationConstructComposite make_vec2_array_length_3_bad(
+      37, {41, 45, 27, 27}, 46, 0, 200);
+  ASSERT_TRUE(
+      make_vec2_array_length_3.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      make_vec2_array_length_3_bad.IsApplicable(context.get(), fact_manager));
   make_vec2_array_length_3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 41, 200, {0}));
@@ -164,38 +160,30 @@ TEST(TransformationConstructCompositeTest, ConstructArrays) {
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 27, 200, {2}));
 
   // Make a float[2]
-  TransformationConstructComposite make_float_array_length_2(9,
-                                                            { 24, 40 },
-                                                            71,
-                                                            1,
-                                                            201);
+  TransformationConstructComposite make_float_array_length_2(9, {24, 40}, 71, 1,
+                                                             201);
   // Bad: %41 does not have type float
-  TransformationConstructComposite make_float_array_length_2_bad(9,
-                                                                { 41, 40 },
-                                                                71,
-                                                                1,
-                                                                201);
-  ASSERT_TRUE(make_float_array_length_2.IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(make_float_array_length_2_bad.IsApplicable(context.get(), fact_manager));
+  TransformationConstructComposite make_float_array_length_2_bad(9, {41, 40},
+                                                                 71, 1, 201);
+  ASSERT_TRUE(
+      make_float_array_length_2.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      make_float_array_length_2_bad.IsApplicable(context.get(), fact_manager));
   make_float_array_length_2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 24, 201, {0}));
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 40, 201, {1}));
 
   // Make a bool[3]
-  TransformationConstructComposite make_bool_array_length_3(47,
-                                                             { 33, 50, 50 },
-                                                             33,
-                                                             1,
-                                                             202);
+  TransformationConstructComposite make_bool_array_length_3(47, {33, 50, 50},
+                                                            33, 1, 202);
   // Bad: %54 is not available at the desired program point.
-  TransformationConstructComposite make_bool_array_length_3_bad(47,
-                                                                 { 33, 54, 50 },
-                                                                 33,
-                                                                 1,
-                                                                 202);
-  ASSERT_TRUE(make_bool_array_length_3.IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(make_bool_array_length_3_bad.IsApplicable(context.get(), fact_manager));
+  TransformationConstructComposite make_bool_array_length_3_bad(
+      47, {33, 54, 50}, 33, 1, 202);
+  ASSERT_TRUE(
+      make_bool_array_length_3.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      make_bool_array_length_3_bad.IsApplicable(context.get(), fact_manager));
   make_bool_array_length_3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 33, 202, {0}));
@@ -203,19 +191,15 @@ TEST(TransformationConstructCompositeTest, ConstructArrays) {
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 50, 202, {2}));
 
   // make a uvec3[2][2]
-  TransformationConstructComposite make_uvec3_array_length_2_2(58,
-                                                            { 69, 100 },
-                                                            64,
-                                                            1,
-                                                            203);
+  TransformationConstructComposite make_uvec3_array_length_2_2(58, {69, 100},
+                                                               64, 1, 203);
   // Bad: Offset 100 is too large.
-  TransformationConstructComposite make_uvec3_array_length_2_2_bad(58,
-                                                                { 33, 54 },
-                                                                64,
-                                                                100,
-                                                                203);
-  ASSERT_TRUE(make_uvec3_array_length_2_2.IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(make_uvec3_array_length_2_2_bad.IsApplicable(context.get(), fact_manager));
+  TransformationConstructComposite make_uvec3_array_length_2_2_bad(
+      58, {33, 54}, 64, 100, 203);
+  ASSERT_TRUE(
+      make_uvec3_array_length_2_2.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(make_uvec3_array_length_2_2_bad.IsApplicable(context.get(),
+                                                            fact_manager));
   make_uvec3_array_length_2_2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 69, 203, {0}));
@@ -409,17 +393,9 @@ TEST(TransformationConstructCompositeTest, ConstructMatrices) {
   FactManager fact_manager;
 
   // make a mat3x4
-  TransformationConstructComposite make_mat34(32,
-                                                               { 25, 28, 31 },
-                                                               31,
-                                                               2,
-                                                               200);
+  TransformationConstructComposite make_mat34(32, {25, 28, 31}, 31, 2, 200);
   // Bad: %35 is mat4x3, not mat3x4.
-  TransformationConstructComposite make_mat34_bad(35,
-                                                                   { 25, 28, 31 },
-                                                                   31,
-                                                                   2,
-                                                                   200);
+  TransformationConstructComposite make_mat34_bad(35, {25, 28, 31}, 31, 2, 200);
   ASSERT_TRUE(make_mat34.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(make_mat34_bad.IsApplicable(context.get(), fact_manager));
   make_mat34.Apply(context.get(), &fact_manager);
@@ -429,16 +405,10 @@ TEST(TransformationConstructCompositeTest, ConstructMatrices) {
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 31, 200, {2}));
 
   // make a mat4x3
-  TransformationConstructComposite make_mat43(35,
-                                              { 11, 13, 16, 100 },
-                                              31,
-                                              1,
+  TransformationConstructComposite make_mat43(35, {11, 13, 16, 100}, 31, 1,
                                               201);
   // Bad: %25 does not match the matrix's column type.
-  TransformationConstructComposite make_mat43_bad(35,
-                                                  { 25, 13, 16, 100 },
-                                                  31,
-                                                  1,
+  TransformationConstructComposite make_mat43_bad(35, {25, 13, 16, 100}, 31, 1,
                                                   201);
   ASSERT_TRUE(make_mat43.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(make_mat43_bad.IsApplicable(context.get(), fact_manager));
@@ -622,17 +592,9 @@ TEST(TransformationConstructCompositeTest, ConstructStructs) {
   FactManager fact_manager;
 
   // make an Inner
-  TransformationConstructComposite make_inner(9,
-                                              { 25, 19 },
-                                              57,
-                                              0,
-                                              200);
+  TransformationConstructComposite make_inner(9, {25, 19}, 57, 0, 200);
   // Bad: Too few fields to make the struct.
-  TransformationConstructComposite make_inner_bad(9,
-                                                  { 25 },
-                                                  57,
-                                                  0,
-                                                  200);
+  TransformationConstructComposite make_inner_bad(9, {25}, 57, 0, 200);
   ASSERT_TRUE(make_inner.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(make_inner_bad.IsApplicable(context.get(), fact_manager));
   make_inner.Apply(context.get(), &fact_manager);
@@ -640,18 +602,10 @@ TEST(TransformationConstructCompositeTest, ConstructStructs) {
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 25, 200, {0}));
   ASSERT_TRUE(SynonymFactHolds(fact_manager, 19, 200, {1}));
 
-
   // make an Outer
-  TransformationConstructComposite make_outer(33,
-                                              { 46, 200, 56 },
-                                              200,
-                                              1,
-                                              201);
+  TransformationConstructComposite make_outer(33, {46, 200, 56}, 200, 1, 201);
   // Bad: %200 is not available at the desired program point.
-  TransformationConstructComposite make_outer_bad(33,
-                                                  { 46, 200, 56 },
-                                                  200,
-                                                  0,
+  TransformationConstructComposite make_outer_bad(33, {46, 200, 56}, 200, 0,
                                                   201);
   ASSERT_TRUE(make_outer.IsApplicable(context.get(), fact_manager));
   ASSERT_FALSE(make_outer_bad.IsApplicable(context.get(), fact_manager));

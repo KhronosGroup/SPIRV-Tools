@@ -60,12 +60,15 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
     return false;
   }
 
+  // Does the id use descriptor in the transformation identify an instruction?
   auto use_instruction =
       transformation::FindInstruction(message_.id_use_descriptor(), context);
   if (!use_instruction) {
     return false;
   }
 
+  // Is it legitimate to replace the use identified by the id use descriptor
+  // with a synonym?
   if (!ReplacingUseWithSynonymIsOk(
           context, use_instruction,
           message_.id_use_descriptor().in_operand_index(),
@@ -75,7 +78,8 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
 
   if (message_.fresh_id_for_temporary() == 0) {
     if (!message_.data_descriptor().index().empty()) {
-      // If we have no id to use as a temporary variable, we should not have any indices to extract from.
+      // If we have no id to use as a temporary variable, we should not have any
+      // indices to extract from.
       return false;
     }
   } else {
@@ -84,7 +88,8 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
       return false;
     }
     if (message_.data_descriptor().index_size() != 1) {
-      // At present we support just a single index to allow extracting directly from a composite.
+      // At present we support just a single index to allow extracting directly
+      // from a composite.
       return false;
     }
   }
@@ -98,47 +103,76 @@ void TransformationReplaceIdWithSynonym::Apply(
   auto instruction_to_change =
       transformation::FindInstruction(message_.id_use_descriptor(), context);
 
+  // Ultimately we are going to replace the id use identified in the
+  // transformation with |replacement_id|, which will either be the synonym's
+  // id, or the id of a temporary used to extract the synonym from a composite.
   uint32_t replacement_id;
 
   if (message_.fresh_id_for_temporary()) {
-    auto type_id_of_id_to_be_replaced = context->get_def_use_mgr()->GetDef(message_.id_use_descriptor().id_of_interest())->type_id();
-    auto type_of_id_to_be_replaced = context->get_type_mgr()->GetType(type_id_of_id_to_be_replaced);
-    auto type_of_composite = context->get_type_mgr()->GetType(context->get_def_use_mgr()->GetDef(message_.data_descriptor().object())->type_id());
+    // The transformation having a temporary variable means that we need to
+    // extract the synonym from a composite.
+
+    uint32_t type_id_of_id_to_be_replaced =
+        context->get_def_use_mgr()
+            ->GetDef(message_.id_use_descriptor().id_of_interest())
+            ->type_id();
+    opt::analysis::Type* type_of_id_to_be_replaced =
+        context->get_type_mgr()->GetType(type_id_of_id_to_be_replaced);
+    opt::analysis::Type* type_of_composite = context->get_type_mgr()->GetType(
+        context->get_def_use_mgr()
+            ->GetDef(message_.data_descriptor().object())
+            ->type_id());
+
+    // Intuitively we want to make an OpCompositeExtract instruction, to get the
+    // synonym out of the composite. But in the case of a vector, the synonym
+    // might involve multiple vector indices; e.g. the y and z components of a
+    // vec4 might be synonymous with a vec2, and in that case OpCompositeExtract
+    // doesn't give us what we want; we need to use OpVectorShuffle instead.
     std::unique_ptr<opt::Instruction> new_instruction;
-    if (type_of_composite->AsVector() && type_of_composite->AsVector()->element_type() != type_of_id_to_be_replaced) {
+    if (type_of_composite->AsVector() &&
+        type_of_composite->AsVector()->element_type() !=
+            type_of_id_to_be_replaced) {
+      // We need to extract a vector from inside a vector, so we will need to
+      // use OpVectorShuffle.
+
       assert(type_of_id_to_be_replaced->AsVector());
-      assert(type_of_id_to_be_replaced->AsVector()->element_type() == type_of_composite->AsVector()->element_type());
+      assert(type_of_id_to_be_replaced->AsVector()->element_type() ==
+             type_of_composite->AsVector()->element_type());
       opt::Instruction::OperandList shuffle_operands = {
-              {SPV_OPERAND_TYPE_ID,              {message_.data_descriptor().object()}},
-              {SPV_OPERAND_TYPE_ID,              {message_.data_descriptor().object()}}
-      };
-      for (uint32_t i = 0; i < type_of_id_to_be_replaced->AsVector()->element_count(); i++) {
-        shuffle_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {
-                message_.data_descriptor().index(0) + i}});
+          {SPV_OPERAND_TYPE_ID, {message_.data_descriptor().object()}},
+          {SPV_OPERAND_TYPE_ID, {message_.data_descriptor().object()}}};
+      for (uint32_t i = 0;
+           i < type_of_id_to_be_replaced->AsVector()->element_count(); i++) {
+        shuffle_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                                    {message_.data_descriptor().index(0) + i}});
       }
-      new_instruction = MakeUnique<opt::Instruction>(context, SpvOpVectorShuffle,
-                                                     type_id_of_id_to_be_replaced,
-                                                     message_.fresh_id_for_temporary(), shuffle_operands);
+      new_instruction = MakeUnique<opt::Instruction>(
+          context, SpvOpVectorShuffle, type_id_of_id_to_be_replaced,
+          message_.fresh_id_for_temporary(), shuffle_operands);
     } else {
+      // We are either extracting from a non-vector, or extracting a scalar from
+      // a vector, so we can use OpCompositeExtract.
       opt::Instruction::OperandList extract_operands = {
-              {SPV_OPERAND_TYPE_ID,              {message_.data_descriptor().object()}},
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {
-                                                  message_.data_descriptor().index(0)}}
-      };
-      new_instruction = MakeUnique<opt::Instruction>(context, SpvOpCompositeExtract,
-                                                          type_id_of_id_to_be_replaced,
-                                                          message_.fresh_id_for_temporary(), extract_operands);
+          {SPV_OPERAND_TYPE_ID, {message_.data_descriptor().object()}},
+          {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+           {message_.data_descriptor().index(0)}}};
+      new_instruction = MakeUnique<opt::Instruction>(
+          context, SpvOpCompositeExtract, type_id_of_id_to_be_replaced,
+          message_.fresh_id_for_temporary(), extract_operands);
     }
     instruction_to_change->InsertBefore(std::move(new_instruction));
+
+    // The replacement id is the temporary variable we used to extract the
+    // synonym from a composite.
     replacement_id = message_.fresh_id_for_temporary();
     fuzzerutil::UpdateModuleIdBound(context, replacement_id);
   } else {
+    // The replacement id is the synonym's id.
     replacement_id = message_.data_descriptor().object();
   }
 
   instruction_to_change->SetInOperand(
-      message_.id_use_descriptor().in_operand_index(),
-      {replacement_id});
+      message_.id_use_descriptor().in_operand_index(), {replacement_id});
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 

@@ -65,7 +65,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAdjustingSelectionControl() {
     return chance_of_adjusting_selection_control_;
   }
-  uint32_t GetChanceOfConstructingComposite() { return chance_of_constructing_composite_; }
+  uint32_t GetChanceOfConstructingComposite() {
+    return chance_of_constructing_composite_;
+  }
   uint32_t GetChanceOfCopyingObject() { return chance_of_copying_object_; }
   uint32_t GetChanceOfMovingBlockDown() { return chance_of_moving_block_down_; }
   uint32_t GetChanceOfObfuscatingConstant() {

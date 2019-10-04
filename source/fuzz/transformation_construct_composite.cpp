@@ -67,22 +67,26 @@ bool TransformationConstructComposite::IsApplicable(
       context->get_type_mgr()->GetType(message_.composite_type_id());
 
   if (!fuzzerutil::IsCompositeType(composite_type)) {
+    // The type must actually be a composite.
     return false;
   }
 
-  if (composite_type->AsArray() && !ComponentsForArrayConstructionAreOK(context, *composite_type->AsArray())) {
+  // If the type is an array, matrix, struct or vector, the components need to
+  // be suitable for constructing something of that type.
+  if (composite_type->AsArray() && !ComponentsForArrayConstructionAreOK(
+                                       context, *composite_type->AsArray())) {
     return false;
   }
-
-  if (composite_type->AsMatrix() && !ComponentsForMatrixConstructionAreOK(context, *composite_type->AsMatrix())) {
+  if (composite_type->AsMatrix() && !ComponentsForMatrixConstructionAreOK(
+                                        context, *composite_type->AsMatrix())) {
     return false;
   }
-
-  if (composite_type->AsStruct() && !ComponentsForStructConstructionAreOK(context, *composite_type->AsStruct())) {
+  if (composite_type->AsStruct() && !ComponentsForStructConstructionAreOK(
+                                        context, *composite_type->AsStruct())) {
     return false;
   }
-
-  if (composite_type->AsVector() && !ComponentsForVectorConstructionAreOK(context, *composite_type->AsVector())) {
+  if (composite_type->AsVector() && !ComponentsForVectorConstructionAreOK(
+                                        context, *composite_type->AsVector())) {
     return false;
   }
 
@@ -119,21 +123,27 @@ bool TransformationConstructComposite::IsApplicable(
 
 void TransformationConstructComposite::Apply(opt::IRContext* context,
                                              FactManager* fact_manager) const {
+  // Use the base and offset information from the transformation to determine
+  // where in the module a new instruction should be inserted.
   auto base_instruction =
       context->get_def_use_mgr()->GetDef(message_.base_instruction_id());
   auto destination_block = context->get_instr_block(base_instruction);
   auto insert_before = fuzzerutil::GetIteratorForBaseInstructionAndOffset(
       destination_block, base_instruction, message_.offset());
 
+  // Prepare the input operands for an OpCompositeConstruct instruction.
   opt::Instruction::OperandList in_operands;
   for (auto& component_id : message_.component()) {
     in_operands.push_back({SPV_OPERAND_TYPE_ID, {component_id}});
   }
 
+  // Insert an OpCompositeConstruct instruction.
   insert_before.InsertBefore(MakeUnique<opt::Instruction>(
       context, SpvOpCompositeConstruct, message_.composite_type_id(),
       message_.fresh_id(), in_operands));
 
+  // Inform the fact manager that we now have new synonyms: every component of
+  // the composite is synonymous with the id used to construct that component.
   auto composite_type =
       context->get_type_mgr()->GetType(message_.composite_type_id());
   uint32_t index = 0;
@@ -145,6 +155,8 @@ void TransformationConstructComposite::Apply(opt::IRContext* context,
     fact.mutable_id_synonym_fact()->mutable_data_descriptor()->add_index(index);
     fact_manager->AddFact(fact, context);
     if (composite_type->AsVector()) {
+      // The vector case is a bit fiddly, because one argument to a vector
+      // constructor can cover more than one element.
       auto component_type = context->get_type_mgr()->GetType(
           context->get_def_use_mgr()->GetDef(component)->type_id());
       if (component_type->AsVector()) {
@@ -156,8 +168,9 @@ void TransformationConstructComposite::Apply(opt::IRContext* context,
         index++;
       }
     } else {
-      // The non-vector cases are all easy: the constructor has exactly the same number of arguments as the number
-      // of sub-components, so we can just increment the index.
+      // The non-vector cases are all easy: the constructor has exactly the same
+      // number of arguments as the number of sub-components, so we can just
+      // increment the index.
       index++;
     }
   }
@@ -166,13 +179,16 @@ void TransformationConstructComposite::Apply(opt::IRContext* context,
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
-bool TransformationConstructComposite::ComponentsForArrayConstructionAreOK(opt::IRContext* context, const opt::analysis::Array& array_type) const {
-  if (array_type.length_info().words[0] != opt::analysis::Array::LengthInfo::kConstant) {
+bool TransformationConstructComposite::ComponentsForArrayConstructionAreOK(
+    opt::IRContext* context, const opt::analysis::Array& array_type) const {
+  if (array_type.length_info().words[0] !=
+      opt::analysis::Array::LengthInfo::kConstant) {
     // We only handle constant-sized arrays.
     return false;
   }
   if (array_type.length_info().words.size() != 2) {
-    // We only handle the case where the array size can be captured in a single word.
+    // We only handle the case where the array size can be captured in a single
+    // word.
     return false;
   }
   // Get the array size.
@@ -181,7 +197,8 @@ bool TransformationConstructComposite::ComponentsForArrayConstructionAreOK(opt::
     // The number of components must match the array size.
     return false;
   }
-  // Check that each component is the result id of an instruction whose type is the array's element type.
+  // Check that each component is the result id of an instruction whose type is
+  // the array's element type.
   for (auto component_id : message_.component()) {
     auto inst = context->get_def_use_mgr()->GetDef(component_id);
     if (inst == nullptr || !inst->type_id()) {
@@ -199,12 +216,15 @@ bool TransformationConstructComposite::ComponentsForArrayConstructionAreOK(opt::
   return true;
 }
 
-bool TransformationConstructComposite::ComponentsForMatrixConstructionAreOK(opt::IRContext* context, const opt::analysis::Matrix& matrix_type) const {
-  if (static_cast<uint32_t>(message_.component().size()) != matrix_type.element_count()) {
+bool TransformationConstructComposite::ComponentsForMatrixConstructionAreOK(
+    opt::IRContext* context, const opt::analysis::Matrix& matrix_type) const {
+  if (static_cast<uint32_t>(message_.component().size()) !=
+      matrix_type.element_count()) {
     // The number of components must match the number of columns of the matrix.
     return false;
   }
-  // Check that each component is the result id of an instruction whose type is the matrix's column type.
+  // Check that each component is the result id of an instruction whose type is
+  // the matrix's column type.
   for (auto component_id : message_.component()) {
     auto inst = context->get_def_use_mgr()->GetDef(component_id);
     if (inst == nullptr || !inst->type_id()) {
@@ -222,14 +242,19 @@ bool TransformationConstructComposite::ComponentsForMatrixConstructionAreOK(opt:
   return true;
 }
 
-bool TransformationConstructComposite::ComponentsForStructConstructionAreOK(opt::IRContext* context, const opt::analysis::Struct& struct_type) const {
-  if (static_cast<uint32_t>(message_.component().size()) != struct_type.element_types().size()) {
+bool TransformationConstructComposite::ComponentsForStructConstructionAreOK(
+    opt::IRContext* context, const opt::analysis::Struct& struct_type) const {
+  if (static_cast<uint32_t>(message_.component().size()) !=
+      struct_type.element_types().size()) {
     // The number of components must match the number of fields of the struct.
     return false;
   }
-  // Check that each component is the result id of an instruction those type matches the associated field type.
-  for (uint32_t field_index = 0; field_index < struct_type.element_types().size(); field_index++) {
-    auto inst = context->get_def_use_mgr()->GetDef(message_.component()[field_index]);
+  // Check that each component is the result id of an instruction those type
+  // matches the associated field type.
+  for (uint32_t field_index = 0;
+       field_index < struct_type.element_types().size(); field_index++) {
+    auto inst =
+        context->get_def_use_mgr()->GetDef(message_.component()[field_index]);
     if (inst == nullptr || !inst->type_id()) {
       // The component does not correspond to an instruction with a result
       // type.
@@ -245,7 +270,8 @@ bool TransformationConstructComposite::ComponentsForStructConstructionAreOK(opt:
   return true;
 }
 
-bool TransformationConstructComposite::ComponentsForVectorConstructionAreOK(opt::IRContext* context, const opt::analysis::Vector& vector_type) const {
+bool TransformationConstructComposite::ComponentsForVectorConstructionAreOK(
+    opt::IRContext* context, const opt::analysis::Vector& vector_type) const {
   uint32_t base_element_count = 0;
   auto element_type = vector_type.element_type();
   for (auto& component_id : message_.component()) {

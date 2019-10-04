@@ -89,13 +89,14 @@ bool BlockIsReachableInItsFunction(opt::IRContext* context,
 
 // Determines whether it is OK to insert an instruction with opcode |opcode|
 // before |instruction_in_block|.
-bool CanInsertOpcodeBeforeInstruction(SpvOp opcode,
-        const opt::BasicBlock::iterator& instruction_in_block);
+bool CanInsertOpcodeBeforeInstruction(
+    SpvOp opcode, const opt::BasicBlock::iterator& instruction_in_block);
 
 // Determines whether it is OK to make a synonym of |inst|.
 bool CanMakeSynonymOf(opt::IRContext* ir_context, opt::Instruction* inst);
 
-// TODO comment
+// Determines whether the given type is a composite; that is: an array, matrix,
+// struct or vector.
 bool IsCompositeType(const opt::analysis::Type* type);
 
 }  // namespace fuzzerutil

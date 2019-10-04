@@ -71,7 +71,8 @@ bool TransformationCopyObject::IsApplicable(
     return false;
   }
 
-  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyObject, insert_before)) {
+  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyObject,
+                                                    insert_before)) {
     return false;
   }
 

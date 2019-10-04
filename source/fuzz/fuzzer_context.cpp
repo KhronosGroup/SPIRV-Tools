@@ -58,7 +58,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingDeadContinue);
   chance_of_adjusting_selection_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingSelectionControl);
-  chance_of_constructing_composite_ = ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
+  chance_of_constructing_composite_ =
+      ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_moving_block_down_ =
       ChooseBetweenMinAndMax(kChanceOfMovingBlockDown);
