@@ -308,12 +308,20 @@ int main(int argc, const char** argv) {
   const auto reduction_status = reducer.Run(std::move(binary_in), &binary_out,
                                             reducer_options, validator_options);
 
-  if (reduction_status == spvtools::reduce::Reducer::ReductionResultStatus::
-                              kInitialStateNotInteresting ||
-      !WriteFile<uint32_t>(out_binary_file.c_str(), "wb", binary_out.data(),
+  // Always try to write the output file, even if the reduction failed.
+  if (!WriteFile<uint32_t>(out_binary_file.c_str(), "wb", binary_out.data(),
                            binary_out.size())) {
     return 1;
   }
 
-  return 0;
+  // These are the only successful statuses.
+  switch (reduction_status) {
+    case spvtools::reduce::Reducer::ReductionResultStatus::kComplete:
+    case spvtools::reduce::Reducer::ReductionResultStatus::kReachedStepLimit:
+      return 0;
+    default:
+      break;
+  }
+
+  return 1;
 }
