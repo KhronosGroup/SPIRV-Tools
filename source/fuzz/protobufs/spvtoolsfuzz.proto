@@ -175,6 +175,7 @@ message Transformation {
     TransformationReplaceIdWithSynonym replace_id_with_synonym = 14;
     TransformationSetSelectionControl set_selection_control = 15;
     TransformationConstructComposite construct_composite = 16;
+    TransformationSetLoopControl set_loop_control = 17;
     // Add additional option using the next available number.
   }
 }
@@ -410,6 +411,28 @@ message TransformationReplaceIdWithSynonym {
   uint32 fresh_id_for_temporary = 3;
 }
 
+message TransformationSetLoopControl {
+
+  // A transformation that sets the loop control operand of an OpLoopMerge
+  // instruction.
+
+  // The id of a basic block that should contain OpLoopMerge.
+  uint32 block_id = 1;
+
+  // The value to which the 'loop control' operand should be set.
+  // This must be a legal loop control mask.
+  uint32 loop_control = 2;
+
+  // Provides a peel count value for the loop.  Used if and only if the PeelCount bit is set.  Must be zero if the
+  // PeelCount bit is not set (can still be zero if this bit is set).
+  uint32 peel_count = 3;
+
+  // Provides a partial count value for the loop.  Used if and only if the PartialCount bit is set.  Must be zero if the
+  // PartialCount bit is not set (can still be zero if this bit is set).
+  uint32 partial_count = 4;
+
+}
+
 message TransformationSetSelectionControl {
 
   // A transformation that sets the selection control operand of an
@@ -418,10 +441,10 @@ message TransformationSetSelectionControl {
   // The id of a basic block that should contain OpSelectionMerge.
   uint32 block_id = 1;
 
-  // The value to which the 'selection control' operand should be set.
+  // The value to which the 'loop control' operand should be set.
   // Although technically 'selection control' is a literal mask that can be
   // some combination of 'None', 'Flatten' and 'DontFlatten', the combination
-  // 'Flatten | DontFlatten' does not make sense.
+  // 'Flatten | DontFlatten' does not make sense and is not allowed here.
   uint32 selection_control = 2;
 
 }
