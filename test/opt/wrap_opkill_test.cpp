@@ -250,7 +250,7 @@ TEST_F(WrapOpKillTest, IdBoundOverflow1) {
 OpCapability GeometryStreams
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
-OpExecutionMode %4 OriginUpperLeft
+OpExecutionMode %main OriginUpperLeft
 %2 = OpTypeVoid
 %3 = OpTypeFunction %2
 %bool = OpTypeBool
@@ -291,7 +291,7 @@ TEST_F(WrapOpKillTest, IdBoundOverflow2) {
 OpCapability GeometryStreams
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
-OpExecutionMode %4 OriginUpperLeft
+OpExecutionMode %main OriginUpperLeft
 %2 = OpTypeVoid
 %3 = OpTypeFunction %2
 %bool = OpTypeBool

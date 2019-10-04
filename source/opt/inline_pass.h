@@ -139,6 +139,9 @@ class InlinePass : public Pass {
   // Return true if |func| is a function that can be inlined.
   bool IsInlinableFunction(Function* func);
 
+  // Returns true if |func| contains an OpKill instruction.
+  bool ContainsKill(Function* func) const;
+
   // Update phis in succeeding blocks to point to new last block
   void UpdateSucceedingPhis(
       std::vector<std::unique_ptr<BasicBlock>>& new_blocks);
