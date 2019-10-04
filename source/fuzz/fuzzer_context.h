@@ -62,6 +62,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingDeadContinue() {
     return chance_of_adding_dead_continue_;
   }
+  uint32_t GetChanceOfAdjustingSelectionControl() {
+    return chance_of_adjusting_selection_control_;
+  }
   uint32_t GetChanceOfCopyingObject() { return chance_of_copying_object_; }
   uint32_t GetChanceOfMovingBlockDown() { return chance_of_moving_block_down_; }
   uint32_t GetChanceOfObfuscatingConstant() {
@@ -88,6 +91,7 @@ class FuzzerContext {
   // Keep them in alphabetical order.
   uint32_t chance_of_adding_dead_break_;
   uint32_t chance_of_adding_dead_continue_;
+  uint32_t chance_of_adjusting_selection_control_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_moving_block_down_;
   uint32_t chance_of_obfuscating_constant_;

@@ -38,6 +38,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_add_dead_continues.h
         fuzzer_pass_add_useful_constructs.h
+        fuzzer_pass_adjust_selection_controls.h
         fuzzer_pass_apply_id_synonyms.h
         fuzzer_pass_copy_objects.h
         fuzzer_pass_obfuscate_constants.h
@@ -64,6 +65,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_boolean_constant_with_constant_binary.h
         transformation_replace_constant_with_uniform.h
         transformation_replace_id_with_synonym.h
+        transformation_set_selection_control.h
         transformation_split_block.h
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
@@ -77,6 +79,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_dead_continues.cpp
         fuzzer_pass_add_useful_constructs.cpp
+        fuzzer_pass_adjust_selection_controls.cpp
         fuzzer_pass_apply_id_synonyms.cpp
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_obfuscate_constants.cpp
@@ -102,6 +105,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_boolean_constant_with_constant_binary.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_replace_id_with_synonym.cpp
+        transformation_set_selection_control.cpp
         transformation_split_block.cpp
         uniform_buffer_element_descriptor.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
