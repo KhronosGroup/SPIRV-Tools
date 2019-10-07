@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/opt/ir_context.h"
+
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -19,7 +21,6 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "source/opt/ir_context.h"
 #include "source/opt/pass.h"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
@@ -741,11 +742,11 @@ TEST_F(IRContextTest, AsanErrorTest) {
   context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisDominatorAnalysis);  // Invalidates the
                                                               // CFG analysis
-  dom = context->GetDominatorAnalysis(fun);  // Does *not* recompute the CFG
-                                             // analysis - depends on the now
-                                             // invalid CFG analysis
+  dom = context->GetDominatorAnalysis(
+      fun);  // Recompute the CFG analysis because the Dominator tree uses it.
   auto bb = dom->ImmediateDominator(5);
-  std::cout << bb->id();  // asan complains of use-after-free
+  std::cout
+      << bb->id();  // Make sure asan does not complain about use after free.
 }
 
 }  // namespace
