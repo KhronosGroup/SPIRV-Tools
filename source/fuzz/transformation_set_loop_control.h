@@ -46,6 +46,9 @@ class TransformationSetLoopControl : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
+
+  bool LoopControlBitIsAddedByTransformation(SpvLoopControlMask loop_control_single_bit_mask, uint32_t existing_loop_control_mask) const;
+
   protobufs::TransformationSetLoopControl message_;
 };
 
