@@ -25,8 +25,7 @@ FuzzerPassAdjustLoopControls::FuzzerPassAdjustLoopControls(
         protobufs::TransformationSequence* transformations)
         : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations){};
 
-FuzzerPassAdjustLoopControls::~FuzzerPassAdjustLoopControls() =
-default;
+FuzzerPassAdjustLoopControls::~FuzzerPassAdjustLoopControls() = default;
 
 void FuzzerPassAdjustLoopControls::Apply() {
   // Consider every merge instruction in the module (via looking through all
@@ -39,14 +38,22 @@ void FuzzerPassAdjustLoopControls::Apply() {
           continue;
         }
 
+        // Decide randomly whether to adjust this loop merge.
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfAdjustingLoopControl())) {
           continue;
         }
 
         uint32_t existing_mask = merge_inst->GetSingleWordOperand(TransformationSetLoopControl::kLoopControlMaskInOperandIndex);
+
+        // First, set the new mask to one of None, Unroll or DontUnroll.
         std::vector<uint32_t> basic_masks = { SpvLoopControlMaskNone, SpvLoopControlUnrollMask, SpvLoopControlDontUnrollMask };
         uint32_t new_mask = basic_masks[GetFuzzerContext()->RandomIndex(basic_masks)];
+
+        // For the loop controls that depend on guarantees about what the loop
+        // does, check which of these were present in the existing mask and
+        // randomly decide whether to keep them.  They are just hints, so
+        // removing them should not change the semantics of the module.
         for (auto mask : {
                 SpvLoopControlDependencyInfiniteMask,
                 SpvLoopControlDependencyLengthMask,
@@ -58,14 +65,24 @@ void FuzzerPassAdjustLoopControls::Apply() {
           }
         }
 
+        // We use 0 for peel count and partial count in the case that we choose
+        // not to set these controls.
         uint32_t peel_count = 0;
         uint32_t partial_count = 0;
 
+        // PeelCount and PartialCount are not compatible with DontUnroll, so
+        // we check whether DontUnroll is set.
         if (!(new_mask & SpvLoopControlDontUnrollMask)) {
+          // If PeelCount is supported by this SPIR-V version, randomly choose
+          // whether to set it.  If it was set in the original mask and is not
+          // selected for setting here, that amounts to dropping it.
           if (TransformationSetLoopControl::PeelCountIsSupported(GetIRContext()) && GetFuzzerContext()->ChooseEven()) {
             new_mask |= SpvLoopControlPeelCountMask;
+            // The peel count is chosen randomly - if PeelCount was already set
+            // this will overwrite whatever peel count was previously used.
             peel_count = GetFuzzerContext()->GetRandomLoopControlPeelCount();
           }
+          // Similar, but for PartialCount.
           if (TransformationSetLoopControl::PartialCountIsSupported(GetIRContext()) &&
               GetFuzzerContext()->ChooseEven()) {
             new_mask |= SpvLoopControlPartialCountMask;
