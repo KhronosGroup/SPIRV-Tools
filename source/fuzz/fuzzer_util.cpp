@@ -216,6 +216,13 @@ bool NewEdgeRespectsUseDefDominance(opt::IRContext* context,
     return true;
   }
 
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2919): the
+  //  solution below to determining whether a new edge respects dominance
+  //  rules is incomplete.  Test
+  //  TransformationAddDeadContinueTest::DISABLED_Miscellaneous6 exposes the
+  //  problem.  In practice, this limitation does not bite too often, and the
+  //  worst it does is leads to SPIR-V that spirv-val rejects.
+
   // Let us assume that the module being manipulated is valid according to the
   // rules of the SPIR-V language.
   //
