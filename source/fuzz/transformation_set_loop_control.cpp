@@ -52,7 +52,7 @@ bool TransformationSetLoopControl::IsApplicable(
   // No additional bits should be set.
   assert (!(message_.loop_control() & ~all_loop_control_mask_bits_set));
 
-  auto existing_loop_control_mask = merge_inst->GetSingleWordInOperand(2);
+  auto existing_loop_control_mask = merge_inst->GetSingleWordInOperand(kLoopControlMaskInOperandIndex);
 
   // Check that there is no attempt to set one of the loop controls that requires guarantees to hold.
   for (SpvLoopControlMask mask : {SpvLoopControlDependencyInfiniteMask, SpvLoopControlDependencyLengthMask, SpvLoopControlMinIterationsMask, SpvLoopControlMaxIterationsMask,
@@ -62,17 +62,22 @@ bool TransformationSetLoopControl::IsApplicable(
     }
   }
 
-  if (!(message_.loop_control() & SpvLoopControlPeelCountMask) && message_.peel_count() > 0) {
+  if ((message_.loop_control() & (SpvLoopControlPeelCountMask|SpvLoopControlPartialCountMask)) && !(PeelCountIsSupported(context) && PartialCountIsSupported(context))) {
+    // At least one of PeelCount or PartialCount is used, but the SPIR-V version in question does not support these loop controls.
+    return false;
+  }
+
+  if (message_.peel_count() > 0 && !(message_.loop_control() & SpvLoopControlPeelCountMask)) {
     // Peel count provided, but peel count mask bit not set.
     return false;
   }
 
-  if (!(message_.loop_control() & SpvLoopControlPartialCountMask) && message_.partial_count() > 0) {
+  if (message_.partial_count() > 0 && !(message_.loop_control() & SpvLoopControlPartialCountMask)) {
     // Partial count provided, but partial count mask bit not set.
     return false;
   }
 
-  // We must not be setting both 'don't unroll' and one of 'peel count' or 'partial count'.
+  // We must not set both 'don't unroll' and one of 'peel count' or 'partial count'.
   return !((message_.loop_control() & SpvLoopControlDontUnrollMask) && (message_.loop_control() & (SpvLoopControlPeelCountMask | SpvLoopControlPartialCountMask)));
 
 }
@@ -80,7 +85,7 @@ bool TransformationSetLoopControl::IsApplicable(
 void TransformationSetLoopControl::Apply(opt::IRContext* context,
                                               FactManager* /*unused*/) const {
   auto merge_inst = context->get_instr_block(message_.block_id())->GetMergeInst();
-  auto existing_loop_control_mask = merge_inst->GetSingleWordInOperand(2);
+  auto existing_loop_control_mask = merge_inst->GetSingleWordInOperand(kLoopControlMaskInOperandIndex);
 
   opt::Instruction::OperandList new_operands;
   new_operands.push_back(merge_inst->GetInOperand(0));
@@ -92,7 +97,7 @@ void TransformationSetLoopControl::Apply(opt::IRContext* context,
           SpvLoopControlIterationMultipleMask}) {
     if (existing_loop_control_mask & mask) {
       if (message_.loop_control() & mask) {
-        new_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {merge_inst->GetSingleWordInOperand(3 + literal_index)}});
+        new_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {merge_inst->GetSingleWordInOperand(kLoopControlFirstLiteralInOperandIndex + literal_index)}});
       }
       literal_index++;
     }
@@ -118,6 +123,36 @@ protobufs::Transformation TransformationSetLoopControl::ToMessage() const {
 bool TransformationSetLoopControl::LoopControlBitIsAddedByTransformation(SpvLoopControlMask loop_control_single_bit_mask, uint32_t existing_loop_control_mask) const {
   return
   !(loop_control_single_bit_mask & existing_loop_control_mask) && (loop_control_single_bit_mask & message_.loop_control());
+}
+
+bool TransformationSetLoopControl::PartialCountIsSupported(opt::IRContext* context) {
+  // TODO(afd): We capture the universal environments for which this loop
+  //  control is definitely not supported.  The check should be refined on
+  //  demand for other target environments.
+  switch (context->grammar().target_env()) {
+    case SPV_ENV_UNIVERSAL_1_0:
+    case SPV_ENV_UNIVERSAL_1_1:
+    case SPV_ENV_UNIVERSAL_1_2:
+    case SPV_ENV_UNIVERSAL_1_3:
+      return false;
+    default:
+      return true;
+  }
+}
+
+bool TransformationSetLoopControl::PeelCountIsSupported(opt::IRContext* context) {
+  // TODO(afd): We capture the universal environments for which this loop
+  //  control is definitely not supported.  The check should be refined on
+  //  demand for other target environments.
+  switch (context->grammar().target_env()) {
+    case SPV_ENV_UNIVERSAL_1_0:
+    case SPV_ENV_UNIVERSAL_1_1:
+    case SPV_ENV_UNIVERSAL_1_2:
+    case SPV_ENV_UNIVERSAL_1_3:
+      return false;
+    default:
+      return true;
+  }
 }
 
 }  // namespace fuzz

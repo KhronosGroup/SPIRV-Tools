@@ -705,6 +705,72 @@ TEST(TransformationSetLoopControlTest, VariousScenarios) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 10
+         %17 = OpTypeBool
+         %20 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpIAdd %6 %19 %20
+               OpStore %8 %21
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto consumer = nullptr;
+  const auto context_1_0 = BuildModule(SPV_ENV_UNIVERSAL_1_0, consumer, shader, kFuzzAssembleOption);
+  const auto context_1_1 = BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer, shader, kFuzzAssembleOption);
+  const auto context_1_2 = BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer, shader, kFuzzAssembleOption);
+  const auto context_1_3 = BuildModule(SPV_ENV_UNIVERSAL_1_3, consumer, shader, kFuzzAssembleOption);
+  const auto context_1_4 = BuildModule(SPV_ENV_UNIVERSAL_1_4, consumer, shader, kFuzzAssembleOption);
+  const auto context_1_5 = BuildModule(SPV_ENV_UNIVERSAL_1_5, consumer, shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+
+  TransformationSetLoopControl set_peel_and_partial(10, SpvLoopControlPeelCountMask|SpvLoopControlPartialCountMask, 4, 4);
+
+  // PeelCount and PartialCount were introduced in SPIRV 1.4, so are not valid in the context of older versions.
+  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_0.get(), fact_manager));
+  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_1.get(), fact_manager));
+  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_2.get(), fact_manager));
+  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_3.get(), fact_manager));
+
+  ASSERT_TRUE(set_peel_and_partial.IsApplicable(context_1_4.get(), fact_manager));
+  ASSERT_TRUE(set_peel_and_partial.IsApplicable(context_1_5.get(), fact_manager));
+
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

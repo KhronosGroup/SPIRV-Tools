@@ -25,6 +25,10 @@ namespace fuzz {
 
 class TransformationSetLoopControl : public Transformation {
  public:
+
+  const static uint32_t kLoopControlMaskInOperandIndex = 2;
+  const static uint32_t kLoopControlFirstLiteralInOperandIndex = 3;
+
   explicit TransformationSetLoopControl(
           const protobufs::TransformationSetLoopControl& message);
 
@@ -44,6 +48,13 @@ class TransformationSetLoopControl : public Transformation {
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  // Does the version of SPIR-V being used support the PartialCount loop
+  // control?
+  static bool PartialCountIsSupported(opt::IRContext* context);
+
+  // Does the version of SPIR-V being used support the PeelCount loop control?
+  static bool PeelCountIsSupported(opt::IRContext* context);
 
  private:
 
