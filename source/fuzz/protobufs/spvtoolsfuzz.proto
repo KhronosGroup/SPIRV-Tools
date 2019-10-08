@@ -173,6 +173,7 @@ message Transformation {
     TransformationAddDeadContinue add_dead_continue = 12;
     TransformationCopyObject copy_object = 13;
     TransformationReplaceIdWithSynonym replace_id_with_synonym = 14;
+    TransformationSetSelectionControl set_selection_control = 15;
     // Add additional option using the next available number.
   }
 }
@@ -382,6 +383,22 @@ message TransformationReplaceIdWithSynonym {
   // obtain an element of a vector, provides a fresh id for the temporary;
   // should be set to 0 if no temporary is required
   uint32 fresh_id_for_temporary = 3;
+}
+
+message TransformationSetSelectionControl {
+
+  // A transformation that sets the selection control operand of an
+  // OpSelectionMerge instruction.
+
+  // The id of a basic block that should contain OpSelectionMerge.
+  uint32 block_id = 1;
+
+  // The value to which the 'selection control' operand should be set.
+  // Although technically 'selection control' is a literal mask that can be
+  // some combination of 'None', 'Flatten' and 'DontFlatten', the combination
+  // 'Flatten | DontFlatten' does not make sense.
+  uint32 selection_control = 2;
+
 }
 
 message TransformationSplitBlock {
