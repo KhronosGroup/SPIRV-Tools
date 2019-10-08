@@ -14,14 +14,20 @@
 
 #include "source/reduce/reducer.h"
 
+#include "source/opt/build_module.h"
 #include "source/reduce/operand_to_const_reduction_opportunity_finder.h"
-#include "source/reduce/remove_opname_instruction_reduction_opportunity_finder.h"
 #include "source/reduce/remove_unreferenced_instruction_reduction_opportunity_finder.h"
 #include "test/reduce/reduce_test_util.h"
 
 namespace spvtools {
 namespace reduce {
 namespace {
+
+using opt::BasicBlock;
+using opt::IRContext;
+
+const spv_target_env kEnv = SPV_ENV_UNIVERSAL_1_3;
+const MessageConsumer kMessageConsumer = CLIMessageConsumer;
 
 // This changes its mind each time IsInteresting is invoked as to whether the
 // binary is interesting, until some limit is reached after which the binary is
@@ -55,6 +61,8 @@ class PingPongInteresting {
 };
 
 TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
+  // Check that ExprToConstant and RemoveUnreferenced work together; once some
+  // ID uses have been changed to constants, those IDs can be removed.
   std::string original = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -149,15 +157,6 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %60
                OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-               OpName %16 "buf2"
-               OpMemberName %16 0 "i"
-               OpName %18 ""
-               OpName %25 "buf1"
-               OpMemberName %25 0 "f"
-               OpName %27 ""
-               OpName %60 "_GLF_color"
                OpMemberDecorate %16 0 Offset 0
                OpDecorate %16 Block
                OpDecorate %18 DescriptorSet 0
@@ -174,14 +173,12 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
          %16 = OpTypeStruct %6
          %17 = OpTypePointer Uniform %16
          %18 = OpVariable %17 Uniform
-         %19 = OpTypePointer Uniform %6
          %22 = OpTypeBool
         %100 = OpConstantTrue %22
          %24 = OpTypeFloat 32
          %25 = OpTypeStruct %24
          %26 = OpTypePointer Uniform %25
          %27 = OpVariable %26 Uniform
-         %28 = OpTypePointer Uniform %24
          %31 = OpConstant %24 2
          %56 = OpConstant %6 1
          %58 = OpTypeVector %24 4
@@ -209,8 +206,7 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
                OpFunctionEnd
   )";
 
-  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
-  Reducer reducer(env);
+  Reducer reducer(kEnv);
   PingPongInteresting ping_pong_interesting(10);
   reducer.SetMessageConsumer(NopDiagnostic);
   reducer.SetInterestingnessFunction(
@@ -218,12 +214,13 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
         return ping_pong_interesting.IsInteresting(binary);
       });
   reducer.AddReductionPass(
+      MakeUnique<RemoveUnreferencedInstructionReductionOpportunityFinder>(
+          false));
+  reducer.AddReductionPass(
       MakeUnique<OperandToConstReductionOpportunityFinder>());
-  reducer.AddReductionPass(
-      MakeUnique<RemoveUnreferencedInstructionReductionOpportunityFinder>());
 
   std::vector<uint32_t> binary_in;
-  SpirvTools t(env);
+  SpirvTools t(kEnv);
 
   ASSERT_TRUE(t.Assemble(original, &binary_in, kReduceAssembleOption));
   std::vector<uint32_t> binary_out;
@@ -237,83 +234,7 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
 
   ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
 
-  CheckEqual(env, expected, binary_out);
-}
-
-TEST(ReducerTest, RemoveOpnameAndRemoveUnreferenced) {
-  const std::string original = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main"
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %2 "main"
-               OpName %3 "a"
-               OpName %4 "this-name-counts-as-usage-for-load-instruction"
-          %5 = OpTypeVoid
-          %6 = OpTypeFunction %5
-          %7 = OpTypeFloat 32
-          %8 = OpTypePointer Function %7
-          %9 = OpConstant %7 1
-          %2 = OpFunction %5 None %6
-         %10 = OpLabel
-          %3 = OpVariable %8 Function
-          %4 = OpLoad %7 %3
-               OpStore %3 %9
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  const std::string expected = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main"
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource ESSL 310
-          %5 = OpTypeVoid
-          %6 = OpTypeFunction %5
-          %7 = OpTypeFloat 32
-          %8 = OpTypePointer Function %7
-          %9 = OpConstant %7 1
-          %2 = OpFunction %5 None %6
-         %10 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
-  Reducer reducer(env);
-  // Make ping-pong interesting very quickly, as there are not many
-  // opportunities.
-  PingPongInteresting ping_pong_interesting(1);
-  reducer.SetMessageConsumer(NopDiagnostic);
-  reducer.SetInterestingnessFunction(
-      [&](const std::vector<uint32_t>& binary, uint32_t) -> bool {
-        return ping_pong_interesting.IsInteresting(binary);
-      });
-  reducer.AddReductionPass(
-      MakeUnique<RemoveOpNameInstructionReductionOpportunityFinder>());
-  reducer.AddReductionPass(
-      MakeUnique<RemoveUnreferencedInstructionReductionOpportunityFinder>());
-
-  std::vector<uint32_t> binary_in;
-  SpirvTools t(env);
-
-  ASSERT_TRUE(t.Assemble(original, &binary_in, kReduceAssembleOption));
-  std::vector<uint32_t> binary_out;
-  spvtools::ReducerOptions reducer_options;
-  reducer_options.set_step_limit(500);
-  reducer_options.set_fail_on_validation_error(true);
-  spvtools::ValidatorOptions validator_options;
-
-  Reducer::ReductionResultStatus status = reducer.Run(
-      std::move(binary_in), &binary_out, reducer_options, validator_options);
-
-  ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
-
-  CheckEqual(env, expected, binary_out);
+  CheckEqual(kEnv, expected, binary_out);
 }
 
 }  // namespace
