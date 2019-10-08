@@ -174,6 +174,7 @@ message Transformation {
     TransformationCopyObject copy_object = 13;
     TransformationReplaceIdWithSynonym replace_id_with_synonym = 14;
     TransformationSetSelectionControl set_selection_control = 15;
+    TransformationConstructComposite construct_composite = 16;
     // Add additional option using the next available number.
   }
 }
@@ -315,6 +316,30 @@ message TransformationCopyObject {
 
   // A fresh id for the copied object
   uint32 fresh_id = 4;
+
+}
+
+message TransformationConstructComposite {
+
+  // A transformation that introduces an OpCompositeConstruct instruction to
+  // make a composite object.
+
+  // Id of the type of the composite that is to be constructed
+  uint32 composite_type_id = 1;
+
+  // Ids of the objects that will form the components of the composite
+  repeated uint32 component = 2;
+
+  // The id of an instruction in a block
+  uint32 base_instruction_id = 3;
+
+  // An offset, such that OpCompositeConstruct instruction should be inserted
+  // right before the instruction |offset| instructions after
+  // |base_instruction_id|
+  uint32 offset = 4;
+
+  // A fresh id for the composite object
+  uint32 fresh_id = 5;
 
 }
 

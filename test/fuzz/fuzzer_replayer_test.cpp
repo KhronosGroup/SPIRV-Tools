@@ -21,6 +21,8 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+const uint32_t kNumFuzzerRuns = 20;
+
 // Assembles the given |shader| text, and then runs the fuzzer |num_runs|
 // times, using successive seeds starting from |initial_seed|.  Checks that
 // the binary produced after each fuzzer run is valid, and that replaying
@@ -240,9 +242,9 @@ TEST(FuzzerReplayerTest, Miscellaneous1) {
                OpFunctionEnd
   )";
 
-  // Do 5 fuzzer runs, starting from an initial seed of 0 (seed value chosen
+  // Do some fuzzer runs, starting from an initial seed of 0 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 0, 5);
+  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 0, kNumFuzzerRuns);
 }
 
 TEST(FuzzerReplayerTest, Miscellaneous2) {
@@ -485,9 +487,9 @@ TEST(FuzzerReplayerTest, Miscellaneous2) {
                OpFunctionEnd
   )";
 
-  // Do 5 fuzzer runs, starting from an initial seed of 10 (seed value chosen
+  // Do some fuzzer runs, starting from an initial seed of 10 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 10, 5);
+  RunFuzzerAndReplayer(shader, protobufs::FactSequence(), 10, kNumFuzzerRuns);
 }
 
 TEST(FuzzerReplayerTest, Miscellaneous3) {
@@ -970,9 +972,9 @@ TEST(FuzzerReplayerTest, Miscellaneous3) {
     *facts.mutable_fact()->Add() = temp;
   }
 
-  // Do 5 fuzzer runs, starting from an initial seed of 94 (seed value chosen
+  // Do some fuzzer runs, starting from an initial seed of 94 (seed value chosen
   // arbitrarily).
-  RunFuzzerAndReplayer(shader, facts, 94, 5);
+  RunFuzzerAndReplayer(shader, facts, 94, kNumFuzzerRuns);
 }
 
 }  // namespace
