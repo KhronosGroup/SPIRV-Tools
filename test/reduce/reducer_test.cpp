@@ -206,8 +206,7 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
                OpFunctionEnd
   )";
 
-  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
-  Reducer reducer(env);
+  Reducer reducer(kEnv);
   PingPongInteresting ping_pong_interesting(10);
   reducer.SetMessageConsumer(NopDiagnostic);
   reducer.SetInterestingnessFunction(
@@ -221,7 +220,7 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
       MakeUnique<OperandToConstReductionOpportunityFinder>());
 
   std::vector<uint32_t> binary_in;
-  SpirvTools t(env);
+  SpirvTools t(kEnv);
 
   ASSERT_TRUE(t.Assemble(original, &binary_in, kReduceAssembleOption));
   std::vector<uint32_t> binary_out;
@@ -235,7 +234,7 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
 
   ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
 
-  CheckEqual(env, expected, binary_out);
+  CheckEqual(kEnv, expected, binary_out);
 }
 
 }  // namespace
