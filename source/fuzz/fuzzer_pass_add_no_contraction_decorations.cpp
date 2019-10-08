@@ -43,8 +43,6 @@ void FuzzerPassAddNoContractionDecorations::Apply() {
       }
     }
   }
-
-  assert(false);
 }
 
 }  // namespace fuzz
