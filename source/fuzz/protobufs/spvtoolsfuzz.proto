@@ -23,8 +23,8 @@ package spvtools.fuzz.protobufs;
 
 message IdUseDescriptor {
 
-  // Describes a use of an id as an input operand to an instruction in some block
-  // of a function.
+  // Describes a use of an id as an input operand to an instruction in some
+  // block of a function.
 
   // Example:
   //   - id_of_interest = 42
@@ -167,7 +167,8 @@ message Transformation {
     TransformationAddTypeFloat add_type_float = 6;
     TransformationAddTypeInt add_type_int = 7;
     TransformationAddDeadBreak add_dead_break = 8;
-    TransformationReplaceBooleanConstantWithConstantBinary replace_boolean_constant_with_constant_binary = 9;
+    TransformationReplaceBooleanConstantWithConstantBinary
+      replace_boolean_constant_with_constant_binary = 9;
     TransformationAddTypePointer add_type_pointer = 10;
     TransformationReplaceConstantWithUniform replace_constant_with_uniform = 11;
     TransformationAddDeadContinue add_dead_continue = 12;
@@ -423,12 +424,14 @@ message TransformationSetLoopControl {
   // This must be a legal loop control mask.
   uint32 loop_control = 2;
 
-  // Provides a peel count value for the loop.  Used if and only if the PeelCount bit is set.  Must be zero if the
-  // PeelCount bit is not set (can still be zero if this bit is set).
+  // Provides a peel count value for the loop.  Used if and only if the
+  // PeelCount bit is set.  Must be zero if the PeelCount bit is not set (can
+  // still be zero if this bit is set).
   uint32 peel_count = 3;
 
-  // Provides a partial count value for the loop.  Used if and only if the PartialCount bit is set.  Must be zero if the
-  // PartialCount bit is not set (can still be zero if this bit is set).
+  // Provides a partial count value for the loop.  Used if and only if the
+  // PartialCount bit is set.  Must be zero if the PartialCount bit is not set
+  // (can still be zero if this bit is set).
   uint32 partial_count = 4;
 
 }
@@ -441,7 +444,7 @@ message TransformationSetSelectionControl {
   // The id of a basic block that should contain OpSelectionMerge.
   uint32 block_id = 1;
 
-  // The value to which the 'loop control' operand should be set.
+  // The value to which the 'selection control' operand should be set.
   // Although technically 'selection control' is a literal mask that can be
   // some combination of 'None', 'Flatten' and 'DontFlatten', the combination
   // 'Flatten | DontFlatten' does not make sense and is not allowed here.
