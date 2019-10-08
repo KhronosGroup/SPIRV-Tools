@@ -24,9 +24,9 @@ namespace fuzz {
 class FuzzerPassAdjustLoopControls : public FuzzerPass {
  public:
   FuzzerPassAdjustLoopControls(
-          opt::IRContext* ir_context, FactManager* fact_manager,
-          FuzzerContext* fuzzer_context,
-          protobufs::TransformationSequence* transformations);
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassAdjustLoopControls() override;
 

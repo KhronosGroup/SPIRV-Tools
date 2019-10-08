@@ -25,26 +25,33 @@ namespace fuzz {
 
 class TransformationSetLoopControl : public Transformation {
  public:
-
   const static uint32_t kLoopControlMaskInOperandIndex = 2;
   const static uint32_t kLoopControlFirstLiteralInOperandIndex = 3;
 
   explicit TransformationSetLoopControl(
-          const protobufs::TransformationSetLoopControl& message);
+      const protobufs::TransformationSetLoopControl& message);
 
-  TransformationSetLoopControl(uint32_t block_id,
-                                    uint32_t loop_control, uint32_t peel_count, uint32_t partial_count);
+  TransformationSetLoopControl(uint32_t block_id, uint32_t loop_control,
+                               uint32_t peel_count, uint32_t partial_count);
 
   // - |message_.block_id| must be a block containing an OpLoopMerge
   //   instruction.
-  // - |message_.loop_control| must be a legal loop control mask that does not
-  //   change the number of type of loop control parameters that are already
-  //   present.
+  // - |message_.loop_control| must be a legal loop control mask that
+  //   only uses controls available in the SPIR-V version associated with
+  //   |context|, and must not add loop controls that are only valid in the
+  //   presence of guarantees about what the loop does (e.g. MinIterations).
+  // - |message_.peel_count| (respectively |message_.partial_count|) must be
+  //   zero PeelCount (respectively PartialCount) is set in
+  //   |message_.loop_control|.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
   // - The loop control operand of the OpLoopMergeInstruction in
   //   |message_.block_id| is overwritten with |message_.loop_control|.
+  // - The literals associated with the loop control are updated to reflect any
+  //   controls with associated literals that have been removed (e.g.
+  //   MinIterations), and any that have been added (PeelCount and/or
+  //   PartialCount).
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
@@ -57,8 +64,11 @@ class TransformationSetLoopControl : public Transformation {
   static bool PeelCountIsSupported(opt::IRContext* context);
 
  private:
-
-  bool LoopControlBitIsAddedByTransformation(SpvLoopControlMask loop_control_single_bit_mask, uint32_t existing_loop_control_mask) const;
+  // Returns true if and only if |loop_single_bit_mask| is *not* set in
+  // |existing_loop_control| but *is* set in |message_.loop_control|.
+  bool LoopControlBitIsAddedByTransformation(
+      SpvLoopControlMask loop_control_single_bit_mask,
+      uint32_t existing_loop_control_mask) const;
 
   protobufs::TransformationSetLoopControl message_;
 };
