@@ -30,6 +30,7 @@
 #include "transformation_replace_boolean_constant_with_constant_binary.h"
 #include "transformation_replace_constant_with_uniform.h"
 #include "transformation_replace_id_with_synonym.h"
+#include "transformation_set_selection_control.h"
 #include "transformation_split_block.h"
 
 namespace spvtools {
@@ -76,6 +77,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kReplaceIdWithSynonym:
       return MakeUnique<TransformationReplaceIdWithSynonym>(
           message.replace_id_with_synonym());
+    case protobufs::Transformation::TransformationCase::kSetSelectionControl:
+      return MakeUnique<TransformationSetSelectionControl>(
+          message.set_selection_control());
     case protobufs::Transformation::TransformationCase::kSplitBlock:
       return MakeUnique<TransformationSplitBlock>(message.split_block());
     case protobufs::Transformation::TRANSFORMATION_NOT_SET:

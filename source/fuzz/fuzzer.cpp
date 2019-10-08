@@ -23,6 +23,7 @@
 #include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_continues.h"
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
+#include "source/fuzz/fuzzer_pass_adjust_selection_controls.h"
 #include "source/fuzz/fuzzer_pass_apply_id_synonyms.h"
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
@@ -160,6 +161,15 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
           fuzzer_context.ChoosePercentage(kChanceOfApplyingAnotherPass))) {
     is_first = false;
     passes[fuzzer_context.RandomIndex(passes)]->Apply();
+  }
+
+  // Now apply some passes that it does not make sense to apply repeatedly,
+  // as they do not unlock other passes.
+  if (fuzzer_context.ChooseEven()) {
+    FuzzerPassAdjustSelectionControls(ir_context.get(), &fact_manager,
+                                      &fuzzer_context,
+                                      transformation_sequence_out)
+        .Apply();
   }
 
   // Encode the module as a binary.
