@@ -25,6 +25,7 @@ namespace {
 
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBreak = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadContinue = {5, 80};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingFunctionControl = {20,
                                                                          70};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingLoopControl = {20, 90};
@@ -64,6 +65,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingDeadBreak);
   chance_of_adding_dead_continue_ =
       ChooseBetweenMinAndMax(kChanceOfAddingDeadContinue);
+  chance_of_adding_no_contraction_decoration_ =
+          ChooseBetweenMinAndMax(kChanceOfAddingNoContractionDecoration);
   chance_of_adjusting_function_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingFunctionControl);
   chance_of_adjusting_loop_control_ =
