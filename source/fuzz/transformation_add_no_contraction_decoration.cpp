@@ -19,30 +19,38 @@
 namespace spvtools {
 namespace fuzz {
 
-TransformationAddNoContractionDecoration::TransformationAddNoContractionDecoration(
-        const spvtools::fuzz::protobufs::TransformationAddNoContractionDecoration& message)
-        : message_(message) {}
+TransformationAddNoContractionDecoration::
+    TransformationAddNoContractionDecoration(
+        const spvtools::fuzz::protobufs::
+            TransformationAddNoContractionDecoration& message)
+    : message_(message) {}
 
-TransformationAddNoContractionDecoration::TransformationAddNoContractionDecoration(uint32_t result_id) {
+TransformationAddNoContractionDecoration::
+    TransformationAddNoContractionDecoration(uint32_t result_id) {
   message_.set_result_id(result_id);
 }
 
 bool TransformationAddNoContractionDecoration::IsApplicable(
-        opt::IRContext* context,
-        const spvtools::fuzz::FactManager& /*unused*/) const {
+    opt::IRContext* context,
+    const spvtools::fuzz::FactManager& /*unused*/) const {
+  // |message_.result_id| must be the id of an instruction.
   auto instr = context->get_def_use_mgr()->GetDef(message_.result_id());
   if (!instr) {
     return false;
   }
+  // The instruction must be arithmetic.
   return IsArithmetic(instr->opcode());
 }
 
 void TransformationAddNoContractionDecoration::Apply(
-        opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
-  context->get_decoration_mgr()->AddDecoration(message_.result_id(), SpvDecorationNoContraction);
+    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
+  // Add a NoContraction decoration targeting |message_.result_id|.
+  context->get_decoration_mgr()->AddDecoration(message_.result_id(),
+                                               SpvDecorationNoContraction);
 }
 
-protobufs::Transformation TransformationAddNoContractionDecoration::ToMessage() const {
+protobufs::Transformation TransformationAddNoContractionDecoration::ToMessage()
+    const {
   protobufs::Transformation result;
   *result.mutable_add_no_contraction_decoration() = message_;
   return result;
@@ -97,7 +105,6 @@ bool TransformationAddNoContractionDecoration::IsArithmetic(uint32_t opcode) {
       return false;
   }
 }
-
 
 }  // namespace fuzz
 }  // namespace spvtools

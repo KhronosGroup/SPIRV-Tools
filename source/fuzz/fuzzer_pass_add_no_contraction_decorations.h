@@ -24,14 +24,13 @@ namespace fuzz {
 class FuzzerPassAddNoContractionDecorations : public FuzzerPass {
  public:
   FuzzerPassAddNoContractionDecorations(
-          opt::IRContext* ir_context, FactManager* fact_manager,
-          FuzzerContext* fuzzer_context,
-          protobufs::TransformationSequence* transformations);
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassAddNoContractionDecorations() override;
 
   void Apply() override;
-
 };
 
 }  // namespace fuzz

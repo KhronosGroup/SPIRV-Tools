@@ -56,9 +56,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddDeadContinue:
       return MakeUnique<TransformationAddDeadContinue>(
           message.add_dead_continue());
-    case protobufs::Transformation::TransformationCase::kAddNoContractionDecoration:
+    case protobufs::Transformation::TransformationCase::
+        kAddNoContractionDecoration:
       return MakeUnique<TransformationAddNoContractionDecoration>(
-              message.add_no_contraction_decoration());
+          message.add_no_contraction_decoration());
     case protobufs::Transformation::TransformationCase::kAddTypeBoolean:
       return MakeUnique<TransformationAddTypeBoolean>(
           message.add_type_boolean());

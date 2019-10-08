@@ -26,20 +26,26 @@ namespace fuzz {
 class TransformationAddNoContractionDecoration : public Transformation {
  public:
   explicit TransformationAddNoContractionDecoration(
-          const protobufs::TransformationAddNoContractionDecoration& message);
+      const protobufs::TransformationAddNoContractionDecoration& message);
 
   explicit TransformationAddNoContractionDecoration(uint32_t fresh_id);
 
-  // TODO
+  // - |message_.result_id| must be the result id of an arithmetic instruction,
+  //   as defined by the SPIR-V specification.
+  // - It does not matter whether this instruction is already annotated with the
+  //   NoContraction decoration.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO
+  // Adds a decoration of the form:
+  //   'OpDecoration |message_.result_id| NoContraction'
+  // to the module.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
 
-  // TODO
+  // Returns true if and only if |opcode| is the opcode of an arithmetic
+  // instruction, as defined by the SPIR-V specification.
   static bool IsArithmetic(uint32_t opcode);
 
  private:

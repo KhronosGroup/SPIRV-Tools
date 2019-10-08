@@ -188,9 +188,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
 
   if (fuzzer_context.ChooseEven()) {
     FuzzerPassAddNoContractionDecorations(ir_context.get(), &fact_manager,
-                                      &fuzzer_context,
-                                      transformation_sequence_out)
-            .Apply();
+                                          &fuzzer_context,
+                                          transformation_sequence_out)
+        .Apply();
   }
 
   // Encode the module as a binary.
