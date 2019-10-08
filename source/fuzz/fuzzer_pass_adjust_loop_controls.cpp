@@ -20,10 +20,10 @@ namespace spvtools {
 namespace fuzz {
 
 FuzzerPassAdjustLoopControls::FuzzerPassAdjustLoopControls(
-        opt::IRContext* ir_context, FactManager* fact_manager,
-        FuzzerContext* fuzzer_context,
-        protobufs::TransformationSequence* transformations)
-        : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations){};
+    opt::IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformations)
+    : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations){};
 
 FuzzerPassAdjustLoopControls::~FuzzerPassAdjustLoopControls() = default;
 
@@ -44,22 +44,25 @@ void FuzzerPassAdjustLoopControls::Apply() {
           continue;
         }
 
-        uint32_t existing_mask = merge_inst->GetSingleWordOperand(TransformationSetLoopControl::kLoopControlMaskInOperandIndex);
+        uint32_t existing_mask = merge_inst->GetSingleWordOperand(
+            TransformationSetLoopControl::kLoopControlMaskInOperandIndex);
 
         // First, set the new mask to one of None, Unroll or DontUnroll.
-        std::vector<uint32_t> basic_masks = { SpvLoopControlMaskNone, SpvLoopControlUnrollMask, SpvLoopControlDontUnrollMask };
-        uint32_t new_mask = basic_masks[GetFuzzerContext()->RandomIndex(basic_masks)];
+        std::vector<uint32_t> basic_masks = {SpvLoopControlMaskNone,
+                                             SpvLoopControlUnrollMask,
+                                             SpvLoopControlDontUnrollMask};
+        uint32_t new_mask =
+            basic_masks[GetFuzzerContext()->RandomIndex(basic_masks)];
 
         // For the loop controls that depend on guarantees about what the loop
         // does, check which of these were present in the existing mask and
         // randomly decide whether to keep them.  They are just hints, so
         // removing them should not change the semantics of the module.
-        for (auto mask : {
-                SpvLoopControlDependencyInfiniteMask,
-                SpvLoopControlDependencyLengthMask,
-                SpvLoopControlMinIterationsMask,
-                SpvLoopControlMaxIterationsMask,
-                SpvLoopControlIterationMultipleMask}) {
+        for (auto mask :
+             {SpvLoopControlDependencyInfiniteMask,
+              SpvLoopControlDependencyLengthMask,
+              SpvLoopControlMinIterationsMask, SpvLoopControlMaxIterationsMask,
+              SpvLoopControlIterationMultipleMask}) {
           if ((existing_mask & mask) && GetFuzzerContext()->ChooseEven()) {
             new_mask |= mask;
           }
@@ -76,29 +79,33 @@ void FuzzerPassAdjustLoopControls::Apply() {
           // If PeelCount is supported by this SPIR-V version, randomly choose
           // whether to set it.  If it was set in the original mask and is not
           // selected for setting here, that amounts to dropping it.
-          if (TransformationSetLoopControl::PeelCountIsSupported(GetIRContext()) && GetFuzzerContext()->ChooseEven()) {
+          if (TransformationSetLoopControl::PeelCountIsSupported(
+                  GetIRContext()) &&
+              GetFuzzerContext()->ChooseEven()) {
             new_mask |= SpvLoopControlPeelCountMask;
             // The peel count is chosen randomly - if PeelCount was already set
             // this will overwrite whatever peel count was previously used.
             peel_count = GetFuzzerContext()->GetRandomLoopControlPeelCount();
           }
           // Similar, but for PartialCount.
-          if (TransformationSetLoopControl::PartialCountIsSupported(GetIRContext()) &&
+          if (TransformationSetLoopControl::PartialCountIsSupported(
+                  GetIRContext()) &&
               GetFuzzerContext()->ChooseEven()) {
             new_mask |= SpvLoopControlPartialCountMask;
-            partial_count = GetFuzzerContext()->GetRandomLoopControlPartialCount();
+            partial_count =
+                GetFuzzerContext()->GetRandomLoopControlPartialCount();
           }
         }
 
         // Apply the transformation and add it to the output transformation
         // sequence.
-        TransformationSetLoopControl transformation(
-                block.id(), new_mask, peel_count, partial_count);
+        TransformationSetLoopControl transformation(block.id(), new_mask,
+                                                    peel_count, partial_count);
         assert(transformation.IsApplicable(GetIRContext(), *GetFactManager()) &&
                "Transformation should be applicable by construction.");
         transformation.Apply(GetIRContext(), GetFactManager());
         *GetTransformations()->add_transformation() =
-                transformation.ToMessage();
+            transformation.ToMessage();
       }
     }
   }

@@ -172,9 +172,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // as they do not unlock other passes.
   if (fuzzer_context.ChooseEven()) {
     FuzzerPassAdjustLoopControls(ir_context.get(), &fact_manager,
-                                      &fuzzer_context,
-                                      transformation_sequence_out)
-            .Apply();
+                                 &fuzzer_context, transformation_sequence_out)
+        .Apply();
   }
   if (fuzzer_context.ChooseEven()) {
     FuzzerPassAdjustSelectionControls(ir_context.get(), &fact_manager,

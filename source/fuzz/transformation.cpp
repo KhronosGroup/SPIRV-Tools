@@ -84,7 +84,7 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.replace_id_with_synonym());
     case protobufs::Transformation::TransformationCase::kSetLoopControl:
       return MakeUnique<TransformationSetLoopControl>(
-              message.set_loop_control());
+          message.set_loop_control());
     case protobufs::Transformation::TransformationCase::kSetSelectionControl:
       return MakeUnique<TransformationSetSelectionControl>(
           message.set_selection_control());

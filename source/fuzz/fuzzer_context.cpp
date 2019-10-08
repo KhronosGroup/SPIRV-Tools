@@ -63,7 +63,7 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_adding_dead_continue_ =
       ChooseBetweenMinAndMax(kChanceOfAddingDeadContinue);
   chance_of_adjusting_loop_control_ =
-          ChooseBetweenMinAndMax(kChanceOfAdjustingLoopControl);
+      ChooseBetweenMinAndMax(kChanceOfAdjustingLoopControl);
   chance_of_adjusting_selection_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingSelectionControl);
   chance_of_constructing_composite_ =
