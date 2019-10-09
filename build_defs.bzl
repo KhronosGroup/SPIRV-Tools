@@ -185,7 +185,7 @@ def base_test(name, srcs, deps = []):
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
-        size = "small",
+        size = "large",
         deps = [
             ":test_common",
             "@com_google_googletest//:gtest_main",
@@ -202,7 +202,7 @@ def link_test(name, srcs, deps = []):
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
-        size = "small",
+        size = "large",
         deps = [
             ":link_test_common",
             "@com_google_googletest//:gtest_main",
@@ -219,7 +219,7 @@ def opt_test(name, srcs, deps = []):
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
-        size = "small",
+        size = "large",
         deps = [
             ":opt_test_common",
             "@com_google_googletest//:gtest_main",
@@ -236,7 +236,7 @@ def reduce_test(name, srcs, deps = []):
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
-        size = "small",
+        size = "large",
         deps = [
             ":reduce_test_common",
             ":spirv_tools_reduce",
@@ -254,7 +254,7 @@ def util_test(name, srcs, deps = []):
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS,
-        size = "small",
+        size = "large",
         deps = [
             ":opt_test_common",
             "@com_google_googletest//:gtest_main",
@@ -263,7 +263,7 @@ def util_test(name, srcs, deps = []):
         ] + deps,
     )
 
-def val_test(name, srcs = [], size = "small", copts = [], deps = [], **kwargs):
+def val_test(name, srcs = [], copts = [], deps = [], **kwargs):
     if name[-5:] != "_test":
         name = name + "_test"
     if name[:4] != "val_":
@@ -273,7 +273,7 @@ def val_test(name, srcs = [], size = "small", copts = [], deps = [], **kwargs):
         srcs = srcs,
         compatible_with = [],
         copts = TEST_COPTS + copts,
-        size = size,
+        size = "large",
         deps = [
             ":val_test_common",
             "@com_google_googletest//:gtest_main",
