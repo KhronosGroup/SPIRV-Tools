@@ -507,20 +507,7 @@ base_test(
 ) for f in glob(
     ["test/val/*.cpp"],
     exclude = [
-        "test/val/val_capability_test.cpp", # has its own val_test below.
-        "test/val/val_limits_test.cpp", # has its own val_test below.
         "test/val/pch_test_val.cpp", # pch tests are skipped.
     ],
 )]
 
-val_test(
-    name = "capability",
-    size = "large",
-    srcs = ["test/val/val_capability_test.cpp"],
-)
-
-val_test(
-    name = "limits",
-    size = "large",
-    srcs = ["test/val/val_limits_test.cpp"],
-)
