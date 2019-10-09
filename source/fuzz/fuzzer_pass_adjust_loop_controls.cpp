@@ -58,13 +58,19 @@ void FuzzerPassAdjustLoopControls::Apply() {
         // does, check which of these were present in the existing mask and
         // randomly decide whether to keep them.  They are just hints, so
         // removing them should not change the semantics of the module.
-        for (auto mask :
+        for (auto mask_bit :
              {SpvLoopControlDependencyInfiniteMask,
               SpvLoopControlDependencyLengthMask,
               SpvLoopControlMinIterationsMask, SpvLoopControlMaxIterationsMask,
               SpvLoopControlIterationMultipleMask}) {
-          if ((existing_mask & mask) && GetFuzzerContext()->ChooseEven()) {
-            new_mask |= mask;
+          if ((existing_mask & mask_bit) && GetFuzzerContext()->ChooseEven()) {
+            // The mask bits we are considering are not available in all SPIR-V
+            // versions.  However, we only include a mask bit if it was present
+            // in the original loop control mask, and we work under the
+            // assumption that we are transforming a valid module, thus we don't
+            // need to actually check whether the SPIR-V version being used
+            // supports these loop control mask bits.
+            new_mask |= mask_bit;
           }
         }
 
