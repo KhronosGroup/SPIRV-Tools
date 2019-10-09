@@ -42,10 +42,10 @@ spv_result_t ValidateUndef(ValidationState_t& _, const Instruction* inst) {
 
 spv_result_t ValidateShaderClock(ValidationState_t& _,
                                  const Instruction* inst) {
-  const uint32_t execution_scope = inst->word(3);
-  if (auto error = ValidateExecutionScope(_, inst, execution_scope)) {
-    return error;
-  }
+  // const uint32_t execution_scope = inst->word(3);
+  // if (auto error = ValidateExecutionScope(_, inst, execution_scope)) {
+  //  return error;
+  //}
 
   // Result Type must be a 64 - bit unsigned integer type or
   // a vector of two - components of 32 -
