@@ -64,6 +64,7 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfAdjustingFunctionControl() {
     return chance_of_adjusting_function_control_;
+  }
   uint32_t GetChanceOfAdjustingLoopControl() {
     return chance_of_adjusting_loop_control_;
   }

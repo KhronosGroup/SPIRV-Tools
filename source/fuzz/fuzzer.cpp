@@ -171,21 +171,18 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
 
   // Now apply some passes that it does not make sense to apply repeatedly,
   // as they do not unlock other passes.
-  if (fuzzer_context.ChooseEven()) {
-    FuzzerPassAdjustFunctionControls(ir_context.get(), &fact_manager,
-                                     &fuzzer_context,
-                                     transformation_sequence_out)
-        .Apply();
-  }
-  if (fuzzer_context.ChooseEven()) {
-    FuzzerPassAdjustLoopControls(ir_context.get(), &fact_manager,
-                                 &fuzzer_context, transformation_sequence_out)
-  }
-  if (fuzzer_context.ChooseEven()) {
-    FuzzerPassAdjustSelectionControls(ir_context.get(), &fact_manager,
-                                      &fuzzer_context,
-                                      transformation_sequence_out)
-        .Apply();
+  std::vector<std::unique_ptr<FuzzerPass>> final_passes;
+  MaybeAddPass<FuzzerPassAdjustFunctionControls>(&passes, ir_context.get(),
+                                                 &fact_manager, &fuzzer_context,
+                                                 transformation_sequence_out);
+  MaybeAddPass<FuzzerPassAdjustLoopControls>(&passes, ir_context.get(),
+                                             &fact_manager, &fuzzer_context,
+                                             transformation_sequence_out);
+  MaybeAddPass<FuzzerPassAdjustSelectionControls>(
+      &passes, ir_context.get(), &fact_manager, &fuzzer_context,
+      transformation_sequence_out);
+  for (auto& pass : final_passes) {
+    pass->Apply();
   }
 
   // Encode the module as a binary.
