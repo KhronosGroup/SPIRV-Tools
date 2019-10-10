@@ -3026,6 +3026,7 @@ OpMemoryModel Logical GLSL450
 %undef = OpUndef %bool
 %func = OpFunction %void None %void_fn
 %entry = OpLabel
+OpSelectionMerge %block None
 OpBranchConditional %undef %block %unreachable
 %block = OpLabel
 OpReturn
@@ -3049,6 +3050,7 @@ OpMemoryModel Logical GLSL450
 %undef = OpUndef %int
 %func = OpFunction %void None %void_fn
 %entry = OpLabel
+OpSelectionMerge %block1 None
 OpSwitch %undef %block1 0 %unreachable 1 %block2
 %block1 = OpLabel
 OpReturn

@@ -933,6 +933,51 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     if (_.HasCapability(SpvCapabilityShader)) {
       if (auto error = StructuredControlFlowChecks(_, &function, back_edges))
         return error;
+
+      std::unordered_set<uint32_t> seen;
+      for (auto iter = postorder.rbegin(); iter != postorder.rend(); ++iter) {
+        const auto* block = *iter;
+        seen.insert(block->id());
+        const auto* terminator = block->terminator();
+        if (!terminator) continue;
+        const auto index = terminator - &_.ordered_instructions()[0];
+        auto* merge = &_.ordered_instructions()[index - 1];
+        if (merge->opcode() == SpvOpSelectionMerge) {
+          seen.insert(merge->GetOperandAs<uint32_t>(0));
+        } else if (merge->opcode() == SpvOpLoopMerge) {
+          seen.insert(merge->GetOperandAs<uint32_t>(0));
+          seen.insert(merge->GetOperandAs<uint32_t>(1));
+        } else {
+          merge = nullptr;
+        }
+
+        if (!merge) {
+          if (terminator->opcode() == SpvOpBranchConditional) {
+            const auto true_label = terminator->GetOperandAs<uint32_t>(1);
+            const auto false_label = terminator->GetOperandAs<uint32_t>(2);
+            if (true_label != false_label && !seen.count(true_label) &&
+                !seen.count(false_label)) {
+              return _.diag(SPV_ERROR_INVALID_CFG, terminator)
+                     << "Selection must be structured";
+            }
+          } else if (terminator->opcode() == SpvOpSwitch) {
+            uint32_t count = 0;
+            std::unordered_set<uint32_t> targeted;
+            for (uint32_t i = 1; i < terminator->operands().size(); i += 2) {
+              const auto target = terminator->GetOperandAs<uint32_t>(i);
+              if (targeted.insert(target).second) {
+                if (!seen.count(target)) {
+                  count++;
+                }
+              }
+            }
+            if (count > 1) {
+              return _.diag(SPV_ERROR_INVALID_CFG, terminator)
+                     << "Selection must be structured";
+            }
+          }
+        }
+      }
     }
   }
   return SPV_SUCCESS;
