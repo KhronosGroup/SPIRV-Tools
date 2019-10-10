@@ -417,7 +417,7 @@ message TransformationSetLoopControl {
   // A transformation that sets the loop control operand of an OpLoopMerge
   // instruction.
 
-  // The id of a basic block that should contain OpLoopMerge.
+  // The id of a basic block that should contain OpLoopMerge
   uint32 block_id = 1;
 
   // The value to which the 'loop control' operand should be set.
@@ -441,7 +441,7 @@ message TransformationSetSelectionControl {
   // A transformation that sets the selection control operand of an
   // OpSelectionMerge instruction.
 
-  // The id of a basic block that should contain OpSelectionMerge.
+  // The id of a basic block that should contain OpSelectionMerge
   uint32 block_id = 1;
 
   // The value to which the 'selection control' operand should be set.
