@@ -74,6 +74,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_id_with_synonym.h
         transformation_set_function_control.h
         transformation_set_loop_control.h
+        transformation_set_memory_operands_mask.h
         transformation_set_selection_control.h
         transformation_split_block.h
         uniform_buffer_element_descriptor.h
@@ -123,6 +124,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_id_with_synonym.cpp
         transformation_set_function_control.cpp
         transformation_set_loop_control.cpp
+        transformation_set_memory_operands_mask.cpp
         transformation_set_selection_control.cpp
         transformation_split_block.cpp
         uniform_buffer_element_descriptor.cpp

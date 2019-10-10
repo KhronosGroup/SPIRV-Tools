@@ -37,6 +37,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_replace_id_with_synonym_test.cpp
           transformation_set_function_control_test.cpp
           transformation_set_loop_control_test.cpp
+          transformation_set_memory_operands_mask_test.cpp
           transformation_set_selection_control_test.cpp
           transformation_split_block_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
