@@ -64,6 +64,11 @@ void AddUnreachableEdgeAndUpdateOpPhis(
 bool BlockIsInLoopContinueConstruct(opt::IRContext* context, uint32_t block_id,
                                     uint32_t maybe_loop_header_id);
 
+// If |block| contains |inst|, an iterator for |inst| is returned.
+// Otherwise |block|->end() is returned.
+opt::BasicBlock::iterator GetIteratorForInstruction(
+    opt::BasicBlock* block, const opt::Instruction* inst);
+
 // Requires that |base_inst| is either the label instruction of |block| or an
 // instruction inside |block|.
 //

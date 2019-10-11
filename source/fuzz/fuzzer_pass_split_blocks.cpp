@@ -14,9 +14,10 @@
 
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 
-#include <utility>
+#include <tuple>
 #include <vector>
 
+#include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_split_block.h"
 
 namespace spvtools {
@@ -50,39 +51,51 @@ void FuzzerPassSplitBlocks::Apply() {
       continue;
     }
     // We are going to try to split this block.  We now need to choose where
-    // to split it.  We do this by finding a base instruction that has a
-    // result id, and an offset from that base instruction.  We would like
-    // offsets to be as small as possible and ideally 0 - we only need offsets
-    // because not all instructions can be identified by a result id (e.g.
-    // OpStore instructions cannot).
-    std::vector<std::pair<uint32_t, uint32_t>> base_offset_pairs;
+    // to split it.  We describe the instruction before which we would like to
+    // split a block via the opcode 'opc' of the relevant instruction, a base
+    // instruction 'base' that has a result id, and the number of instructions
+    // with opcode 'opc' that we should skip when searching from 'base' for the
+    // desired instruction.  (When the instruction before which we would like to
+    // split the block actually has a result id, the instruction is used as
+    // base, 'opc' is its opcode, and there are 0 instructions to skip.)
+    std::vector<std::tuple<uint32_t, SpvOp, uint32_t>> base_opcode_skip_triples;
+
     // The initial base instruction is the block label.
     uint32_t base = block->id();
-    uint32_t offset = 0;
+
+    // Counts the number of times we have seen each opcode since we reset the
+    // base instruction.
+    std::map<SpvOp, uint32_t> skip_count;
+
     // Consider every instruction in the block.  The label is excluded: it is
     // only necessary to consider it as a base in case the first instruction
     // in the block does not have a result id.
     for (auto& inst : *block) {
       if (inst.HasResultId()) {
         // In the case that the instruction has a result id, we use the
-        // instruction as its own base, with zero offset.
+        // instruction as its own base, and clear the skip counts we have
+        // collected.
         base = inst.result_id();
-        offset = 0;
-      } else {
-        // The instruction does not have a result id, so we need to identify
-        // it via the latest instruction that did have a result id (base), and
-        // an incremented offset.
-        offset++;
+        skip_count.clear();
       }
-      base_offset_pairs.emplace_back(base, offset);
+      const SpvOp opcode = inst.opcode();
+      base_opcode_skip_triples.emplace_back(
+          base, opcode, skip_count.count(opcode) ? skip_count.at(opcode) : 0);
+      if (!inst.HasResultId()) {
+        skip_count[opcode] =
+            skip_count.count(opcode) ? skip_count.at(opcode) + 1 : 1;
+      }
     }
     // Having identified all the places we might be able to split the block,
     // we choose one of them.
-    auto base_offset =
-        base_offset_pairs[GetFuzzerContext()->RandomIndex(base_offset_pairs)];
-    auto transformation =
-        TransformationSplitBlock(base_offset.first, base_offset.second,
-                                 GetFuzzerContext()->GetFreshId());
+    std::tuple<uint32_t, SpvOp, uint32_t> base_opcode_skip =
+        base_opcode_skip_triples[GetFuzzerContext()->RandomIndex(
+            base_opcode_skip_triples)];
+    auto transformation = TransformationSplitBlock(
+        MakeInstructionDescriptor(std::get<0>(base_opcode_skip),
+                                  std::get<1>(base_opcode_skip),
+                                  std::get<2>(base_opcode_skip)),
+        GetFuzzerContext()->GetFreshId());
     // If the position we have chosen turns out to be a valid place to split
     // the block, we apply the split. Otherwise the block just doesn't get
     // split.
