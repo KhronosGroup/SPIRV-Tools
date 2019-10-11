@@ -24,6 +24,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_constant_scalar_test.cpp
           transformation_add_dead_break_test.cpp
           transformation_add_dead_continue_test.cpp
+          transformation_add_no_contraction_decoration_test.cpp
           transformation_add_type_boolean_test.cpp
           transformation_add_type_float_test.cpp
           transformation_add_type_int_test.cpp
