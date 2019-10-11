@@ -3894,6 +3894,124 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, MissingMergeLoopBreakGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %exit %continue None
+OpBranch %body
+%body = OpLabel
+OpBranchConditional %undef %body2 %exit
+%body2 = OpLabel
+OpBranch %continue
+%continue = OpLabel
+OpBranch %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MissingMergeLoopContinueGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %exit %continue None
+OpBranch %body
+%body = OpLabel
+OpBranchConditional %undef %body2 %continue
+%body2 = OpLabel
+OpBranch %continue
+%continue = OpLabel
+OpBranch %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MissingMergeSwitchBreakGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpSwitch %int_0 %merge 1 %b1
+%b1 = OpLabel
+OpBranchConditional %undef %merge %b2
+%b2 = OpLabel
+OpBranch %merge
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MissingMergeSwitchFallThroughGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpSwitch %int_0 %b1 1 %b2
+%b1 = OpLabel
+OpBranchConditional %undef %b3 %b2
+%b2 = OpLabel
+OpBranch %merge
+%b3 = OpLabel
+OpBranch %merge
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
