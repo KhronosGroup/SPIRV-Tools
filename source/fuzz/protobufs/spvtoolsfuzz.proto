@@ -177,6 +177,7 @@ message Transformation {
     TransformationSetSelectionControl set_selection_control = 15;
     TransformationConstructComposite construct_composite = 16;
     TransformationSetLoopControl set_loop_control = 17;
+    TransformationSetFunctionControl set_function_control = 18;
     // Add additional option using the next available number.
   }
 }
@@ -410,6 +411,19 @@ message TransformationReplaceIdWithSynonym {
   // obtain an element of a vector, provides a fresh id for the temporary;
   // should be set to 0 if no temporary is required
   uint32 fresh_id_for_temporary = 3;
+}
+
+message TransformationSetFunctionControl {
+
+  // A transformation that sets the function control operand of an OpFunction
+  // instruction.
+
+  // The result id of an OpFunction instruction
+  uint32 function_id = 1;
+
+  // The value to which the 'function control' operand should be set.
+  uint32 function_control = 2;
+
 }
 
 message TransformationSetLoopControl {
