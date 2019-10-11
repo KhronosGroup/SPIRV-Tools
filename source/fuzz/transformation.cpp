@@ -30,6 +30,7 @@
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
+#include "source/fuzz/transformation_set_function_control.h"
 #include "source/fuzz/transformation_set_loop_control.h"
 #include "source/fuzz/transformation_set_selection_control.h"
 #include "source/fuzz/transformation_split_block.h"
@@ -82,6 +83,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kReplaceIdWithSynonym:
       return MakeUnique<TransformationReplaceIdWithSynonym>(
           message.replace_id_with_synonym());
+    case protobufs::Transformation::TransformationCase::kSetFunctionControl:
+      return MakeUnique<TransformationSetFunctionControl>(
+          message.set_function_control());
     case protobufs::Transformation::TransformationCase::kSetLoopControl:
       return MakeUnique<TransformationSetLoopControl>(
           message.set_loop_control());
