@@ -85,8 +85,8 @@ void FuzzerPassApplyIdSynonyms::Apply() {
                     : GetFuzzerContext()->GetFreshId();
 
             TransformationReplaceIdWithSynonym replace_id_transformation(
-                transformation::MakeIdUseDescriptorFromUse(
-                    GetIRContext(), use_inst, use_in_operand_index),
+                MakeIdUseDescriptorFromUse(GetIRContext(), use_inst,
+                                           use_in_operand_index),
                 *synonym_to_try, fresh_id_for_temporary);
 
             // The transformation should be applicable by construction.

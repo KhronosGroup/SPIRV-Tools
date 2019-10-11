@@ -21,6 +21,24 @@ syntax = "proto3";
 
 package spvtools.fuzz.protobufs;
 
+message InstructionDescriptor {
+
+  // Describes an instruction in some block of a function with respect to a
+  // base instruction.
+
+  // The id of an instruction after which the instruction being described is
+  // believed to be located.  It might be the using instruction itself.
+  uint32 base_instruction_result_id = 1;
+
+  // The opcode for the instruction being described.
+  uint32 target_instruction_opcode = 2;
+
+  // The number of matching opcodes to skip over when searching from the base
+  // instruction to the instruction being described.
+  uint32 num_opcodes_to_ignore = 3;
+
+}
+
 message IdUseDescriptor {
 
   // Describes a use of an id as an input operand to an instruction in some
@@ -28,10 +46,12 @@ message IdUseDescriptor {
 
   // Example:
   //   - id_of_interest = 42
-  //   - target_instruction_opcode = OpStore
+  //   - enclosing_instruction = (
+  //         base_instruction_result_id = 50,
+  //         target_instruction_opcode = OpStore
+  //         num_opcodes_to_ignore = 7
+  //     )
   //   - in_operand_index = 1
-  //   - base_instruction_result_id = 50
-  //   - num_opcodes_to_ignore = 7
   // represents a use of id 42 as input operand 1 to an OpStore instruction,
   // such that the OpStore instruction can be found in the same basic block as
   // the instruction with result id 50, and in particular is the 8th OpStore
@@ -41,19 +61,10 @@ message IdUseDescriptor {
   // An id that we would like to be able to find a use of.
   uint32 id_of_interest = 1;
 
-  // The opcode for the instruction that uses the id.
-  uint32 target_instruction_opcode = 2;
-
   // The input operand index at which the use is expected.
+  InstructionDescriptor enclosing_instruction = 2;
+
   uint32 in_operand_index = 3;
-
-  // The id of an instruction after which the instruction that contains the use
-  // is believed to occur; it might be the using instruction itself.
-  uint32 base_instruction_result_id = 4;
-
-  // The number of matching opcodes to skip over when searching for the using
-  // instruction from the base instruction.
-  uint32 num_opcodes_to_ignore = 5;
 
 }
 

@@ -62,7 +62,7 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
 
   // Does the id use descriptor in the transformation identify an instruction?
   auto use_instruction =
-      transformation::FindInstruction(message_.id_use_descriptor(), context);
+      FindInstructionContainingUse(message_.id_use_descriptor(), context);
   if (!use_instruction) {
     return false;
   }
@@ -101,7 +101,7 @@ void TransformationReplaceIdWithSynonym::Apply(
     spvtools::opt::IRContext* context,
     spvtools::fuzz::FactManager* /*unused*/) const {
   auto instruction_to_change =
-      transformation::FindInstruction(message_.id_use_descriptor(), context);
+      FindInstructionContainingUse(message_.id_use_descriptor(), context);
 
   // Ultimately we are going to replace the id use identified in the
   // transformation with |replacement_id|, which will either be the synonym's

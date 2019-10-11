@@ -50,6 +50,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
         id_use_descriptor.h
+        instruction_descriptor.h
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
@@ -99,6 +100,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_split_blocks.cpp
         fuzzer_util.cpp
         id_use_descriptor.cpp
+        instruction_descriptor.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
         replayer.cpp
