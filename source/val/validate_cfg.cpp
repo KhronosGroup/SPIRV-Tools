@@ -590,6 +590,9 @@ spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
   return SPV_SUCCESS;
 }
 
+// Validates that all CFG divergences (i.e. conditional branch or switch) are
+// structured correctly. Either divergence is preceded by a merge instruction
+// or the divergence introduces at most one unseen label.
 spv_result_t ValidateStructuredSelections(
     ValidationState_t& _, const std::vector<const BasicBlock*>& postorder) {
   std::unordered_set<uint32_t> seen;
