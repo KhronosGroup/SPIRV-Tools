@@ -3750,7 +3750,149 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-/// TODO(umar): Nested CFG constructs
+TEST_F(ValidateCFG, MissingMergeConditionalBranchBad) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranchConditional %undef %then %else
+%then = OpLabel
+OpReturn
+%else = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Selection must be structured"));
+}
+
+TEST_F(ValidateCFG, MissingMergeSwitchBad) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%undef = OpUndef %int
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSwitch %undef %then 0 %else
+%then = OpLabel
+OpReturn
+%else = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Selection must be structured"));
+}
+
+TEST_F(ValidateCFG, MissingMergeOneBranchToMergeGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %b3 None
+OpBranchConditional %undef %b1 %b2
+%b1 = OpLabel
+OpBranchConditional %undef %b2 %b3
+%b2 = OpLabel
+OpBranch %b3
+%b3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MissingMergeSameTargetConditionalBranchGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranchConditional %undef %then %then
+%then = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MissingMergeOneTargetSwitchGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%undef = OpUndef %int
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSwitch %undef %then 0 %then 1 %then
+%then = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MissingMergeOneUnseenTargetSwitchGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%undef_int = OpUndef %int
+%bool = OpTypeBool
+%undef_bool = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %undef_bool %merge %b1
+%b1 = OpLabel
+OpSwitch %undef_int %b2 0 %b2 1 %merge 2 %b2
+%b2 = OpLabel
+OpBranch %merge
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
 
 }  // namespace
 }  // namespace val

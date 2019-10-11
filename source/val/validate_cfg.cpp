@@ -951,30 +951,30 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           merge = nullptr;
         }
 
-        if (!merge) {
-          if (terminator->opcode() == SpvOpBranchConditional) {
-            const auto true_label = terminator->GetOperandAs<uint32_t>(1);
-            const auto false_label = terminator->GetOperandAs<uint32_t>(2);
-            if (true_label != false_label && !seen.count(true_label) &&
-                !seen.count(false_label)) {
-              return _.diag(SPV_ERROR_INVALID_CFG, terminator)
-                     << "Selection must be structured";
-            }
-          } else if (terminator->opcode() == SpvOpSwitch) {
-            uint32_t count = 0;
-            std::unordered_set<uint32_t> targeted;
-            for (uint32_t i = 1; i < terminator->operands().size(); i += 2) {
-              const auto target = terminator->GetOperandAs<uint32_t>(i);
-              if (targeted.insert(target).second) {
-                if (!seen.count(target)) {
-                  count++;
-                }
+        if (merge || !block->reachable()) continue;
+
+        if (terminator->opcode() == SpvOpBranchConditional) {
+          const auto true_label = terminator->GetOperandAs<uint32_t>(1);
+          const auto false_label = terminator->GetOperandAs<uint32_t>(2);
+          if (true_label != false_label && !seen.count(true_label) &&
+              !seen.count(false_label)) {
+            return _.diag(SPV_ERROR_INVALID_CFG, terminator)
+                   << "Selection must be structured";
+          }
+        } else if (terminator->opcode() == SpvOpSwitch) {
+          uint32_t count = 0;
+          std::unordered_set<uint32_t> targeted;
+          for (uint32_t i = 1; i < terminator->operands().size(); i += 2) {
+            const auto target = terminator->GetOperandAs<uint32_t>(i);
+            if (targeted.insert(target).second) {
+              if (!seen.count(target)) {
+                count++;
               }
             }
-            if (count > 1) {
-              return _.diag(SPV_ERROR_INVALID_CFG, terminator)
-                     << "Selection must be structured";
-            }
+          }
+          if (count > 1) {
+            return _.diag(SPV_ERROR_INVALID_CFG, terminator)
+                   << "Selection must be structured";
           }
         }
       }
