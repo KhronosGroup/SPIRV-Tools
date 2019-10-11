@@ -178,6 +178,7 @@ message Transformation {
     TransformationConstructComposite construct_composite = 16;
     TransformationSetLoopControl set_loop_control = 17;
     TransformationSetFunctionControl set_function_control = 18;
+    TransformationAddNoContractionDecoration add_no_contraction_decoration = 19;
     // Add additional option using the next available number.
   }
 }
@@ -247,6 +248,15 @@ message TransformationAddDeadContinue {
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
   repeated uint32 phi_id = 3;
+
+}
+
+message TransformationAddNoContractionDecoration {
+
+  // Applies OpDecorate NoContraction to the given result id
+
+  // Result id to be decorated
+  uint32 result_id = 1;
 
 }
 
