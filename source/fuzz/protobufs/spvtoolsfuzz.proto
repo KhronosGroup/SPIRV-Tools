@@ -331,15 +331,12 @@ message TransformationCopyObject {
   // Id of the object to be copied
   uint32 object = 1;
 
-  // The id of an instruction in a block
-  uint32 base_instruction_id = 2;
-
-  // An offset, such that OpCopyObject instruction should be inserted right
-  // before the instruction |offset| instructions after |base_instruction_id|
-  uint32 offset = 3;
+  // A descriptor for an instruction in a block before which the new
+  // OpCopyObject instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 2;
 
   // A fresh id for the copied object
-  uint32 fresh_id = 4;
+  uint32 fresh_id = 3;
 
 }
 
@@ -354,16 +351,12 @@ message TransformationConstructComposite {
   // Ids of the objects that will form the components of the composite
   repeated uint32 component = 2;
 
-  // The id of an instruction in a block
-  uint32 base_instruction_id = 3;
-
-  // An offset, such that OpCompositeConstruct instruction should be inserted
-  // right before the instruction |offset| instructions after
-  // |base_instruction_id|
-  uint32 offset = 4;
+  // A descriptor for an instruction in a block before which the new
+  // OpCompositeConstruct instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 3;
 
   // A fresh id for the composite object
-  uint32 fresh_id = 5;
+  uint32 fresh_id = 4;
 
 }
 
