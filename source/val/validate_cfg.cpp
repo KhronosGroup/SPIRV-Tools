@@ -606,6 +606,7 @@ spv_result_t ValidateStructuredSelections(
       seen.insert(merge->GetOperandAs<uint32_t>(0));
       seen.insert(merge->GetOperandAs<uint32_t>(1));
     } else {
+      // Only track the pointer if it is a merge instruction.
       merge = nullptr;
     }
 
