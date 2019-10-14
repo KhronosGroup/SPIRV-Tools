@@ -849,6 +849,10 @@ Optimizer::PassToken CreateWrapOpKillPass();
 // capabilities.
 Optimizer::PassToken CreateAmdExtToKhrPass();
 
+// Create a pass that will fuse floating point multiply+add pairs to avoid
+// reassociation of instructions.
+Optimizer::PassToken CreateFusedMultiplyAddPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

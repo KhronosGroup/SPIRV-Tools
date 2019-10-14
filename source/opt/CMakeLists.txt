@@ -50,6 +50,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
   function.h
+  fused_multiply_add_pass.h
   generate_webgpu_initializers_pass.h
   graphics_robust_access_pass.h
   if_conversion.h
@@ -156,6 +157,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   function.cpp
+  fused_multiply_add_pass.cpp
   graphics_robust_access_pass.cpp
   generate_webgpu_initializers_pass.cpp
   if_conversion.cpp

@@ -499,6 +499,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateWrapOpKillPass());
   } else if (pass_name == "amd-ext-to-khr") {
     RegisterPass(CreateAmdExtToKhrPass());
+  } else if (pass_name == "fused-multiply-add") {
+    RegisterPass(CreateFusedMultiplyAddPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -938,6 +940,11 @@ Optimizer::PassToken CreateWrapOpKillPass() {
 Optimizer::PassToken CreateAmdExtToKhrPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::AmdExtensionToKhrPass>());
+}
+
+Optimizer::PassToken CreateFusedMultiplyAddPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::FusedMultiplyAddPass>());
 }
 
 }  // namespace spvtools
