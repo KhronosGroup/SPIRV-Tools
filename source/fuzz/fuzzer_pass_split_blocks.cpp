@@ -14,7 +14,6 @@
 
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 
-#include <tuple>
 #include <vector>
 
 #include "source/fuzz/instruction_descriptor.h"
@@ -50,15 +49,16 @@ void FuzzerPassSplitBlocks::Apply() {
       // We are not going to try to split this block.
       continue;
     }
+
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2964): consider
+    //  taking a simpler approach to identifying the instruction before which
+    //  to split a block.
+
     // We are going to try to split this block.  We now need to choose where
     // to split it.  We describe the instruction before which we would like to
-    // split a block via the opcode 'opc' of the relevant instruction, a base
-    // instruction 'base' that has a result id, and the number of instructions
-    // with opcode 'opc' that we should skip when searching from 'base' for the
-    // desired instruction.  (When the instruction before which we would like to
-    // split the block actually has a result id, the instruction is used as
-    // base, 'opc' is its opcode, and there are 0 instructions to skip.)
-    std::vector<std::tuple<uint32_t, SpvOp, uint32_t>> base_opcode_skip_triples;
+    // split a block via an InstructionDescriptor, details of which are
+    // commented in the protobufs definition file.
+    std::vector<protobufs::InstructionDescriptor> instruction_descriptors;
 
     // The initial base instruction is the block label.
     uint32_t base = block->id();
@@ -79,8 +79,8 @@ void FuzzerPassSplitBlocks::Apply() {
         skip_count.clear();
       }
       const SpvOp opcode = inst.opcode();
-      base_opcode_skip_triples.emplace_back(
-          base, opcode, skip_count.count(opcode) ? skip_count.at(opcode) : 0);
+      instruction_descriptors.emplace_back(MakeInstructionDescriptor(
+          base, opcode, skip_count.count(opcode) ? skip_count.at(opcode) : 0));
       if (!inst.HasResultId()) {
         skip_count[opcode] =
             skip_count.count(opcode) ? skip_count.at(opcode) + 1 : 1;
@@ -88,13 +88,9 @@ void FuzzerPassSplitBlocks::Apply() {
     }
     // Having identified all the places we might be able to split the block,
     // we choose one of them.
-    std::tuple<uint32_t, SpvOp, uint32_t> base_opcode_skip =
-        base_opcode_skip_triples[GetFuzzerContext()->RandomIndex(
-            base_opcode_skip_triples)];
     auto transformation = TransformationSplitBlock(
-        MakeInstructionDescriptor(std::get<0>(base_opcode_skip),
-                                  std::get<1>(base_opcode_skip),
-                                  std::get<2>(base_opcode_skip)),
+        instruction_descriptors[GetFuzzerContext()->RandomIndex(
+            instruction_descriptors)],
         GetFuzzerContext()->GetFreshId());
     // If the position we have chosen turns out to be a valid place to split
     // the block, we apply the split. Otherwise the block just doesn't get
