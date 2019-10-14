@@ -170,6 +170,16 @@ bool BlockIsInLoopContinueConstruct(opt::IRContext* context, uint32_t block_id,
   return false;
 }
 
+opt::BasicBlock::iterator GetIteratorForInstruction(
+    opt::BasicBlock* block, const opt::Instruction* inst) {
+  for (auto inst_it = block->begin(); inst_it != block->end(); ++inst_it) {
+    if (inst == &*inst_it) {
+      return inst_it;
+    }
+  }
+  return block->end();
+}
+
 opt::BasicBlock::iterator GetIteratorForBaseInstructionAndOffset(
     opt::BasicBlock* block, const opt::Instruction* base_inst,
     uint32_t offset) {
