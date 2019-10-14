@@ -206,6 +206,27 @@ else()
   endmacro()
 endif()
 
+if(ENABLE_SPIRV_TOOLS_INSTALL)
+  if(WIN32)
+    macro(spvtools_config_package_dir TARGET PATH)
+      set(${PATH} ${TARGET}/cmake)
+    endmacro()
+  else()
+    macro(spvtools_config_package_dir TARGET PATH)
+      set(${PATH} lib/cmake/${TARGET})
+    endmacro()
+  endif()
+
+  macro(spvtools_generate_config_file TARGET)
+    file(WRITE ${CMAKE_BINARY_DIR}/${TARGET}Config.cmake
+      "include(CMakeFindDependencyMacro)\n"
+      "find_dependency(${SPIRV_TOOLS})\n"
+      "include(\${CMAKE_CURRENT_LIST_DIR}/${TARGET}Targets.cmake)\n"
+      "set(${TARGET}_LIBRARIES ${TARGET})\n"
+      "get_target_property(${TARGET}_INCLUDE_DIRS ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)\n")
+  endmacro()
+endif()
+
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
   "Skip building the executable and tests along with the library"
