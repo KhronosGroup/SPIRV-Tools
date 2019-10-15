@@ -28,8 +28,9 @@ class TransformationSetMemoryOperandsMask : public Transformation {
   explicit TransformationSetMemoryOperandsMask(
       const protobufs::TransformationSetMemoryOperandsMask& message);
 
-  TransformationSetMemoryOperandsMask(uint32_t memory_access_id, uint32_t
-  memory_operands_mask, uint32_t memory_operands_mask_index);
+  TransformationSetMemoryOperandsMask(
+      const protobufs::InstructionDescriptor& memory_access_instruction,
+      uint32_t memory_operands_mask, uint32_t memory_operands_mask_index);
 
   // TODO comment
   bool IsApplicable(opt::IRContext* context,

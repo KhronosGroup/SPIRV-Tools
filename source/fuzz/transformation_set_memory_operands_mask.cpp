@@ -18,12 +18,14 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationSetMemoryOperandsMask::TransformationSetMemoryOperandsMask(
-    const spvtools::fuzz::protobufs::TransformationSetMemoryOperandsMask& message)
+    const spvtools::fuzz::protobufs::TransformationSetMemoryOperandsMask&
+        message)
     : message_(message) {}
 
-TransformationSetMemoryOperandsMask::TransformationSetMemoryOperandsMask(uint32_t memory_access_id, uint32_t
-        memory_operands_mask, uint32_t memory_operands_mask_index) {
-  message_.set_memory_access_id(memory_access_id);
+TransformationSetMemoryOperandsMask::TransformationSetMemoryOperandsMask(
+    const protobufs::InstructionDescriptor& memory_access_instruction,
+    uint32_t memory_operands_mask, uint32_t memory_operands_mask_index) {
+  *message_.mutable_memory_access_instruction() = memory_access_instruction;
   message_.set_memory_operands_mask(memory_operands_mask);
   message_.set_memory_operands_mask_index(memory_operands_mask_index);
 }
@@ -36,11 +38,13 @@ bool TransformationSetMemoryOperandsMask::IsApplicable(
 }
 
 void TransformationSetMemoryOperandsMask::Apply(
-    opt::IRContext* /*context*/, spvtools::fuzz::FactManager* /*unused*/) const {
+    opt::IRContext* /*context*/,
+    spvtools::fuzz::FactManager* /*unused*/) const {
   assert(false && "Not implemented yet");
 }
 
-protobufs::Transformation TransformationSetMemoryOperandsMask::ToMessage() const {
+protobufs::Transformation TransformationSetMemoryOperandsMask::ToMessage()
+    const {
   protobufs::Transformation result;
   *result.mutable_set_memory_operands_mask() = message_;
   return result;

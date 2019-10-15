@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_set_memory_operands_mask.h"
+#include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -92,7 +93,72 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
 
   FactManager fact_manager;
 
-  // TODO - add test content
+  // Not OK to remove Aligned
+  ASSERT_FALSE(TransformationSetMemoryOperandsMask(
+                   MakeInstructionDescriptor(147, SpvOpLoad, 0),
+                   SpvMemoryAccessVolatileMask | SpvMemoryAccessNontemporalMask,
+                   0)
+                   .IsApplicable(context.get(), fact_manager));
+
+  TransformationSetMemoryOperandsMask transformation1(
+      MakeInstructionDescriptor(147, SpvOpLoad, 0),
+      SpvMemoryAccessAlignedMask | SpvMemoryAccessVolatileMask, 0);
+  ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
+  transformation1.Apply(context.get(), &fact_manager);
+
+  // Not OK to remove Aligned
+  ASSERT_FALSE(TransformationSetMemoryOperandsMask(
+                   MakeInstructionDescriptor(21, SpvOpCopyMemory, 0),
+                   SpvMemoryAccessMaskNone, 0)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // OK: leaves the mask as is
+  ASSERT_TRUE(TransformationSetMemoryOperandsMask(
+                  MakeInstructionDescriptor(21, SpvOpCopyMemory, 0),
+                  SpvMemoryAccessAlignedMask, 0)
+                  .IsApplicable(context.get(), fact_manager));
+
+  // OK: adds Nontemporal and Volatile
+  TransformationSetMemoryOperandsMask transformation2(
+      MakeInstructionDescriptor(21, SpvOpCopyMemory, 0),
+      SpvMemoryAccessAlignedMask | SpvMemoryAccessNontemporalMask |
+          SpvMemoryAccessVolatileMask,
+      0);
+  ASSERT_TRUE(transformation2.IsApplicable(context.get(), fact_manager));
+  transformation2.Apply(context.get(), &fact_manager);
+
+  // Not OK to remove Volatile
+  ASSERT_FALSE(TransformationSetMemoryOperandsMask(
+                   MakeInstructionDescriptor(21, SpvOpCopyMemory, 1),
+                   SpvMemoryAccessNontemporalMask, 0)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // Not OK to add Aligned
+  ASSERT_FALSE(TransformationSetMemoryOperandsMask(
+                   MakeInstructionDescriptor(21, SpvOpCopyMemory, 1),
+                   SpvMemoryAccessAlignedMask | SpvMemoryAccessVolatileMask, 0)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // OK: adds Nontemporal
+  TransformationSetMemoryOperandsMask transformation3(
+      MakeInstructionDescriptor(21, SpvOpCopyMemory, 1),
+      SpvMemoryAccessNontemporalMask | SpvMemoryAccessVolatileMask, 0);
+  ASSERT_TRUE(transformation3.IsApplicable(context.get(), fact_manager));
+  transformation3.Apply(context.get(), &fact_manager);
+
+  // OK: adds Nontemporal and Volatile
+  TransformationSetMemoryOperandsMask transformation4(
+      MakeInstructionDescriptor(138, SpvOpCopyMemory, 0),
+      SpvMemoryAccessNontemporalMask | SpvMemoryAccessVolatileMask, 0);
+  ASSERT_TRUE(transformation4.IsApplicable(context.get(), fact_manager));
+  transformation4.Apply(context.get(), &fact_manager);
+
+  // OK: removes Nontemporal, adds Volatile
+  TransformationSetMemoryOperandsMask transformation5(
+      MakeInstructionDescriptor(148, SpvOpStore, 0),
+      SpvMemoryAccessVolatileMask, 0);
+  ASSERT_TRUE(transformation5.IsApplicable(context.get(), fact_manager));
+  transformation5.Apply(context.get(), &fact_manager);
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -146,20 +212,19 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
           %5 = OpLabel
         %133 = OpVariable %132 Function
          %21 = OpAccessChain %20 %17 %19
-               OpCopyMemory %12 %21 Aligned 16
-               OpCopyMemory %133 %12 Volatile
+               OpCopyMemory %12 %21 Aligned|Nontemporal|Volatile 16
+               OpCopyMemory %133 %12 Nontemporal|Volatile
         %136 = OpAccessChain %135 %17 %30
         %138 = OpAccessChain %24 %12 %19
-               OpCopyMemory %138 %136 None
+               OpCopyMemory %138 %136 Nontemporal|Volatile
         %146 = OpAccessChain %145 %133 %30
-        %147 = OpLoad %7 %146 Volatile|Nontemporal|Aligned 16
+        %147 = OpLoad %7 %146 Aligned|Volatile 16
         %148 = OpAccessChain %24 %12 %19
-               OpStore %148 %147 Nontemporal
+               OpStore %148 %147 Volatile
                OpReturn
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL(); // Remove once test is implemented
 }
 
 TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
@@ -302,7 +367,7 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL(); // Remove once test is implemented
+  FAIL();  // Remove once test is implemented
 }
 
 }  // namespace
