@@ -33,6 +33,7 @@ if (!build_with_chromium || use_fuzzing_engine) {
     testonly = true
 
     deps = [
+      ":spvtools_as_fuzzer",
       ":spvtools_binary_parser_fuzzer",
       ":spvtools_opt_legalization_fuzzer",
       ":spvtools_opt_performance_fuzzer",
@@ -64,6 +65,12 @@ template("spvtools_fuzzer") {
       ":fuzzer_config",
     ]
   }
+}
+
+spvtools_fuzzer("spvtools_as_fuzzer_src") {
+  sources = [
+    "spvtools_as_fuzzer.cpp",
+  ]
 }
 
 spvtools_fuzzer("spvtools_binary_parser_fuzzer_src") {
@@ -116,6 +123,15 @@ spvtools_fuzzer("spvtools_val_webgpu_fuzzer_src") {
 }
 
 if (!build_with_chromium || use_fuzzing_engine) {
+  fuzzer_test("spvtools_as_fuzzer") {
+    sources = []
+    deps = [
+      ":spvtools_as_fuzzer_src",
+    ]
+    # Intentionally doesn't use the seed corpus, because it consumes
+    #  part of the input as not part of the file.
+  }
+
   fuzzer_test("spvtools_binary_parser_fuzzer") {
     sources = []
     deps = [
