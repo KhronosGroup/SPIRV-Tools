@@ -32,31 +32,41 @@ class TransformationSetMemoryOperandsMask : public Transformation {
       const protobufs::InstructionDescriptor& memory_access_instruction,
       uint32_t memory_operands_mask, uint32_t memory_operands_mask_index);
 
-  // TODO comment
+  // - |message_.memory_access_instruction| must describe a memory access
+  //   instruction.
+  // - |message_.memory_operands_mask_index| must be suitable for this memory
+  //   access instruction, e.g. it must be 0 in the case of OpLoad, and may be
+  //   1 in the case of OpCopyMemory if the SPIR-V version is 1.4 or higher.
+  // - |message_.memory_operands_mask| must be identical to the original memory
+  //   operands mask, except that Volatile may be added, and Nontemporal may be
+  //   toggled.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Replaces the operands mask identified by
+  // |message_.memory_operands_mask_index| in the instruction described by
+  // |message_.memory_access_instruction| with |message_.memory_operands_mask|,
+  // creating an input operand for the mask if no such operand was present.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
 
-  // TODO comment
+  // Helper function that determines whether |instruction| is a memory
+  // instruction (e.g. OpLoad).
   static bool IsMemoryAccess(const opt::Instruction& instruction);
 
   // Does the version of SPIR-V being used support multiple memory operand
   // masks on relevant memory access instructions?
   static bool MultipleMemoryOperandMasksAreSupported(opt::IRContext* context);
 
+  // Helper function to get the input operand index associated with mask number
+  // |mask_index|. This is a bit tricky if there are multiple masks, because the
+  // index associated with the second mask depends on whether the first mask
+  // includes any flags such as Aligned that have corresponding operands.
+  static uint32_t GetInOperandIndexForMask(const opt::Instruction& instruction,
+                                           uint32_t mask_index);
+
  private:
-  // TODO comment
-  uint32_t GetOriginalMaskInOperandIndex(
-      const opt::Instruction& instruction) const;
-
-  // TODO comment
-  bool NewMaskIsValid(const opt::Instruction& instruction,
-                      uint32_t original_mask_in_operand_index) const;
-
   protobufs::TransformationSetMemoryOperandsMask message_;
 };
 

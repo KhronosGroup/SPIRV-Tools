@@ -41,6 +41,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_useful_constructs.h
         fuzzer_pass_adjust_function_controls.h
         fuzzer_pass_adjust_loop_controls.h
+        fuzzer_pass_adjust_memory_operands_masks.h
         fuzzer_pass_adjust_selection_controls.h
         fuzzer_pass_apply_id_synonyms.h
         fuzzer_pass_construct_composites.h
@@ -92,6 +93,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_useful_constructs.cpp
         fuzzer_pass_adjust_function_controls.cpp
         fuzzer_pass_adjust_loop_controls.cpp
+        fuzzer_pass_adjust_memory_operands_masks.cpp
         fuzzer_pass_adjust_selection_controls.cpp
         fuzzer_pass_apply_id_synonyms.cpp
         fuzzer_pass_construct_composites.cpp
