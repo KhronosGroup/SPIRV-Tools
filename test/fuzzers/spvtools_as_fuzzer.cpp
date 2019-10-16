@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cstring> // memcpy
 #include <cstdint>
+#include <cstring>  // memcpy
 #include <vector>
 
 #include "source/spirv_target_env.h"
@@ -38,7 +38,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  spvTextToBinaryWithOptions(context, input_str.data(), input_str.size(), SPV_TEXT_TO_BINARY_OPTION_NONE, &binary, &diagnostic);
+  spvTextToBinaryWithOptions(context, input_str.data(), input_str.size(),
+                             SPV_TEXT_TO_BINARY_OPTION_NONE, &binary,
+                             &diagnostic);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -46,11 +48,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   }
 
   if (binary) {
-      spvBinaryDestroy(binary);
-      binary = nullptr;
+    spvBinaryDestroy(binary);
+    binary = nullptr;
   }
 
-  spvTextToBinaryWithOptions(context, input_str.data(), input_str.size(), SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS, &binary, &diagnostic);
+  spvTextToBinaryWithOptions(context, input_str.data(), input_str.size(),
+                             SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS,
+                             &binary, &diagnostic);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -58,8 +62,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   }
 
   if (binary) {
-      spvBinaryDestroy(binary);
-      binary = nullptr;
+    spvBinaryDestroy(binary);
+    binary = nullptr;
   }
 
   return 0;
