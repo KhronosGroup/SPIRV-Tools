@@ -249,6 +249,10 @@ typedef enum spv_ext_inst_type_t {
   SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT,
   SPV_EXT_INST_TYPE_DEBUGINFO,
 
+  // all ext inst types below here are all non-semantic as defined in
+  // SPV_KHR_non_semantic_info
+  SPV_EXT_INST_TYPE_NONSEMANTIC,
+
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;
 

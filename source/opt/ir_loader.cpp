@@ -113,7 +113,9 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       } else if (IsTypeInst(opcode)) {
         module_->AddType(std::move(spv_inst));
       } else if (IsConstantInst(opcode) || opcode == SpvOpVariable ||
-                 opcode == SpvOpUndef) {
+                 opcode == SpvOpUndef ||
+                 (opcode == SpvOpExtInst &&
+                  inst->ext_inst_type >= SPV_EXT_INST_TYPE_NONSEMANTIC)) {
         module_->AddGlobalValue(std::move(spv_inst));
       } else {
         Errorf(consumer_, src, loc,

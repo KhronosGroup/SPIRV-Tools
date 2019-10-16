@@ -85,6 +85,11 @@ class Instruction {
     return inst_.ext_inst_type;
   }
 
+  bool IsNonSemantic() const {
+    return opcode() == SpvOp::SpvOpExtInst &&
+           inst_.ext_inst_type >= SPV_EXT_INST_TYPE_NONSEMANTIC;
+  }
+
   // Casts the words belonging to the operand under |index| to |T| and returns.
   template <typename T>
   T GetOperandAs(size_t index) const {

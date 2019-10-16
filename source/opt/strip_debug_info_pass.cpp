@@ -19,12 +19,34 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status StripDebugInfoPass::Process() {
-  bool modified = !context()->debugs1().empty() ||
-                  !context()->debugs2().empty() ||
-                  !context()->debugs3().empty();
+  bool uses_non_semantic_info = false;
+  for (auto& inst : context()->module()->extensions()) {
+    const char* ext_name =
+        reinterpret_cast<const char*>(&inst.GetInOperand(0).words[0]);
+    if (0 == std::strcmp(ext_name, "SPV_KHR_non_semantic_info")) {
+      uses_non_semantic_info = true;
+    }
+  }
 
   std::vector<Instruction*> to_kill;
-  for (auto& dbg : context()->debugs1()) to_kill.push_back(&dbg);
+
+  // if we use non-semantic info, it may reference OpString. Only remove
+  // OpSource from debugs1
+  if (uses_non_semantic_info) {
+    for (auto& inst : context()->module()->debugs1()) {
+      switch (inst.opcode()) {
+        case SpvOpString:
+          break;
+
+        default:
+          to_kill.push_back(&inst);
+          break;
+      }
+    }
+  } else {
+    for (auto& dbg : context()->debugs1()) to_kill.push_back(&dbg);
+  }
+
   for (auto& dbg : context()->debugs2()) to_kill.push_back(&dbg);
   for (auto& dbg : context()->debugs3()) to_kill.push_back(&dbg);
 
@@ -38,8 +60,11 @@ Pass::Status StripDebugInfoPass::Process() {
               return false;
             });
 
+  bool modified = !to_kill.empty();
+
   for (auto* inst : to_kill) context()->KillInst(inst);
 
+  // clear OpLine information
   context()->module()->ForEachInst([&modified](Instruction* inst) {
     modified |= !inst->dbg_line_insts().empty();
     inst->dbg_line_insts().clear();

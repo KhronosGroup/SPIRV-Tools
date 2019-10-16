@@ -30,6 +30,7 @@ SPV_AMD_gcn_shader
 SPV_AMD_gpu_shader_half_float
 SPV_AMD_gpu_shader_int16
 SPV_AMD_shader_trinary_minmax
+SPV_KHR_non_semantic_info
 """
 
 

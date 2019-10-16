@@ -34,6 +34,30 @@ namespace {
 // checked.
 spv_result_t ModuleScopedInstructions(ValidationState_t& _,
                                       const Instruction* inst, SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpExtInst:
+      if (inst->ext_inst_type() >= SPV_EXT_INST_TYPE_NONSEMANTIC) {
+        // non-semantic extinst opcodes are allowed beginning in the types
+        // section, but since they must name a return type they cannot be the
+        // first instruction in the types section. Therefore check that we are
+        // already in it.
+        if (_.current_layout_section() < kLayoutTypes) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << "Non-semantic OpExtInst must not appear before types "
+                 << "section";
+        }
+      } else {
+        // otherwise they must be used in a block
+        if (_.current_layout_section() < kLayoutFunctionDefinitions) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << spvOpcodeString(opcode) << " must appear in a block";
+        }
+      }
+      break;
+    default:
+      break;
+  }
+
   while (_.IsOpcodeInCurrentLayoutSection(opcode) == false) {
     _.ProgressToNextLayoutSectionOrder();
 
@@ -141,6 +165,24 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
           if (auto error = _.current_function().RegisterSetFunctionDeclType(
                   FunctionDecl::kFunctionDeclDefinition))
             return error;
+        }
+        break;
+
+      case SpvOpExtInst:
+        if (inst->ext_inst_type() >= SPV_EXT_INST_TYPE_NONSEMANTIC) {
+          // non-semantic extinst opcodes are allowed beginning in the types
+          // section
+          if (_.current_layout_section() < kLayoutTypes) {
+            return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                   << "Non-semantic OpExtInst must not appear before types "
+                   << "section";
+          }
+        } else {
+          // otherwise they must be used in a block
+          if (_.in_block() == false) {
+            return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                   << spvOpcodeString(opcode) << " must appear in a block";
+          }
         }
         break;
 
