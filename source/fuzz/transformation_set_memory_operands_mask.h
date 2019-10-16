@@ -41,7 +41,22 @@ class TransformationSetMemoryOperandsMask : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // TODO comment
+  static bool IsMemoryAccess(const opt::Instruction& instruction);
+
+  // Does the version of SPIR-V being used support multiple memory operand
+  // masks on relevant memory access instructions?
+  static bool MultipleMemoryOperandMasksAreSupported(opt::IRContext* context);
+
  private:
+  // TODO comment
+  uint32_t GetOriginalMaskInOperandIndex(
+      const opt::Instruction& instruction) const;
+
+  // TODO comment
+  bool NewMaskIsValid(const opt::Instruction& instruction,
+                      uint32_t original_mask_in_operand_index) const;
+
   protobufs::TransformationSetMemoryOperandsMask message_;
 };
 
