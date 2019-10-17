@@ -781,7 +781,7 @@ spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
 // TODO(dneto): This probably belongs in text.cpp since that's the only place
 // that a spv_binary_t value is created.
 void spvBinaryDestroy(spv_binary binary) {
-  if (!binary) {
+  if (binary) {
     if (binary->code) delete[] binary->code;
     delete binary;
   }
