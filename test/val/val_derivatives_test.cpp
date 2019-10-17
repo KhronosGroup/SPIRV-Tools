@@ -173,7 +173,7 @@ TEST_P(ValidateHalfDerivatives, ScalarFailure) {
               HasSubstr("Result type component width must be 32 bits"));
 }
 
-TEST_P(ValidateHalfDerivatives, VectorSuccess) {
+TEST_P(ValidateHalfDerivatives, VectorFailure) {
   const std::string op = GetParam();
   const std::string body = "%val = " + op + " %f16vec4 %f16vec4_0\n";
 
