@@ -185,15 +185,10 @@ TEST_P(ValidateHalfDerivatives, VectorSuccess) {
 }
 
 INSTANTIATE_TEST_SUITE_P(HalfDerivatives, ValidateHalfDerivatives,
-                         ::testing::Values("OpDPdx",
-                                           "OpDPdy",
-                                           "OpFwidth",
-                                           "OpDPdxFine",
-                                           "OpDPdyFine",
-                                           "OpFwidthFine",
-                                           "OpDPdxCoarse",
-                                           "OpDPdyCoarse",
-                                           "OpFwidthCoarse"));
+                         ::testing::Values("OpDPdx", "OpDPdy", "OpFwidth",
+                                           "OpDPdxFine", "OpDPdyFine",
+                                           "OpFwidthFine", "OpDPdxCoarse",
+                                           "OpDPdyCoarse", "OpFwidthCoarse"));
 
 }  // namespace
 }  // namespace val
