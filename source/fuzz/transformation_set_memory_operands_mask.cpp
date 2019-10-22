@@ -44,6 +44,19 @@ TransformationSetMemoryOperandsMask::TransformationSetMemoryOperandsMask(
 bool TransformationSetMemoryOperandsMask::IsApplicable(
     opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
+  if (message_.memory_operands_mask_index() != 0) {
+    // The following conditions should never be violated, even if
+    // transformations end up being replayed in a different way to the manner in
+    // which they were applied during fuzzing, hence why these are assertions
+    // rather than applicability checks.
+    assert(message_.memory_operands_mask_index() == 1);
+    assert(message_.memory_access_instruction().target_instruction_opcode() ==
+               SpvOpCopyMemory ||
+           message_.memory_access_instruction().target_instruction_opcode() ==
+               SpvOpCopyMemorySized);
+    assert(MultipleMemoryOperandMasksAreSupported(context));
+  }
+
   auto instruction =
       FindInstruction(message_.memory_access_instruction(), context);
   if (!instruction) {
@@ -51,13 +64,6 @@ bool TransformationSetMemoryOperandsMask::IsApplicable(
   }
   if (!IsMemoryAccess(*instruction)) {
     return false;
-  }
-
-  if (message_.memory_operands_mask_index() != 0) {
-    assert(message_.memory_operands_mask_index() == 1);
-    assert(instruction->opcode() == SpvOpCopyMemory ||
-           instruction->opcode() == SpvOpCopyMemorySized);
-    assert(MultipleMemoryOperandMasksAreSupported(context));
   }
 
   auto original_mask_in_operand_index = GetInOperandIndexForMask(

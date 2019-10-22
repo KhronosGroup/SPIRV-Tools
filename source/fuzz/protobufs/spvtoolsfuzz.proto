@@ -474,7 +474,7 @@ message TransformationSetMemoryOperandsMask {
   InstructionDescriptor memory_access_instruction = 1;
 
   // A mask of memory operands to be applied to the instruction.  It must be the
-  // same as the original mask, except that Volatile can be removed, and
+  // same as the original mask, except that Volatile can be added, and
   // Nontemporal can be added or removed.
   uint32 memory_operands_mask = 2;
 

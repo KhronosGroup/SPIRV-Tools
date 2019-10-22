@@ -76,8 +76,8 @@ protobufs::InstructionDescriptor MakeInstructionDescriptor(
 
   // Consider instructions in the block in reverse order, starting from
   // |inst_it|.
-  for (opt::BasicBlock::const_iterator backwards_iterator = inst_it;
-       backwards_iterator != block.begin(); --backwards_iterator) {
+  for (opt::BasicBlock::const_iterator backwards_iterator = inst_it;;
+       --backwards_iterator) {
     if (backwards_iterator->HasResultId()) {
       // As soon as we find an instruction with a result id, we can return a
       // descriptor for |inst_it|.
@@ -86,9 +86,14 @@ protobufs::InstructionDescriptor MakeInstructionDescriptor(
     }
     if (backwards_iterator != inst_it &&
         backwards_iterator->opcode() == opcode) {
-      // We are skipping over an with the same opcode as |inst_it|; we increase
-      // our skip count to reflect this.
+      // We are skipping over an instruction with the same opcode as |inst_it|;
+      // we increase our skip count to reflect this.
       skip_count++;
+    }
+    if (backwards_iterator == block.begin()) {
+      // We exit the loop when we reach the start of the block, but only after
+      // we have processed the first instruction in the block.
+      break;
     }
   }
   // We did not find an instruction inside the block with a result id, so we use
