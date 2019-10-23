@@ -1,5 +1,5 @@
 {
-    "name": "spirv",
+    "name": "spirvls",
     "description": "Language support for SPIR-V disassembly files",
     "author": "Google",
     "license": "Apache-2.0",
@@ -16,7 +16,6 @@
         "languages": [
             {
                 "id": "spirv",
-                "configuration": "spirv.configuration.json",
                 "extensions": [
                     "spvasm"
                 ]
@@ -29,5 +28,12 @@
                 "path": "spirv.json"
             }
         ]
-    }
+    },
+    "dependencies": {
+        "vscode-languageclient": "~4.3.0"
+    },
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./extension.js"
 }
