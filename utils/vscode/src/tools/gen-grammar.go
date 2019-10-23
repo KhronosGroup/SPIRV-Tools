@@ -93,6 +93,7 @@ func run() error {
 				}
 				return sb.String()
 			},
+			"Replace": strings.ReplaceAll,
 		}).Parse(string(tf))
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse template")
