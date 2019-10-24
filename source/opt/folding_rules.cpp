@@ -1326,6 +1326,11 @@ FoldingRule FactorAddMuls() {
         add_op1_inst->opcode() != SpvOpIMul)
       return false;
 
+    // Only perform this optimization if both of the muls only have one use.
+    // Otherwise this is a deoptimization in size and performance.
+    if (def_use_mgr->NumUses(add_op0_inst) > 1) return false;
+    if (def_use_mgr->NumUses(add_op1_inst) > 1) return false;
+
     if (add_op0_inst->opcode() == SpvOpFMul &&
         (!add_op0_inst->IsFloatingPointFoldingAllowed() ||
          !add_op1_inst->IsFloatingPointFoldingAllowed()))
