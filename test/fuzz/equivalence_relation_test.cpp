@@ -33,7 +33,7 @@ struct UInt32Hash {
   }
 };
 
-std::set<uint32_t> ChasePointers(
+std::set<uint32_t> ToUIntSet(
     EquivalenceRelation<uint32_t, UInt32Hash, UInt32Equals>::ValueSet
         pointers) {
   std::set<uint32_t> result;
@@ -66,9 +66,9 @@ TEST(EquivalenceRelationTest, BasicTest) {
     class1.insert(element);
   }
   class1.insert(98);
-  ASSERT_TRUE(class1 == ChasePointers(relation.GetEquivalenceClass(0)));
-  ASSERT_TRUE(class1 == ChasePointers(relation.GetEquivalenceClass(4)));
-  ASSERT_TRUE(class1 == ChasePointers(relation.GetEquivalenceClass(40)));
+  ASSERT_TRUE(class1 == ToUIntSet(relation.GetEquivalenceClass(0)));
+  ASSERT_TRUE(class1 == ToUIntSet(relation.GetEquivalenceClass(4)));
+  ASSERT_TRUE(class1 == ToUIntSet(relation.GetEquivalenceClass(40)));
 
   std::set<uint32_t> class2;
   for (uint32_t element = 1; element < 79; element += 2) {
@@ -77,9 +77,9 @@ TEST(EquivalenceRelationTest, BasicTest) {
     class2.insert(element);
   }
   class2.insert(79);
-  ASSERT_TRUE(class2 == ChasePointers(relation.GetEquivalenceClass(1)));
-  ASSERT_TRUE(class2 == ChasePointers(relation.GetEquivalenceClass(11)));
-  ASSERT_TRUE(class2 == ChasePointers(relation.GetEquivalenceClass(31)));
+  ASSERT_TRUE(class2 == ToUIntSet(relation.GetEquivalenceClass(1)));
+  ASSERT_TRUE(class2 == ToUIntSet(relation.GetEquivalenceClass(11)));
+  ASSERT_TRUE(class2 == ToUIntSet(relation.GetEquivalenceClass(31)));
 
   std::set<uint32_t> class3;
   for (uint32_t element = 81; element < 99; element += 2) {
@@ -88,9 +88,9 @@ TEST(EquivalenceRelationTest, BasicTest) {
     class3.insert(element);
   }
   class3.insert(99);
-  ASSERT_TRUE(class3 == ChasePointers(relation.GetEquivalenceClass(81)));
-  ASSERT_TRUE(class3 == ChasePointers(relation.GetEquivalenceClass(91)));
-  ASSERT_TRUE(class3 == ChasePointers(relation.GetEquivalenceClass(99)));
+  ASSERT_TRUE(class3 == ToUIntSet(relation.GetEquivalenceClass(81)));
+  ASSERT_TRUE(class3 == ToUIntSet(relation.GetEquivalenceClass(91)));
+  ASSERT_TRUE(class3 == ToUIntSet(relation.GetEquivalenceClass(99)));
 }
 
 }  // namespace

@@ -31,6 +31,41 @@ namespace fuzz {
 // constructor, and the |PointerHashT| and |PointerEqualsT| must be functors
 // providing hashing and equality testing functionality for pointers to objects
 // of type |T|.
+//
+// A disjoint-set (a.k.a. union-find or merge-find) data structure is used to
+// represent the equivalence relation.  Path compression is used.  Union by
+// rank/size is not used.
+//
+// Each disjoint set is represented as a tree, rooted at the representative
+// of the set.
+//
+// Getting the representative of a value simply requires chasing parent pointers
+// from the value until you reach the root.
+//
+// Checking equivalence of two elements requires checking that the
+// representatives are equal.
+//
+// Traversing the tree rooted at a value's representative visits the value's
+// equivalence class.
+//
+// |PointerHashT| and |PointerEqualsT| are used to define *equality* between
+// values, and otherwise are *not* used to define the equivalence relation
+// (except that equal values are equivalent).  The equivalence relation is
+// constructed by repeatedly adding pairs of (typically non-equal) values that
+// are deemed to be equivalent.
+//
+// For example in an equivalence relation on integers, 1 and 5 might be added
+// as equivalent, so that IsEquivalent(1, 5) holds, because they represent
+// IDs in a SPIR-V binary that are known to contain the same value at run time,
+// but clearly 1 != 5.  Since 1 and 1 are equal, IsEquivalent(1, 1) will also
+// hold.
+//
+// Each unique (up to equality) value added to the relation is copied into
+// |owned_values_|, so there is one canonical memory address per unique value.
+// Uniqueness is ensured by storing (and checking) a set of pointers to these
+// values in |value_set_|, which uses |PointerHashT| and |PointerEqualsT|.
+//
+// |parent_| and |children_| encode the equivalence relation, i.e., the trees.
 template <typename T, typename PointerHashT, typename PointerEqualsT>
 class EquivalenceRelation {
  public:
