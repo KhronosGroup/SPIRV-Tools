@@ -15,9 +15,8 @@
 #ifndef SOURCE_FUZZ_EQUIVALENCE_RELATION_H_
 #define SOURCE_FUZZ_EQUIVALENCE_RELATION_H_
 
-#include <map>
 #include <memory>
-#include <set>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -88,7 +87,7 @@ class EquivalenceRelation {
         // Initially say that the value is its own parent and that it has no
         // children.
         parent_[pointer_to_value] = pointer_to_value;
-        children_[pointer_to_value] = std::set<const T*>();
+        children_[pointer_to_value] = std::unordered_set<const T*>();
       }
     }
 
@@ -192,7 +191,7 @@ class EquivalenceRelation {
   //
   // Mutable because the intuitively const method, 'Find', performs path
   // compression.
-  mutable std::map<const T*, const T*> parent_;
+  mutable std::unordered_map<const T*, const T*> parent_;
 
   // Stores the children of each value.  This allows the equivalence class of
   // a value to be calculated by traversing all descendents of the class's
@@ -200,7 +199,7 @@ class EquivalenceRelation {
   //
   // Mutable because the intuitively const method, 'Find', performs path
   // compression.
-  mutable std::map<const T*, std::set<const T*>> children_;
+  mutable std::unordered_map<const T*, std::unordered_set<const T*>> children_;
 
   // The values known to the equivalence relation are alloacated in
   // |owned_values_|, and |value_pool_| provides (via |PointerHashT| and
