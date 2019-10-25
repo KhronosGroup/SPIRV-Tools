@@ -36,7 +36,6 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_move_block_down_test.cpp
           transformation_replace_boolean_constant_with_constant_binary_test.cpp
           transformation_replace_constant_with_uniform_test.cpp
-          transformation_replace_id_with_synonym_test.cpp
           transformation_set_function_control_test.cpp
           transformation_set_loop_control_test.cpp
           transformation_set_memory_operands_mask_test.cpp
