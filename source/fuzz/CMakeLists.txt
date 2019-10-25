@@ -69,6 +69,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_int.h
         transformation_add_type_pointer.h
         transformation_composite_construct.h
+        transformation_composite_extract.h
         transformation_copy_object.h
         transformation_move_block_down.h
         transformation_replace_boolean_constant_with_constant_binary.h
@@ -120,6 +121,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_int.cpp
         transformation_add_type_pointer.cpp
         transformation_composite_construct.cpp
+        transformation_composite_extract.cpp
         transformation_copy_object.cpp
         transformation_move_block_down.cpp
         transformation_replace_boolean_constant_with_constant_binary.cpp
