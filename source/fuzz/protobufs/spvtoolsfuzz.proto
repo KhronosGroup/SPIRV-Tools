@@ -82,6 +82,10 @@ message DataDescriptor {
   // 0 or more indices, used to index into a composite object
   repeated uint32 index = 2;
 
+  // The number of contiguous elements.  This will typically be 1, but e.g. 2 or
+  // 3 can be used to describe the 'xy' or 'xyz' portion of a vec4.
+  uint32 num_contiguous_elements = 3;
+
 }
 
 message UniformBufferElementDescriptor {
@@ -124,7 +128,7 @@ message Fact {
   oneof fact {
     // Order the fact options by numeric id (rather than alphabetically).
     FactConstantUniform constant_uniform_fact = 1;
-    FactIdSynonym id_synonym_fact = 2;
+    FactDataSynonym data_synonym_fact = 2;
   }
 }
 
@@ -146,19 +150,16 @@ message FactConstantUniform {
 
 }
 
-message FactIdSynonym {
+message FactDataSynonym {
 
-  // Records the fact that the data held in an id is guaranteed to be equal to
-  // the data held in a data descriptor.  spirv-fuzz can use this to replace
-  // uses of the id with references to the data described by the data
-  // descriptor.
+  // Records the fact that the data held in two data descriptors are guaranteed
+  // to be equal.  spirv-fuzz can use this to replace uses of one piece of data
+  // with a known-to-be-equal piece of data.
 
-  // An id
-  uint32 id = 1;
+  // Data descriptors guaranteed to hold identical data.
+  DataDescriptor data1 = 1;
 
-  // A data descriptor guaranteed to hold a value identical to that held by the
-  // id
-  DataDescriptor data_descriptor = 2;
+  DataDescriptor data2 = 2;
 
 }
 
