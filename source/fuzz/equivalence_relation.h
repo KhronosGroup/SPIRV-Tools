@@ -27,7 +27,7 @@ namespace fuzz {
 
 // A class for representing an equivalence relation on objects of type |T|,
 // which should be a value type.  The type |T| is required to have a copy
-// constructor, and the |PointerHashT| and |PointerEqualsT| must be functors
+// constructor, and |PointerHashT| and |PointerEqualsT| must be functors
 // providing hashing and equality testing functionality for pointers to objects
 // of type |T|.
 //
