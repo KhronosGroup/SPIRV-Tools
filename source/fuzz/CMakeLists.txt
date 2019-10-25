@@ -30,6 +30,7 @@ if(SPIRV_BUILD_FUZZER)
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
         data_descriptor.h
+        equivalence_relation.h
         fact_manager.h
         force_render_red.h
         fuzzer.h
