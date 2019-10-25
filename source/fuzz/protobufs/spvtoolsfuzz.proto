@@ -187,7 +187,7 @@ message Transformation {
     TransformationCopyObject copy_object = 13;
     TransformationReplaceIdWithSynonym replace_id_with_synonym = 14;
     TransformationSetSelectionControl set_selection_control = 15;
-    TransformationConstructComposite construct_composite = 16;
+    TransformationCompositeConstruct composite_construct = 16;
     TransformationSetLoopControl set_loop_control = 17;
     TransformationSetFunctionControl set_function_control = 18;
     TransformationAddNoContractionDecoration add_no_contraction_decoration = 19;
@@ -325,24 +325,7 @@ message TransformationAddTypePointer {
 
 }
 
-message TransformationCopyObject {
-
-  // A transformation that introduces an OpCopyObject instruction to make a
-  // copy of an object.
-
-  // Id of the object to be copied
-  uint32 object = 1;
-
-  // A descriptor for an instruction in a block before which the new
-  // OpCopyObject instruction should be inserted
-  InstructionDescriptor instruction_to_insert_before = 2;
-
-  // A fresh id for the copied object
-  uint32 fresh_id = 3;
-
-}
-
-message TransformationConstructComposite {
+message TransformationCompositeConstruct {
 
   // A transformation that introduces an OpCompositeConstruct instruction to
   // make a composite object.
@@ -359,6 +342,23 @@ message TransformationConstructComposite {
 
   // A fresh id for the composite object
   uint32 fresh_id = 4;
+
+}
+
+message TransformationCopyObject {
+
+  // A transformation that introduces an OpCopyObject instruction to make a
+  // copy of an object.
+
+  // Id of the object to be copied
+  uint32 object = 1;
+
+  // A descriptor for an instruction in a block before which the new
+  // OpCopyObject instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 2;
+
+  // A fresh id for the copied object
+  uint32 fresh_id = 3;
 
 }
 
