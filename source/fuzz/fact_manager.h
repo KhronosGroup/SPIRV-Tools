@@ -53,7 +53,7 @@ class FactManager {
   // fact manager.
   bool AddFact(const protobufs::Fact& fact, opt::IRContext* context);
 
-  // TODO comment
+  // Record the fact that |data1| and |data2| are synonymous.
   void AddFactDataSynonym(const protobufs::DataDescriptor& data1,
                           const protobufs::DataDescriptor& data2);
 
