@@ -26,6 +26,7 @@
 #include "source/fuzz/transformation_add_type_int.h"
 #include "source/fuzz/transformation_add_type_pointer.h"
 #include "source/fuzz/transformation_composite_construct.h"
+#include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_copy_object.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
@@ -74,6 +75,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kCompositeConstruct:
       return MakeUnique<TransformationCompositeConstruct>(
           message.composite_construct());
+    case protobufs::Transformation::TransformationCase::kCompositeExtract:
+      return MakeUnique<TransformationCompositeExtract>(
+          message.composite_extract());
     case protobufs::Transformation::TransformationCase::kCopyObject:
       return MakeUnique<TransformationCopyObject>(message.copy_object());
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
