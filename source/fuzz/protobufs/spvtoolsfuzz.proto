@@ -192,6 +192,7 @@ message Transformation {
     TransformationSetFunctionControl set_function_control = 18;
     TransformationAddNoContractionDecoration add_no_contraction_decoration = 19;
     TransformationSetMemoryOperandsMask set_memory_operands_mask = 20;
+    TransformationCompositeExtract composite_extract = 21;
     // Add additional option using the next available number.
   }
 }
@@ -342,6 +343,26 @@ message TransformationCompositeConstruct {
 
   // A fresh id for the composite object
   uint32 fresh_id = 4;
+
+}
+
+message TransformationCompositeExtract {
+
+  // A transformation that adds an instruction to extract an element from a
+  // composite.
+
+  // A descriptor for an instruction in a block before which the new
+  // OpCompositeExtract instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 1;
+
+  // Result id for the extract operation.
+  uint32 fresh_id = 2;
+
+  // Id of the composite from which data is to be extracted.
+  uint32 composite_id = 3;
+
+  // Indices that indicate which part of the composite should be extracted.
+  repeated uint32 index = 4;
 
 }
 
