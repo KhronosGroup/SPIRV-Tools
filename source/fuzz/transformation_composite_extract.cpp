@@ -76,7 +76,7 @@ bool TransformationCompositeExtract::IsApplicable(
     return false;
   }
 
-  return fuzzerutil::WalkCompositeIndices(
+  return fuzzerutil::WalkCompositeTypeIndices(
              context, composite_instruction->type_id(), message_.index()) != 0;
 }
 
@@ -89,7 +89,7 @@ void TransformationCompositeExtract::Apply(
   }
   auto composite_instruction =
       context->get_def_use_mgr()->GetDef(message_.composite_id());
-  auto extracted_type = fuzzerutil::WalkCompositeIndices(
+  auto extracted_type = fuzzerutil::WalkCompositeTypeIndices(
       context, composite_instruction->type_id(), message_.index());
 
   FindInstruction(message_.instruction_to_insert_before(), context)
