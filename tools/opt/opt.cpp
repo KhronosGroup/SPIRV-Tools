@@ -526,6 +526,13 @@ Options (in lexicographical order):)",
                avoid triggering those bugs.
                Current workarounds: Avoid OpUnreachable in loops.)");
   printf(R"(
+  --wrap-opkill
+               Replaces all OpKill instructions in functions that can be called
+               from a continue construct with a function call to a function
+               whose only instruction is an OpKill.  This is done to enable
+               inlining on these functions.
+               )");
+  printf(R"(
   --unify-const
                Remove the duplicated constants.)");
   printf(R"(
