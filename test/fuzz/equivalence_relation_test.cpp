@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <external/googletest/googlemock/include/gmock/gmock-generated-matchers.h>
 #include <set>
 
 #include "gmock/gmock.h"
