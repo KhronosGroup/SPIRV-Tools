@@ -126,12 +126,13 @@ class FactManager {
   // For each distinct kind of fact to be managed, we use a separate opaque
   // struct type.
 
-  class ConstantUniformFacts;  // Opaque class for management of
-                               // constant uniform facts.
+  struct ConstantUniformFacts;  // Opaque class for management of
+                                // constant uniform facts.
   std::unique_ptr<ConstantUniformFacts>
       uniform_constant_facts_;  // Unique pointer to internal data.
 
-  class DataSynonymFacts;  // Opaque class for management of data synonym facts.
+  struct DataSynonymFacts;  // Opaque class for management of data synonym
+                            // facts.
   std::unique_ptr<DataSynonymFacts>
       data_synonym_facts_;  // Unique pointer to internal data.
 };
