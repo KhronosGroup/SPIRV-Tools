@@ -111,9 +111,9 @@ uint32_t WalkCompositeTypeIndices(
 uint32_t GetNumberOfStructMembers(
     const opt::Instruction& struct_type_instruction);
 
-// Returns the constant size of the array associated
-// with |array_type_instruction|, which must be an OpArrayType instruction.
-// Returns 0 if there is not a static size.
+// Returns the constant size of the array associated with
+// |array_type_instruction|, which must be an OpArrayType instruction. Returns
+// 0 if there is not a static size.
 uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
                       opt::IRContext* context);
 

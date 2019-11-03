@@ -105,8 +105,8 @@ class FactManager {
   //==============================
   // Querying facts about id synonyms
 
-  // Returns every id for which a fact of the form "this id is synonymous
-  // with this piece of data" is known.
+  // Returns every id for which a fact of the form "this id is synonymous with
+  // this piece of data" is known.
   std::vector<uint32_t> GetIdsForWhichSynonymsAreKnown(
       opt::IRContext* context) const;
 
@@ -121,7 +121,7 @@ class FactManager {
       const protobufs::DataDescriptor& data_descriptor,
       opt::IRContext* context) const;
 
-  // Return true if and ony if |data_descriptor1| and |data_descriptor2| are
+  // Returns true if and ony if |data_descriptor1| and |data_descriptor2| are
   // known to be synonymous.
   bool IsSynonymous(const protobufs::DataDescriptor& data_descriptor1,
                     const protobufs::DataDescriptor& data_descriptor2,
@@ -132,7 +132,7 @@ class FactManager {
 
  private:
   // For each distinct kind of fact to be managed, we use a separate opaque
-  // struct type.
+  // class type.
 
   class ConstantUniformFacts;  // Opaque class for management of
                                // constant uniform facts.
