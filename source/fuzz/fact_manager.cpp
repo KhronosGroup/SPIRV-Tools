@@ -370,6 +370,12 @@ class FactManager::DataSynonymFacts {
   // compute the closure only when a data synonym fact is *queried*.
   void ComputeClosureOfFacts(opt::IRContext* context) const;
 
+  // Returns true if and only if |dd1| and |dd2| are valid data descriptors
+  // whose associated data have the same type.
+  bool DataDescriptorsAreWellFormedAndComparable(
+      opt::IRContext* context, const protobufs::DataDescriptor& dd1,
+      const protobufs::DataDescriptor& dd2) const;
+
   // The data descriptors that are known to be synonymous with one another are
   // captured by this equivalence relation.
   //
@@ -405,6 +411,9 @@ void FactManager::DataSynonymFacts::AddFact(
 
 void FactManager::DataSynonymFacts::AddFactRecursive(
     const protobufs::FactDataSynonym& fact, opt::IRContext* context) {
+  assert(DataDescriptorsAreWellFormedAndComparable(context, fact.data1(),
+                                                   fact.data2()));
+
   // Record that the data descriptors provided in the fact are equivalent.
   synonymous_.MakeEquivalent(fact.data1(), fact.data2());
   // As we have updated the equivalence relation, we might be able to deduce
@@ -454,14 +463,14 @@ void FactManager::DataSynonymFacts::AddFactRecursive(
         fuzzerutil::RepeatedFieldToVector(fact.data1().index());
     extended_indices1.push_back(i);
     std::vector<uint32_t> extended_indices2 =
-        fuzzerutil::RepeatedFieldToVector(fact.data1().index());
+        fuzzerutil::RepeatedFieldToVector(fact.data2().index());
     extended_indices2.push_back(i);
     protobufs::FactDataSynonym extended_data_synonym_fact;
     *extended_data_synonym_fact.mutable_data1() =
         MakeDataDescriptor(fact.data1().object(), std::move(extended_indices1));
     *extended_data_synonym_fact.mutable_data2() =
         MakeDataDescriptor(fact.data2().object(), std::move(extended_indices2));
-    AddFact(extended_data_synonym_fact, context);
+    AddFactRecursive(extended_data_synonym_fact, context);
   }
 }
 
@@ -721,6 +730,8 @@ void FactManager::DataSynonymFacts::ComputeClosureOfFacts(
             // have deduced that |dd1_prefix| and |dd2_prefix| are synonymous
             // by observing that all their sub-components are already
             // synonymous.
+            assert(DataDescriptorsAreWellFormedAndComparable(
+                context, dd1_prefix, dd2_prefix));
             synonymous_.MakeEquivalent(dd1_prefix, dd2_prefix);
             // As we have added a new synonym fact, we might benefit from doing
             // another pass over the equivalence relation.
@@ -734,6 +745,18 @@ void FactManager::DataSynonymFacts::ComputeClosureOfFacts(
       }
     }
   }
+}
+
+bool FactManager::DataSynonymFacts::DataDescriptorsAreWellFormedAndComparable(
+    opt::IRContext* context, const protobufs::DataDescriptor& dd1,
+    const protobufs::DataDescriptor& dd2) const {
+  auto end_type_1 = fuzzerutil::WalkCompositeTypeIndices(
+      context, context->get_def_use_mgr()->GetDef(dd1.object())->type_id(),
+      dd1.index());
+  auto end_type_2 = fuzzerutil::WalkCompositeTypeIndices(
+      context, context->get_def_use_mgr()->GetDef(dd2.object())->type_id(),
+      dd2.index());
+  return end_type_1 && end_type_1 == end_type_2;
 }
 
 std::vector<const protobufs::DataDescriptor*>
