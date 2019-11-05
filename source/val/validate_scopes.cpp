@@ -39,8 +39,8 @@ bool IsValidScope(uint32_t scope) {
   return false;
 }
 
-spv_result_t ValidateScope(ValidationState_t& _,
-                           const Instruction* inst, uint32_t scope) {
+spv_result_t ValidateScope(ValidationState_t& _, const Instruction* inst,
+                           uint32_t scope) {
   SpvOp opcode = inst->opcode();
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
@@ -48,8 +48,7 @@ spv_result_t ValidateScope(ValidationState_t& _,
 
   if (!is_int32) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode)
-           << ": expected scope to be a 32-bit int";
+           << spvOpcodeString(opcode) << ": expected scope to be a 32-bit int";
   }
 
   if (!is_const_int32) {
