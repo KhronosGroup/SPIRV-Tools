@@ -4863,7 +4863,7 @@ TEST_F(ValidateDecorations,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ConstantNull: expected Execution Scope to be a 32-bit int"));
+      HasSubstr("ConstantNull: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateDecorations,

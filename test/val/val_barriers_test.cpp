@@ -343,7 +343,7 @@ OpControlBarrier %f32_1 %device %none
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ControlBarrier: expected Execution Scope to be a 32-bit int"));
+      HasSubstr("ControlBarrier: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierU64ExecutionScope) {
@@ -355,7 +355,7 @@ OpControlBarrier %u64_1 %device %none
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ControlBarrier: expected Execution Scope to be a 32-bit int"));
+      HasSubstr("ControlBarrier: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierFloatMemoryScope) {
@@ -367,7 +367,7 @@ OpControlBarrier %device %f32_1 %none
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ControlBarrier: expected Memory Scope to be a 32-bit int"));
+      HasSubstr("ControlBarrier: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierU64MemoryScope) {
@@ -379,7 +379,7 @@ OpControlBarrier %device %u64_1 %none
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ControlBarrier: expected Memory Scope to be a 32-bit int"));
+      HasSubstr("ControlBarrier: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierFloatMemorySemantics) {
@@ -799,7 +799,7 @@ OpMemoryBarrier %f32_1 %acquire_release_uniform_workgroup
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("MemoryBarrier: expected Memory Scope to be a 32-bit int"));
+      HasSubstr("MemoryBarrier: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateBarriers, OpMemoryBarrierU64MemoryScope) {
@@ -811,7 +811,7 @@ OpMemoryBarrier %u64_1 %acquire_release_uniform_workgroup
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("MemoryBarrier: expected Memory Scope to be a 32-bit int"));
+      HasSubstr("MemoryBarrier: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateBarriers, OpMemoryBarrierFloatMemorySemantics) {
@@ -994,7 +994,7 @@ OpMemoryNamedBarrier %barrier %f32_1 %acquire_release_workgroup
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "MemoryNamedBarrier: expected Memory Scope to be a 32-bit int"));
+          "MemoryNamedBarrier: expected scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateBarriers, OpMemoryNamedBarrierFloatMemorySemantics) {
