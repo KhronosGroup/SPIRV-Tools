@@ -66,10 +66,14 @@ type Parameter struct {
 	Name string `json:"name"`
 }
 
+// Quantifier indicates the number of times the quantified term may appear.
 type Quantifier string
 
 const (
+	// The quantified term may appear exactly once.
 	Once       Quantifier = ""
+	// The quantified term may appear zero or one time; an optional term.
 	ZeroOrOnce Quantifier = "?"
+	// The quantified term may appear any number of times.
 	ZeroOrMany Quantifier = "*"
 )
