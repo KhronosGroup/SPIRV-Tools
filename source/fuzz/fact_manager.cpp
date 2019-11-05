@@ -530,8 +530,7 @@ void FactManager::DataSynonymFacts::ComputeClosureOfFacts(
   // synonymous.  A pair is a key to this map only if we have observed that
   // the pair are synonymous at *some* index, but not at *all* indices.
   // Once we find that a pair of data descriptors are equivalent at all indices
-  // indices we record the fact that they are synonymous and remove them from
-  // the map.
+  // we record the fact that they are synonymous and remove them from the map.
   //
   // Using the m and v example from above, initially the pair (m[2], v) would
   // not be a key to the map.  If we find that m[2, 2] == v[2] holds, we would
@@ -587,6 +586,10 @@ void FactManager::DataSynonymFacts::ComputeClosureOfFacts(
           // At this point we know that:
           // - |dd1| has the form obj_1[a_1, ..., a_m, i]
           // - |dd2| has the form obj_2[b_1, ..., b_n, j]
+          assert(dd1->index_size() > 0 && dd2->index_size() > 0 &&
+                 "Control should not reach here if either data descriptor has "
+                 "no indices.");
+
           // We are only interested if i == j.
           if (dd1->index(dd1->index_size() - 1) !=
               dd2->index(dd2->index_size() - 1)) {
@@ -708,7 +711,7 @@ void FactManager::DataSynonymFacts::ComputeClosureOfFacts(
             existing_entry =
                 candidate_composite_synonyms.find(candidate_composite_synonym);
           } else {
-            // We have seen this pair of data descriptors before, and we know
+            // We have seen this pair of data descriptors before, and we now
             // know that they are synonymous at one further index, so we
             // update the entry to record that.
             existing_entry->second[common_final_index] = true;
