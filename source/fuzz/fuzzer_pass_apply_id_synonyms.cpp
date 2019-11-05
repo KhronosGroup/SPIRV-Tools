@@ -32,7 +32,7 @@ void FuzzerPassApplyIdSynonyms::Apply() {
   std::vector<TransformationReplaceIdWithSynonym> transformations_to_apply;
 
   for (auto id_with_known_synonyms :
-       GetFactManager()->GetIdsForWhichSynonymsAreKnown()) {
+       GetFactManager()->GetIdsForWhichSynonymsAreKnown(GetIRContext())) {
     GetIRContext()->get_def_use_mgr()->ForEachUse(
         id_with_known_synonyms,
         [this, id_with_known_synonyms, &transformations_to_apply](
@@ -54,8 +54,8 @@ void FuzzerPassApplyIdSynonyms::Apply() {
               use_index - use_inst->NumOperands() + use_inst->NumInOperands();
 
           std::vector<const protobufs::DataDescriptor*> synonyms_to_try;
-          for (auto& data_descriptor :
-               GetFactManager()->GetSynonymsForId(id_with_known_synonyms)) {
+          for (auto& data_descriptor : GetFactManager()->GetSynonymsForId(
+                   id_with_known_synonyms, GetIRContext())) {
             synonyms_to_try.push_back(data_descriptor);
           }
           while (!synonyms_to_try.empty()) {
