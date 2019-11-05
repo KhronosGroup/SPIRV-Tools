@@ -1038,7 +1038,7 @@ TEST(FactManagerTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(
       MakeDataDescriptor(40, {}), MakeDataDescriptor(108, {}), context.get()));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(107, {0}),
-                                  MakeDataDescriptor(35, {0}), context.get());
+                                  MakeDataDescriptor(35, {}), context.get());
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {0}),
                                   MakeDataDescriptor(108, {0}), context.get());
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {1}),
