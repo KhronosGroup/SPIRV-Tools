@@ -432,19 +432,15 @@ message TransformationReplaceConstantWithUniform {
 
 message TransformationReplaceIdWithSynonym {
 
-  // Replaces an id use with something known to be synonymous with that id use,
-  // e.g. because it was obtained via applying OpCopyObject
+  // Replaces a use of an id with an id that is known to be synonymous, e.g.
+  // because it was obtained via applying OpCopyObject
 
-  // Identifies the id use that is to be replaced
+  // The id use that is to be replaced
   IdUseDescriptor id_use_descriptor = 1;
 
-  // Identifies the data with which the id use is expected to be synonymous
-  DataDescriptor data_descriptor = 2;
+  // The synonymous id
+  uint32 synonymous_id = 2;
 
-  // In the case that a temporary is required to express the synonym (e.g. to
-  // obtain an element of a vector, provides a fresh id for the temporary;
-  // should be set to 0 if no temporary is required
-  uint32 fresh_id_for_temporary = 3;
 }
 
 message TransformationSetFunctionControl {
