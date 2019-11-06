@@ -42,6 +42,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_set_memory_operands_mask_test.cpp
           transformation_set_selection_control_test.cpp
           transformation_split_block_test.cpp
+          transformation_vector_shuffle_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
 
   if (${SPIRV_ENABLE_LONG_FUZZER_TESTS})
