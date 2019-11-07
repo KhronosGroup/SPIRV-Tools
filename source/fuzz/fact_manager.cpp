@@ -896,7 +896,7 @@ bool FactManager::IsSynonymous(
     opt::IRContext* context) const {
   return data_synonym_facts_->IsSynonymous(data_descriptor1, data_descriptor2,
                                            context);
-};
+}
 
 }  // namespace fuzz
 }  // namespace spvtools
