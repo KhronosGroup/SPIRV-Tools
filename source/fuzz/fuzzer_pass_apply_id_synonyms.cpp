@@ -89,7 +89,7 @@ void FuzzerPassApplyIdSynonyms::Apply() {
             use_inst->opcode() == SpvOpPhi) {
           // We are trying to replace an operand to an OpPhi.  This means
           // we cannot use a composite synonym, because that requires
-          // extracting a component from a composite an we cannot insert
+          // extracting a component from a composite and we cannot insert
           // an extract instruction before an OpPhi.
           //
           // TODO(afd): We could consider inserting the extract instruction
