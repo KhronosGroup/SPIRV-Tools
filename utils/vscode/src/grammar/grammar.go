@@ -70,10 +70,12 @@ type Parameter struct {
 type Quantifier string
 
 const (
-	// The quantified term may appear exactly once.
-	Once       Quantifier = ""
-	// The quantified term may appear zero or one time; an optional term.
+	// Once indicates the quantified term may appear exactly once.
+	Once Quantifier = ""
+	// ZeroOrOnce indicates the quantified term may appear zero or one
+	// time; an optional term.
 	ZeroOrOnce Quantifier = "?"
-	// The quantified term may appear any number of times.
+	// ZeroOrMany indicates the quantified term may appear any number of
+	// times.
 	ZeroOrMany Quantifier = "*"
 )
