@@ -2263,6 +2263,7 @@ FoldingRule UpdateImageOperands() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     const auto opcode = inst->opcode();
+    (void)opcode;
     assert((opcode == SpvOpImageSampleImplicitLod ||
             opcode == SpvOpImageSampleExplicitLod ||
             opcode == SpvOpImageSampleDrefImplicitLod ||
