@@ -63,12 +63,14 @@ spv_result_t ValidateGroupNonUniformBroadcast(ValidationState_t& _,
               "Boolean type scalar or vector.";
   }
 
-  const auto invocation_id = inst->GetOperandAs<uint32_t>(4);
-  const auto invocation = _.FindDef(invocation_id);
+  if (_.version() < SPV_SPIRV_VERSION_WORD(1, 5)) {
+    const auto invocation_id = inst->GetOperandAs<uint32_t>(4);
+    const auto invocation = _.FindDef(invocation_id);
 
-  if (!spvOpcodeIsConstant(invocation->opcode())) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected id to be a constant.";
+    if (!spvOpcodeIsConstant(invocation->opcode())) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected id to be a constant.";
+    }
   }
 
   const auto value_id = inst->GetOperandAs<uint32_t>(3);
@@ -121,12 +123,14 @@ spv_result_t ValidateGroupNonUniformQuadBroadcast(ValidationState_t& _,
               "Boolean type scalar or vector.";
   }
 
-  const auto invocation_id = inst->GetOperandAs<uint32_t>(4);
-  const auto invocation = _.FindDef(invocation_id);
+  if (_.version() < SPV_SPIRV_VERSION_WORD(1, 5)) {
+    const auto invocation_id = inst->GetOperandAs<uint32_t>(4);
+    const auto invocation = _.FindDef(invocation_id);
 
-  if (!spvOpcodeIsConstant(invocation->opcode())) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected index to be a constant.";
+    if (!spvOpcodeIsConstant(invocation->opcode())) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected index to be a constant.";
+    }
   }
 
   const auto value_id = inst->GetOperandAs<uint32_t>(3);
