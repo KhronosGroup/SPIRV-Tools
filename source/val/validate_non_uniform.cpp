@@ -50,6 +50,97 @@ spv_result_t ValidateGroupNonUniformBallotBitCount(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateGroupNonUniformBroadcast(ValidationState_t& _,
+                                              const Instruction* inst) {
+  // Scope is already checked by ValidateExecutionScope() above.
+
+  const uint32_t result_type = inst->type_id();
+  if (!(_.IsFloatScalarOrVectorType(result_type) ||
+        _.IsIntScalarOrVectorType(result_type) ||
+        _.IsBoolScalarOrVectorType(result_type))) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Result Type to be an integer, floating point, or "
+              "Boolean type scalar or vector.";
+  }
+
+  const auto invocation_id = inst->GetOperandAs<uint32_t>(4);
+  const auto invocation = _.FindDef(invocation_id);
+
+  if (!spvOpcodeIsConstant(invocation->opcode())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected id to be a constant.";
+  }
+
+  const auto value_id = inst->GetOperandAs<uint32_t>(3);
+  const auto value = _.FindDef(value_id);
+  const auto value_type = value->type_id();
+
+  if (result_type != value_type) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected the type of Value to be the same as Result Type.";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateGroupNonUniformBroadcastFirst(ValidationState_t& _,
+                                                   const Instruction* inst) {
+  // Scope is already checked by ValidateExecutionScope() above.
+
+  const uint32_t result_type = inst->type_id();
+  if (!(_.IsFloatScalarOrVectorType(result_type) ||
+        _.IsIntScalarOrVectorType(result_type) ||
+        _.IsBoolScalarOrVectorType(result_type))) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Result Type to be an integer, floating point, or "
+              "Boolean type scalar or vector.";
+  }
+
+  const auto value_id = inst->GetOperandAs<uint32_t>(3);
+  const auto value = _.FindDef(value_id);
+  const auto value_type = value->type_id();
+
+  if (result_type != value_type) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected the type of Value to be the same as Result Type.";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateGroupNonUniformQuadBroadcast(ValidationState_t& _,
+                                                  const Instruction* inst) {
+  // Scope is already checked by ValidateExecutionScope() above.
+
+  const uint32_t result_type = inst->type_id();
+  if (!(_.IsFloatScalarOrVectorType(result_type) ||
+        _.IsIntScalarOrVectorType(result_type) ||
+        _.IsBoolScalarOrVectorType(result_type))) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Result Type to be an integer, floating point, or "
+              "Boolean type scalar or vector.";
+  }
+
+  const auto invocation_id = inst->GetOperandAs<uint32_t>(4);
+  const auto invocation = _.FindDef(invocation_id);
+
+  if (!spvOpcodeIsConstant(invocation->opcode())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected index to be a constant.";
+  }
+
+  const auto value_id = inst->GetOperandAs<uint32_t>(3);
+  const auto value = _.FindDef(value_id);
+  const auto value_type = value->type_id();
+
+  if (result_type != value_type) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected the type of Value to be the same as Result Type.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 // Validates correctness of non-uniform group instructions.
@@ -66,6 +157,12 @@ spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst) {
   switch (opcode) {
     case SpvOpGroupNonUniformBallotBitCount:
       return ValidateGroupNonUniformBallotBitCount(_, inst);
+    case SpvOpGroupNonUniformBroadcast:
+      return ValidateGroupNonUniformBroadcast(_, inst);
+    case SpvOpGroupNonUniformBroadcastFirst:
+      return ValidateGroupNonUniformBroadcastFirst(_, inst);
+    case SpvOpGroupNonUniformQuadBroadcast:
+      return ValidateGroupNonUniformQuadBroadcast(_, inst);
     default:
       break;
   }

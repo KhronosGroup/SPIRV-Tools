@@ -48,12 +48,15 @@ OpCapability GroupNonUniformQuad
 
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical GLSL450\n";
-  ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  ss << "OpEntryPoint " << execution_model
+     << " %main \"main\" %SubgroupId_variable\n";
   if (execution_model == "GLCompute") {
     ss << "OpExecutionMode %main LocalSize 1 1 1\n";
   }
 
   ss << R"(
+OpDecorate %SubgroupId_variable BuiltIn SubgroupId
+
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
@@ -62,6 +65,7 @@ OpCapability GroupNonUniformQuad
 %float = OpTypeFloat 32
 %u32vec4 = OpTypeVector %u32 4
 %u32vec3 = OpTypeVector %u32 3
+%ptr_Input_u32           = OpTypePointer Input %u32
 
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
@@ -84,8 +88,12 @@ OpCapability GroupNonUniformQuad
 %exclusive_scan = OpConstant %u32 2
 %clustered_reduce = OpConstant %u32 3
 
+%SubgroupId_variable     = OpVariable %ptr_Input_u32 Input
+
 %main = OpFunction %void None %func
 %main_entry = OpLabel
+
+%SubgroupId_value      = OpLoad %u32 %SubgroupId_variable
 )";
 
   ss << body;
@@ -288,6 +296,59 @@ INSTANTIATE_TEST_SUITE_P(GroupNonUniformBallotBitCountBadValue, GroupNonUniform,
                                  Values("Expected Value to be a vector of four "
                                         "components of integer type scalar")));
 
+INSTANTIATE_TEST_SUITE_P(GroupNonUniformBroadcast_NonConst, GroupNonUniform,
+                         Combine(Values("OpGroupNonUniformBroadcast"),
+                                 Values("%bool"), Values(SpvScopeSubgroup),
+                                 Values("%true %SubgroupId_value"),
+                                 Values("Expected id to be a constant.")));
+
+INSTANTIATE_TEST_SUITE_P(GroupNonUniformQuadBroadcast_NonConst, GroupNonUniform,
+                         Combine(Values("OpGroupNonUniformQuadBroadcast"),
+                                 Values("%bool"), Values(SpvScopeSubgroup),
+                                 Values("%true %SubgroupId_value"),
+                                 Values("Expected index to be a constant.")));
+
+INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformBroadcast_InvalidType, GroupNonUniform,
+    Combine(Values("OpGroupNonUniformBroadcast"), Values("%void"),
+            Values(SpvScopeSubgroup), Values("%true %u32_0"),
+            Values("Expected Result Type to be an integer, floating point, or "
+                   "Boolean type scalar or vector.")));
+
+INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformBroadcastFirst_InvalidType, GroupNonUniform,
+    Combine(Values("OpGroupNonUniformBroadcastFirst"), Values("%void"),
+            Values(SpvScopeSubgroup), Values("%true"),
+            Values("Expected Result Type to be an integer, floating point, or "
+                   "Boolean type scalar or vector.")));
+
+INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformQuadBroadcast_InvalidType, GroupNonUniform,
+    Combine(Values("OpGroupNonUniformQuadBroadcast"), Values("%void"),
+            Values(SpvScopeSubgroup), Values("%true %u32_0"),
+            Values("Expected Result Type to be an integer, floating point, or "
+                   "Boolean type scalar or vector.")));
+
+INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformBroadcast_TypeMismatch, GroupNonUniform,
+    Combine(
+        Values("OpGroupNonUniformBroadcast"), Values("%u32"),
+        Values(SpvScopeSubgroup), Values("%true %u32_0"),
+        Values("Expected the type of Value to be the same as Result Type.")));
+
+INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformBroadcastFirst_TypeMismatch, GroupNonUniform,
+    Combine(
+        Values("OpGroupNonUniformBroadcastFirst"), Values("%u32"),
+        Values(SpvScopeSubgroup), Values("%true"),
+        Values("Expected the type of Value to be the same as Result Type.")));
+
+INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformQuadBroadcast_TypeMismatch, GroupNonUniform,
+    Combine(
+        Values("OpGroupNonUniformQuadBroadcast"), Values("%u32"),
+        Values(SpvScopeSubgroup), Values("%true %u32_0"),
+        Values("Expected the type of Value to be the same as Result Type.")));
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
