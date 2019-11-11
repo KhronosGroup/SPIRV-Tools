@@ -6989,46 +6989,46 @@ std::string ImageOperandsTestBody(const std::string& image_instruction) {
 INSTANTIATE_TEST_SUITE_P(ImageOperandsBitmaskFoldingTest, MatchingInstructionWithNoResultFoldingTest,
 ::testing::Values(
     // Test case 0: OpImageFetch without Offset
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               %89 = OpImageFetch %10 %88 %101 Lod %5
-      )"), 89, false),
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+        "%89 = OpImageFetch %10 %88 %101 Lod %5 \n")
+        , 89, false),
     // Test case 1: OpImageFetch with non-const offset
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               %89 = OpImageFetch %10 %88 %101 Lod|Offset %5 %val
-      )"), 89, false),
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+        "%89 = OpImageFetch %10 %88 %101 Lod|Offset %5 %val \n")
+        , 89, false),
     // Test case 2: OpImageFetch with Lod and Offset
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               %89 = OpImageFetch %10 %88 %101 Lod|Offset %5 %101
-      ; CHECK: %89 = OpImageFetch %10 %88 %101 Lod|ConstOffset %5 %101
-      )"), 89, true),
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+      "         %89 = OpImageFetch %10 %88 %101 Lod|Offset %5 %101      \n"
+      "; CHECK: %89 = OpImageFetch %10 %88 %101 Lod|ConstOffset %5 %101 \n")
+      , 89, true),
     // Test case 3: OpImageFetch with Bias and Offset
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               %89 = OpImageFetch %10 %88 %101 Bias|Offset %5 %101
-      ; CHECK: %89 = OpImageFetch %10 %88 %101 Bias|ConstOffset %5 %101
-      )"), 89, true),
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+      "         %89 = OpImageFetch %10 %88 %101 Bias|Offset %5 %101      \n"
+      "; CHECK: %89 = OpImageFetch %10 %88 %101 Bias|ConstOffset %5 %101 \n")
+      , 89, true),
     // Test case 4: OpImageFetch with Grad and Offset.
     // Grad adds 2 operands to the instruction.
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               %89 = OpImageFetch %10 %88 %101 Grad|Offset %5 %5 %101
-      ; CHECK: %89 = OpImageFetch %10 %88 %101 Grad|ConstOffset %5 %5 %101
-      )"), 89, true),
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+      "         %89 = OpImageFetch %10 %88 %101 Grad|Offset %5 %5 %101      \n"
+      "; CHECK: %89 = OpImageFetch %10 %88 %101 Grad|ConstOffset %5 %5 %101 \n")
+      , 89, true),
     // Test case 5: OpImageFetch with Offset and MinLod.
     // This is an example of a case where the bitmask bit-offset is larger than
     // that of the Offset.
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               %89 = OpImageFetch %10 %88 %101 Offset|MinLod %101 %5
-      ; CHECK: %89 = OpImageFetch %10 %88 %101 ConstOffset|MinLod %101 %5
-      )"), 89, true),
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+      "         %89 = OpImageFetch %10 %88 %101 Offset|MinLod %101 %5      \n"
+      "; CHECK: %89 = OpImageFetch %10 %88 %101 ConstOffset|MinLod %101 %5 \n")
+      , 89, true),
     // Test case 6: OpImageGather with constant Offset
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               %89 = OpImageGather %10 %26 %20 %5 Offset %101
-      ; CHECK: %89 = OpImageGather %10 %26 %20 %5 ConstOffset %101
-      )"), 89, true),
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+      "         %89 = OpImageGather %10 %26 %20 %5 Offset %101      \n"
+      "; CHECK: %89 = OpImageGather %10 %26 %20 %5 ConstOffset %101 \n")
+      , 89, true),
     // Test case 7: OpImageWrite with constant Offset
-    InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
-               OpImageWrite %88 %5 %101 Offset %101
-      ; CHECK: OpImageWrite %88 %5 %101 ConstOffset %101
-      )"), 0 /* No result-id */, true)
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+      "         OpImageWrite %88 %5 %101 Offset %101      \n"
+      "; CHECK: OpImageWrite %88 %5 %101 ConstOffset %101 \n")
+      , 0 /* No result-id */, true)
 ));
 
 }  // namespace
