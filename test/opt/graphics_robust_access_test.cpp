@@ -898,7 +898,7 @@ TEST_F(GraphicsRobustAccessTest, ACStructNegativeFail) {
 TEST_F(GraphicsRobustAccessTest, ACRTArrayLeastInboundClamped) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
-    shaders << ShaderPreambleAC() << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 "
+    shaders << ShaderPreambleAC() << "OpDecorate %rtarr ArrayStride 4 "
             << DecoSSBO() << TypesVoid() << TypesInt() << TypesFloat() << R"(
        %rtarr = OpTypeRuntimeArray %float
        %ssbo_s = OpTypeStruct %uint %uint %rtarr
@@ -925,7 +925,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralShortIndexClamped) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
+            << "OpDecorate %rtarr ArrayStride 4 " << DecoSSBO()
             << TypesVoid() << TypesShort() << TypesFloat() << R"(
        %rtarr = OpTypeRuntimeArray %float
        %ssbo_s = OpTypeStruct %short %short %rtarr
@@ -955,7 +955,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUShortIndexClamped) {
     std::ostringstream shaders;
     shaders << "OpCapability Int16\n"
             << ShaderPreambleAC({"i"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
+            << "OpDecorate %rtarr ArrayStride 4 " << DecoSSBO()
             << TypesVoid() << TypesShort() << TypesFloat() << R"(
        %rtarr = OpTypeRuntimeArray %float
        %ssbo_s = OpTypeStruct %short %short %rtarr
@@ -984,7 +984,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralIntIndexClamped) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
+            << "OpDecorate %rtarr ArrayStride 4 " << DecoSSBO()
             << TypesVoid() << TypesInt() << TypesFloat() << R"(
        %rtarr = OpTypeRuntimeArray %float
        %ssbo_s = OpTypeStruct %int %int %rtarr
@@ -1010,7 +1010,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUIntIndexClamped) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
+            << "OpDecorate %rtarr ArrayStride 4 " << DecoSSBO()
             << TypesVoid() << TypesInt() << TypesFloat() << R"(
        %rtarr = OpTypeRuntimeArray %float
        %ssbo_s = OpTypeStruct %int %int %rtarr
@@ -1036,7 +1036,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralLongIndexClamped) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64" << ShaderPreambleAC({"i"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
+            << "OpDecorate %rtarr ArrayStride 4 " << DecoSSBO()
             << TypesVoid() << TypesInt() << TypesLong() << TypesFloat() << R"(
        %rtarr = OpTypeRuntimeArray %float
        %ssbo_s = OpTypeStruct %int %int %rtarr
@@ -1064,7 +1064,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralULongIndexClamped) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << "OpCapability Int64" << ShaderPreambleAC({"i"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 4 " << DecoSSBO()
+            << "OpDecorate %rtarr ArrayStride 4 " << DecoSSBO()
             << TypesVoid() << TypesInt() << TypesLong() << TypesFloat() << R"(
        %rtarr = OpTypeRuntimeArray %float
        %ssbo_s = OpTypeStruct %int %int %rtarr
@@ -1095,7 +1095,7 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayStructVectorElem) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i", "j"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 32\n"
+            << "OpDecorate %rtarr ArrayStride 32\n"
             << DecoSSBO() << "OpMemberDecorate %rtelem 0 Offset 0\n"
             << "OpMemberDecorate %rtelem 1 Offset 16\n"
             << TypesVoid() << TypesInt() << TypesFloat() << R"(
@@ -1131,7 +1131,7 @@ TEST_F(GraphicsRobustAccessTest, ACArrayRTArrayStructVectorElem) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i", "ssbo_s"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 32\n"
+            << "OpDecorate %rtarr ArrayStride 32\n"
             << DecoSSBO() << "OpMemberDecorate %rtelem 0 Offset 0\n"
             << "OpMemberDecorate %rtelem 1 Offset 16\n"
             << TypesVoid() << TypesInt() << TypesFloat() << R"(
@@ -1175,7 +1175,7 @@ TEST_F(GraphicsRobustAccessTest, ACSplitACArrayRTArrayStructVectorElem) {
     std::ostringstream shaders;
     shaders << ShaderPreambleAC({"i", "j", "k", "ssbo_s", "ssbo_pty",
                                  "rtarr_pty", "ac_ssbo", "ac_rtarr"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 32\n"
+            << "OpDecorate %rtarr ArrayStride 32\n"
             << DecoSSBO() << "OpMemberDecorate %rtelem 0 Offset 0\n"
             << "OpMemberDecorate %rtelem 1 Offset 16\n"
             << TypesVoid() << TypesInt() << TypesFloat() << R"(
@@ -1238,7 +1238,7 @@ TEST_F(GraphicsRobustAccessTest,
     shaders << ShaderPreambleAC({"i", "j", "k", "bb1", "bb2", "ssbo_s",
                                  "ssbo_pty", "rtarr_pty", "ac_ssbo",
                                  "ac_rtarr"})
-            << "OpMemberDecorate %ssbo_s 0 ArrayStride 32\n"
+            << "OpDecorate %rtarr ArrayStride 32\n"
             << DecoSSBO() << "OpMemberDecorate %rtelem 0 Offset 0\n"
             << "OpMemberDecorate %rtelem 1 Offset 16\n"
             << TypesVoid() << TypesInt() << TypesFloat() << R"(
