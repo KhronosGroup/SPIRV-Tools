@@ -942,8 +942,8 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralShortIndexClamped) {
        ; CHECK-DAG: %[[max:\w+]] = OpISub %uint %[[arrlen]] %uint_1
        ; CHECK-DAG: %[[i_ext:\w+]] = OpSConvert %uint %i
        ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %[[i_ext]] %uint_0 %[[max]]
-       )" << MainPrefix()
-            << ACCheck(ac, "%short_2 %i", "%short_2 %[[clamp]]")
+       )"
+            << MainPrefix() << ACCheck(ac, "%short_2 %i", "%short_2 %[[clamp]]")
             << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
   }
@@ -971,8 +971,8 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUShortIndexClamped) {
        ; CHECK-DAG: %[[max:\w+]] = OpISub %uint %[[arrlen]] %uint_1
        ; CHECK-DAG: %[[i_ext:\w+]] = OpSConvert %uint %i
        ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %[[i_ext]] %uint_0 %[[max]]
-       )" << MainPrefix()
-            << ACCheck(ac, "%short_2 %i", "%short_2 %[[clamp]]")
+       )"
+            << MainPrefix() << ACCheck(ac, "%short_2 %i", "%short_2 %[[clamp]]")
             << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
   }
@@ -997,8 +997,9 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralIntIndexClamped) {
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK: %[[max:\w+]] = OpISub %int %[[arrlen]] %int_1
        ; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] UClamp %i %int_0 %[[max]]
-       )" << MainPrefix()
-            << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]") << MainSuffix();
+       )"
+            << MainPrefix() << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]")
+            << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
   }
 }
@@ -1022,8 +1023,9 @@ TEST_F(GraphicsRobustAccessTest, ACRTArrayGeneralUIntIndexClamped) {
        ; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 2
        ; CHECK: %[[max:\w+]] = OpISub %uint %[[arrlen]] %uint_1
        ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] UClamp %i %uint_0 %[[max]]
-       )" << MainPrefix()
-            << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]") << MainSuffix();
+       )"
+            << MainPrefix() << ACCheck(ac, "%int_2 %i", "%int_2 %[[clamp]]")
+            << MainSuffix();
     SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
   }
 }
