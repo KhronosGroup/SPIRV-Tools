@@ -38,7 +38,7 @@ const uint32_t kStoreObjectInIdx = 1;
 // Some image instructions may contain an "image operands" argument.
 // Returns the operand index for the "image operands".
 // Returns -1 if the instruction does not have image operands.
-int32_t ImageOperandsIndex(Instruction* inst) {
+int32_t ImageOperandsMaskInOperandIndex(Instruction* inst) {
   const auto opcode = inst->opcode();
   switch (opcode) {
     case SpvOpImageSampleImplicitLod:
@@ -53,7 +53,7 @@ int32_t ImageOperandsIndex(Instruction* inst) {
     case SpvOpImageSparseSampleProjExplicitLod:
     case SpvOpImageSparseFetch:
     case SpvOpImageSparseRead:
-      return inst->NumOperands() > 4 ? 4 : -1;
+      return inst->NumOperands() > 4 ? 2 : -1;
     case SpvOpImageSampleDrefImplicitLod:
     case SpvOpImageSampleDrefExplicitLod:
     case SpvOpImageSampleProjDrefImplicitLod:
@@ -66,7 +66,7 @@ int32_t ImageOperandsIndex(Instruction* inst) {
     case SpvOpImageSparseSampleProjDrefExplicitLod:
     case SpvOpImageSparseGather:
     case SpvOpImageSparseDrefGather:
-      return inst->NumOperands() > 5 ? 5 : -1;
+      return inst->NumOperands() > 5 ? 3 : -1;
     case SpvOpImageWrite:
       return inst->NumOperands() > 3 ? 3 : -1;
     default:
@@ -2260,8 +2260,8 @@ FoldingRule RemoveRedundantOperands() {
 // If an image instruction's operand is a constant, updates the image operand
 // flag from Offset to ConstOffset.
 FoldingRule UpdateImageOperands() {
-  return [](IRContext* context, Instruction* inst,
-            const std::vector<const analysis::Constant*>&) {
+  return [](IRContext*, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
     const auto opcode = inst->opcode();
     (void)opcode;
     assert((opcode == SpvOpImageSampleImplicitLod ||
@@ -2289,26 +2289,22 @@ FoldingRule UpdateImageOperands() {
             opcode == SpvOpImageSparseRead) &&
            "Wrong opcode.  Should be an image instruction.");
 
-    int32_t operand_index = ImageOperandsIndex(inst);
+    int32_t operand_index = ImageOperandsMaskInOperandIndex(inst);
     if (operand_index >= 0) {
-      auto image_operands = inst->GetSingleWordOperand(operand_index);
+      auto image_operands = inst->GetSingleWordInOperand(operand_index);
       if (image_operands & SpvImageOperandsOffsetMask) {
         uint32_t offset_operand_index = operand_index + 1;
         if (image_operands & SpvImageOperandsBiasMask) offset_operand_index++;
         if (image_operands & SpvImageOperandsLodMask) offset_operand_index++;
         if (image_operands & SpvImageOperandsGradMask)
           offset_operand_index += 2;
-        // Note that it is illegal to have both Offset and ConstOffset bits
-        // enabled in the bitmask.
         assert(((image_operands & SpvImageOperandsConstOffsetMask) == 0) &&
                "Offset and ConstOffset may not be used together");
         if (offset_operand_index < inst->NumOperands()) {
-          Instruction* offset_inst = context->get_def_use_mgr()->GetDef(
-              inst->GetSingleWordOperand(offset_operand_index));
-          if (offset_inst && offset_inst->IsConstant()) {
+          if (constants[offset_operand_index]) {
             image_operands = image_operands | SpvImageOperandsConstOffsetMask;
             image_operands = image_operands & ~SpvImageOperandsOffsetMask;
-            inst->SetOperand(operand_index, {image_operands});
+            inst->SetInOperand(operand_index, {image_operands});
             return true;
           }
         }

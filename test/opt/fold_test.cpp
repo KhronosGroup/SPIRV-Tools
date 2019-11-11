@@ -6941,46 +6941,6 @@ INSTANTIATE_TEST_SUITE_P(FloatControlsFoldingTest, FloatControlsFoldingTest,
                                  1, false)
 ));
 
-// clang-format on
-using ImageOperandsBitmaskFoldingTest =
-    ::testing::TestWithParam<InstructionFoldingCase<bool>>;
-
-TEST_P(ImageOperandsBitmaskFoldingTest, Case) {
-  const auto& tc = GetParam();
-
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_4, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  // If |id_to_fold| is zero, we fold the instruction before the OpReturn
-  // instruction. This will allow for testing OpImageWrite which does not have a
-  // result-id.
-  Instruction* inst = nullptr;
-  if (tc.id_to_fold) {
-    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-    inst = def_use_mgr->GetDef(tc.id_to_fold);
-  } else {
-    Function* func = &*context->module()->begin();
-    for (auto& bb : *func) {
-      Instruction* terminator = bb.terminator();
-      if (terminator->IsReturnOrAbort()) {
-        inst = terminator->PreviousNode();
-        break;
-      }
-    }
-  }
-
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-  EXPECT_EQ(succeeded, tc.expected_result);
-  if (succeeded) {
-    Match(tc.test_body, context.get());
-  }
-}
-
-// clang-format off
 std::string ImageOperandsTestBody(const std::string& image_instruction) {
   std::string body = R"(
                OpCapability Shader
@@ -7026,7 +6986,7 @@ std::string ImageOperandsTestBody(const std::string& image_instruction) {
   return body;
 }
 
-INSTANTIATE_TEST_SUITE_P(ImageOperandsBitmaskFoldingTest, ImageOperandsBitmaskFoldingTest,
+INSTANTIATE_TEST_SUITE_P(ImageOperandsBitmaskFoldingTest, MatchingInstructionWithNoResultFoldingTest,
 ::testing::Values(
     // Test case 0: OpImageFetch without Offset
     InstructionFoldingCase<bool>(ImageOperandsTestBody(R"(
