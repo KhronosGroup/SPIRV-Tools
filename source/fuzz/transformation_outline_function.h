@@ -15,6 +15,9 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_OUTLINE_FUNCTION_H_
 #define SOURCE_FUZZ_TRANSFORMATION_OUTLINE_FUNCTION_H_
 
+#include <map>
+#include <vector>
+
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -28,12 +31,13 @@ class TransformationOutlineFunction : public Transformation {
   explicit TransformationOutlineFunction(
       const protobufs::TransformationOutlineFunction& message);
 
-  TransformationOutlineFunction(uint32_t entry_block, uint32_t exit_block,
-                                uint32_t new_function_type_id,
-                                uint32_t new_function_id,
-                                uint32_t new_function_entry_block,
-                                uint32_t new_function_exit_block,
-                                uint32_t function_call_result_id);
+  TransformationOutlineFunction(
+      uint32_t entry_block, uint32_t exit_block,
+      uint32_t new_function_struct_return_type_id,
+      uint32_t new_function_type_id, uint32_t new_function_id,
+      uint32_t new_function_entry_block, uint32_t new_caller_result_id,
+      uint32_t new_callee_result_id,
+      std::map<uint32_t, uint32_t>&& output_id_to_fresh_id);
 
   // TODO comment
   bool IsApplicable(opt::IRContext* context,
@@ -53,6 +57,13 @@ class TransformationOutlineFunction : public Transformation {
   bool CheckIdIsFreshAndNotUsedByThisTransformation(
       uint32_t id, opt::IRContext* context,
       std::set<uint32_t>* ids_used_by_this_transformation) const;
+
+  // TODO comment
+  std::vector<uint32_t> GetIdsDefinedInRegionAndUsedOutsideRegion(
+      opt::IRContext* context) const;
+
+  // TODO comment
+  std::map<uint32_t, uint32_t> GetOutputIdToFreshIdMap() const;
 
   protobufs::TransformationOutlineFunction message_;
 };

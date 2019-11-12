@@ -21,6 +21,16 @@ syntax = "proto3";
 
 package spvtools.fuzz.protobufs;
 
+message UInt32Pair {
+
+  // A pair of uint32s; useful for defining mappings.
+
+  uint32 first = 1;
+
+  uint32 second = 2;
+
+}
+
 message InstructionDescriptor {
 
   // Describes an instruction in some block of a function with respect to a
@@ -402,20 +412,27 @@ message TransformationOutlineFunction {
   // Id of the exit block of the single-entry single-exit region to be outlined
   uint32 exit_block = 2;
 
+  // Id of a struct that will store the return values of the new function
+  uint32 new_function_struct_return_type_id = 3;
+
   // A fresh id for the type of the outlined function
-  uint32 new_function_type_id = 3;
+  uint32 new_function_type_id = 4;
 
   // A fresh id for the outlined function itself
-  uint32 new_function_id = 4;
+  uint32 new_function_id = 5;
 
   // A fresh id for the entry block of the outlined function
-  uint32 new_function_entry_block = 5;
+  uint32 new_function_entry_block = 6;
 
-  // A fresh id for the exit block of the outlined function
-  uint32 new_function_exit_block = 6;
+  // A fresh id for the result of the OpFunctionCall instruction that will call
+  // the outlined function
+  uint32 new_caller_result_id = 7;
 
-  // A fresh id to capture the return value for the function call
-  uint32 function_call_result_id = 7;
+  // A fresh id to capture the return value of the outlined function - the
+  // argument to OpReturn
+  uint32 new_callee_result_id = 8;
+
+  repeated UInt32Pair output_id_to_fresh_id = 9;
 
 }
 
