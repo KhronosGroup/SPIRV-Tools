@@ -134,7 +134,7 @@ bool TransformationOutlineFunction::IsApplicable(
   std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
       GetOutputIdToFreshIdMap();
   std::vector<uint32_t> ids_defined_in_region_and_used_outside_region =
-      GetIdsDefinedInRegionAndUsedOutsideRegion(context);
+      GetIdsDefinedInRegionAndUsedOutsideRegion(context, GetRegionSet(context));
   for (auto id : ids_defined_in_region_and_used_outside_region) {
     if (output_id_to_fresh_id_map.count(id) == 0) {
       return false;
@@ -158,10 +158,21 @@ void TransformationOutlineFunction::Apply(
 
   std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
       GetOutputIdToFreshIdMap();
+  std::set<opt::BasicBlock*> region_set = GetRegionSet(context);
   std::vector<uint32_t> ids_defined_in_region_and_used_outside_region =
-      GetIdsDefinedInRegionAndUsedOutsideRegion(context);
+      GetIdsDefinedInRegionAndUsedOutsideRegion(context, region_set);
+
+  auto entry_block = context->cfg()->block(message_.entry_block());
+  auto enclosing_function = entry_block->GetParent();
 
   for (uint32_t id : ids_defined_in_region_and_used_outside_region) {
+    def_use_manager_before_changes->ForEachUse(
+        id, [context, id, &output_id_to_fresh_id_map, region_set](
+                opt::Instruction* use, uint32_t operand_index) {
+          if (region_set.count(context->get_instr_block(use)) != 0) {
+            use->SetOperand(operand_index, {output_id_to_fresh_id_map[id]});
+          }
+        });
     def_use_manager_before_changes->GetDef(id)->SetResultId(
         output_id_to_fresh_id_map[id]);
   }
@@ -218,7 +229,6 @@ void TransformationOutlineFunction::Apply(
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           context, SpvOpLabel, 0, message_.new_function_entry_block(),
           opt::Instruction::OperandList()));
-  auto entry_block = context->cfg()->block(message_.entry_block());
   for (auto& inst : *entry_block) {
     if (inst.opcode() == SpvOpPhi) {
       continue;
@@ -230,11 +240,6 @@ void TransformationOutlineFunction::Apply(
 
   // We now go through the single-entry single-exit region defined by the entry
   // and exit blocks, and clones of all such blocks to the new function.
-  auto enclosing_function = entry_block->GetParent();
-  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
-  auto exit_block = context->cfg()->block(message_.exit_block());
-  auto postdominator_analysis =
-      context->GetPostDominatorAnalysis(enclosing_function);
 
   // Consider every block in the enclosing function.
   for (auto block_it = enclosing_function->begin();
@@ -245,8 +250,7 @@ void TransformationOutlineFunction::Apply(
       continue;
     }
     // Skip any blocks that are not in the region.
-    if (!(dominator_analysis->Dominates(entry_block, &*block_it) &&
-          postdominator_analysis->Dominates(exit_block, &*block_it))) {
+    if (region_set.count(&*block_it) == 0) {
       ++block_it;
       continue;
     }
@@ -344,44 +348,30 @@ bool TransformationOutlineFunction::
 
 std::vector<uint32_t>
 TransformationOutlineFunction::GetIdsDefinedInRegionAndUsedOutsideRegion(
-    opt::IRContext* context) const {
-  std::set<opt::BasicBlock*> blocks_in_region;
+    opt::IRContext* context,
+    const std::set<opt::BasicBlock*>& region_set) const {
   std::vector<opt::BasicBlock*> list_of_blocks_in_region;
-
-  auto entry_block = context->cfg()->block(message_.entry_block());
-  auto exit_block = context->cfg()->block(message_.exit_block());
-
-  auto enclosing_function = entry_block->GetParent();
-  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
-  auto postdominator_analysis =
-      context->GetPostDominatorAnalysis(enclosing_function);
-
-  for (auto& block : *enclosing_function) {
-    if (dominator_analysis->Dominates(entry_block, &block) &&
-        postdominator_analysis->Dominates(exit_block, &block)) {
-      blocks_in_region.insert(&block);
-      list_of_blocks_in_region.push_back(&block);
-    }
-  }
 
   std::vector<uint32_t> result;
 
-  for (auto block : list_of_blocks_in_region) {
-    for (auto& inst : *block) {
-      context->get_def_use_mgr()->WhileEachUse(
-          &inst,
-          [&blocks_in_region, context, &inst, &result](
-              opt::Instruction* use, uint32_t /*unused*/) -> bool {
-            auto use_block = context->get_instr_block(use);
-            if (use_block && blocks_in_region.count(use_block) == 0) {
-              result.push_back(inst.result_id());
-              return false;
-            }
-            return true;
-          });
+  for (auto& block :
+       *context->cfg()->block(message_.entry_block())->GetParent()) {
+    if (region_set.count(&block) != 0) {
+      for (auto& inst : block) {
+        context->get_def_use_mgr()->WhileEachUse(
+            &inst,
+            [&region_set, context, &inst, &result](
+                opt::Instruction* use, uint32_t /*unused*/) -> bool {
+              auto use_block = context->get_instr_block(use);
+              if (use_block && region_set.count(use_block) == 0) {
+                result.push_back(inst.result_id());
+                return false;
+              }
+              return true;
+            });
+      }
     }
   }
-
   return result;
 }
 
@@ -390,6 +380,25 @@ TransformationOutlineFunction::GetOutputIdToFreshIdMap() const {
   std::map<uint32_t, uint32_t> result;
   for (auto& pair : message_.output_id_to_fresh_id()) {
     result[pair.first()] = pair.second();
+  }
+  return result;
+}
+
+std::set<opt::BasicBlock*> TransformationOutlineFunction::GetRegionSet(
+    opt::IRContext* context) const {
+  auto entry_block = context->cfg()->block(message_.entry_block());
+  auto exit_block = context->cfg()->block(message_.exit_block());
+  auto enclosing_function = entry_block->GetParent();
+  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
+  auto postdominator_analysis =
+      context->GetPostDominatorAnalysis(enclosing_function);
+
+  std::set<opt::BasicBlock*> result;
+  for (auto& block : *enclosing_function) {
+    if (dominator_analysis->Dominates(entry_block, &block) &&
+        postdominator_analysis->Dominates(exit_block, &block)) {
+      result.insert(&block);
+    }
   }
   return result;
 }

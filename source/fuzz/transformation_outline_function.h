@@ -60,10 +60,14 @@ class TransformationOutlineFunction : public Transformation {
 
   // TODO comment
   std::vector<uint32_t> GetIdsDefinedInRegionAndUsedOutsideRegion(
-      opt::IRContext* context) const;
+      opt::IRContext* context,
+      const std::set<opt::BasicBlock*>& region_set) const;
 
   // TODO comment
   std::map<uint32_t, uint32_t> GetOutputIdToFreshIdMap() const;
+
+  // TODO comment
+  std::set<opt::BasicBlock*> GetRegionSet(opt::IRContext* context) const;
 
   protobufs::TransformationOutlineFunction message_;
 };
