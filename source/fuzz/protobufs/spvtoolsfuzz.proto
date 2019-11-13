@@ -432,7 +432,9 @@ message TransformationOutlineFunction {
   // argument to OpReturn
   uint32 new_callee_result_id = 8;
 
-  repeated UInt32Pair output_id_to_fresh_id = 9;
+  repeated UInt32Pair input_id_to_fresh_id = 9;
+
+  repeated UInt32Pair output_id_to_fresh_id = 10;
 
 }
 

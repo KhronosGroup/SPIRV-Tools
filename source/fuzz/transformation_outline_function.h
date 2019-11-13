@@ -37,6 +37,7 @@ class TransformationOutlineFunction : public Transformation {
       uint32_t new_function_type_id, uint32_t new_function_id,
       uint32_t new_function_entry_block, uint32_t new_caller_result_id,
       uint32_t new_callee_result_id,
+      std::map<uint32_t, uint32_t>&& input_id_to_fresh_id,
       std::map<uint32_t, uint32_t>&& output_id_to_fresh_id);
 
   // TODO comment
@@ -59,15 +60,23 @@ class TransformationOutlineFunction : public Transformation {
       std::set<uint32_t>* ids_used_by_this_transformation) const;
 
   // TODO comment
-  std::vector<uint32_t> GetIdsDefinedInRegionAndUsedOutsideRegion(
+  std::vector<uint32_t> GetRegionInputIds(
       opt::IRContext* context,
       const std::set<opt::BasicBlock*>& region_set) const;
+
+  // TODO comment
+  std::vector<uint32_t> GetRegionOutputIds(
+      opt::IRContext* context,
+      const std::set<opt::BasicBlock*>& region_set) const;
+
+  // TODO comment
+  std::map<uint32_t, uint32_t> GetInputIdToFreshIdMap() const;
 
   // TODO comment
   std::map<uint32_t, uint32_t> GetOutputIdToFreshIdMap() const;
 
   // TODO comment
-  std::set<opt::BasicBlock*> GetRegionSet(opt::IRContext* context) const;
+  std::set<opt::BasicBlock*> GetRegionBlocks(opt::IRContext* context) const;
 
   protobufs::TransformationOutlineFunction message_;
 };
