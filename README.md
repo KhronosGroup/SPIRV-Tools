@@ -319,11 +319,11 @@ installed regardless of your OS:
 targets, you need to install CMake Version 2.8.12 or later.
 - [Python 3](http://www.python.org/): for utility scripts and running the test
 suite.
-- [Bazel](https://baze.build/) (optional): if building the source with Bazel,
+- [Bazel](https://bazel.build/) (optional): if building the source with Bazel,
 you need to install Bazel Version 0.29.1 on your machine. Other versions may
 also work, but are not verified.
 
-SPIRV-Tools is regularly tested with the the following compilers:
+SPIRV-Tools is regularly tested with the following compilers:
 
 On Linux
 - GCC version 4.8.5
