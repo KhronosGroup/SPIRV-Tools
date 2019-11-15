@@ -615,6 +615,81 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesASingleId) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAVariable) {
+  // This tests outlining of a block that uses a variable.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+         %20 = OpTypeInt 32 1
+         %21 = OpConstant %20 5
+          %3 = OpTypeFunction %2
+         %12 = OpTypePointer Function %20
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %13 = OpVariable %12 Function
+               OpBranch %6
+          %6 = OpLabel
+          %8 = OpLoad %20 %13
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 103, 104,
+                                               105, {{13, 106}}, {});
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+         %20 = OpTypeInt 32 1
+         %21 = OpConstant %20 5
+          %3 = OpTypeFunction %2
+         %12 = OpTypePointer Function %20
+        %101 = OpTypeFunction %2 %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %13 = OpVariable %12 Function
+               OpBranch %6
+          %6 = OpLabel
+        %104 = OpFunctionCall %2 %102 %13
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %102 = OpFunction %2 None %101
+        %106 = OpFunctionParameter %12
+        %103 = OpLabel
+          %8 = OpLoad %20 %106
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
