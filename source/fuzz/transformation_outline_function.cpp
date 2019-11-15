@@ -156,10 +156,43 @@ bool TransformationOutlineFunction::IsApplicable(
     return false;
   }
 
+  auto region_set = GetRegionBlocks(context);
+
+  for (auto block : region_set) {
+    if (block == exit_block) {
+      continue;
+    }
+
+    if (auto merge = block->GetMergeInst()) {
+      if (region_set.count(
+              context->cfg()->block(merge->GetSingleWordOperand(0))) == 0) {
+        return false;
+      }
+    }
+    if (auto loop_merge = block->GetLoopMergeInst()) {
+      if (region_set.count(context->cfg()->block(
+              loop_merge->GetSingleWordOperand(1))) == 0) {
+        return false;
+      }
+    }
+  }
+
+  auto first_instruction = entry_block->begin();
+  if (entry_block->GetLoopMergeInst() &&
+      first_instruction->opcode() == SpvOpPhi) {
+    for (uint32_t pred_index = 1;
+         pred_index < entry_block->begin()->NumInOperands(); pred_index += 2) {
+      if (region_set.count(context->cfg()->block(
+              first_instruction->GetSingleWordInOperand(pred_index))) > 0) {
+        return false;
+      }
+    }
+  }
+
   std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
       GetInputIdToFreshIdMap();
   std::vector<uint32_t> ids_defined_outside_region_and_used_in_region =
-      GetRegionInputIds(context, GetRegionBlocks(context));
+      GetRegionInputIds(context, region_set);
   for (auto id : ids_defined_outside_region_and_used_in_region) {
     if (input_id_to_fresh_id_map.count(id) == 0) {
       return false;
@@ -169,7 +202,7 @@ bool TransformationOutlineFunction::IsApplicable(
   std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
       GetOutputIdToFreshIdMap();
   std::vector<uint32_t> ids_defined_in_region_and_used_outside_region =
-      GetRegionOutputIds(context, GetRegionBlocks(context));
+      GetRegionOutputIds(context, region_set);
   for (auto id : ids_defined_in_region_and_used_outside_region) {
     if (output_id_to_fresh_id_map.count(id) == 0) {
       return false;
@@ -340,14 +373,47 @@ void TransformationOutlineFunction::Apply(
       ++block_it;
       continue;
     }
-    // Skip any blocks that are not in the region.
     if (region_blocks.count(&*block_it) == 0) {
+      // The block is not in the region.  Check whether it uses the last block
+      // of the region as a continue target, or has the last block of the region
+      // as an OpPhi predecessor, and change such occurrences to be the first
+      // block of the region (i.e. the block containing the call to what was
+      // outlined).
+      if (block_it->ContinueBlockIdIfAny() == message_.exit_block()) {
+        block_it->GetMergeInst()->SetInOperand(1, {message_.entry_block()});
+      }
+      block_it->ForEachPhiInst([this](opt::Instruction* phi_inst) {
+        for (uint32_t predecessor_index = 1;
+             predecessor_index < phi_inst->NumInOperands();
+             predecessor_index += 2) {
+          if (phi_inst->GetSingleWordInOperand(predecessor_index) ==
+              message_.exit_block()) {
+            phi_inst->SetInOperand(predecessor_index, {message_.entry_block()});
+          }
+        }
+
+      });
+
       ++block_it;
       continue;
     }
-    // Add the block to the new function.
-    outlined_function->AddBasicBlock(
-        std::unique_ptr<opt::BasicBlock>(block_it->Clone(context)));
+    // Clone the block so that it can be added to the new function.
+    auto cloned_block =
+        std::unique_ptr<opt::BasicBlock>(block_it->Clone(context));
+    // Redirect any OpPhi operands whose values are the original region entry
+    // block to become the new function entry block.
+    cloned_block->ForEachPhiInst([this](opt::Instruction* phi_inst) {
+      for (uint32_t predecessor_index = 1;
+           predecessor_index < phi_inst->NumInOperands();
+           predecessor_index += 2) {
+        if (phi_inst->GetSingleWordInOperand(predecessor_index) ==
+            message_.entry_block()) {
+          phi_inst->SetInOperand(predecessor_index,
+                                 {message_.new_function_entry_block()});
+        }
+      }
+    });
+    outlined_function->AddBasicBlock(std::move(cloned_block));
     block_it = block_it.Erase();
   }
   auto final_block = --outlined_function->end();
