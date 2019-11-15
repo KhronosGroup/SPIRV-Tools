@@ -147,9 +147,11 @@ class TestStatus:
     if sys.version_info[0] is 2:
      self.stdout = stdout.decode('utf-8')
      self.stderr = stderr.decode('utf-8')
-    else:
+    elif sys.version_info[0] is 3:
       self.stdout = str(stdout, encoding='utf-8') if stdout else stdout
       self.stderr = str(stderr, encoding='utf-8') if stderr else stderr
+    else:
+      raise Exception('Unable to determine if running Python 2 or 3 from {}'.format(sys.version_info))
     # temporary directory where the test runs
     self.directory = directory
     # List of inputs, as PlaceHolder objects.
