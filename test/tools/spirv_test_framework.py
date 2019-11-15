@@ -142,8 +142,14 @@ class TestStatus:
                inputs, input_filenames):
     self.test_manager = test_manager
     self.returncode = returncode
-    self.stdout = str(stdout, encoding='ascii') if stdout else stdout
-    self.stderr = str(stderr, encoding='ascii') if stderr else stderr
+    # Some of our MacOS bots still run Python 2, so need to be backwards
+    # compatible here.
+    if sys.version_info[0] is 2:
+     self.stdout = stdout.decode('utf-8')
+     self.stderr = stderr.decode('utf-8')
+    else:
+      self.stdout = str(stdout, encoding='utf-8') if stdout else stdout
+      self.stderr = str(stderr, encoding='utf-8') if stderr else stderr
     # temporary directory where the test runs
     self.directory = directory
     # List of inputs, as PlaceHolder objects.
