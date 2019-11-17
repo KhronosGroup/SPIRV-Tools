@@ -406,6 +406,7 @@ void TransformationOutlineFunction::Apply(
     // Clone the block so that it can be added to the new function.
     auto cloned_block =
         std::unique_ptr<opt::BasicBlock>(block_it->Clone(context));
+    cloned_block->SetParent(outlined_function.get());
     // Redirect any OpPhi operands whose values are the original region entry
     // block to become the new function entry block.
     cloned_block->ForEachPhiInst([this](opt::Instruction* phi_inst) {
