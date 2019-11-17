@@ -49,6 +49,22 @@ class TransformationOutlineFunction : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // TODO comment
+  static std::set<opt::BasicBlock*> GetRegionBlocks(opt::IRContext* context,
+          opt::BasicBlock* entry_block, opt::BasicBlock* exit_block);
+
+  // TODO comment
+  static std::vector<uint32_t> GetRegionInputIds(
+          opt::IRContext* context,
+          const std::set<opt::BasicBlock*>& region_set,
+          opt::BasicBlock* region_entry_block);
+
+  // TODO comment
+  static std::vector<uint32_t> GetRegionOutputIds(
+          opt::IRContext* context,
+          const std::set<opt::BasicBlock*>& region_set,
+          opt::BasicBlock* region_entry_block);
+
  private:
   // A helper method for the applicability check.  Returns true if and only if
   // |id| is (a) a fresh id for the module, and (b) an id that has not
@@ -60,23 +76,10 @@ class TransformationOutlineFunction : public Transformation {
       std::set<uint32_t>* ids_used_by_this_transformation) const;
 
   // TODO comment
-  std::vector<uint32_t> GetRegionInputIds(
-      opt::IRContext* context,
-      const std::set<opt::BasicBlock*>& region_set) const;
-
-  // TODO comment
-  std::vector<uint32_t> GetRegionOutputIds(
-      opt::IRContext* context,
-      const std::set<opt::BasicBlock*>& region_set) const;
-
-  // TODO comment
   std::map<uint32_t, uint32_t> GetInputIdToFreshIdMap() const;
 
   // TODO comment
   std::map<uint32_t, uint32_t> GetOutputIdToFreshIdMap() const;
-
-  // TODO comment
-  std::set<opt::BasicBlock*> GetRegionBlocks(opt::IRContext* context) const;
 
   protobufs::TransformationOutlineFunction message_;
 };

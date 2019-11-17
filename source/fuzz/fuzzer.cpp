@@ -32,6 +32,7 @@
 #include "source/fuzz/fuzzer_pass_construct_composites.h"
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
+#include "source/fuzz/fuzzer_pass_outline_functions.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
@@ -185,6 +186,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassObfuscateConstants>(&passes, ir_context.get(),
                                                &fact_manager, &fuzzer_context,
                                                transformation_sequence_out);
+    MaybeAddPass<FuzzerPassOutlineFunctions>(&passes, ir_context.get(),
+                                        &fact_manager, &fuzzer_context,
+                                        transformation_sequence_out);
     MaybeAddPass<FuzzerPassPermuteBlocks>(&passes, ir_context.get(),
                                           &fact_manager, &fuzzer_context,
                                           transformation_sequence_out);

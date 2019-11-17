@@ -156,7 +156,10 @@ bool TransformationOutlineFunction::IsApplicable(
     return false;
   }
 
-  auto region_set = GetRegionBlocks(context);
+  auto region_set = GetRegionBlocks(context,
+          entry_block = context->cfg()
+          ->block(message_.entry_block()),
+                  exit_block = context->cfg()->block(message_.exit_block()));
 
   for (auto block : region_set) {
     if (block == exit_block) {
@@ -192,7 +195,7 @@ bool TransformationOutlineFunction::IsApplicable(
   std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
       GetInputIdToFreshIdMap();
   std::vector<uint32_t> ids_defined_outside_region_and_used_in_region =
-      GetRegionInputIds(context, region_set);
+      GetRegionInputIds(context, region_set, entry_block);
   for (auto id : ids_defined_outside_region_and_used_in_region) {
     if (input_id_to_fresh_id_map.count(id) == 0) {
       return false;
@@ -202,7 +205,7 @@ bool TransformationOutlineFunction::IsApplicable(
   std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
       GetOutputIdToFreshIdMap();
   std::vector<uint32_t> ids_defined_in_region_and_used_outside_region =
-      GetRegionOutputIds(context, region_set);
+      GetRegionOutputIds(context, region_set, entry_block);
   for (auto id : ids_defined_in_region_and_used_outside_region) {
     if (output_id_to_fresh_id_map.count(id) == 0) {
       return false;
@@ -236,16 +239,19 @@ void TransformationOutlineFunction::Apply(
     fuzzerutil::UpdateModuleIdBound(context, entry.second);
   }
 
-  std::set<opt::BasicBlock*> region_blocks = GetRegionBlocks(context);
-
-  std::vector<uint32_t> region_input_ids =
-      GetRegionInputIds(context, region_blocks);
-
-  std::vector<uint32_t> region_output_ids =
-      GetRegionOutputIds(context, region_blocks);
+  std::set<opt::BasicBlock*> region_blocks = GetRegionBlocks(context,
+                                                             context->cfg()
+                                                                     ->block(message_.entry_block()),
+                                                             context->cfg()->block(message_.exit_block()));
 
   auto entry_block = context->cfg()->block(message_.entry_block());
   auto enclosing_function = entry_block->GetParent();
+
+  std::vector<uint32_t> region_input_ids =
+      GetRegionInputIds(context, region_blocks, entry_block);
+
+  std::vector<uint32_t> region_output_ids =
+      GetRegionOutputIds(context, region_blocks, entry_block);
 
   for (uint32_t id : region_input_ids) {
     def_use_manager_before_changes->ForEachUse(
@@ -509,10 +515,9 @@ bool TransformationOutlineFunction::
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
     opt::IRContext* context,
-    const std::set<opt::BasicBlock*>& region_set) const {
+    const std::set<opt::BasicBlock*>& region_set, opt::BasicBlock*
+    region_entry_block) {
   std::vector<uint32_t> result;
-  opt::BasicBlock* region_entry_block =
-      context->cfg()->block(message_.entry_block());
 
   region_entry_block->ForEachPhiInst(
       [context, &region_set, &result](opt::Instruction* phi_inst) {
@@ -551,10 +556,11 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionOutputIds(
     opt::IRContext* context,
-    const std::set<opt::BasicBlock*>& region_set) const {
+    const std::set<opt::BasicBlock*>& region_set, opt::BasicBlock*
+    region_entry_block) {
   std::vector<uint32_t> result;
   for (auto& block :
-       *context->cfg()->block(message_.entry_block())->GetParent()) {
+       *region_entry_block->GetParent()) {
     if (region_set.count(&block) != 0) {
       for (auto& inst : block) {
         context->get_def_use_mgr()->WhileEachUse(
@@ -585,9 +591,8 @@ TransformationOutlineFunction::GetOutputIdToFreshIdMap() const {
 }
 
 std::set<opt::BasicBlock*> TransformationOutlineFunction::GetRegionBlocks(
-    opt::IRContext* context) const {
-  auto entry_block = context->cfg()->block(message_.entry_block());
-  auto exit_block = context->cfg()->block(message_.exit_block());
+    opt::IRContext* context, opt::BasicBlock* entry_block, opt::BasicBlock*
+    exit_block) {
   auto enclosing_function = entry_block->GetParent();
   auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
   auto postdominator_analysis =
