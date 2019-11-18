@@ -215,7 +215,7 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
     endmacro()
   else()
     macro(spvtools_config_package_dir TARGET PATH)
-      set(${PATH} lib/cmake/${TARGET})
+      set(${PATH} ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET})
     endmacro()
   endif()
 
