@@ -156,10 +156,9 @@ bool TransformationOutlineFunction::IsApplicable(
     return false;
   }
 
-  auto region_set = GetRegionBlocks(context,
-          entry_block = context->cfg()
-          ->block(message_.entry_block()),
-                  exit_block = context->cfg()->block(message_.exit_block()));
+  auto region_set = GetRegionBlocks(
+      context, entry_block = context->cfg()->block(message_.entry_block()),
+      exit_block = context->cfg()->block(message_.exit_block()));
 
   for (auto block : region_set) {
     if (block == exit_block) {
@@ -239,10 +238,9 @@ void TransformationOutlineFunction::Apply(
     fuzzerutil::UpdateModuleIdBound(context, entry.second);
   }
 
-  std::set<opt::BasicBlock*> region_blocks = GetRegionBlocks(context,
-                                                             context->cfg()
-                                                                     ->block(message_.entry_block()),
-                                                             context->cfg()->block(message_.exit_block()));
+  std::set<opt::BasicBlock*> region_blocks =
+      GetRegionBlocks(context, context->cfg()->block(message_.entry_block()),
+                      context->cfg()->block(message_.exit_block()));
 
   auto entry_block = context->cfg()->block(message_.entry_block());
   auto enclosing_function = entry_block->GetParent();
@@ -425,15 +423,21 @@ void TransformationOutlineFunction::Apply(
   }
   auto final_block = --outlined_function->end();
   std::unique_ptr<opt::Instruction> cloned_merge = nullptr;
-  if (final_block->GetMergeInst()) {
-    cloned_merge = std::unique_ptr<opt::Instruction>(
-        final_block->GetMergeInst()->Clone(context));
-    final_block->GetMergeInst()->RemoveFromList();
-  }
-  std::unique_ptr<opt::Instruction> cloned_terminator =
-      std::unique_ptr<opt::Instruction>(
+  std::unique_ptr<opt::Instruction> cloned_terminator = nullptr;
+  for (auto inst_it = final_block->begin(); inst_it != final_block->end();) {
+    if (inst_it->opcode() == SpvOpLoopMerge ||
+        inst_it->opcode() == SpvOpSelectionMerge) {
+      cloned_merge = std::unique_ptr<opt::Instruction>(inst_it->Clone(context));
+      inst_it = inst_it.Erase();
+    } else if (inst_it->IsBlockTerminator()) {
+      cloned_terminator = std::unique_ptr<opt::Instruction>(
           final_block->terminator()->Clone(context));
-  final_block->terminator()->RemoveFromList();
+      inst_it = inst_it.Erase();
+    } else {
+      ++inst_it;
+    }
+  }
+  assert(cloned_terminator != nullptr && "Every block must have a terminator.");
 
   if (region_output_ids.empty()) {
     final_block->AddInstruction(MakeUnique<opt::Instruction>(
@@ -515,9 +519,8 @@ bool TransformationOutlineFunction::
 }
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
-    opt::IRContext* context,
-    const std::set<opt::BasicBlock*>& region_set, opt::BasicBlock*
-    region_entry_block) {
+    opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
+    opt::BasicBlock* region_entry_block) {
   std::vector<uint32_t> result;
 
   region_entry_block->ForEachPhiInst(
@@ -556,12 +559,10 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
 }
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionOutputIds(
-    opt::IRContext* context,
-    const std::set<opt::BasicBlock*>& region_set, opt::BasicBlock*
-    region_entry_block) {
+    opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
+    opt::BasicBlock* region_entry_block) {
   std::vector<uint32_t> result;
-  for (auto& block :
-       *region_entry_block->GetParent()) {
+  for (auto& block : *region_entry_block->GetParent()) {
     if (region_set.count(&block) != 0) {
       for (auto& inst : block) {
         context->get_def_use_mgr()->WhileEachUse(
@@ -592,8 +593,8 @@ TransformationOutlineFunction::GetOutputIdToFreshIdMap() const {
 }
 
 std::set<opt::BasicBlock*> TransformationOutlineFunction::GetRegionBlocks(
-    opt::IRContext* context, opt::BasicBlock* entry_block, opt::BasicBlock*
-    exit_block) {
+    opt::IRContext* context, opt::BasicBlock* entry_block,
+    opt::BasicBlock* exit_block) {
   auto enclosing_function = entry_block->GetParent();
   auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
   auto postdominator_analysis =

@@ -187,8 +187,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
                                                &fact_manager, &fuzzer_context,
                                                transformation_sequence_out);
     MaybeAddPass<FuzzerPassOutlineFunctions>(&passes, ir_context.get(),
-                                        &fact_manager, &fuzzer_context,
-                                        transformation_sequence_out);
+                                             &fact_manager, &fuzzer_context,
+                                             transformation_sequence_out);
     MaybeAddPass<FuzzerPassPermuteBlocks>(&passes, ir_context.get(),
                                           &fact_manager, &fuzzer_context,
                                           transformation_sequence_out);

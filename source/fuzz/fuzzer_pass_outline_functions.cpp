@@ -36,8 +36,8 @@ void FuzzerPassOutlineFunctions::Apply() {
     original_functions.push_back(&function);
   }
   for (auto& function : original_functions) {
-    if (!GetFuzzerContext()->ChoosePercentage(GetFuzzerContext()
-    ->GetChanceOfOutliningFunction())) {
+    if (!GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()->GetChanceOfOutliningFunction())) {
       continue;
     }
     std::vector<opt::BasicBlock*> blocks;
@@ -46,58 +46,51 @@ void FuzzerPassOutlineFunctions::Apply() {
     }
     auto entry_block = blocks[GetFuzzerContext()->RandomIndex(blocks)];
     auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(function);
-    auto postdominator_analysis = GetIRContext()->GetPostDominatorAnalysis
-    (function);
+    auto postdominator_analysis =
+        GetIRContext()->GetPostDominatorAnalysis(function);
     std::vector<opt::BasicBlock*> candidate_exit_blocks;
     for (auto postdominates_entry_block = entry_block;
          postdominates_entry_block != nullptr;
-         postdominates_entry_block = postdominator_analysis->ImmediateDominator
-            (postdominates_entry_block)) {
+         postdominates_entry_block = postdominator_analysis->ImmediateDominator(
+             postdominates_entry_block)) {
       if (dominator_analysis->Dominates(entry_block,
-              postdominates_entry_block)) {
+                                        postdominates_entry_block)) {
         candidate_exit_blocks.push_back(postdominates_entry_block);
       }
     }
     if (candidate_exit_blocks.empty()) {
       continue;
     }
-    auto exit_block = candidate_exit_blocks[GetFuzzerContext()->RandomIndex
-                                            (candidate_exit_blocks)];
+    auto exit_block = candidate_exit_blocks[GetFuzzerContext()->RandomIndex(
+        candidate_exit_blocks)];
 
-    auto region_blocks = TransformationOutlineFunction::GetRegionBlocks
-    (GetIRContext(),
-            entry_block, exit_block);
+    auto region_blocks = TransformationOutlineFunction::GetRegionBlocks(
+        GetIRContext(), entry_block, exit_block);
     std::map<uint32_t, uint32_t> input_id_to_fresh_id;
-    for (auto id : TransformationOutlineFunction::GetRegionInputIds(GetIRContext
-    (),
-            region_blocks, entry_block)) {
+    for (auto id : TransformationOutlineFunction::GetRegionInputIds(
+             GetIRContext(), region_blocks, entry_block)) {
       input_id_to_fresh_id[id] = GetFuzzerContext()->GetFreshId();
     }
     std::map<uint32_t, uint32_t> output_id_to_fresh_id;
-    for (auto id : TransformationOutlineFunction::GetRegionOutputIds
-    (GetIRContext
-                                                                            (),
-                                                                    region_blocks, entry_block)) {
+    for (auto id : TransformationOutlineFunction::GetRegionOutputIds(
+             GetIRContext(), region_blocks, entry_block)) {
       output_id_to_fresh_id[id] = GetFuzzerContext()->GetFreshId();
     }
     TransformationOutlineFunction transformation(
-            entry_block->id(),
-            exit_block->id(),
-            /*new_function_struct_return_type_id*/ GetFuzzerContext()->GetFreshId(),
-            /*new_function_type_id*/ GetFuzzerContext()->GetFreshId(),
-            /*new_function_id*/ GetFuzzerContext()->GetFreshId(),
-            /*new_function_entry_block*/ GetFuzzerContext()->GetFreshId(),
-            /*new_caller_result_id*/ GetFuzzerContext()->GetFreshId(),
-            /*new_callee_result_id*/ GetFuzzerContext()->GetFreshId(),
-            /*input_id_to_fresh_id*/ std::move(input_id_to_fresh_id),
-            /*output_id_to_fresh_id*/ std::move(output_id_to_fresh_id));
+        entry_block->id(), exit_block->id(),
+        /*new_function_struct_return_type_id*/ GetFuzzerContext()->GetFreshId(),
+        /*new_function_type_id*/ GetFuzzerContext()->GetFreshId(),
+        /*new_function_id*/ GetFuzzerContext()->GetFreshId(),
+        /*new_function_entry_block*/ GetFuzzerContext()->GetFreshId(),
+        /*new_caller_result_id*/ GetFuzzerContext()->GetFreshId(),
+        /*new_callee_result_id*/ GetFuzzerContext()->GetFreshId(),
+        /*input_id_to_fresh_id*/ std::move(input_id_to_fresh_id),
+        /*output_id_to_fresh_id*/ std::move(output_id_to_fresh_id));
     if (transformation.IsApplicable(GetIRContext(), *GetFactManager())) {
       transformation.Apply(GetIRContext(), GetFactManager());
-      *GetTransformations()->add_transformation() =
-              transformation.ToMessage();
+      *GetTransformations()->add_transformation() = transformation.ToMessage();
     }
   }
-
 }
 
 }  // namespace fuzz

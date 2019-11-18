@@ -23,9 +23,10 @@ namespace fuzz {
 // TODO comment
 class FuzzerPassOutlineFunctions : public FuzzerPass {
  public:
-  FuzzerPassOutlineFunctions(opt::IRContext* ir_context, FactManager* fact_manager,
-                        FuzzerContext* fuzzer_context,
-                        protobufs::TransformationSequence* transformations);
+  FuzzerPassOutlineFunctions(
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassOutlineFunctions();
 
