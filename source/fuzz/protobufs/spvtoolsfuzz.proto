@@ -421,20 +421,30 @@ message TransformationOutlineFunction {
   // A fresh id for the outlined function itself
   uint32 new_function_id = 5;
 
-  // A fresh id for the entry block of the outlined function
-  uint32 new_function_entry_block = 6;
+  // A fresh id for a dummy block in the outlined function that will branch
+  // unconditionally to another block that represents the start of the outlined
+  // region.  This is needed because the first block of the outlined region
+  // might be a loop header, which is not allowed to be the first block in a
+  // function.
+  uint32 new_function_first_block = 6;
+
+  // A fresh id to represent the block in the outlined function that represents
+  // the first block of the outlined region.
+  uint32 new_function_region_entry_block = 7;
 
   // A fresh id for the result of the OpFunctionCall instruction that will call
   // the outlined function
-  uint32 new_caller_result_id = 7;
+  uint32 new_caller_result_id = 8;
 
   // A fresh id to capture the return value of the outlined function - the
   // argument to OpReturn
-  uint32 new_callee_result_id = 8;
+  uint32 new_callee_result_id = 9;
 
-  repeated UInt32Pair input_id_to_fresh_id = 9;
+  // TODO comment
+  repeated UInt32Pair input_id_to_fresh_id = 10;
 
-  repeated UInt32Pair output_id_to_fresh_id = 10;
+  // TODO comment
+  repeated UInt32Pair output_id_to_fresh_id = 11;
 
 }
 

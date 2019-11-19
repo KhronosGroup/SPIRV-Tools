@@ -48,7 +48,7 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 6, /* not relevant */ 200,
-                                               100, 101, 102, 103,
+                                               100, 101, 300, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -72,6 +72,8 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
                OpReturn
                OpFunctionEnd
         %101 = OpFunction %2 None %3
+        %300 = OpLabel
+               OpBranch %102
         %102 = OpLabel
                OpReturn
                OpFunctionEnd
@@ -125,7 +127,7 @@ TEST(TransformationOutlineFunctionTest, OutlineInterestingControlFlowNoState) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 12, /* not relevant */
-                                               200, 100, 101, 102, 103,
+                                               200, 100, 101, 300, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -151,6 +153,8 @@ TEST(TransformationOutlineFunctionTest, OutlineInterestingControlFlowNoState) {
                OpReturn
                OpFunctionEnd
         %101 = OpFunction %2 None %3
+        %300 = OpLabel
+               OpBranch %102
         %102 = OpLabel
                OpBranch %7
           %7 = OpLabel
@@ -226,7 +230,7 @@ TEST(TransformationOutlineFunctionTest,
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 12, /* not relevant */
-                                               200, 100, 101, 102, 103,
+                                               200, 100, 101, 300, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -259,6 +263,8 @@ TEST(TransformationOutlineFunctionTest,
                OpReturn
                OpFunctionEnd
         %101 = OpFunction %2 None %3
+        %300 = OpLabel
+               OpBranch %102
         %102 = OpLabel
                OpBranch %7
           %7 = OpLabel
@@ -316,7 +322,7 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesUnusedIds) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 6, /* not relevant */ 200,
-                                               100, 101, 102, 103,
+                                               100, 101, 300, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -342,6 +348,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesUnusedIds) {
                OpReturn
                OpFunctionEnd
         %101 = OpFunction %2 None %3
+        %300 = OpLabel
+               OpBranch %102
         %102 = OpLabel
           %7 = OpCopyObject %20 %21
           %8 = OpCopyObject %20 %21
@@ -389,8 +397,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesSingleUsedId) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 6, 99, 100, 101, 102, 103,
-                                               105, {}, {{9, 104}});
+  TransformationOutlineFunction transformation(6, 6, 99, 100, 101, 300, 102,
+                                               103, 105, {}, {{9, 104}});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -421,6 +429,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesSingleUsedId) {
                OpReturn
                OpFunctionEnd
         %101 = OpFunction %99 None %100
+        %300 = OpLabel
+               OpBranch %102
         %102 = OpLabel
           %7 = OpCopyObject %20 %21
           %8 = OpCopyObject %20 %21
@@ -483,7 +493,7 @@ TEST(TransformationOutlineFunctionTest, OutlineDiamondThatGeneratesSeveralIds) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(
-      6, 12, 100, 101, 102, 103, 104, 105, {},
+      6, 12, 100, 101, 102, 300, 103, 104, 105, {},
       {{15, 106}, {9, 107}, {7, 108}, {8, 109}});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -521,6 +531,8 @@ TEST(TransformationOutlineFunctionTest, OutlineDiamondThatGeneratesSeveralIds) {
                OpReturn
                OpFunctionEnd
         %102 = OpFunction %100 None %101
+        %300 = OpLabel
+               OpBranch %103
         %103 = OpLabel
         %108 = OpCopyObject %20 %21
         %109 = OpCopyObject %20 %21
@@ -576,8 +588,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesASingleId) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 103, 104,
-                                               105, {{7, 106}}, {});
+  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 300, 103,
+                                               104, 105, {{7, 106}}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -607,6 +619,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesASingleId) {
                OpFunctionEnd
         %102 = OpFunction %2 None %101
         %106 = OpFunctionParameter %20
+        %300 = OpLabel
+               OpBranch %103
         %103 = OpLabel
           %8 = OpCopyObject %20 %106
                OpReturn
@@ -650,8 +664,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAVariable) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 103, 104,
-                                               105, {{13, 106}}, {});
+  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 300, 103,
+                                               104, 105, {{13, 106}}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -682,6 +696,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAVariable) {
                OpFunctionEnd
         %102 = OpFunction %2 None %101
         %106 = OpFunctionParameter %12
+        %300 = OpLabel
+               OpBranch %103
         %103 = OpLabel
           %8 = OpLoad %20 %106
                OpReturn
@@ -724,8 +740,8 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 103, 104,
-                                               105, {}, {});
+  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 300, 103,
+                                               104, 105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -763,8 +779,49 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 103, 104,
-                                               105, {}, {});
+  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 300, 103,
+                                               104, 105, {}, {});
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationOutlineFunctionTest,
+     DoNotOutlineIfLoopHeadIsOutsiderRegion) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %9 = OpTypeBool
+         %10 = OpConstantTrue %9
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %6
+          %6 = OpLabel
+               OpLoopMerge %8 %11 None
+               OpBranch %7
+          %7 = OpLabel
+               OpBranchConditional %10 %11 %8
+         %11 = OpLabel
+               OpBranch %6
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(7, 8, 100, 101, 102, 300, 103,
+                                               104, 105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -802,8 +859,8 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 103, 104,
-                                               105, {}, {});
+  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 300, 103,
+                                               104, 105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -843,12 +900,12 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 103, 104,
-                                               105, {}, {});
+  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 300, 103,
+                                               104, 105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationOutlineFunctionTest, Miscellaneous) {
+TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
   // This tests outlining of some non-trivial code.
 
   std::string shader = R"(
@@ -960,7 +1017,8 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous) {
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_entry_block*/ 203,
+      /*new_function_first_block*/ 500,
+      /*new_function_region_entry_block*/ 203,
       /*new_caller_result_id*/ 204,
       /*new_callee_result_id*/ 205,
       /*input_id_to_fresh_id*/ {{102, 300}, {103, 301}, {40, 302}},
@@ -1043,6 +1101,8 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous) {
         %301 = OpFunctionParameter %15
         %300 = OpFunctionParameter %7
         %302 = OpFunctionParameter %15
+        %500 = OpLabel
+               OpBranch %203
         %203 = OpLabel
                OpBranch %41
          %41 = OpLabel
@@ -1076,6 +1136,143 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous) {
          %43 = OpLabel
         %205 = OpCompositeConstruct %200 %401 %400
                OpReturnValue %205
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationOutlineFunctionTest, Miscellaneous2) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %21 = OpTypeBool
+        %167 = OpConstantTrue %21
+        %168 = OpConstantFalse %21
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+               OpLoopMerge %36 %37 None
+               OpBranchConditional %168 %37 %38
+         %38 = OpLabel
+               OpBranchConditional %168 %37 %36
+         %37 = OpLabel
+               OpBranch %34
+         %36 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 38,
+      /*exit_block*/ 36,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_first_block*/ 300,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationOutlineFunctionTest, Miscellaneous3) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %21 = OpTypeBool
+        %167 = OpConstantTrue %21
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %54
+         %54 = OpLabel
+               OpLoopMerge %56 %57 None
+               OpBranch %57
+         %57 = OpLabel
+               OpBranchConditional %167 %54 %56
+         %56 = OpLabel
+               OpBranch %58
+         %58 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 54,
+      /*exit_block*/ 56,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_first_block*/ 300,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %21 = OpTypeBool
+        %167 = OpConstantTrue %21
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %54
+         %54 = OpLabel
+        %204 = OpFunctionCall %2 %202
+               OpBranch %58
+         %58 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %202 = OpFunction %2 None %3
+        %300 = OpLabel
+               OpBranch %203
+        %203 = OpLabel
+               OpLoopMerge %56 %57 None
+               OpBranch %57
+         %57 = OpLabel
+               OpBranchConditional %167 %203 %56
+         %56 = OpLabel
+               OpReturn
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
