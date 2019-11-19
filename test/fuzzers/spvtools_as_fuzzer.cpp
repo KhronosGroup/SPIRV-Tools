@@ -66,5 +66,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     binary = nullptr;
   }
 
+  spvContextDestroy(context);
+
   return 0;
 }
