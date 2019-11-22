@@ -220,7 +220,7 @@ bool TransformationOutlineFunction::IsApplicable(
   std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
       GetInputIdToFreshIdMap();
   std::vector<uint32_t> ids_defined_outside_region_and_used_in_region =
-      GetRegionInputIds(context, region_set, entry_block);
+      GetRegionInputIds(context, region_set, entry_block, exit_block);
   for (auto id : ids_defined_outside_region_and_used_in_region) {
     if (input_id_to_fresh_id_map.count(id) == 0) {
       return false;
@@ -230,7 +230,7 @@ bool TransformationOutlineFunction::IsApplicable(
   std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
       GetOutputIdToFreshIdMap();
   std::vector<uint32_t> ids_defined_in_region_and_used_outside_region =
-      GetRegionOutputIds(context, region_set, entry_block);
+      GetRegionOutputIds(context, region_set, entry_block, exit_block);
   for (auto id : ids_defined_in_region_and_used_outside_region) {
     if (output_id_to_fresh_id_map.count(id) == 0) {
       return false;
@@ -266,26 +266,30 @@ void TransformationOutlineFunction::Apply(
     fuzzerutil::UpdateModuleIdBound(context, entry.second);
   }
 
-  std::set<opt::BasicBlock*> region_blocks =
-      GetRegionBlocks(context, context->cfg()->block(message_.entry_block()),
-                      context->cfg()->block(message_.exit_block()));
-
-  auto entry_block = context->cfg()->block(message_.entry_block());
-  auto enclosing_function = entry_block->GetParent();
+  auto original_region_entry_block =
+      context->cfg()->block(message_.entry_block());
+  auto original_region_exit_block =
+      context->cfg()->block(message_.exit_block());
+  std::set<opt::BasicBlock*> region_blocks = GetRegionBlocks(
+      context, original_region_entry_block, original_region_exit_block);
 
   std::vector<uint32_t> region_input_ids =
-      GetRegionInputIds(context, region_blocks, entry_block);
+      GetRegionInputIds(context, region_blocks, original_region_entry_block,
+                        original_region_exit_block);
 
   std::vector<uint32_t> region_output_ids =
-      GetRegionOutputIds(context, region_blocks, entry_block);
+      GetRegionOutputIds(context, region_blocks, original_region_entry_block,
+                         original_region_exit_block);
 
   for (uint32_t id : region_input_ids) {
     def_use_manager_before_changes->ForEachUse(
-        id, [context, entry_block, id, &input_id_to_fresh_id_map,
-             region_blocks](opt::Instruction* use, uint32_t operand_index) {
+        id,
+        [context, original_region_entry_block, id, &input_id_to_fresh_id_map,
+         region_blocks](opt::Instruction* use, uint32_t operand_index) {
           opt::BasicBlock* use_block = context->get_instr_block(use);
           if (region_blocks.count(use_block) != 0 &&
-              (use->opcode() != SpvOpPhi || use_block != entry_block)) {
+              (use->opcode() != SpvOpPhi ||
+               use_block != original_region_entry_block)) {
             use->SetOperand(operand_index, {input_id_to_fresh_id_map[id]});
           }
         });
@@ -293,9 +297,15 @@ void TransformationOutlineFunction::Apply(
 
   for (uint32_t id : region_output_ids) {
     def_use_manager_before_changes->ForEachUse(
-        id, [context, id, &output_id_to_fresh_id_map, region_blocks](
-                opt::Instruction* use, uint32_t operand_index) {
-          if (region_blocks.count(context->get_instr_block(use)) != 0) {
+        id,
+        [context, original_region_exit_block, id, &output_id_to_fresh_id_map,
+         region_blocks](opt::Instruction* use, uint32_t operand_index) {
+          auto use_block = context->get_instr_block(use);
+          // TODO: comment on why we check the condition on the exit block; it's
+          // because its terminator is going to remain in the original region.
+          if (region_blocks.count(use_block) != 0 &&
+              !(use_block == original_region_exit_block &&
+                use->IsBlockTerminator())) {
             use->SetOperand(operand_index, {output_id_to_fresh_id_map[id]});
           }
         });
@@ -313,12 +323,12 @@ void TransformationOutlineFunction::Apply(
   // ids we are going to make a new struct for those, and since that struct does
   // not exist there cannot already be a function type with this struct as its
   // return type.
-  if (message_.output_id_to_fresh_id().empty()) {
+  if (region_output_ids.empty()) {
     opt::analysis::Void void_type;
     return_type_id = context->get_type_mgr()->GetId(&void_type);
     std::vector<const opt::analysis::Type*> argument_types;
     for (auto id : region_input_ids) {
-      argument_types.emplace_back(context->get_type_mgr()->GetType(
+      argument_types.push_back(context->get_type_mgr()->GetType(
           def_use_manager_before_changes->GetDef(id)->type_id()));
     }
     opt::analysis::Function function_type(&void_type, argument_types);
@@ -383,6 +393,7 @@ void TransformationOutlineFunction::Apply(
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           context, SpvOpLabel, 0, message_.new_function_first_block(),
           opt::Instruction::OperandList()));
+  new_function_first_block->SetParent(outlined_function.get());
   new_function_first_block->AddInstruction(MakeUnique<opt::Instruction>(
       context, SpvOpBranch, 0, 0,
       opt::Instruction::OperandList(
@@ -390,30 +401,40 @@ void TransformationOutlineFunction::Apply(
             {message_.new_function_region_entry_block()}}})));
   outlined_function->AddBasicBlock(std::move(new_function_first_block));
 
+  // When we create the exit block for the outlined region, we use this pointer
+  // to track of it so that we can manipulate it later.
+  opt::BasicBlock* outlined_region_exit_block = nullptr;
+
   // The region entry block in the new function is identical to the entry block
   // of the region being outlined, except that OpPhi instructions of the
   // original block do not get outlined.
-  std::unique_ptr<opt::BasicBlock> new_function_region_entry_block =
+  std::unique_ptr<opt::BasicBlock> outlined_region_entry_block =
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           context, SpvOpLabel, 0, message_.new_function_region_entry_block(),
           opt::Instruction::OperandList()));
-  for (auto& inst : *entry_block) {
+  outlined_region_entry_block->SetParent(outlined_function.get());
+  if (original_region_entry_block == original_region_exit_block) {
+    outlined_region_exit_block = outlined_region_entry_block.get();
+  }
+
+  for (auto& inst : *original_region_entry_block) {
     if (inst.opcode() == SpvOpPhi) {
       continue;
     }
-    new_function_region_entry_block->AddInstruction(
+    outlined_region_entry_block->AddInstruction(
         std::unique_ptr<opt::Instruction>(inst.Clone(context)));
   }
-  outlined_function->AddBasicBlock(std::move(new_function_region_entry_block));
+  outlined_function->AddBasicBlock(std::move(outlined_region_entry_block));
 
   // We now go through the single-entry single-exit region defined by the entry
   // and exit blocks, and clones of all such blocks to the new function.
 
   // Consider every block in the enclosing function.
+  auto enclosing_function = original_region_entry_block->GetParent();
   for (auto block_it = enclosing_function->begin();
        block_it != enclosing_function->end();) {
     // Skip the region's entry block - we already dealt with it above.
-    if (&*block_it == entry_block) {
+    if (&*block_it == original_region_entry_block) {
       ++block_it;
       continue;
     }
@@ -447,6 +468,15 @@ void TransformationOutlineFunction::Apply(
     // Clone the block so that it can be added to the new function.
     auto cloned_block =
         std::unique_ptr<opt::BasicBlock>(block_it->Clone(context));
+
+    // If this is the region's exit block, then the cloned block is the outlined
+    // region's exit block.
+    if (&*block_it == original_region_exit_block) {
+      assert(outlined_region_exit_block == nullptr &&
+             "We should not yet have encountered the exit block.");
+      outlined_region_exit_block = cloned_block.get();
+    }
+
     cloned_block->SetParent(outlined_function.get());
     // Redirect any OpPhi operands whose values are the original region entry
     // block to become the new function entry block.
@@ -484,17 +514,21 @@ void TransformationOutlineFunction::Apply(
     outlined_function->AddBasicBlock(std::move(cloned_block));
     block_it = block_it.Erase();
   }
-  auto final_block = --outlined_function->end();
+  assert(outlined_region_exit_block != nullptr &&
+         "We should have encountered the region's exit block when iterating "
+         "through "
+         "the function");
   std::unique_ptr<opt::Instruction> cloned_merge = nullptr;
   std::unique_ptr<opt::Instruction> cloned_terminator = nullptr;
-  for (auto inst_it = final_block->begin(); inst_it != final_block->end();) {
+  for (auto inst_it = outlined_region_exit_block->begin();
+       inst_it != outlined_region_exit_block->end();) {
     if (inst_it->opcode() == SpvOpLoopMerge ||
         inst_it->opcode() == SpvOpSelectionMerge) {
       cloned_merge = std::unique_ptr<opt::Instruction>(inst_it->Clone(context));
       inst_it = inst_it.Erase();
     } else if (inst_it->IsBlockTerminator()) {
       cloned_terminator = std::unique_ptr<opt::Instruction>(
-          final_block->terminator()->Clone(context));
+          outlined_region_exit_block->terminator()->Clone(context));
       inst_it = inst_it.Erase();
     } else {
       ++inst_it;
@@ -503,7 +537,7 @@ void TransformationOutlineFunction::Apply(
   assert(cloned_terminator != nullptr && "Every block must have a terminator.");
 
   if (region_output_ids.empty()) {
-    final_block->AddInstruction(MakeUnique<opt::Instruction>(
+    outlined_region_exit_block->AddInstruction(MakeUnique<opt::Instruction>(
         context, SpvOpReturn, 0, 0, opt::Instruction::OperandList()));
   } else {
     opt::Instruction::OperandList struct_member_operands;
@@ -511,11 +545,11 @@ void TransformationOutlineFunction::Apply(
       struct_member_operands.push_back(
           {SPV_OPERAND_TYPE_ID, {output_id_to_fresh_id_map[id]}});
     }
-    final_block->AddInstruction(MakeUnique<opt::Instruction>(
+    outlined_region_exit_block->AddInstruction(MakeUnique<opt::Instruction>(
         context, SpvOpCompositeConstruct,
         message_.new_function_struct_return_type_id(),
         message_.new_callee_result_id(), struct_member_operands));
-    final_block->AddInstruction(MakeUnique<opt::Instruction>(
+    outlined_region_exit_block->AddInstruction(MakeUnique<opt::Instruction>(
         context, SpvOpReturnValue, 0, 0,
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {message_.new_callee_result_id()}}})));
@@ -526,7 +560,8 @@ void TransformationOutlineFunction::Apply(
 
   context->module()->AddFunction(std::move(outlined_function));
 
-  for (auto inst_it = entry_block->begin(); inst_it != entry_block->end();) {
+  for (auto inst_it = original_region_entry_block->begin();
+       inst_it != original_region_entry_block->end();) {
     if (inst_it->opcode() == SpvOpPhi) {
       ++inst_it;
       continue;
@@ -540,13 +575,13 @@ void TransformationOutlineFunction::Apply(
     function_call_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
   }
 
-  entry_block->AddInstruction(MakeUnique<opt::Instruction>(
+  original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
       context, SpvOpFunctionCall, return_type_id,
       message_.new_caller_result_id(), function_call_operands));
 
   for (uint32_t index = 0; index < region_output_ids.size(); ++index) {
     uint32_t id = region_output_ids[index];
-    entry_block->AddInstruction(MakeUnique<opt::Instruction>(
+    original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
         context, SpvOpCompositeExtract, output_id_to_type_id[id], id,
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {message_.new_caller_result_id()}},
@@ -554,9 +589,9 @@ void TransformationOutlineFunction::Apply(
   }
 
   if (cloned_merge != nullptr) {
-    entry_block->AddInstruction(std::move(cloned_merge));
+    original_region_entry_block->AddInstruction(std::move(cloned_merge));
   }
-  entry_block->AddInstruction(std::move(cloned_terminator));
+  original_region_entry_block->AddInstruction(std::move(cloned_terminator));
 
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
@@ -583,7 +618,7 @@ bool TransformationOutlineFunction::
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
     opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
-    opt::BasicBlock* region_entry_block) {
+    opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block) {
   std::vector<uint32_t> result;
 
   region_entry_block->ForEachPhiInst(
@@ -607,10 +642,13 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
     for (auto& inst : block) {
       context->get_def_use_mgr()->WhileEachUse(
           &inst,
-          [context, &inst, &region_set, &result](opt::Instruction* use,
-                                                 uint32_t /*unused*/) -> bool {
+          [context, &inst, region_exit_block, &region_set, &result](
+              opt::Instruction* use, uint32_t /*unused*/) -> bool {
             auto use_block = context->get_instr_block(use);
-            if (use_block && region_set.count(use_block) != 0) {
+            // TODO comment on why we don't want to regard a use in the exit
+            // block terminator as being an input id.
+            if (use_block && region_set.count(use_block) != 0 &&
+                !(use_block == region_exit_block && use->IsBlockTerminator())) {
               result.push_back(inst.result_id());
               return false;
             }
@@ -623,17 +661,22 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionOutputIds(
     opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
-    opt::BasicBlock* region_entry_block) {
+    opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block) {
   std::vector<uint32_t> result;
   for (auto& block : *region_entry_block->GetParent()) {
     if (region_set.count(&block) != 0) {
       for (auto& inst : block) {
         context->get_def_use_mgr()->WhileEachUse(
             &inst,
-            [&region_set, context, &inst, &result](
+            [&region_set, context, &inst, region_exit_block, &result](
                 opt::Instruction* use, uint32_t /*unused*/) -> bool {
               auto use_block = context->get_instr_block(use);
-              if (use_block && region_set.count(use_block) == 0) {
+              // TODO comment on why we care about region exit block - it is
+              // due to returning a definition from the region requiring it to
+              // be passed out.
+              if (use_block && (region_set.count(use_block) == 0 ||
+                                (use_block == region_exit_block &&
+                                 use->IsBlockTerminator()))) {
                 result.push_back(inst.result_id());
                 return false;
               }

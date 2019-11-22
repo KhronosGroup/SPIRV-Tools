@@ -58,12 +58,12 @@ class TransformationOutlineFunction : public Transformation {
   // TODO comment
   static std::vector<uint32_t> GetRegionInputIds(
       opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
-      opt::BasicBlock* region_entry_block);
+      opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block);
 
   // TODO comment
   static std::vector<uint32_t> GetRegionOutputIds(
       opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
-      opt::BasicBlock* region_entry_block);
+      opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block);
 
  private:
   // A helper method for the applicability check.  Returns true if and only if
