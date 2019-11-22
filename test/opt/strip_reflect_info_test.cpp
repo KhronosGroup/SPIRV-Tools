@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include <string>
+#include "gmock/gmock.h"
+
+#include "spirv-tools/optimizer.hpp"
 
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
@@ -22,6 +25,40 @@ namespace opt {
 namespace {
 
 using StripLineReflectInfoTest = PassTest<::testing::Test>;
+
+TEST_F(StripLineReflectInfoTest, StripReflectEnd2EndExample) {
+  // This is a non-sensical example, but exercises the instructions.
+  std::string before = R"(OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_decorate_string"
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpMemoryModel Logical Simple
+OpDecorateStringGOOGLE %float HlslSemanticGOOGLE "foobar"
+OpDecorateStringGOOGLE %void HlslSemanticGOOGLE "my goodness"
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+)";
+  SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
+  std::vector<uint32_t> binary_in;
+  tools.Assemble(before, &binary_in);
+
+  // Instantiate the optimizer, and run one pass over the module.
+  spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_1);
+  optimizer.RegisterPass(spvtools::CreateStripReflectInfoPass());
+  std::vector<uint32_t> binary_out;
+  optimizer.Run(binary_in.data(), binary_in.size(), &binary_out);
+
+  // Check results
+  std::string disassembly;
+  tools.Disassemble(binary_out.data(), binary_out.size(), &disassembly);
+  std::string after = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical Simple
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+)";
+  EXPECT_THAT(disassembly, testing::Eq(after));
+}
 
 TEST_F(StripLineReflectInfoTest, StripHlslSemantic) {
   // This is a non-sensical example, but exercises the instructions.
