@@ -34,8 +34,6 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
           %3 = OpTypeFunction %2
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-               OpBranch %6
-          %6 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -47,7 +45,7 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 6, /* not relevant */ 200,
+  TransformationOutlineFunction transformation(5, 5, /* not relevant */ 200,
                                                100, 101, 300, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
@@ -66,8 +64,6 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
           %3 = OpTypeFunction %2
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-               OpBranch %6
-          %6 = OpLabel
         %103 = OpFunctionCall %2 %101
                OpReturn
                OpFunctionEnd
@@ -79,6 +75,43 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationOutlineFunctionTest,
+     DoNotOutlineIfRegionStartsWithOpVariable) {
+  // This checks that we do not outline the first block of a function if it
+  // contains OpVariable.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %7 = OpTypeBool
+          %8 = OpTypePointer Function %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %6 = OpVariable %8 Function
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(5, 5, /* not relevant */ 200,
+                                               100, 101, 300, 102, 103,
+                                               /* not relevant */ 201, {}, {});
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationOutlineFunctionTest, OutlineInterestingControlFlowNoState) {
@@ -701,6 +734,104 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAVariable) {
         %103 = OpLabel
           %8 = OpLoad %20 %106
                OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAParameter) {
+  // This tests outlining of a block that uses a function parameter.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "foo(i1;"
+               OpName %9 "x"
+               OpName %18 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %6 %7
+         %13 = OpConstant %6 1
+         %17 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %18 = OpVariable %7 Function
+               OpStore %18 %17
+         %19 = OpFunctionCall %6 %10 %18
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpLoad %6 %9
+         %14 = OpIAdd %6 %12 %13
+               OpReturnValue %14
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+      11, 11, 100, 101, 102, 300, 103, 104, 105, {{9, 106}}, {{14, 107}});
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "foo(i1;"
+               OpName %9 "x"
+               OpName %18 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %6 %7
+         %13 = OpConstant %6 1
+         %17 = OpConstant %6 3
+        %100 = OpTypeStruct %6
+        %101 = OpTypeFunction %100 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %18 = OpVariable %7 Function
+               OpStore %18 %17
+         %19 = OpFunctionCall %6 %10 %18
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+        %104 = OpFunctionCall %100 %102 %9
+         %14 = OpCompositeExtract %6 %104 0
+               OpReturnValue %14
+               OpFunctionEnd
+        %102 = OpFunction %100 None %101
+        %106 = OpFunctionParameter %7
+        %300 = OpLabel
+               OpBranch %103
+        %103 = OpLabel
+         %12 = OpLoad %6 %106
+        %107 = OpIAdd %6 %12 %13
+        %105 = OpCompositeConstruct %100 %107
+               OpReturnValue %105
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));

@@ -145,6 +145,13 @@ bool TransformationOutlineFunction::IsApplicable(
   auto entry_block = context->cfg()->block(message_.entry_block());
   auto exit_block = context->cfg()->block(message_.exit_block());
 
+  // The entry block cannot start with OpVariable - this would mean that
+  // outlining would remove a variable from the function containing the region
+  // being outlined.
+  if (entry_block->begin()->opcode() == SpvOpVariable) {
+    return false;
+  }
+
   // The block must be in the same function.
   if (entry_block->GetParent() != exit_block->GetParent()) {
     return false;
@@ -629,6 +636,21 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
               auto use_block = context->get_instr_block(use);
               if (use_block && region_set.count(use_block) != 0) {
                 result.push_back(phi_inst->result_id());
+                return false;
+              }
+              return true;
+            });
+      });
+
+  region_entry_block->GetParent()->ForEachParam(
+      [context, &region_set, &result](opt::Instruction* function_parameter) {
+        context->get_def_use_mgr()->WhileEachUse(
+            function_parameter,
+            [context, function_parameter, &region_set, &result](
+                opt::Instruction* use, uint32_t /*unused*/) {
+              auto use_block = context->get_instr_block(use);
+              if (use_block && region_set.count(use_block) != 0) {
+                result.push_back(function_parameter->result_id());
                 return false;
               }
               return true;
