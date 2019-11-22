@@ -1355,7 +1355,7 @@ std::string GetReachableMergeAndContinue(SpvCapability cap,
   }
   if (cap == SpvCapabilityShader) {
     branch.AppendBody("OpLoopMerge %merge %target None\n");
-    body.AppendBody("OpSelectionMerge %target None\n");
+    body.AppendBody("OpSelectionMerge %f None\n");
   }
 
   if (!spvIsWebGPUEnv(env))
@@ -2038,12 +2038,9 @@ TEST_P(ValidateCFG,
 }
 
 TEST_P(ValidateCFG, ContinueTargetCanBeMergeBlockForNestedStructureGood) {
-  // This example is valid.  It shows that the validator can't just add
-  // an edge from the loop head to the continue target.  If that edge
-  // is added, then the "if_merge" block is both the continue target
-  // for the loop and also the merge block for the nested selection, but
-  // then it wouldn't be dominated by "if_head", the header block for the
-  // nested selection.
+  // The continue construct cannot be the merge target of a nested selection
+  // because the loop construct must contain "if_merge" because it contains
+  // "if_head".
   bool is_shader = GetParam() == SpvCapabilityShader;
   Block entry("entry");
   Block loop("loop");
@@ -2072,7 +2069,16 @@ TEST_P(ValidateCFG, ContinueTargetCanBeMergeBlockForNestedStructureGood) {
   str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+  if (is_shader) {
+    EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+    EXPECT_THAT(
+        getDiagnosticString(),
+        HasSubstr("Header block 3[%if_head] is contained in the loop construct "
+                  "headed "
+                  "by 2[%loop], but it's merge block 5[%if_merge] is not"));
+  } else {
+    EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+  }
 }
 
 TEST_P(ValidateCFG, SingleLatchBlockMultipleBranchesToLoopHeader) {
@@ -3681,17 +3687,21 @@ OpBranch %7
 OpLoopMerge %8 %9 None
 OpBranch %10
 %10 = OpLabel
-OpLoopMerge %9 %11 None
+OpLoopMerge %11 %12 None
+OpBranch %13
+%13 = OpLabel
+OpSelectionMerge %14 None
+OpBranchConditional %3 %14 %15
+%15 = OpLabel
+OpBranch %8
+%14 = OpLabel
 OpBranch %12
 %12 = OpLabel
-OpSelectionMerge %11 None
-OpBranchConditional %3 %11 %13
-%13 = OpLabel
-OpBranch %8
+OpBranchConditional %3 %10 %11
 %11 = OpLabel
-OpBranchConditional %3 %9 %10
+OpBranch %9
 %9 = OpLabel
-OpBranchConditional %3 %8 %7
+OpBranchConditional %3 %7 %8
 %8 = OpLabel
 OpReturn
 OpFunctionEnd
@@ -3700,7 +3710,7 @@ OpFunctionEnd
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("block <ID> 13[%13] exits the loop headed by <ID> "
+              HasSubstr("block <ID> 15[%15] exits the loop headed by <ID> "
                         "10[%10], but not via a structured exit"));
 }
 
@@ -3726,9 +3736,11 @@ OpBranchConditional %undef %11 %12
 OpSelectionMerge %31 None
 OpBranchConditional %undef %30 %31
 %30 = OpLabel
-OpSelectionMerge %37 None
-OpBranchConditional %undef %36 %37
+OpSelectionMerge %38 None
+OpBranchConditional %undef %36 %38
 %36 = OpLabel
+OpBranch %38
+%38 = OpLabel
 OpBranch %37
 %37 = OpLabel
 OpBranch %10

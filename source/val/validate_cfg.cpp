@@ -729,6 +729,22 @@ spv_result_t StructuredControlFlowChecks(
     }
 
     Construct::ConstructBlockSet construct_blocks = construct.blocks(function);
+    //auto PrintConstruct = [](const Construct& c) {
+    //  switch (c.type()) {
+    //    case ConstructType::kSelection:
+    //      return "Selection";
+    //    case ConstructType::kContinue:
+    //      return "Continue";
+    //    case ConstructType::kLoop:
+    //      return "Loop";
+    //    default:
+    //      return "";
+    //  }
+    //};
+    //std::cout << PrintConstruct(construct) << " construct headed by " << header->id() << "\n";
+    //for (auto block : construct_blocks) {
+    //  std::cout << " block: " << block->id() << "\n";
+    //}
     for (auto block : construct_blocks) {
       std::string construct_name, header_name, exit_name;
       std::tie(construct_name, header_name, exit_name) =
@@ -753,6 +769,25 @@ spv_result_t StructuredControlFlowChecks(
                  << "block <ID> " << pred->id() << " branches to the "
                  << construct_name << " construct, but not to the "
                  << header_name << " <ID> " << header->id();
+        }
+      }
+
+      if (block->is_type(BlockType::kBlockTypeHeader)) {
+        size_t index = (block->terminator() - &_.ordered_instructions()[0]) - 1;
+        const auto& merge_inst = _.ordered_instructions()[index];
+        if (merge_inst.opcode() == SpvOpSelectionMerge ||
+            merge_inst.opcode() == SpvOpLoopMerge) {
+          uint32_t merge_id = merge_inst.GetOperandAs<uint32_t>(0);
+          auto merge_block = function->GetBlock(merge_id).first;
+          if (merge_block->reachable() &&
+              !construct_blocks.count(merge_block)) {
+            return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+                   << "Header block " << _.getIdName(block->id())
+                   << " is contained in the " << construct_name
+                   << " construct headed by " << _.getIdName(header->id())
+                   << ", but it's merge block " << _.getIdName(merge_id)
+                   << " is not";
+          }
         }
       }
     }
