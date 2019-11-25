@@ -4113,6 +4113,80 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Selection must be structured"));
 }
 
+TEST_F(ValidateCFG, ContinueCannotBeSelectionMergeTarget) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %loop "loop"
+OpName %continue "continue"
+OpName %body "body"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %exit %continue None
+OpBranch %body
+%body = OpLabel
+OpSelectionMerge %continue None
+OpBranchConditional %undef %exit %continue
+%continue = OpLabel
+OpBranch %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Header block 3[%body] is contained in the loop construct headed by "
+          "1[%loop], but it's merge block 2[%continue] is not"));
+}
+
+TEST_F(ValidateCFG, ContinueCannotBeLoopMergeTarget) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %loop "loop"
+OpName %continue "continue"
+OpName %inner "inner"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %exit %continue None
+OpBranchConditional %undef %exit %inner
+%inner = OpLabel
+OpLoopMerge %continue %inner None
+OpBranchConditional %undef %inner %continue
+%continue = OpLabel
+OpBranch %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Header block 3[%inner] is contained in the loop construct headed by "
+          "1[%loop], but it's merge block 2[%continue] is not"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
