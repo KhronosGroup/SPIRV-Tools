@@ -51,14 +51,14 @@ bool IsMerge(IRContext* context, BasicBlock* block) {
 
 // Returns true if |id| is the continue target of a merge instruction.
 bool IsContinue(IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->WhileEachUse(id, [](Instruction* user,
-                                                          uint32_t index) {
-    SpvOp op = user->opcode();
-    if (op == SpvOpLoopMerge && index == 1u) {
-      return false;
-    }
-    return true;
-  });
+  return !context->get_def_use_mgr()->WhileEachUse(
+      id, [](Instruction* user, uint32_t index) {
+        SpvOp op = user->opcode();
+        if (op == SpvOpLoopMerge && index == 1u) {
+          return false;
+        }
+        return true;
+      });
 }
 
 // Removes any OpPhi instructions in |block|, which should have exactly one

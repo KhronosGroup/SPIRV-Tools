@@ -27,7 +27,6 @@
 static const int kSpvFunctionCallFunctionId = 2;
 static const int kSpvFunctionCallArgumentId = 3;
 static const int kSpvReturnValueId = 0;
-static const int kSpvLoopMergeContinueTargetIdInIdx = 1;
 
 namespace spvtools {
 namespace opt {
