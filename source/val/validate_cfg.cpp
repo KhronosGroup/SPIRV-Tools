@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/val/validate.h"
-
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -34,6 +32,7 @@
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
 #include "source/val/function.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -729,7 +728,7 @@ spv_result_t StructuredControlFlowChecks(
     }
 
     Construct::ConstructBlockSet construct_blocks = construct.blocks(function);
-    //auto PrintConstruct = [](const Construct& c) {
+    // auto PrintConstruct = [](const Construct& c) {
     //  switch (c.type()) {
     //    case ConstructType::kSelection:
     //      return "Selection";
@@ -741,8 +740,8 @@ spv_result_t StructuredControlFlowChecks(
     //      return "";
     //  }
     //};
-    //std::cout << PrintConstruct(construct) << " construct headed by " << header->id() << "\n";
-    //for (auto block : construct_blocks) {
+    // std::cout << PrintConstruct(construct) << " construct headed by " <<
+    // header->id() << "\n"; for (auto block : construct_blocks) {
     //  std::cout << " block: " << block->id() << "\n";
     //}
     for (auto block : construct_blocks) {
@@ -772,7 +771,8 @@ spv_result_t StructuredControlFlowChecks(
         }
       }
 
-      if (block->is_type(BlockType::kBlockTypeHeader)) {
+      if (block->is_type(BlockType::kBlockTypeSelection) ||
+          block->is_type(BlockType::kBlockTypeLoop)) {
         size_t index = (block->terminator() - &_.ordered_instructions()[0]) - 1;
         const auto& merge_inst = _.ordered_instructions()[index];
         if (merge_inst.opcode() == SpvOpSelectionMerge ||

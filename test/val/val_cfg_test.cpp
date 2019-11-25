@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-
 #include "source/diagnostic.h"
 #include "source/spirv_target_env.h"
 #include "source/val/validate.h"
@@ -1650,25 +1649,27 @@ TEST_P(ValidateCFG, BackEdgeBlockDoesntPostDominateContinueTargetBad) {
   Block entry("entry");
   Block loop1("loop1", SpvOpBranchConditional);
   Block loop2("loop2", SpvOpBranchConditional);
-  Block loop2_merge("loop2_merge", SpvOpBranchConditional);
+  Block loop2_merge("loop2_merge");
+  Block loop1_cont("loop1_cont", SpvOpBranchConditional);
   Block be_block("be_block");
   Block exit("exit", SpvOpReturn);
 
   entry.SetBody("%cond    = OpSLessThan %boolt %one %two\n");
   if (is_shader) {
-    loop1.SetBody("OpLoopMerge %exit %loop2_merge None\n");
+    loop1.SetBody("OpLoopMerge %exit %loop1_cont None\n");
     loop2.SetBody("OpLoopMerge %loop2_merge %loop2 None\n");
   }
 
-  std::string str = GetDefaultHeader(GetParam()) +
-                    nameOps("loop1", "loop2", "be_block", "loop2_merge") +
-                    types_consts() +
-                    "%func    = OpFunction %voidt None %funct\n";
+  std::string str =
+      GetDefaultHeader(GetParam()) +
+      nameOps("loop1", "loop2", "be_block", "loop1_cont", "loop2_merge") +
+      types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop1;
   str += loop1 >> std::vector<Block>({loop2, exit});
   str += loop2 >> std::vector<Block>({loop2, loop2_merge});
-  str += loop2_merge >> std::vector<Block>({be_block, exit});
+  str += loop2_merge >> loop1_cont;
+  str += loop1_cont >> std::vector<Block>({be_block, exit});
   str += be_block >> loop1;
   str += exit;
   str += "OpFunctionEnd";
@@ -1678,7 +1679,7 @@ TEST_P(ValidateCFG, BackEdgeBlockDoesntPostDominateContinueTargetBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("The continue construct with the continue target "
-                             ".\\[%loop2_merge\\] is not post dominated by the "
+                             ".\\[%loop1_cont\\] is not post dominated by the "
                              "back-edge block .\\[%be_block\\]\n"
                              "  %be_block = OpLabel\n"));
   } else {

@@ -291,14 +291,9 @@ bool InlinePass::GenInlineCode(
   // at the end of the first block.  First determine if the caller is in a
   // single block loop.  We'll wait to move the OpLoopMerge until the end
   // of the regular inlining logic, and only if necessary.
-  //bool caller_is_single_block_loop = false;
   bool caller_is_loop_header = false;
-  //if (auto* loop_merge = call_block_itr->GetLoopMergeInst()) {
   if (call_block_itr->GetLoopMergeInst()) {
     caller_is_loop_header = true;
-    //caller_is_single_block_loop =
-    //    call_block_itr->id() ==
-    //    loop_merge->GetSingleWordInOperand(kSpvLoopMergeContinueTargetIdInIdx);
   }
 
   bool callee_begins_with_structured_header =
@@ -612,10 +607,6 @@ bool InlinePass::GenInlineCode(
     --loop_merge_itr;
     assert(loop_merge_itr->opcode() == SpvOpLoopMerge);
     std::unique_ptr<Instruction> cp_inst(loop_merge_itr->Clone(context()));
-    //if (caller_is_single_block_loop) {
-    //  // Also, update its continue target to point to the last block.
-    //  cp_inst->SetInOperand(kSpvLoopMergeContinueTargetIdInIdx, {last->id()});
-    //}
     first->tail().InsertBefore(std::move(cp_inst));
 
     // Remove the loop merge from the last block.
