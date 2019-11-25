@@ -54,6 +54,191 @@ TEST_F(ValidateWebGPU, OpUndefIsDisallowed) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("OpUndef is disallowed"));
 }
 
+TEST_F(ValidateWebGPU, OpNameIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+            OpName %1 "foo"
+       %1 = OpTypeFloat 32
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, OpMemberNameIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+            OpMemberName %2 0 "foo"
+       %1 = OpTypeFloat 32
+       %2 = OpTypeStruct %1
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, OpSourceIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+            OpSource GLSL 450
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, OpSourceContinuedIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+            OpSource GLSL 450
+            OpSourceContinued "I am a happy shader! Yay! ;"
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, OpSourceExtensionIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+            OpSourceExtension "bar"
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, OpStringIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+       %1 = OpString "foo"
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, OpLineIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+       %1 = OpString "minimal.vert"
+            OpLine %1 1 1
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, OpNoLineIsAllowed) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpCapability VulkanMemoryModelKHR
+            OpExtension "SPV_KHR_vulkan_memory_model"
+            OpMemoryModel Logical VulkanKHR
+            OpEntryPoint Vertex %func "shader"
+            OpNoLine
+  %void   = OpTypeVoid
+  %void_f = OpTypeFunction %void
+  %func   = OpFunction %void None %void_f
+  %label  = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, LogicalAddressingVulkanKHRMemoryGood) {
+  std::string spirv = R"(
+          OpCapability Shader
+          OpCapability VulkanMemoryModelKHR
+          OpExtension "SPV_KHR_vulkan_memory_model"
+          OpMemoryModel Logical VulkanKHR
+          OpEntryPoint Vertex %func "shader"
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
 TEST_F(ValidateWebGPU, NonVulkanKHRMemoryModelBad) {
   std::string spirv = R"(
      OpCapability Shader
