@@ -26,6 +26,12 @@ namespace {
 
 using StripLineReflectInfoTest = PassTest<::testing::Test>;
 
+// This test acts as an end-to-end code example on how to strip
+// reflection info from a SPIR-V module.  Use this code pattern
+// when you have compiled HLSL code with Glslang or DXC using
+// option -fhlsl_functionality1 to insert reflection information,
+// but then want to filter out the extra instructions before sending
+// it to a driver that does not implement VK_GOOGLE_hlsl_functionality1.
 TEST_F(StripLineReflectInfoTest, StripReflectEnd2EndExample) {
   // This is a non-sensical example, but exercises the instructions.
   std::string before = R"(OpCapability Shader
@@ -42,7 +48,9 @@ OpDecorateStringGOOGLE %void HlslSemanticGOOGLE "my goodness"
   std::vector<uint32_t> binary_in;
   tools.Assemble(before, &binary_in);
 
-  // Instantiate the optimizer, and run one pass over the module.
+  // Instantiate the optimizer, and run the strip-reflection-info
+  // pass over the |binary_in| module, and place the modified module
+  // into |binary_out|.
   spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_1);
   optimizer.RegisterPass(spvtools::CreateStripReflectInfoPass());
   std::vector<uint32_t> binary_out;
@@ -60,6 +68,8 @@ OpMemoryModel Logical Simple
   EXPECT_THAT(disassembly, testing::Eq(after));
 }
 
+// This test is functionally the same as the end-to-end test above,
+// but uses the test SinglePassRunAndCheck test fixture instead.
 TEST_F(StripLineReflectInfoTest, StripHlslSemantic) {
   // This is a non-sensical example, but exercises the instructions.
   std::string before = R"(OpCapability Shader
