@@ -728,22 +728,6 @@ spv_result_t StructuredControlFlowChecks(
     }
 
     Construct::ConstructBlockSet construct_blocks = construct.blocks(function);
-    // auto PrintConstruct = [](const Construct& c) {
-    //  switch (c.type()) {
-    //    case ConstructType::kSelection:
-    //      return "Selection";
-    //    case ConstructType::kContinue:
-    //      return "Continue";
-    //    case ConstructType::kLoop:
-    //      return "Loop";
-    //    default:
-    //      return "";
-    //  }
-    //};
-    // std::cout << PrintConstruct(construct) << " construct headed by " <<
-    // header->id() << "\n"; for (auto block : construct_blocks) {
-    //  std::cout << " block: " << block->id() << "\n";
-    //}
     for (auto block : construct_blocks) {
       std::string construct_name, header_name, exit_name;
       std::tie(construct_name, header_name, exit_name) =
