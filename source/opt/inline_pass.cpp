@@ -284,12 +284,11 @@ bool InlinePass::GenInlineCode(
     if (rid != 0) callee_result_ids.insert(rid);
   });
 
-  // If the caller is in a single-block loop, and the callee has multiple
-  // blocks, then the normal inlining logic will place the OpLoopMerge in
-  // the last of several blocks in the loop.  Instead, it should be placed
-  // at the end of the first block.  First determine if the caller is in a
-  // single block loop.  We'll wait to move the OpLoopMerge until the end
-  // of the regular inlining logic, and only if necessary.
+  // If the caller is a loop header and the callee has multiple blocks, then the
+  // normal inlining logic will place the OpLoopMerge in the last of several
+  // blocks in the loop.  Instead, it should be placed at the end of the first
+  // block.  We'll wait to move the OpLoopMerge until the end of the regular
+  // inlining logic, and only if necessary.
   bool caller_is_loop_header = false;
   if (call_block_itr->GetLoopMergeInst()) {
     caller_is_loop_header = true;

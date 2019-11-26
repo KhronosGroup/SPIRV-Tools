@@ -2038,7 +2038,7 @@ TEST_P(ValidateCFG,
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
-TEST_P(ValidateCFG, ContinueTargetCanBeMergeBlockForNestedStructureGood) {
+TEST_P(ValidateCFG, ContinueTargetCanBeMergeBlockForNestedStructure) {
   // The continue construct cannot be the merge target of a nested selection
   // because the loop construct must contain "if_merge" because it contains
   // "if_head".
