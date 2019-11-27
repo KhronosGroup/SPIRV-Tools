@@ -311,11 +311,6 @@ void TransformationOutlineFunction::Apply(
   UpdateModuleIdBoundForFreshIds(context, input_id_to_fresh_id_map,
                                  output_id_to_fresh_id_map);
 
-  RemapInputAndOutputIdsInRegion(
-      context, *original_region_entry_block, *original_region_exit_block,
-      region_blocks, region_input_ids, region_output_ids,
-      input_id_to_fresh_id_map, output_id_to_fresh_id_map);
-
   std::map<uint32_t, uint32_t> output_id_to_type_id;
   for (uint32_t output_id : region_output_ids) {
     output_id_to_type_id[output_id] =
@@ -331,25 +326,29 @@ void TransformationOutlineFunction::Apply(
       std::unique_ptr<opt::Instruction>(
           original_region_exit_block->terminator()->Clone(context));
   assert(cloned_exit_block_terminator != nullptr &&
-         "Every block must have a "
-         "terminator.");
+         "Every block must have a terminator.");
 
   std::unique_ptr<opt::Function> outlined_function =
       PrepareFunctionPrototype(context, region_input_ids, region_output_ids,
                                input_id_to_fresh_id_map, output_id_to_type_id);
-  uint32_t return_type_id = outlined_function->type_id();
+
+  RemapInputAndOutputIdsInRegion(
+      context, *original_region_entry_block, *original_region_exit_block,
+      region_blocks, region_input_ids, region_output_ids,
+      input_id_to_fresh_id_map, output_id_to_fresh_id_map);
 
   PopulateOutlinedFunction(context, *original_region_entry_block,
                            *original_region_exit_block, region_blocks,
                            region_output_ids, output_id_to_fresh_id_map,
                            outlined_function.get());
 
-  context->module()->AddFunction(std::move(outlined_function));
-
   ContractOriginalRegion(
       context, region_blocks, region_input_ids, region_output_ids,
-      output_id_to_type_id, return_type_id, std::move(cloned_exit_block_merge),
+      output_id_to_type_id, outlined_function->type_id(),
+      std::move(cloned_exit_block_merge),
       std::move(cloned_exit_block_terminator), original_region_entry_block);
+
+  context->module()->AddFunction(std::move(outlined_function));
 
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
