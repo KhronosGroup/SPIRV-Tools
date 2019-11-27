@@ -364,6 +364,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         // bound is too big.  This never requires us to *add* a capability
         // declaration for Int64 because the existence of the array bound would
         // already have required that declaration.
+        // See https://gitlab.khronos.org/spirv/SPIR-V/issues/524
         index_inst = WidenInteger(index_type->IsSigned(), maxval_width,
                                   index_inst, &inst);
       }
