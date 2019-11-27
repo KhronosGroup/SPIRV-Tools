@@ -16,6 +16,7 @@
 #define SOURCE_FUZZ_TRANSFORMATION_OUTLINE_FUNCTION_H_
 
 #include <map>
+#include <set>
 #include <vector>
 
 #include "source/fuzz/fact_manager.h"
@@ -80,6 +81,23 @@ class TransformationOutlineFunction : public Transformation {
       std::set<uint32_t>* ids_used_by_this_transformation) const;
 
   // TODO comment
+  void UpdateModuleIdBoundForFreshIds
+          (opt::IRContext* context,
+           const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map,
+           const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map) const;
+
+  // TODO comment
+  void RemapInputAndOutputIdsInRegion
+          (opt::IRContext* context,
+           const opt::BasicBlock& original_region_entry_block,
+           const opt::BasicBlock& original_region_exit_block,
+           const std::set<opt::BasicBlock*>& region_blocks,
+           const std::vector<uint32_t>& region_input_ids,
+           const std::vector<uint32_t>& region_output_ids,
+           const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map,
+           const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map) const;
+
+    // TODO comment
   std::unique_ptr<opt::Function> PrepareFunctionPrototype(
       opt::IRContext* context, const std::vector<uint32_t>& region_input_ids,
       const std::vector<uint32_t>& region_output_ids,

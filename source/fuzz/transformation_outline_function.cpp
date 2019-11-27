@@ -281,113 +281,44 @@ bool TransformationOutlineFunction::IsApplicable(
 
 void TransformationOutlineFunction::Apply(
     opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
-  // Enlarge the module's id bound as needed to accommodate the various fresh
-  // ids associated with the transformation.
-  fuzzerutil::UpdateModuleIdBound(
-      context, message_.new_function_struct_return_type_id());
-  fuzzerutil::UpdateModuleIdBound(context, message_.new_function_type_id());
-  fuzzerutil::UpdateModuleIdBound(context, message_.new_function_id());
-  fuzzerutil::UpdateModuleIdBound(context, message_.new_function_first_block());
-  fuzzerutil::UpdateModuleIdBound(context,
-                                  message_.new_function_region_entry_block());
-  fuzzerutil::UpdateModuleIdBound(context, message_.new_caller_result_id());
-  fuzzerutil::UpdateModuleIdBound(context, message_.new_callee_result_id());
-
-  std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
-      PairSequenceToMap(message_.input_id_to_fresh_id());
-  for (auto& entry : input_id_to_fresh_id_map) {
-    fuzzerutil::UpdateModuleIdBound(context, entry.second);
-  }
-
-  std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
-      PairSequenceToMap(message_.output_id_to_fresh_id());
-  for (auto& entry : output_id_to_fresh_id_map) {
-    fuzzerutil::UpdateModuleIdBound(context, entry.second);
-  }
 
   // The entry block for the region before outlining.
   auto original_region_entry_block =
-      context->cfg()->block(message_.entry_block());
+          context->cfg()->block(message_.entry_block());
 
   // The exit block for the region before outlining.
   auto original_region_exit_block =
-      context->cfg()->block(message_.exit_block());
+          context->cfg()->block(message_.exit_block());
 
   // The single-entry single-exit region defined by |message_.entry_block| and
   // |message_.exit_block|.
   std::set<opt::BasicBlock*> region_blocks = GetRegionBlocks(
-      context, original_region_entry_block, original_region_exit_block);
+          context, original_region_entry_block, original_region_exit_block);
 
   // Input and output ids for the region being outlined.
   std::vector<uint32_t> region_input_ids =
-      GetRegionInputIds(context, region_blocks, original_region_entry_block,
-                        original_region_exit_block);
+          GetRegionInputIds(context, region_blocks, original_region_entry_block,
+                            original_region_exit_block);
   std::vector<uint32_t> region_output_ids =
-      GetRegionOutputIds(context, region_blocks, original_region_entry_block,
-                         original_region_exit_block);
+          GetRegionOutputIds(context, region_blocks, original_region_entry_block,
+                             original_region_exit_block);
 
-  // Change all uses of input ids inside the region to the corresponding fresh
-  // ids that will ultimately be parameters of the outlined function.
-  // This is done by considering each region input id in turn.
-  for (uint32_t id : region_input_ids) {
-    // We then consider each use of the input id.
-    context->get_def_use_mgr()->ForEachUse(
-        id,
-        [context, original_region_entry_block, id, &input_id_to_fresh_id_map,
-         region_blocks](opt::Instruction* use, uint32_t operand_index) {
-          // Find the block in which this use of the input id occurs.
-          opt::BasicBlock* use_block = context->get_instr_block(use);
-          // We want to rewrite the use id if its block occurs in the outlined
-          // region, with one exception: if the use appears in an OpPhi in the
-          // region's entry block then we leave it alone, as we will not pull
-          // such OpPhi instructions into the outlined function.
-          if (
-              // The block is in the region ...
-              region_blocks.count(use_block) != 0 &&
-              // ... and the use is not in an OpPhi in the region's entry block.
-              !(use->opcode() == SpvOpPhi &&
-                use_block == original_region_entry_block)) {
-            // Rewrite this use of the input id.
-            use->SetOperand(operand_index, {input_id_to_fresh_id_map[id]});
-          }
-        });
-  }
+  // Maps from input and output ids to fresh ids.
+  std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
+          PairSequenceToMap(message_.input_id_to_fresh_id());
+  std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
+          PairSequenceToMap(message_.output_id_to_fresh_id());
 
-  // Change each definition of a region output id to define the corresponding
-  // fresh ids that will store intermediate value for the output ids.  Also
-  // change all uses of the output id located in the outlined region.
-  // This is done by considering each region output id in turn.
-  for (uint32_t id : region_output_ids) {
-    // First consider each use of the output id and update the relevant uses.
-    context->get_def_use_mgr()->ForEachUse(
-        id,
-        [context, original_region_exit_block, id, &output_id_to_fresh_id_map,
-         region_blocks](opt::Instruction* use, uint32_t operand_index) {
-          // Find the block in which this use of the output id occurs.
-          auto use_block = context->get_instr_block(use);
-          // We want to rewrite the use id if its block occurs in the outlined
-          // region, with one exception: the terminator of the exit block of
-          // the region is going to remain in the original function, so if the
-          // use appears in such a terminator instruction we leave it alone.
-          if (
-              // The block is in the region ...
-              region_blocks.count(use_block) != 0 &&
-              // ... and the use is not in the terminator instruction of the
-              // region's exit block.
-              !(use_block == original_region_exit_block &&
-                use->IsBlockTerminator())) {
-            // Rewrite this use of the output id.
-            use->SetOperand(operand_index, {output_id_to_fresh_id_map[id]});
-          }
-        });
+  UpdateModuleIdBoundForFreshIds(context, input_id_to_fresh_id_map, output_id_to_fresh_id_map);
 
-    // Now change the instruction that defines the output id so that it instead
-    // defines the corresponding fresh id.  We do this after changing all the
-    // uses so that the definition of the original id is still registered when
-    // we analyse its uses.
-    context->get_def_use_mgr()->GetDef(id)->SetResultId(
-        output_id_to_fresh_id_map[id]);
-  }
+  RemapInputAndOutputIdsInRegion(context,
+          *original_region_entry_block,
+          *original_region_exit_block,
+          region_blocks,
+          region_input_ids,
+          region_output_ids,
+          input_id_to_fresh_id_map,
+          output_id_to_fresh_id_map);
 
   std::map<uint32_t, uint32_t> output_id_to_type_id;
   for (uint32_t output_id : region_output_ids) {
@@ -511,7 +442,7 @@ void TransformationOutlineFunction::Apply(
         }
         break;
       case SpvOpBranchConditional:
-        for (uint32_t index : {0, 1}) {
+        for (uint32_t index : {0u, 1u}) {
           if (cloned_block->terminator()->GetSingleWordInOperand(index) ==
               message_.entry_block()) {
             cloned_block->terminator()->SetInOperand(
@@ -811,6 +742,109 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
   }
 
   return outlined_function;
+}
+
+void TransformationOutlineFunction::UpdateModuleIdBoundForFreshIds
+(opt::IRContext* context,
+const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map,
+const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map) const {
+  // Enlarge the module's id bound as needed to accommodate the various fresh
+  // ids associated with the transformation.
+  fuzzerutil::UpdateModuleIdBound(
+          context, message_.new_function_struct_return_type_id());
+  fuzzerutil::UpdateModuleIdBound(context, message_.new_function_type_id());
+  fuzzerutil::UpdateModuleIdBound(context, message_.new_function_id());
+  fuzzerutil::UpdateModuleIdBound(context, message_.new_function_first_block());
+  fuzzerutil::UpdateModuleIdBound(context,
+                                  message_.new_function_region_entry_block());
+  fuzzerutil::UpdateModuleIdBound(context, message_.new_caller_result_id());
+  fuzzerutil::UpdateModuleIdBound(context, message_.new_callee_result_id());
+
+  for (auto& entry : input_id_to_fresh_id_map) {
+    fuzzerutil::UpdateModuleIdBound(context, entry.second);
+  }
+
+  for (auto& entry : output_id_to_fresh_id_map) {
+    fuzzerutil::UpdateModuleIdBound(context, entry.second);
+  }
+}
+
+void TransformationOutlineFunction::RemapInputAndOutputIdsInRegion
+        (opt::IRContext* context,
+         const opt::BasicBlock& original_region_entry_block,
+         const opt::BasicBlock& original_region_exit_block,
+         const std::set<opt::BasicBlock*>& region_blocks,
+         const std::vector<uint32_t>& region_input_ids,
+         const std::vector<uint32_t>& region_output_ids,
+         const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map,
+         const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map) const {
+  // Change all uses of input ids inside the region to the corresponding fresh
+  // ids that will ultimately be parameters of the outlined function.
+  // This is done by considering each region input id in turn.
+  for (uint32_t id : region_input_ids) {
+    // We then consider each use of the input id.
+    context->get_def_use_mgr()->ForEachUse(
+            id,
+            [context, &original_region_entry_block, id,
+             &input_id_to_fresh_id_map,
+                    region_blocks](opt::Instruction* use, uint32_t operand_index) {
+              // Find the block in which this use of the input id occurs.
+              opt::BasicBlock* use_block = context->get_instr_block(use);
+              // We want to rewrite the use id if its block occurs in the outlined
+              // region, with one exception: if the use appears in an OpPhi in the
+              // region's entry block then we leave it alone, as we will not pull
+              // such OpPhi instructions into the outlined function.
+              if (
+                // The block is in the region ...
+                      region_blocks.count(use_block) != 0 &&
+                      // ... and the use is not in an OpPhi in the region's entry block.
+                      !(use->opcode() == SpvOpPhi &&
+                        use_block == &original_region_entry_block)) {
+                // Rewrite this use of the input id.
+                use->SetOperand(operand_index, {input_id_to_fresh_id_map
+                .at(id)});
+              }
+            });
+  }
+
+  // Change each definition of a region output id to define the corresponding
+  // fresh ids that will store intermediate value for the output ids.  Also
+  // change all uses of the output id located in the outlined region.
+  // This is done by considering each region output id in turn.
+  for (uint32_t id : region_output_ids) {
+    // First consider each use of the output id and update the relevant uses.
+    context->get_def_use_mgr()->ForEachUse(
+            id,
+            [context, &original_region_exit_block, id,
+             &output_id_to_fresh_id_map,
+                    region_blocks](opt::Instruction* use, uint32_t operand_index) {
+              // Find the block in which this use of the output id occurs.
+              auto use_block = context->get_instr_block(use);
+              // We want to rewrite the use id if its block occurs in the outlined
+              // region, with one exception: the terminator of the exit block of
+              // the region is going to remain in the original function, so if the
+              // use appears in such a terminator instruction we leave it alone.
+              if (
+                // The block is in the region ...
+                      region_blocks.count(use_block) != 0 &&
+                      // ... and the use is not in the terminator instruction of the
+                      // region's exit block.
+                      !(use_block == &original_region_exit_block &&
+                        use->IsBlockTerminator())) {
+                // Rewrite this use of the output id.
+                use->SetOperand(operand_index, {output_id_to_fresh_id_map
+                .at(id)});
+              }
+            });
+
+    // Now change the instruction that defines the output id so that it instead
+    // defines the corresponding fresh id.  We do this after changing all the
+    // uses so that the definition of the original id is still registered when
+    // we analyse its uses.
+    context->get_def_use_mgr()->GetDef(id)->SetResultId(
+            output_id_to_fresh_id_map.at(id));
+  }
+
 }
 
 }  // namespace fuzz
