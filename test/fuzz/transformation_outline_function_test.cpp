@@ -1178,6 +1178,47 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
+TEST(TransformationOutlineFunctionTest,
+     DoNotOutlineSelectionHeaderNotInRegion) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %8
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(8, 11, 100, 101, 102, 300, 103,
+                                               104, 105, {}, {});
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
+}
+
 TEST(TransformationOutlineFunctionTest, OutlineRegionEndingWithReturnVoid) {
   std::string shader = R"(
                OpCapability Shader
@@ -1529,6 +1570,200 @@ TEST(TransformationOutlineFunctionTest,
         %300 = OpLabel
                OpBranch %203
         %203 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationOutlineFunctionTest,
+     OutlineRegionWithSelectionMergeAsExitAndHeaderInRegion) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+          /*entry_block*/ 20,
+          /*exit_block*/ 10,
+          /*new_function_struct_return_type_id*/ 200,
+          /*new_function_type_id*/ 201,
+          /*new_function_id*/ 202,
+          /*new_function_first_block*/ 300,
+          /*new_function_region_entry_block*/ 203,
+          /*new_caller_result_id*/ 204,
+          /*new_callee_result_id*/ 205,
+          /*input_id_to_fresh_id*/ {},
+          /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+        %204 = OpFunctionCall %2 %202
+               OpBranch %11
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %202 = OpFunction %2 None %3
+        %300 = OpLabel
+               OpBranch %203
+        %203 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationOutlineFunctionTest,
+     OutlineRegionWithSelectionMergeAsExitAndHeaderNotInRegion) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %8
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+          /*entry_block*/ 8,
+          /*exit_block*/ 10,
+          /*new_function_struct_return_type_id*/ 200,
+          /*new_function_type_id*/ 201,
+          /*new_function_id*/ 202,
+          /*new_function_first_block*/ 300,
+          /*new_function_region_entry_block*/ 203,
+          /*new_caller_result_id*/ 204,
+          /*new_callee_result_id*/ 205,
+          /*input_id_to_fresh_id*/ {},
+          /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %7 %8 %8
+          %8 = OpLabel
+        %204 = OpFunctionCall %2 %202
+               OpBranch %11
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %202 = OpFunction %2 None %3
+        %300 = OpLabel
+               OpBranch %203
+        %203 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
                OpReturn
                OpFunctionEnd
   )";

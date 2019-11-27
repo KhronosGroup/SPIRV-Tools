@@ -20,7 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO comment
+// A fuzzer pass for outlining single-entry single-exit regions of a  control
+// flow graph into their own functions.
 class FuzzerPassOutlineFunctions : public FuzzerPass {
  public:
   FuzzerPassOutlineFunctions(

@@ -440,10 +440,16 @@ message TransformationOutlineFunction {
   // argument to OpReturn
   uint32 new_callee_result_id = 9;
 
-  // TODO comment
+  // Ids defined outside the region and used inside the region will become
+  // parameters to the outlined function.  This is a mapping from used ids to
+  // fresh parameter ids.
   repeated UInt32Pair input_id_to_fresh_id = 10;
 
-  // TODO comment
+  // Ids defined inside the region and used outside the region will become
+  // fresh ids defined by the outlined function, which get copied into the
+  // function's struct return value and then copied into their destination ids
+  // by the caller.  This is a mapping from original ids to corresponding fresh
+  // ids.
   repeated UInt32Pair output_id_to_fresh_id = 11;
 
 }

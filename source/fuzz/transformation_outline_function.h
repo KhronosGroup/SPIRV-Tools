@@ -41,7 +41,11 @@ class TransformationOutlineFunction : public Transformation {
       std::map<uint32_t, uint32_t>&& input_id_to_fresh_id,
       std::map<uint32_t, uint32_t>&& output_id_to_fresh_id);
 
-  // TODO comment
+  // - All the fresh ids occurring in the transformation must be distinct and
+  //   fresh.
+  // - |message_.entry_block| and |message_.exit_block| must form a single-entry
+  //   single-exit control flow graph region.
+  //
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
