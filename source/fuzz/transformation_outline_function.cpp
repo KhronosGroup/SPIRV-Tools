@@ -326,6 +326,16 @@ void TransformationOutlineFunction::Apply(
         context->get_def_use_mgr()->GetDef(output_id)->type_id();
   }
 
+  std::unique_ptr<opt::Instruction> cloned_exit_block_merge =
+          original_region_exit_block->GetMergeInst() ?
+          std::unique_ptr<opt::Instruction>
+                  (original_region_exit_block->GetMergeInst()->Clone(context)) : nullptr;
+  std::unique_ptr<opt::Instruction> cloned_exit_block_terminator =
+                                            std::unique_ptr<opt::Instruction>(
+          original_region_exit_block->terminator()->Clone(context));
+  assert(cloned_exit_block_terminator != nullptr && "Every block must have a "
+                                             "terminator.");
+
   std::unique_ptr<opt::Function> outlined_function =
       PrepareFunctionPrototype(context, region_input_ids, region_output_ids,
                                input_id_to_fresh_id_map, output_id_to_type_id);
@@ -458,25 +468,18 @@ void TransformationOutlineFunction::Apply(
   }
   assert(outlined_region_exit_block != nullptr &&
          "We should have encountered the region's exit block when iterating "
-         "through "
-         "the function");
-  std::unique_ptr<opt::Instruction> cloned_merge = nullptr;
-  std::unique_ptr<opt::Instruction> cloned_terminator = nullptr;
+         "through the function");
   for (auto inst_it = outlined_region_exit_block->begin();
        inst_it != outlined_region_exit_block->end();) {
     if (inst_it->opcode() == SpvOpLoopMerge ||
         inst_it->opcode() == SpvOpSelectionMerge) {
-      cloned_merge = std::unique_ptr<opt::Instruction>(inst_it->Clone(context));
       inst_it = inst_it.Erase();
     } else if (inst_it->IsBlockTerminator()) {
-      cloned_terminator = std::unique_ptr<opt::Instruction>(
-          outlined_region_exit_block->terminator()->Clone(context));
       inst_it = inst_it.Erase();
     } else {
       ++inst_it;
     }
   }
-  assert(cloned_terminator != nullptr && "Every block must have a terminator.");
 
   if (region_output_ids.empty()) {
     outlined_region_exit_block->AddInstruction(MakeUnique<opt::Instruction>(
@@ -531,10 +534,10 @@ void TransformationOutlineFunction::Apply(
              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}})));
   }
 
-  if (cloned_merge != nullptr) {
-    original_region_entry_block->AddInstruction(std::move(cloned_merge));
+  if (cloned_exit_block_merge != nullptr) {
+    original_region_entry_block->AddInstruction(std::move(cloned_exit_block_merge));
   }
-  original_region_entry_block->AddInstruction(std::move(cloned_terminator));
+  original_region_entry_block->AddInstruction(std::move(cloned_exit_block_terminator));
 
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
