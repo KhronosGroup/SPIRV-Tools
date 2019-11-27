@@ -191,8 +191,8 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
           } else if (def->IsNonSemantic() && !inst->IsNonSemantic()) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "Operand " << _.getIdName(operand_word)
-                   << " in semantic instruction cannot have been defined by "
-                   << "non-semantic instruction";
+                   << " in semantic instruction cannot be a non-semantic "
+                      "instruction";
           } else {
             ret = SPV_SUCCESS;
           }

@@ -163,8 +163,8 @@ INSTANTIATE_TEST_SUITE_P(
                    "%invalid = OpConstantComposite %f32vec2 %f32_0 %result"),
             Values(""),
             Values(TestResult(SPV_ERROR_INVALID_ID,
-                              "in semantic instruction cannot have been "
-                              "defined by non-semantic instruction"))));
+                              "in semantic instruction cannot be a "
+                              "non-semantic instruction"))));
 
 TEST_F(ValidateNonSemanticString, InvalidSectionOpExtInst) {
   const std::string spirv = R"(
