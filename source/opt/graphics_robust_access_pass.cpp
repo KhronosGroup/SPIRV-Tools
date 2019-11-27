@@ -585,16 +585,19 @@ opt::Instruction* opt::GraphicsRobustAccessPass::WidenInteger(
   return conversion;
 }
 
-Instruction* GraphicsRobustAccessPass::MakeUMinInst(Instruction* x,
-                                                    Instruction* y,
-                                                    Instruction* where) {
+Instruction* GraphicsRobustAccessPass::MakeUMinInst(
+    const analysis::TypeManager& tm, Instruction* x, Instruction* y,
+    Instruction* where) {
   // Get IDs of instructions we'll be referencing. Evaluate them before calling
   // the function so we force a deterministic ordering in case both of them need
   // to take a new ID.
   const uint32_t glsl_insts_id = GetGlslInsts();
   uint32_t smin_id = TakeNextId();
-  assert(x->type_id()->AsInteger()->width() ==
-         y->type_id()->AsInteger()->width());
+  const auto xwidth = tm.GetType(x->type_id())->AsInteger()->width();
+  const auto ywidth = tm.GetType(y->type_id())->AsInteger()->width();
+  assert(xwidth == ywidth);
+  (void)xwidth;
+  (void)ywidth;
   auto* smin_inst = InsertInst(
       where, SpvOpExtInst, x->type_id(), smin_id,
       {
@@ -606,15 +609,22 @@ Instruction* GraphicsRobustAccessPass::MakeUMinInst(Instruction* x,
   return smin_inst;
 }
 
-Instruction* GraphicsRobustAccessPass::MakeSClampInst(Instruction* x,
-                                                      Instruction* min,
-                                                      Instruction* max,
-                                                      Instruction* where) {
+Instruction* GraphicsRobustAccessPass::MakeSClampInst(
+    const analysis::TypeManager& tm, Instruction* x, Instruction* min,
+    Instruction* max, Instruction* where) {
   // Get IDs of instructions we'll be referencing. Evaluate them before calling
   // the function so we force a deterministic ordering in case both of them need
   // to take a new ID.
   const uint32_t glsl_insts_id = GetGlslInsts();
   uint32_t clamp_id = TakeNextId();
+  const auto xwidth = tm.GetType(x->type_id())->AsInteger()->width();
+  const auto minwidth = tm.GetType(min->type_id())->AsInteger()->width();
+  const auto maxwidth = tm.GetType(max->type_id())->AsInteger()->width();
+  assert(xwidth == minwidth);
+  assert(xwidth == maxwidth);
+  (void)xwidth;
+  (void)minwidth;
+  (void)maxwidth;
   assert(x->type_id()->AsInteger()->width() ==
          min->type_id()->AsInteger()->width());
   assert(x->type_id()->AsInteger()->width() ==

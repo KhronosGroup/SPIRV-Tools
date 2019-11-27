@@ -25,6 +25,7 @@
 #include "instruction.h"
 #include "module.h"
 #include "pass.h"
+#include "type_manager.h"
 
 namespace spvtools {
 namespace opt {
@@ -92,7 +93,8 @@ class GraphicsRobustAccessPass : public Pass {
   //  - |y| otherwise
   // We assume that |x| and |y| are scalar integer types with the same
   // width.  The instruction is inserted before |where|.
-  opt::Instruction* MakeUMinInst(Instruction* x, Instruction* y,
+  opt::Instruction* MakeUMinInst(const analysis::TypeManager& tm,
+                                 Instruction* x, Instruction* y,
                                  Instruction* where);
 
   // Returns a new instruction that invokes the SClamp GLSL.std.450 extended
@@ -104,7 +106,8 @@ class GraphicsRobustAccessPass : public Pass {
   // We assume that |min| is signed-less-or-equal to |max|, and that the
   // operands all have the same scalar integer type.  The instruction is
   // inserted before |where|.
-  opt::Instruction* MakeSClampInst(Instruction* x, Instruction* min,
+  opt::Instruction* MakeSClampInst(const analysis::TypeManager& tm,
+                                   Instruction* x, Instruction* min,
                                    Instruction* max, Instruction* where);
 
   // Returns a new instruction which evaluates to the length the runtime array
