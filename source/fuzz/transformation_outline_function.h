@@ -113,6 +113,16 @@ class TransformationOutlineFunction : public Transformation {
       const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
       opt::Function* outlined_function) const;
 
+  void ContractOriginalRegion(
+          opt::IRContext* context, std::set<opt::BasicBlock*>& region_blocks,
+          const std::vector<uint32_t>& region_input_ids,
+          const std::vector<uint32_t>& region_output_ids,
+          const std::map<uint32_t, uint32_t>& output_id_to_type_id,
+          uint32_t return_type_id,
+          std::unique_ptr<opt::Instruction> cloned_exit_block_merge,
+          std::unique_ptr<opt::Instruction> cloned_exit_block_terminator,
+          opt::BasicBlock* original_region_entry_block) const;
+
   protobufs::TransformationOutlineFunction message_;
 };
 

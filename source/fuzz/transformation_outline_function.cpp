@@ -346,40 +346,10 @@ void TransformationOutlineFunction::Apply(
 
   context->module()->AddFunction(std::move(outlined_function));
 
-  for (auto inst_it = original_region_entry_block->begin();
-       inst_it != original_region_entry_block->end();) {
-    if (inst_it->opcode() == SpvOpPhi) {
-      ++inst_it;
-      continue;
-    }
-    inst_it = inst_it.Erase();
-  }
-  opt::Instruction::OperandList function_call_operands;
-  function_call_operands.push_back(
-      {SPV_OPERAND_TYPE_ID, {message_.new_function_id()}});
-  for (auto id : region_input_ids) {
-    function_call_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
-  }
-
-  original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
-      context, SpvOpFunctionCall, return_type_id,
-      message_.new_caller_result_id(), function_call_operands));
-
-  for (uint32_t index = 0; index < region_output_ids.size(); ++index) {
-    uint32_t id = region_output_ids[index];
-    original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
-        context, SpvOpCompositeExtract, output_id_to_type_id[id], id,
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID, {message_.new_caller_result_id()}},
-             {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}})));
-  }
-
-  if (cloned_exit_block_merge != nullptr) {
-    original_region_entry_block->AddInstruction(
-        std::move(cloned_exit_block_merge));
-  }
-  original_region_entry_block->AddInstruction(
-      std::move(cloned_exit_block_terminator));
+  ContractOriginalRegion(
+      context, region_blocks, region_input_ids, region_output_ids,
+      output_id_to_type_id, return_type_id, std::move(cloned_exit_block_merge),
+      std::move(cloned_exit_block_terminator), original_region_entry_block);
 
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
@@ -739,34 +709,8 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
   for (auto block_it = enclosing_function->begin();
        block_it != enclosing_function->end();) {
     // Skip the region's entry block - we already dealt with it above.
-    if (&*block_it == &original_region_entry_block) {
-      ++block_it;
-      continue;
-    }
-    if (region_blocks.count(&*block_it) == 0) {
-      // The block is not in the region.  Check whether it uses the last block
-      // of the region as a merge block continue target, or has the last block
-      // of the region as an OpPhi predecessor, and change such occurrences
-      // to be the first block of the region (i.e. the block containing the call
-      // to what was outlined).
-      if (block_it->MergeBlockIdIfAny() == message_.exit_block()) {
-        block_it->GetMergeInst()->SetInOperand(0, {message_.entry_block()});
-      }
-      if (block_it->ContinueBlockIdIfAny() == message_.exit_block()) {
-        block_it->GetMergeInst()->SetInOperand(1, {message_.entry_block()});
-      }
-      block_it->ForEachPhiInst([this](opt::Instruction* phi_inst) {
-        for (uint32_t predecessor_index = 1;
-             predecessor_index < phi_inst->NumInOperands();
-             predecessor_index += 2) {
-          if (phi_inst->GetSingleWordInOperand(predecessor_index) ==
-              message_.exit_block()) {
-            phi_inst->SetInOperand(predecessor_index, {message_.entry_block()});
-          }
-        }
-
-      });
-
+    if (region_blocks.count(&*block_it) == 0 ||
+        &*block_it == &original_region_entry_block) {
       ++block_it;
       continue;
     }
@@ -855,6 +799,85 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
 
   outlined_function->SetFunctionEnd(MakeUnique<opt::Instruction>(
       context, SpvOpFunctionEnd, 0, 0, opt::Instruction::OperandList()));
+}
+
+void TransformationOutlineFunction::ContractOriginalRegion(
+    opt::IRContext* context, std::set<opt::BasicBlock*>& region_blocks,
+    const std::vector<uint32_t>& region_input_ids,
+    const std::vector<uint32_t>& region_output_ids,
+    const std::map<uint32_t, uint32_t>& output_id_to_type_id,
+    uint32_t return_type_id,
+    std::unique_ptr<opt::Instruction> cloned_exit_block_merge,
+    std::unique_ptr<opt::Instruction> cloned_exit_block_terminator,
+    opt::BasicBlock* original_region_entry_block) const {
+  // Consider every block in the enclosing function.
+  auto enclosing_function = original_region_entry_block->GetParent();
+  for (auto block_it = enclosing_function->begin();
+       block_it != enclosing_function->end();) {
+    if (&*block_it == original_region_entry_block) {
+      ++block_it;
+    } else if (region_blocks.count(&*block_it) == 0) {
+      // The block is not in the region.  Check whether it uses the last block
+      // of the region as a merge block continue target, or has the last block
+      // of the region as an OpPhi predecessor, and change such occurrences
+      // to be the first block of the region (i.e. the block containing the call
+      // to what was outlined).
+      if (block_it->MergeBlockIdIfAny() == message_.exit_block()) {
+        block_it->GetMergeInst()->SetInOperand(0, {message_.entry_block()});
+      }
+      if (block_it->ContinueBlockIdIfAny() == message_.exit_block()) {
+        block_it->GetMergeInst()->SetInOperand(1, {message_.entry_block()});
+      }
+      block_it->ForEachPhiInst([this](opt::Instruction* phi_inst) {
+        for (uint32_t predecessor_index = 1;
+             predecessor_index < phi_inst->NumInOperands();
+             predecessor_index += 2) {
+          if (phi_inst->GetSingleWordInOperand(predecessor_index) ==
+              message_.exit_block()) {
+            phi_inst->SetInOperand(predecessor_index, {message_.entry_block()});
+          }
+        }
+      });
+      ++block_it;
+    } else {
+      block_it = block_it.Erase();
+    }
+  }
+
+  for (auto inst_it = original_region_entry_block->begin();
+       inst_it != original_region_entry_block->end();) {
+    if (inst_it->opcode() == SpvOpPhi) {
+      ++inst_it;
+      continue;
+    }
+    inst_it = inst_it.Erase();
+  }
+  opt::Instruction::OperandList function_call_operands;
+  function_call_operands.push_back(
+      {SPV_OPERAND_TYPE_ID, {message_.new_function_id()}});
+  for (auto id : region_input_ids) {
+    function_call_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
+  }
+
+  original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
+      context, SpvOpFunctionCall, return_type_id,
+      message_.new_caller_result_id(), function_call_operands));
+
+  for (uint32_t index = 0; index < region_output_ids.size(); ++index) {
+    uint32_t id = region_output_ids[index];
+    original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
+        context, SpvOpCompositeExtract, output_id_to_type_id.at(id), id,
+        opt::Instruction::OperandList(
+            {{SPV_OPERAND_TYPE_ID, {message_.new_caller_result_id()}},
+             {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}})));
+  }
+
+  if (cloned_exit_block_merge != nullptr) {
+    original_region_entry_block->AddInstruction(
+        std::move(cloned_exit_block_merge));
+  }
+  original_region_entry_block->AddInstruction(
+      std::move(cloned_exit_block_terminator));
 }
 
 }  // namespace fuzz
