@@ -121,7 +121,7 @@
 //      the result of an OpArrayLength instruction acting on the pointer of
 //      the containing structure as noted above.
 //
-//      - Access chain indicies are always treated as signed, so:
+//      - Access chain indices are always treated as signed, so:
 //        - Clamp the upper bound at the signed integer maximum.
 //        - Use SClamp for all clamping.
 //
