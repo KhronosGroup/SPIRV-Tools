@@ -281,10 +281,11 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
   // the new instruction and records that them module is modified.
   // Assumes %min_value is signed-less-or-equal than %max_value. (All callees
   // use 0 for %min_value).
-  auto clamp_index = [&inst, this, &replace_index](
+  auto clamp_index = [&inst, type_mgr, this, &replace_index](
                          uint32_t operand_index, Instruction* old_value,
                          Instruction* min_value, Instruction* max_value) {
-    auto* clamp_inst = MakeSClampInst(old_value, min_value, max_value, &inst);
+    auto* clamp_inst =
+        MakeSClampInst(*type_mgr, old_value, min_value, max_value, &inst);
     replace_index(operand_index, clamp_inst);
   };
 
@@ -433,8 +434,9 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
       // Use unsigned-min to ensure that the result is always non-negative.
       // That ensures we satisfy the invariant for SClamp, where the "min"
       // argument we give it (zero), is no larger than the third argument.
-      auto* upper_bound = MakeUMinInst(
-          count_minus_1, GetValueForType(max_signed_value, wider_type), &inst);
+      auto* upper_bound =
+          MakeUMinInst(*type_mgr, count_minus_1,
+                       GetValueForType(max_signed_value, wider_type), &inst);
       // Now clamp the index to this upper bound.
       clamp_index(operand_index, index_inst, zero, upper_bound);
     }
@@ -626,10 +628,6 @@ Instruction* GraphicsRobustAccessPass::MakeSClampInst(
   (void)xwidth;
   (void)minwidth;
   (void)maxwidth;
-  assert(x->type_id()->AsInteger()->width() ==
-         min->type_id()->AsInteger()->width());
-  assert(x->type_id()->AsInteger()->width() ==
-         max->type_id()->AsInteger()->width());
   auto* clamp_inst = InsertInst(
       where, SpvOpExtInst, x->type_id(), clamp_id,
       {
@@ -979,9 +977,9 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
         {constant_mgr->GetDefiningInstruction(coordinate_1)->result_id()}}});
 
   // Clamp the coordinate
-  auto* clamp_coord =
-      MakeSClampInst(coord, constant_mgr->GetDefiningInstruction(coordinate_0),
-                     query_max_including_faces, image_texel_pointer);
+  auto* clamp_coord = MakeSClampInst(
+      *type_mgr, coord, constant_mgr->GetDefiningInstruction(coordinate_0),
+      query_max_including_faces, image_texel_pointer);
   image_texel_pointer->SetInOperand(1, {clamp_coord->result_id()});
 
   // Clamp the sample index
@@ -1000,7 +998,7 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
                                     {SPV_OPERAND_TYPE_ID, {component_1_id}}});
 
     auto* clamp_samples = MakeSClampInst(
-        samples, constant_mgr->GetDefiningInstruction(coordinate_0),
+        *type_mgr, samples, constant_mgr->GetDefiningInstruction(coordinate_0),
         max_samples, image_texel_pointer);
     image_texel_pointer->SetInOperand(2, {clamp_samples->result_id()});
 
