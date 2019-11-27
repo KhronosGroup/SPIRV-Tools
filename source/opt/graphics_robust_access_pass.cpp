@@ -121,6 +121,10 @@
 //      the result of an OpArrayLength instruction acting on the pointer of
 //      the containing structure as noted above.
 //
+//      - Access chain indicies are always treated as signed, so:
+//        - Clamp the upper bound at the signed integer maximum.
+//        - Use SClamp for all clamping.
+//
 //    - TODO(dneto): OpImageTexelPointer:
 //      - Clamp coordinate to the image size returned by OpImageQuerySize
 //      - If multi-sampled, clamp the sample index to the count returned by
@@ -141,6 +145,7 @@
 #include <cstring>
 #include <functional>
 #include <initializer_list>
+#include <limits>
 #include <utility>
 
 #include "constants.h"
@@ -272,12 +277,14 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
 
   // Replaces one of the OpAccesssChain index operands with a clamped value.
   // Replace the operand at |operand_index| with the value computed from
-  // unsigned_clamp(%old_value, %min_value, %max_value).  It also analyzes
+  // signed_clamp(%old_value, %min_value, %max_value).  It also analyzes
   // the new instruction and records that them module is modified.
+  // Assumes %min_value is signed-less-or-equal than %max_value. (All callees
+  // use 0 for %min_value).
   auto clamp_index = [&inst, this, &replace_index](
                          uint32_t operand_index, Instruction* old_value,
                          Instruction* min_value, Instruction* max_value) {
-    auto* clamp_inst = MakeClampInst(old_value, min_value, max_value, &inst);
+    auto* clamp_inst = MakeSClampInst(old_value, min_value, max_value, &inst);
     replace_index(operand_index, clamp_inst);
   };
 
@@ -292,13 +299,31 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
     const auto* index_type =
         type_mgr->GetType(index_inst->type_id())->AsInteger();
     assert(index_type);
+    const auto index_width = index_type->width();
+
     if (count <= 1) {
       // Replace the index with 0.
       replace_index(operand_index, GetValueForType(0, index_type));
       return;
     }
 
-    const auto index_width = index_type->width();
+    uint64_t maxval = count - 1;
+
+    // Compute the bit width of a viable type to hold |maxval|.
+    // Look for a bit width, up to 64 bits wide, to fit maxval.
+    uint32_t maxval_width = index_width;
+    while ((maxval_width < 64) && (0 != (maxval >> maxval_width))) {
+      maxval_width *= 2;
+    }
+    // Determine the type for |maxval|.
+    analysis::Integer signed_type_for_query(maxval_width, true);
+    auto* maxval_type =
+        type_mgr->GetRegisteredType(&signed_type_for_query)->AsInteger();
+    // Access chain indices are treated as signed, so limit the maximum value
+    // of the index so it will always be positive for a signed clamp operation.
+    maxval = std::min(maxval, ((uint64_t(1) << (maxval_width - 1)) - 1));
+
+    // Split into two cases: the current index is a constant, or not.
 
     // If the index is a constant then |index_constant| will not be a null
     // pointer.  (If index is an |OpConstantNull| then it |index_constant| will
@@ -321,25 +346,18 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
       }
       if (value < 0) {
         replace_index(operand_index, GetValueForType(0, index_type));
-      } else if (uint64_t(value) < count) {
+      } else if (uint64_t(value) <= maxval) {
         // Nothing to do.
         return;
       } else {
-        // Replace with count - 1.
+        // Replace with maxval.
         assert(count > 0);  // Already took care of this case above.
-        replace_index(operand_index, GetValueForType(count - 1, index_type));
+        replace_index(operand_index, GetValueForType(maxval, maxval_type));
       }
     } else {
       // Generate a clamp instruction.
+      assert(maxval >= 1);
 
-      // Compute the bit width of a viable type to hold (count-1).
-      const auto maxval = count - 1;
-      const auto* maxval_type = index_type;
-      // Look for a bit width, up to 64 bits wide, to fit maxval.
-      uint32_t maxval_width = index_width;
-      while ((maxval_width < 64) && (0 != (maxval >> maxval_width))) {
-        maxval_width *= 2;
-      }
       // Widen the index value if necessary
       if (maxval_width > index_width) {
         // Find the wider type.  We only need this case if a constant (array)
@@ -348,8 +366,8 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         // already have required that declaration.
         index_inst = WidenInteger(index_type->IsSigned(), maxval_width,
                                   index_inst, &inst);
-        maxval_type = type_mgr->GetType(index_inst->type_id())->AsInteger();
       }
+
       // Finally, clamp the index.
       clamp_index(operand_index, index_inst, GetValueForType(0, maxval_type),
                   GetValueForType(maxval, maxval_type));
@@ -406,8 +424,18 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
           &inst, SpvOpISub, type_mgr->GetId(wider_type), TakeNextId(),
           {{SPV_OPERAND_TYPE_ID, {count_inst->result_id()}},
            {SPV_OPERAND_TYPE_ID, {one->result_id()}}});
-      clamp_index(operand_index, index_inst, GetValueForType(0, wider_type),
-                  count_minus_1);
+      auto* zero = GetValueForType(0, wider_type);
+      // Make sure we clamp to an upper bound that is at most the signed max
+      // for the target type.
+      const uint64_t max_signed_value =
+          ((uint64_t(1) << (target_width - 1)) - 1);
+      // Use unsigned-min to ensure that the result is always non-negative.
+      // That ensures we satisfy the invariant for SClamp, where the "min"
+      // argument we give it (zero), is no larger than the third argument.
+      auto* upper_bound = MakeUMinInst(
+          count_minus_1, GetValueForType(max_signed_value, wider_type), &inst);
+      // Now clamp the index to this upper bound.
+      clamp_index(operand_index, index_inst, zero, upper_bound);
     }
   };
 
@@ -557,10 +585,30 @@ opt::Instruction* opt::GraphicsRobustAccessPass::WidenInteger(
   return conversion;
 }
 
-Instruction* GraphicsRobustAccessPass::MakeClampInst(Instruction* x,
-                                                     Instruction* min,
-                                                     Instruction* max,
-                                                     Instruction* where) {
+Instruction* GraphicsRobustAccessPass::MakeUMinInst(Instruction* x,
+                                                    Instruction* y,
+                                                    Instruction* where) {
+  // Get IDs of instructions we'll be referencing. Evaluate them before calling
+  // the function so we force a deterministic ordering in case both of them need
+  // to take a new ID.
+  const uint32_t glsl_insts_id = GetGlslInsts();
+  uint32_t smin_id = TakeNextId();
+  assert(x->type_id() == y->type_id());
+  auto* smin_inst = InsertInst(
+      where, SpvOpExtInst, x->type_id(), smin_id,
+      {
+          {SPV_OPERAND_TYPE_ID, {glsl_insts_id}},
+          {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {GLSLstd450UMin}},
+          {SPV_OPERAND_TYPE_ID, {x->result_id()}},
+          {SPV_OPERAND_TYPE_ID, {y->result_id()}},
+      });
+  return smin_inst;
+}
+
+Instruction* GraphicsRobustAccessPass::MakeSClampInst(Instruction* x,
+                                                      Instruction* min,
+                                                      Instruction* max,
+                                                      Instruction* where) {
   // Get IDs of instructions we'll be referencing. Evaluate them before calling
   // the function so we force a deterministic ordering in case both of them need
   // to take a new ID.
@@ -572,7 +620,7 @@ Instruction* GraphicsRobustAccessPass::MakeClampInst(Instruction* x,
       where, SpvOpExtInst, x->type_id(), clamp_id,
       {
           {SPV_OPERAND_TYPE_ID, {glsl_insts_id}},
-          {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {GLSLstd450UClamp}},
+          {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER, {GLSLstd450SClamp}},
           {SPV_OPERAND_TYPE_ID, {x->result_id()}},
           {SPV_OPERAND_TYPE_ID, {min->result_id()}},
           {SPV_OPERAND_TYPE_ID, {max->result_id()}},
@@ -716,6 +764,7 @@ Instruction* GraphicsRobustAccessPass::MakeRuntimeArrayLengthInst(
 spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
     opt::Instruction* image_texel_pointer) {
   // TODO(dneto): Write tests for this code.
+  // TODO(dneto): Use signed-clamp
   return SPV_SUCCESS;
 
   // Example:
@@ -917,8 +966,8 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
 
   // Clamp the coordinate
   auto* clamp_coord =
-      MakeClampInst(coord, constant_mgr->GetDefiningInstruction(coordinate_0),
-                    query_max_including_faces, image_texel_pointer);
+      MakeSClampInst(coord, constant_mgr->GetDefiningInstruction(coordinate_0),
+                     query_max_including_faces, image_texel_pointer);
   image_texel_pointer->SetInOperand(1, {clamp_coord->result_id()});
 
   // Clamp the sample index
@@ -936,7 +985,7 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
                                    {{SPV_OPERAND_TYPE_ID, {query_samples_id}},
                                     {SPV_OPERAND_TYPE_ID, {component_1_id}}});
 
-    auto* clamp_samples = MakeClampInst(
+    auto* clamp_samples = MakeSClampInst(
         samples, constant_mgr->GetDefiningInstruction(coordinate_0),
         max_samples, image_texel_pointer);
     image_texel_pointer->SetInOperand(2, {clamp_samples->result_id()});
