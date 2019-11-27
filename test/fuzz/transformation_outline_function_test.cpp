@@ -1617,17 +1617,17 @@ TEST(TransformationOutlineFunctionTest,
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(
-          /*entry_block*/ 20,
-          /*exit_block*/ 10,
-          /*new_function_struct_return_type_id*/ 200,
-          /*new_function_type_id*/ 201,
-          /*new_function_id*/ 202,
-          /*new_function_first_block*/ 300,
-          /*new_function_region_entry_block*/ 203,
-          /*new_caller_result_id*/ 204,
-          /*new_callee_result_id*/ 205,
-          /*input_id_to_fresh_id*/ {},
-          /*output_id_to_fresh_id*/ {});
+      /*entry_block*/ 20,
+      /*exit_block*/ 10,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_first_block*/ 300,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {},
+      /*output_id_to_fresh_id*/ {});
 
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -1714,17 +1714,17 @@ TEST(TransformationOutlineFunctionTest,
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(
-          /*entry_block*/ 8,
-          /*exit_block*/ 10,
-          /*new_function_struct_return_type_id*/ 200,
-          /*new_function_type_id*/ 201,
-          /*new_function_id*/ 202,
-          /*new_function_first_block*/ 300,
-          /*new_function_region_entry_block*/ 203,
-          /*new_caller_result_id*/ 204,
-          /*new_callee_result_id*/ 205,
-          /*input_id_to_fresh_id*/ {},
-          /*output_id_to_fresh_id*/ {});
+      /*entry_block*/ 8,
+      /*exit_block*/ 10,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_first_block*/ 300,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {},
+      /*output_id_to_fresh_id*/ {});
 
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
