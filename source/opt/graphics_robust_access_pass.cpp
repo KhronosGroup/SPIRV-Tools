@@ -593,7 +593,8 @@ Instruction* GraphicsRobustAccessPass::MakeUMinInst(Instruction* x,
   // to take a new ID.
   const uint32_t glsl_insts_id = GetGlslInsts();
   uint32_t smin_id = TakeNextId();
-  assert(x->type_id() == y->type_id());
+  assert(x->type_id()->AsInteger()->width() ==
+         y->type_id()->AsInteger()->width());
   auto* smin_inst = InsertInst(
       where, SpvOpExtInst, x->type_id(), smin_id,
       {
@@ -614,8 +615,10 @@ Instruction* GraphicsRobustAccessPass::MakeSClampInst(Instruction* x,
   // to take a new ID.
   const uint32_t glsl_insts_id = GetGlslInsts();
   uint32_t clamp_id = TakeNextId();
-  assert(x->type_id() == min->type_id());
-  assert(x->type_id() == max->type_id());
+  assert(x->type_id()->AsInteger()->width() ==
+         min->type_id()->AsInteger()->width());
+  assert(x->type_id()->AsInteger()->width() ==
+         max->type_id()->AsInteger()->width());
   auto* clamp_inst = InsertInst(
       where, SpvOpExtInst, x->type_id(), clamp_id,
       {
