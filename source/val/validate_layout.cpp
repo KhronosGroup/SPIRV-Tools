@@ -171,11 +171,16 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
       case SpvOpExtInst:
         if (inst->ext_inst_type() >= SPV_EXT_INST_TYPE_NONSEMANTIC) {
           // non-semantic extinst opcodes are allowed beginning in the types
-          // section
+          // section, but must either be placed outside a function declaration,
+          // or inside a block.
           if (_.current_layout_section() < kLayoutTypes) {
             return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                    << "Non-semantic OpExtInst must not appear before types "
                    << "section";
+          } else if (_.in_function_body() && _.in_block() == false) {
+            return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                   << "Non-semantic OpExtInst within function definition must "
+                      "appear in a block";
           }
         } else {
           // otherwise they must be used in a block
