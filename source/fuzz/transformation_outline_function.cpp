@@ -311,45 +311,61 @@ void TransformationOutlineFunction::Apply(
   UpdateModuleIdBoundForFreshIds(context, input_id_to_fresh_id_map,
                                  output_id_to_fresh_id_map);
 
+  // Construct a map that associates each output id with its type id.
   std::map<uint32_t, uint32_t> output_id_to_type_id;
   for (uint32_t output_id : region_output_ids) {
     output_id_to_type_id[output_id] =
         context->get_def_use_mgr()->GetDef(output_id)->type_id();
   }
 
+  // The region will be collapsed to a single block that calls a function
+  // containing the outlined region.  This block needs to end with whatever
+  // the exit block of the region ended with before outlining.  We thus clone
+  // the terminator of the region's exit block, and the merge instruction for
+  // the block if there is one, so that we can append them to the end of the
+  // collapsed block later.
+  std::unique_ptr<opt::Instruction> cloned_exit_block_terminator =
+      std::unique_ptr<opt::Instruction>(
+          original_region_exit_block->terminator()->Clone(context));
   std::unique_ptr<opt::Instruction> cloned_exit_block_merge =
       original_region_exit_block->GetMergeInst()
           ? std::unique_ptr<opt::Instruction>(
                 original_region_exit_block->GetMergeInst()->Clone(context))
           : nullptr;
-  std::unique_ptr<opt::Instruction> cloned_exit_block_terminator =
-      std::unique_ptr<opt::Instruction>(
-          original_region_exit_block->terminator()->Clone(context));
-  assert(cloned_exit_block_terminator != nullptr &&
-         "Every block must have a terminator.");
 
+  // Make a function prototype for the outlined function, which involves
+  // figuring out its required type.
   std::unique_ptr<opt::Function> outlined_function =
       PrepareFunctionPrototype(context, region_input_ids, region_output_ids,
                                input_id_to_fresh_id_map, output_id_to_type_id);
 
+  // Adapt the region to be outlined so that its input ids are replaced with the
+  // ids of the outlined function's input parameters, and so that output ids
+  // are similarly remapped.
   RemapInputAndOutputIdsInRegion(
       context, *original_region_entry_block, *original_region_exit_block,
       region_blocks, region_input_ids, region_output_ids,
       input_id_to_fresh_id_map, output_id_to_fresh_id_map);
 
+  // Fill out the body of the outlined function according to the region that is
+  // being outlined.
   PopulateOutlinedFunction(context, *original_region_entry_block,
                            *original_region_exit_block, region_blocks,
                            region_output_ids, output_id_to_fresh_id_map,
                            outlined_function.get());
 
+  // Collapse the region that has been outlined into a function down to a single
+  // block that calls said function.
   ContractOriginalRegion(
       context, region_blocks, region_input_ids, region_output_ids,
       output_id_to_type_id, outlined_function->type_id(),
       std::move(cloned_exit_block_merge),
       std::move(cloned_exit_block_terminator), original_region_entry_block);
 
+  // Add the outlined function to the module.
   context->module()->AddFunction(std::move(outlined_function));
 
+  // Major surgery has been conducted on the module, so invalidate all analyses.
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 

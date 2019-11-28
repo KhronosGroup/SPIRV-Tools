@@ -46,11 +46,54 @@ class TransformationOutlineFunction : public Transformation {
   //   fresh.
   // - |message_.entry_block| and |message_.exit_block| must form a single-entry
   //   single-exit control flow graph region.
-  //
+  // - |message_.entry_block| must not start with OpVariable
+  // - A structured control flow construct must lie either completely within the
+  //   region or completely outside it, with the exception that
+  //   |message_.exit_block| can be a merge or continue block even if the
+  //   associated header is not in the region.
+  // - If |message_.entry_block| is a loop header, it must not contain OpPhi
+  //   instructions.
+  // - |message_.input_id_to_fresh_id| must contain an entry for every id
+  //   defined outside the region but used in the region.
+  // - |message_.output_id_to_fresh_id| must contain an entry for every id
+  //   defined in the region but used outside the region.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // - A new function with id |message_.new_function_id| is added to the module.
+  // - If the region generates output ids, the return type of this function is
+  //   a new struct type with one field per output id, and with type id
+  //   |message_.new_function_struct_return_type|, otherwise the function return
+  //   types is void and |message_.new_function_struct_return_type| is not used.
+  // - If the region generates input ids, the new function has one parameter per
+  //   input id.  Fresh ids for these parameters are provided by
+  //   |message_.input_id_to_fresh_id|.
+  // - Unless the type required for the new function is already known,
+  //   |message_.new_function_type_id| is used as the type id for a new function
+  //   type, and the new function uses this type.
+  // - The new function starts with a dummy block with id
+  //   |message_.new_function_first_block|, which jumps straight to a successor
+  //   block, to avoid violating rules on what the first block in a function may
+  //   look like.
+  // - The outlined region is replaced with a single block, with the same id
+  //   as |message_.entry_block|, and which calls the new function, passing the
+  //   region's input ids as parameters.  The result is  stored in
+  //   |message_.new_caller_result_id|, which has type
+  //   |message_.new_function_struct_return_type| (unless there are
+  //   no output ids, in which case the return type is void).  The components
+  //   of this returned struct are then copied out into the region's output ids.
+  //   The block ends with the merge instruction (if any) and terminator of
+  //   |message_.exit_block|.
+  // - The body of the new function is identical to the outlined region, except
+  //   that (a) the region's entry block has id
+  //   |message_.new_function_region_entry_block|, (b) input id uses are
+  //   replaced with parameter accesses, (c) and definitions of output ids are
+  //   replaced with definitions of corresponding fresh ids provided by
+  //   |message_.output_id_to_fresh_id|, and (d) the block of the function
+  //   ends by returning a composite of type
+  //   |message_.new_function_struct_return_type| comprised of all the fresh
+  //   output ids (unless the return type is void, in which case no value is
+  //   returned.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
@@ -114,14 +157,14 @@ class TransformationOutlineFunction : public Transformation {
       opt::Function* outlined_function) const;
 
   void ContractOriginalRegion(
-          opt::IRContext* context, std::set<opt::BasicBlock*>& region_blocks,
-          const std::vector<uint32_t>& region_input_ids,
-          const std::vector<uint32_t>& region_output_ids,
-          const std::map<uint32_t, uint32_t>& output_id_to_type_id,
-          uint32_t return_type_id,
-          std::unique_ptr<opt::Instruction> cloned_exit_block_merge,
-          std::unique_ptr<opt::Instruction> cloned_exit_block_terminator,
-          opt::BasicBlock* original_region_entry_block) const;
+      opt::IRContext* context, std::set<opt::BasicBlock*>& region_blocks,
+      const std::vector<uint32_t>& region_input_ids,
+      const std::vector<uint32_t>& region_output_ids,
+      const std::map<uint32_t, uint32_t>& output_id_to_type_id,
+      uint32_t return_type_id,
+      std::unique_ptr<opt::Instruction> cloned_exit_block_merge,
+      std::unique_ptr<opt::Instruction> cloned_exit_block_terminator,
+      opt::BasicBlock* original_region_entry_block) const;
 
   protobufs::TransformationOutlineFunction message_;
 };
