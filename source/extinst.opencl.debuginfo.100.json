@@ -369,6 +369,27 @@
         { "kind" : "LiteralInteger", "name" : "'Line'" },
         { "kind" : "IdRef", "name" : "'Macro'" }
       ]
+    },
+    {
+      "opname" : "DebugImportedEntity",
+      "opcode" : 34,
+      "operands" : [
+        { "kind" : "IdRef", "name" : "'Name'" },
+        { "kind" : "DebugImportedEntity", "name" : "'Tag'" },
+        { "kind" : "IdRef", "name" : "'Source'" },
+        { "kind" : "IdRef", "name" : "'Entity'" },
+        { "kind" : "LiteralInteger", "name" : "'Line'" },
+        { "kind" : "LiteralInteger", "name" : "'Column'" },
+        { "kind" : "IdRef", "name" : "'Parent'" }
+      ]
+    },
+    {
+      "opname" : "DebugSource",
+      "opcode" : 35,
+      "operands" : [
+        { "kind" : "IdRef", "name" : "'File'" },
+        { "kind" : "IdRef", "name" : "'Text'", "qualifier" : "?" }
+      ]
     }
   ],
   "operand_kinds" : [
@@ -435,6 +456,18 @@
         {
           "enumerant" : "FlagIsOptimized",
           "value" : "0x2000"
+        },
+        {
+          "enumerant" : "FlagIsEnumClass",
+          "value" : "0x4000"
+        },
+        {
+          "enumerant" : "FlagTypePassByValue",
+          "value" : "0x8000"
+        },
+        {
+          "enumerant" : "FlagTypePassByReference",
+          "value" : "0x10000"
         }
       ]
     },
@@ -456,23 +489,23 @@
         },
         {
           "enumerant" : "Float",
-          "value" : "4"
+          "value" : "3"
         },
         {
           "enumerant" : "Signed",
-          "value" : "5"
+          "value" : "4"
         },
         {
           "enumerant" : "SignedChar",
-          "value" : "6"
+          "value" : "5"
         },
         {
           "enumerant" : "Unsigned",
-          "value" : "7"
+          "value" : "6"
         },
         {
           "enumerant" : "UnsignedChar",
-          "value" : "8"
+          "value" : "7"
         }
       ]
     },
@@ -509,6 +542,10 @@
         {
           "enumerant" : "RestrictType",
           "value" : "2"
+        },
+        {
+          "enumerant" : "AtomicType",
+          "value" : "3"
         }
       ]
     },
@@ -561,7 +598,29 @@
           "parameters" : [
              { "kind" : "LiteralInteger" }
           ]
+        },
+        {
+          "enumerant" : "Fragment",
+          "value" : "9",
+          "parameters" : [
+             { "kind" : "LiteralInteger" },
+             { "kind" : "LiteralInteger" }
+          ]
         }
+      ]
+    },
+    {
+      "category" : "ValueEnum",
+      "kind" : "DebugImportedEntity",
+      "enumerants" : [
+        {
+          "enumerant" : "ImportedModule",
+          "value" : "0"
+        },
+        {
+          "enumerant" : "ImportedDeclaration",
+          "value" : "1"
+	}
       ]
     }
   ]
