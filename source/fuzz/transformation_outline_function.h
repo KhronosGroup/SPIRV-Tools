@@ -98,12 +98,15 @@ class TransformationOutlineFunction : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
-  // TODO comment
+  // Returns the set of blocks dominated by |entry_block| and post-dominated
+  // by |exit_block|.
   static std::set<opt::BasicBlock*> GetRegionBlocks(
       opt::IRContext* context, opt::BasicBlock* entry_block,
       opt::BasicBlock* exit_block);
 
-  // TODO comment
+  // Yields all ids defined in the same function as |region_set| but by blocks
+  // outside |region_set|, and used in |region_set|.
+  // TODO it is more complex than that so be more precise
   static std::vector<uint32_t> GetRegionInputIds(
       opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
       opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block);
