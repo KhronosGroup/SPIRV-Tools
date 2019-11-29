@@ -335,9 +335,8 @@ void TransformationOutlineFunction::Apply(
 
   // Make a function prototype for the outlined function, which involves
   // figuring out its required type.
-  std::unique_ptr<opt::Function> outlined_function =
-      PrepareFunctionPrototype(context, region_input_ids, region_output_ids,
-                               input_id_to_fresh_id_map, output_id_to_type_id);
+  std::unique_ptr<opt::Function> outlined_function = PrepareFunctionPrototype(
+      context, region_input_ids, region_output_ids, input_id_to_fresh_id_map);
 
   // Adapt the region to be outlined so that its input ids are replaced with the
   // ids of the outlined function's input parameters, and so that output ids
@@ -356,7 +355,7 @@ void TransformationOutlineFunction::Apply(
 
   // Collapse the region that has been outlined into a function down to a single
   // block that calls said function.
-  ContractOriginalRegion(
+  ShrinkOriginalRegion(
       context, region_blocks, region_input_ids, region_output_ids,
       output_id_to_type_id, outlined_function->type_id(),
       std::move(cloned_exit_block_merge),
@@ -394,53 +393,90 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
     opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block) {
   std::vector<uint32_t> result;
 
-  region_entry_block->ForEachPhiInst(
-      [context, &region_set, &result](opt::Instruction* phi_inst) {
-        context->get_def_use_mgr()->WhileEachUse(
-            phi_inst, [context, phi_inst, &region_set, &result](
-                          opt::Instruction* use, uint32_t /*unused*/) {
-              auto use_block = context->get_instr_block(use);
-              if (use_block && region_set.count(use_block) != 0) {
-                result.push_back(phi_inst->result_id());
-                return false;
-              }
-              return true;
-            });
-      });
+  auto enclosing_function = region_entry_block->GetParent();
 
-  region_entry_block->GetParent()->ForEachParam(
-      [context, &region_set, &result](opt::Instruction* function_parameter) {
-        context->get_def_use_mgr()->WhileEachUse(
-            function_parameter,
-            [context, function_parameter, &region_set, &result](
-                opt::Instruction* use, uint32_t /*unused*/) {
-              auto use_block = context->get_instr_block(use);
-              if (use_block && region_set.count(use_block) != 0) {
-                result.push_back(function_parameter->result_id());
-                return false;
-              }
-              return true;
-            });
-      });
+  // Consider each parameter of the function containing the region.
+  enclosing_function->ForEachParam([context, &region_set, &result](
+                                       opt::Instruction* function_parameter) {
+    // Consider every use of the parameter.
+    context->get_def_use_mgr()->WhileEachUse(
+        function_parameter, [context, function_parameter, &region_set, &result](
+                                opt::Instruction* use, uint32_t /*unused*/) {
+          // Get the block, if any, in which the parameter is used.
+          auto use_block = context->get_instr_block(use);
+          // If the use is in a block that lies within the region, the
+          // parameter is an input id for the region.
+          if (use_block && region_set.count(use_block) != 0) {
+            result.push_back(function_parameter->result_id());
+            return false;
+          }
+          return true;
+        });
+  });
 
-  for (auto& block : *region_entry_block->GetParent()) {
-    if (region_set.count(&block) != 0) {
+  // Consider all definitions in the function that might turn out to be input
+  // ids.
+  for (auto& block : *enclosing_function) {
+    std::vector<opt::Instruction*> candidate_input_ids_for_block;
+    if (&block == region_entry_block) {
+      // OpPhi instructions in the region's entry block might generate input
+      // ids, because these instructions do not get outlined, but might be used
+      // inside the region.
+      block.ForEachPhiInst(
+          [&candidate_input_ids_for_block](opt::Instruction* phi_inst) {
+            candidate_input_ids_for_block.push_back(phi_inst);
+          });
+    } else if (region_set.count(&block) == 0) {
+      // All instructions in blocks outside the region are candidate's for
+      // generating input ids.
+      for (auto& inst : block) {
+        candidate_input_ids_for_block.push_back(&inst);
+      }
+    } else {
+      // Blocks in the region, other than the entry block, cannot generate input
+      // ids.
       continue;
     }
-    for (auto& inst : block) {
+
+    // Consider each candidate input id to check whether it is used in the
+    // region.
+    for (auto& inst : candidate_input_ids_for_block) {
       context->get_def_use_mgr()->WhileEachUse(
-          &inst,
-          [context, &inst, region_exit_block, &region_set, &result](
-              opt::Instruction* use, uint32_t /*unused*/) -> bool {
+          inst,
+          [context, &inst, region_entry_block, region_exit_block, &region_set,
+           &result](opt::Instruction* use, uint32_t /*unused*/) -> bool {
+
+            // Find the block in which this id use occurs, recording the id as
+            // an input id if the block is outside the region, with some
+            // exceptions detailed below.
             auto use_block = context->get_instr_block(use);
-            // TODO comment on why we don't want to regard a use in the exit
-            // block terminator as being an input id.
-            if (use_block && region_set.count(use_block) != 0 &&
-                !(use_block == region_exit_block && use->IsBlockTerminator())) {
-              result.push_back(inst.result_id());
-              return false;
+
+            if (!use_block) {
+              // There might be no containing block, e.g. if the use is in a
+              // decoration.
+              return true;
             }
-            return true;
+
+            if (region_set.count(use_block) == 0) {
+              // The use is not in the region: this does not make it an input
+              // id.
+              return true;
+            }
+
+            if (use_block == region_exit_block && use->IsBlockTerminator()) {
+              // We do not regard uses in the exit block terminator as input
+              // ids, as this terminator does not get outlined.
+              return true;
+            }
+
+            if (use_block == region_entry_block && use->opcode() == SpvOpPhi) {
+              // We do not regard uses in OpPhi instructions in the entry block
+              // as input ids, since such instructions do not get outlined.
+              return true;
+            }
+
+            result.push_back(inst->result_id());
+            return false;
           });
     }
   }
@@ -451,26 +487,49 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionOutputIds(
     opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
     opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block) {
   std::vector<uint32_t> result;
+
+  // Consider each block in the function containing the region.
   for (auto& block : *region_entry_block->GetParent()) {
-    if (region_set.count(&block) != 0) {
-      for (auto& inst : block) {
-        context->get_def_use_mgr()->WhileEachUse(
-            &inst,
-            [&region_set, context, &inst, region_exit_block, &result](
-                opt::Instruction* use, uint32_t /*unused*/) -> bool {
-              auto use_block = context->get_instr_block(use);
-              // TODO comment on why we care about region exit block - it is
-              // due to returning a definition from the region requiring it to
-              // be passed out.
-              if (use_block && (region_set.count(use_block) == 0 ||
-                                (use_block == region_exit_block &&
-                                 use->IsBlockTerminator()))) {
-                result.push_back(inst.result_id());
-                return false;
-              }
-              return true;
-            });
+    if (region_set.count(&block) == 0) {
+      // Skip blocks that are not in the region.
+      continue;
+    }
+    // Consider each use of each instruction defined in the block.
+    for (auto& inst : block) {
+      if (&block == region_entry_block && inst.opcode() == SpvOpPhi) {
+        // Skip OpPhi instructions in the region's entry block, as these do not
+        // get outlined.
+        continue;
       }
+
+      context->get_def_use_mgr()->WhileEachUse(
+          &inst,
+          [&region_set, context, &inst, region_exit_block, &result](
+              opt::Instruction* use, uint32_t /*unused*/) -> bool {
+
+            // Find the block in which this id use occurs, recording the id as
+            // an output id if the block is outside the region, with some
+            // exceptions detailed below.
+            auto use_block = context->get_instr_block(use);
+
+            if (!use_block) {
+              // There might be no containing block, e.g. if the use is in a
+              // decoration.
+              return true;
+            }
+
+            if (region_set.count(use_block) != 0) {
+              // The use is in the region.
+              if (use_block != region_exit_block || !use->IsBlockTerminator()) {
+                // Furthermore, the use is not in the terminator of the region's
+                // exit block.  This does not make it an output id.
+                return true;
+              }
+            }
+
+            result.push_back(inst.result_id());
+            return false;
+          });
     }
   }
   return result;
@@ -498,8 +557,7 @@ std::unique_ptr<opt::Function>
 TransformationOutlineFunction::PrepareFunctionPrototype(
     opt::IRContext* context, const std::vector<uint32_t>& region_input_ids,
     const std::vector<uint32_t>& region_output_ids,
-    const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map,
-    const std::map<uint32_t, uint32_t>& output_id_to_type_id) const {
+    const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map) const {
   uint32_t return_type_id = 0;
   uint32_t function_type_id = 0;
 
@@ -520,26 +578,33 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
     function_type_id = context->get_type_mgr()->GetId(&function_type);
   }
 
+  // If no existing function type was found, we need to create one.
   if (function_type_id == 0) {
-    opt::Instruction::OperandList struct_member_types;
     assert(
         ((return_type_id == 0) == !region_output_ids.empty()) &&
         "We should only have set the return type if there are no output ids.");
+    // If the region generates output ids, we need to make a struct with one
+    // field per output id.
     if (!region_output_ids.empty()) {
+      opt::Instruction::OperandList struct_member_types;
       for (uint32_t output_id : region_output_ids) {
-        struct_member_types.push_back(
-            {SPV_OPERAND_TYPE_ID, {output_id_to_type_id.at(output_id)}});
+        auto output_id_type =
+            context->get_def_use_mgr()->GetDef(output_id)->type_id();
+        struct_member_types.push_back({SPV_OPERAND_TYPE_ID, {output_id_type}});
       }
+      // Add a new struct type to the module.
       context->module()->AddType(MakeUnique<opt::Instruction>(
           context, SpvOpTypeStruct, 0,
           message_.new_function_struct_return_type_id(),
           std::move(struct_member_types)));
+      // The return type for the function is the newly-created struct.
       return_type_id = message_.new_function_struct_return_type_id();
     }
     assert(
         return_type_id != 0 &&
         "We should either have a void return type, or have created a struct.");
 
+    // The region's input ids dictate the parameter types to the function.
     opt::Instruction::OperandList function_type_operands;
     function_type_operands.push_back({SPV_OPERAND_TYPE_ID, {return_type_id}});
     for (auto id : region_input_ids) {
@@ -547,6 +612,8 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
           {SPV_OPERAND_TYPE_ID,
            {context->get_def_use_mgr()->GetDef(id)->type_id()}});
     }
+    // Add a new function type to the module, and record that this is the type
+    // id for the new function.
     context->module()->AddType(MakeUnique<opt::Instruction>(
         context, SpvOpTypeFunction, 0, message_.new_function_type_id(),
         function_type_operands));
@@ -564,6 +631,8 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
                {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                 {function_type_id}}})));
 
+  // Add one parameter to the function for each input id, using the fresh ids
+  // provided in |input_id_to_fresh_id_map|.
   for (auto id : region_input_ids) {
     outlined_function->AddParameter(MakeUnique<opt::Instruction>(
         context, SpvOpFunctionParameter,
@@ -678,7 +747,11 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
     const std::vector<uint32_t>& region_output_ids,
     const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
     opt::Function* outlined_function) const {
-  // TODO comment why we do this
+  // A function cannot start with a loop header, and the region being outlined
+  // might be a loop header.  As a catch-all for this, we always add a dummy
+  // entry block at the start of the new function, with id
+  // |message_.new_function_first_block|, which immediately branches to
+  // |message_.new_function_region_entry_block|.
   std::unique_ptr<opt::BasicBlock> new_function_first_block =
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           context, SpvOpLabel, 0, message_.new_function_first_block(),
@@ -742,6 +815,7 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
     }
 
     cloned_block->SetParent(outlined_function);
+
     // Redirect any OpPhi operands whose values are the original region entry
     // block to become the new function entry block.
     cloned_block->ForEachPhiInst([this](opt::Instruction* phi_inst) {
@@ -755,6 +829,10 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
         }
       }
     });
+
+    // If the cloned block would branch to the original region's entry block,
+    // we need to redirect such branches to
+    // |message_.new_function_region_entry_block|.
     switch (cloned_block->terminator()->opcode()) {
       case SpvOpBranch:
         if (cloned_block->terminator()->GetSingleWordInOperand(0) ==
@@ -781,6 +859,12 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
   assert(outlined_region_exit_block != nullptr &&
          "We should have encountered the region's exit block when iterating "
          "through the function");
+
+  // We now need to adapt the exit block for the region - in the new function -
+  // so that it ends with a return.
+
+  // We first eliminate the merge instruction (if any) and the terminator for
+  // the cloned exit block.
   for (auto inst_it = outlined_region_exit_block->begin();
        inst_it != outlined_region_exit_block->end();) {
     if (inst_it->opcode() == SpvOpLoopMerge ||
@@ -793,10 +877,17 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
     }
   }
 
+  // We now add either OpReturn or OpReturnValue as the cloned exit block's
+  // terminator.
   if (region_output_ids.empty()) {
+    // The case where there are no region output ids is simple: we just add
+    // OpReturn.
     outlined_region_exit_block->AddInstruction(MakeUnique<opt::Instruction>(
         context, SpvOpReturn, 0, 0, opt::Instruction::OperandList()));
   } else {
+    // In the case where there are output ids, we add an OpCompositeConstruct
+    // instruction to pack all the output values into a struct, and then an
+    // OpReturnValue instruction to return this struct.
     opt::Instruction::OperandList struct_member_operands;
     for (uint32_t id : region_output_ids) {
       struct_member_operands.push_back(
@@ -816,7 +907,7 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
       context, SpvOpFunctionEnd, 0, 0, opt::Instruction::OperandList()));
 }
 
-void TransformationOutlineFunction::ContractOriginalRegion(
+void TransformationOutlineFunction::ShrinkOriginalRegion(
     opt::IRContext* context, std::set<opt::BasicBlock*>& region_blocks,
     const std::vector<uint32_t>& region_input_ids,
     const std::vector<uint32_t>& region_output_ids,
@@ -825,7 +916,13 @@ void TransformationOutlineFunction::ContractOriginalRegion(
     std::unique_ptr<opt::Instruction> cloned_exit_block_merge,
     std::unique_ptr<opt::Instruction> cloned_exit_block_terminator,
     opt::BasicBlock* original_region_entry_block) const {
-  // Consider every block in the enclosing function.
+  // Erase all blocks from the original function that are in the outlined
+  // region, except for the region's entry block.
+  //
+  // In the process, identify all references to the exit block of the region,
+  // as merge blocks, continue targets, or OpPhi predecessors, and rewrite them
+  // to refer to the region entry block (the single block to which we are
+  // shrinking the region).
   auto enclosing_function = original_region_entry_block->GetParent();
   for (auto block_it = enclosing_function->begin();
        block_it != enclosing_function->end();) {
@@ -855,10 +952,15 @@ void TransformationOutlineFunction::ContractOriginalRegion(
       });
       ++block_it;
     } else {
+      // The block is in the region and is not the region's entry block: kill
+      // it.
       block_it = block_it.Erase();
     }
   }
 
+  // Now we deal with the region's entry block.  We keep any OpPhi instructions
+  // that it starts with, and erase all other instructions (as they have been
+  // outlined).
   for (auto inst_it = original_region_entry_block->begin();
        inst_it != original_region_entry_block->end();) {
     if (inst_it->opcode() == SpvOpPhi) {
@@ -867,26 +969,36 @@ void TransformationOutlineFunction::ContractOriginalRegion(
     }
     inst_it = inst_it.Erase();
   }
+
+  // Now we add a call to the outlined function to the region's entry block.
   opt::Instruction::OperandList function_call_operands;
   function_call_operands.push_back(
       {SPV_OPERAND_TYPE_ID, {message_.new_function_id()}});
-  for (auto id : region_input_ids) {
-    function_call_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
+  // The function parameters are the region input ids.
+  for (auto input_id : region_input_ids) {
+    function_call_operands.push_back({SPV_OPERAND_TYPE_ID, {input_id}});
   }
 
   original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
       context, SpvOpFunctionCall, return_type_id,
       message_.new_caller_result_id(), function_call_operands));
 
+  // If there are output ids, the function call will return a struct.  For each
+  // output id, we add an extract operation to pull the appropriate struct
+  // member out into an output id.
   for (uint32_t index = 0; index < region_output_ids.size(); ++index) {
-    uint32_t id = region_output_ids[index];
+    uint32_t output_id = region_output_ids[index];
     original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
-        context, SpvOpCompositeExtract, output_id_to_type_id.at(id), id,
+        context, SpvOpCompositeExtract, output_id_to_type_id.at(output_id),
+        output_id,
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {message_.new_caller_result_id()}},
              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}})));
   }
 
+  // Finally, we terminate the block with the merge instruction (if any) that
+  // used to belong to the region's exit block, and the terminator that used
+  // to belong to the region's exit block.
   if (cloned_exit_block_merge != nullptr) {
     original_region_entry_block->AddInstruction(
         std::move(cloned_exit_block_merge));
