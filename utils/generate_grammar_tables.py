@@ -374,6 +374,7 @@ def generate_extended_instruction_table(json_grammar, set_name, operand_kind_pre
         prefix_operand_kind_names(operand_kind_prefix, json_grammar)
 
     inst_table = json_grammar["instructions"]
+    set_name = set_name.replace(".", "_")
 
     inst_table = sorted(inst_table, key=lambda k: k['opcode'])
     caps = [inst.get('capabilities', []) for inst in inst_table]

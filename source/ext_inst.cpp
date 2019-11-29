@@ -29,6 +29,7 @@
 #include "debuginfo.insts.inc"
 #include "glsl.std.450.insts.inc"
 #include "opencl.std.insts.inc"
+#include "opencl.debuginfo.100.insts.inc"
 
 #include "spirv-tools/libspirv.h"
 #include "spv-amd-gcn-shader.insts.inc"
@@ -50,6 +51,8 @@ static const spv_ext_inst_group_t kGroups_1_0[] = {
     {SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT,
      ARRAY_SIZE(spv_amd_shader_ballot_entries), spv_amd_shader_ballot_entries},
     {SPV_EXT_INST_TYPE_DEBUGINFO, ARRAY_SIZE(debuginfo_entries),
+     debuginfo_entries},
+    {SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100, ARRAY_SIZE(opencl_debuginfo_100_entries),
      debuginfo_entries},
 };
 
@@ -120,6 +123,8 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   // above this point, and update spvExtInstIsNonSemantic()
   if (!strncmp("NonSemantic.", name, 12)) {
     return SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN;
+  if (!strcmp("OpenCL.DebugInfo.100", name)) {
+    return SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100;
   }
   return SPV_EXT_INST_TYPE_NONE;
 }
