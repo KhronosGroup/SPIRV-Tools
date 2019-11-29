@@ -50,6 +50,7 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
       "%3 = OpExtInst %2 %1 " +
       GetParam().name + GetParam().operands + "\n";
   // First make sure it assembles correctly.
+  std::cout << input << std::endl;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(Concatenate(
                   {MakeInstruction(SpvOpExtInstImport, {1},
@@ -61,7 +62,7 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
   EXPECT_THAT(EncodeAndDecodeSuccessfully(input), input) << input;
 }
 
-#define EPREFIX "OpenCLDebugInfo100"
+#define EPREFIX "Debug"
 
 #define CASE_0(Enum)                                               \
   {                                                                \
