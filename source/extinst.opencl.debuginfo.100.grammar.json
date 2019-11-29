@@ -388,7 +388,7 @@
       "opcode" : 35,
       "operands" : [
         { "kind" : "IdRef", "name" : "'File'" },
-        { "kind" : "IdRef", "name" : "'Text'", "qualifier" : "?" }
+        { "kind" : "IdRef", "name" : "'Text'", "quantifier" : "?" }
       ]
     }
   ],
