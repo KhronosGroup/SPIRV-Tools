@@ -1931,12 +1931,11 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
          %48 = OpLoad %6 %47
          %49 = OpConvertFToS %15 %48
          %50 = OpSLessThan %35 %104 %49
-               OpLoopMerge %43 %65 None
-               OpBranchConditional %50 %42 %43
+               OpLoopMerge %1000 %65 None
+               OpBranchConditional %50 %42 %1000
          %42 = OpLabel
          %60 = OpIAdd %15 %106 %114
          %63 = OpSGreaterThan %35 %104 %60
-               OpSelectionMerge %65 None
                OpBranchConditional %63 %64 %65
          %64 = OpLabel
          %71 = OpCompositeExtract %6 %107 0
@@ -1951,6 +1950,8 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
         %110 = OpPhi %15 %60 %42 %79 %64
          %81 = OpIAdd %15 %104 %39
                OpBranch %41
+       %1000 = OpLabel
+               OpBranch %43
          %43 = OpLabel
                OpBranch %22
          %24 = OpLabel
@@ -2071,12 +2072,11 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
          %48 = OpLoad %6 %47
          %49 = OpConvertFToS %15 %48
          %50 = OpSLessThan %35 %104 %49
-               OpLoopMerge %43 %65 None
-               OpBranchConditional %50 %42 %43
+               OpLoopMerge %1000 %65 None
+               OpBranchConditional %50 %42 %1000
          %42 = OpLabel
          %60 = OpIAdd %15 %400 %114
          %63 = OpSGreaterThan %35 %104 %60
-               OpSelectionMerge %65 None
                OpBranchConditional %63 %64 %65
          %64 = OpLabel
          %71 = OpCompositeExtract %6 %401 0
@@ -2091,6 +2091,8 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
         %110 = OpPhi %15 %60 %42 %79 %64
          %81 = OpIAdd %15 %104 %39
                OpBranch %41
+       %1000 = OpLabel
+               OpBranch %43
          %43 = OpLabel
         %205 = OpCompositeConstruct %200 %401 %400
                OpReturnValue %205
