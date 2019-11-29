@@ -847,12 +847,12 @@ TEST_P(OpTypeArrayLengthTest, LengthZero) {
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width)),
-          "OpTypeArray Length <id> '[0-9]\\[%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
           "least 1."));
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width)),
-          "OpTypeArray Length <id> '[0-9]\\[%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
           "least 1."));
 }
 
@@ -861,23 +861,23 @@ TEST_P(OpTypeArrayLengthTest, LengthNegative) {
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width)),
-          "OpTypeArray Length <id> '[0-9]\\[%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
           "least 1."));
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width)),
-          "OpTypeArray Length <id> '[0-9]\\[%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
           "least 1."));
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width)),
-          "OpTypeArray Length <id> '[0-9]\\[%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
           "least 1."));
   const std::string neg_max = "0x8" + std::string(width / 4 - 1, '0');
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width)),
-          "OpTypeArray Length <id> '[0-9]\\[%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
           "least 1."));
 }
 
@@ -943,7 +943,7 @@ TEST_P(OpTypeArrayLengthTest, LengthPositiveHugeEnding1InWebGPU) {
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(module,
-          "OpTypeArray Length <id> '[0-9]\\[%.*\\]' size exceeds max value "
+          "OpTypeArray Length <id> '3\\[%.*\\]' size exceeds max value "
           "2147483648 permitted by WebGPU: got 2147483649"));
 }
 
