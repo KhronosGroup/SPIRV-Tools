@@ -50,7 +50,8 @@ class GraphicsRobustAccessPass : public Pass {
   // consumer.
   spvtools::DiagnosticStream Fail();
 
-  // Returns SPV_SUCCESS if this pass can correctly process the module.
+  // Returns SPV_SUCCESS if this pass can correctly process the module,
+  // as far as we can tell from capabilities and the memory model.
   // Otherwise logs a message and returns a failure code.
   spv_result_t IsCompatibleModule();
 
@@ -60,12 +61,12 @@ class GraphicsRobustAccessPass : public Pass {
   spv_result_t ProcessCurrentModule();
 
   // Process the given function.  Updates the state value |_|.  Returns true
-  // if the module was modified.
+  // if the module was modified.  This can log a failure.
   bool ProcessAFunction(opt::Function*);
 
   // Clamps indices in the OpAccessChain or OpInBoundsAccessChain instruction
   // |access_chain|. Inserts instructions before the given instruction.  Updates
-  // analyses and records that the module is modified.
+  // analyses and records that the module is modified.  This can log a failure.
   void ClampIndicesForAccessChain(Instruction* access_chain);
 
   // Returns the id of the instruction importing the "GLSL.std.450" extended

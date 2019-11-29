@@ -251,6 +251,7 @@ bool GraphicsRobustAccessPass::ProcessAFunction(opt::Function* function) {
   }
   for (auto* inst : access_chains) {
     ClampIndicesForAccessChain(inst);
+    if (module_status_.failed) return module_status_.modified;
   }
 
   for (auto* inst : image_texel_pointers) {
@@ -266,6 +267,8 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
   auto* constant_mgr = context()->get_constant_mgr();
   auto* def_use_mgr = context()->get_def_use_mgr();
   auto* type_mgr = context()->get_type_mgr();
+  const bool have_int64_cap =
+      context()->get_feature_mgr()->HasCapability(SpvCapabilityInt64);
 
   // Replaces one of the OpAccessChain index operands with a new value.
   // Updates def-use analysis.
@@ -273,6 +276,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
                                             Instruction* new_value) {
     inst.SetOperand(operand_index, {new_value->result_id()});
     def_use_mgr->AnalyzeInstUse(&inst);
+    return SPV_SUCCESS;
   };
 
   // Replaces one of the OpAccesssChain index operands with a clamped value.
@@ -286,15 +290,15 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
                          Instruction* min_value, Instruction* max_value) {
     auto* clamp_inst =
         MakeSClampInst(*type_mgr, old_value, min_value, max_value, &inst);
-    replace_index(operand_index, clamp_inst);
+    return replace_index(operand_index, clamp_inst);
   };
 
   // Ensures the specified index of access chain |inst| has a value that is
   // at most |count| - 1.  If the index is already a constant value less than
   // |count| then no change is made.
-  auto clamp_to_literal_count = [&inst, this, &constant_mgr, &type_mgr,
-                                 &replace_index, &clamp_index](
-                                    uint32_t operand_index, uint64_t count) {
+  auto clamp_to_literal_count =
+      [&inst, this, &constant_mgr, &type_mgr, have_int64_cap, &replace_index,
+       &clamp_index](uint32_t operand_index, uint64_t count) -> spv_result_t {
     Instruction* index_inst =
         this->GetDef(inst.GetSingleWordOperand(operand_index));
     const auto* index_type =
@@ -304,8 +308,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
 
     if (count <= 1) {
       // Replace the index with 0.
-      replace_index(operand_index, GetValueForType(0, index_type));
-      return;
+      return replace_index(operand_index, GetValueForType(0, index_type));
     }
 
     uint64_t maxval = count - 1;
@@ -324,6 +327,14 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
     // of the index so it will always be positive for a signed clamp operation.
     maxval = std::min(maxval, ((uint64_t(1) << (maxval_width - 1)) - 1));
 
+    if (index_width > 64) {
+      return this->Fail() << "Can't handle indices wider than 64 bits, found "
+                             "constant index with "
+                          << index_width << " bits as index number "
+                          << operand_index << " of access chain "
+                          << inst.PrettyPrint();
+    }
+
     // Split into two cases: the current index is a constant, or not.
 
     // If the index is a constant then |index_constant| will not be a null
@@ -339,49 +350,62 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         value = int64_t(int_index_constant->GetS32BitValue());
       } else if (index_width <= 64) {
         value = int_index_constant->GetS64BitValue();
-      } else {
-        this->Fail() << "Can't handle indices wider than 64 bits, found "
-                        "constant index with "
-                     << index_type->width() << "bits";
-        return;
       }
       if (value < 0) {
-        replace_index(operand_index, GetValueForType(0, index_type));
+        return replace_index(operand_index, GetValueForType(0, index_type));
       } else if (uint64_t(value) <= maxval) {
         // Nothing to do.
-        return;
+        return SPV_SUCCESS;
       } else {
         // Replace with maxval.
         assert(count > 0);  // Already took care of this case above.
-        replace_index(operand_index, GetValueForType(maxval, maxval_type));
+        return replace_index(operand_index,
+                             GetValueForType(maxval, maxval_type));
       }
     } else {
       // Generate a clamp instruction.
       assert(maxval >= 1);
-
+      assert(index_width <= 64);  // Otherwise, already returned above.
+      if (index_width >= 64 && !have_int64_cap) {
+        // An inconsistent module.
+        return Fail() << "Access chain index is wider than 64 bits, but Int64 "
+                         "is not declared: "
+                      << index_inst->PrettyPrint();
+      }
       // Widen the index value if necessary
       if (maxval_width > index_width) {
-        // Find the wider type.  We only need this case if a constant (array)
-        // bound is too big.  This never requires us to *add* a capability
-        // declaration for Int64 because the existence of the array bound would
-        // already have required that declaration.
-        // See https://gitlab.khronos.org/spirv/SPIR-V/issues/524
+        // Find the wider type.  We only need this case if a constant array
+        // bound is too big.
+
+        // From how we calculated maxval_width, widening won't require adding
+        // the Int64 capability.
+        assert(have_int64_cap || maxval_width <= 32);
+        if (!have_int64_cap && maxval_width >= 64) {
+          // Be defensive, but this shouldn't happen.
+          return this->Fail()
+                 << "Clamping index would require adding Int64 capability. "
+                 << "Can't clamp 32-bit index " << operand_index
+                 << " of access chain " << inst.PrettyPrint();
+        }
         index_inst = WidenInteger(index_type->IsSigned(), maxval_width,
                                   index_inst, &inst);
       }
 
       // Finally, clamp the index.
-      clamp_index(operand_index, index_inst, GetValueForType(0, maxval_type),
-                  GetValueForType(maxval, maxval_type));
+      return clamp_index(operand_index, index_inst,
+                         GetValueForType(0, maxval_type),
+                         GetValueForType(maxval, maxval_type));
     }
+    return SPV_SUCCESS;
   };
 
   // Ensures the specified index of access chain |inst| has a value that is at
   // most the value of |count_inst| minus 1, where |count_inst| is treated as an
-  // unsigned integer.
+  // unsigned integer. This can log a failure.
   auto clamp_to_count = [&inst, this, &constant_mgr, &clamp_to_literal_count,
-                         &clamp_index, &type_mgr](uint32_t operand_index,
-                                                  Instruction* count_inst) {
+                         &clamp_index,
+                         &type_mgr](uint32_t operand_index,
+                                    Instruction* count_inst) -> spv_result_t {
     Instruction* index_inst =
         this->GetDef(inst.GetSingleWordOperand(operand_index));
     const auto* index_type =
@@ -398,12 +422,11 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
       } else if (width <= 64) {
         value = count_constant->AsIntConstant()->GetU64BitValue();
       } else {
-        this->Fail() << "Can't handle indices wider than 64 bits, found "
-                        "constant index with "
-                     << index_type->width() << "bits";
-        return;
+        return this->Fail() << "Can't handle indices wider than 64 bits, found "
+                               "constant index with "
+                            << index_type->width() << "bits";
       }
-      clamp_to_literal_count(operand_index, value);
+      return clamp_to_literal_count(operand_index, value);
     } else {
       // Widen them to the same width.
       const auto index_width = index_type->width();
@@ -438,8 +461,9 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
           MakeUMinInst(*type_mgr, count_minus_1,
                        GetValueForType(max_signed_value, wider_type), &inst);
       // Now clamp the index to this upper bound.
-      clamp_index(operand_index, index_inst, zero, upper_bound);
+      return clamp_index(operand_index, index_inst, zero, upper_bound);
     }
+    return SPV_SUCCESS;
   };
 
   const Instruction* base_inst = GetDef(inst.GetSingleWordInOperand(0));
@@ -514,6 +538,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
           return;
         }
         clamp_to_count(idx, array_len);
+        if (module_status_.failed) return;
         pointee_type = GetDef(pointee_type->GetSingleWordOperand(1));
       } break;
 

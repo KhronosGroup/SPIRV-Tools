@@ -737,6 +737,81 @@ TEST_F(GraphicsRobustAccessTest, ACArrayGeneralULongIndexIntBoundsClamped) {
   }
 }
 
+TEST_F(GraphicsRobustAccessTest,
+       ACArrayGeneralShortIndeArrayBiggerThanShortMaxClipsToShortIntMax) {
+  for (auto* ac : AccessChains()) {
+    std::ostringstream shaders;
+    shaders << "OpCapability Int16\n"
+            << ShaderPreambleAC({"i"}) << TypesVoid() << TypesShort()
+            << TypesInt() << TypesFloat() << R"(
+       %uint_50000 = OpConstant %uint 50000
+       %arr = OpTypeArray %float %uint_50000
+       %var_ty = OpTypePointer Function %arr
+       %ptr_ty = OpTypePointer Function %float
+       %i = OpUndef %ushort
+       )" << MainPrefix() << R"(
+       ; CHECK: %[[GLSLSTD450:\w+]] = OpExtInstImport "GLSL.std.450"
+       ; CHECK-DAG: %short_0 = OpConstant %short 0
+       ; CHECK-DAG: %[[intmax:\w+]] = OpConstant %short 32767
+       ; CHECK: OpLabel
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %ushort %[[GLSLSTD450]] SClamp %i %short_0 %[[intmax]]
+       %var = OpVariable %var_ty Function)"
+            << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
+    SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
+  }
+}
+
+TEST_F(GraphicsRobustAccessTest,
+       ACArrayGeneralIntIndexArrayBiggerThanIntMaxClipsToSignedIntMax) {
+  for (auto* ac : AccessChains()) {
+    std::ostringstream shaders;
+    shaders << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
+            << TypesFloat() << R"(
+       %uint_3000000000 = OpConstant %uint 3000000000
+       %arr = OpTypeArray %float %uint_3000000000
+       %var_ty = OpTypePointer Function %arr
+       %ptr_ty = OpTypePointer Function %float
+       %i = OpUndef %uint
+       )" << MainPrefix() << R"(
+       ; CHECK: %[[GLSLSTD450:\w+]] = OpExtInstImport "GLSL.std.450"
+       ; CHECK-DAG: %int_0 = OpConstant %int 0
+       ; CHECK-DAG: %[[intmax:\w+]] = OpConstant %int 2147483647
+       ; CHECK: OpLabel
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %uint %[[GLSLSTD450]] SClamp %i %int_0 %[[intmax]]
+       %var = OpVariable %var_ty Function)"
+            << ACCheck(ac, "%i", "%[[clamp]]") << MainSuffix();
+    SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
+  }
+}
+
+TEST_F(GraphicsRobustAccessTest,
+       ACArrayGeneralLongIndexArrayBiggerThanLongMaxClipsToSignedLongMax) {
+  for (auto* ac : AccessChains()) {
+    std::ostringstream shaders;
+    shaders << "OpCapability Int64\n"
+            << ShaderPreambleAC({"i"}) << TypesVoid() << TypesInt()
+            << TypesLong()
+            << TypesFloat()
+            // 2^63 == 9,223,372,036,854,775,807
+            << R"(
+       %ulong_9223372036854775999 = OpConstant %ulong 9223372036854775999
+       %arr = OpTypeArray %float %ulong_9223372036854775999
+       %var_ty = OpTypePointer Function %arr
+       %ptr_ty = OpTypePointer Function %float
+       %i = OpUndef %ulong
+       )"
+            << MainPrefix() << R"(
+       ; CHECK: %[[GLSLSTD450:\w+]] = OpExtInstImport "GLSL.std.450"
+       ; CHECK-DAG: %long_0 = OpConstant %long 0
+       ; CHECK-DAG: %[[intmax:\w+]] = OpConstant %long 9223372036854775807
+       ; CHECK: OpLabel
+       ; CHECK: %[[clamp:\w+]] = OpExtInst %ulong %[[GLSLSTD450]] SClamp %i %long_0 %[[intmax]]
+       %var = OpVariable %var_ty Function)" << ACCheck(ac, "%i", "%[[clamp]]")
+            << MainSuffix();
+    SinglePassRunAndMatch<GraphicsRobustAccessPass>(shaders.str(), true);
+  }
+}
+
 TEST_F(GraphicsRobustAccessTest, ACArraySpecIdSizedAlwaysClamped) {
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
