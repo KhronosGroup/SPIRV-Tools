@@ -33,6 +33,112 @@ using spvtest::MakeInstruction;
 using testing::Eq;
 using utils::MakeVector;
 
+// Test values of enums vs. what is written in the spec.
+
+TEST(ExtInstCLDebugInfo, InstructionValues) {
+  EXPECT_EQ(0, OpenCLDebugInfo100DebugInfoNone);
+  EXPECT_EQ(1, OpenCLDebugInfo100DebugCompilationUnit);
+  EXPECT_EQ(2, OpenCLDebugInfo100DebugTypeBasic);
+  EXPECT_EQ(3, OpenCLDebugInfo100DebugTypePointer);
+  EXPECT_EQ(4, OpenCLDebugInfo100DebugTypeQualifier);
+  EXPECT_EQ(5, OpenCLDebugInfo100DebugTypeArray);
+  EXPECT_EQ(6, OpenCLDebugInfo100DebugTypeVector);
+  EXPECT_EQ(7, OpenCLDebugInfo100DebugTypedef);
+  EXPECT_EQ(8, OpenCLDebugInfo100DebugTypeFunction);
+  EXPECT_EQ(9, OpenCLDebugInfo100DebugTypeEnum);
+  EXPECT_EQ(10, OpenCLDebugInfo100DebugTypeComposite);
+  EXPECT_EQ(11, OpenCLDebugInfo100DebugTypeMember);
+  EXPECT_EQ(12, OpenCLDebugInfo100DebugTypeInheritance);
+  EXPECT_EQ(13, OpenCLDebugInfo100DebugTypePtrToMember);
+  EXPECT_EQ(14, OpenCLDebugInfo100DebugTypeTemplate);
+  EXPECT_EQ(15, OpenCLDebugInfo100DebugTypeTemplateParameter);
+  EXPECT_EQ(16, OpenCLDebugInfo100DebugTypeTemplateTemplateParameter);
+  EXPECT_EQ(17, OpenCLDebugInfo100DebugTypeTemplateParameterPack);
+  EXPECT_EQ(18, OpenCLDebugInfo100DebugGlobalVariable);
+  EXPECT_EQ(19, OpenCLDebugInfo100DebugFunctionDeclaration);
+  EXPECT_EQ(20, OpenCLDebugInfo100DebugFunction);
+  EXPECT_EQ(21, OpenCLDebugInfo100DebugLexicalBlock);
+  EXPECT_EQ(22, OpenCLDebugInfo100DebugLexicalBlockDiscriminator);
+  EXPECT_EQ(23, OpenCLDebugInfo100DebugScope);
+  EXPECT_EQ(24, OpenCLDebugInfo100DebugNoScope);
+  EXPECT_EQ(25, OpenCLDebugInfo100DebugInlinedAt);
+  EXPECT_EQ(26, OpenCLDebugInfo100DebugLocalVariable);
+  EXPECT_EQ(27, OpenCLDebugInfo100DebugInlinedVariable);
+  EXPECT_EQ(28, OpenCLDebugInfo100DebugDeclare);
+  EXPECT_EQ(29, OpenCLDebugInfo100DebugValue);
+  EXPECT_EQ(30, OpenCLDebugInfo100DebugOperation);
+  EXPECT_EQ(31, OpenCLDebugInfo100DebugExpression);
+  EXPECT_EQ(32, OpenCLDebugInfo100DebugMacroDef);
+  EXPECT_EQ(33, OpenCLDebugInfo100DebugMacroUndef);
+  EXPECT_EQ(34, OpenCLDebugInfo100DebugImportedEntity);
+  EXPECT_EQ(35, OpenCLDebugInfo100DebugSource);
+}
+
+TEST(ExtInstCLDebugInfo, InfoFlagValues) {
+  EXPECT_EQ(1 << 0, OpenCLDebugInfo100FlagIsProtected);
+  EXPECT_EQ(1 << 1, OpenCLDebugInfo100FlagIsPrivate);
+  EXPECT_EQ(((1 << 0) | (1 << 1)), OpenCLDebugInfo100FlagIsPublic);
+  EXPECT_EQ(1 << 2, OpenCLDebugInfo100FlagIsLocal);
+  EXPECT_EQ(1 << 3, OpenCLDebugInfo100FlagIsDefinition);
+  EXPECT_EQ(1 << 4, OpenCLDebugInfo100FlagFwdDecl);
+  EXPECT_EQ(1 << 5, OpenCLDebugInfo100FlagArtificial);
+  EXPECT_EQ(1 << 6, OpenCLDebugInfo100FlagExplicit);
+  EXPECT_EQ(1 << 7, OpenCLDebugInfo100FlagPrototyped);
+  EXPECT_EQ(1 << 8, OpenCLDebugInfo100FlagObjectPointer);
+  EXPECT_EQ(1 << 9, OpenCLDebugInfo100FlagStaticMember);
+  EXPECT_EQ(1 << 10, OpenCLDebugInfo100FlagIndirectVariable);
+  EXPECT_EQ(1 << 11, OpenCLDebugInfo100FlagLValueReference);
+  EXPECT_EQ(1 << 12, OpenCLDebugInfo100FlagRValueReference);
+  EXPECT_EQ(1 << 13, OpenCLDebugInfo100FlagIsOptimized);
+  EXPECT_EQ(1 << 14, OpenCLDebugInfo100FlagIsEnumClass);
+  EXPECT_EQ(1 << 15, OpenCLDebugInfo100FlagTypePassByValue);
+  EXPECT_EQ(1 << 16, OpenCLDebugInfo100FlagTypePassByReference);
+}
+
+TEST(ExtInstCLDebugInfo, BaseTypeAttributeEndodingValues) {
+  EXPECT_EQ(0, OpenCLDebugInfo100Unspecified);
+  EXPECT_EQ(1, OpenCLDebugInfo100Address);
+  EXPECT_EQ(2, OpenCLDebugInfo100Boolean);
+  EXPECT_EQ(3, OpenCLDebugInfo100Float);
+  EXPECT_EQ(4, OpenCLDebugInfo100Signed);
+  EXPECT_EQ(5, OpenCLDebugInfo100SignedChar);
+  EXPECT_EQ(6, OpenCLDebugInfo100Unsigned);
+  EXPECT_EQ(7, OpenCLDebugInfo100UnsignedChar);
+}
+
+TEST(ExtInstCLDebugInfo, CompositeTypeValues) {
+  EXPECT_EQ(0, OpenCLDebugInfo100Class);
+  EXPECT_EQ(1, OpenCLDebugInfo100Structure);
+  EXPECT_EQ(2, OpenCLDebugInfo100Union);
+}
+
+TEST(ExtInstCLDebugInfo, TypeQualifierValues) {
+  EXPECT_EQ(0, OpenCLDebugInfo100ConstType);
+  EXPECT_EQ(1, OpenCLDebugInfo100VolatileType);
+  EXPECT_EQ(2, OpenCLDebugInfo100RestrictType);
+  EXPECT_EQ(3, OpenCLDebugInfo100AtomicType);
+}
+
+TEST(ExtInstCLDebugInfo, DebugOperationValues) {
+  EXPECT_EQ(0, OpenCLDebugInfo100Deref);
+  EXPECT_EQ(1, OpenCLDebugInfo100Plus);
+  EXPECT_EQ(2, OpenCLDebugInfo100Minus);
+  EXPECT_EQ(3, OpenCLDebugInfo100PlusUconst);
+  EXPECT_EQ(4, OpenCLDebugInfo100BitPiece);
+  EXPECT_EQ(5, OpenCLDebugInfo100Swap);
+  EXPECT_EQ(6, OpenCLDebugInfo100Xderef);
+  EXPECT_EQ(7, OpenCLDebugInfo100StackValue);
+  EXPECT_EQ(8, OpenCLDebugInfo100Constu);
+  EXPECT_EQ(9, OpenCLDebugInfo100Fragment);
+}
+
+TEST(ExtInstCLDebugInfo, ImportedEntityValues) {
+  EXPECT_EQ(0, OpenCLDebugInfo100ImportedModule);
+  EXPECT_EQ(1, OpenCLDebugInfo100ImportedDeclaration);
+}
+
+// Test round trip through assembler and disassembler.
+
 struct InstructionCase {
   uint32_t opcode;
   std::string name;
@@ -155,6 +261,14 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
     }                                                                     \
   }
 
+#define CASE_IEIILLI(Enum, E0, L1, L2)                      \
+  {                                                         \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
+        " %4 " #E0 " %5 %6 " #L1 " " #L2 " %7", {           \
+      4, uint32_t(OpenCLDebugInfo100##E0), 5, 6, L1, L2, 7  \
+    }                                                       \
+  }
+
 #define CASE_IIE(Enum, E0)                                                   \
   {                                                                          \
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, " %4 %5 " #E0, { \
@@ -191,14 +305,6 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
         " %4 " #L0 " %5 %6", {                              \
       4, L0, 5, 6                                           \
-    }                                                       \
-  }
-
-#define CASE_ILIILLI(Enum, L0, L1, L2)                      \
-  {                                                         \
-    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
-        " %4 " #L0 " %5 %6 " #L1 " " #L2 " %7", {           \
-      4, L0, 5, 6, L1, L2, 7                                \
     }                                                       \
   }
 
@@ -825,18 +931,19 @@ INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugMacroUndef,
 
 // OpenCL.DebugInfo.100 4.10 Imported Entities
 
-INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugImportedEntity,
-                         ExtInstCLDebugInfo100RoundTripTest,
-                         ::testing::ValuesIn(std::vector<InstructionCase>({
-                             // ID Name
-                             // Literal Tag
-                             // ID Source
-                             // ID Entity
-                             // Literal Number Line
-                             // Literal Number Column
-                             // ID Parent
-                             CASE_ILIILLI(ImportedEntity, 66, 67, 68),
-                         })));
+INSTANTIATE_TEST_SUITE_P(
+    OpenCLDebugInfo100DebugImportedEntity, ExtInstCLDebugInfo100RoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        // ID Name
+        // Literal Tag
+        // ID Source
+        // ID Entity
+        // Literal Number Line
+        // Literal Number Column
+        // ID Parent
+        CASE_IEIILLI(ImportedEntity, ImportedModule, 67, 68),
+        CASE_IEIILLI(ImportedEntity, ImportedDeclaration, 42, 43),
+    })));
 
 #undef EPREFIX
 #undef CASE_0
@@ -852,12 +959,12 @@ INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugImportedEntity,
 #undef CASE_IIILLI
 #undef CASE_IIILLIL
 #undef CASE_IE
+#undef CASE_IEIILLI
 #undef CASE_IIE
 #undef CASE_ISF
 #undef CASE_LII
 #undef CASE_ILI
 #undef CASE_ILII
-#undef CASE_ILIILLI
 #undef CASE_ILLII
 #undef CASE_IIILLIIF
 #undef CASE_IIILLIIFII
