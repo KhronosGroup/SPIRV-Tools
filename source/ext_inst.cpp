@@ -28,8 +28,8 @@
 
 #include "debuginfo.insts.inc"
 #include "glsl.std.450.insts.inc"
-#include "opencl.std.insts.inc"
 #include "opencl.debuginfo.100.insts.inc"
+#include "opencl.std.insts.inc"
 
 #include "spirv-tools/libspirv.h"
 #include "spv-amd-gcn-shader.insts.inc"
