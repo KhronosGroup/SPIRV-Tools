@@ -18,13 +18,12 @@
 #include <map>
 #include <unordered_map>
 
-#include "source/diagnostic.h"
-
 #include "constants.h"
 #include "def_use_manager.h"
 #include "instruction.h"
 #include "module.h"
 #include "pass.h"
+#include "source/diagnostic.h"
 #include "type_manager.h"
 
 namespace spvtools {
