@@ -844,41 +844,35 @@ TEST_P(OpTypeArrayLengthTest, LengthPositiveSmall) {
 
 TEST_P(OpTypeArrayLengthTest, LengthZero) {
   const int width = GetParam();
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width)),
-          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
-          "least 1."));
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width)),
-          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
-          "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width)),
+                "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
+                "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width)),
+                "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
+                "least 1."));
 }
 
 TEST_P(OpTypeArrayLengthTest, LengthNegative) {
   const int width = GetParam();
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width)),
-          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
-          "least 1."));
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width)),
-          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
-          "least 1."));
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width)),
-          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
-          "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width)),
+                "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
+                "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width)),
+                "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
+                "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width)),
+                "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
+                "least 1."));
   const std::string neg_max = "0x8" + std::string(width / 4 - 1, '0');
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width)),
-          "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
-          "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width)),
+                "OpTypeArray Length <id> '3\\[%.*\\]' default value must be at "
+                "least 1."));
 }
 
 // Returns the string form of an integer of the form 0x80....0 of the
@@ -940,11 +934,10 @@ TEST_P(OpTypeArrayLengthTest, LengthPositiveHugeEnding1InWebGPU) {
   const int max_int_width = 32;
   const auto module = CompileSuccessfully(MakeArrayLength(
       big_num_ending_1(width), kUnsigned, width, max_int_width, true));
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(module,
-          "OpTypeArray Length <id> '3\\[%.*\\]' size exceeds max value "
-          "2147483648 permitted by WebGPU: got 2147483649"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(module,
+                "OpTypeArray Length <id> '3\\[%.*\\]' size exceeds max value "
+                "2147483648 permitted by WebGPU: got 2147483649"));
 }
 
 // The only valid widths for integers are 8, 16, 32, and 64.
