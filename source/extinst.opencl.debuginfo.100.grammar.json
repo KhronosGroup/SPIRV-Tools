@@ -35,9 +35,10 @@
       "opname" : "DebugCompilationUnit",
       "opcode" : 1,
       "operands" : [
-        { "kind" : "IdRef", "name" : "'Source'" },
         { "kind" : "LiteralInteger", "name" : "'Version'" },
-        { "kind" : "LiteralInteger", "name" : "'DWARF Version'" }
+        { "kind" : "LiteralInteger", "name" : "'DWARF Version'" },
+        { "kind" : "IdRef", "name" : "'Source'" },
+        { "kind" : "SourceLanguage", "name" : "'Language'" }
       ]
     },
     {
@@ -55,7 +56,7 @@
       "operands" : [
         { "kind" : "IdRef", "name" : "'Base Type'" },
         { "kind" : "StorageClass", "name" : "'Storage Class'" },
-        { "kind" : "DebugInfoFlags", "name" : "'Literal Flags'" }
+        { "kind" : "DebugInfoFlags", "name" : "'Flags'" }
       ]
     },
     {
@@ -98,8 +99,9 @@
       "opname" : "DebugTypeFunction",
       "opcode" : 8,
       "operands" : [
+        { "kind" : "DebugInfoFlags", "name" : "'Flags'" },
         { "kind" : "IdRef", "name" : "'Return Type'" },
-        { "kind" : "IdRef", "name" : "'Paramter Types'", "quantifier" : "*" }
+        { "kind" : "IdRef", "name" : "'Parameter Types'", "quantifier" : "*" }
       ]
     },
     {
@@ -127,6 +129,7 @@
         { "kind" : "LiteralInteger", "name" : "'Line'" },
         { "kind" : "LiteralInteger", "name" : "'Column'" },
         { "kind" : "IdRef", "name" : "'Parent'" },
+        { "kind" : "IdRef", "name" : "'Linkage Name'" },
         { "kind" : "IdRef", "name" : "'Size'" },
         { "kind" : "DebugInfoFlags", "name" : "'Flags'" },
         { "kind" : "IdRef", "name" : "'Members'", "quantifier" : "*" }
@@ -271,7 +274,7 @@
       "opname" : "DebugLexicalBlockDiscriminator",
       "opcode" : 22,
       "operands" : [
-        { "kind" : "IdRef", "name" : "'Scope'" },
+        { "kind" : "IdRef", "name" : "'Source'" },
         { "kind" : "LiteralInteger", "name" : "'Discriminator'" },
         { "kind" : "IdRef", "name" : "'Parent'" }
       ]
@@ -307,6 +310,7 @@
         { "kind" : "LiteralInteger", "name" : "'Line'" },
         { "kind" : "LiteralInteger", "name" : "'Column'" },
         { "kind" : "IdRef", "name" : "'Parent'" },
+        { "kind" : "DebugInfoFlags", "name" : "'Flags'" },
         { "kind" : "LiteralInteger", "name" : "'Arg Number'", "quantifier" : "?" }
       ]
     },
@@ -331,6 +335,7 @@
       "opname" : "DebugValue",
       "opcode" : 29,
       "operands" : [
+        { "kind" : "IdRef", "name" : "'Local Variable'" },
         { "kind" : "IdRef", "name" : "'Value'" },
         { "kind" : "IdRef", "name" : "'Expression'" },
         { "kind" : "IdRef", "name" : "'Indexes'", "quantifier" : "*" }

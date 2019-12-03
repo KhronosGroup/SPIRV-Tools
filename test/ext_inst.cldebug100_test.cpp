@@ -18,6 +18,7 @@
 #include "OpenCLDebugInfo100.h"
 #include "gmock/gmock.h"
 #include "source/util/string_utils.h"
+#include "spirv/unified1/spirv.h"
 #include "test/test_fixture.h"
 #include "test/unit_spirv.h"
 
@@ -246,6 +247,22 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
     }                                                       \
   }
 
+#define CASE_IIILLIF(Enum, L0, L1, Fstr, Fnum)              \
+  {                                                         \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
+        " %4 %5 %6 " #L0 " " #L1 " %7 " Fstr, {             \
+      4, 5, 6, L0, L1, 7, Fnum                              \
+    }                                                       \
+  }
+
+#define CASE_IIILLIFL(Enum, L0, L1, Fstr, Fnum, L2)         \
+  {                                                         \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
+        " %4 %5 %6 " #L0 " " #L1 " %7 " Fstr " " #L2, {     \
+      4, 5, 6, L0, L1, 7, Fnum, L2                          \
+    }                                                       \
+  }
+
 #define CASE_IIILLIL(Enum, L0, L1, L2)                      \
   {                                                         \
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
@@ -290,6 +307,14 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
     {                                                                         \
       L0, 4, 5                                                                \
     }                                                                         \
+  }
+
+#define CASE_LLIe(Enum, L0, L1, RawEnumName, RawEnumValue)  \
+  {                                                         \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
+        " " #L0 " " #L1 " %4 " RawEnumName, {               \
+      L0, L1, 4, RawEnumValue                               \
+    }                                                       \
   }
 
 #define CASE_ILI(Enum, L0)                                                    \
@@ -348,44 +373,45 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
     }                                                                        \
   }
 
-#define CASE_IEILLIIF(Enum, E0, L0, L1, Fstr, Fnum)              \
-  {                                                              \
-    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum,      \
-        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 " Fstr, {          \
-      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, Fnum \
-    }                                                            \
-  }
-
-#define CASE_IEILLIIFI(Enum, E0, L0, L1, Fstr, Fnum)                \
+#define CASE_IEILLIIIF(Enum, E0, L0, L1, Fstr, Fnum)                \
   {                                                                 \
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum,         \
-        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 " Fstr " %8", {       \
-      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, Fnum, 8 \
+        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 %8 " Fstr, {          \
+      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, 8, Fnum \
     }                                                               \
   }
 
-#define CASE_IEILLIIFII(Enum, E0, L0, L1, Fstr, Fnum)                  \
+#define CASE_IEILLIIIFI(Enum, E0, L0, L1, Fstr, Fnum)                  \
   {                                                                    \
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum,            \
-        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 " Fstr " %8 %9", {       \
-      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, Fnum, 8, 9 \
+        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 %8 " Fstr " %9", {       \
+      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, 8, Fnum, 9 \
     }                                                                  \
   }
 
-#define CASE_IEILLIIFIII(Enum, E0, L0, L1, Fstr, Fnum)                     \
+#define CASE_IEILLIIIFII(Enum, E0, L0, L1, Fstr, Fnum)                     \
   {                                                                        \
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum,                \
-        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 " Fstr " %8 %9 %10", {       \
-      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, Fnum, 8, 9, 10 \
+        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 %8 " Fstr " %9 %10", {       \
+      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, 8, Fnum, 9, 10 \
     }                                                                      \
   }
 
-#define CASE_IEILLIIFIIII(Enum, E0, L0, L1, Fstr, Fnum)                        \
+#define CASE_IEILLIIIFIII(Enum, E0, L0, L1, Fstr, Fnum)                        \
   {                                                                            \
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum,                    \
-        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 " Fstr " %8 %9 %10 %11", {       \
-      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, Fnum, 8, 9, 10, 11 \
+        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 %8 " Fstr " %9 %10 %11", {       \
+      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, 8, Fnum, 9, 10, 11 \
     }                                                                          \
+  }
+
+#define CASE_IEILLIIIFIIII(Enum, E0, L0, L1, Fstr, Fnum)                     \
+  {                                                                          \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum,                  \
+        " %4 " #E0 " %5 " #L0 " " #L1 " %6 %7 %8 " Fstr " %9 %10 %11 %12", { \
+      4, uint32_t(OpenCLDebugInfo100##E0), 5, L0, L1, 6, 7, 8, Fnum, 9, 10,  \
+          11, 12                                                             \
+    }                                                                        \
   }
 
 #define CASE_IIILLIIIF(Enum, L0, L1, Fstr, Fnum)            \
@@ -483,6 +509,45 @@ TEST_P(ExtInstCLDebugInfo100RoundTripTest, ParameterizedExtInst) {
     }                                                                  \
   }
 
+#define CASE_EI(Enum, E0)                                                    \
+  {                                                                          \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, " " #E0 " %4", { \
+      uint32_t(OpenCLDebugInfo100##E0), 4                                    \
+    }                                                                        \
+  }
+
+#define CASE_EII(Enum, E0)                                                    \
+  {                                                                           \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, " " #E0 " %4 %5", \
+    {                                                                         \
+      uint32_t(OpenCLDebugInfo100##E0), 4, 5                                  \
+    }                                                                         \
+  }
+
+#define CASE_EIII(Enum, E0)                                 \
+  {                                                         \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
+        " " #E0 " %4 %5 %6", {                              \
+      uint32_t(OpenCLDebugInfo100##E0), 4, 5, 6             \
+    }                                                       \
+  }
+
+#define CASE_EIIII(Enum, E0)                                \
+  {                                                         \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
+        " " #E0 " %4 %5 %6 %7", {                           \
+      uint32_t(OpenCLDebugInfo100##E0), 4, 5, 6, 7          \
+    }                                                       \
+  }
+
+#define CASE_EIIIII(Enum, E0)                               \
+  {                                                         \
+    uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, \
+        " " #E0 " %4 %5 %6 %7 %8", {                        \
+      uint32_t(OpenCLDebugInfo100##E0), 4, 5, 6, 7, 8       \
+    }                                                       \
+  }
+
 #define CASE_EL(Enum, E0, L0)                                                  \
   {                                                                            \
     uint32_t(OpenCLDebugInfo100Debug##Enum), EPREFIX #Enum, " " #E0 " " #L0, { \
@@ -506,11 +571,11 @@ INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugInfoNone,
                          })));
 
 // OpenCL.DebugInfo.100 4.2 Compilation Unit
-INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugCompilationUnit,
-                         ExtInstCLDebugInfo100RoundTripTest,
-                         ::testing::ValuesIn(std::vector<InstructionCase>({
-                             CASE_ILL(CompilationUnit, 100, 42),
-                         })));
+INSTANTIATE_TEST_SUITE_P(
+    OpenCLDebugInfo100DebugCompilationUnit, ExtInstCLDebugInfo100RoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE_LLIe(CompilationUnit, 100, 42, "HLSL", SpvSourceLanguageHLSL),
+    })));
 
 INSTANTIATE_TEST_SUITE_P(
     OpenCLDebugInfo100DebugSource, ExtInstCLDebugInfo100RoundTripTest,
@@ -652,11 +717,11 @@ INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugTypedef,
 INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugTypeFunction,
                          ExtInstCLDebugInfo100RoundTripTest,
                          ::testing::ValuesIn(std::vector<InstructionCase>({
-                             CASE_I(TypeFunction),
-                             CASE_II(TypeFunction),
-                             CASE_III(TypeFunction),
-                             CASE_IIII(TypeFunction),
-                             CASE_IIIII(TypeFunction),
+                             CASE_EI(TypeFunction, FlagIsProtected),
+                             CASE_EII(TypeFunction, FlagIsDefinition),
+                             CASE_EIII(TypeFunction, FlagArtificial),
+                             CASE_EIIII(TypeFunction, FlagExplicit),
+                             CASE_EIIIII(TypeFunction, FlagIsPrivate),
                          })));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -678,7 +743,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     OpenCLDebugInfo100DebugTypeComposite, ExtInstCLDebugInfo100RoundTripTest,
     ::testing::ValuesIn(std::vector<InstructionCase>({
-        CASE_IEILLIIF(
+        CASE_IEILLIIIF(
             TypeComposite, Class, 12, 13,
             "FlagIsPrivate|FlagFwdDecl|FlagIndirectVariable|FlagIsOptimized",
             uint32_t(OpenCLDebugInfo100FlagIsPrivate) |
@@ -686,21 +751,21 @@ INSTANTIATE_TEST_SUITE_P(
                 uint32_t(OpenCLDebugInfo100FlagIndirectVariable) |
                 uint32_t(OpenCLDebugInfo100FlagIsOptimized)),
         // Cover all tag values: Class, Structure, Union
-        CASE_IEILLIIF(TypeComposite, Class, 12, 13, "FlagIsPrivate",
-                      uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
-        CASE_IEILLIIF(TypeComposite, Structure, 12, 13, "FlagIsPrivate",
-                      uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
-        CASE_IEILLIIF(TypeComposite, Union, 12, 13, "FlagIsPrivate",
-                      uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
-        // Now add members
-        CASE_IEILLIIFI(TypeComposite, Class, 9, 10, "FlagIsPrivate",
+        CASE_IEILLIIIF(TypeComposite, Class, 12, 13, "FlagIsPrivate",
                        uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
-        CASE_IEILLIIFII(TypeComposite, Class, 9, 10, "FlagIsPrivate",
+        CASE_IEILLIIIF(TypeComposite, Structure, 12, 13, "FlagIsPrivate",
+                       uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
+        CASE_IEILLIIIF(TypeComposite, Union, 12, 13, "FlagIsPrivate",
+                       uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
+        // Now add members
+        CASE_IEILLIIIFI(TypeComposite, Class, 9, 10, "FlagIsPrivate",
                         uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
-        CASE_IEILLIIFIII(TypeComposite, Class, 9, 10, "FlagIsPrivate",
+        CASE_IEILLIIIFII(TypeComposite, Class, 9, 10, "FlagIsPrivate",
                          uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
-        CASE_IEILLIIFIIII(TypeComposite, Class, 9, 10, "FlagIsPrivate",
+        CASE_IEILLIIIFIII(TypeComposite, Class, 9, 10, "FlagIsPrivate",
                           uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
+        CASE_IEILLIIIFIIII(TypeComposite, Class, 9, 10, "FlagIsPrivate",
+                           uint32_t(OpenCLDebugInfo100FlagIsPrivate)),
     })));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -847,14 +912,18 @@ INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugInlinedAt,
 
 // OpenCL.DebugInfo.100 4.8 Local Variables
 
-INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugLocalVariable,
-                         ExtInstCLDebugInfo100RoundTripTest,
-                         ::testing::ValuesIn(std::vector<InstructionCase>({
-                             CASE_IIILLI(LocalVariable, 1, 2),
-                             CASE_IIILLI(LocalVariable, 42, 43),
-                             CASE_IIILLIL(LocalVariable, 1, 2, 3),
-                             CASE_IIILLIL(LocalVariable, 42, 43, 44),
-                         })));
+INSTANTIATE_TEST_SUITE_P(
+    OpenCLDebugInfo100DebugLocalVariable, ExtInstCLDebugInfo100RoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE_IIILLIF(LocalVariable, 1, 2, "FlagIsPrivate",
+                     OpenCLDebugInfo100FlagIsPrivate),
+        CASE_IIILLIF(LocalVariable, 4, 5, "FlagIsProtected",
+                     OpenCLDebugInfo100FlagIsProtected),
+        CASE_IIILLIFL(LocalVariable, 9, 99, "FlagIsProtected",
+                      OpenCLDebugInfo100FlagIsProtected, 195),
+        CASE_IIILLIFL(LocalVariable, 19, 199, "FlagIsPrivate",
+                      OpenCLDebugInfo100FlagIsPrivate, 195),
+    })));
 
 INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugInlinedVariable,
                          ExtInstCLDebugInfo100RoundTripTest,
@@ -871,11 +940,10 @@ INSTANTIATE_TEST_SUITE_P(OpenCLDebugInfo100DebugDebugDeclare,
 INSTANTIATE_TEST_SUITE_P(
     OpenCLDebugInfo100DebugDebugValue, ExtInstCLDebugInfo100RoundTripTest,
     ::testing::ValuesIn(std::vector<InstructionCase>({
-        CASE_III(Value),
         CASE_IIII(Value),
         CASE_IIIII(Value),
         CASE_IIIIII(Value),
-        // Test up to 4 id parameters. We can always try more.
+        // Test up to 3 id parameters. We can always try more.
         CASE_IIIIIII(Value),
     })));
 
@@ -963,18 +1031,21 @@ INSTANTIATE_TEST_SUITE_P(
 #undef CASE_IIE
 #undef CASE_ISF
 #undef CASE_LII
+#undef CASE_LLIe
 #undef CASE_ILI
 #undef CASE_ILII
 #undef CASE_ILLII
+#undef CASE_IIILLIF
+#undef CASE_IIILLIFL
 #undef CASE_IIILLIIF
 #undef CASE_IIILLIIFII
 #undef CASE_IIILLIIFIIII
 #undef CASE_IIILLIIFIIIIII
-#undef CASE_IEILLIIF
-#undef CASE_IEILLIIFI
-#undef CASE_IEILLIIFII
-#undef CASE_IEILLIIFIII
-#undef CASE_IEILLIIFIIII
+#undef CASE_IEILLIIIF
+#undef CASE_IEILLIIIFI
+#undef CASE_IEILLIIIFII
+#undef CASE_IEILLIIIFIII
+#undef CASE_IEILLIIIFIIII
 #undef CASE_IIILLIIIF
 #undef CASE_IIILLIIIFI
 #undef CASE_IIIIF
@@ -987,6 +1058,11 @@ INSTANTIATE_TEST_SUITE_P(
 #undef CASE_IIILLIIFLI
 #undef CASE_IIILLIIFLII
 #undef CASE_E
+#undef CASE_EI
+#undef CASE_EII
+#undef CASE_EIII
+#undef CASE_EIIII
+#undef CASE_EIIIII
 #undef CASE_EL
 #undef CASE_ELL
 

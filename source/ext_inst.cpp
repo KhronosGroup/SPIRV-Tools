@@ -119,12 +119,13 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   if (!strcmp("DebugInfo", name)) {
     return SPV_EXT_INST_TYPE_DEBUGINFO;
   }
+  if (!strcmp("OpenCL.DebugInfo.100", name)) {
+    return SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100;
+  }
   // ensure to add any known non-semantic extended instruction sets
   // above this point, and update spvExtInstIsNonSemantic()
   if (!strncmp("NonSemantic.", name, 12)) {
     return SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN;
-  if (!strcmp("OpenCL.DebugInfo.100", name)) {
-    return SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100;
   }
   return SPV_EXT_INST_TYPE_NONE;
 }
