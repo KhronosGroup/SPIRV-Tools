@@ -1468,7 +1468,7 @@ TEST_F(ValidateIdWithMessage, OpConstantNullGood) {
  %4 = OpConstantNull %3
  %5 = OpTypeFloat 32
  %6 = OpConstantNull %5
- %7 = OpTypePointer UniformConstant %3
+ %7 = OpTypePointer StorageBuffer %3
  %8 = OpConstantNull %7
  %9 = OpTypeEvent
 %10 = OpConstantNull %9
@@ -2553,12 +2553,12 @@ TEST_F(ValidateIdWithMessage, OpPhiBad) {
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Using pointers with OpPhi requires capability "
+              HasSubstr("Generating variable pointers requires capability "
                         "VariablePointers or VariablePointersStorageBuffer"));
 }
 
 // With the VariablePointer Capability, OpLoad should allow loading through a
-// VaiablePointer. In this test the variable pointer is obtained from an
+// VariablePointer. In this test the variable pointer is obtained from an
 // OpFunctionCall (return value from a function)
 TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpFunctionCallGood) {
   std::ostringstream spirv;
@@ -3530,10 +3530,10 @@ const char kDeeplyNestedStructureSetup[] = R"(
 %float = OpTypeFloat 32
 %v3float = OpTypeVector %float 3
 %mat4x3 = OpTypeMatrix %v3float 4
-%_ptr_Private_mat4x3 = OpTypePointer Private %mat4x3
-%_ptr_Private_float = OpTypePointer Private %float
-%my_matrix = OpVariable %_ptr_Private_mat4x3 Private
-%my_float_var = OpVariable %_ptr_Private_float Private
+%_ptr_Workgroup_mat4x3 = OpTypePointer Workgroup %mat4x3
+%_ptr_Workgroup_float = OpTypePointer Workgroup %float
+%my_matrix = OpVariable %_ptr_Workgroup_mat4x3 Workgroup
+%my_float_var = OpVariable %_ptr_Workgroup_float Workgroup
 %_ptr_Function_float = OpTypePointer Function %float
 %int_0 = OpConstant %int 0
 %int_1 = OpConstant %int 1
@@ -3549,7 +3549,7 @@ const char kDeeplyNestedStructureSetup[] = R"(
 ;   int i;
 ;   mat4x3 m[5];
 ; }
-; uniform blockName {
+; groupshared blockName {
 ;   S s;
 ;   bool cond;
 ;   RunTimeArray arr;
@@ -3559,17 +3559,15 @@ const char kDeeplyNestedStructureSetup[] = R"(
 %v4float = OpTypeVector %float 4
 %array5_mat4x3 = OpTypeArray %mat4x3 %int_5
 %array5_vec4 = OpTypeArray %v4float %int_5
-%_ptr_Uniform_float = OpTypePointer Uniform %float
 %_ptr_Function_vec4 = OpTypePointer Function %v4float
-%_ptr_Uniform_vec4 = OpTypePointer Uniform %v4float
+%_ptr_Workgroup_vec4 = OpTypePointer Workgroup %v4float
 %struct_s = OpTypeStruct %int %array5_vec4 %int %array5_mat4x3
 %struct_blockName = OpTypeStruct %struct_s %int %f32arr
-%_ptr_Uniform_blockName = OpTypePointer Uniform %struct_blockName
-%_ptr_Uniform_struct_s = OpTypePointer Uniform %struct_s
-%_ptr_Uniform_array5_mat4x3 = OpTypePointer Uniform %array5_mat4x3
-%_ptr_Uniform_mat4x3 = OpTypePointer Uniform %mat4x3
-%_ptr_Uniform_v3float = OpTypePointer Uniform %v3float
-%blockName_var = OpVariable %_ptr_Uniform_blockName Uniform
+%_ptr_Workgroup_blockName = OpTypePointer Workgroup %struct_blockName
+%_ptr_Workgroup_struct_s = OpTypePointer Workgroup %struct_s
+%_ptr_Workgroup_array5_mat4x3 = OpTypePointer Workgroup %array5_mat4x3
+%_ptr_Workgroup_v3float = OpTypePointer Workgroup %v3float
+%blockName_var = OpVariable %_ptr_Workgroup_blockName Workgroup
 %spec_int = OpSpecConstant %int 2
 %float_0 = OpConstant %float 0
 %func = OpFunction %void None %void_f
@@ -3593,7 +3591,7 @@ TEST_P(AccessChainInstructionTest, AccessChainGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup +
                       "%float_entry = " + instr +
-                      R"( %_ptr_Private_float %my_matrix )" + elem +
+                      R"( %_ptr_Workgroup_float %my_matrix )" + elem +
                       R"(%int_0 %int_1
               OpReturn
               OpFunctionEnd
@@ -3616,7 +3614,7 @@ OpFunctionEnd
   )";
 
   const std::string expected_err = "The Result Type of " + instr +
-                                   " <id> '36[%36]' must be "
+                                   " <id> '34[%34]' must be "
                                    "OpTypePointer. Found OpTypeFloat.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -3629,7 +3627,7 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeVoidBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %float_entry = )" +
-                      instr + " %_ptr_Private_float %void " + elem +
+                      instr + " %_ptr_Workgroup_float %void " + elem +
                       R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3644,9 +3642,9 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr + R"( %_ptr_Private_float %_ptr_Private_float )" +
+  std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup +
+                      R"(
+%entry = )" + instr + R"( %_ptr_Workgroup_float %_ptr_Workgroup_float )" +
                       elem +
                       R"(%int_0 %int_1
 OpReturn
@@ -3655,7 +3653,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 8[%_ptr_Private_float] cannot be a type"));
+              HasSubstr("Operand 8[%_ptr_Workgroup_float] cannot be a type"));
 }
 
 // Invalid: The storage class of Base and Result do not match.
@@ -3686,7 +3684,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Private_float %my_float_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %my_float_var )" +
+                      elem +
                       R"(%int_0
 OpReturn
 OpFunctionEnd
@@ -3706,7 +3705,8 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Private_float %my_float_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %my_float_var )" +
+                      elem +
                       R"(
 OpReturn
 OpFunctionEnd
@@ -3722,7 +3722,8 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Private_mat4x3 %my_float_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_mat4x3 %my_float_var )" +
+                      elem +
                       R"(
 OpReturn
 OpFunctionEnd
@@ -3752,9 +3753,9 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesGood) {
   }
 
   // Define Pointer and Variable to use for the AccessChain instruction.
-  spirv << "%_ptr_Uniform_deep_struct = OpTypePointer Uniform %s_depth_"
+  spirv << "%_ptr_Workgroup_deep_struct = OpTypePointer Workgroup %s_depth_"
         << depth << "\n";
-  spirv << "%deep_var = OpVariable %_ptr_Uniform_deep_struct Uniform\n";
+  spirv << "%deep_var = OpVariable %_ptr_Workgroup_deep_struct Workgroup\n";
 
   // Function Start
   spirv << R"(
@@ -3763,7 +3764,7 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesGood) {
   )";
 
   // AccessChain with 'n' indexes (n = depth)
-  spirv << "%entry = " << instr << " %_ptr_Uniform_float %deep_var" << elem;
+  spirv << "%entry = " << instr << " %_ptr_Workgroup_float %deep_var" << elem;
   for (int i = 0; i < depth; ++i) {
     spirv << " %int_0";
   }
@@ -3783,7 +3784,7 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? " %int_0 " : "";
   std::ostringstream spirv;
   spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup;
-  spirv << "%entry = " << instr << " %_ptr_Private_float %my_matrix" << elem;
+  spirv << "%entry = " << instr << " %_ptr_Workgroup_float %my_matrix" << elem;
   for (int i = 0; i < 256; ++i) {
     spirv << " %int_0";
   }
@@ -3815,9 +3816,9 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesGood) {
   }
 
   // Define Pointer and Variable to use for the AccessChain instruction.
-  spirv << "%_ptr_Uniform_deep_struct = OpTypePointer Uniform %s_depth_"
+  spirv << "%_ptr_Workgroup_deep_struct = OpTypePointer Workgroup %s_depth_"
         << depth << "\n";
-  spirv << "%deep_var = OpVariable %_ptr_Uniform_deep_struct Uniform\n";
+  spirv << "%deep_var = OpVariable %_ptr_Workgroup_deep_struct Workgroup\n";
 
   // Function Start
   spirv << R"(
@@ -3826,7 +3827,7 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesGood) {
   )";
 
   // AccessChain with 'n' indexes (n = depth)
-  spirv << "%entry = " << instr << " %_ptr_Uniform_float %deep_var" << elem;
+  spirv << "%entry = " << instr << " %_ptr_Workgroup_float %deep_var" << elem;
   for (int i = 0; i < depth; ++i) {
     spirv << " %int_0";
   }
@@ -3849,7 +3850,7 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? " %int_0 " : "";
   std::ostringstream spirv;
   spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup;
-  spirv << "%entry = " << instr << " %_ptr_Private_float %my_matrix" << elem;
+  spirv << "%entry = " << instr << " %_ptr_Workgroup_float %my_matrix" << elem;
   for (int i = 0; i < 11; ++i) {
     spirv << " %int_0";
   }
@@ -3873,7 +3874,7 @@ TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Private_float %my_matrix )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %my_matrix )" + elem +
                       R"(%float_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3892,7 +3893,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %f = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %blockName_var )" +
+                      elem +
                       R"(%int_0 %spec_int %int_2
 OpReturn
 OpFunctionEnd
@@ -3912,7 +3914,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %blockName_var )" +
+                      elem +
                       R"(%int_0 %int_1 %int_2
 OpReturn
 OpFunctionEnd
@@ -3932,7 +3935,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructTooManyIndexesBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %blockName_var )" +
+                      elem +
                       R"(%int_0 %int_2 %int_2
 OpReturn
 OpFunctionEnd
@@ -3951,14 +3955,15 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %blockName_var )" +
+                      elem +
                       R"(%int_3 %int_2 %int_2
 OpReturn
 OpFunctionEnd
   )";
   const std::string expected_err = "Index is out of bounds: " + instr +
                                    " can not find index 3 into the structure "
-                                   "<id> '25[%_struct_25]'. This structure "
+                                   "<id> '24[%_struct_24]'. This structure "
                                    "has 3 members. Largest valid index is 2.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -3977,15 +3982,15 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoAllTypesGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::ostringstream spirv;
   spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
-  spirv << "%ss = " << instr << " %_ptr_Uniform_struct_s %blockName_var "
+  spirv << "%ss = " << instr << " %_ptr_Workgroup_struct_s %blockName_var "
         << elem << "%int_0" << std::endl;
-  spirv << "%sa = " << instr << " %_ptr_Uniform_array5_mat4x3 %blockName_var "
+  spirv << "%sa = " << instr << " %_ptr_Workgroup_array5_mat4x3 %blockName_var "
         << elem << "%int_0 %int_3" << std::endl;
-  spirv << "%sm = " << instr << " %_ptr_Uniform_mat4x3 %blockName_var " << elem
-        << "%int_0 %int_3 %int_1" << std::endl;
-  spirv << "%sc = " << instr << " %_ptr_Uniform_v3float %blockName_var " << elem
-        << "%int_0 %int_3 %int_1 %int_2" << std::endl;
-  spirv << "%entry = " << instr << " %_ptr_Uniform_float %blockName_var "
+  spirv << "%sm = " << instr << " %_ptr_Workgroup_mat4x3 %blockName_var "
+        << elem << "%int_0 %int_3 %int_1" << std::endl;
+  spirv << "%sc = " << instr << " %_ptr_Workgroup_v3float %blockName_var "
+        << elem << "%int_0 %int_3 %int_1 %int_2" << std::endl;
+  spirv << "%entry = " << instr << " %_ptr_Workgroup_float %blockName_var "
         << elem << "%int_0 %int_3 %int_1 %int_2 %int_0" << std::endl;
   spirv << R"(
 OpReturn
@@ -4001,7 +4006,8 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %blockName_var )" +
+                      elem +
                       R"(%int_2 %int_0
 OpReturn
 OpFunctionEnd
@@ -4016,7 +4022,8 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %blockName_var )" +
+                      elem +
                       R"(%int_2 %int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -4036,7 +4043,7 @@ TEST_P(AccessChainInstructionTest, AccessChainMatrixMoreArgsThanNeededBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Private_float %my_matrix )" + elem +
+                      instr + R"( %_ptr_Workgroup_float %my_matrix )" + elem +
                       R"(%int_0 %int_1 %int_0
 OpReturn
 OpFunctionEnd
@@ -4056,7 +4063,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
-                      instr + R"( %_ptr_Private_mat4x3 %my_matrix )" + elem +
+                      instr + R"( %_ptr_Workgroup_mat4x3 %my_matrix )" + elem +
                       R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -5209,11 +5216,11 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
      OpReturnValue %7
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  // The first validation error is from the OpFunction.
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpReturnValue value's type <id> "
-                        "'3[%_ptr_Function_uint]' is a pointer, which is "
-                        "invalid in the Logical addressing model."));
+              HasSubstr("Generating variable pointers requires capability "
+                        "VariablePointers or VariablePointersStorageBuffer"));
 }
 
 // With the VariablePointer Capability, the return value of a function is

@@ -31,7 +31,8 @@ AUTHORS = ['The Khronos Group Inc.',
            'Google Inc.',
            'Google LLC',
            'Pierre Moreau',
-           'Samsung Inc']
+           'Samsung Inc',
+           'Advanced Micro Devices, Inc.']
 CURRENT_YEAR='2020'
 
 YEARS = '(2014-2016|2015-2016|2016|2016-2017|2017|2017-2019|2018|2019|2020)'

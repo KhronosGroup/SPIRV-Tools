@@ -2835,14 +2835,47 @@ TEST_F(ValidateCFG, ShaderWithPhiPtr) {
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Using pointers with OpPhi requires capability "
+              HasSubstr("Generating variable pointers requires capability "
                         "VariablePointers or VariablePointersStorageBuffer"));
 }
 
-TEST_F(ValidateCFG, VarPtrShaderWithPhiPtr) {
+TEST_F(ValidateCFG, VarPtrShaderWithPhiWorkgroupPtr) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability VariablePointers
+               OpExtension "SPV_KHR_variable_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+               OpSource HLSL 600
+       %bool = OpTypeBool
+%_ptr_Workgroup_bool = OpTypePointer Workgroup %bool
+          %7 = OpVariable %_ptr_Workgroup_bool Workgroup
+          %8 = OpVariable %_ptr_Workgroup_bool Workgroup
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+          %1 = OpFunction %void None %5
+          %6 = OpLabel
+          %9 = OpUndef %bool
+               OpSelectionMerge %10 None
+               OpBranchConditional %9 %11 %10
+         %11 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+         %12 = OpPhi %_ptr_Workgroup_bool %7 %6 %8 %11
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, VarPtrShaderWithPhiFunctionPtr) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability VariablePointers
+               OpCapability VariablePointersStorageBuffer
                OpExtension "SPV_KHR_variable_pointers"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
@@ -2868,7 +2901,10 @@ TEST_F(ValidateCFG, VarPtrShaderWithPhiPtr) {
 )";
 
   CompileSuccessfully(text);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointers must point to Workgroup or "
+                        "StorageBuffer storage class"));
 }
 
 TEST_F(ValidateCFG, VarPtrStgBufShaderWithPhiStgBufPtr) {

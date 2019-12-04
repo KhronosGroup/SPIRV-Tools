@@ -283,8 +283,27 @@ bool spvOpcodeReturnsLogicalVariablePointer(const SpvOp opcode) {
     case SpvOpCopyObject:
     case SpvOpSelect:
     case SpvOpPhi:
+    case SpvOpFunction:
     case SpvOpFunctionCall:
     case SpvOpPtrAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
+    case SpvOpLoad:
+    case SpvOpConstantNull:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool spvOpcodeGeneratesVariablePointer(const SpvOp opcode) {
+  // SPIR-V spec section 2.2.2 Types, definition of "Variable Pointer".
+  switch (opcode) {
+    case SpvOpSelect:
+    case SpvOpPhi:
+    case SpvOpFunction:
+    case SpvOpFunctionCall:
+    case SpvOpPtrAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
     case SpvOpLoad:
     case SpvOpConstantNull:
       return true;

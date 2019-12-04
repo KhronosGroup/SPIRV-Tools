@@ -306,6 +306,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_literals.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_logicals.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_logical_pointers.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_memory.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_memory_semantics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_misc.cpp

@@ -86,6 +86,11 @@ int32_t spvOpcodeReturnsLogicalPointer(const SpvOp opcode);
 // pointer when using the logical addressing model.
 bool spvOpcodeReturnsLogicalVariablePointer(const SpvOp opcode);
 
+// Returns whether the given opcode initially creates a variable pointer
+// if the result is a logical pointer (as opposed to merely propagating
+// when an operand is already a variable pointer).
+bool spvOpcodeGeneratesVariablePointer(const SpvOp opcode);
+
 // Determines if the given opcode generates a type. Returns zero if false,
 // non-zero otherwise.
 int32_t spvOpcodeGeneratesType(SpvOp opcode);

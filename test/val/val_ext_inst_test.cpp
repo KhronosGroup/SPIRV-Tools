@@ -6828,10 +6828,11 @@ TEST_F(ValidateExtInst, VStoreNAddressingModelLogical) {
   ss << "%val1 = OpExtInst %void %extinst vstoren %f32vec2_01 %u32_1 %ptr_g\n";
 
   CompileSuccessfully(GenerateKernelCode(ss.str(), "", "Logical"));
+  // The first validation error is from the OpPtrCastToGeneric
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpenCL.std vstoren can only be used with physical "
-                        "addressing models"));
+              HasSubstr("Logical pointers must not be produced by this "
+                        "opcode"));
 }
 
 TEST_F(ValidateExtInst, VStoreNOffsetNotSizeT) {

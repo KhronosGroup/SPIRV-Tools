@@ -893,6 +893,7 @@ OpReturn
 OpFunctionEnd
 )";
 
+  ValidatorOptions()->relax_logical_pointer = true;
   SinglePassRunAndMatch<CCPPass>(text, true);
 }
 

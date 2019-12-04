@@ -898,9 +898,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberPtrAccessChain) {
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 0
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 16
 ; CHECK: %type__Globals = OpTypeStruct %float %float
-; CHECK: [[ac:%\w+]] = OpAccessChain %_ptr_Uniform_type__Globals %_Globals %uint_0
-; CHECK: OpPtrAccessChain %_ptr_Uniform_float [[ac]] %uint_1 %uint_0
-; CHECK: OpPtrAccessChain %_ptr_Uniform_float [[ac]] %uint_0 %uint_1
+; CHECK: [[ac:%\w+]] = OpAccessChain %_ptr_StorageBuffer_type__Globals %_Globals %uint_0
+; CHECK: OpPtrAccessChain %_ptr_StorageBuffer_float [[ac]] %uint_1 %uint_0
+; CHECK: OpPtrAccessChain %_ptr_StorageBuffer_float [[ac]] %uint_0 %uint_1
                OpCapability Shader
                OpCapability VariablePointersStorageBuffer
                OpMemoryModel Logical GLSL450
@@ -926,17 +926,17 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberPtrAccessChain) {
       %float = OpTypeFloat 32
 %type__Globals = OpTypeStruct %float %float %float
 %_arr_type__Globals_uint_3 = OpTypeArray %type__Globals %uint_3
-%_ptr_Uniform_type__Globals = OpTypePointer Uniform %type__Globals
-%_ptr_Uniform__arr_type__Globals_uint_3 = OpTypePointer Uniform %_arr_type__Globals_uint_3
+%_ptr_StorageBuffer_type__Globals = OpTypePointer StorageBuffer %type__Globals
+%_ptr_StorageBuffer__arr_type__Globals_uint_3 = OpTypePointer StorageBuffer %_arr_type__Globals_uint_3
        %void = OpTypeVoid
          %14 = OpTypeFunction %void
-%_ptr_Uniform_float = OpTypePointer Uniform %float
-   %_Globals = OpVariable %_ptr_Uniform__arr_type__Globals_uint_3 Uniform
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+   %_Globals = OpVariable %_ptr_StorageBuffer__arr_type__Globals_uint_3 StorageBuffer
        %main = OpFunction %void None %14
          %16 = OpLabel
-         %17 = OpAccessChain %_ptr_Uniform_type__Globals %_Globals %uint_0
-         %18 = OpPtrAccessChain %_ptr_Uniform_float %17 %uint_1 %uint_0
-         %19 = OpPtrAccessChain %_ptr_Uniform_float %17 %uint_0 %uint_2
+         %17 = OpAccessChain %_ptr_StorageBuffer_type__Globals %_Globals %uint_0
+         %18 = OpPtrAccessChain %_ptr_StorageBuffer_float %17 %uint_1 %uint_0
+         %19 = OpPtrAccessChain %_ptr_StorageBuffer_float %17 %uint_0 %uint_2
                OpReturn
                OpFunctionEnd
 )";
@@ -957,11 +957,12 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberInBoundsPtrAccessChain) {
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 0
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 16
 ; CHECK: %type__Globals = OpTypeStruct %float %float
-; CHECK: [[ac:%\w+]] = OpAccessChain %_ptr_Uniform_type__Globals %_Globals %uint_0
-; CHECK: OpInBoundsPtrAccessChain %_ptr_Uniform_float [[ac]] %uint_1 %uint_0
-; CHECK: OpInBoundsPtrAccessChain %_ptr_Uniform_float [[ac]] %uint_0 %uint_1
+; CHECK: [[ac:%\w+]] = OpAccessChain %_ptr_StorageBuffer_type__Globals %_Globals %uint_0
+; CHECK: OpInBoundsPtrAccessChain %_ptr_StorageBuffer_float [[ac]] %uint_1 %uint_0
+; CHECK: OpInBoundsPtrAccessChain %_ptr_StorageBuffer_float [[ac]] %uint_0 %uint_1
                OpCapability Shader
                OpCapability Addresses
+               OpCapability VariablePointers
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
                OpSource HLSL 600
@@ -985,17 +986,17 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberInBoundsPtrAccessChain) {
       %float = OpTypeFloat 32
 %type__Globals = OpTypeStruct %float %float %float
 %_arr_type__Globals_uint_3 = OpTypeArray %type__Globals %uint_3
-%_ptr_Uniform_type__Globals = OpTypePointer Uniform %type__Globals
-%_ptr_Uniform__arr_type__Globals_uint_3 = OpTypePointer Uniform %_arr_type__Globals_uint_3
+%_ptr_StorageBuffer_type__Globals = OpTypePointer StorageBuffer %type__Globals
+%_ptr_StorageBuffer_arr_type__Globals_uint_3 = OpTypePointer StorageBuffer %_arr_type__Globals_uint_3
        %void = OpTypeVoid
          %14 = OpTypeFunction %void
-%_ptr_Uniform_float = OpTypePointer Uniform %float
-   %_Globals = OpVariable %_ptr_Uniform__arr_type__Globals_uint_3 Uniform
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+   %_Globals = OpVariable %_ptr_StorageBuffer_arr_type__Globals_uint_3 StorageBuffer
        %main = OpFunction %void None %14
          %16 = OpLabel
-         %17 = OpAccessChain %_ptr_Uniform_type__Globals %_Globals %uint_0
-         %18 = OpInBoundsPtrAccessChain %_ptr_Uniform_float %17 %uint_1 %uint_0
-         %19 = OpInBoundsPtrAccessChain %_ptr_Uniform_float %17 %uint_0 %uint_2
+         %17 = OpAccessChain %_ptr_StorageBuffer_type__Globals %_Globals %uint_0
+         %18 = OpInBoundsPtrAccessChain %_ptr_StorageBuffer_float %17 %uint_1 %uint_0
+         %19 = OpInBoundsPtrAccessChain %_ptr_StorageBuffer_float %17 %uint_0 %uint_2
                OpReturn
                OpFunctionEnd
 )";

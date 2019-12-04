@@ -47,8 +47,9 @@ using ValidateConstant = spvtest::ValidateBase<bool>;
   "%uint2_0 = OpConstantNull %uint "            \
   "%float_0 = OpConstantNull %float "           \
   "%false = OpConstantFalse %bool "             \
-  "%true = OpConstantTrue %bool "               \
-  "%null = OpConstantNull %_ptr_uint "
+  "%true = OpConstantTrue %bool "
+
+#define kKernelTypes "%null = OpConstantNull %_ptr_uint "
 
 #define kShaderPreamble    \
   "OpCapability Shader\n"  \
@@ -78,15 +79,21 @@ TEST_P(ValidateConstantOp, Samples) {
     EXPECT_EQ(SPV_SUCCESS, result);
     EXPECT_THAT(getDiagnosticString(), Eq(""));
   } else {
-    EXPECT_EQ(SPV_ERROR_INVALID_ID, result);
+    EXPECT_NE(SPV_SUCCESS, result);
     EXPECT_THAT(getDiagnosticString(), HasSubstr(GetParam().expect_err));
   }
 }
 
 #define GOOD_SHADER_10(STR) \
   { SPV_ENV_UNIVERSAL_1_0, kShaderPreamble kBasicTypes STR, true, "" }
-#define GOOD_KERNEL_10(STR) \
-  { SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes STR, true, "" }
+#define BAD_SHADER_10(STR, MSG) \
+  { SPV_ENV_UNIVERSAL_1_0, kShaderPreamble kBasicTypes STR, false, MSG }
+#define GOOD_KERNEL_10(STR)                                                    \
+  {                                                                            \
+    SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes kKernelTypes STR, true, \
+        ""                                                                     \
+  }
+
 INSTANTIATE_TEST_SUITE_P(
     UniversalInShader, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
@@ -142,6 +149,7 @@ INSTANTIATE_TEST_SUITE_P(
             "%v = OpSpecConstantOp %bool SGreaterThan %uint_0 %uint_0"),
         GOOD_SHADER_10(
             "%v = OpSpecConstantOp %bool SGreaterThanEqual %uint_0 %uint_0"),
+        BAD_SHADER_10("%v = OpConstantNull %_ptr_uint", ""),
     }));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -286,55 +294,37 @@ INSTANTIATE_TEST_SUITE_P(
                        "InBoundsPtrAccessChain %null %uint_0"),
     }));
 
-#define BAD_SHADER_10(STR, NAME)                                   \
-  {                                                                \
-    SPV_ENV_UNIVERSAL_1_0, kShaderPreamble kBasicTypes STR, false, \
-        "Specialization constant operation " NAME                  \
-        " requires Kernel capability"                              \
-  }
+#define BAD_SHADER_10_REQUIRES_KERNEL(STR, NAME)               \
+  BAD_SHADER_10(STR, "Specialization constant operation " NAME \
+                     " requires Kernel capability")
 INSTANTIATE_TEST_SUITE_P(
     KernelInShader, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
         // TODO(dneto): Conversions must change width.
-        BAD_SHADER_10("%v = OpSpecConstantOp %uint ConvertFToS %float_0",
-                      "ConvertFToS"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float ConvertSToF %uint_0",
-                      "ConvertSToF"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %uint ConvertFToU %float_0",
-                      "ConvertFToU"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float ConvertUToF %uint_0",
-                      "ConvertUToF"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint GenericCastToPtr %null",
-                      "GenericCastToPtr"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint PtrCastToGeneric %null",
-                      "PtrCastToGeneric"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %uint Bitcast %uint_0", "Bitcast"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float FNegate %float_0",
-                      "FNegate"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float FAdd %float_0 %float_0",
-                      "FAdd"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float FSub %float_0 %float_0",
-                      "FSub"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float FMul %float_0 %float_0",
-                      "FMul"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float FDiv %float_0 %float_0",
-                      "FDiv"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float FRem %float_0 %float_0",
-                      "FRem"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %float FMod %float_0 %float_0",
-                      "FMod"),
-        BAD_SHADER_10(
-            "%v = OpSpecConstantOp %_ptr_uint AccessChain %null %uint_0",
-            "AccessChain"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint InBoundsAccessChain "
-                      "%null %uint_0",
-                      "InBoundsAccessChain"),
-        BAD_SHADER_10(
-            "%v = OpSpecConstantOp %_ptr_uint PtrAccessChain %null %uint_0",
-            "PtrAccessChain"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint "
-                      "InBoundsPtrAccessChain %null %uint_0",
-                      "InBoundsPtrAccessChain"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %uint ConvertFToS %float_0", "ConvertFToS"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float ConvertSToF %uint_0", "ConvertSToF"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %uint ConvertFToU %float_0", "ConvertFToU"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float ConvertUToF %uint_0", "ConvertUToF"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %uint Bitcast %uint_0", "Bitcast"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float FNegate %float_0", "FNegate"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float FAdd %float_0 %float_0", "FAdd"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float FSub %float_0 %float_0", "FSub"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float FMul %float_0 %float_0", "FMul"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float FDiv %float_0 %float_0", "FDiv"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float FRem %float_0 %float_0", "FRem"),
+        BAD_SHADER_10_REQUIRES_KERNEL(
+            "%v = OpSpecConstantOp %float FMod %float_0 %float_0", "FMod"),
     }));
 
 INSTANTIATE_TEST_SUITE_P(

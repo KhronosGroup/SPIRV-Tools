@@ -32,7 +32,8 @@ using ValidateLogicals = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCode(
     const std::string& body,
-    const std::string& capabilities_and_extensions = "") {
+    const std::string& capabilities_and_extensions = "",
+    const std::string& globals = "") {
   const std::string capabilities =
       R"(
 OpCapability Shader
@@ -157,8 +158,10 @@ OpExecutionMode %main OriginUpperLeft
 %st_u32_u32_1_2 = OpConstantComposite %st_u32_u32 %u32_1 %u32_2
 %mat_f32_2_2_01_12 = OpConstantComposite %mat_f32_2_2 %f32vec2_01 %f32vec2_12
 
-%f32vec4ptr = OpTypePointer Function %f32vec4
+%f32vec4ptr = OpTypePointer Function %f32vec4)";
 
+  const std::string before_body =
+      R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel)";
 
@@ -168,7 +171,8 @@ OpReturn
 OpFunctionEnd)";
 
   return capabilities + capabilities_and_extensions +
-         after_extension_before_body + body + after_body;
+         after_extension_before_body + globals + before_body + body +
+         after_body;
 }
 
 std::string GenerateKernelCode(
@@ -623,19 +627,53 @@ OpStore %y %f32vec4_1234
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Using pointers with OpSelect requires capability VariablePointers "
-          "or VariablePointersStorageBuffer"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Generating variable pointers requires capability "
+                        "VariablePointers or VariablePointersStorageBuffer"));
 }
 
 TEST_F(ValidateLogicals, OpSelectPointerWithCapability1) {
+  const std::string globals = R"(
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %u32
+%x = OpVariable %_ptr_Workgroup_uint Workgroup
+%y = OpVariable %_ptr_Workgroup_uint Workgroup
+)";
   const std::string body = R"(
-%x = OpVariable %f32vec4ptr Function
+%val1 = OpSelect %_ptr_Workgroup_uint %true %x %y
+)";
+
+  const std::string extra_cap_ext = R"(
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra_cap_ext, globals).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLogicals, OpSelectPointerWithCapability2) {
+  const std::string globals = R"(
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %u32
+%x = OpVariable %_ptr_StorageBuffer_uint StorageBuffer
+%y = OpVariable %_ptr_StorageBuffer_uint StorageBuffer
+)";
+  const std::string body = R"(
+%val1 = OpSelect %_ptr_StorageBuffer_uint %true %x %y
+)";
+
+  const std::string extra_cap_ext = R"(
+OpCapability VariablePointersStorageBuffer
+OpExtension "SPV_KHR_variable_pointers"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra_cap_ext, globals).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLogicals, OpSelectPointerWithCapability3) {
+  const std::string body = R"(
 %y = OpVariable %f32vec4ptr Function
-OpStore %x %f32vec4_0123
-OpStore %y %f32vec4_1234
+%x = OpVariable %f32vec4ptr Function
 %val1 = OpSelect %f32vec4ptr %true %x %y
 )";
 
@@ -645,25 +683,11 @@ OpExtension "SPV_KHR_variable_pointers"
 )";
 
   CompileSuccessfully(GenerateShaderCode(body, extra_cap_ext).c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-}
-
-TEST_F(ValidateLogicals, OpSelectPointerWithCapability2) {
-  const std::string body = R"(
-%x = OpVariable %f32vec4ptr Function
-%y = OpVariable %f32vec4ptr Function
-OpStore %x %f32vec4_0123
-OpStore %y %f32vec4_1234
-%val1 = OpSelect %f32vec4ptr %true %x %y
-)";
-
-  const std::string extra_cap_ext = R"(
-OpCapability VariablePointersStorageBuffer
-OpExtension "SPV_KHR_variable_pointers"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra_cap_ext).c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Variable pointers must point to Workgroup or StorageBuffer "
+                "storage classes"));
 }
 
 TEST_F(ValidateLogicals, OpSelectWrongCondition) {

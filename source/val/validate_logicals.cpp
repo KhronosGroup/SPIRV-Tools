@@ -161,21 +161,12 @@ spv_result_t LogicalsPass(ValidationState_t& _, const Instruction* inst) {
 
         const SpvOp type_opcode = type_inst->opcode();
         switch (type_opcode) {
-          case SpvOpTypePointer: {
-            if (_.addressing_model() == SpvAddressingModelLogical &&
-                !_.features().variable_pointers &&
-                !_.features().variable_pointers_storage_buffer)
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << "Using pointers with OpSelect requires capability "
-                     << "VariablePointers or VariablePointersStorageBuffer";
-            break;
-          }
-
           case SpvOpTypeVector: {
             dimension = type_inst->word(3);
             break;
           }
 
+          case SpvOpTypePointer:
           case SpvOpTypeBool:
           case SpvOpTypeInt:
           case SpvOpTypeFloat: {

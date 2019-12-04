@@ -1356,14 +1356,6 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
 
 spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
                                     const Instruction* inst) {
-  if (_.addressing_model() == SpvAddressingModelLogical) {
-    if (!_.features().variable_pointers &&
-        !_.features().variable_pointers_storage_buffer) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Generating variable pointers requires capability "
-             << "VariablePointers or VariablePointersStorageBuffer";
-    }
-  }
   return ValidateAccessChain(_, inst);
 }
 

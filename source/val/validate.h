@@ -197,6 +197,9 @@ spv_result_t FunctionPass(ValidationState_t& _, const Instruction* inst);
 /// Validates correctness of miscellaneous instructions.
 spv_result_t MiscPass(ValidationState_t& _, const Instruction* inst);
 
+/// Validates correctness of instructions that generate logical pointers.
+spv_result_t LogicalPointersPass(ValidationState_t& _, const Instruction* inst);
+
 /// Validates execution limitations.
 ///
 /// Verifies execution models are allowed for all functionality they contain.
