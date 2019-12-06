@@ -790,7 +790,7 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
   outlined_function->AddBasicBlock(std::move(outlined_region_entry_block));
 
   // We now go through the single-entry single-exit region defined by the entry
-  // and exit blocks, and clones of all such blocks to the new function.
+  // and exit blocks, adding clones of all blocks to the new function.
 
   // Consider every block in the enclosing function.
   auto enclosing_function = original_region_entry_block.GetParent();

@@ -1058,7 +1058,7 @@ TEST(TransformationOutlineFunctionTest,
 }
 
 TEST(TransformationOutlineFunctionTest,
-     DoNotOutlineIfLoopHeadIsOutsiderRegion) {
+     DoNotOutlineIfLoopHeadIsOutsideRegion) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
