@@ -3396,7 +3396,17 @@ INSTANTIATE_TEST_SUITE_P(CompositeConstructFoldingTest, GeneralInstructionFoldin
             "%2 = OpCompositeConstruct %v2int %103 %103\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, VEC2_0_ID)
+        2, VEC2_0_ID),
+    // Test case 5: Don't segfault when trying to fold an OpCompositeConstruct
+    // for an empty struct, and we reached the id limit.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%empty_struct = OpTypeStruct\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%4194303 = OpCompositeConstruct %empty_struct\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4194303, 0)
 ));
 
 INSTANTIATE_TEST_SUITE_P(PhiFoldingTest, GeneralInstructionFoldingTest,
