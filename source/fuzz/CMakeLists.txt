@@ -47,6 +47,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_apply_id_synonyms.h
         fuzzer_pass_construct_composites.h
         fuzzer_pass_copy_objects.h
+        fuzzer_pass_merge_blocks.h
         fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_outline_functions.h
         fuzzer_pass_permute_blocks.h
@@ -104,6 +105,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_apply_id_synonyms.cpp
         fuzzer_pass_construct_composites.cpp
         fuzzer_pass_copy_objects.cpp
+        fuzzer_pass_merge_blocks.cpp
         fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_outline_functions.cpp
         fuzzer_pass_permute_blocks.cpp

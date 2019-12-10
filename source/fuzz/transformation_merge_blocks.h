@@ -31,15 +31,15 @@ class TransformationMergeBlocks : public Transformation {
   TransformationMergeBlocks(uint32_t block_id);
 
   // - |message_.block_id| must be the id of a block, b
-  // - b must have a single successor, c
-  // - b must be the sole predecessor of c
-  // - c must not be a merge block nor a continue target
-  // - c must not start with OpPhi
+  // - b must have a single predecessor, a
+  // - b must be the sole successor of a
+  // - b must not be a merge block nor a continue target
+  // - b must not start with OpPhi
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // The contents of c are merged into b, and b's terminator is replaced with
-  // the terminator of c.  Block c is removed from the module.
+  // The contents of b are merged into a, and a's terminator is replaced with
+  // the terminator of b.  Block b is removed from the module.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

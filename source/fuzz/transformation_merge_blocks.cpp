@@ -30,26 +30,30 @@ TransformationMergeBlocks::TransformationMergeBlocks(uint32_t block_id) {
 bool TransformationMergeBlocks::IsApplicable(
     opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
-  auto first_block = fuzzerutil::MaybeFindBlock(context, message_.block_id());
+  auto second_block = fuzzerutil::MaybeFindBlock(context, message_.block_id());
   // The given block must exist.
-  if (!first_block) {
+  if (!second_block) {
     return false;
   }
-  // The block must have just one successor.
+  // The block must have just one predecessor.
+  auto predecessors = context->cfg()->preds(second_block->id());
+  if (predecessors.size() != 1) {
+    return false;
+  }
+  auto first_block = context->cfg()->block(predecessors.at(0));
+
+  // The predecessor must have just one successor.
   if (first_block->terminator()->opcode() != SpvOpBranch) {
     return false;
   }
-  // The block's successor must have just one predecessor.
-  auto successor = context->cfg()->block(
-      first_block->terminator()->GetSingleWordInOperand(0));
-  if (context->cfg()->preds(successor->id()).size() != 1) {
-    return false;
-  }
+  assert(first_block->terminator()->GetSingleWordInOperand(0) ==
+             second_block->id() &&
+         "Sole successor of predecessor should yield the same block");
 
   // The block's successor must not be used as a merge block or continue target.
   bool used_as_merge_block_or_continue_target;
   context->get_def_use_mgr()->WhileEachUse(
-      successor->id(),
+      second_block->id(),
       [&used_as_merge_block_or_continue_target](
           const opt::Instruction* use_instruction,
           uint32_t /*unused*/) -> bool {
@@ -69,11 +73,12 @@ bool TransformationMergeBlocks::IsApplicable(
 
   // The block's successor must not start with OpPhi.
   bool successor_starts_with_op_phi = false;
-  successor->WhileEachPhiInst([&successor_starts_with_op_phi](
-                                  const opt::Instruction * /*unused*/) -> bool {
-    successor_starts_with_op_phi = true;
-    return false;
-  });
+  second_block->WhileEachPhiInst(
+      [&successor_starts_with_op_phi](const opt::Instruction *
+                                      /*unused*/) -> bool {
+        successor_starts_with_op_phi = true;
+        return false;
+      });
   if (successor_starts_with_op_phi) {
     return false;
   }
@@ -82,11 +87,11 @@ bool TransformationMergeBlocks::IsApplicable(
 
 void TransformationMergeBlocks::Apply(
     opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
-  auto first_block = fuzzerutil::MaybeFindBlock(context, message_.block_id());
+  auto second_block = fuzzerutil::MaybeFindBlock(context, message_.block_id());
+  auto first_block =
+      context->cfg()->block(context->cfg()->preds(second_block->id()).at(0));
   assert(first_block->terminator()->opcode() == SpvOpBranch &&
-         "The blocks to be merged must be separted by OpBranch");
-  auto second_block = fuzzerutil::MaybeFindBlock(
-      context, first_block->terminator()->GetSingleWordInOperand(0));
+         "The blocks to be merged must be separated by OpBranch");
 
   // Erase the terminator of the first block.
   for (auto inst_it = first_block->begin();; ++inst_it) {

@@ -34,8 +34,9 @@ const std::pair<uint32_t, uint32_t> kChanceOfAdjustingMemoryOperandsMask = {20,
                                                                             90};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingSelectionControl = {20,
                                                                           90};
-const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfMergingBlocks = {20, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfOutliningFunction = {10, 90};
@@ -82,6 +83,7 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_constructing_composite_ =
       ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
+  chance_of_merging_blocks_ = ChooseBetweenMinAndMax(kChanceOfMergingBlocks);
   chance_of_moving_block_down_ =
       ChooseBetweenMinAndMax(kChanceOfMovingBlockDown);
   chance_of_obfuscating_constant_ =

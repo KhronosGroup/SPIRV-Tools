@@ -52,45 +52,7 @@ TEST(TransformationMergeBlocksTest, BlockDoesNotExist) {
       TransformationMergeBlocks(7).IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationMergeBlocksTest, DoNotMergeBlockHasMultipleSuccessors) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %7 = OpTypeBool
-          %8 = OpConstantTrue %7
-          %3 = OpTypeFunction %2
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpSelectionMerge %10 None
-               OpBranchConditional %8 %6 %9
-          %6 = OpLabel
-               OpBranch %10
-          %9 = OpLabel
-               OpBranch %10
-         %10 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_4;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-
-  ASSERT_FALSE(
-      TransformationMergeBlocks(5).IsApplicable(context.get(), fact_manager));
-}
-
-TEST(TransformationMergeBlocksTest,
-     DoNotMergeBlockSuccessorHasMultiplePredecessors) {
+TEST(TransformationMergeBlocksTest, DoNotMergeFirstBlockHasMultipleSuccessors) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -125,11 +87,47 @@ TEST(TransformationMergeBlocksTest,
 
   ASSERT_FALSE(
       TransformationMergeBlocks(6).IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(
-      TransformationMergeBlocks(9).IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsSelectionMerge) {
+TEST(TransformationMergeBlocksTest,
+     DoNotMergeSecondBlockHasMultiplePredecessors) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %7 = OpTypeBool
+          %8 = OpConstantTrue %7
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %10 None
+               OpBranchConditional %8 %6 %9
+          %6 = OpLabel
+               OpBranch %10
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  ASSERT_FALSE(
+      TransformationMergeBlocks(10).IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationMergeBlocksTest, DoNotMergeSecondBlockIsSelectionMerge) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -165,10 +163,10 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsSelectionMerge) {
   FactManager fact_manager;
 
   ASSERT_FALSE(
-      TransformationMergeBlocks(11).IsApplicable(context.get(), fact_manager));
+      TransformationMergeBlocks(10).IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopMerge) {
+TEST(TransformationMergeBlocksTest, DoNotMergeSecondBlockIsLoopMerge) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -206,10 +204,10 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopMerge) {
   FactManager fact_manager;
 
   ASSERT_FALSE(
-      TransformationMergeBlocks(9).IsApplicable(context.get(), fact_manager));
+      TransformationMergeBlocks(10).IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopContinue) {
+TEST(TransformationMergeBlocksTest, DoNotMergeSecondBlockIsLoopContinue) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -250,10 +248,10 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopContinue) {
   FactManager fact_manager;
 
   ASSERT_FALSE(
-      TransformationMergeBlocks(12).IsApplicable(context.get(), fact_manager));
+      TransformationMergeBlocks(11).IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorStartsWithOpPhi) {
+TEST(TransformationMergeBlocksTest, DoNotMergeSecondBlockStartsWithOpPhi) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -283,7 +281,7 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorStartsWithOpPhi) {
   FactManager fact_manager;
 
   ASSERT_FALSE(
-      TransformationMergeBlocks(5).IsApplicable(context.get(), fact_manager));
+      TransformationMergeBlocks(6).IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMergeBlocksTest, BasicMerge) {
@@ -334,8 +332,8 @@ TEST(TransformationMergeBlocksTest, BasicMerge) {
   FactManager fact_manager;
 
   for (auto& transformation :
-       {TransformationMergeBlocks(102), TransformationMergeBlocks(101),
-        TransformationMergeBlocks(100), TransformationMergeBlocks(5)}) {
+       {TransformationMergeBlocks(100), TransformationMergeBlocks(101),
+        TransformationMergeBlocks(102), TransformationMergeBlocks(103)}) {
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));
@@ -375,7 +373,7 @@ TEST(TransformationMergeBlocksTest, BasicMerge) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-TEST(TransformationMergeBlocksTest, MergeWhenSuccessorIsSelectionHeader) {
+TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsSelectionHeader) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -422,7 +420,7 @@ TEST(TransformationMergeBlocksTest, MergeWhenSuccessorIsSelectionHeader) {
   FactManager fact_manager;
 
   for (auto& transformation :
-       {TransformationMergeBlocks(100), TransformationMergeBlocks(5)}) {
+       {TransformationMergeBlocks(101), TransformationMergeBlocks(100)}) {
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));
@@ -507,7 +505,7 @@ TEST(TransformationMergeBlocksTest,
 
   FactManager fact_manager;
 
-  TransformationMergeBlocks transformation(100);
+  TransformationMergeBlocks transformation(101);
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));

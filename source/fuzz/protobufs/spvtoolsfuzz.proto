@@ -394,10 +394,10 @@ message TransformationCopyObject {
 
 message TransformationMergeBlocks {
 
-  // A transformation that merges a block with its successor.
+  // A transformation that merges a block with its predecessor.
 
-  // The id of the block that is to be merged with its successor; the merged
-  // block will have this id
+  // The id of the block that is to be merged with its predecessor; the merged
+  // block will have the *predecessor's* id.
   uint32 block_id = 1;
 
 }
