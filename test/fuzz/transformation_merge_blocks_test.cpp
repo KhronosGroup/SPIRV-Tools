@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_merge_blocks.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -287,6 +288,42 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorStartsWithOpPhi) {
 
 TEST(TransformationMergeBlocksTest, BasicMerge) {
   std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %100
+        %100 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %6 %10
+         %13 = OpLoad %6 %8
+               OpBranch %101
+        %101 = OpLabel
+         %14 = OpIAdd %6 %13 %12
+               OpStore %8 %14
+         %15 = OpLoad %6 %8
+               OpBranch %102
+        %102 = OpLabel
+         %16 = OpLoad %6 %10
+         %17 = OpIMul %6 %16 %15
+               OpBranch %103
+        %103 = OpLabel
+               OpStore %10 %17
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_4;
@@ -296,11 +333,85 @@ TEST(TransformationMergeBlocksTest, BasicMerge) {
 
   FactManager fact_manager;
 
-  FAIL();
+  for (auto& transformation :
+       {TransformationMergeBlocks(102), TransformationMergeBlocks(101),
+        TransformationMergeBlocks(100), TransformationMergeBlocks(5)}) {
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %12 = OpLoad %6 %10
+         %13 = OpLoad %6 %8
+         %14 = OpIAdd %6 %13 %12
+               OpStore %8 %14
+         %15 = OpLoad %6 %8
+         %16 = OpLoad %6 %10
+         %17 = OpIMul %6 %16 %15
+               OpStore %10 %17
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationMergeBlocksTest, MergeWhenSuccessorIsSelectionHeader) {
   std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+         %50 = OpTypeBool
+         %51 = OpConstantTrue %50
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %100
+        %100 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %6 %10
+         %13 = OpLoad %6 %8
+               OpBranch %101
+        %101 = OpLabel
+               OpSelectionMerge %103 None
+               OpBranchConditional %51 %102 %103
+        %102 = OpLabel
+         %14 = OpIAdd %6 %13 %12
+               OpStore %8 %14
+               OpBranch %103
+        %103 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_4;
@@ -310,12 +421,83 @@ TEST(TransformationMergeBlocksTest, MergeWhenSuccessorIsSelectionHeader) {
 
   FactManager fact_manager;
 
-  FAIL();
+  for (auto& transformation :
+       {TransformationMergeBlocks(100), TransformationMergeBlocks(5)}) {
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+         %50 = OpTypeBool
+         %51 = OpConstantTrue %50
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %12 = OpLoad %6 %10
+         %13 = OpLoad %6 %8
+               OpSelectionMerge %103 None
+               OpBranchConditional %51 %102 %103
+        %102 = OpLabel
+         %14 = OpIAdd %6 %13 %12
+               OpStore %8 %14
+               OpBranch %103
+        %103 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationMergeBlocksTest,
      MergeWhenFirstBlockIsLoopMergeFollowedByUnconditionalBranch) {
   std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+         %50 = OpTypeBool
+         %51 = OpConstantTrue %50
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %102 %103 None
+               OpBranch %101
+        %101 = OpLabel
+               OpBranchConditional %51 %102 %103
+        %103 = OpLabel
+               OpBranch %100
+        %102 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_4;
@@ -325,7 +507,43 @@ TEST(TransformationMergeBlocksTest,
 
   FactManager fact_manager;
 
-  FAIL();
+  TransformationMergeBlocks transformation(100);
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+         %50 = OpTypeBool
+         %51 = OpConstantTrue %50
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %102 %103 None
+               OpBranchConditional %51 %102 %103
+        %103 = OpLabel
+               OpBranch %100
+        %102 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace

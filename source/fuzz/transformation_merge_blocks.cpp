@@ -81,9 +81,35 @@ bool TransformationMergeBlocks::IsApplicable(
 }
 
 void TransformationMergeBlocks::Apply(
-    opt::IRContext* /*context*/,
-    spvtools::fuzz::FactManager* /*unused*/) const {
-  assert(false && "Not implemented yet");
+    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
+  auto first_block = fuzzerutil::MaybeFindBlock(context, message_.block_id());
+  assert(first_block->terminator()->opcode() == SpvOpBranch &&
+         "The blocks to be merged must be separted by OpBranch");
+  auto second_block = fuzzerutil::MaybeFindBlock(
+      context, first_block->terminator()->GetSingleWordInOperand(0));
+
+  // Erase the terminator of the first block.
+  for (auto inst_it = first_block->begin();; ++inst_it) {
+    if (&*inst_it == first_block->terminator()) {
+      inst_it.Erase();
+      break;
+    }
+  }
+
+  for (auto inst_it = second_block->begin(); inst_it != second_block->end();) {
+    first_block->AddInstruction(
+        std::unique_ptr<opt::Instruction>(inst_it->Clone(context)));
+    inst_it = inst_it.Erase();
+  }
+
+  for (auto block_it = first_block->GetParent()->begin();; ++block_it) {
+    if (&*block_it == second_block) {
+      block_it.Erase();
+      break;
+    }
+  }
+
+  context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationMergeBlocks::ToMessage() const {
