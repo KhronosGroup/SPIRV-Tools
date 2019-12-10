@@ -38,6 +38,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfOutliningFunction = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingIdWithSynonym = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
 
@@ -85,6 +86,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfMovingBlockDown);
   chance_of_obfuscating_constant_ =
       ChooseBetweenMinAndMax(kChanceOfObfuscatingConstant);
+  chance_of_outlining_function_ =
+      ChooseBetweenMinAndMax(kChanceOfOutliningFunction);
   chance_of_replacing_id_with_synonym_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingIdWithSynonym);
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);

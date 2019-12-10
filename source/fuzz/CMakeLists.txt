@@ -48,6 +48,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.h
         fuzzer_pass_copy_objects.h
         fuzzer_pass_obfuscate_constants.h
+        fuzzer_pass_outline_functions.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
@@ -72,6 +73,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_extract.h
         transformation_copy_object.h
         transformation_move_block_down.h
+        transformation_outline_function.h
         transformation_replace_boolean_constant_with_constant_binary.h
         transformation_replace_constant_with_uniform.h
         transformation_replace_id_with_synonym.h
@@ -102,6 +104,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.cpp
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_obfuscate_constants.cpp
+        fuzzer_pass_outline_functions.cpp
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_split_blocks.cpp
         fuzzer_util.cpp
@@ -125,6 +128,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_extract.cpp
         transformation_copy_object.cpp
         transformation_move_block_down.cpp
+        transformation_outline_function.cpp
         transformation_replace_boolean_constant_with_constant_binary.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_replace_id_with_synonym.cpp
