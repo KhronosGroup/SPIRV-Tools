@@ -396,6 +396,8 @@ message TransformationMergeBlocks {
 
   // A transformation that merges a block with its successor.
 
+  // The id of the block that is to be merged with its successor; the merged
+  // block will have this id
   uint32 block_id = 1;
 
 }

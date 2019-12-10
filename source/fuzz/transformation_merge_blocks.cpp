@@ -96,12 +96,15 @@ void TransformationMergeBlocks::Apply(
     }
   }
 
+  // Add clones of all instructions from the second block to the first block,
+  // erasing them from the second block in the process.
   for (auto inst_it = second_block->begin(); inst_it != second_block->end();) {
     first_block->AddInstruction(
         std::unique_ptr<opt::Instruction>(inst_it->Clone(context)));
     inst_it = inst_it.Erase();
   }
 
+  // Erase the second block from the module (as it is now unreachable).
   for (auto block_it = first_block->GetParent()->begin();; ++block_it) {
     if (&*block_it == second_block) {
       block_it.Erase();
@@ -109,6 +112,7 @@ void TransformationMergeBlocks::Apply(
     }
   }
 
+  // Invalidate all analyses, since we have changed the module significantly.
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 

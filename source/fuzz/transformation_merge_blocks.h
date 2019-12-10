@@ -34,6 +34,7 @@ class TransformationMergeBlocks : public Transformation {
   // - b must have a single successor, c
   // - b must be the sole predecessor of c
   // - c must not be a merge block nor a continue target
+  // - c must not start with OpPhi
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
