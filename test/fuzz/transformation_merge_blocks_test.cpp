@@ -45,10 +45,10 @@ TEST(TransformationMergeBlocksTest, BlockDoesNotExist) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(TransformationMergeBlocks(3).IsApplicable(context.get(),
-          fact_manager));
-  ASSERT_FALSE(TransformationMergeBlocks(7).IsApplicable(context.get(),
-                                                         fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(3).IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(7).IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMergeBlocksTest, DoNotMergeBlockHasMultipleSuccessors) {
@@ -84,11 +84,12 @@ TEST(TransformationMergeBlocksTest, DoNotMergeBlockHasMultipleSuccessors) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(TransformationMergeBlocks(5).IsApplicable(context.get(),
-                                                         fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(5).IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationMergeBlocksTest, DoNotMergeBlockSuccessorHasMultiplePredecessors) {
+TEST(TransformationMergeBlocksTest,
+     DoNotMergeBlockSuccessorHasMultiplePredecessors) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -121,10 +122,10 @@ TEST(TransformationMergeBlocksTest, DoNotMergeBlockSuccessorHasMultiplePredecess
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(TransformationMergeBlocks(6).IsApplicable(context.get(),
-                                                         fact_manager));
-  ASSERT_FALSE(TransformationMergeBlocks(9).IsApplicable(context.get(),
-                                                         fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(6).IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(9).IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsSelectionMerge) {
@@ -162,8 +163,8 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsSelectionMerge) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(TransformationMergeBlocks(11).IsApplicable(context.get(),
-                                                         fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(11).IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopMerge) {
@@ -203,8 +204,8 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopMerge) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(TransformationMergeBlocks(9).IsApplicable(context.get(),
-                                                          fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(9).IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopContinue) {
@@ -247,8 +248,8 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorIsLoopContinue) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(TransformationMergeBlocks(12).IsApplicable(context.get(),
-                                                         fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(12).IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorStartsWithOpPhi) {
@@ -280,13 +281,52 @@ TEST(TransformationMergeBlocksTest, DoNotMergeSuccessorStartsWithOpPhi) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(TransformationMergeBlocks(5).IsApplicable(context.get(),
-                                                         fact_manager));
+  ASSERT_FALSE(
+      TransformationMergeBlocks(5).IsApplicable(context.get(), fact_manager));
 }
 
-// TODO: do merge when successor is selection header
+TEST(TransformationMergeBlocksTest, BasicMerge) {
+  std::string shader = R"(
+  )";
 
-// TODO: do merge when first block is loop head followed by branch
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  FAIL();
+}
+
+TEST(TransformationMergeBlocksTest, MergeWhenSuccessorIsSelectionHeader) {
+  std::string shader = R"(
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  FAIL();
+}
+
+TEST(TransformationMergeBlocksTest,
+     MergeWhenFirstBlockIsLoopMergeFollowedByUnconditionalBranch) {
+  std::string shader = R"(
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  FAIL();
+}
 
 }  // namespace
 }  // namespace fuzz

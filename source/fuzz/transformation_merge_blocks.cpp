@@ -40,37 +40,37 @@ bool TransformationMergeBlocks::IsApplicable(
     return false;
   }
   // The block's successor must have just one predecessor.
-  auto successor = context->cfg()->block(first_block->terminator()
-          ->GetSingleWordInOperand(0));
+  auto successor = context->cfg()->block(
+      first_block->terminator()->GetSingleWordInOperand(0));
   if (context->cfg()->preds(successor->id()).size() != 1) {
     return false;
   }
 
   // The block's successor must not be used as a merge block or continue target.
   bool used_as_merge_block_or_continue_target;
-  context->get_def_use_mgr()->WhileEachUse(successor->id(),
-          [&used_as_merge_block_or_continue_target](const opt::Instruction*
-          use_instruction, uint32_t /*unused*/) -> bool {
-    switch (use_instruction->opcode()) {
-      case SpvOpLoopMerge:
-      case SpvOpSelectionMerge:
-        used_as_merge_block_or_continue_target = true;
-        return false;
-      default:
-        break;
-    }
-    return true;
-  });
+  context->get_def_use_mgr()->WhileEachUse(
+      successor->id(),
+      [&used_as_merge_block_or_continue_target](
+          const opt::Instruction* use_instruction,
+          uint32_t /*unused*/) -> bool {
+        switch (use_instruction->opcode()) {
+          case SpvOpLoopMerge:
+          case SpvOpSelectionMerge:
+            used_as_merge_block_or_continue_target = true;
+            return false;
+          default:
+            break;
+        }
+        return true;
+      });
   if (used_as_merge_block_or_continue_target) {
     return false;
   }
 
   // The block's successor must not start with OpPhi.
   bool successor_starts_with_op_phi = false;
-  successor->WhileEachPhiInst([&successor_starts_with_op_phi](const
-  opt::Instruction* /*unused*/)
-  ->
-  bool {
+  successor->WhileEachPhiInst([&successor_starts_with_op_phi](
+                                  const opt::Instruction * /*unused*/) -> bool {
     successor_starts_with_op_phi = true;
     return false;
   });
@@ -81,7 +81,8 @@ bool TransformationMergeBlocks::IsApplicable(
 }
 
 void TransformationMergeBlocks::Apply(
-    opt::IRContext* /*context*/, spvtools::fuzz::FactManager* /*unused*/) const {
+    opt::IRContext* /*context*/,
+    spvtools::fuzz::FactManager* /*unused*/) const {
   assert(false && "Not implemented yet");
 }
 
