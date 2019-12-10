@@ -57,6 +57,9 @@ class TransformationOutlineFunction : public Transformation {
   //   defined outside the region but used in the region.
   // - |message_.output_id_to_fresh_id| must contain an entry for every id
   //   defined in the region but used outside the region.
+  // - |message.entry_block| must not start with OpPhi; this is to keep the
+  //   transformation simple - another transformation should be used to split
+  //   a desired entry block that starts with OpPhi if needed.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
@@ -151,12 +154,10 @@ class TransformationOutlineFunction : public Transformation {
   // in the region to be outlined, all the input ids in |region_input_ids| and
   // the output ids in |region_output_ids| to their fresh counterparts.
   // Parameters |region_blocks| provides access to the blocks that must be
-  // modified, and |original_region_entry_block| and
-  // |original_region_exit_block| allow for some special cases where ids should
-  // not be remapped.
+  // modified, and |original_region_exit_block| allows for some special cases
+  // where ids should not be remapped.
   void RemapInputAndOutputIdsInRegion(
       opt::IRContext* context,
-      const opt::BasicBlock& original_region_entry_block,
       const opt::BasicBlock& original_region_exit_block,
       const std::set<opt::BasicBlock*>& region_blocks,
       const std::vector<uint32_t>& region_input_ids,

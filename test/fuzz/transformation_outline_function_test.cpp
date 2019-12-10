@@ -1057,8 +1057,7 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
-TEST(TransformationOutlineFunctionTest,
-     DoNotOutlineIfLoopHeadIsOutsideRegion) {
+TEST(TransformationOutlineFunctionTest, DoNotOutlineIfLoopHeadIsOutsideRegion) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1770,7 +1769,7 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-TEST(TransformationOutlineFunctionTest, OutlineRegionThatStartsWithOpPhi) {
+TEST(TransformationOutlineFunctionTest, DoNotOutlineRegionThatStartsWithOpPhi) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1785,10 +1784,9 @@ TEST(TransformationOutlineFunctionTest, OutlineRegionThatStartsWithOpPhi) {
           %7 = OpConstantTrue %6
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %20 = OpCopyObject %6 %7
                OpBranch %21
          %21 = OpLabel
-         %22 = OpPhi %6 %20 %5
+         %22 = OpPhi %6 %7 %5
          %23 = OpCopyObject %6 %22
                OpBranch %24
          %24 = OpLabel
@@ -1818,49 +1816,7 @@ TEST(TransformationOutlineFunctionTest, OutlineRegionThatStartsWithOpPhi) {
       /*input_id_to_fresh_id*/ {{22, 207}},
       /*output_id_to_fresh_id*/ {{23, 208}});
 
-  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
-  transformation.Apply(context.get(), &fact_manager);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeBool
-          %7 = OpConstantTrue %6
-        %200 = OpTypeStruct %6
-        %201 = OpTypeFunction %200 %6
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-         %20 = OpCopyObject %6 %7
-               OpBranch %21
-         %21 = OpLabel
-         %22 = OpPhi %6 %20 %5
-        %205 = OpFunctionCall %200 %202 %22
-         %23 = OpCompositeExtract %6 %205 0
-               OpBranch %24
-         %24 = OpLabel
-         %25 = OpCopyObject %6 %23
-         %26 = OpCopyObject %6 %22
-               OpReturn
-               OpFunctionEnd
-        %202 = OpFunction %200 None %201
-        %207 = OpFunctionParameter %6
-        %203 = OpLabel
-               OpBranch %204
-        %204 = OpLabel
-        %208 = OpCopyObject %6 %207
-        %206 = OpCompositeConstruct %200 %208
-               OpReturnValue %206
-               OpFunctionEnd
-  )";
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
@@ -2323,6 +2279,100 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous4) {
                OpReturn
          %17 = OpLabel
                OpBranch %304
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationOutlineFunctionTest,
+     DISABLED_OutlineRegionThatStartsWithOpPhi) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpCopyObject %6 %7
+               OpBranch %21
+         %21 = OpLabel
+         %22 = OpPhi %6 %20 %5
+         %23 = OpCopyObject %6 %22
+               OpBranch %24
+         %24 = OpLabel
+         %25 = OpCopyObject %6 %23
+         %26 = OpCopyObject %6 %22
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 21,
+      /*exit_block*/ 21,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_first_block*/ 203,
+      /*new_function_region_entry_block*/ 204,
+      /*new_caller_result_id*/ 205,
+      /*new_callee_result_id*/ 206,
+      /*input_id_to_fresh_id*/ {{22, 207}},
+      /*output_id_to_fresh_id*/ {{23, 208}});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+        %200 = OpTypeStruct %6
+        %201 = OpTypeFunction %200 %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpCopyObject %6 %7
+               OpBranch %21
+         %21 = OpLabel
+         %22 = OpPhi %6 %20 %5
+        %205 = OpFunctionCall %200 %202 %22
+         %23 = OpCompositeExtract %6 %205 0
+               OpBranch %24
+         %24 = OpLabel
+         %25 = OpCopyObject %6 %23
+         %26 = OpCopyObject %6 %22
+               OpReturn
+               OpFunctionEnd
+        %202 = OpFunction %200 None %201
+        %207 = OpFunctionParameter %6
+        %203 = OpLabel
+               OpBranch %204
+        %204 = OpLabel
+        %208 = OpCopyObject %6 %207
+        %206 = OpCompositeConstruct %200 %208
+               OpReturnValue %206
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
