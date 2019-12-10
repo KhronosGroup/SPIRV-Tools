@@ -1524,7 +1524,7 @@ bool CompositeExtractFeedingConstruct(
   // - extracting the same position they are inserting
   // - all extract from the same id.
   for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
-    uint32_t element_id = inst->GetSingleWordInOperand(i);
+    const uint32_t element_id = inst->GetSingleWordInOperand(i);
     Instruction* element_inst = def_use_mgr->GetDef(element_id);
 
     if (element_inst->opcode() != SpvOpCompositeExtract) {
