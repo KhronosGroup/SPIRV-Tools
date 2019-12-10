@@ -78,11 +78,12 @@ void FuzzerPassOutlineFunctions::Apply() {
     }
     TransformationOutlineFunction transformation(
         entry_block->id(), exit_block->id(),
-        /*new_function_struct_return_type_id*/ GetFuzzerContext()->GetFreshId(),
+        /*new_function_struct_return_type_id*/
+        GetFuzzerContext()->GetFreshId(),
         /*new_function_type_id*/ GetFuzzerContext()->GetFreshId(),
         /*new_function_id*/ GetFuzzerContext()->GetFreshId(),
-        /*new_function_first_block*/ GetFuzzerContext()->GetFreshId(),
-        /*new_function_region_entry_block*/ GetFuzzerContext()->GetFreshId(),
+        /*new_function_region_entry_block*/
+        GetFuzzerContext()->GetFreshId(),
         /*new_caller_result_id*/ GetFuzzerContext()->GetFreshId(),
         /*new_callee_result_id*/ GetFuzzerContext()->GetFreshId(),
         /*input_id_to_fresh_id*/ std::move(input_id_to_fresh_id),

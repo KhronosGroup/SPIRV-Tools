@@ -46,7 +46,7 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(5, 5, /* not relevant */ 200,
-                                               100, 101, 300, 102, 103,
+                                               100, 101, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -107,7 +107,7 @@ TEST(TransformationOutlineFunctionTest,
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(5, 5, /* not relevant */ 200,
-                                               100, 101, 300, 102, 103,
+                                               100, 101, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
@@ -160,7 +160,7 @@ TEST(TransformationOutlineFunctionTest, OutlineInterestingControlFlowNoState) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 13, /* not relevant */
-                                               200, 100, 101, 300, 102, 103,
+                                               200, 100, 101, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -245,7 +245,7 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesUnusedIds) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 6, /* not relevant */ 200,
-                                               100, 101, 300, 102, 103,
+                                               100, 101, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -318,8 +318,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesSingleUsedId) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 6, 99, 100, 101, 300, 102,
-                                               103, 105, {}, {{9, 104}});
+  TransformationOutlineFunction transformation(6, 6, 99, 100, 101, 102, 103,
+                                               105, {}, {{9, 104}});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -414,7 +414,7 @@ TEST(TransformationOutlineFunctionTest, OutlineDiamondThatGeneratesSeveralIds) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(
-      6, 80, 100, 101, 102, 300, 103, 104, 105, {},
+      6, 80, 100, 101, 102, 103, 104, 105, {},
       {{15, 106}, {9, 107}, {7, 108}, {8, 109}});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
@@ -509,8 +509,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesASingleId) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 300, 103,
-                                               104, 105, {{7, 106}}, {});
+  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 103, 104,
+                                               105, {{7, 106}}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -583,8 +583,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAVariable) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 300, 103,
-                                               104, 105, {{13, 106}}, {});
+  TransformationOutlineFunction transformation(6, 6, 100, 101, 102, 103, 104,
+                                               105, {{13, 106}}, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -667,8 +667,8 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAParameter) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(
-      11, 11, 100, 101, 102, 300, 103, 104, 105, {{9, 106}}, {{14, 107}});
+  TransformationOutlineFunction transformation(11, 11, 100, 101, 102, 103, 104,
+                                               105, {{9, 106}}, {{14, 107}});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -753,8 +753,8 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 300, 103,
-                                               104, 105, {}, {});
+  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 103, 104,
+                                               105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -800,7 +800,7 @@ TEST(TransformationOutlineFunctionTest, DoNotOutlineIfRegionInvolvesReturn) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 11, /* not relevant */ 200,
-                                               100, 101, 300, 102, 103,
+                                               100, 101, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
@@ -847,7 +847,7 @@ TEST(TransformationOutlineFunctionTest, DoNotOutlineIfRegionInvolvesKill) {
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 11, /* not relevant */ 200,
-                                               100, 101, 300, 102, 103,
+                                               100, 101, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
@@ -895,7 +895,7 @@ TEST(TransformationOutlineFunctionTest,
   FactManager fact_manager;
 
   TransformationOutlineFunction transformation(6, 11, /* not relevant */ 200,
-                                               100, 101, 300, 102, 103,
+                                               100, 101, 102, 103,
                                                /* not relevant */ 201, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
@@ -934,8 +934,8 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 300, 103,
-                                               104, 105, {}, {});
+  TransformationOutlineFunction transformation(6, 8, 100, 101, 102, 103, 104,
+                                               105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -974,8 +974,8 @@ TEST(TransformationOutlineFunctionTest, DoNotOutlineIfLoopHeadIsOutsideRegion) {
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(7, 8, 100, 101, 102, 300, 103,
-                                               104, 105, {}, {});
+  TransformationOutlineFunction transformation(7, 8, 100, 101, 102, 103, 104,
+                                               105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -1013,8 +1013,8 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 300, 103,
-                                               104, 105, {}, {});
+  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 103, 104,
+                                               105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -1054,8 +1054,8 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 300, 103,
-                                               104, 105, {}, {});
+  TransformationOutlineFunction transformation(6, 7, 100, 101, 102, 103, 104,
+                                               105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -1095,8 +1095,8 @@ TEST(TransformationOutlineFunctionTest,
 
   FactManager fact_manager;
 
-  TransformationOutlineFunction transformation(8, 11, 100, 101, 102, 300, 103,
-                                               104, 105, {}, {});
+  TransformationOutlineFunction transformation(8, 11, 100, 101, 102, 103, 104,
+                                               105, {}, {});
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
@@ -1139,7 +1139,6 @@ TEST(TransformationOutlineFunctionTest, OutlineRegionEndingWithReturnVoid) {
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 300,
       /*new_function_region_entry_block*/ 203,
       /*new_caller_result_id*/ 204,
       /*new_callee_result_id*/ 205,
@@ -1227,7 +1226,6 @@ TEST(TransformationOutlineFunctionTest, OutlineRegionEndingWithReturnValue) {
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 300,
       /*new_function_region_entry_block*/ 203,
       /*new_caller_result_id*/ 204,
       /*new_callee_result_id*/ 205,
@@ -1319,7 +1317,6 @@ TEST(TransformationOutlineFunctionTest,
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 300,
       /*new_function_region_entry_block*/ 203,
       /*new_caller_result_id*/ 204,
       /*new_callee_result_id*/ 205,
@@ -1406,7 +1403,6 @@ TEST(TransformationOutlineFunctionTest,
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 300,
       /*new_function_region_entry_block*/ 203,
       /*new_caller_result_id*/ 204,
       /*new_callee_result_id*/ 205,
@@ -1489,7 +1485,6 @@ TEST(TransformationOutlineFunctionTest, DoNotOutlineRegionThatStartsWithOpPhi) {
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 203,
       /*new_function_region_entry_block*/ 204,
       /*new_caller_result_id*/ 205,
       /*new_callee_result_id*/ 206,
@@ -1543,7 +1538,6 @@ TEST(TransformationOutlineFunctionTest,
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 203,
       /*new_function_region_entry_block*/ 204,
       /*new_caller_result_id*/ 205,
       /*new_callee_result_id*/ 206,
@@ -1597,7 +1591,6 @@ TEST(TransformationOutlineFunctionTest,
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 203,
       /*new_function_region_entry_block*/ 204,
       /*new_caller_result_id*/ 205,
       /*new_callee_result_id*/ 206,
@@ -1722,7 +1715,6 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 500,
       /*new_function_region_entry_block*/ 203,
       /*new_caller_result_id*/ 204,
       /*new_callee_result_id*/ 205,
@@ -1888,7 +1880,6 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous2) {
       /*new_function_struct_return_type_id*/ 200,
       /*new_function_type_id*/ 201,
       /*new_function_id*/ 202,
-      /*new_function_first_block*/ 300,
       /*new_function_region_entry_block*/ 203,
       /*new_caller_result_id*/ 204,
       /*new_callee_result_id*/ 205,
@@ -1944,7 +1935,6 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous3) {
       /*new_function_struct_return_type_id*/ 300,
       /*new_function_type_id*/ 301,
       /*new_function_id*/ 302,
-      /*new_function_first_block*/ 303,
       /*new_function_region_entry_block*/ 304,
       /*new_caller_result_id*/ 305,
       /*new_callee_result_id*/ 306,
