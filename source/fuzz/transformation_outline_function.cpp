@@ -252,8 +252,7 @@ bool TransformationOutlineFunction::IsApplicable(
   // used as a function parameter.
   std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
       PairSequenceToMap(message_.input_id_to_fresh_id());
-  for (auto id :
-       GetRegionInputIds(context, region_set, entry_block, exit_block)) {
+  for (auto id : GetRegionInputIds(context, region_set, exit_block)) {
     if (input_id_to_fresh_id_map.count(id) == 0) {
       return false;
     }
@@ -264,8 +263,7 @@ bool TransformationOutlineFunction::IsApplicable(
   // can hold the value for this id computed in the outlined function.
   std::map<uint32_t, uint32_t> output_id_to_fresh_id_map =
       PairSequenceToMap(message_.output_id_to_fresh_id());
-  for (auto id :
-       GetRegionOutputIds(context, region_set, entry_block, exit_block)) {
+  for (auto id : GetRegionOutputIds(context, region_set, exit_block)) {
     if (output_id_to_fresh_id_map.count(id) == 0) {
       return false;
     }
@@ -291,11 +289,9 @@ void TransformationOutlineFunction::Apply(
 
   // Input and output ids for the region being outlined.
   std::vector<uint32_t> region_input_ids =
-      GetRegionInputIds(context, region_blocks, original_region_entry_block,
-                        original_region_exit_block);
+      GetRegionInputIds(context, region_blocks, original_region_exit_block);
   std::vector<uint32_t> region_output_ids =
-      GetRegionOutputIds(context, region_blocks, original_region_entry_block,
-                         original_region_exit_block);
+      GetRegionOutputIds(context, region_blocks, original_region_exit_block);
 
   // Maps from input and output ids to fresh ids.
   std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
@@ -384,10 +380,10 @@ bool TransformationOutlineFunction::
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
     opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
-    opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block) {
+    opt::BasicBlock* region_exit_block) {
   std::vector<uint32_t> result;
 
-  auto enclosing_function = region_entry_block->GetParent();
+  auto enclosing_function = region_exit_block->GetParent();
 
   // Consider each parameter of the function containing the region.
   enclosing_function->ForEachParam([context, &region_set, &result](
@@ -428,8 +424,8 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
     for (auto& inst : candidate_input_ids_for_block) {
       context->get_def_use_mgr()->WhileEachUse(
           inst,
-          [context, &inst, region_entry_block, region_exit_block, &region_set,
-           &result](opt::Instruction* use, uint32_t /*unused*/) -> bool {
+          [context, &inst, region_exit_block, &region_set, &result](
+              opt::Instruction* use, uint32_t /*unused*/) -> bool {
 
             // Find the block in which this id use occurs, recording the id as
             // an input id if the block is outside the region, with some
@@ -464,11 +460,11 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
 
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionOutputIds(
     opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
-    opt::BasicBlock* region_entry_block, opt::BasicBlock* region_exit_block) {
+    opt::BasicBlock* region_exit_block) {
   std::vector<uint32_t> result;
 
   // Consider each block in the function containing the region.
-  for (auto& block : *region_entry_block->GetParent()) {
+  for (auto& block : *region_exit_block->GetParent()) {
     if (region_set.count(&block) == 0) {
       // Skip blocks that are not in the region.
       continue;

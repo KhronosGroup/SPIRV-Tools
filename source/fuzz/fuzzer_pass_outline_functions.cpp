@@ -68,12 +68,12 @@ void FuzzerPassOutlineFunctions::Apply() {
         GetIRContext(), entry_block, exit_block);
     std::map<uint32_t, uint32_t> input_id_to_fresh_id;
     for (auto id : TransformationOutlineFunction::GetRegionInputIds(
-             GetIRContext(), region_blocks, entry_block, exit_block)) {
+             GetIRContext(), region_blocks, exit_block)) {
       input_id_to_fresh_id[id] = GetFuzzerContext()->GetFreshId();
     }
     std::map<uint32_t, uint32_t> output_id_to_fresh_id;
     for (auto id : TransformationOutlineFunction::GetRegionOutputIds(
-             GetIRContext(), region_blocks, entry_block, exit_block)) {
+             GetIRContext(), region_blocks, exit_block)) {
       output_id_to_fresh_id[id] = GetFuzzerContext()->GetFreshId();
     }
     TransformationOutlineFunction transformation(
