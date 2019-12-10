@@ -29,6 +29,7 @@
 #include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_copy_object.h"
 #include "source/fuzz/transformation_move_block_down.h"
+#include "source/fuzz/transformation_outline_function.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
@@ -83,6 +84,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
       return MakeUnique<TransformationCopyObject>(message.copy_object());
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
       return MakeUnique<TransformationMoveBlockDown>(message.move_block_down());
+    case protobufs::Transformation::TransformationCase::kOutlineFunction:
+      return MakeUnique<TransformationOutlineFunction>(
+          message.outline_function());
     case protobufs::Transformation::TransformationCase::
         kReplaceBooleanConstantWithConstantBinary:
       return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(
