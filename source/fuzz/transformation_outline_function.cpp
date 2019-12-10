@@ -42,7 +42,7 @@ TransformationOutlineFunction::TransformationOutlineFunction(
 TransformationOutlineFunction::TransformationOutlineFunction(
     uint32_t entry_block, uint32_t exit_block,
     uint32_t new_function_struct_return_type_id, uint32_t new_function_type_id,
-    uint32_t new_function_id, uint32_t new_function_first_block,
+    uint32_t new_function_id, uint32_t /*new_function_first_block*/,
     uint32_t new_function_region_entry_block, uint32_t new_caller_result_id,
     uint32_t new_callee_result_id,
     std::map<uint32_t, uint32_t>&& input_id_to_fresh_id,
@@ -53,7 +53,6 @@ TransformationOutlineFunction::TransformationOutlineFunction(
       new_function_struct_return_type_id);
   message_.set_new_function_type_id(new_function_type_id);
   message_.set_new_function_id(new_function_id);
-  message_.set_new_function_first_block(new_function_first_block);
   message_.set_new_function_region_entry_block(new_function_region_entry_block);
   message_.set_new_caller_result_id(new_caller_result_id);
   message_.set_new_callee_result_id(new_callee_result_id);
@@ -92,12 +91,6 @@ bool TransformationOutlineFunction::IsApplicable(
 
   if (!CheckIdIsFreshAndNotUsedByThisTransformation(
           message_.new_function_id(), context,
-          &ids_used_by_this_transformation)) {
-    return false;
-  }
-
-  if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-          message_.new_function_first_block(), context,
           &ids_used_by_this_transformation)) {
     return false;
   }
@@ -149,6 +142,32 @@ bool TransformationOutlineFunction::IsApplicable(
   // outlining would remove a variable from the function containing the region
   // being outlined.
   if (entry_block->begin()->opcode() == SpvOpVariable) {
+    return false;
+  }
+
+  // For simplicity, we do not allow the entry block to be a loop header.
+  if (entry_block->GetLoopMergeInst()) {
+    return false;
+  }
+
+  // For simplicity, we do not allow the exit block to be a merge block or
+  // continue target.
+  bool exit_block_is_merge_or_continue = false;
+  context->get_def_use_mgr()->WhileEachUse(
+      exit_block->id(),
+      [&exit_block_is_merge_or_continue](
+          const opt::Instruction* use_instruction,
+          uint32_t /*unused*/) -> bool {
+        switch (use_instruction->opcode()) {
+          case SpvOpLoopMerge:
+          case SpvOpSelectionMerge:
+            exit_block_is_merge_or_continue = true;
+            return false;
+          default:
+            return true;
+        }
+      });
+  if (exit_block_is_merge_or_continue) {
     return false;
   }
 
@@ -224,14 +243,8 @@ bool TransformationOutlineFunction::IsApplicable(
       // The block is a loop or selection header -- the header and its
       // associated merge block had better both be in the region or both be
       // outside the region.
-      //
-      // There is one exception: if the merge is the exit block for the region
-      // then it doesn't matter whether the header is in the region or not;
-      // if the header turns out not to be in the region, the header's merge
-      // will be changed to the block containing the outlined function call.
       auto merge_block = context->cfg()->block(merge->GetSingleWordOperand(0));
-      if (merge_block != exit_block &&
-          region_set.count(&block) != region_set.count(merge_block)) {
+      if (region_set.count(&block) != region_set.count(merge_block)) {
         return false;
       }
     }
@@ -491,7 +504,7 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionOutputIds(
               // The use is in the region.
               if (use_block != region_exit_block || !use->IsBlockTerminator()) {
                 // Furthermore, the use is not in the terminator of the region's
-                // exit block.  This does not make it an output id.
+                // exit block.
                 return true;
               }
             }
@@ -622,7 +635,6 @@ void TransformationOutlineFunction::UpdateModuleIdBoundForFreshIds(
       context, message_.new_function_struct_return_type_id());
   fuzzerutil::UpdateModuleIdBound(context, message_.new_function_type_id());
   fuzzerutil::UpdateModuleIdBound(context, message_.new_function_id());
-  fuzzerutil::UpdateModuleIdBound(context, message_.new_function_first_block());
   fuzzerutil::UpdateModuleIdBound(context,
                                   message_.new_function_region_entry_block());
   fuzzerutil::UpdateModuleIdBound(context, message_.new_caller_result_id());
@@ -707,23 +719,6 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
     const std::vector<uint32_t>& region_output_ids,
     const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
     opt::Function* outlined_function) const {
-  // A function cannot start with a loop header, and the region being outlined
-  // might be a loop header.  As a catch-all for this, we always add a dummy
-  // entry block at the start of the new function, with id
-  // |message_.new_function_first_block|, which immediately branches to
-  // |message_.new_function_region_entry_block|.
-  std::unique_ptr<opt::BasicBlock> new_function_first_block =
-      MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
-          context, SpvOpLabel, 0, message_.new_function_first_block(),
-          opt::Instruction::OperandList()));
-  new_function_first_block->SetParent(outlined_function);
-  new_function_first_block->AddInstruction(MakeUnique<opt::Instruction>(
-      context, SpvOpBranch, 0, 0,
-      opt::Instruction::OperandList(
-          {{SPV_OPERAND_TYPE_ID,
-            {message_.new_function_region_entry_block()}}})));
-  outlined_function->AddBasicBlock(std::move(new_function_first_block));
-
   // When we create the exit block for the outlined region, we use this pointer
   // to track of it so that we can manipulate it later.
   opt::BasicBlock* outlined_region_exit_block = nullptr;
@@ -787,29 +782,6 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
       }
     });
 
-    // If the cloned block would branch to the original region's entry block,
-    // we need to redirect such branches to
-    // |message_.new_function_region_entry_block|.
-    switch (cloned_block->terminator()->opcode()) {
-      case SpvOpBranch:
-        if (cloned_block->terminator()->GetSingleWordInOperand(0) ==
-            message_.entry_block()) {
-          cloned_block->terminator()->SetInOperand(
-              0, {message_.new_function_region_entry_block()});
-        }
-        break;
-      case SpvOpBranchConditional:
-        for (uint32_t index : {0u, 1u}) {
-          if (cloned_block->terminator()->GetSingleWordInOperand(index) ==
-              message_.entry_block()) {
-            cloned_block->terminator()->SetInOperand(
-                index, {message_.new_function_region_entry_block()});
-          }
-        }
-        break;
-      default:
-        break;
-    }
     outlined_function->AddBasicBlock(std::move(cloned_block));
     block_it = block_it.Erase();
   }
@@ -886,17 +858,14 @@ void TransformationOutlineFunction::ShrinkOriginalRegion(
     if (&*block_it == original_region_entry_block) {
       ++block_it;
     } else if (region_blocks.count(&*block_it) == 0) {
-      // The block is not in the region.  Check whether it uses the last block
-      // of the region as a merge block continue target, or has the last block
-      // of the region as an OpPhi predecessor, and change such occurrences
-      // to be the first block of the region (i.e. the block containing the call
-      // to what was outlined).
-      if (block_it->MergeBlockIdIfAny() == message_.exit_block()) {
-        block_it->GetMergeInst()->SetInOperand(0, {message_.entry_block()});
-      }
-      if (block_it->ContinueBlockIdIfAny() == message_.exit_block()) {
-        block_it->GetMergeInst()->SetInOperand(1, {message_.entry_block()});
-      }
+      // The block is not in the region.  Check whether it has the last block
+      // of the region as an OpPhi predecessor, and if so change the
+      // predecessor to be the first block of the region (i.e. the block
+      // containing the call to what was outlined).
+      assert(block_it->MergeBlockIdIfAny() != message_.exit_block() &&
+             "Outlined region must not end with a merge block");
+      assert(block_it->ContinueBlockIdIfAny() != message_.exit_block() &&
+             "Outlined region must not end with a continue target");
       block_it->ForEachPhiInst([this](opt::Instruction* phi_inst) {
         for (uint32_t predecessor_index = 1;
              predecessor_index < phi_inst->NumInOperands();

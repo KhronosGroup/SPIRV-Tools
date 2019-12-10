@@ -43,21 +43,22 @@ class TransformationOutlineFunction : public Transformation {
       std::map<uint32_t, uint32_t>&& output_id_to_fresh_id);
 
   // - All the fresh ids occurring in the transformation must be distinct and
-  //   fresh.
+  //   fresh
   // - |message_.entry_block| and |message_.exit_block| must form a single-entry
-  //   single-exit control flow graph region.
+  //   single-exit control flow graph region
   // - |message_.entry_block| must not start with OpVariable
+  // - |message_.entry_block| must not be a loop header
+  // - |message_.exit_block| must not be a merge block or the continue target
+  //   of a loop
   // - A structured control flow construct must lie either completely within the
-  //   region or completely outside it, with the exception that
-  //   |message_.exit_block| can be a merge or continue block even if the
-  //   associated header is not in the region.
+  //   region or completely outside it
   // - |message.entry_block| must not start with OpPhi; this is to keep the
   //   transformation simple - another transformation should be used to split
-  //   a desired entry block that starts with OpPhi if needed.
+  //   a desired entry block that starts with OpPhi if needed
   // - |message_.input_id_to_fresh_id| must contain an entry for every id
-  //   defined outside the region but used in the region.
+  //   defined outside the region but used in the region
   // - |message_.output_id_to_fresh_id| must contain an entry for every id
-  //   defined in the region but used outside the region.
+  //   defined in the region but used outside the region
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
