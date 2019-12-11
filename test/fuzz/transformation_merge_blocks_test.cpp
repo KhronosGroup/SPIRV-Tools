@@ -490,6 +490,7 @@ TEST(TransformationMergeBlocksTest,
                OpLoopMerge %102 %103 None
                OpBranch %101
         %101 = OpLabel
+        %200 = OpCopyObject %6 %9
                OpBranchConditional %51 %102 %103
         %103 = OpLabel
                OpBranch %100
@@ -532,6 +533,7 @@ TEST(TransformationMergeBlocksTest,
                OpStore %8 %9
                OpBranch %100
         %100 = OpLabel
+        %200 = OpCopyObject %6 %9
                OpLoopMerge %102 %103 None
                OpBranchConditional %51 %102 %103
         %103 = OpLabel

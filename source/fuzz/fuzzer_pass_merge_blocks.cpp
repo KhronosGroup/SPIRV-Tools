@@ -50,12 +50,14 @@ void FuzzerPassMergeBlocks::Apply() {
     }
   }
 
-  // TODO if the following works, then we could in fact just apply the
-  //  transformations on-the-fly.
-  for (auto& transformation : potential_transformations) {
-    assert(transformation.IsApplicable(GetIRContext(), *GetFactManager()));
-    transformation.Apply(GetIRContext(), GetFactManager());
-    *GetTransformations()->add_transformation() = transformation.ToMessage();
+  while (!potential_transformations.empty()) {
+    uint32_t index = GetFuzzerContext()->RandomIndex(potential_transformations);
+    auto transformation = potential_transformations.at(index);
+    potential_transformations.erase(potential_transformations.begin() + index);
+    if (transformation.IsApplicable(GetIRContext(), *GetFactManager())) {
+      transformation.Apply(GetIRContext(), GetFactManager());
+      *GetTransformations()->add_transformation() = transformation.ToMessage();
+    }
   }
 }
 

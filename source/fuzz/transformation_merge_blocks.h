@@ -33,8 +33,8 @@ class TransformationMergeBlocks : public Transformation {
   // - |message_.block_id| must be the id of a block, b
   // - b must have a single predecessor, a
   // - b must be the sole successor of a
-  // - b must not be a merge block nor a continue target
-  // - b must not start with OpPhi
+  // - Replacing a with the merge of a and b (and removing b) must lead to a
+  //   valid module
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
