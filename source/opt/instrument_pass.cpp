@@ -864,6 +864,14 @@ bool InstrumentPass::InstProcessCallTreeFromRoots(InstProcessFunction& pfn,
 }
 
 bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
+  // Check that format version 2 requested
+  if (version_ != 2u) {
+    if (consumer()) {
+      std::string message = "Unsupported instrumentation format requested";
+      consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());
+    }
+    return false;
+  }
   // Make sure all entry points have the same execution model. Do not
   // instrument if they do not.
   // TODO(greg-lunarg): Handle mixed stages. Technically, a shader module
@@ -877,12 +885,17 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   for (auto& e : get_module()->entry_points()) {
     if (ecnt == 0)
       stage = e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx);
-    else if (e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx) != stage)
+    else if (e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx) !=
+             stage) {
+      if (consumer()) {
+        std::string message = "Mixed stage shader module not supported";
+        consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());
+      }
       return false;
+    }
     ++ecnt;
   }
-  // Only supporting vertex, fragment and compute shaders at the moment.
-  // TODO(greg-lunarg): Handle all stages.
+  // Check for supported stages
   if (stage != SpvExecutionModelVertex && stage != SpvExecutionModelFragment &&
       stage != SpvExecutionModelGeometry &&
       stage != SpvExecutionModelGLCompute &&
@@ -892,8 +905,14 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
       stage != SpvExecutionModelIntersectionNV &&
       stage != SpvExecutionModelAnyHitNV &&
       stage != SpvExecutionModelClosestHitNV &&
-      stage != SpvExecutionModelMissNV && stage != SpvExecutionModelCallableNV)
+      stage != SpvExecutionModelMissNV &&
+      stage != SpvExecutionModelCallableNV) {
+    if (consumer()) {
+      std::string message = "Stage not supported by instrumentation";
+      consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());
+    }
     return false;
+  }
   // Add together the roots of all entry points
   std::queue<uint32_t> roots;
   for (auto& e : get_module()->entry_points()) {
@@ -904,7 +923,6 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
 }
 
 void InstrumentPass::InitializeInstrument() {
-  assert(version_ == 2u && "unsupported instrumentation version");
   output_buffer_id_ = 0;
   output_buffer_ptr_id_ = 0;
   input_buffer_ptr_id_ = 0;
