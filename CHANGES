@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2019.5-dev 2019-12-11
+v2019.5 2019-12-11
  - General:
    - Export SPIRV-Tools targets on installation
    - SPIRV-Tools support for SPIR-V 1.5 (#2865)
