@@ -31,11 +31,14 @@ class TransformationAddTypeVector : public Transformation {
   TransformationAddTypeVector(uint32_t fresh_id, uint32_t base_type_id,
                               uint32_t size);
 
-  // TODO comment
+  // - |message_.fresh_id| must be a fresh id
+  // - |message_.component_type_id| must be the id of a scalar type
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an OpTypeVector instruction to the module, with component type
+  // |message_.component_type_id| and |message_.component_count| components,
+  // with result if |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
