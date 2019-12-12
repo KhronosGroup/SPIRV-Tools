@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_add_global_undef.h"
 
+#include "source/fuzz/fuzzer_util.h"
+
 namespace spvtools {
 namespace fuzz {
 
@@ -23,22 +25,31 @@ TransformationAddGlobalUndef::TransformationAddGlobalUndef(
 
 TransformationAddGlobalUndef::TransformationAddGlobalUndef(uint32_t fresh_id,
                                                            uint32_t type_id) {
-  (void)(fresh_id);
-  (void)(type_id);
-  assert(false && "Not implemented yet");
+  message_.set_fresh_id(fresh_id);
+  message_.set_type_id(type_id);
 }
 
 bool TransformationAddGlobalUndef::IsApplicable(
-    opt::IRContext* /*context*/,
+    opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
-  assert(false && "Not implemented yet");
-  return false;
+  // A fresh id is required.
+  if (!fuzzerutil::IsFreshId(context, message_.fresh_id())) {
+    return false;
+  }
+  auto type = context->get_type_mgr()->GetType(message_.type_id());
+  // The type must exist, and must not be a function type.
+  return type && !type->AsFunction();
 }
 
 void TransformationAddGlobalUndef::Apply(
-    opt::IRContext* /*context*/,
-    spvtools::fuzz::FactManager* /*unused*/) const {
-  assert(false && "Not implemented yet");
+    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context, SpvOpUndef, message_.type_id(), message_.fresh_id(),
+      opt::Instruction::OperandList()));
+  fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
+  // We have added an instruction to the module, so need to be careful about the
+  // validity of existing analyses.
+  context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationAddGlobalUndef::ToMessage() const {

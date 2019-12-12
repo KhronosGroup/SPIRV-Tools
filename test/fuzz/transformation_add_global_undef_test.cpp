@@ -21,6 +21,24 @@ namespace {
 
 TEST(TransformationAddGlobalUndefTest, BasicTest) {
   std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypeVector %6 3
+         %10 = OpTypeVector %6 4
+         %11 = OpTypeVector %7 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_4;
@@ -30,12 +48,69 @@ TEST(TransformationAddGlobalUndefTest, BasicTest) {
 
   FactManager fact_manager;
 
-  // TODO - add test content
+  // Id already in use
+  ASSERT_FALSE(TransformationAddGlobalUndef(4, 11).IsApplicable(context.get(),
+                                                                fact_manager));
+  // %1 is not a type
+  ASSERT_FALSE(TransformationAddGlobalUndef(100, 1).IsApplicable(context.get(),
+                                                                 fact_manager));
+
+  // %3 is a function type
+  ASSERT_FALSE(TransformationAddGlobalUndef(100, 3).IsApplicable(context.get(),
+                                                                 fact_manager));
+
+  TransformationAddGlobalUndef transformations[] = {
+      // %100 = OpUndef %6
+      TransformationAddGlobalUndef(100, 6),
+
+      // %101 = OpUndef %7
+      TransformationAddGlobalUndef(101, 7),
+
+      // %102 = OpUndef %8
+      TransformationAddGlobalUndef(102, 8),
+
+      // %103 = OpUndef %9
+      TransformationAddGlobalUndef(103, 9),
+
+      // %104 = OpUndef %10
+      TransformationAddGlobalUndef(104, 10),
+
+      // %105 = OpUndef %11
+      TransformationAddGlobalUndef(105, 11)};
+
+  for (auto& transformation : transformations) {
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+  }
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypeVector %6 3
+         %10 = OpTypeVector %6 4
+         %11 = OpTypeVector %7 2
+        %100 = OpUndef %6
+        %101 = OpUndef %7
+        %102 = OpUndef %8
+        %103 = OpUndef %9
+        %104 = OpUndef %10
+        %105 = OpUndef %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL();  // Remove once test is implemented
 }
 
 }  // namespace
