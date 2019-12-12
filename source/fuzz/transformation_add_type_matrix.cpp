@@ -41,7 +41,8 @@ bool TransformationAddTypeMatrix::IsApplicable(
   if (!column_type) {
     return false;
   }
-  return column_type->AsVector();
+  return column_type->AsVector() &&
+         column_type->AsVector()->element_type()->AsFloat();
 }
 
 void TransformationAddTypeMatrix::Apply(

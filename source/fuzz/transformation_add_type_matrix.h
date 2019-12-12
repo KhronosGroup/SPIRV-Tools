@@ -31,11 +31,14 @@ class TransformationAddTypeMatrix : public Transformation {
   TransformationAddTypeMatrix(uint32_t fresh_id, uint32_t base_type_id,
                               uint32_t size);
 
-  // TODO comment
+  // - |message_.fresh_id| must be a fresh id
+  // - |message_.column_type_id| must be the id of a floating-point vector type
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an OpTypeMatrix instruction to the module, with column type
+  // |message_.column_type_id| and |message_.column_count| columns, with result
+  // id |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

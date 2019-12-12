@@ -38,7 +38,7 @@ class TransformationAddTypeVector : public Transformation {
 
   // Adds an OpTypeVector instruction to the module, with component type
   // |message_.component_type_id| and |message_.component_count| components,
-  // with result if |message_.fresh_id|.
+  // with result id |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
