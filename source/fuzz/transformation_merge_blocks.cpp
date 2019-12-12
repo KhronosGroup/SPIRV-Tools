@@ -56,6 +56,9 @@ void TransformationMergeBlocks::Apply(
   // We need an iterator pointing to the predecessor, hence the loop.
   for (auto bi = function->begin(); bi != function->end(); ++bi) {
     if (bi->id() == first_block->id()) {
+      assert(opt::blockmergeutil::CanMergeWithSuccessor(context, &*bi) &&
+             "Because 'Apply' should only be invoked if 'IsApplicable' holds, "
+             "it must be possible to merge |bi| with its successor.");
       opt::blockmergeutil::MergeWithSuccessor(context, function, bi);
       // Invalidate all analyses, since we have changed the module
       // significantly.
