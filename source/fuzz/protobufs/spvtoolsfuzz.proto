@@ -201,6 +201,7 @@ message Transformation {
     TransformationCompositeExtract composite_extract = 21;
     TransformationVectorShuffle vector_shuffle = 22;
     TransformationOutlineFunction outline_function = 23;
+    TransformationMergeBlocks merge_blocks = 24;
     // Add additional option using the next available number.
   }
 }
@@ -388,6 +389,16 @@ message TransformationCopyObject {
 
   // A fresh id for the copied object
   uint32 fresh_id = 3;
+
+}
+
+message TransformationMergeBlocks {
+
+  // A transformation that merges a block with its predecessor.
+
+  // The id of the block that is to be merged with its predecessor; the merged
+  // block will have the *predecessor's* id.
+  uint32 block_id = 1;
 
 }
 

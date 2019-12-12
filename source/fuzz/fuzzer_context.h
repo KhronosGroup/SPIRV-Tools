@@ -81,6 +81,7 @@ class FuzzerContext {
     return chance_of_constructing_composite_;
   }
   uint32_t GetChanceOfCopyingObject() { return chance_of_copying_object_; }
+  uint32_t GetChanceOfMergingBlocks() { return chance_of_merging_blocks_; }
   uint32_t GetChanceOfMovingBlockDown() { return chance_of_moving_block_down_; }
   uint32_t GetChanceOfObfuscatingConstant() {
     return chance_of_obfuscating_constant_;
@@ -122,6 +123,7 @@ class FuzzerContext {
   uint32_t chance_of_adjusting_selection_control_;
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
+  uint32_t chance_of_merging_blocks_;
   uint32_t chance_of_moving_block_down_;
   uint32_t chance_of_obfuscating_constant_;
   uint32_t chance_of_outlining_function_;
