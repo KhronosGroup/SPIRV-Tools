@@ -28,10 +28,13 @@ class TransformationAddTypeArray : public Transformation {
   explicit TransformationAddTypeArray(
       const protobufs::TransformationAddTypeArray& message);
 
-  TransformationAddTypeArray(uint32_t fresh_id, uint32_t base_type_id,
+  TransformationAddTypeArray(uint32_t fresh_id, uint32_t element_type_id,
                              uint32_t size_id);
 
-  // TODO comment
+  // - |message_.fresh_id| must be fresh
+  // - |message_.element_type_id| must be the id of a non-function type
+  // - |message_.size_id| must be the id of a 32-bit integer constant that is
+  //   positive when interpreted as signed.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
