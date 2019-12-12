@@ -33,11 +33,13 @@ class TransformationAddTypeStruct : public Transformation {
   TransformationAddTypeStruct(uint32_t fresh_id,
                               const std::vector<uint32_t>& component_type_ids);
 
-  // TODO comment
+  // - |message_.fresh_id| must be a fresh id
+  // - |message_.member_type_id| must be a sequence of non-function type ids
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an OpTypeStruct instruction whose field types are given by
+  // |message_.member_type_id|, with result id |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

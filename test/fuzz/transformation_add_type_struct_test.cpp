@@ -21,6 +21,24 @@ namespace {
 
 TEST(TransformationAddTypeStructTest, BasicTest) {
   std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypeVector %6 3
+         %10 = OpTypeVector %6 4
+         %11 = OpTypeVector %7 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_4;
@@ -30,12 +48,61 @@ TEST(TransformationAddTypeStructTest, BasicTest) {
 
   FactManager fact_manager;
 
-  // TODO - add test content
+  // Id already in use
+  ASSERT_FALSE(TransformationAddTypeStruct(4, {}).IsApplicable(context.get(),
+                                                               fact_manager));
+  // %1 is not a type
+  ASSERT_FALSE(TransformationAddTypeStruct(100, {1}).IsApplicable(
+      context.get(), fact_manager));
+
+  // %3 is a function type
+  ASSERT_FALSE(TransformationAddTypeStruct(100, {3}).IsApplicable(
+      context.get(), fact_manager));
+
+  TransformationAddTypeStruct transformations[] = {
+      // %100 = OpTypeStruct %6 %7 %8 %9 %10 %11
+      TransformationAddTypeStruct(100, {6, 7, 8, 9, 10, 11}),
+
+      // %101 = OpTypeStruct
+      TransformationAddTypeStruct(101, {}),
+
+      // %102 = OpTypeStruct %6
+      TransformationAddTypeStruct(102, {6}),
+
+      // %103 = OpTypeStruct %6 %6
+      TransformationAddTypeStruct(103, {6, 6})};
+
+  for (auto& transformation : transformations) {
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+  }
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypeVector %6 3
+         %10 = OpTypeVector %6 4
+         %11 = OpTypeVector %7 2
+        %100 = OpTypeStruct %6 %7 %8 %9 %10 %11
+        %101 = OpTypeStruct
+        %102 = OpTypeStruct %6
+        %103 = OpTypeStruct %6 %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL();  // Remove once test is implemented
 }
 
 }  // namespace

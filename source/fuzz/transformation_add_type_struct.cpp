@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_add_type_struct.h"
 
+#include "source/fuzz/fuzzer_util.h"
+
 namespace spvtools {
 namespace fuzz {
 
@@ -23,22 +25,42 @@ TransformationAddTypeStruct::TransformationAddTypeStruct(
 
 TransformationAddTypeStruct::TransformationAddTypeStruct(
     uint32_t fresh_id, const std::vector<uint32_t>& member_type_ids) {
-  (void)(fresh_id);
-  (void)(member_type_ids);
-  assert(false && "Not implemented yet");
+  message_.set_fresh_id(fresh_id);
+  for (auto member_type_id : member_type_ids) {
+    message_.add_member_type_id(member_type_id);
+  }
 }
 
 bool TransformationAddTypeStruct::IsApplicable(
-    opt::IRContext* /*context*/,
+    opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
-  assert(false && "Not implemented yet");
-  return false;
+  // A fresh id is required.
+  if (!fuzzerutil::IsFreshId(context, message_.fresh_id())) {
+    return false;
+  }
+  for (auto member_type : message_.member_type_id()) {
+    auto type = context->get_type_mgr()->GetType(member_type);
+    if (!type || type->AsFunction()) {
+      // The member type id either does not refer to a type, or refers to a
+      // function type; both are illegal.
+      return false;
+    }
+  }
+  return true;
 }
 
 void TransformationAddTypeStruct::Apply(
-    opt::IRContext* /*context*/,
-    spvtools::fuzz::FactManager* /*unused*/) const {
-  assert(false && "Not implemented yet");
+    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
+  opt::Instruction::OperandList in_operands;
+  for (auto member_type : message_.member_type_id()) {
+    in_operands.push_back({SPV_OPERAND_TYPE_ID, {member_type}});
+  }
+  context->module()->AddType(MakeUnique<opt::Instruction>(
+      context, SpvOpTypeStruct, 0, message_.fresh_id(), in_operands));
+  fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
+  // We have added an instruction to the module, so need to be careful about the
+  // validity of existing analyses.
+  context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationAddTypeStruct::ToMessage() const {
