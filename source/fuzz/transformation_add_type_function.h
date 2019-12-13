@@ -33,11 +33,18 @@ class TransformationAddTypeFunction : public Transformation {
   TransformationAddTypeFunction(uint32_t fresh_id, uint32_t return_type_id,
                                 const std::vector<uint32_t>& argument_type_ids);
 
-  // TODO comment
+  // - |message_.fresh_id| must not be used by the module
+  // - |message_.return_type_id| and each element of |message_.argument_type_id|
+  //   must be the ids of non-function types
+  // - The module must not contain an OpTypeFunction instruction defining a
+  //   function type with the signature provided by teh given return and
+  //   argument types
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an OpTypeFunction instruction to the module, with signature given by
+  // |message_.return_type_id| and |message_.argument_type_id|.  The result id
+  // for the instruction is |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

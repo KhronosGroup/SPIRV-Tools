@@ -38,7 +38,9 @@ class TransformationAddTypeArray : public Transformation {
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an OpTypeArray instruction to the module, with element type given by
+  // |message_.element_type_id| and size given by |message_.size_id|.  The
+  // result id of the instruction is |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

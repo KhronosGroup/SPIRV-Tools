@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_add_type_function.h"
 
+#include <vector>
+
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {
@@ -36,9 +38,12 @@ TransformationAddTypeFunction::TransformationAddTypeFunction(
 bool TransformationAddTypeFunction::IsApplicable(
     opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
+  // The result id must be fresh.
   if (!fuzzerutil::IsFreshId(context, message_.fresh_id())) {
     return false;
   }
+  // The return and argument types must be type ids but not not be function
+  // type ids.
   if (!fuzzerutil::IsNonFunctionTypeId(context, message_.return_type_id())) {
     return false;
   }
@@ -46,6 +51,39 @@ bool TransformationAddTypeFunction::IsApplicable(
     if (!fuzzerutil::IsNonFunctionTypeId(context, argument_type_id)) {
       return false;
     }
+  }
+  // Check whether there is already an OpTypeFunction definition that uses
+  // exactly the same return and argument type ids.  (Note that the type manager
+  // does not allow us to check this, as it does not distinguish between
+  // function types with different but isomorphic pointer argument types.)
+  for (auto& inst : context->module()->types_values()) {
+    if (inst.opcode() != SpvOpTypeFunction) {
+      // Consider only OpTypeFunction instructions.
+      continue;
+    }
+    if (inst.GetSingleWordInOperand(0) != message_.return_type_id()) {
+      // Different return types - cannot be the same.
+      continue;
+    }
+    if (inst.NumInOperands() !=
+        1 + static_cast<uint32_t>(message_.argument_type_id().size())) {
+      // Different numbers of arguments - cannot be the same.
+      continue;
+    }
+    bool found_argument_mismatch = false;
+    for (uint32_t index = 1; index < inst.NumInOperands(); index++) {
+      if (message_.argument_type_id(index - 1) !=
+          inst.GetSingleWordInOperand(index)) {
+        // Argument mismatch - cannot be the same.
+        found_argument_mismatch = true;
+        break;
+      }
+    }
+    if (found_argument_mismatch) {
+      continue;
+    }
+    // Everything matches - the type is already declared.
+    return false;
   }
   return true;
 }

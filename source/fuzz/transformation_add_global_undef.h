@@ -30,11 +30,13 @@ class TransformationAddGlobalUndef : public Transformation {
 
   TransformationAddGlobalUndef(uint32_t fresh_id, uint32_t type_id);
 
-  // TODO comment
+  // - |message_.fresh_id| must be fresh
+  // - |message_.type_id| must be the id of a non-function type
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an OpUndef instruction to the module, with |message_.type_id| as its
+  // type.  The instruction has result id |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
