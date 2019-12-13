@@ -21,6 +21,31 @@ namespace {
 
 TEST(TransformationAddGlobalVariableTest, BasicTest) {
   std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypePointer Function %6
+         %10 = OpTypePointer Private %6
+         %20 = OpTypePointer Uniform %6
+         %11 = OpTypePointer Function %7
+         %12 = OpTypePointer Private %7
+         %13 = OpTypePointer Private %8
+         %14 = OpVariable %10 Private
+         %15 = OpVariable %20 Uniform
+         %16 = OpConstant %7 1
+         %17 = OpTypePointer Private %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_4;
@@ -30,12 +55,100 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
 
   FactManager fact_manager;
 
-  // TODO - add test content
+  // Id already in use
+  ASSERT_FALSE(TransformationAddGlobalVariable(4, 10, 0).IsApplicable(
+      context.get(), fact_manager));
+  // %1 is not a type
+  ASSERT_FALSE(TransformationAddGlobalVariable(100, 1, 0).IsApplicable(
+      context.get(), fact_manager));
+
+  // %7 is not a pointer type
+  ASSERT_FALSE(TransformationAddGlobalVariable(100, 7, 0).IsApplicable(
+      context.get(), fact_manager));
+
+  // %9 does not have Private storage class
+  ASSERT_FALSE(TransformationAddGlobalVariable(100, 9, 0).IsApplicable(
+      context.get(), fact_manager));
+
+  // %15 does not have Private storage class
+  ASSERT_FALSE(TransformationAddGlobalVariable(100, 15, 0)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // %10 is a pointer to float, while %16 is an int constant
+  ASSERT_FALSE(TransformationAddGlobalVariable(100, 10, 16)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // %10 is a Private pointer to float, while %15 is a variable with type
+  // Uniform float pointer
+  ASSERT_FALSE(TransformationAddGlobalVariable(100, 10, 15)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // %12 is a Private pointer to int, while %10 is a variable with type
+  // Private float pointer
+  ASSERT_FALSE(TransformationAddGlobalVariable(100, 12, 10)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // %10 is pointer-to-float, and %14 has type pointer-to-float; that's not OK
+  // since the initializer's type should be the *pointee* type.
+  ASSERT_FALSE(TransformationAddGlobalVariable(104, 10, 14)
+                   .IsApplicable(context.get(), fact_manager));
+
+  // This would work in principle, but logical addressing does not allow
+  // a pointer to a pointer.
+  ASSERT_FALSE(TransformationAddGlobalVariable(104, 17, 14)
+                   .IsApplicable(context.get(), fact_manager));
+
+  TransformationAddGlobalVariable transformations[] = {
+      // %100 = OpVariable %12 Private
+      TransformationAddGlobalVariable(100, 12, 0),
+
+      // %101 = OpVariable %10 Private
+      TransformationAddGlobalVariable(101, 10, 0),
+
+      // %102 = OpVariable %13 Private
+      TransformationAddGlobalVariable(102, 13, 0),
+
+      // %103 = OpVariable %12 Private %16
+      TransformationAddGlobalVariable(103, 12, 16)};
+
+  for (auto& transformation : transformations) {
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+  }
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypePointer Function %6
+         %10 = OpTypePointer Private %6
+         %20 = OpTypePointer Uniform %6
+         %11 = OpTypePointer Function %7
+         %12 = OpTypePointer Private %7
+         %13 = OpTypePointer Private %8
+         %14 = OpVariable %10 Private
+         %15 = OpVariable %20 Uniform
+         %16 = OpConstant %7 1
+         %17 = OpTypePointer Private %10
+        %100 = OpVariable %12 Private
+        %101 = OpVariable %10 Private
+        %102 = OpVariable %13 Private
+        %103 = OpVariable %12 Private %16
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL();  // Remove once test is implemented
 }
 
 }  // namespace

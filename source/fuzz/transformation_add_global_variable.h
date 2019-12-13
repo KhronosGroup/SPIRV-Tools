@@ -29,14 +29,20 @@ class TransformationAddGlobalVariable : public Transformation {
       const protobufs::TransformationAddGlobalVariable& message);
 
   TransformationAddGlobalVariable(uint32_t fresh_id, uint32_t type_id,
-                                  SpvStorageClass storage_class,
                                   uint32_t initializer_id);
 
-  // TODO comment
+  // - |message_.fresh_id| must be fresh
+  // - |message_.type_id| must be the id of a pointer type with Private storage
+  //   class
+  // - |message_.initializer_id| must either be 0 or the id of a constant whose
+  //   type is the pointee type of |message_.type_id|
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds a global variable with Private storage class to the module, with type
+  // |message_.type_id| and either no initializer or |message_.initializer_id|
+  // as an initializer, depending on whether |message_.initializer_id| is 0.
+  // The global variable has result id |message_.fresh_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
