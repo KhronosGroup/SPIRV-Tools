@@ -116,6 +116,10 @@ bool IsValid(opt::IRContext* context);
 // parsing it again.
 std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context);
 
+// Returns true if and only if |id| is the id of a type that is not a function
+// type.
+bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

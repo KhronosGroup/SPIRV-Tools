@@ -312,6 +312,11 @@ std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context) {
                      binary.size());
 }
 
+bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id) {
+  auto type = ir_context->get_type_mgr()->GetType(id);
+  return type && !type->AsFunction();
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

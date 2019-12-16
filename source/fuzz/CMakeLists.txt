@@ -62,14 +62,22 @@ if(SPIRV_BUILD_FUZZER)
         shrinker.h
         transformation.h
         transformation_add_constant_boolean.h
+        transformation_add_constant_composite.h
         transformation_add_constant_scalar.h
         transformation_add_dead_break.h
         transformation_add_dead_continue.h
+        transformation_add_global_undef.h
+        transformation_add_global_variable.h
         transformation_add_no_contraction_decoration.h
+        transformation_add_type_array.h
         transformation_add_type_boolean.h
         transformation_add_type_float.h
+        transformation_add_type_function.h
         transformation_add_type_int.h
+        transformation_add_type_matrix.h
         transformation_add_type_pointer.h
+        transformation_add_type_struct.h
+        transformation_add_type_vector.h
         transformation_composite_construct.h
         transformation_composite_extract.h
         transformation_copy_object.h
@@ -119,14 +127,22 @@ if(SPIRV_BUILD_FUZZER)
         shrinker.cpp
         transformation.cpp
         transformation_add_constant_boolean.cpp
+        transformation_add_constant_composite.cpp
         transformation_add_constant_scalar.cpp
         transformation_add_dead_break.cpp
         transformation_add_dead_continue.cpp
+        transformation_add_global_undef.cpp
+        transformation_add_global_variable.cpp
         transformation_add_no_contraction_decoration.cpp
+        transformation_add_type_array.cpp
         transformation_add_type_boolean.cpp
         transformation_add_type_float.cpp
+        transformation_add_type_function.cpp
         transformation_add_type_int.cpp
+        transformation_add_type_matrix.cpp
         transformation_add_type_pointer.cpp
+        transformation_add_type_struct.cpp
+        transformation_add_type_vector.cpp
         transformation_composite_construct.cpp
         transformation_composite_extract.cpp
         transformation_copy_object.cpp
