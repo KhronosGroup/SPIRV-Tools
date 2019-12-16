@@ -202,6 +202,14 @@ message Transformation {
     TransformationVectorShuffle vector_shuffle = 22;
     TransformationOutlineFunction outline_function = 23;
     TransformationMergeBlocks merge_blocks = 24;
+    TransformationAddTypeVector add_type_vector = 25;
+    TransformationAddTypeArray add_type_array = 26;
+    TransformationAddTypeMatrix add_type_matrix = 27;
+    TransformationAddTypeStruct add_type_struct = 28;
+    TransformationAddTypeFunction add_type_function = 29;
+    TransformationAddConstantComposite add_constant_composite = 30;
+    TransformationAddGlobalVariable add_global_variable = 31;
+    TransformationAddGlobalUndef add_global_undef = 32;
     // Add additional option using the next available number.
   }
 }
@@ -215,6 +223,21 @@ message TransformationAddConstantBoolean {
 
   uint32 fresh_id = 1;
   bool is_true = 2;
+
+}
+
+message TransformationAddConstantComposite {
+
+  // Adds a constant of the given composite type to the module.
+
+  // Fresh id for the composite
+  uint32 fresh_id = 1;
+
+  // A composite type id
+  uint32 type_id = 2;
+
+  // Constituent ids for the composite
+  repeated uint32 constituent_id = 3;
 
 }
 
@@ -274,12 +297,55 @@ message TransformationAddDeadContinue {
 
 }
 
+message TransformationAddGlobalUndef {
+
+  // Adds an undefined value of a given type to the module at global scope.
+
+  // Fresh id for the undefined value
+  uint32 fresh_id = 1;
+
+  // The type of the undefined value
+  uint32 type_id = 2;
+
+}
+
+message TransformationAddGlobalVariable {
+
+  // Adds a global variable of the given type to the module, with Private
+  // storage class and optionally with an initializer.
+
+  // Fresh id for the global variable
+  uint32 fresh_id = 1;
+
+  // The type of the global variable
+  uint32 type_id = 2;
+
+  // Optional initializer; 0 if there is no initializer
+  uint32 initializer_id = 3;
+
+}
+
 message TransformationAddNoContractionDecoration {
 
   // Applies OpDecorate NoContraction to the given result id
 
   // Result id to be decorated
   uint32 result_id = 1;
+
+}
+
+message TransformationAddTypeArray {
+
+  // Adds an array type of the given element type and size to the module
+
+  // Fresh id for the array type
+  uint32 fresh_id = 1;
+
+  // The array's element type
+  uint32 element_type_id = 2;
+
+  // The array's size
+  uint32 size_id = 3;
 
 }
 
@@ -304,6 +370,21 @@ message TransformationAddTypeFloat {
 
 }
 
+message TransformationAddTypeFunction {
+
+  // Adds a function type to the module
+
+  // Fresh id for the function type
+  uint32 fresh_id = 1;
+
+  // The function's return type
+  uint32 return_type_id = 2;
+
+  // The function's argument types
+  repeated uint32 argument_type_id = 3;
+
+}
+
 message TransformationAddTypeInt {
 
   // Adds OpTypeInt to the module with the given width and signedness
@@ -316,6 +397,22 @@ message TransformationAddTypeInt {
 
   // True if and only if this is a signed type
   bool is_signed = 3;
+
+}
+
+message TransformationAddTypeMatrix {
+
+  // Adds a matrix type to the module
+
+  // Fresh id for the matrix type
+  uint32 fresh_id = 1;
+
+  // The matrix's column type, which must be a floating-point vector (as per
+  // the "data rules" in the SPIR-V specification).
+  uint32 column_type_id = 2;
+
+  // The matrix's column count
+  uint32 column_count = 3;
 
 }
 
@@ -332,6 +429,33 @@ message TransformationAddTypePointer {
 
   // Id of the base type for the pointer
   uint32 base_type_id = 3;
+
+}
+
+message TransformationAddTypeStruct {
+
+  // Adds a struct type to the module
+
+  // Fresh id for the struct type
+  uint32 fresh_id = 1;
+
+  // The struct's member types
+  repeated uint32 member_type_id = 3;
+
+}
+
+message TransformationAddTypeVector {
+
+  // Adds a vector type to the module
+
+  // Fresh id for the vector type
+  uint32 fresh_id = 1;
+
+  // The vector's component type
+  uint32 component_type_id = 2;
+
+  // The vector's component count
+  uint32 component_count = 3;
 
 }
 
