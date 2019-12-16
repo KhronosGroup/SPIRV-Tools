@@ -407,7 +407,8 @@ message TransformationAddTypeMatrix {
   // Fresh id for the matrix type
   uint32 fresh_id = 1;
 
-  // The matrix's column type
+  // The matrix's column type, which must be a floating-point vector (as per
+  // the "data rules" in the SPIR-V specification).
   uint32 column_type_id = 2;
 
   // The matrix's column count
@@ -450,8 +451,7 @@ message TransformationAddTypeVector {
   // Fresh id for the vector type
   uint32 fresh_id = 1;
 
-  // The vector's component type, which must be a floating-point vector (as per
-  // the "data rules" in the SPIR-V specification).
+  // The vector's component type
   uint32 component_type_id = 2;
 
   // The vector's component count
