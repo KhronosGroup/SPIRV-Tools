@@ -33,9 +33,11 @@ TransformationAddTypeMatrix::TransformationAddTypeMatrix(
 bool TransformationAddTypeMatrix::IsApplicable(
     opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
+  // The result id must be fresh.
   if (!fuzzerutil::IsFreshId(context, message_.fresh_id())) {
     return false;
   }
+  // The column type must be a floating-point vector.
   auto column_type =
       context->get_type_mgr()->GetType(message_.column_type_id());
   if (!column_type) {

@@ -42,6 +42,10 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
          %15 = OpVariable %20 Uniform
          %16 = OpConstant %7 1
          %17 = OpTypePointer Private %10
+         %18 = OpTypeBool
+         %19 = OpTypePointer Private %18
+         %21 = OpConstantTrue %18
+         %22 = OpConstantFalse %18
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn
@@ -109,7 +113,13 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
       TransformationAddGlobalVariable(102, 13, 0),
 
       // %103 = OpVariable %12 Private %16
-      TransformationAddGlobalVariable(103, 12, 16)};
+      TransformationAddGlobalVariable(103, 12, 16),
+
+      // %104 = OpVariable %19 Private %21
+      TransformationAddGlobalVariable(104, 19, 21),
+
+      // %105 = OpVariable %19 Private %22
+      TransformationAddGlobalVariable(105, 19, 22)};
 
   for (auto& transformation : transformations) {
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
@@ -139,10 +149,16 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
          %15 = OpVariable %20 Uniform
          %16 = OpConstant %7 1
          %17 = OpTypePointer Private %10
+         %18 = OpTypeBool
+         %19 = OpTypePointer Private %18
+         %21 = OpConstantTrue %18
+         %22 = OpConstantFalse %18
         %100 = OpVariable %12 Private
         %101 = OpVariable %10 Private
         %102 = OpVariable %13 Private
         %103 = OpVariable %12 Private %16
+        %104 = OpVariable %19 Private %21
+        %105 = OpVariable %19 Private %22
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn

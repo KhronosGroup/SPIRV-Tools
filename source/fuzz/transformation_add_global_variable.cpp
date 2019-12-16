@@ -52,25 +52,19 @@ bool TransformationAddGlobalVariable::IsApplicable(
     return false;
   }
   if (message_.initializer_id()) {
-    auto initilizer_instruction =
-        context->get_def_use_mgr()->GetDef(message_.initializer_id());
-    // If an initializer id is provided it must correspond to an instruction.
-    if (!initilizer_instruction) {
+    // The initializer id must be the id of a constant.  Check this with the
+    // constant manager.
+    auto constant_id = context->get_constant_mgr()->GetConstantsFromIds(
+        {message_.initializer_id()});
+    if (constant_id.empty()) {
       return false;
     }
-    // The instruction must be a constant.
-    switch (initilizer_instruction->opcode()) {
-      case SpvOpConstant:
-      case SpvOpConstantComposite:
-        if (pointer_type->pointee_type() !=
-            context->get_type_mgr()->GetType(
-                initilizer_instruction->type_id())) {
-          return false;
-        }
-        break;
-      default:
-        // No other instructions can be used as an initializer.
-        return false;
+    assert(constant_id.size() == 1 &&
+           "We asked for the constant associated with a single id; we should "
+           "get a single constant.");
+    // The type of the constant must match the pointee type of the pointer.
+    if (pointer_type->pointee_type() != constant_id[0]->type()) {
+      return false;
     }
   }
   return true;
