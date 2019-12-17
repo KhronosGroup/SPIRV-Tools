@@ -124,6 +124,11 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%result = OpExtInst %void %extinst 123 %i32"), Values(""),
             Values(TestResult())));
 
+INSTANTIATE_TEST_SUITE_P(ComplexGlobalExtInst, ValidateNonSemanticGenerated,
+                         Combine(Values(true), Values(true), Values(R"(
+%result = OpExtInst %void %extinst  123 %i32 %u32_2 %f32vec4_1234 %u32_0)"),
+                                 Values(""), Values(TestResult())));
+
 INSTANTIATE_TEST_SUITE_P(
     SimpleFunctionLevelExtInst, ValidateNonSemanticGenerated,
     Combine(Values(true), Values(true), Values(""),
