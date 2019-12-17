@@ -222,7 +222,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
           SPV_SUCCESS) {
         stream_ << ext_inst->name;
       } else {
-        if (inst.ext_inst_type < SPV_EXT_INST_TYPE_NONSEMANTIC) {
+        if (!spvExtInstIsNonSemantic(inst.ext_inst_type)) {
           assert(false && "should have caught this earlier");
         } else {
           // for non-semantic instruction sets we can just print the number

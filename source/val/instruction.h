@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "source/ext_inst.h"
 #include "source/table.h"
 #include "spirv-tools/libspirv.h"
 
@@ -87,7 +88,7 @@ class Instruction {
 
   bool IsNonSemantic() const {
     return opcode() == SpvOp::SpvOpExtInst &&
-           inst_.ext_inst_type >= SPV_EXT_INST_TYPE_NONSEMANTIC;
+           spvExtInstIsNonSemantic(inst_.ext_inst_type);
   }
 
   // Casts the words belonging to the operand under |index| to |T| and returns.

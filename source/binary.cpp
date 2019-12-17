@@ -484,7 +484,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       } else {
         // if we don't know this extended instruction and the set isn't
         // non-semantic, we cannot process further
-        if (inst->ext_inst_type < SPV_EXT_INST_TYPE_NONSEMANTIC) {
+        if (!spvExtInstIsNonSemantic(inst->ext_inst_type)) {
           return diagnostic()
                  << "Invalid extended instruction number: " << word;
         } else {

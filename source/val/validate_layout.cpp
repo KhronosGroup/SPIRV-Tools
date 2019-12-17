@@ -36,7 +36,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
                                       const Instruction* inst, SpvOp opcode) {
   switch (opcode) {
     case SpvOpExtInst:
-      if (inst->ext_inst_type() >= SPV_EXT_INST_TYPE_NONSEMANTIC) {
+      if (spvExtInstIsNonSemantic(inst->ext_inst_type())) {
         // non-semantic extinst opcodes are allowed beginning in the types
         // section, but since they must name a return type they cannot be the
         // first instruction in the types section. Therefore check that we are
@@ -169,7 +169,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         break;
 
       case SpvOpExtInst:
-        if (inst->ext_inst_type() >= SPV_EXT_INST_TYPE_NONSEMANTIC) {
+        if (spvExtInstIsNonSemantic(inst->ext_inst_type())) {
           // non-semantic extinst opcodes are allowed beginning in the types
           // section, but must either be placed outside a function declaration,
           // or inside a block.

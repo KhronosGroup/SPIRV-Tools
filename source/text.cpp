@@ -252,7 +252,7 @@ spv_result_t spvTextEncodeOperand(const spvtools::AssemblyGrammar& grammar,
       } else {
         // if we don't know this extended instruction and the set isn't
         // non-semantic, we cannot process further
-        if (pInst->extInstType < SPV_EXT_INST_TYPE_NONSEMANTIC) {
+        if (!spvExtInstIsNonSemantic(pInst->extInstType)) {
           return context->diagnostic()
                  << "Invalid extended instruction name '" << textValue << "'.";
         } else {
