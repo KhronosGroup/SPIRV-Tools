@@ -30,13 +30,39 @@ Pass::Status StripDebugInfoPass::Process() {
 
   std::vector<Instruction*> to_kill;
 
-  // if we use non-semantic info, it may reference OpString. Only remove
-  // OpSource from debugs1
+  // if we use non-semantic info, it may reference OpString. Do a more
+  // expensive pass checking the uses of the OpString to see if any are
+  // OpExtInst on a non-semantic instruction set. If we're not using the
+  // extension then we can do a simpler pass and kill all debug1 instructions
   if (uses_non_semantic_info) {
     for (auto& inst : context()->module()->debugs1()) {
       switch (inst.opcode()) {
-        case SpvOpString:
+        case SpvOpString: {
+          analysis::DefUseManager* def_use = context()->get_def_use_mgr();
+
+          // see if this string is used anywhere by a non-semantic instruction
+          bool no_nonsemantic_use =
+              def_use->WhileEachUser(&inst, [this, def_use](Instruction* use) {
+                if (use->opcode() == SpvOpExtInst) {
+                  auto ext_inst_set =
+                      def_use->GetDef(use->GetSingleWordInOperand(0u));
+                  const char* extension_name = reinterpret_cast<const char*>(
+                      &ext_inst_set->GetInOperand(0).words[0]);
+                  if (0 == std::strncmp(extension_name, "NonSemantic.", 12)) {
+                    // found a non-semantic use, return false as we cannot
+                    // remove this OpString
+                    return false;
+                  }
+                }
+
+                // other instructions can't be a non-semantic use
+                return true;
+              });
+
+          if (no_nonsemantic_use) to_kill.push_back(&inst);
+
           break;
+        }
 
         default:
           to_kill.push_back(&inst);
