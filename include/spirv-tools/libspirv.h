@@ -249,6 +249,11 @@ typedef enum spv_ext_inst_type_t {
   SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT,
   SPV_EXT_INST_TYPE_DEBUGINFO,
 
+  // Multiple distinct extended instruction set types could return this
+  // value, if they are prefixed with NonSemantic. and are otherwise
+  // unrecognised
+  SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN,
+
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;
 

@@ -477,9 +477,22 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       assert(SpvOpExtInst == opcode);
       assert(inst->ext_inst_type != SPV_EXT_INST_TYPE_NONE);
       spv_ext_inst_desc ext_inst;
-      if (grammar_.lookupExtInst(inst->ext_inst_type, word, &ext_inst))
-        return diagnostic() << "Invalid extended instruction number: " << word;
-      spvPushOperandTypes(ext_inst->operandTypes, expected_operands);
+      if (grammar_.lookupExtInst(inst->ext_inst_type, word, &ext_inst) ==
+          SPV_SUCCESS) {
+        // if we know about this ext inst, push the expected operands
+        spvPushOperandTypes(ext_inst->operandTypes, expected_operands);
+      } else {
+        // if we don't know this extended instruction and the set isn't
+        // non-semantic, we cannot process further
+        if (!spvExtInstIsNonSemantic(inst->ext_inst_type)) {
+          return diagnostic()
+                 << "Invalid extended instruction number: " << word;
+        } else {
+          // for non-semantic instruction sets, we know the form of all such
+          // extended instructions contains a series of IDs as parameters
+          expected_operands->push_back(SPV_OPERAND_TYPE_VARIABLE_ID);
+        }
+      }
     } break;
 
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {

@@ -217,10 +217,18 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
       break;
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       spv_ext_inst_desc ext_inst;
-      if (grammar_.lookupExtInst(inst.ext_inst_type, word, &ext_inst))
-        assert(false && "should have caught this earlier");
       SetRed();
-      stream_ << ext_inst->name;
+      if (grammar_.lookupExtInst(inst.ext_inst_type, word, &ext_inst) ==
+          SPV_SUCCESS) {
+        stream_ << ext_inst->name;
+      } else {
+        if (!spvExtInstIsNonSemantic(inst.ext_inst_type)) {
+          assert(false && "should have caught this earlier");
+        } else {
+          // for non-semantic instruction sets we can just print the number
+          stream_ << word;
+        }
+      }
     } break;
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
       spv_opcode_desc opcode_desc;

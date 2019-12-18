@@ -116,7 +116,19 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   if (!strcmp("DebugInfo", name)) {
     return SPV_EXT_INST_TYPE_DEBUGINFO;
   }
+  // ensure to add any known non-semantic extended instruction sets
+  // above this point, and update spvExtInstIsNonSemantic()
+  if (!strncmp("NonSemantic.", name, 12)) {
+    return SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN;
+  }
   return SPV_EXT_INST_TYPE_NONE;
+}
+
+bool spvExtInstIsNonSemantic(const spv_ext_inst_type_t type) {
+  if (type == SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN) {
+    return true;
+  }
+  return false;
 }
 
 spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
