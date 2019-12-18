@@ -42,7 +42,7 @@ Pass::Status StripDebugInfoPass::Process() {
 
           // see if this string is used anywhere by a non-semantic instruction
           bool no_nonsemantic_use =
-              def_use->WhileEachUser(&inst, [this, def_use](Instruction* use) {
+              def_use->WhileEachUser(&inst, [def_use](Instruction* use) {
                 if (use->opcode() == SpvOpExtInst) {
                   auto ext_inst_set =
                       def_use->GetDef(use->GetSingleWordInOperand(0u));

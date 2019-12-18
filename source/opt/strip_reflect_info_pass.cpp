@@ -95,7 +95,7 @@ Pass::Status StripReflectInfoPass::Process() {
   // the module to remove any OpExtInst that referenced those sets
   if (!non_semantic_sets.empty()) {
     context()->module()->ForEachInst(
-        [this, &non_semantic_sets, &to_remove](Instruction* inst) {
+        [&non_semantic_sets, &to_remove](Instruction* inst) {
           if (inst->opcode() == SpvOpExtInst) {
             if (non_semantic_sets.find(inst->GetSingleWordInOperand(0)) !=
                 non_semantic_sets.end()) {
