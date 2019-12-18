@@ -47,8 +47,7 @@ using ValidateNonSemanticGenerated = spvtest::ValidateBase<
     std::tuple<bool, bool, const char*, const char*, TestResult>>;
 using ValidateNonSemanticString = spvtest::ValidateBase<bool>;
 
-CodeGenerator GetNonSemanticCodeGenerator(spv_target_env env,
-                                          const bool declare_ext,
+CodeGenerator GetNonSemanticCodeGenerator(const bool declare_ext,
                                           const bool declare_extinst,
                                           const char* const global_extinsts,
                                           const char* const function_extinsts) {
@@ -86,8 +85,7 @@ TEST_P(ValidateNonSemanticGenerated, InTest) {
   const TestResult& test_result = std::get<4>(GetParam());
 
   CodeGenerator generator = GetNonSemanticCodeGenerator(
-      SPV_ENV_VULKAN_1_0, declare_ext, declare_extinst, global_extinsts,
-      function_extinsts);
+      declare_ext, declare_extinst, global_extinsts, function_extinsts);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -124,10 +122,12 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%result = OpExtInst %void %extinst 123 %i32"), Values(""),
             Values(TestResult())));
 
-INSTANTIATE_TEST_SUITE_P(ComplexGlobalExtInst, ValidateNonSemanticGenerated,
-                         Combine(Values(true), Values(true), Values(R"(
-%result = OpExtInst %void %extinst  123 %i32 %u32_2 %f32vec4_1234 %u32_0)"),
-                                 Values(""), Values(TestResult())));
+INSTANTIATE_TEST_SUITE_P(
+    ComplexGlobalExtInst, ValidateNonSemanticGenerated,
+    Combine(Values(true), Values(true),
+            Values("%result = OpExtInst %void %extinst  123 %i32 %u32_2 "
+                   "%f32vec4_1234 %u32_0"),
+            Values(""), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     SimpleFunctionLevelExtInst, ValidateNonSemanticGenerated,
