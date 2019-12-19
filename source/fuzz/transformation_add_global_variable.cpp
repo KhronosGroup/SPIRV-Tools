@@ -89,8 +89,8 @@ void TransformationAddGlobalVariable::Apply(
     // the module.  This means that the global is available for other
     // transformations to use.
     //
-    // A downside of this is that the global will be in
-    // the interface even if it ends up never being used.
+    // A downside of this is that the global will be in the interface even if it
+    // ends up never being used.
     //
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3111) revisit
     //  this if a more thorough approach to entry point interfaces is taken.
