@@ -55,6 +55,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_util.h
         id_use_descriptor.h
         instruction_descriptor.h
+        instruction_message.h
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
@@ -66,6 +67,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_constant_scalar.h
         transformation_add_dead_break.h
         transformation_add_dead_continue.h
+        transformation_add_function.h
         transformation_add_global_undef.h
         transformation_add_global_variable.h
         transformation_add_no_contraction_decoration.h
@@ -121,6 +123,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_util.cpp
         id_use_descriptor.cpp
         instruction_descriptor.cpp
+        instruction_message.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
         replayer.cpp
@@ -131,6 +134,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_constant_scalar.cpp
         transformation_add_dead_break.cpp
         transformation_add_dead_continue.cpp
+        transformation_add_function.cpp
         transformation_add_global_undef.cpp
         transformation_add_global_variable.cpp
         transformation_add_no_contraction_decoration.cpp

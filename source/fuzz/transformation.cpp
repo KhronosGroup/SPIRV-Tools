@@ -21,6 +21,7 @@
 #include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_dead_break.h"
 #include "source/fuzz/transformation_add_dead_continue.h"
+#include "source/fuzz/transformation_add_function.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_global_variable.h"
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
@@ -72,6 +73,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddDeadContinue:
       return MakeUnique<TransformationAddDeadContinue>(
           message.add_dead_continue());
+    case protobufs::Transformation::TransformationCase::kAddFunction:
+      return MakeUnique<TransformationAddFunction>(message.add_function());
     case protobufs::Transformation::TransformationCase::kAddGlobalUndef:
       return MakeUnique<TransformationAddGlobalUndef>(
           message.add_global_undef());
