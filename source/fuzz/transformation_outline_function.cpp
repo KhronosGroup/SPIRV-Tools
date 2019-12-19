@@ -259,13 +259,20 @@ bool TransformationOutlineFunction::IsApplicable(
     }
   }
 
-  // For each region input id -- i.e. every id defined outside the region but
-  // used inside the region -- there needs to be a corresponding fresh id to be
-  // used as a function parameter.
+  // For each region input id, i.e. every id defined outside the region but
+  // used inside the region, ...
   std::map<uint32_t, uint32_t> input_id_to_fresh_id_map =
       PairSequenceToMap(message_.input_id_to_fresh_id());
   for (auto id : GetRegionInputIds(context, region_set, exit_block)) {
+    // There needs to be a corresponding fresh id to be used as a function
+    // parameter.
     if (input_id_to_fresh_id_map.count(id) == 0) {
+      return false;
+    }
+    // Furthermore, no region input id is allowed to be the result of an access
+    // chain.  This is because region input ids will become function parameters,
+    // and it is not legal to pass an access chain as a function parameter.
+    if (context->get_def_use_mgr()->GetDef(id)->opcode() == SpvOpAccessChain) {
       return false;
     }
   }
