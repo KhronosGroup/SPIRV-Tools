@@ -100,6 +100,7 @@ set(TEST_SOURCES
   diagnostic_test.cpp
   enum_string_mapping_test.cpp
   enum_set_test.cpp
+  ext_inst.cldebug100_test.cpp
   ext_inst.debuginfo_test.cpp
   ext_inst.glsl_test.cpp
   ext_inst.non_semantic_test.cpp
