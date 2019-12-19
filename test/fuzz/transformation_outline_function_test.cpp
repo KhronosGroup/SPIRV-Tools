@@ -1600,6 +1600,62 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
+TEST(TransformationOutlineFunctionTest, DoNotOutlineRegionThatUsesAccessChain) {
+  // An access chain result is a pointer, but it cannot be passed as a function
+  // parameter, as it is not a memory object.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypePointer Function %7
+          %9 = OpTypePointer Function %6
+         %18 = OpTypeInt 32 0
+         %19 = OpConstant %18 0
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %10 = OpVariable %8 Function
+               OpBranch %11
+         %11 = OpLabel
+         %12 = OpAccessChain %9 %10 %19
+               OpBranch %13
+         %13 = OpLabel
+         %14 = OpLoad %6 %12
+               OpBranch %15
+         %15 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 13,
+      /*exit_block*/ 15,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_region_entry_block*/ 204,
+      /*new_caller_result_id*/ 205,
+      /*new_callee_result_id*/ 206,
+      /*input_id_to_fresh_id*/ {{12, 207}},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
+}
+
 TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
   // This tests outlining of some non-trivial code.
 
