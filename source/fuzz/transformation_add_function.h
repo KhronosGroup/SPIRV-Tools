@@ -45,7 +45,7 @@ class TransformationAddFunction : public Transformation {
  private:
   // Attempts to create a function from the series of instructions in
   // |message_.instruction| and add it to |context|.  Returns false if this is
-  // not possible due to the messages not respect the basic structure of a
+  // not possible due to the messages not respecting the basic structure of a
   // function, e.g. if there is no OpFunction instruction or no blocks; in this
   // case |context| is left in an indeterminate state.
   //
