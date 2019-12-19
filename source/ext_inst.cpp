@@ -28,6 +28,7 @@
 
 #include "debuginfo.insts.inc"
 #include "glsl.std.450.insts.inc"
+#include "opencl.debuginfo.100.insts.inc"
 #include "opencl.std.insts.inc"
 
 #include "spirv-tools/libspirv.h"
@@ -51,6 +52,8 @@ static const spv_ext_inst_group_t kGroups_1_0[] = {
      ARRAY_SIZE(spv_amd_shader_ballot_entries), spv_amd_shader_ballot_entries},
     {SPV_EXT_INST_TYPE_DEBUGINFO, ARRAY_SIZE(debuginfo_entries),
      debuginfo_entries},
+    {SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100,
+     ARRAY_SIZE(opencl_debuginfo_100_entries), opencl_debuginfo_100_entries},
 };
 
 static const spv_ext_inst_table_t kTable_1_0 = {ARRAY_SIZE(kGroups_1_0),
@@ -115,6 +118,9 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   }
   if (!strcmp("DebugInfo", name)) {
     return SPV_EXT_INST_TYPE_DEBUGINFO;
+  }
+  if (!strcmp("OpenCL.DebugInfo.100", name)) {
+    return SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100;
   }
   // ensure to add any known non-semantic extended instruction sets
   // above this point, and update spvExtInstIsNonSemantic()
