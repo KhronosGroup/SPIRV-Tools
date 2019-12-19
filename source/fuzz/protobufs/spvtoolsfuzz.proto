@@ -126,6 +126,37 @@ message UniformBufferElementDescriptor {
 
 }
 
+message InstructionOperand {
+
+  // Represents an operand to a SPIR-V instruction.
+
+  // The type of the operand.
+  uint32 operand_type = 1;
+
+  // The data associated with the operand.  For most operands (e.g. ids,
+  // storage classes and literals) this will be a single word.
+  repeated uint32 operand_data = 2;
+
+}
+
+message Instruction {
+
+  // Represents a SPIR-V instruction.
+
+  // The instruction's opcode (e.g. OpLabel).
+  uint32 opcode = 1;
+
+  // The id of the instruction's result type; 0 if there is no result type.
+  uint32 result_type_id = 2;
+
+  // The id of the instruction's result; 0 if there is no result.
+  uint32 result_id = 3;
+
+  // Zero or more input operands.
+  repeated InstructionOperand input_operand = 4;
+
+}
+
 message FactSequence {
   repeated Fact fact = 1;
 }
@@ -210,6 +241,7 @@ message Transformation {
     TransformationAddConstantComposite add_constant_composite = 30;
     TransformationAddGlobalVariable add_global_variable = 31;
     TransformationAddGlobalUndef add_global_undef = 32;
+    TransformationAddFunction add_function = 33;
     // Add additional option using the next available number.
   }
 }
@@ -294,6 +326,15 @@ message TransformationAddDeadContinue {
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
   repeated uint32 phi_id = 3;
+
+}
+
+message TransformationAddFunction {
+
+  // Adds a SPIR-V function to the module.
+
+  // The series of instructions that comprise the function.
+  repeated Instruction instruction = 1;
 
 }
 
