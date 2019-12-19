@@ -48,6 +48,9 @@ class TransformationAddGlobalVariable : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
+  static bool PrivateGlobalsMustBeDeclaredInEntryPointInterfaces(
+      opt::IRContext* context);
+
   protobufs::TransformationAddGlobalVariable message_;
 };
 

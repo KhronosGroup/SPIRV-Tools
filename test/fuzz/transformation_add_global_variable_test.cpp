@@ -52,7 +52,7 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
                OpFunctionEnd
   )";
 
-  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -161,6 +161,109 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
         %105 = OpVariable %19 Private %22
           %4 = OpFunction %2 None %3
           %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationAddGlobalVariableTest, TestEntryPointInterfaceEnlargement) {
+  // This checks that when global variables are added to a SPIR-V 1.4+ module,
+  // they are also added to entry points of that module.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "m1"
+               OpEntryPoint Vertex %5 "m2"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypePointer Function %6
+         %10 = OpTypePointer Private %6
+         %20 = OpTypePointer Uniform %6
+         %11 = OpTypePointer Function %7
+         %12 = OpTypePointer Private %7
+         %13 = OpTypePointer Private %8
+         %14 = OpVariable %10 Private
+         %15 = OpVariable %20 Uniform
+         %16 = OpConstant %7 1
+         %17 = OpTypePointer Private %10
+         %18 = OpTypeBool
+         %19 = OpTypePointer Private %18
+         %21 = OpConstantTrue %18
+          %4 = OpFunction %2 None %3
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %5 = OpFunction %2 None %3
+         %31 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationAddGlobalVariable transformations[] = {
+      // %100 = OpVariable %12 Private
+      TransformationAddGlobalVariable(100, 12, 0),
+
+      // %101 = OpVariable %12 Private %16
+      TransformationAddGlobalVariable(101, 12, 16),
+
+      // %102 = OpVariable %19 Private %21
+      TransformationAddGlobalVariable(102, 19, 21)};
+
+  for (auto& transformation : transformations) {
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+  }
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "m1" %100 %101 %102
+               OpEntryPoint Vertex %5 "m2" %100 %101 %102
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 2
+          %9 = OpTypePointer Function %6
+         %10 = OpTypePointer Private %6
+         %20 = OpTypePointer Uniform %6
+         %11 = OpTypePointer Function %7
+         %12 = OpTypePointer Private %7
+         %13 = OpTypePointer Private %8
+         %14 = OpVariable %10 Private
+         %15 = OpVariable %20 Uniform
+         %16 = OpConstant %7 1
+         %17 = OpTypePointer Private %10
+         %18 = OpTypeBool
+         %19 = OpTypePointer Private %18
+         %21 = OpConstantTrue %18
+        %100 = OpVariable %12 Private
+        %101 = OpVariable %12 Private %16
+        %102 = OpVariable %19 Private %21
+          %4 = OpFunction %2 None %3
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %5 = OpFunction %2 None %3
+         %31 = OpLabel
                OpReturn
                OpFunctionEnd
   )";

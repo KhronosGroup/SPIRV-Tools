@@ -83,6 +83,22 @@ void TransformationAddGlobalVariable::Apply(
       MakeUnique<opt::Instruction>(context, SpvOpVariable, message_.type_id(),
                                    message_.fresh_id(), input_operands));
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
+
+  if (PrivateGlobalsMustBeDeclaredInEntryPointInterfaces(context)) {
+    // Conservatively add this global to the interface of every entry point in
+    // the module.  This means that the global is available for other
+    // transformations to use.
+    //
+    // A downside of this is that the global will be in
+    // the interface even if it ends up never being used.
+    //
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3111) revisit
+    //  this if a more thorough approach to entry point interfaces is taken.
+    for (auto& entry_point : context->module()->entry_points()) {
+      entry_point.AddOperand({SPV_OPERAND_TYPE_ID, {message_.fresh_id()}});
+    }
+  }
+
   // We have added an instruction to the module, so need to be careful about the
   // validity of existing analyses.
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
@@ -92,6 +108,23 @@ protobufs::Transformation TransformationAddGlobalVariable::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_global_variable() = message_;
   return result;
+}
+
+bool TransformationAddGlobalVariable::
+    PrivateGlobalsMustBeDeclaredInEntryPointInterfaces(
+        opt::IRContext* context) {
+  // TODO(afd): We capture the universal environments for which this requirement
+  //  holds.  The check should be refined on demand for other target
+  //  environments.
+  switch (context->grammar().target_env()) {
+    case SPV_ENV_UNIVERSAL_1_0:
+    case SPV_ENV_UNIVERSAL_1_1:
+    case SPV_ENV_UNIVERSAL_1_2:
+    case SPV_ENV_UNIVERSAL_1_3:
+      return false;
+    default:
+      return true;
+  }
 }
 
 }  // namespace fuzz
