@@ -112,14 +112,14 @@ bool PhiIdsOkForNewEdge(
 uint32_t MaybeGetBoolConstantId(opt::IRContext* context, bool value) {
   opt::analysis::Bool bool_type;
   auto registered_bool_type =
-          context->get_type_mgr()->GetRegisteredType(&bool_type);
+      context->get_type_mgr()->GetRegisteredType(&bool_type);
   if (!registered_bool_type) {
     return 0;
   }
   opt::analysis::BoolConstant bool_constant(registered_bool_type->AsBool(),
-          value);
+                                            value);
   return context->get_constant_mgr()->FindDeclaredConstant(
-          &bool_constant, context->get_type_mgr()->GetId(&bool_type));
+      &bool_constant, context->get_type_mgr()->GetId(&bool_type));
 }
 
 void AddUnreachableEdgeAndUpdateOpPhis(
@@ -133,7 +133,9 @@ void AddUnreachableEdgeAndUpdateOpPhis(
 
   // Get the id of the boolean constant to be used as the condition.
   uint32_t bool_id = MaybeGetBoolConstantId(context, condition_value);
-  assert(bool_id && "Precondition that condition value must be available is not satisfied");
+  assert(
+      bool_id &&
+      "Precondition that condition value must be available is not satisfied");
 
   const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
   auto successor = bb_from->terminator()->GetSingleWordInOperand(0);
@@ -330,19 +332,18 @@ bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id) {
 bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id) {
   bool result = false;
   ir_context->get_def_use_mgr()->WhileEachUse(
-          block_id,
-          [&result](
-                  const opt::Instruction* use_instruction,
-                  uint32_t /*unused*/) -> bool {
-              switch (use_instruction->opcode()) {
-                case SpvOpLoopMerge:
-                case SpvOpSelectionMerge:
-                  result = true;
-                  return false;
-                default:
-                  return true;
-              }
-          });
+      block_id,
+      [&result](const opt::Instruction* use_instruction,
+                uint32_t /*unused*/) -> bool {
+        switch (use_instruction->opcode()) {
+          case SpvOpLoopMerge:
+          case SpvOpSelectionMerge:
+            result = true;
+            return false;
+          default:
+            return true;
+        }
+      });
   return result;
 }
 

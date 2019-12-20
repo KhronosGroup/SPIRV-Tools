@@ -70,8 +70,7 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
       return MakeUnique<TransformationAddConstantScalar>(
           message.add_constant_scalar());
     case protobufs::Transformation::TransformationCase::kAddDeadBlock:
-      return MakeUnique<TransformationAddDeadBlock>(
-          message.add_dead_block());
+      return MakeUnique<TransformationAddDeadBlock>(message.add_dead_block());
     case protobufs::Transformation::TransformationCase::kAddDeadBreak:
       return MakeUnique<TransformationAddDeadBreak>(message.add_dead_break());
     case protobufs::Transformation::TransformationCase::kAddDeadContinue:

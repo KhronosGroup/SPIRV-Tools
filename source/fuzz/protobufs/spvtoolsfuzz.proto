@@ -166,6 +166,7 @@ message Fact {
     // Order the fact options by numeric id (rather than alphabetically).
     FactConstantUniform constant_uniform_fact = 1;
     FactDataSynonym data_synonym_fact = 2;
+    FactIdIsDead id_is_dead_fact = 3;
   }
 }
 
@@ -198,6 +199,16 @@ message FactDataSynonym {
 
   DataDescriptor data2 = 2;
 
+}
+
+message FactIdIsDead {
+
+  // Records the fact that a block label instruction, or an instruction inside
+  // a block, is guaranteed to be dynamically unreachable.  This is useful
+  // because it informs the fuzzer that rather arbitrary changes can be made
+  // in relation to this instruction.
+
+  uint32 id = 1;
 }
 
 message TransformationSequence {

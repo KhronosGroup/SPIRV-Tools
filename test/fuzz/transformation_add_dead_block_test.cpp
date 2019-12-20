@@ -48,15 +48,19 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
   FactManager fact_manager;
 
   // Id 4 is already in use
-  ASSERT_FALSE(TransformationAddDeadBlock(4, 5, true, {}).IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(TransformationAddDeadBlock(4, 5, true, {})
+                   .IsApplicable(context.get(), fact_manager));
 
   // Id 7 is not a block
-  ASSERT_FALSE(TransformationAddDeadBlock(100, 7, true, {}).IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 7, true, {})
+                   .IsApplicable(context.get(), fact_manager));
 
   TransformationAddDeadBlock transformation(100, 5, true, {});
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
+
+  ASSERT_TRUE(fact_manager.IdIsDead(100));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -72,7 +76,7 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
           %7 = OpConstantTrue %6
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-               OpSelectionMerge %8
+               OpSelectionMerge %8 None
                OpBranchConditional %7 %8 %100
         %100 = OpLabel
                OpBranch %8
@@ -83,11 +87,12 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-// Target block must not be merge or continue
+// TODO Target block must not be merge or continue
 
-// Source block must not be loop head
+// TODO Source block must not be loop head
 
-// Target block can start with OpPhi; need to give suitable ids in that case
+// TODO Target block can start with OpPhi; need to give suitable ids in that
+//  case
 
 }  // namespace
 }  // namespace fuzz

@@ -800,9 +800,37 @@ bool FactManager::DataSynonymFacts::IsSynonymous(
 // End of data synonym facts
 //==============================
 
+//==============================
+// Dead id facts
+
+// TODO comment.
+class FactManager::DeadIdFacts {
+ public:
+  // See method in FactManager which delegates to this method.
+  void AddFact(const protobufs::FactIdIsDead& fact);
+
+  // See method in FactManager which delegates to this method.
+  bool IdIsDead(uint32_t id) const;
+
+ private:
+  std::set<uint32_t> dead_ids_;
+};
+
+void FactManager::DeadIdFacts::AddFact(const protobufs::FactIdIsDead& fact) {
+  dead_ids_.insert(fact.id());
+}
+
+bool FactManager::DeadIdFacts::IdIsDead(uint32_t id) const {
+  return dead_ids_.count(id) != 0;
+}
+
+// End of dead id facts
+//==============================
+
 FactManager::FactManager()
     : uniform_constant_facts_(MakeUnique<ConstantUniformFacts>()),
-      data_synonym_facts_(MakeUnique<DataSynonymFacts>()) {}
+      data_synonym_facts_(MakeUnique<DataSynonymFacts>()),
+      dead_id_facts_(MakeUnique<DeadIdFacts>()) {}
 
 FactManager::~FactManager() = default;
 
@@ -826,6 +854,9 @@ bool FactManager::AddFact(const fuzz::protobufs::Fact& fact,
                                               context);
     case protobufs::Fact::kDataSynonymFact:
       data_synonym_facts_->AddFact(fact.data_synonym_fact(), context);
+      return true;
+    case protobufs::Fact::kIdIsDeadFact:
+      dead_id_facts_->AddFact(fact.id_is_dead_fact());
       return true;
     default:
       assert(false && "Unknown fact type.");
@@ -896,6 +927,16 @@ bool FactManager::IsSynonymous(
     opt::IRContext* context) const {
   return data_synonym_facts_->IsSynonymous(data_descriptor1, data_descriptor2,
                                            context);
+}
+
+bool FactManager::IdIsDead(uint32_t id) const {
+  return dead_id_facts_->IdIsDead(id);
+}
+
+void FactManager::AddFactIdIsDead(uint32_t id) {
+  protobufs::FactIdIsDead fact;
+  fact.set_id(id);
+  dead_id_facts_->AddFact(fact);
 }
 
 }  // namespace fuzz

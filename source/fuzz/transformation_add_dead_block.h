@@ -28,8 +28,7 @@ class TransformationAddDeadBlock : public Transformation {
   explicit TransformationAddDeadBlock(
       const protobufs::TransformationAddDeadBlock& message);
 
-  TransformationAddDeadBlock(uint32_t fresh_id,
-                             uint32_t existing_block,
+  TransformationAddDeadBlock(uint32_t fresh_id, uint32_t existing_block,
                              bool condition_value,
                              std::vector<uint32_t> phi_id);
 

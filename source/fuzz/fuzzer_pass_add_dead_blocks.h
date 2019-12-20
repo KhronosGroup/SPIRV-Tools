@@ -24,8 +24,8 @@ namespace fuzz {
 class FuzzerPassAddDeadBlocks : public FuzzerPass {
  public:
   FuzzerPassAddDeadBlocks(opt::IRContext* ir_context, FactManager* fact_manager,
-                        FuzzerContext* fuzzer_context,
-                        protobufs::TransformationSequence* transformations);
+                          FuzzerContext* fuzzer_context,
+                          protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassAddDeadBlocks();
 

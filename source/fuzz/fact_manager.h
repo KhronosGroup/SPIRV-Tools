@@ -58,6 +58,9 @@ class FactManager {
                           const protobufs::DataDescriptor& data2,
                           opt::IRContext* context);
 
+  // Records the fact that |id| is dead.
+  void AddFactIdIsDead(uint32_t id);
+
   // The fact manager is responsible for managing a few distinct categories of
   // facts. In principle there could be different fact managers for each kind
   // of fact, but in practice providing one 'go to' place for facts is
@@ -130,6 +133,14 @@ class FactManager {
   // End of id synonym facts
   //==============================
 
+  //==============================
+  // Querying facts about dead ids
+
+  bool IdIsDead(uint32_t id) const;
+
+  // End of dead id facts
+  //==============================
+
  private:
   // For each distinct kind of fact to be managed, we use a separate opaque
   // class type.
@@ -142,6 +153,10 @@ class FactManager {
   class DataSynonymFacts;  // Opaque class for management of data synonym facts.
   std::unique_ptr<DataSynonymFacts>
       data_synonym_facts_;  // Unique pointer to internal data.
+
+  class DeadIdFacts;  // Opaque class for management of dead id facts.
+  std::unique_ptr<DeadIdFacts>
+      dead_id_facts_;  // Unique pointer to internal data.
 };
 
 }  // namespace fuzz

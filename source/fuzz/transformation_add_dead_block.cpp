@@ -24,9 +24,8 @@ TransformationAddDeadBlock::TransformationAddDeadBlock(
     : message_(message) {}
 
 TransformationAddDeadBlock::TransformationAddDeadBlock(
-        uint32_t fresh_id, uint32_t existing_block,
-bool condition_value,
-        std::vector<uint32_t> phi_id) {
+    uint32_t fresh_id, uint32_t existing_block, bool condition_value,
+    std::vector<uint32_t> phi_id) {
   message_.set_fresh_id(fresh_id);
   message_.set_existing_block(existing_block);
   message_.set_condition_value(condition_value);
@@ -45,14 +44,16 @@ bool TransformationAddDeadBlock::IsApplicable(
 
   // First, we check that a constant with the same value as
   // |message_.condition_value| is present.
-  if (!fuzzerutil::MaybeGetBoolConstantId(context, message_.condition_value())) {
+  if (!fuzzerutil::MaybeGetBoolConstantId(context,
+                                          message_.condition_value())) {
     // The required constant is not present, so the transformation cannot be
     // applied.
     return false;
   }
 
   // The existing block must indeed exist.
-  auto existing_block = fuzzerutil::MaybeFindBlock(context, message_.existing_block());
+  auto existing_block =
+      fuzzerutil::MaybeFindBlock(context, message_.existing_block());
   if (!existing_block) {
     return false;
   }
@@ -68,32 +69,54 @@ bool TransformationAddDeadBlock::IsApplicable(
   }
 
   // Its successor must not be a merge block nor continue target.
-  if (fuzzerutil::IsMergeOrContinue(context, existing_block->terminator()->GetSingleWordInOperand(0))) {
+  if (fuzzerutil::IsMergeOrContinue(
+          context, existing_block->terminator()->GetSingleWordInOperand(0))) {
     return false;
   }
   return true;
 }
 
 void TransformationAddDeadBlock::Apply(
-    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
+    opt::IRContext* context, spvtools::fuzz::FactManager* fact_manager) const {
   // TODO comment
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
   auto existing_block = context->cfg()->block(message_.existing_block());
-  auto successor_block_id = existing_block->terminator()->GetSingleWordInOperand(0);
-  auto bool_id = fuzzerutil::MaybeGetBoolConstantId(context, message_.condition_value());
+  auto successor_block_id =
+      existing_block->terminator()->GetSingleWordInOperand(0);
+  auto bool_id =
+      fuzzerutil::MaybeGetBoolConstantId(context, message_.condition_value());
 
   auto enclosing_function = existing_block->GetParent();
-  std::unique_ptr<opt::BasicBlock> new_block =
-          MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
-                  context, SpvOpLabel, 0, message_.fresh_id(), opt::Instruction::OperandList()));
+  std::unique_ptr<opt::BasicBlock> new_block = MakeUnique<opt::BasicBlock>(
+      MakeUnique<opt::Instruction>(context, SpvOpLabel, 0, message_.fresh_id(),
+                                   opt::Instruction::OperandList()));
   new_block->SetParent(enclosing_function);
-  new_block->AddInstruction(MakeUnique<opt::Instruction>(context, SpvOpBranch, 0, 0, opt::Instruction::OperandList({{SPV_OPERAND_TYPE_ID, {successor_block_id}}})));
+  new_block->AddInstruction(MakeUnique<opt::Instruction>(
+      context, SpvOpBranch, 0, 0,
+      opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_ID, {successor_block_id}}})));
+
+  existing_block->terminator()->InsertBefore(MakeUnique<opt::Instruction>(
+      context, SpvOpSelectionMerge, 0, 0,
+      opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_ID, {successor_block_id}},
+           {SPV_OPERAND_TYPE_SELECTION_CONTROL,
+            {SpvSelectionControlMaskNone}}})));
+
   existing_block->terminator()->SetOpcode(SpvOpBranchConditional);
   existing_block->terminator()->SetInOperands(
-          {{SPV_OPERAND_TYPE_ID, {bool_id}},
-           {SPV_OPERAND_TYPE_ID, {message_.condition_value() ? successor_block_id : message_.fresh_id()}},
-           {SPV_OPERAND_TYPE_ID, {message_.condition_value() ? message_.fresh_id() : successor_block_id}}});
-  enclosing_function->InsertBasicBlockAfter(std::move(new_block), existing_block);
+      {{SPV_OPERAND_TYPE_ID, {bool_id}},
+       {SPV_OPERAND_TYPE_ID,
+        {message_.condition_value() ? successor_block_id
+                                    : message_.fresh_id()}},
+       {SPV_OPERAND_TYPE_ID,
+        {message_.condition_value() ? message_.fresh_id()
+                                    : successor_block_id}}});
+  enclosing_function->InsertBasicBlockAfter(std::move(new_block),
+                                            existing_block);
+
+  fact_manager->AddFactIdIsDead(message_.fresh_id());
+
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 

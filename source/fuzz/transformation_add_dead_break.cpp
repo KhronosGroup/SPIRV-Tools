@@ -111,7 +111,8 @@ bool TransformationAddDeadBreak::IsApplicable(
     opt::IRContext* context, const FactManager& /*unused*/) const {
   // First, we check that a constant with the same value as
   // |message_.break_condition_value| is present.
-  if (!fuzzerutil::MaybeGetBoolConstantId(context, message_.break_condition_value())) {
+  if (!fuzzerutil::MaybeGetBoolConstantId(context,
+                                          message_.break_condition_value())) {
     // The required constant is not present, so the transformation cannot be
     // applied.
     return false;
