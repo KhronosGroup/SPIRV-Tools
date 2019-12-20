@@ -109,6 +109,19 @@ bool PhiIdsOkForNewEdge(
   return phi_index == static_cast<uint32_t>(phi_ids.size());
 }
 
+uint32_t MaybeGetBoolConstantId(opt::IRContext* context, bool value) {
+  opt::analysis::Bool bool_type;
+  auto registered_bool_type =
+          context->get_type_mgr()->GetRegisteredType(&bool_type);
+  if (!registered_bool_type) {
+    return 0;
+  }
+  opt::analysis::BoolConstant bool_constant(registered_bool_type->AsBool(),
+          value);
+  return context->get_constant_mgr()->FindDeclaredConstant(
+          &bool_constant, context->get_type_mgr()->GetId(&bool_type));
+}
+
 void AddUnreachableEdgeAndUpdateOpPhis(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     bool condition_value,
@@ -119,12 +132,8 @@ void AddUnreachableEdgeAndUpdateOpPhis(
          "Precondition on terminator of bb_from is not satisfied");
 
   // Get the id of the boolean constant to be used as the condition.
-  opt::analysis::Bool bool_type;
-  opt::analysis::BoolConstant bool_constant(
-      context->get_type_mgr()->GetRegisteredType(&bool_type)->AsBool(),
-      condition_value);
-  uint32_t bool_id = context->get_constant_mgr()->FindDeclaredConstant(
-      &bool_constant, context->get_type_mgr()->GetId(&bool_type));
+  uint32_t bool_id = MaybeGetBoolConstantId(context, condition_value);
+  assert(bool_id && "Precondition that condition value must be available is not satisfied");
 
   const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
   auto successor = bb_from->terminator()->GetSingleWordInOperand(0);
@@ -302,7 +311,8 @@ uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
 bool IsValid(opt::IRContext* context) {
   std::vector<uint32_t> binary;
   context->module()->ToBinary(&binary, false);
-  return SpirvTools(context->grammar().target_env()).Validate(binary);
+  SpirvTools tools(context->grammar().target_env());
+  return tools.Validate(binary);
 }
 
 std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context) {
@@ -315,6 +325,25 @@ std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context) {
 bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id) {
   auto type = ir_context->get_type_mgr()->GetType(id);
   return type && !type->AsFunction();
+}
+
+bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id) {
+  bool result = false;
+  ir_context->get_def_use_mgr()->WhileEachUse(
+          block_id,
+          [&result](
+                  const opt::Instruction* use_instruction,
+                  uint32_t /*unused*/) -> bool {
+              switch (use_instruction->opcode()) {
+                case SpvOpLoopMerge:
+                case SpvOpSelectionMerge:
+                  result = true;
+                  return false;
+                default:
+                  return true;
+              }
+          });
+  return result;
 }
 
 }  // namespace fuzzerutil

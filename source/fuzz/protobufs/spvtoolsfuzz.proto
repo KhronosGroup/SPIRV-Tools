@@ -242,6 +242,7 @@ message Transformation {
     TransformationAddGlobalVariable add_global_variable = 31;
     TransformationAddGlobalUndef add_global_undef = 32;
     TransformationAddFunction add_function = 33;
+    TransformationAddDeadBlock add_dead_block = 34;
     // Add additional option using the next available number.
   }
 }
@@ -275,7 +276,7 @@ message TransformationAddConstantComposite {
 
 message TransformationAddConstantScalar {
 
-  // Adds a constant of the given scalar type
+  // Adds a constant of the given scalar type.
 
   // Id for the constant
   uint32 fresh_id = 1;
@@ -285,6 +286,29 @@ message TransformationAddConstantScalar {
 
   // Value of the constant
   repeated uint32 word = 3;
+
+}
+
+message TransformationAddDeadBlock {
+
+  // Adds a new block to the module that is statically reachable from an
+  // existing block, but dynamically unreachable.
+
+  // Fresh id for the dead block
+  uint32 fresh_id = 1;
+
+  // Id of an existing block terminated with OpBranch, such that this OpBranch
+  // can be replaced with an OpBranchConditional to its exiting successor or
+  // the dead block
+  uint32 existing_block = 2;
+
+  // Determines whether the condition associated with the OpBranchConditional
+  // is true or false
+  bool condition_value = 3;
+
+  // A sequence of ids suitable for extending OpPhi instructions at the
+  // successor of |existing_block| as a result of adding a new edge
+  repeated uint32 phi_id = 4;
 
 }
 

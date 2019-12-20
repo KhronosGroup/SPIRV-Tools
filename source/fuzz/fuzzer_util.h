@@ -52,8 +52,13 @@ bool PhiIdsOkForNewEdge(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids);
 
-// Requires that PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids) holds,
-// and that bb_from ends with "OpBranch %some_block".  Turns OpBranch into
+// Returns the id of a boolean constant with value |value| if it exists in the
+// module, or 0 otherwise.
+uint32_t MaybeGetBoolConstantId(opt::IRContext* context, bool value);
+
+// Requires that a boolean constant with value |condition_value| is available,
+// that PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids) holds, and that
+// bb_from ends with "OpBranch %some_block".  Turns OpBranch into
 // "OpBranchConditional |condition_value| ...", such that control will branch
 // to %some_block, with |bb_to| being the unreachable alternative.  Updates
 // OpPhi instructions in |bb_to| using |phi_ids| so that the new edge is valid.
@@ -122,6 +127,9 @@ std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context);
 // Returns true if and only if |id| is the id of a type that is not a function
 // type.
 bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id);
+
+// Returns true if and only if |block_id| is a merge block or continue target
+bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
 
 }  // namespace fuzzerutil
 

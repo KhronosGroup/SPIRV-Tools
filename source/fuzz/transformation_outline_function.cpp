@@ -151,22 +151,7 @@ bool TransformationOutlineFunction::IsApplicable(
 
   // For simplicity, we do not allow the exit block to be a merge block or
   // continue target.
-  bool exit_block_is_merge_or_continue = false;
-  context->get_def_use_mgr()->WhileEachUse(
-      exit_block->id(),
-      [&exit_block_is_merge_or_continue](
-          const opt::Instruction* use_instruction,
-          uint32_t /*unused*/) -> bool {
-        switch (use_instruction->opcode()) {
-          case SpvOpLoopMerge:
-          case SpvOpSelectionMerge:
-            exit_block_is_merge_or_continue = true;
-            return false;
-          default:
-            return true;
-        }
-      });
-  if (exit_block_is_merge_or_continue) {
+  if (fuzzerutil::IsMergeOrContinue(context, exit_block->id())) {
     return false;
   }
 
