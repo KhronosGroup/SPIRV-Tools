@@ -2076,7 +2076,7 @@ TEST_P(ValidateCFG, ContinueTargetCanBeMergeBlockForNestedStructure) {
         getDiagnosticString(),
         HasSubstr("Header block 3[%if_head] is contained in the loop construct "
                   "headed "
-                  "by 2[%loop], but it's merge block 5[%if_merge] is not"));
+                  "by 2[%loop], but its merge block 5[%if_merge] is not"));
   } else {
     EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
   }
@@ -4147,7 +4147,7 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "Header block 3[%body] is contained in the loop construct headed by "
-          "1[%loop], but it's merge block 2[%continue] is not"));
+          "1[%loop], but its merge block 2[%continue] is not"));
 }
 
 TEST_F(ValidateCFG, ContinueCannotBeLoopMergeTarget) {
@@ -4184,7 +4184,7 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "Header block 3[%inner] is contained in the loop construct headed by "
-          "1[%loop], but it's merge block 2[%continue] is not"));
+          "1[%loop], but its merge block 2[%continue] is not"));
 }
 
 }  // namespace
