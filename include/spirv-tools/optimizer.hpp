@@ -748,7 +748,7 @@ Optimizer::PassToken CreateCombineAccessChainsPass();
 // |version| specifies the buffer record format.
 Optimizer::PassToken CreateInstBindlessCheckPass(
     uint32_t desc_set, uint32_t shader_id, bool input_length_enable = false,
-    bool input_init_enable = false, uint32_t version = 1);
+    bool input_init_enable = false, uint32_t version = 2);
 
 // Create a pass to instrument physical buffer address checking
 // This pass instruments all physical buffer address references to check that
