@@ -769,7 +769,7 @@ spv_result_t StructuredControlFlowChecks(
                    << "Header block " << _.getIdName(block->id())
                    << " is contained in the " << construct_name
                    << " construct headed by " << _.getIdName(header->id())
-                   << ", but it's merge block " << _.getIdName(merge_id)
+                   << ", but its merge block " << _.getIdName(merge_id)
                    << " is not";
           }
         }
