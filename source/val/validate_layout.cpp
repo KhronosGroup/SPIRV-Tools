@@ -14,15 +14,15 @@
 
 // Source code for logical layout validation as described in section 2.4
 
-#include "source/val/validate.h"
-
 #include <cassert>
 
+#include "OpenCLDebugInfo100.h"
 #include "source/diagnostic.h"
 #include "source/opcode.h"
 #include "source/operand.h"
 #include "source/val/function.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -45,6 +45,19 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Non-semantic OpExtInst must not appear before types "
                  << "section";
+        }
+      } else if (spvExtInstIsDebugInfo(inst->ext_inst_type())) {
+        // Debug info extinst opcodes other than DebugScope, DebugNoScope,
+        // DebugDeclare, DebugValue must be placed between section 9 (types,
+        // constants, global variables) and section 10 (function declarations).
+        if (_.current_layout_section() < kLayoutTypes ||
+            _.current_layout_section() > kLayoutFunctionDeclarations) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << "OpenCL.DebugInfo.100 instructions other than "
+                 << "DebugScope, DebugNoScope, DebugDeclare, DebugValue "
+                 << "must appear between section 9 (types, constants, "
+                 << "global variables) and section 10 (function "
+                 << "declarations)";
         }
       } else {
         // otherwise they must be used in a block
@@ -181,6 +194,37 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
             return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                    << "Non-semantic OpExtInst within function definition must "
                       "appear in a block";
+          }
+        } else if (spvExtInstIsDebugInfo(inst->ext_inst_type())) {
+          const uint32_t ext_inst_index = inst->word(4);
+          const OpenCLDebugInfo100Instructions ext_inst_key =
+              OpenCLDebugInfo100Instructions(ext_inst_index);
+          if (ext_inst_key == OpenCLDebugInfo100DebugScope ||
+              ext_inst_key == OpenCLDebugInfo100DebugNoScope ||
+              ext_inst_key == OpenCLDebugInfo100DebugDeclare ||
+              ext_inst_key == OpenCLDebugInfo100DebugValue) {
+            if (_.in_function_body() == false) {
+              // DebugScope, DebugNoScope, DebugDeclare, DebugValue must
+              // appear in a function body.
+              return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                     << "OpenCL.DebugInfo.100 DebugScope, DebugNoScope, "
+                     << "DebugDeclare, DebugValue must appear in a function "
+                     << "body";
+            }
+          } else {
+            // Debug info extinst opcodes other than DebugScope, DebugNoScope,
+            // DebugDeclare, DebugValue must be placed between section 9 (types,
+            // constants, global variables) and section 10 (function
+            // declarations).
+            if (_.current_layout_section() < kLayoutTypes ||
+                _.current_layout_section() > kLayoutFunctionDeclarations) {
+              return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                     << "OpenCL.DebugInfo.100 instructions other than "
+                     << "DebugScope, DebugNoScope, DebugDeclare, DebugValue "
+                     << "must appear between section 9 (types, constants, "
+                     << "global variables) and section 10 (function "
+                     << "declarations)";
+            }
           }
         } else {
           // otherwise they must be used in a block
