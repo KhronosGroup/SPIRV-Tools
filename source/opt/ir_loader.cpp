@@ -131,20 +131,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       }
     } else {
       if (block_ == nullptr) {  // Inside function but outside blocks
-        if (opcode == SpvOpExtInst &&
-            spvExtInstIsDebugInfo(inst->ext_inst_type)) {
-          const uint32_t ext_inst_index = inst->words[4];
-          const OpenCLDebugInfo100Instructions ext_inst_key =
-              OpenCLDebugInfo100Instructions(ext_inst_index);
-          if (ext_inst_key != OpenCLDebugInfo100DebugScope &&
-              ext_inst_key != OpenCLDebugInfo100DebugNoScope) {
-            Errorf(consumer_, src, loc,
-                   "None-scope DebugInfo instruction found inside "
-                   "function but outside basic block",
-                   opcode);
-            return false;
-          }
-        } else if (opcode != SpvOpFunctionParameter) {
+        if (opcode != SpvOpFunctionParameter) {
           Errorf(consumer_, src, loc,
                  "Non-OpFunctionParameter (opcode: %d) found inside "
                  "function but outside basic block",
@@ -153,6 +140,23 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         }
         function_->AddParameter(std::move(spv_inst));
       } else {
+        if (opcode == SpvOpExtInst &&
+            spvExtInstIsDebugInfo(inst->ext_inst_type)) {
+          const uint32_t ext_inst_index = inst->words[4];
+          const OpenCLDebugInfo100Instructions ext_inst_key =
+              OpenCLDebugInfo100Instructions(ext_inst_index);
+          if (ext_inst_key != OpenCLDebugInfo100DebugScope &&
+              ext_inst_key != OpenCLDebugInfo100DebugNoScope &&
+              ext_inst_key != OpenCLDebugInfo100DebugDeclare &&
+              ext_inst_key != OpenCLDebugInfo100DebugValue) {
+            Errorf(consumer_, src, loc,
+                   "Debug info extension instruction other than DebugScope, "
+                   "DebugNoScope, DebugDeclare, and DebugValue found inside "
+                   "function",
+                   opcode);
+            return false;
+          }
+        }
         block_->AddInstruction(std::move(spv_inst));
       }
     }
