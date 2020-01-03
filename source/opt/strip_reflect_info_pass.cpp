@@ -109,12 +109,17 @@ Pass::Status StripReflectInfoPass::Process() {
   // OpName must come first, since they may refer to other debug instructions.
   // If they are after the instructions that refer to, then they will be killed
   // when that instruction is killed, which will lead to a double kill.
-  // Similarly, OpString must come right after OpName, since they may refer to
-  // other debug instructions such OpExtInst for OpenCL.DebugInfo.100 extension.
   std::sort(to_remove.begin(), to_remove.end(),
             [](Instruction* lhs, Instruction* rhs) -> bool {
               if (lhs->opcode() == SpvOpName && rhs->opcode() != SpvOpName)
                 return true;
+              return false;
+            });
+
+  // Similarly, OpString must come first, since they may refer to
+  // other debug instructions such OpExtInst for OpenCL.DebugInfo.100 extension.
+  std::sort(to_remove.begin(), to_remove.end(),
+            [](Instruction* lhs, Instruction* rhs) -> bool {
               if (lhs->opcode() == SpvOpString && rhs->opcode() != SpvOpString)
                 return true;
               return false;
