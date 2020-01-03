@@ -230,7 +230,7 @@ OpLine %7 3 18
 %40 = OpExtInst %void %1 DebugTypeMember %12 %38 %34 3 3 %36 %int_128 %int_128 FlagIsProtected|FlagIsPrivate
 %41 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %36 %38 %38
 %42 = OpExtInst %void %1 DebugExpression
-%43 = OpExtInst %void %1 DebugFunction %14 %41 %34 6 1 %35 %15 FlagIsProtected|FlagIsPrivate 7 %34
+%43 = OpExtInst %void %1 DebugFunction %14 %41 %34 6 1 %35 %15 FlagIsProtected|FlagIsPrivate 7 %main
 %44 = OpExtInst %void %1 DebugLocalVariable %16 %38 %34 6 16 %43 FlagIsLocal 0
 %45 = OpExtInst %void %1 DebugLocalVariable %17 %38 %34 7 16 %43 FlagIsLocal 1
 %46 = OpExtInst %void %1 DebugLocalVariable %18 %36 %34 8 3 %43 FlagIsLocal
@@ -284,9 +284,6 @@ TEST(IrBuilder, ConsumeDebugInfoLexicalScopeInst) {
   // float4 main(float pos : POSITION) : SV_POSITION {  // main
   //   return func1(pos);
   // }
-  //
-  // TODO: After handling forward reference to OpFunction,
-  // update DebugFunction.
   DoRoundTripCheck(R"(OpCapability Shader
 %1 = OpExtInstImport "OpenCL.DebugInfo.100"
 OpMemoryModel Logical GLSL450
@@ -372,9 +369,9 @@ OpLine %5 12 37
 %44 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %43 %42
 %45 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %43 %42
 %46 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %43 %42
-%47 = OpExtInst %void %1 DebugFunction %8 %44 %40 12 1 %41 %9 FlagIsProtected|FlagIsPrivate 13 %40
-%48 = OpExtInst %void %1 DebugFunction %13 %45 %40 5 1 %41 %10 FlagIsProtected|FlagIsPrivate 13 %40
-%49 = OpExtInst %void %1 DebugFunction %14 %46 %40 1 1 %41 %11 FlagIsProtected|FlagIsPrivate 13 %40
+%47 = OpExtInst %void %1 DebugFunction %8 %44 %40 12 1 %41 %9 FlagIsProtected|FlagIsPrivate 13 %main
+%48 = OpExtInst %void %1 DebugFunction %13 %45 %40 5 1 %41 %10 FlagIsProtected|FlagIsPrivate 13 %func1
+%49 = OpExtInst %void %1 DebugFunction %14 %46 %40 1 1 %41 %11 FlagIsProtected|FlagIsPrivate 13 %func2
 %50 = OpExtInst %void %1 DebugLexicalBlock %40 6 17 %48
 %51 = OpExtInst %void %1 DebugLexicalBlock %40 9 3 %48
 OpLine %5 12 1
@@ -453,8 +450,11 @@ TEST(IrBuilder, ConsumeDebugInlinedAt) {
   //   return func1(pos);
   // }
   //
-  // TODO: After handling forward reference to OpFunction,
-  // update DebugFunction.
+  // TODO(https://gitlab.khronos.org/spirv/SPIR-V/issues/533): In the following
+  // SPIRV code, we use DebugInfoNone to reference opted-out function from
+  // DebugFunction similar to opted-out global variable for DebugGlobalVariable,
+  // but this is not a part of the spec yet. We are still in discussion and we
+  // must correct it if our decision is different.
   DoRoundTripCheck(R"(OpCapability Shader
 %1 = OpExtInstImport "OpenCL.DebugInfo.100"
 OpMemoryModel Logical GLSL450
@@ -525,22 +525,22 @@ OpLine %5 12 25
 %pos = OpVariable %_ptr_Input_float Input
 OpLine %5 12 37
 %gl_Position = OpVariable %_ptr_Output_v4float Output
-%32 = OpExtInst %void %1 DebugSource %5 %6
-%33 = OpExtInst %void %1 DebugCompilationUnit 2 4 %32 HLSL
-%34 = OpExtInst %void %1 DebugTypeBasic %7 %int_32 Float
-%35 = OpExtInst %void %1 DebugTypeVector %34 4
-%36 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %35 %34
-%37 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %35 %34
-%38 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %35 %34
-%39 = OpExtInst %void %1 DebugInfoNone
-%40 = OpExtInst %void %1 DebugFunction %8 %36 %32 12 1 %33 %9 FlagIsProtected|FlagIsPrivate 13 %39
-%41 = OpExtInst %void %1 DebugFunction %13 %37 %32 5 1 %33 %10 FlagIsProtected|FlagIsPrivate 13 %39
-%42 = OpExtInst %void %1 DebugFunction %14 %38 %32 1 1 %33 %11 FlagIsProtected|FlagIsPrivate 13 %39
-%43 = OpExtInst %void %1 DebugLexicalBlock %32 12 49 %40
-%44 = OpExtInst %void %1 DebugLexicalBlock %32 5 26 %41
-%45 = OpExtInst %void %1 DebugLexicalBlock %32 1 26 %42
-%46 = OpExtInst %void %1 DebugLexicalBlock %32 6 17 %44
-%47 = OpExtInst %void %1 DebugLexicalBlock %32 9 3 %44
+%32 = OpExtInst %void %1 DebugInfoNone
+%33 = OpExtInst %void %1 DebugSource %5 %6
+%34 = OpExtInst %void %1 DebugCompilationUnit 2 4 %33 HLSL
+%35 = OpExtInst %void %1 DebugTypeBasic %7 %int_32 Float
+%36 = OpExtInst %void %1 DebugTypeVector %35 4
+%37 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %36 %35
+%38 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %36 %35
+%39 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %36 %35
+%40 = OpExtInst %void %1 DebugFunction %8 %37 %33 12 1 %34 %9 FlagIsProtected|FlagIsPrivate 13 %main
+%41 = OpExtInst %void %1 DebugFunction %13 %38 %33 5 1 %34 %10 FlagIsProtected|FlagIsPrivate 13 %32
+%42 = OpExtInst %void %1 DebugFunction %14 %39 %33 1 1 %34 %11 FlagIsProtected|FlagIsPrivate 13 %32
+%43 = OpExtInst %void %1 DebugLexicalBlock %33 12 49 %40
+%44 = OpExtInst %void %1 DebugLexicalBlock %33 5 26 %41
+%45 = OpExtInst %void %1 DebugLexicalBlock %33 1 26 %42
+%46 = OpExtInst %void %1 DebugLexicalBlock %33 6 17 %44
+%47 = OpExtInst %void %1 DebugLexicalBlock %33 9 3 %44
 %48 = OpExtInst %void %1 DebugInlinedAt 9 %47
 %49 = OpExtInst %void %1 DebugInlinedAt 13 %43
 %50 = OpExtInst %void %1 DebugInlinedAt 13 %43 %48
@@ -591,9 +591,6 @@ TEST(IrBuilder, DebugInfoInstInFunctionOutOfBlock) {
   // float4 main(float pos : POSITION) : SV_POSITION {  // main
   //   return func1(pos);
   // }
-  //
-  // TODO: After handling forward reference to OpFunction,
-  // update DebugFunction.
   const std::string text = R"(OpCapability Shader
 %1 = OpExtInstImport "OpenCL.DebugInfo.100"
 OpMemoryModel Logical GLSL450
@@ -679,9 +676,9 @@ OpLine %5 12 37
 %44 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %43 %42
 %45 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %43 %42
 %46 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %43 %42
-%47 = OpExtInst %void %1 DebugFunction %8 %44 %40 12 1 %41 %9 FlagIsProtected|FlagIsPrivate 13 %40
-%48 = OpExtInst %void %1 DebugFunction %13 %45 %40 5 1 %41 %10 FlagIsProtected|FlagIsPrivate 13 %40
-%49 = OpExtInst %void %1 DebugFunction %14 %46 %40 1 1 %41 %11 FlagIsProtected|FlagIsPrivate 13 %40
+%47 = OpExtInst %void %1 DebugFunction %8 %44 %40 12 1 %41 %9 FlagIsProtected|FlagIsPrivate 13 %main
+%48 = OpExtInst %void %1 DebugFunction %13 %45 %40 5 1 %41 %10 FlagIsProtected|FlagIsPrivate 13 %func1
+%49 = OpExtInst %void %1 DebugFunction %14 %46 %40 1 1 %41 %11 FlagIsProtected|FlagIsPrivate 13 %func2
 %50 = OpExtInst %void %1 DebugLexicalBlock %40 6 17 %48
 %51 = OpExtInst %void %1 DebugLexicalBlock %40 9 3 %48
 OpLine %5 12 1
