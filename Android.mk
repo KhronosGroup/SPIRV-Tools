@@ -239,12 +239,8 @@ $(1)/$(2).h : \
 		    --extinst-grammar=$(3) \
 		    --extinst-output-base=$(1)/$(2)
 		@echo "[$(TARGET_ARCH_ABI)] Generate language specific header for $(2): headers <= grammar"
-$(LOCAL_PATH)/source/ext_inst.cpp: $(1)/$(2).h
-$(LOCAL_PATH)/source/opt/ir_loader.cpp: $(1)/$(2).h
-$(LOCAL_PATH)/source/val/validate_layout.cpp: $(1)/$(2).h
-$(LOCAL_PATH)/source/operand.cpp: $(1)/$(2).h
-$(LOCAL_PATH)/source/operand.h: $(1)/$(2).h
-$(LOCAL_PATH)/test/ext_inst.cldebug100_test.cpp: $(1)/$(2).h
+$(foreach F,$(SPVTOOLS_SRC_FILES) $(SPVTOOLS_OPT_SRC_FILES),$(LOCAL_PATH)/$F ) \
+	: $(1)/$(2).h
 endef
 # We generate language-specific headers for DebugInfo and OpenCL.DebugInfo.100
 $(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),DebugInfo,$(SPV_DEBUGINFO_GRAMMAR)))
