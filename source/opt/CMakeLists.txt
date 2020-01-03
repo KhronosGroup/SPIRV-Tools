@@ -220,6 +220,8 @@ set(SPIRV_TOOLS_OPT_SOURCES
   vector_dce.cpp
   workaround1209.cpp
   wrap_opkill.cpp
+
+  ${spirv-tools_BINARY_DIR}/OpenCLDebugInfo100.h
 )
 
 if(MSVC)
