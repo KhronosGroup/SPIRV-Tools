@@ -988,6 +988,10 @@ void InstrumentPass::InitializeInstrument() {
     (void)i;
     ++module_offset;
   }
+  for (auto& i : module->debuginfo()) {
+    (void)i;
+    ++module_offset;
+  }
   for (auto& i : module->annotations()) {
     (void)i;
     ++module_offset;

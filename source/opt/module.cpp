@@ -95,6 +95,7 @@ void Module::ForEachInst(const std::function<void(Instruction*)>& f,
   DELEGATE(debugs1_);
   DELEGATE(debugs2_);
   DELEGATE(debugs3_);
+  DELEGATE(debuginfo_);
   DELEGATE(annotations_);
   DELEGATE(types_values_);
   for (auto& i : functions_) i->ForEachInst(f, run_on_debug_line_insts);
@@ -115,6 +116,7 @@ void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
   for (auto& i : debugs1_) DELEGATE(i);
   for (auto& i : debugs2_) DELEGATE(i);
   for (auto& i : debugs3_) DELEGATE(i);
+  for (auto& i : debuginfo_) DELEGATE(i);
   for (auto& i : annotations_) DELEGATE(i);
   for (auto& i : types_values_) DELEGATE(i);
   for (auto& i : functions_) {

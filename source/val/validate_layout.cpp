@@ -51,7 +51,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
         // DebugDeclare, DebugValue must be placed between section 9 (types,
         // constants, global variables) and section 10 (function declarations).
         if (_.current_layout_section() < kLayoutTypes ||
-            _.current_layout_section() > kLayoutFunctionDeclarations) {
+            _.current_layout_section() >= kLayoutFunctionDeclarations) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "OpenCL.DebugInfo.100 instructions other than "
                  << "DebugScope, DebugNoScope, DebugDeclare, DebugValue "
@@ -217,7 +217,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
             // constants, global variables) and section 10 (function
             // declarations).
             if (_.current_layout_section() < kLayoutTypes ||
-                _.current_layout_section() > kLayoutFunctionDeclarations) {
+                _.current_layout_section() >= kLayoutFunctionDeclarations) {
               return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                      << "OpenCL.DebugInfo.100 instructions other than "
                      << "DebugScope, DebugNoScope, DebugDeclare, DebugValue "

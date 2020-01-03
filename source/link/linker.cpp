@@ -324,6 +324,11 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
       linked_module->AddDebug3Inst(
           std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
+  for (const auto& module : input_modules)
+    for (const auto& inst : module->debuginfo())
+      linked_module->AddDebugInfoInst(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
+
   // If the generated module uses SPIR-V 1.1 or higher, add an
   // OpModuleProcessed instruction about the linking step.
   if (linked_module->version() >= 0x10100) {

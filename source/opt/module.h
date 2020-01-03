@@ -102,6 +102,10 @@ class Module {
   // This is due to decision by the SPIR Working Group, pending publication.
   inline void AddDebug3Inst(std::unique_ptr<Instruction> d);
 
+  // Appends a debug info extension (OpenCL.DebugInfo.100 or DebugInfo)
+  // instruction to this module.
+  inline void AddDebugInfoInst(std::unique_ptr<Instruction> d);
+
   // Appends an annotation instruction to this module.
   inline void AddAnnotationInst(std::unique_ptr<Instruction> a);
 
@@ -181,6 +185,14 @@ class Module {
   inline inst_iterator debug3_end();
   inline IteratorRange<inst_iterator> debugs3();
   inline IteratorRange<const_inst_iterator> debugs3() const;
+
+  // Iterators for debug info instructions (excluding OpLine & OpNoLine)
+  // contained in this module.  These are OpExtInst for OpenCL.DebugInfo.100
+  // or DebugInfo extension placed between section 9 and 10.
+  inline inst_iterator debuginfo_begin();
+  inline inst_iterator debuginfo_end();
+  inline IteratorRange<inst_iterator> debuginfo();
+  inline IteratorRange<const_inst_iterator> debuginfo() const;
 
   // Iterators for entry point instructions contained in this module
   inline IteratorRange<inst_iterator> entry_points();
@@ -274,6 +286,7 @@ class Module {
   InstructionList debugs1_;
   InstructionList debugs2_;
   InstructionList debugs3_;
+  InstructionList debuginfo_;
   InstructionList annotations_;
   // Type declarations, constants, and global variable declarations.
   InstructionList types_values_;
@@ -321,6 +334,10 @@ inline void Module::AddDebug2Inst(std::unique_ptr<Instruction> d) {
 
 inline void Module::AddDebug3Inst(std::unique_ptr<Instruction> d) {
   debugs3_.push_back(std::move(d));
+}
+
+inline void Module::AddDebugInfoInst(std::unique_ptr<Instruction> d) {
+  debuginfo_.push_back(std::move(d));
 }
 
 inline void Module::AddAnnotationInst(std::unique_ptr<Instruction> a) {
@@ -401,6 +418,21 @@ inline IteratorRange<Module::inst_iterator> Module::debugs3() {
 
 inline IteratorRange<Module::const_inst_iterator> Module::debugs3() const {
   return make_range(debugs3_.begin(), debugs3_.end());
+}
+
+inline Module::inst_iterator Module::debuginfo_begin() {
+  return debuginfo_.begin();
+}
+inline Module::inst_iterator Module::debuginfo_end() {
+  return debuginfo_.end();
+}
+
+inline IteratorRange<Module::inst_iterator> Module::debuginfo() {
+  return make_range(debuginfo_.begin(), debuginfo_.end());
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::debuginfo() const {
+  return make_range(debuginfo_.begin(), debuginfo_.end());
 }
 
 inline IteratorRange<Module::inst_iterator> Module::entry_points() {
