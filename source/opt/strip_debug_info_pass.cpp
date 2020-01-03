@@ -87,15 +87,6 @@ Pass::Status StripDebugInfoPass::Process() {
               return false;
             });
 
-  // Similarly, OpString must come first, since they may refer to
-  // other debug instructions such OpExtInst for OpenCL.DebugInfo.100 extension.
-  std::sort(to_kill.begin(), to_kill.end(),
-            [](Instruction* lhs, Instruction* rhs) -> bool {
-              if (lhs->opcode() == SpvOpString && rhs->opcode() != SpvOpString)
-                return true;
-              return false;
-            });
-
   bool modified = !to_kill.empty();
 
   for (auto* inst : to_kill) context()->KillInst(inst);

@@ -18,6 +18,7 @@
 #include <functional>
 #include <vector>
 
+#include "OpenCLDebugInfo100.h"
 #include "source/table.h"
 #include "spirv-tools/libspirv.h"
 
@@ -140,5 +141,12 @@ bool spvIsInIdType(spv_operand_type_t type);
 // used in the SSA validation stage of the pipeline
 std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     SpvOp opcode);
+
+// Takes the instruction key of a debug info extension instruction
+// and returns a function object that will return true if the index
+// of the operand can be forward declared. This function will
+// used in the SSA validation stage of the pipeline
+std::function<bool(unsigned)> spvDbgInfoExtOperandCanBeForwardDeclaredFunction(
+    OpenCLDebugInfo100Instructions key);
 
 #endif  // SOURCE_OPERAND_H_

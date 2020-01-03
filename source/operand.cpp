@@ -512,3 +512,23 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
   }
   return out;
 }
+
+std::function<bool(unsigned)> spvDbgInfoExtOperandCanBeForwardDeclaredFunction(
+    OpenCLDebugInfo100Instructions key) {
+  std::function<bool(unsigned index)> out;
+  // TODO(https://gitlab.khronos.org/spirv/SPIR-V/issues/532): Forward
+  // references for debug info instructions are still in discussion. We must
+  // update the following lines of code when we conclude the spec.
+  switch (key) {
+    case OpenCLDebugInfo100DebugFunction:
+      out = [](unsigned index) { return index == 13; };
+      break;
+    case OpenCLDebugInfo100DebugTypeComposite:
+      out = [](unsigned index) { return index >= 13; };
+      break;
+    default:
+      out = [](unsigned) { return false; };
+      break;
+  }
+  return out;
+}

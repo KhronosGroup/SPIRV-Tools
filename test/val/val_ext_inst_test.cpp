@@ -658,19 +658,7 @@ OpFunctionEnd)";
 TEST_F(ValidateOpenCL100DebugInfo, UseDebugInstructionOutOfFunction) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
-%code = OpString "struct VS_OUTPUT {
-  float4 pos : SV_POSITION;
-  float4 color : COLOR;
-};
-
-VS_OUTPUT main(float4 pos : POSITION,
-               float4 color : COLOR) {
-  VS_OUTPUT vout;
-  vout.pos = pos;
-  vout.color = color;
-  return vout;
-}
-"
+%code = OpString "main() {}"
 )";
 
   const std::string dbg_inst = R"(
@@ -689,19 +677,7 @@ VS_OUTPUT main(float4 pos : POSITION,
 TEST_F(ValidateOpenCL100DebugInfo, DebugSourceInFunction) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
-%code = OpString "struct VS_OUTPUT {
-  float4 pos : SV_POSITION;
-  float4 color : COLOR;
-};
-
-VS_OUTPUT main(float4 pos : POSITION,
-               float4 color : COLOR) {
-  VS_OUTPUT vout;
-  vout.pos = pos;
-  vout.color = color;
-  return vout;
-}
-"
+%code = OpString "main() {}"
 )";
 
   const std::string dbg_inst = R"(
@@ -723,20 +699,42 @@ VS_OUTPUT main(float4 pos : POSITION,
                 "(function declarations)"));
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionForwardReference) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() {}"
+%void_name = OpString "void"
+%main_name = OpString "main"
+%main_linkage_name = OpString "v_main"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%void_info = OpExtInst %void %DbgExt DebugTypeBasic %void_name %u32_0 Unspecified
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void_info %void_info
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+)";
+
+  const std::string body = R"(
+%main_scope = OpExtInst %void %DbgExt DebugScope %main_info
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugScopeBeforeOpVariableInFunction) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
-%code = OpString "struct VS_OUTPUT {
-  float4 pos : SV_POSITION;
-  float4 color : COLOR;
-};
-
-VS_OUTPUT main(float4 pos : POSITION,
-               float4 color : COLOR) {
-  VS_OUTPUT vout;
-  vout.pos = pos;
-  vout.color = color;
-  return vout;
+%code = OpString "float4 main(float arg) {
+  float foo;
+  return float4(0, 0, 0, 0);
 }
 "
 %float_name = OpString "float"
@@ -748,15 +746,13 @@ VS_OUTPUT main(float4 pos : POSITION,
 %int_32 = OpConstant %u32 32
 )";
 
-  // TODO: After working on forward references to OpFunction, update
-  // DebugFunction
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
 %v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %v4float_info %float_info
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %dbg_src
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main
 )";
 
   const std::string body = R"(
@@ -771,6 +767,87 @@ VS_OUTPUT main(float4 pos : POSITION,
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, size_const, dbg_inst_header, body, extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeCompositeForwardReference) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "struct VS_OUTPUT {
+  float4 pos : SV_POSITION;
+  float4 color : COLOR;
+};
+main() {}
+"
+%VS_OUTPUT_name = OpString "struct VS_OUTPUT"
+%float_name = OpString "float"
+%VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
+%VS_OUTPUT_color_name = OpString "color : COLOR"
+%VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+%int_128 = OpConstant %u32 128
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%VS_OUTPUT_info = OpExtInst %void %DbgExt DebugTypeComposite %VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %VS_OUTPUT_color_info
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
+%VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_pos_name %v4float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_128 FlagIsPublic
+%VS_OUTPUT_color_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_color_name %v4float_info %dbg_src 3 3 %VS_OUTPUT_info %int_128 %int_128 FlagIsPublic
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeCompositeMissingReference) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "struct VS_OUTPUT {
+  float4 pos : SV_POSITION;
+  float4 color : COLOR;
+};
+main() {}
+"
+%VS_OUTPUT_name = OpString "struct VS_OUTPUT"
+%float_name = OpString "float"
+%VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
+%VS_OUTPUT_color_name = OpString "color : COLOR"
+%VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+%int_128 = OpConstant %u32 128
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%VS_OUTPUT_info = OpExtInst %void %DbgExt DebugTypeComposite %VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %VS_OUTPUT_color_info
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
+%VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_pos_name %v4float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_128 FlagIsPublic
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("forward referenced IDs have not been defined"));
 }
 
 TEST_P(ValidateGlslStd450SqrtLike, Success) {
