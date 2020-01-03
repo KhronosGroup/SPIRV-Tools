@@ -240,6 +240,11 @@ $(1)/$(2).h : \
 		    --extinst-output-base=$(1)/$(2)
 		@echo "[$(TARGET_ARCH_ABI)] Generate language specific header for $(2): headers <= grammar"
 $(LOCAL_PATH)/source/ext_inst.cpp: $(1)/$(2).h
+$(LOCAL_PATH)/source/opt/ir_loader.cpp: $(1)/$(2).h
+$(LOCAL_PATH)/source/val/validate_layout.cpp: $(1)/$(2).h
+$(LOCAL_PATH)/source/operand.cpp: $(1)/$(2).h
+$(LOCAL_PATH)/source/operand.h: $(1)/$(2).h
+$(LOCAL_PATH)/test/ext_inst.cldebug100_test.cpp: $(1)/$(2).h
 endef
 # We generate language-specific headers for DebugInfo and OpenCL.DebugInfo.100
 $(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),DebugInfo,$(SPV_DEBUGINFO_GRAMMAR)))
@@ -320,8 +325,7 @@ LOCAL_C_INCLUDES := \
 LOCAL_EXPORT_C_INCLUDES := \
 		$(LOCAL_PATH)/include
 LOCAL_CXXFLAGS:=-std=c++11 -fno-exceptions -fno-rtti -Werror
-LOCAL_SRC_FILES:= $(SPVTOOLS_SRC_FILES) \
-		$(SPVTOOLS_OUT_PATH)/OpenCLDebugInfo100.h
+LOCAL_SRC_FILES:= $(SPVTOOLS_SRC_FILES)
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -333,6 +337,5 @@ LOCAL_C_INCLUDES := \
 		$(SPVTOOLS_OUT_PATH)
 LOCAL_CXXFLAGS:=-std=c++11 -fno-exceptions -fno-rtti -Werror
 LOCAL_STATIC_LIBRARIES:=SPIRV-Tools
-LOCAL_SRC_FILES:= $(SPVTOOLS_OPT_SRC_FILES) \
-		$(SPVTOOLS_OUT_PATH)/OpenCLDebugInfo100.h
+LOCAL_SRC_FILES:= $(SPVTOOLS_OPT_SRC_FILES)
 include $(BUILD_STATIC_LIBRARY)
