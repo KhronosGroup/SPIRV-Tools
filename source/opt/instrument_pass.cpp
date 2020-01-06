@@ -988,7 +988,7 @@ void InstrumentPass::InitializeInstrument() {
     (void)i;
     ++module_offset;
   }
-  for (auto& i : module->debuginfo()) {
+  for (auto& i : module->ext_inst_debuginfo()) {
     (void)i;
     ++module_offset;
   }

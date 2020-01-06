@@ -121,7 +121,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         module_->AddGlobalValue(std::move(spv_inst));
       } else if (opcode == SpvOpExtInst &&
                  spvExtInstIsDebugInfo(inst->ext_inst_type)) {
-        module_->AddDebugInfoInst(std::move(spv_inst));
+        module_->AddExtInstDebugInfo(std::move(spv_inst));
       } else {
         Errorf(consumer_, src, loc,
                "Unhandled inst type (opcode: %d) found outside function "

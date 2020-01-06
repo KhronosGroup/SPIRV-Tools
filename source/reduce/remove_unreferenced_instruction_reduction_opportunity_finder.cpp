@@ -52,7 +52,7 @@ RemoveUnreferencedInstructionReductionOpportunityFinder::
     result.push_back(MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
   }
 
-  for (auto& inst : context->module()->debuginfo()) {
+  for (auto& inst : context->module()->ext_inst_debuginfo()) {
     if (context->get_def_use_mgr()->NumUses(&inst) > 0) {
       continue;
     }

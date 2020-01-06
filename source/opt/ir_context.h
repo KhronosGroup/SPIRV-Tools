@@ -190,10 +190,10 @@ class IRContext {
   // Iterators for debug info instructions (excluding OpLine & OpNoLine)
   // contained in this module.  These are OpExtInst for OpenCL.DebugInfo.100
   // or DebugInfo extension placed between section 9 and 10.
-  inline Module::inst_iterator debuginfo_begin();
-  inline Module::inst_iterator debuginfo_end();
-  inline IteratorRange<Module::inst_iterator> debuginfo();
-  inline IteratorRange<Module::const_inst_iterator> debuginfo() const;
+  inline Module::inst_iterator ext_inst_debuginfo_begin();
+  inline Module::inst_iterator ext_inst_debuginfo_end();
+  inline IteratorRange<Module::inst_iterator> ext_inst_debuginfo();
+  inline IteratorRange<Module::const_inst_iterator> ext_inst_debuginfo() const;
 
   // Add |capability| to the module, if it is not already enabled.
   inline void AddCapability(SpvCapability capability);
@@ -224,7 +224,7 @@ class IRContext {
   // This is due to decision by the SPIR Working Group, pending publication.
   inline void AddDebug3Inst(std::unique_ptr<Instruction>&& d);
   // Appends a OpExtInst for DebugInfo to this module.
-  inline void AddDebugInfoInst(std::unique_ptr<Instruction>&& d);
+  inline void AddExtInstDebugInfo(std::unique_ptr<Instruction>&& d);
   // Appends an annotation instruction to this module.
   inline void AddAnnotationInst(std::unique_ptr<Instruction>&& a);
   // Appends a type-declaration instruction to this module.
@@ -935,20 +935,21 @@ IteratorRange<Module::const_inst_iterator> IRContext::debugs3() const {
   return ((const Module*)module_.get())->debugs3();
 }
 
-Module::inst_iterator IRContext::debuginfo_begin() {
-  return module()->debuginfo_begin();
+Module::inst_iterator IRContext::ext_inst_debuginfo_begin() {
+  return module()->ext_inst_debuginfo_begin();
 }
 
-Module::inst_iterator IRContext::debuginfo_end() {
-  return module()->debuginfo_end();
+Module::inst_iterator IRContext::ext_inst_debuginfo_end() {
+  return module()->ext_inst_debuginfo_end();
 }
 
-IteratorRange<Module::inst_iterator> IRContext::debuginfo() {
-  return module()->debuginfo();
+IteratorRange<Module::inst_iterator> IRContext::ext_inst_debuginfo() {
+  return module()->ext_inst_debuginfo();
 }
 
-IteratorRange<Module::const_inst_iterator> IRContext::debuginfo() const {
-  return ((const Module*)module_.get())->debuginfo();
+IteratorRange<Module::const_inst_iterator> IRContext::ext_inst_debuginfo()
+    const {
+  return ((const Module*)module_.get())->ext_inst_debuginfo();
 }
 
 void IRContext::AddCapability(SpvCapability capability) {
@@ -1044,8 +1045,8 @@ void IRContext::AddDebug3Inst(std::unique_ptr<Instruction>&& d) {
   module()->AddDebug3Inst(std::move(d));
 }
 
-void IRContext::AddDebugInfoInst(std::unique_ptr<Instruction>&& d) {
-  module()->AddDebugInfoInst(std::move(d));
+void IRContext::AddExtInstDebugInfo(std::unique_ptr<Instruction>&& d) {
+  module()->AddExtInstDebugInfo(std::move(d));
 }
 
 void IRContext::AddAnnotationInst(std::unique_ptr<Instruction>&& a) {
