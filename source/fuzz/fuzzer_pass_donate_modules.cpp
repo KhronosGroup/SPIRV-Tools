@@ -132,14 +132,14 @@ void FuzzerPassDonateModules::HandleExternalInstructionImports(
         // A matching import has found.  Map the result id for the donor import
         // to the id of the existing import, so that when donor instructions
         // rely on the import they will be rewritten to use the existing import.
-        original_id_to_donated_id->operator[](donor_import.result_id()) =
-            existing_import.result_id();
+        original_id_to_donated_id->insert(
+            {donor_import.result_id(), existing_import.result_id()});
         break;
       }
     }
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3116): At present
-    //  we do not handle donation of instruction imports that is,allowing the
-    //  donor to import instruction sets that the recipient did not already
+    //  we do not handle donation of instruction imports, i.e. we do not allow
+    //  the donor to import instruction sets that the recipient did not already
     //  import.  It might be a good idea to allow this, but it requires some
     //  thought.
     assert(original_id_to_donated_id->count(donor_import.result_id()) &&
@@ -159,6 +159,11 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
     uint32_t new_result_id;
 
     // Decide how to handle each kind of instruction on a case-by-case basis.
+    //
+    // Because the donor module is required to be valid, when we encounter a
+    // type comprised of component types (e.g. an aggregate or pointer), we know
+    // that its component types will have been considered previously, and that
+    // |original_id_to_donated_id| will already contain an entry for them.
     switch (type_or_value.opcode()) {
       case SpvOpTypeVoid: {
         // Void has to exist already in order for us to have an entry point.
@@ -410,8 +415,8 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
     }
     // Update the id mapping to associate the instruction's result id with its
     // corresponding id in the recipient.
-    original_id_to_donated_id->operator[](type_or_value.result_id()) =
-        new_result_id;
+    original_id_to_donated_id->insert(
+        {type_or_value.result_id(), new_result_id});
   }
 }
 
@@ -450,8 +455,8 @@ void FuzzerPassDonateModules::HandleFunctions(
     function_to_donate->ForEachInst([this, &original_id_to_donated_id](
                                         const opt::Instruction* instruction) {
       if (instruction->result_id()) {
-        original_id_to_donated_id->operator[](instruction->result_id()) =
-            GetFuzzerContext()->GetFreshId();
+        original_id_to_donated_id->insert(
+            {instruction->result_id(), GetFuzzerContext()->GetFreshId()});
       }
     });
 
@@ -470,21 +475,29 @@ void FuzzerPassDonateModules::HandleFunctions(
             std::vector<uint32_t> operand_data;
             const opt::Operand& in_operand =
                 instruction->GetInOperand(in_operand_index);
-            if (in_operand.type == SPV_OPERAND_TYPE_ID) {
-              // This is an id operand - it consists of a single word of data,
-              // which needs to be remapped so that it is replaced with the
-              // donated form of the id.
-              operand_data.push_back(
-                  original_id_to_donated_id->at(in_operand.words[0]));
-            } else {
-              // For non-id operands, we just add each of the data words.
-              for (auto word : in_operand.words) {
-                operand_data.push_back(word);
-              }
+            switch (in_operand.type) {
+              case SPV_OPERAND_TYPE_ID:
+              case SPV_OPERAND_TYPE_TYPE_ID:
+              case SPV_OPERAND_TYPE_RESULT_ID:
+              case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+              case SPV_OPERAND_TYPE_SCOPE_ID:
+                // This is an id operand - it consists of a single word of data,
+                // which needs to be remapped so that it is replaced with the
+                // donated form of the id.
+                operand_data.push_back(
+                    original_id_to_donated_id->at(in_operand.words[0]));
+                break;
+              default:
+                // For non-id operands, we just add each of the data words.
+                for (auto word : in_operand.words) {
+                  operand_data.push_back(word);
+                }
+                break;
             }
             input_operands.push_back({in_operand.type, operand_data});
           }
-          // Transform the
+          // Remap the result type and result id (if present) of the
+          // instruction, and turn it into a protobuf message.
           donated_instructions.push_back(MakeInstructionMessage(
               instruction->opcode(),
               instruction->type_id()

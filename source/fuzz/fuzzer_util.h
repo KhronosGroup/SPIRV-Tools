@@ -28,7 +28,7 @@ namespace fuzz {
 // Provides types and global utility methods for use by the fuzzer
 namespace fuzzerutil {
 
-// TODO comment
+// Function type that produces a SPIR-V module.
 using ModuleSupplier = std::function<std::unique_ptr<opt::IRContext>()>;
 
 // Returns true if and only if the module does not define the given id.
