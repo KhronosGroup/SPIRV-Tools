@@ -16,6 +16,7 @@
 
 #include <utility>
 
+#include "DebugInfo.h"
 #include "OpenCLDebugInfo100.h"
 #include "source/ext_inst.h"
 #include "source/opt/log.h"
@@ -143,18 +144,34 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         if (opcode == SpvOpExtInst &&
             spvExtInstIsDebugInfo(inst->ext_inst_type)) {
           const uint32_t ext_inst_index = inst->words[4];
-          const OpenCLDebugInfo100Instructions ext_inst_key =
-              OpenCLDebugInfo100Instructions(ext_inst_index);
-          if (ext_inst_key != OpenCLDebugInfo100DebugScope &&
-              ext_inst_key != OpenCLDebugInfo100DebugNoScope &&
-              ext_inst_key != OpenCLDebugInfo100DebugDeclare &&
-              ext_inst_key != OpenCLDebugInfo100DebugValue) {
-            Errorf(consumer_, src, loc,
-                   "Debug info extension instruction other than DebugScope, "
-                   "DebugNoScope, DebugDeclare, and DebugValue found inside "
-                   "function",
-                   opcode);
-            return false;
+          if (inst->ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
+            const OpenCLDebugInfo100Instructions ext_inst_key =
+                OpenCLDebugInfo100Instructions(ext_inst_index);
+            if (ext_inst_key != OpenCLDebugInfo100DebugScope &&
+                ext_inst_key != OpenCLDebugInfo100DebugNoScope &&
+                ext_inst_key != OpenCLDebugInfo100DebugDeclare &&
+                ext_inst_key != OpenCLDebugInfo100DebugValue) {
+              Errorf(consumer_, src, loc,
+                     "Debug info extension instruction other than DebugScope, "
+                     "DebugNoScope, DebugDeclare, and DebugValue found inside "
+                     "function",
+                     opcode);
+              return false;
+            }
+          } else {
+            const DebugInfoInstructions ext_inst_key =
+                DebugInfoInstructions(ext_inst_index);
+            if (ext_inst_key != DebugInfoDebugScope &&
+                ext_inst_key != DebugInfoDebugNoScope &&
+                ext_inst_key != DebugInfoDebugDeclare &&
+                ext_inst_key != DebugInfoDebugValue) {
+              Errorf(consumer_, src, loc,
+                     "Debug info extension instruction other than DebugScope, "
+                     "DebugNoScope, DebugDeclare, and DebugValue found inside "
+                     "function",
+                     opcode);
+              return false;
+            }
           }
         }
         block_->AddInstruction(std::move(spv_inst));

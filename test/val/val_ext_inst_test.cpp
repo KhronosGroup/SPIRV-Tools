@@ -33,6 +33,7 @@ using ::testing::HasSubstr;
 using ::testing::Not;
 
 using ValidateExtInst = spvtest::ValidateBase<bool>;
+using ValidateOldDebugInfo = spvtest::ValidateBase<std::string>;
 using ValidateOpenCL100DebugInfo = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450SqrtLike = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450FMinLike = spvtest::ValidateBase<std::string>;
@@ -655,6 +656,24 @@ OpFunctionEnd)";
   return ss.str();
 }
 
+TEST_F(ValidateOldDebugInfo, UseDebugInstructionOutOfFunction) {
+  const std::string src = R"(
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%cu = OpExtInst %void %DbgExt DebugCompilationUnit %code 1 1
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "DebugInfo"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, UseDebugInstructionOutOfFunction) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -693,7 +712,7 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugSourceInFunction) {
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpenCL.DebugInfo.100 instructions other than DebugScope, "
+      HasSubstr("Debug info extension instructions other than DebugScope, "
                 "DebugNoScope, DebugDeclare, DebugValue must appear between "
                 "section 9 (types, constants, global variables) and section 10 "
                 "(function declarations)"));

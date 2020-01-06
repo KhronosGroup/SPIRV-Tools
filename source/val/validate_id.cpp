@@ -134,7 +134,7 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
       inst->opcode() == SpvOpExtInst &&
               spvExtInstIsDebugInfo(inst->ext_inst_type())
           ? spvDbgInfoExtOperandCanBeForwardDeclaredFunction(
-                OpenCLDebugInfo100Instructions(inst->word(4)))
+                inst->ext_inst_type(), inst->word(4))
           : spvOperandCanBeForwardDeclaredFunction(inst->opcode());
 
   // Keep track of a result id defined by this instruction.  0 means it

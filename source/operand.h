@@ -18,7 +18,6 @@
 #include <functional>
 #include <vector>
 
-#include "OpenCLDebugInfo100.h"
 #include "source/table.h"
 #include "spirv-tools/libspirv.h"
 
@@ -147,6 +146,6 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
 // of the operand can be forward declared. This function will
 // used in the SSA validation stage of the pipeline
 std::function<bool(unsigned)> spvDbgInfoExtOperandCanBeForwardDeclaredFunction(
-    OpenCLDebugInfo100Instructions key);
+    spv_ext_inst_type_t ext_type, uint32_t key);
 
 #endif  // SOURCE_OPERAND_H_

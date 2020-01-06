@@ -16,6 +16,7 @@
 
 #include <cassert>
 
+#include "DebugInfo.h"
 #include "OpenCLDebugInfo100.h"
 #include "source/diagnostic.h"
 #include "source/opcode.h"
@@ -197,18 +198,34 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
           }
         } else if (spvExtInstIsDebugInfo(inst->ext_inst_type())) {
           const uint32_t ext_inst_index = inst->word(4);
-          const OpenCLDebugInfo100Instructions ext_inst_key =
-              OpenCLDebugInfo100Instructions(ext_inst_index);
-          if (ext_inst_key == OpenCLDebugInfo100DebugScope ||
-              ext_inst_key == OpenCLDebugInfo100DebugNoScope ||
-              ext_inst_key == OpenCLDebugInfo100DebugDeclare ||
-              ext_inst_key == OpenCLDebugInfo100DebugValue) {
+          bool local_debug_info = false;
+          if (inst->ext_inst_type() == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
+            const OpenCLDebugInfo100Instructions ext_inst_key =
+                OpenCLDebugInfo100Instructions(ext_inst_index);
+            if (ext_inst_key == OpenCLDebugInfo100DebugScope ||
+                ext_inst_key == OpenCLDebugInfo100DebugNoScope ||
+                ext_inst_key == OpenCLDebugInfo100DebugDeclare ||
+                ext_inst_key == OpenCLDebugInfo100DebugValue) {
+              local_debug_info = true;
+            }
+          } else {
+            const DebugInfoInstructions ext_inst_key =
+                DebugInfoInstructions(ext_inst_index);
+            if (ext_inst_key == DebugInfoDebugScope ||
+                ext_inst_key == DebugInfoDebugNoScope ||
+                ext_inst_key == DebugInfoDebugDeclare ||
+                ext_inst_key == DebugInfoDebugValue) {
+              local_debug_info = true;
+            }
+          }
+
+          if (local_debug_info) {
             if (_.in_function_body() == false) {
               // DebugScope, DebugNoScope, DebugDeclare, DebugValue must
               // appear in a function body.
               return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-                     << "OpenCL.DebugInfo.100 DebugScope, DebugNoScope, "
-                     << "DebugDeclare, DebugValue must appear in a function "
+                     << "DebugScope, DebugNoScope, DebugDeclare, DebugValue "
+                     << "of debug info extension must appear in a function "
                      << "body";
             }
           } else {
@@ -219,7 +236,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
             if (_.current_layout_section() < kLayoutTypes ||
                 _.current_layout_section() >= kLayoutFunctionDeclarations) {
               return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-                     << "OpenCL.DebugInfo.100 instructions other than "
+                     << "Debug info extension instructions other than "
                      << "DebugScope, DebugNoScope, DebugDeclare, DebugValue "
                      << "must appear between section 9 (types, constants, "
                      << "global variables) and section 10 (function "
