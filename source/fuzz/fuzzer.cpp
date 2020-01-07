@@ -31,6 +31,7 @@
 #include "source/fuzz/fuzzer_pass_apply_id_synonyms.h"
 #include "source/fuzz/fuzzer_pass_construct_composites.h"
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
+#include "source/fuzz/fuzzer_pass_donate_modules.h"
 #include "source/fuzz/fuzzer_pass_merge_blocks.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
@@ -52,15 +53,21 @@ const uint32_t kTransformationLimit = 500;
 
 const uint32_t kChanceOfApplyingAnotherPass = 85;
 
-template <typename T>
+// A convenience method to add a fuzzer pass to |passes| with probability 0.5.
+// All fuzzer passes take |ir_context|, |fact_manager|, |fuzzer_context| and
+// |transformation_sequence_out| as parameters.  Extra arguments can be provided
+// via |extra_args|.
+template <typename T, typename... Args>
 void MaybeAddPass(
     std::vector<std::unique_ptr<FuzzerPass>>* passes,
     opt::IRContext* ir_context, FactManager* fact_manager,
     FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformation_sequence_out) {
+    protobufs::TransformationSequence* transformation_sequence_out,
+    Args&&... extra_args) {
   if (fuzzer_context->ChooseEven()) {
     passes->push_back(MakeUnique<T>(ir_context, fact_manager, fuzzer_context,
-                                    transformation_sequence_out));
+                                    transformation_sequence_out,
+                                    std::forward<Args>(extra_args)...));
   }
 }
 
@@ -114,6 +121,7 @@ bool Fuzzer::Impl::ApplyPassAndCheckValidity(
 Fuzzer::FuzzerResultStatus Fuzzer::Run(
     const std::vector<uint32_t>& binary_in,
     const protobufs::FactSequence& initial_facts,
+    const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers,
     std::vector<uint32_t>* binary_out,
     protobufs::TransformationSequence* transformation_sequence_out) const {
   // Check compatibility between the library version being linked with and the
@@ -184,6 +192,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassCopyObjects>(&passes, ir_context.get(),
                                         &fact_manager, &fuzzer_context,
                                         transformation_sequence_out);
+    MaybeAddPass<FuzzerPassDonateModules>(
+        &passes, ir_context.get(), &fact_manager, &fuzzer_context,
+        transformation_sequence_out, donor_suppliers);
     MaybeAddPass<FuzzerPassMergeBlocks>(&passes, ir_context.get(),
                                         &fact_manager, &fuzzer_context,
                                         transformation_sequence_out);
