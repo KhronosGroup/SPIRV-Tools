@@ -89,6 +89,16 @@ class FuzzerPass {
                const protobufs::InstructionDescriptor& instruction_descriptor)>
           maybe_apply_transformation);
 
+  // A generic helper for applying a transforamtion that should be appplicable
+  // by construction, and adding it to the sequence of applied transformations.
+  template <typename TransformationType>
+  void ApplyTransformation(const TransformationType& transformation) {
+    assert(transformation.IsApplicable(GetIRContext(), *GetFactManager()) &&
+           "Transformation should be applicable by construction.");
+    transformation.Apply(GetIRContext(), GetFactManager());
+    *GetTransformations()->add_transformation() = transformation.ToMessage();
+  }
+
  private:
   opt::IRContext* ir_context_;
   FactManager* fact_manager_;

@@ -22,12 +22,14 @@ if (${SPIRV_BUILD_FUZZER})
           fact_manager_test.cpp
           fuzz_test_util.cpp
           fuzzer_pass_add_useful_constructs_test.cpp
+          fuzzer_pass_donate_modules_test.cpp
           instruction_descriptor_test.cpp
           transformation_add_constant_boolean_test.cpp
           transformation_add_constant_composite_test.cpp
           transformation_add_constant_scalar_test.cpp
           transformation_add_dead_break_test.cpp
           transformation_add_dead_continue_test.cpp
+          transformation_add_function_test.cpp
           transformation_add_global_undef_test.cpp
           transformation_add_global_variable_test.cpp
           transformation_add_no_contraction_decoration_test.cpp
