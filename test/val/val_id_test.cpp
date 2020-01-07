@@ -6572,25 +6572,6 @@ TEST_F(ValidateIdWithMessage, MissingForwardPointer) {
           "Operand 3[%_ptr_Uniform__struct_2] requires a previous definition"));
 }
 
-TEST_F(ValidateIdWithMessage, ArrayTypeForwardReference) {
-  const std::string spirv = R"(
-OpCapability Linkage
-OpCapability MinLod
-OpCapability GenericPointer
-OpMemoryModel Logical Simple
-OpName %_ptr_Input__arr_9_uint_7 "ptr"
-%uint = OpTypeInt 32 0
-%uint_7 = OpConstant %uint 7
-%_arr_9_uint_7 = OpTypeArray %_ptr_Input__arr_9_uint_7 %uint_7
-%_ptr_Input__arr_9_uint_7 = OpTypePointer Input %_arr_9_uint_7
-)";
-
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ID 1[%ptr] has not been defined"));
-}
-
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
