@@ -69,6 +69,7 @@ template("spvtools_core_enums") {
         "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
     debuginfo_insts_file = "source/extinst.debuginfo.grammar.json"
     cldebuginfo100_insts_file = "source/extinst.opencl.debuginfo.100.grammar.json"
+
     extension_enum_file = "${target_gen_dir}/extension_enum.inc"
     extension_map_file = "${target_gen_dir}/enum_string_mapping.inc"
 
@@ -86,6 +87,8 @@ template("spvtools_core_enums") {
     ]
     inputs = [
       core_json_file,
+      debuginfo_insts_file,
+      cldebuginfo100_insts_file,
     ]
     outputs = [
       extension_enum_file,
@@ -105,11 +108,18 @@ template("spvtools_glsl_tables") {
     core_json_file =
         "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
     glsl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.glsl.std.450.grammar.json"
+    debuginfo_insts_file = "source/extinst.debuginfo.grammar.json"
+    cldebuginfo100_insts_file = "source/extinst.opencl.debuginfo.100.grammar.json"
+
     glsl_insts_file = "${target_gen_dir}/glsl.std.450.insts.inc"
 
     args = [
       "--spirv-core-grammar",
       rebase_path(core_json_file, root_build_dir),
+      "--extinst-debuginfo-grammar",
+      rebase_path(debuginfo_insts_file, root_build_dir),
+      "--extinst-cldebuginfo100-grammar",
+      rebase_path(cldebuginfo100_insts_file, root_build_dir),
       "--extinst-glsl-grammar",
       rebase_path(glsl_json_file, root_build_dir),
       "--glsl-insts-output",
@@ -118,6 +128,8 @@ template("spvtools_glsl_tables") {
     inputs = [
       core_json_file,
       glsl_json_file,
+      debuginfo_insts_file,
+      cldebuginfo100_insts_file,
     ]
     outputs = [
       glsl_insts_file,
@@ -135,20 +147,29 @@ template("spvtools_opencl_tables") {
 
     core_json_file =
         "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
-    opengl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.opencl.std.100.grammar.json"
+    opencl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.opencl.std.100.grammar.json"
+    debuginfo_insts_file = "source/extinst.debuginfo.grammar.json"
+    cldebuginfo100_insts_file = "source/extinst.opencl.debuginfo.100.grammar.json"
+
     opencl_insts_file = "${target_gen_dir}/opencl.std.insts.inc"
 
     args = [
       "--spirv-core-grammar",
       rebase_path(core_json_file, root_build_dir),
+      "--extinst-debuginfo-grammar",
+      rebase_path(debuginfo_insts_file, root_build_dir),
+      "--extinst-cldebuginfo100-grammar",
+      rebase_path(cldebuginfo100_insts_file, root_build_dir),
       "--extinst-opencl-grammar",
-      rebase_path(opengl_json_file, root_build_dir),
+      rebase_path(opencl_json_file, root_build_dir),
       "--opencl-insts-output",
       rebase_path(opencl_insts_file, root_build_dir),
     ]
     inputs = [
       core_json_file,
-      opengl_json_file,
+      opencl_json_file,
+      debuginfo_insts_file,
+      cldebuginfo100_insts_file,
     ]
     outputs = [
       opencl_insts_file,
@@ -174,7 +195,7 @@ template("spvtools_language_header") {
       rebase_path(extinst_output_base, root_build_dir),
     ]
     inputs = [
-      debug_insts_file,
+      invoker.grammar_file,
     ]
     outputs = [
       "${extinst_output_base}.h",
@@ -267,16 +288,16 @@ spvtools_language_header("cldebuginfo100") {
 }
 
 spvtools_vendor_tables = [
-  ["spv-amd-shader-explicit-vertex-parameter", ""],
-  ["spv-amd-shader-trinary-minmax", ""],
-  ["spv-amd-gcn-shader", ""],
-  ["spv-amd-shader-ballot", ""],
-  ["debuginfo", ""],
+  ["spv-amd-shader-explicit-vertex-parameter", "...nil..."],
+  ["spv-amd-shader-trinary-minmax", "...nil..."],
+  ["spv-amd-gcn-shader", "...nil..."],
+  ["spv-amd-shader-ballot", "...nil..."],
+  ["debuginfo", "...nil..."],
   ["opencl.debuginfo.100", "CLDEBUG100_"],
 ]
 
 foreach(table_def, spvtools_vendor_tables) {
-  spvtools_vendor_table(table) {
+  spvtools_vendor_table(table_def[0]) {
     name = table_def[0]
     operand_kind_prefix = table_def[1]
   }

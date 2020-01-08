@@ -765,6 +765,11 @@ def main():
                         help='prefix for operand kinds (to disambiguate operand type enums)')
     args = parser.parse_args()
 
+    # The GN build system needs this because it doesn't handle quoting
+    # empty string arguments well.
+    if args.vendor_operand_kind_prefix == "...nil...":
+        args.vendor_operand_kind_prefix = ""
+
     if (args.core_insts_output is None) != \
             (args.operand_kinds_output is None):
         print('error: --core-insts-output and --operand-kinds-output '
