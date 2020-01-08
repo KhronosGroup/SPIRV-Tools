@@ -774,8 +774,8 @@ def main():
          args.extinst_debuginfo_grammar and
          args.extinst_cldebuginfo100_grammar):
         print('error: --operand-kinds-output requires --spirv-core-grammar '
-              'and --exinst-debuginfo-grammar '
-              'and --exinst-cldebuginfo100-grammar')
+              'and --extinst-debuginfo-grammar '
+              'and --extinst-cldebuginfo100-grammar')
         exit(1)
     if (args.glsl_insts_output is None) != \
             (args.extinst_glsl_grammar is None):
