@@ -46,7 +46,6 @@ void FuzzerPassAddDeadBlocks::Apply() {
               GetIRContext(), block.terminator()->GetSingleWordInOperand(0))) {
         continue;
       }
-      // TODO think about OpPhi here
       candidate_blocks.push_back(&block);
     }
   }
@@ -54,10 +53,9 @@ void FuzzerPassAddDeadBlocks::Apply() {
     uint32_t index = GetFuzzerContext()->RandomIndex(candidate_blocks);
     auto block = candidate_blocks.at(index);
     candidate_blocks.erase(candidate_blocks.begin() + index);
-    // TODO: address OpPhi situation
-    TransformationAddDeadBlock transformation(
-        GetFuzzerContext()->GetFreshId(), block->id(),
-        GetFuzzerContext()->ChooseEven(), {});
+    TransformationAddDeadBlock transformation(GetFuzzerContext()->GetFreshId(),
+                                              block->id(),
+                                              GetFuzzerContext()->ChooseEven());
     if (transformation.IsApplicable(GetIRContext(), *GetFactManager())) {
       transformation.Apply(GetIRContext(), GetFactManager());
       *GetTransformations()->add_transformation() = transformation.ToMessage();

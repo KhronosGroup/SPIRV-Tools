@@ -58,8 +58,8 @@ class FactManager {
                           const protobufs::DataDescriptor& data2,
                           opt::IRContext* context);
 
-  // Records the fact that |id| is dead.
-  void AddFactIdIsDead(uint32_t id);
+  // Records the fact that |block_id| is dead.
+  void AddFactBlockIsDead(uint32_t block_id);
 
   // The fact manager is responsible for managing a few distinct categories of
   // facts. In principle there could be different fact managers for each kind
@@ -134,11 +134,13 @@ class FactManager {
   //==============================
 
   //==============================
-  // Querying facts about dead ids
+  // Querying facts about dead blocks
 
-  bool IdIsDead(uint32_t id) const;
+  // Returns true if and ony if |block_id| is the id of a block known to be
+  // dynamically unreachable.
+  bool BlockIsDead(uint32_t block_id) const;
 
-  // End of dead id facts
+  // End of dead block facts
   //==============================
 
  private:
@@ -154,9 +156,9 @@ class FactManager {
   std::unique_ptr<DataSynonymFacts>
       data_synonym_facts_;  // Unique pointer to internal data.
 
-  class DeadIdFacts;  // Opaque class for management of dead id facts.
-  std::unique_ptr<DeadIdFacts>
-      dead_id_facts_;  // Unique pointer to internal data.
+  class DeadBlockFacts;  // Opaque class for management of dead block facts.
+  std::unique_ptr<DeadBlockFacts>
+      dead_block_facts_;  // Unique pointer to internal data.
 };
 
 }  // namespace fuzz

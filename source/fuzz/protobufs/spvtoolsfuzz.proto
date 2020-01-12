@@ -166,7 +166,7 @@ message Fact {
     // Order the fact options by numeric id (rather than alphabetically).
     FactConstantUniform constant_uniform_fact = 1;
     FactDataSynonym data_synonym_fact = 2;
-    FactIdIsDead id_is_dead_fact = 3;
+    FactBlockIsDead block_is_dead_fact = 3;
   }
 }
 
@@ -201,14 +201,13 @@ message FactDataSynonym {
 
 }
 
-message FactIdIsDead {
+message FactBlockIsDead {
 
-  // Records the fact that a block label instruction, or an instruction inside
-  // a block, is guaranteed to be dynamically unreachable.  This is useful
-  // because it informs the fuzzer that rather arbitrary changes can be made
-  // in relation to this instruction.
+  // Records the fact that a block is guaranteed to be dynamically unreachable.
+  // This is useful because it informs the fuzzer that rather arbitrary changes
+  // can be made to this block.
 
-  uint32 id = 1;
+  uint32 block_id = 1;
 }
 
 message TransformationSequence {
@@ -316,10 +315,6 @@ message TransformationAddDeadBlock {
   // Determines whether the condition associated with the OpBranchConditional
   // is true or false
   bool condition_value = 3;
-
-  // A sequence of ids suitable for extending OpPhi instructions at the
-  // successor of |existing_block| as a result of adding a new edge
-  repeated uint32 phi_id = 4;
 
 }
 

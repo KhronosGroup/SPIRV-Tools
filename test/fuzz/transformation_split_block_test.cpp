@@ -807,7 +807,7 @@ TEST(TransformationSplitBlockTest, DeadBlockShouldSplitToTwoDeadBlocks) {
   FactManager fact_manager;
 
   // Record the fact that block 8 is dead.
-  fact_manager.AddFactIdIsDead(8);
+  fact_manager.AddFactBlockIsDead(8);
 
   auto split = TransformationSplitBlock(
       MakeInstructionDescriptor(8, SpvOpBranch, 0), 100);
@@ -815,8 +815,8 @@ TEST(TransformationSplitBlockTest, DeadBlockShouldSplitToTwoDeadBlocks) {
   split.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_TRUE(fact_manager.IdIsDead(8));
-  ASSERT_TRUE(fact_manager.IdIsDead(100));
+  ASSERT_TRUE(fact_manager.BlockIsDead(8));
+  ASSERT_TRUE(fact_manager.BlockIsDead(100));
 
   std::string after_split = R"(
                OpCapability Shader

@@ -29,14 +29,23 @@ class TransformationAddDeadBlock : public Transformation {
       const protobufs::TransformationAddDeadBlock& message);
 
   TransformationAddDeadBlock(uint32_t fresh_id, uint32_t existing_block,
-                             bool condition_value,
-                             std::vector<uint32_t> phi_id);
+                             bool condition_value);
 
-  // TODO comment
+  // - |message_.fresh_id| must be a fresh id
+  // - A constant with the same value as |message_.condition_value| must be
+  //   available
+  // - |message_.existing_block| must be a block that is not a loop header,
+  //   and that ends with OpBranch to a block that is not a merge block nor
+  //   continue target - this is because the successor will become the merge
+  //   block of a selection construct headed at |message_.existing_block|
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Changes the OpBranch from |message_.existing_block| to its successor 's'
+  // to an OpBranchConditional to either 's' or a new block,
+  // |message_.fresh_id|, which itself unconditionally branches to 's'.  The
+  // conditional branch uses |message.condition_value| as its condition, and is
+  // arranged so that control will pass to 's' at runtime.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

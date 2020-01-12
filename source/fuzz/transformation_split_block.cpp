@@ -117,8 +117,8 @@ void TransformationSplitBlock::Apply(opt::IRContext* context,
 
   // If the block being split was dead, the new block arising from the split is
   // also dead.
-  if (fact_manager->IdIsDead(block_to_split->id())) {
-    fact_manager->AddFactIdIsDead(message_.fresh_id());
+  if (fact_manager->BlockIsDead(block_to_split->id())) {
+    fact_manager->AddFactBlockIsDead(message_.fresh_id());
   }
 
   // Invalidate all analyses

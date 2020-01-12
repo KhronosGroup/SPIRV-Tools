@@ -48,19 +48,19 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
   FactManager fact_manager;
 
   // Id 4 is already in use
-  ASSERT_FALSE(TransformationAddDeadBlock(4, 5, true, {})
+  ASSERT_FALSE(TransformationAddDeadBlock(4, 5, true)
                    .IsApplicable(context.get(), fact_manager));
 
   // Id 7 is not a block
-  ASSERT_FALSE(TransformationAddDeadBlock(100, 7, true, {})
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 7, true)
                    .IsApplicable(context.get(), fact_manager));
 
-  TransformationAddDeadBlock transformation(100, 5, true, {});
+  TransformationAddDeadBlock transformation(100, 5, true);
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_TRUE(fact_manager.IdIsDead(100));
+  ASSERT_TRUE(fact_manager.BlockIsDead(100));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -87,12 +87,195 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-// TODO Target block must not be merge or continue
+TEST(TransformationAddDeadBlockTest, TargetBlockMustNotBeSelectionMerge) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+               OpBranch %10
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
 
-// TODO Source block must not be loop head
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
-// TODO Target block can start with OpPhi; need to give suitable ids in that
-//  case
+  FactManager fact_manager;
+
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true)
+                   .IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationAddDeadBlockTest, TargetBlockMustNotBeLoopMergeOrContinue) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %11 %12 None
+               OpBranchConditional %7 %9 %10
+          %9 = OpLabel
+               OpBranch %12
+         %10 = OpLabel
+               OpBranch %11
+         %12 = OpLabel
+               OpBranch %8
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  // Bad because 9's successor is the loop continue target.
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true)
+                   .IsApplicable(context.get(), fact_manager));
+  // Bad because 10's successor is the loop merge.
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 10, true)
+                   .IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationAddDeadBlockTest, SourceBlockMustNotBeLoopHead) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %11 %12 None
+               OpBranch %9
+          %9 = OpLabel
+               OpBranchConditional %7 %11 %12
+         %12 = OpLabel
+               OpBranch %8
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  // Bad because 8 is a loop head.
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 8, true)
+                   .IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationAddDeadBlockTest, OpPhiInTarget) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %9 = OpTypeInt 32 0
+         %10 = OpConstant %9 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+         %12 = OpPhi %6 %7 %5
+         %13 = OpPhi %9 %10 %5
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationAddDeadBlock transformation(100, 5, true);
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  ASSERT_TRUE(fact_manager.BlockIsDead(100));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %9 = OpTypeInt 32 0
+         %10 = OpConstant %9 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %7 %8 %100
+        %100 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+         %12 = OpPhi %6 %7 %5 %7 %100
+         %13 = OpPhi %9 %10 %5 %10 %100
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
 
 }  // namespace
 }  // namespace fuzz

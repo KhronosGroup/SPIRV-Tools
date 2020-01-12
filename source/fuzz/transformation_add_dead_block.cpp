@@ -23,15 +23,12 @@ TransformationAddDeadBlock::TransformationAddDeadBlock(
     const spvtools::fuzz::protobufs::TransformationAddDeadBlock& message)
     : message_(message) {}
 
-TransformationAddDeadBlock::TransformationAddDeadBlock(
-    uint32_t fresh_id, uint32_t existing_block, bool condition_value,
-    std::vector<uint32_t> phi_id) {
+TransformationAddDeadBlock::TransformationAddDeadBlock(uint32_t fresh_id,
+                                                       uint32_t existing_block,
+                                                       bool condition_value) {
   message_.set_fresh_id(fresh_id);
   message_.set_existing_block(existing_block);
   message_.set_condition_value(condition_value);
-  for (auto id : phi_id) {
-    message_.add_phi_id(id);
-  }
 }
 
 bool TransformationAddDeadBlock::IsApplicable(
@@ -69,33 +66,42 @@ bool TransformationAddDeadBlock::IsApplicable(
   }
 
   // Its successor must not be a merge block nor continue target.
-  if (fuzzerutil::IsMergeOrContinue(
-          context, existing_block->terminator()->GetSingleWordInOperand(0))) {
+  auto successor_block_id =
+      existing_block->terminator()->GetSingleWordInOperand(0);
+  if (fuzzerutil::IsMergeOrContinue(context, successor_block_id)) {
     return false;
   }
+
   return true;
 }
 
 void TransformationAddDeadBlock::Apply(
     opt::IRContext* context, spvtools::fuzz::FactManager* fact_manager) const {
-  // TODO comment
+  // Update the module id bound so that it is at least the id of the new block.
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
+
+  // Get the existing block and its successor.
   auto existing_block = context->cfg()->block(message_.existing_block());
   auto successor_block_id =
       existing_block->terminator()->GetSingleWordInOperand(0);
+
+  // Get the id of the boolean value that will be used as the branch condition.
   auto bool_id =
       fuzzerutil::MaybeGetBoolConstantId(context, message_.condition_value());
 
+  // Make a new block that unconditionally branches to the original successor
+  // block.
   auto enclosing_function = existing_block->GetParent();
   std::unique_ptr<opt::BasicBlock> new_block = MakeUnique<opt::BasicBlock>(
       MakeUnique<opt::Instruction>(context, SpvOpLabel, 0, message_.fresh_id(),
                                    opt::Instruction::OperandList()));
-  new_block->SetParent(enclosing_function);
   new_block->AddInstruction(MakeUnique<opt::Instruction>(
       context, SpvOpBranch, 0, 0,
       opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID, {successor_block_id}}})));
 
+  // Turn the original block into a selection merge, with its original successor
+  // as the merge block.
   existing_block->terminator()->InsertBefore(MakeUnique<opt::Instruction>(
       context, SpvOpSelectionMerge, 0, 0,
       opt::Instruction::OperandList(
@@ -103,6 +109,10 @@ void TransformationAddDeadBlock::Apply(
            {SPV_OPERAND_TYPE_SELECTION_CONTROL,
             {SpvSelectionControlMaskNone}}})));
 
+  // Change the original block's terminator to be a conditional branch on the
+  // given boolean, with the original successor and the new successor as branch
+  // targets, and such that at runtime control will always transfer to the
+  // original successor.
   existing_block->terminator()->SetOpcode(SpvOpBranchConditional);
   existing_block->terminator()->SetInOperands(
       {{SPV_OPERAND_TYPE_ID, {bool_id}},
@@ -112,11 +122,37 @@ void TransformationAddDeadBlock::Apply(
        {SPV_OPERAND_TYPE_ID,
         {message_.condition_value() ? message_.fresh_id()
                                     : successor_block_id}}});
+
+  // Add the new block to the enclosing function.
+  new_block->SetParent(enclosing_function);
   enclosing_function->InsertBasicBlockAfter(std::move(new_block),
                                             existing_block);
 
-  fact_manager->AddFactIdIsDead(message_.fresh_id());
+  // Record the fact that the new block is dead.
+  fact_manager->AddFactBlockIsDead(message_.fresh_id());
 
+  // Fix up OpPhi instructions in the successor block, so that the values they
+  // yield when control has transferred from the new block are the same as if
+  // control had transferred from |message_.existing_block|.  This is guaranteed
+  // to be valid since |message_.existing_block| dominates the new block by
+  // construction.  Other transformations can change these phi operands to more
+  // interesting values.
+  context->cfg()
+      ->block(successor_block_id)
+      ->ForEachPhiInst([this](opt::Instruction* phi_inst) {
+        // There should be a single existing predecessor, hence two input
+        // operands.
+        assert(phi_inst->NumInOperands() == 2);
+        // Copy the operand that provides the phi value for the single existing
+        // predecessor.
+        opt::Operand copy_of_existing_operand = phi_inst->GetInOperand(0);
+        // Use this as the value associated with the new predecessor.
+        phi_inst->AddOperand(std::move(copy_of_existing_operand));
+        phi_inst->AddOperand({SPV_OPERAND_TYPE_ID, {message_.fresh_id()}});
+      });
+
+  // Do not rely on any existing analysis results since the control flow graph
+  // of the module has changed.
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 

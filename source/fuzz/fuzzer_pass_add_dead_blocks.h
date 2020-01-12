@@ -20,7 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO comment
+// Fuzzer pass to add dynamically unreachable blocks to the module.  Future
+// passes can then manipulate such blocks.
 class FuzzerPassAddDeadBlocks : public FuzzerPass {
  public:
   FuzzerPassAddDeadBlocks(opt::IRContext* ir_context, FactManager* fact_manager,
