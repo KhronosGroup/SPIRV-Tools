@@ -140,11 +140,8 @@ void TransformationAddDeadBlock::Apply(
   context->cfg()
       ->block(successor_block_id)
       ->ForEachPhiInst([this](opt::Instruction* phi_inst) {
-        // There should be a single existing predecessor, hence two input
-        // operands.
-        assert(phi_inst->NumInOperands() == 2);
-        // Copy the operand that provides the phi value for the single existing
-        // predecessor.
+        // Copy the operand that provides the phi value for the first of any
+        // existing predecessors.
         opt::Operand copy_of_existing_operand = phi_inst->GetInOperand(0);
         // Use this as the value associated with the new predecessor.
         phi_inst->AddOperand(std::move(copy_of_existing_operand));
