@@ -151,22 +151,7 @@ bool TransformationOutlineFunction::IsApplicable(
 
   // For simplicity, we do not allow the exit block to be a merge block or
   // continue target.
-  bool exit_block_is_merge_or_continue = false;
-  context->get_def_use_mgr()->WhileEachUse(
-      exit_block->id(),
-      [&exit_block_is_merge_or_continue](
-          const opt::Instruction* use_instruction,
-          uint32_t /*unused*/) -> bool {
-        switch (use_instruction->opcode()) {
-          case SpvOpLoopMerge:
-          case SpvOpSelectionMerge:
-            exit_block_is_merge_or_continue = true;
-            return false;
-          default:
-            return true;
-        }
-      });
-  if (exit_block_is_merge_or_continue) {
+  if (fuzzerutil::IsMergeOrContinue(context, exit_block->id())) {
     return false;
   }
 
@@ -292,7 +277,7 @@ bool TransformationOutlineFunction::IsApplicable(
 }
 
 void TransformationOutlineFunction::Apply(
-    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
+    opt::IRContext* context, spvtools::fuzz::FactManager* fact_manager) const {
   // The entry block for the region before outlining.
   auto original_region_entry_block =
       context->cfg()->block(message_.entry_block());
@@ -357,10 +342,10 @@ void TransformationOutlineFunction::Apply(
 
   // Fill out the body of the outlined function according to the region that is
   // being outlined.
-  PopulateOutlinedFunction(context, *original_region_entry_block,
+  PopulateOutlinedFunction(*original_region_entry_block,
                            *original_region_exit_block, region_blocks,
                            region_output_ids, output_id_to_fresh_id_map,
-                           outlined_function.get());
+                           context, outlined_function.get(), fact_manager);
 
   // Collapse the region that has been outlined into a function down to a single
   // block that calls said function.
@@ -719,12 +704,13 @@ void TransformationOutlineFunction::RemapInputAndOutputIdsInRegion(
 }
 
 void TransformationOutlineFunction::PopulateOutlinedFunction(
-    opt::IRContext* context, const opt::BasicBlock& original_region_entry_block,
+    const opt::BasicBlock& original_region_entry_block,
     const opt::BasicBlock& original_region_exit_block,
     const std::set<opt::BasicBlock*>& region_blocks,
     const std::vector<uint32_t>& region_output_ids,
     const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
-    opt::Function* outlined_function) const {
+    opt::IRContext* context, opt::Function* outlined_function,
+    FactManager* fact_manager) const {
   // When we create the exit block for the outlined region, we use this pointer
   // to track of it so that we can manipulate it later.
   opt::BasicBlock* outlined_region_exit_block = nullptr;
@@ -737,6 +723,13 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
           context, SpvOpLabel, 0, message_.new_function_region_entry_block(),
           opt::Instruction::OperandList()));
   outlined_region_entry_block->SetParent(outlined_function);
+
+  // If the original region's entry block was dead, the outlined region's entry
+  // block is also dead.
+  if (fact_manager->BlockIsDead(original_region_entry_block.id())) {
+    fact_manager->AddFactBlockIsDead(outlined_region_entry_block->id());
+  }
+
   if (&original_region_entry_block == &original_region_exit_block) {
     outlined_region_exit_block = outlined_region_entry_block.get();
   }

@@ -21,6 +21,7 @@
 #include "fuzzer_pass_adjust_memory_operands_masks.h"
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
+#include "source/fuzz/fuzzer_pass_add_dead_blocks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_continues.h"
 #include "source/fuzz/fuzzer_pass_add_no_contraction_decorations.h"
@@ -177,6 +178,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // Apply some semantics-preserving passes.
   std::vector<std::unique_ptr<FuzzerPass>> passes;
   while (passes.empty()) {
+    MaybeAddPass<FuzzerPassAddDeadBlocks>(&passes, ir_context.get(),
+                                          &fact_manager, &fuzzer_context,
+                                          transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddDeadBreaks>(&passes, ir_context.get(),
                                           &fact_manager, &fuzzer_context,
                                           transformation_sequence_out);

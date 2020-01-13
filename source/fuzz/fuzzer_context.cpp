@@ -23,6 +23,7 @@ namespace {
 // Default <minimum, maximum> pairs of probabilities for applying various
 // transformations. All values are percentages. Keep them in alphabetical order.
 
+const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBreak = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadContinue = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
@@ -67,6 +68,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       next_fresh_id_(min_fresh_id),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
+  chance_of_adding_dead_block_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingDeadBlock);
   chance_of_adding_dead_break_ =
       ChooseBetweenMinAndMax(kChanceOfAddingDeadBreak);
   chance_of_adding_dead_continue_ =
