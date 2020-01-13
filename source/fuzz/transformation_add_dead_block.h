@@ -38,6 +38,9 @@ class TransformationAddDeadBlock : public Transformation {
   //   and that ends with OpBranch to a block that is not a merge block nor
   //   continue target - this is because the successor will become the merge
   //   block of a selection construct headed at |message_.existing_block|
+  // - |message_.existing_block| must not be a back-edge block, since in this
+  //   case the newly-added block would lead to another back-edge to the
+  //   associated loop header
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 

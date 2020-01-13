@@ -277,6 +277,45 @@ TEST(TransformationAddDeadBlockTest, OpPhiInTarget) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationAddDeadBlockTest, BackEdge) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %10 %9 None
+               OpBranchConditional %7 %9 %10
+          %9 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  // 9 is a back edge block, so it would not be OK to add a dead block here,
+  // as then both 9 and the dead block would branch to the loop header, 8.
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true).IsApplicable(context
+  .get(), fact_manager));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

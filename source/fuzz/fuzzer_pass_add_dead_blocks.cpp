@@ -29,33 +29,32 @@ FuzzerPassAddDeadBlocks::FuzzerPassAddDeadBlocks(
 FuzzerPassAddDeadBlocks::~FuzzerPassAddDeadBlocks() = default;
 
 void FuzzerPassAddDeadBlocks::Apply() {
-  std::vector<opt::BasicBlock*> candidate_blocks;
+  // We iterate over all blocks in the module collecting up those at which we
+  // might add a branch to a new dead block.  We then loop over all such
+  // candidates and actually apply transformations.  This separation is to
+  // avoid modifying the module as we traverse it.
+  std::vector<TransformationAddDeadBlock> candidate_transformations;
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       if (!GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()->GetChanceOfAddingDeadBlock())) {
         continue;
       }
-      if (block.IsLoopHeader()) {
-        continue;
-      }
-      if (block.terminator()->opcode() != SpvOpBranch) {
-        continue;
-      }
-      if (fuzzerutil::IsMergeOrContinue(
-              GetIRContext(), block.terminator()->GetSingleWordInOperand(0))) {
-        continue;
-      }
-      candidate_blocks.push_back(&block);
+      // We speculatively create a transformation, and then apply it (below) if
+      // it turns out to be applicable.  This avoids duplicating the logic for
+      // applicability checking.
+      //
+      // It means that fresh ids for transformations that turn out not to be
+      // applicable end up being unused.
+      candidate_transformations.emplace_back(TransformationAddDeadBlock
+      (GetFuzzerContext()->GetFreshId(),
+                                                block.id(),
+                                                GetFuzzerContext()
+                                                ->ChooseEven()));
     }
   }
-  while (!candidate_blocks.empty()) {
-    uint32_t index = GetFuzzerContext()->RandomIndex(candidate_blocks);
-    auto block = candidate_blocks.at(index);
-    candidate_blocks.erase(candidate_blocks.begin() + index);
-    TransformationAddDeadBlock transformation(GetFuzzerContext()->GetFreshId(),
-                                              block->id(),
-                                              GetFuzzerContext()->ChooseEven());
+  // Apply all those transformations that are in fact applicable.
+  for (auto& transformation : candidate_transformations) {
     if (transformation.IsApplicable(GetIRContext(), *GetFactManager())) {
       transformation.Apply(GetIRContext(), GetFactManager());
       *GetTransformations()->add_transformation() = transformation.ToMessage();

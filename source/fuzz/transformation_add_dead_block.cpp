@@ -72,6 +72,12 @@ bool TransformationAddDeadBlock::IsApplicable(
     return false;
   }
 
+  // The successor must not be a loop header (i.e., |message_.existing_block|
+  // must not be a back-edge block.
+  if (context->cfg()->block(successor_block_id)->IsLoopHeader()) {
+    return false;
+  }
+
   return true;
 }
 
