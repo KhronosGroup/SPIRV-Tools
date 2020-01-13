@@ -178,14 +178,18 @@ class TransformationOutlineFunction : public Transformation {
   // and patching up branches to |original_region_entry_block| to refer to its
   // clone.  Parameters |region_output_ids| and |output_id_to_fresh_id_map| are
   // used to determine what the function should return.
+  //
+  // The |fact_manager| argument allow facts about blocks being outlined, e.g.
+  // whether they are dead blocks, to be asserted about blocks that get created
+  // during outlining.
   void PopulateOutlinedFunction(
-      opt::IRContext* context,
       const opt::BasicBlock& original_region_entry_block,
       const opt::BasicBlock& original_region_exit_block,
       const std::set<opt::BasicBlock*>& region_blocks,
       const std::vector<uint32_t>& region_output_ids,
       const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
-      opt::Function* outlined_function) const;
+      opt::IRContext* context, opt::Function* outlined_function,
+      FactManager* fact_manager) const;
 
   // Shrinks the outlined region, given by |region_blocks|, down to the single
   // block |original_region_entry_block|.  This block is itself shrunk to just
