@@ -46,11 +46,9 @@ void FuzzerPassAddDeadBlocks::Apply() {
       //
       // It means that fresh ids for transformations that turn out not to be
       // applicable end up being unused.
-      candidate_transformations.emplace_back(TransformationAddDeadBlock
-      (GetFuzzerContext()->GetFreshId(),
-                                                block.id(),
-                                                GetFuzzerContext()
-                                                ->ChooseEven()));
+      candidate_transformations.emplace_back(TransformationAddDeadBlock(
+          GetFuzzerContext()->GetFreshId(), block.id(),
+          GetFuzzerContext()->ChooseEven()));
     }
   }
   // Apply all those transformations that are in fact applicable.

@@ -312,8 +312,8 @@ TEST(TransformationAddDeadBlockTest, BackEdge) {
 
   // 9 is a back edge block, so it would not be OK to add a dead block here,
   // as then both 9 and the dead block would branch to the loop header, 8.
-  ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true).IsApplicable(context
-  .get(), fact_manager));
+  ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true)
+                   .IsApplicable(context.get(), fact_manager));
 }
 
 }  // namespace
