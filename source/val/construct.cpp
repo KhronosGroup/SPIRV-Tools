@@ -171,7 +171,18 @@ bool Construct::IsStructuredExit(ValidationState_t& _, BasicBlock* dest) const {
 
     bool seen_switch = false;
     auto header = entry_block();
+    //  The first block in the traversal is either:
+    //  i.  The header block that declares |header| as its merge block.
+    //  ii. The immediate dominator of |header|.
     auto block = header->immediate_dominator();
+    for (auto& use : header->label()->uses()) {
+      if ((use.first->opcode() == SpvOpLoopMerge ||
+           use.first->opcode() == SpvOpSelectionMerge) &&
+          use.second == 1) {
+        block = use.first->block();
+        break;
+      }
+    }
     while (block) {
       auto terminator = block->terminator();
       auto index = terminator - &_.ordered_instructions()[0];
@@ -197,7 +208,9 @@ bool Construct::IsStructuredExit(ValidationState_t& _, BasicBlock* dest) const {
           }
         }
 
-        if (terminator->opcode() == SpvOpSwitch) seen_switch = true;
+        if (terminator->opcode() == SpvOpSwitch) {
+          seen_switch = true;
+        }
 
         // Hit an enclosing loop and didn't break or continue.
         if (merge_inst->opcode() == SpvOpLoopMerge) return false;
