@@ -167,7 +167,6 @@ struct VulkanEnv {
 static const VulkanEnv ordered_vulkan_envs[] = {
     {SPV_ENV_VULKAN_1_0, VULKAN_VER(1, 0), SPIRV_VER(1, 0)},
     {SPV_ENV_VULKAN_1_1, VULKAN_VER(1, 1), SPIRV_VER(1, 3)},
-    {SPV_ENV_VULKAN_1_1, VULKAN_VER(1, 1), SPIRV_VER(1, 3)},
     {SPV_ENV_VULKAN_1_1_SPIRV_1_4, VULKAN_VER(1, 1), SPIRV_VER(1, 4)},
     {SPV_ENV_VULKAN_1_2, VULKAN_VER(1, 2), SPIRV_VER(1, 5)}};
 
