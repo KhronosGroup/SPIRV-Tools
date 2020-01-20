@@ -324,12 +324,19 @@ config("spvtools_internal_config") {
   }
 }
 
+config("spv_headers_public_config") {
+  include_dirs = [ "${spirv_headers}/include" ]
+}
+
 source_set("spv_headers") {
   sources = [
     "$spirv_headers/include/spirv/1.2/GLSL.std.450.h",
     "$spirv_headers/include/spirv/unified1/OpenCL.std.h",
     "$spirv_headers/include/spirv/unified1/spirv.h",
+    "$spirv_headers/include/spirv/unified1/spirv.hpp",
   ]
+
+  public_configs = [ ":spv_headers_public_config" ]
 }
 
 source_set("spvtools_headers") {
