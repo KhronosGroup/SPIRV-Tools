@@ -169,20 +169,22 @@ bool Construct::IsStructuredExit(ValidationState_t& _, BasicBlock* dest) const {
       return true;
     }
 
+    // The next block in the traversal is either:
+    //  i.  The header block that declares |block| as its merge block.
+    //  ii. The immediate dominator of |block|.
+    auto NextBlock = [](const BasicBlock* block) -> const BasicBlock* {
+      for (auto& use : block->label()->uses()) {
+        if ((use.first->opcode() == SpvOpLoopMerge ||
+             use.first->opcode() == SpvOpSelectionMerge) &&
+            use.second == 1)
+          return use.first->block();
+      }
+      return block->immediate_dominator();
+    };
+
     bool seen_switch = false;
     auto header = entry_block();
-    //  The first block in the traversal is either:
-    //  i.  The header block that declares |header| as its merge block.
-    //  ii. The immediate dominator of |header|.
-    auto block = header->immediate_dominator();
-    for (auto& use : header->label()->uses()) {
-      if ((use.first->opcode() == SpvOpLoopMerge ||
-           use.first->opcode() == SpvOpSelectionMerge) &&
-          use.second == 1) {
-        block = use.first->block();
-        break;
-      }
-    }
+    auto block = NextBlock(header);
     while (block) {
       auto terminator = block->terminator();
       auto index = terminator - &_.ordered_instructions()[0];
@@ -194,7 +196,7 @@ bool Construct::IsStructuredExit(ValidationState_t& _, BasicBlock* dest) const {
         auto merge_target = merge_inst->GetOperandAs<uint32_t>(0u);
         auto merge_block = merge_inst->function()->GetBlock(merge_target).first;
         if (merge_block->dominates(*header)) {
-          block = block->immediate_dominator();
+          block = NextBlock(block);
           continue;
         }
 
@@ -216,7 +218,7 @@ bool Construct::IsStructuredExit(ValidationState_t& _, BasicBlock* dest) const {
         if (merge_inst->opcode() == SpvOpLoopMerge) return false;
       }
 
-      block = block->immediate_dominator();
+      block = NextBlock(block);
     }
   }
 
