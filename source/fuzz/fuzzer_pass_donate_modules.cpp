@@ -62,13 +62,20 @@ void FuzzerPassDonateModules::Apply() {
         GetFuzzerContext()->RandomIndex(donor_suppliers_))();
     assert(donor_ir_context != nullptr && "Supplying of donor failed");
     // Donate the supplied module.
-    DonateSingleModule(donor_ir_context.get());
+    //
+    // Randomly decide whether to make the module "livesafe"; doing so allows it
+    // to be used for live code injection but restricts its behaviour to allow
+    // this, and means that its functions cannot be transformed as if they were
+    // arbitrary dead code.
+    bool make_livesafe = GetFuzzerContext()->ChoosePercentage(
+        GetFuzzerContext()->ChanceOfMakingDonorLivesafe());
+    DonateSingleModule(donor_ir_context.get(), make_livesafe);
   } while (GetFuzzerContext()->ChoosePercentage(
       GetFuzzerContext()->GetChanceOfDonatingAdditionalModule()));
 }
 
 void FuzzerPassDonateModules::DonateSingleModule(
-    opt::IRContext* donor_ir_context) {
+    opt::IRContext* donor_ir_context, bool make_livesafe) {
   // The ids used by the donor module may very well clash with ids defined in
   // the recipient module.  Furthermore, some instructions defined in the donor
   // module will be equivalent to instructions defined in the recipient module,
@@ -91,7 +98,7 @@ void FuzzerPassDonateModules::DonateSingleModule(
   HandleExternalInstructionImports(donor_ir_context,
                                    &original_id_to_donated_id);
   HandleTypesAndValues(donor_ir_context, &original_id_to_donated_id);
-  HandleFunctions(donor_ir_context, &original_id_to_donated_id);
+  HandleFunctions(donor_ir_context, &original_id_to_donated_id, make_livesafe);
 
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3115) Handle some
   //  kinds of decoration.
@@ -420,7 +427,7 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
 
 void FuzzerPassDonateModules::HandleFunctions(
     opt::IRContext* donor_ir_context,
-    std::map<uint32_t, uint32_t>* original_id_to_donated_id) {
+    std::map<uint32_t, uint32_t>* original_id_to_donated_id, bool is_livesafe) {
   // Get the ids of functions in the donor module, topologically sorted
   // according to the donor's call graph.
   auto topological_order =
@@ -506,7 +513,126 @@ void FuzzerPassDonateModules::HandleFunctions(
                   : 0,
               input_operands));
         });
-    ApplyTransformation(TransformationAddFunction(donated_instructions));
+
+    if (is_livesafe) {
+      // Various types and constants must be in place for a function to be made
+      // live-safe.  Add them if not already present.
+      FindOrCreateBoolType();
+      FindOrCreatePointerTo32BitIntegerType(false, SpvStorageClassFunction);
+      FindOrCreate32BitIntegerConstant(0, false);
+      FindOrCreate32BitIntegerConstant(1, false);
+
+      // Get a fresh id for the variable that will be used as a loop limiter.
+      const uint32_t loop_limiter_variable_id =
+          GetFuzzerContext()->GetFreshId();
+      // Choose a random loop limit, and add the required constant to the
+      // module if not already there.
+      const uint32_t loop_limit = FindOrCreate32BitIntegerConstant(
+          GetFuzzerContext()->GetRandomLoopLimit(), false);
+
+      // Consider every loop header in the function to donate, and create a
+      // structure capturing the ids to be used for manipulating the loop
+      // limiter each time the loop is iterated.
+      // TODO update comment to discuss access chain clamping also
+      std::vector<protobufs::LoopLimiterInfo> loop_limiters;
+      std::vector<protobufs::AccessChainClampingInfo>
+          access_chain_clamping_info;
+      for (auto& block : *function_to_donate) {
+        if (block.IsLoopHeader()) {
+          protobufs::LoopLimiterInfo loop_limiter;
+          // Grab the loop header's id, mapped to its donated value.
+          loop_limiter.set_loop_header_id(
+              original_id_to_donated_id->at(block.id()));
+          // Get fresh ids that will be used to load the loop limiter, increment
+          // it, compare it with the loop limit, and an id for a new block that
+          // will contain the loop's original terminator.
+          loop_limiter.set_load_id(GetFuzzerContext()->GetFreshId());
+          loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
+          loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
+          loop_limiter.set_new_block_id(GetFuzzerContext()->GetFreshId());
+          loop_limiters.emplace_back(loop_limiter);
+        }
+        // TODO comment
+        for (auto& inst : block) {
+          switch (inst.opcode()) {
+            case SpvOpAccessChain:
+            case SpvOpInBoundsAccessChain: {
+              protobufs::AccessChainClampingInfo clamping_info;
+              clamping_info.set_access_chain_id(
+                  original_id_to_donated_id->at(inst.result_id()));
+
+              auto base_object = donor_ir_context->get_def_use_mgr()->GetDef(
+                  inst.GetSingleWordInOperand(0));
+              assert(base_object && "The base object must exist.");
+              auto pointer_type = donor_ir_context->get_def_use_mgr()->GetDef(
+                  base_object->type_id());
+              assert(pointer_type &&
+                     pointer_type->opcode() == SpvOpTypePointer &&
+                     "The base object must have pointer type.");
+
+              auto should_be_composite_type =
+                  donor_ir_context->get_def_use_mgr()->GetDef(
+                      pointer_type->GetSingleWordInOperand(1));
+
+              for (uint32_t index = 1; index < inst.NumInOperands(); index++) {
+                auto compare_and_select_ids =
+                    clamping_info.add_compare_and_select_ids();
+                compare_and_select_ids->set_first(
+                    GetFuzzerContext()->GetFreshId());
+                compare_and_select_ids->set_second(
+                    GetFuzzerContext()->GetFreshId());
+
+                uint32_t bound =
+                    TransformationAddFunction::GetBoundForCompositeIndex(
+                        donor_ir_context, *should_be_composite_type);
+                const uint32_t index_id = inst.GetSingleWordInOperand(index);
+                auto index_inst =
+                    donor_ir_context->get_def_use_mgr()->GetDef(index_id);
+                auto index_type_inst =
+                    donor_ir_context->get_def_use_mgr()->GetDef(
+                        index_inst->type_id());
+                assert(index_type_inst->opcode() == SpvOpTypeInt);
+                assert(index_type_inst->GetSingleWordInOperand(0) == 32);
+                opt::analysis::Integer* index_int_type =
+                    donor_ir_context->get_type_mgr()
+                        ->GetType(index_type_inst->result_id())
+                        ->AsInteger();
+                if (index_inst->opcode() != SpvOpConstant) {
+                  // We need one less than the bound, to compare against
+                  FindOrCreate32BitIntegerConstant(bound - 1,
+                                                   index_int_type->IsSigned());
+                  // We need boolean type to do a comparison
+                  FindOrCreateBoolType();
+                }
+                should_be_composite_type =
+                    TransformationAddFunction::FollowCompositeIndex(
+                        donor_ir_context, *should_be_composite_type, index_id);
+              }
+              access_chain_clamping_info.push_back(clamping_info);
+              break;
+            }
+            default:
+              break;
+          }
+        }
+      }
+      uint32_t kill_unreachable_return_value_id;
+      auto function_return_type_inst =
+          donor_ir_context->get_def_use_mgr()->GetDef(
+              function_to_donate->type_id());
+      if (function_return_type_inst->opcode() == SpvOpTypeVoid) {
+        kill_unreachable_return_value_id = 0;
+      } else {
+        kill_unreachable_return_value_id =
+            FindOrCreateGlobalUndef(function_return_type_inst->type_id());
+      }
+      ApplyTransformation(TransformationAddFunction(
+          donated_instructions, loop_limiter_variable_id, loop_limit,
+          loop_limiters, kill_unreachable_return_value_id,
+          access_chain_clamping_info));
+    } else {
+      ApplyTransformation(TransformationAddFunction(donated_instructions));
+    }
   }
 }
 

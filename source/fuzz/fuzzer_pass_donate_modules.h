@@ -38,8 +38,9 @@ class FuzzerPassDonateModules : public FuzzerPass {
   void Apply() override;
 
   // Donates the global declarations and functions of |donor_ir_context| into
-  // the fuzzer pass's IR context.
-  void DonateSingleModule(opt::IRContext* donor_ir_context);
+  // the fuzzer pass's IR context.  |make_livesafe| dictates whether the
+  // functions of the donated module will be made "livesafe".
+  void DonateSingleModule(opt::IRContext* donor_ir_context, bool make_livesafe);
 
  private:
   // Adapts a storage class coming from a donor module so that it will work
@@ -68,9 +69,12 @@ class FuzzerPassDonateModules : public FuzzerPass {
   // functions in |donor_ir_context|'s call graph in a reverse-topologically-
   // sorted order (leaves-to-root), adding each function to the recipient
   // module, rewritten to use fresh ids and using |original_id_to_donated_id| to
-  // remap ids.
+  // remap ids.  The |is_livesafe| argument captures whether the functions in
+  // the module are guaranteed to have been made "livesafe", so that they can be
+  // called from any context without having a semantic effect.
   void HandleFunctions(opt::IRContext* donor_ir_context,
-                       std::map<uint32_t, uint32_t>* original_id_to_donated_id);
+                       std::map<uint32_t, uint32_t>* original_id_to_donated_id,
+                       bool is_livesafe);
 
   // Returns the ids of all functions in |context| in a topological order in
   // relation to the call graph of |context|, which is assumed to be recursion-

@@ -167,6 +167,7 @@ message Fact {
     FactConstantUniform constant_uniform_fact = 1;
     FactDataSynonym data_synonym_fact = 2;
     FactBlockIsDead block_is_dead_fact = 3;
+    FactFunctionIsLivesafe function_is_livesafe_fact = 4;
   }
 }
 
@@ -208,6 +209,70 @@ message FactBlockIsDead {
   // can be made to this block.
 
   uint32 block_id = 1;
+}
+
+message FactFunctionIsLivesafe {
+
+  // Records the fact that a function is guaranteed to be "livesafe", meaning
+  // that it will not make out-of-bounds accesses, does not contain reachable
+  // OpKill or OpUnreachable instructions, and does not contain loops that will
+  // execute for large numbers of iterations.
+
+  uint32 function_id = 1;
+}
+
+message AccessChainClampingInfo {
+
+  // When making a function livesafe it is necessary to clamp the indices that
+  // occur as operands to access chain instructions so that they are guaranteed
+  // to be in bounds.  This message type allows an access chain instruction to
+  // have an associated sequence of ids that are reserved for comparing an
+  // access chain index with a bound (e.g. an array size), and selecting
+  // between the access chain index (if it is within bounds) and the bound (if
+  // it is not).
+  //
+  // This allows turning an instruction of the form:
+  //
+  // %result = OpAccessChain %type %object ... %index ...
+  //
+  // into:
+  //
+  // %t1 = OpULessThanEqual %bool %index %bound_minus_one
+  // %t2 = OpSelect %int_type %t1 %index %bound_minus_one
+  // %result = OpAccessChain %type %object ... %t2 ...
+
+  // The result id of an OpAccessChain or OpInBoundsAccessChain instruction.
+  uint32 access_chain_id = 1;
+
+  // A series of pairs of fresh ids, one per access chain index, for the results
+  // of a compare instruction and a select instruction, serving the roles of %t1
+  // and %t2 in the above example.
+  repeated UInt32Pair compare_and_select_ids = 2;
+
+}
+
+message LoopLimiterInfo {
+
+  // Structure capturing the information required to manipulate a loop limiter
+  // at a loop header.
+
+  // The header for the loop.
+  uint32 loop_header_id = 1;
+
+  // A fresh id for a new block that will contain the loop header's original
+  // terminator.
+  uint32 new_block_id = 2;
+
+  // A fresh id into which the loop limiter's current value can be loaded.
+  uint32 load_id = 3;
+
+  // A fresh id that can be used to increment the loaded value by 1.
+  uint32 increment_id = 4;
+
+  // A fresh id that can be used to compare the loaded value with the loop
+  // limit.
+  uint32 compare_id = 5;
+
 }
 
 message TransformationSequence {
@@ -365,6 +430,33 @@ message TransformationAddFunction {
 
   // The series of instructions that comprise the function.
   repeated Instruction instruction = 1;
+
+  // True if and only if the given function should be made livesafe (see
+  // FactFunctionIsLivesafe for definition).
+  bool is_livesafe = 2;
+
+  // Fresh id for a new variable that will serve as a "loop limiter" for the
+  // function; only relevant if |is_livesafe| holds.
+  uint32 loop_limiter_variable_id = 3;
+
+  // Id of an existing unsigned integer constant providing the maximum value
+  // that the loop limiter can reach before the loop is broken from; only
+  // relevant if |is_livesafe| holds.
+  uint32 loop_limit_constant_id = 4;
+
+  // Fresh ids for each loop in the function that allow the loop limiter to be
+  // manipulated; only relevant if |is_livesafe| holds.
+  repeated LoopLimiterInfo loop_limiter_info = 5;
+
+  // Id of an existing global value with the same return type as the function
+  // that can be used to replace OpKill and OpReachable instructions with
+  // ReturnValue instructions.  Ignored if the function has void return type.
+  uint32 kill_unreachable_return_value_id = 6;
+
+  // A mapping (represented as a sequence) from every access chain result id in
+  // the function to the ids required to clamp its indices to ensure they are in
+  // bounds.
+  repeated AccessChainClampingInfo access_chain_clamping_info = 7;
 
 }
 

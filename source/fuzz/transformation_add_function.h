@@ -28,8 +28,18 @@ class TransformationAddFunction : public Transformation {
   explicit TransformationAddFunction(
       const protobufs::TransformationAddFunction& message);
 
+  // Creates a transformation to add a non live-safe function.
   explicit TransformationAddFunction(
       const std::vector<protobufs::Instruction>& instructions);
+
+  // Creates a transformation to add a live-safe function.
+  TransformationAddFunction(
+      const std::vector<protobufs::Instruction>& instructions,
+      uint32_t loop_limiter_variable_id, uint32_t loop_limit_constant_id,
+      const std::vector<protobufs::LoopLimiterInfo>& loop_limiters,
+      uint32_t kill_unreachable_return_value_id,
+      const std::vector<protobufs::AccessChainClampingInfo>&
+          access_chain_clampers);
 
   // - |message_.instruction| must correspond to a sufficiently well-formed
   //   sequence of instructions that a function can be created from them
@@ -42,12 +52,43 @@ class TransformationAddFunction : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // TODO comment
+  static uint32_t GetBoundForCompositeIndex(
+      opt::IRContext* context, const opt::Instruction& composite_type_inst);
+
+  // TODO comment
+  static opt::Instruction* FollowCompositeIndex(
+      opt::IRContext* context, const opt::Instruction& composite_type_inst,
+      uint32_t index_id);
+
  private:
+  // A helper struct that captures the ids of types and constants that need to
+  // be used when generating the instructions to manipulate a loop limiter.
+  struct LoopLimiterTypeAndConstantIds {
+    uint32_t unsigned_int_type;
+    uint32_t pointer_to_unsigned_int_type;
+    uint32_t bool_type;
+    uint32_t zero;
+    uint32_t one;
+  };
+
+  // Provides the ids of types and constants that are needed to manipulate the
+  // loop limiter variable associated with |message_|.  If any components turn
+  // out to be unavailable, the corresponding field will be set to 0.
+  LoopLimiterTypeAndConstantIds GetLoopLimiterTypeAndConstantIds(
+      opt::IRContext* context) const;
+
   // Attempts to create a function from the series of instructions in
-  // |message_.instruction| and add it to |context|.  Returns false if this is
-  // not possible due to the messages not respecting the basic structure of a
-  // function, e.g. if there is no OpFunction instruction or no blocks; in this
-  // case |context| is left in an indeterminate state.
+  // |message_.instruction| and add it to |context|.  If
+  // |message_.is_livesafe| holds then the function is made "livesafe" in the
+  // process: loop limiters are provided for all loops, all array/vector/matrix
+  // accesses are clamped to be in bounds, and OpKill and OpUnreachable
+  // instructions are replaced with return instructions.
+  //
+  // Returns false if adding the function is not possible due to the messages
+  // not respecting the basic structure of a function, e.g. if there is no
+  // OpFunction instruction or no blocks; in this case |context| is left in an
+  // indeterminate state.
   //
   // Otherwise returns true.  Whether |context| is valid after addition of the
   // function depends on the contents of |message_.instruction|.
@@ -60,6 +101,28 @@ class TransformationAddFunction : public Transformation {
   // - If the dry run succeeds, run the method on the real module of interest,
   //   to add the function.
   bool TryToAddFunction(opt::IRContext* context) const;
+
+  // TODO comment
+  std::vector<uint32_t> GetLoopHeaderIds() const;
+
+  // TODO comment
+  bool FunctionContainsKillOrUnreachable() const;
+
+  // TODO comment
+  bool TryToMakeFunctionLivesafe(opt::IRContext* context) const;
+
+  // TODO comment
+  void AddLoopLimiters(opt::IRContext* context,
+                       opt::Function* added_function) const;
+
+  // TODO comment
+  void TurnKillOrUnreachableIntoReturn(
+      opt::IRContext* context, opt::Function* added_function,
+      opt::Instruction* kill_or_unreachable_inst) const;
+
+  // TODO comment including on return type
+  bool TryToClampAccessChainIndices(opt::IRContext* context,
+                                    opt::Instruction* access_chain_inst) const;
 
   protobufs::TransformationAddFunction message_;
 };

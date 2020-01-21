@@ -195,14 +195,15 @@ TEST(FuzzerPassDonateModulesTest, BasicDonation) {
 
   FactManager fact_manager;
 
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
+  auto prng = MakeUnique<PseudoRandomGenerator>(0);
+  FuzzerContext fuzzer_context(prng.get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(), &fact_manager,
                                       &fuzzer_context, &transformation_sequence,
                                       {});
 
-  fuzzer_pass.DonateSingleModule(donor_context.get());
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
@@ -276,7 +277,7 @@ TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
                                       &fuzzer_context, &transformation_sequence,
                                       {});
 
-  fuzzer_pass.DonateSingleModule(donor_context.get());
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   ASSERT_TRUE(IsValid(env, recipient_context.get()));
 
@@ -397,7 +398,7 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
                                       &fuzzer_context, &transformation_sequence,
                                       {});
 
-  fuzzer_pass.DonateSingleModule(donor_context.get());
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   ASSERT_TRUE(IsValid(env, recipient_context.get()));
 
@@ -483,7 +484,7 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
                                       &fuzzer_context, &transformation_sequence,
                                       {});
 
-  fuzzer_pass.DonateSingleModule(donor_context.get());
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
@@ -660,7 +661,7 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
                                       &fuzzer_context, &transformation_sequence,
                                       {});
 
-  fuzzer_pass.DonateSingleModule(donor_context.get());
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.

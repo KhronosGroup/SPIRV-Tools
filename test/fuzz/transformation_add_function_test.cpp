@@ -20,6 +20,19 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+protobufs::AccessChainClampingInfo MakeAccessClampingInfo(
+    uint32_t access_chain_id,
+    const std::vector<std::pair<uint32_t, uint32_t>>& compare_and_select_ids) {
+  protobufs::AccessChainClampingInfo result;
+  result.set_access_chain_id(access_chain_id);
+  for (auto& compare_and_select_id : compare_and_select_ids) {
+    auto pair = result.add_compare_and_select_ids();
+    pair->set_first(compare_and_select_id.first);
+    pair->set_second(compare_and_select_id.second);
+  }
+  return result;
+}
+
 TEST(TransformationAddFunctionTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
@@ -190,6 +203,12 @@ TEST(TransformationAddFunctionTest, BasicTest) {
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation1, context.get()));
+  ASSERT_TRUE(fact_manager.BlockIsDead(14));
+  ASSERT_TRUE(fact_manager.BlockIsDead(21));
+  ASSERT_TRUE(fact_manager.BlockIsDead(22));
+  ASSERT_TRUE(fact_manager.BlockIsDead(23));
+  ASSERT_TRUE(fact_manager.BlockIsDead(24));
+  ASSERT_TRUE(fact_manager.BlockIsDead(25));
 
   TransformationAddFunction transformation2(std::vector<protobufs::Instruction>(
       {MakeInstructionMessage(
@@ -320,6 +339,7 @@ TEST(TransformationAddFunctionTest, BasicTest) {
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation2, context.get()));
+  ASSERT_TRUE(fact_manager.BlockIsDead(16));
 }
 
 TEST(TransformationAddFunctionTest, InapplicableTransformations) {
@@ -440,6 +460,986 @@ TEST(TransformationAddFunctionTest, InapplicableTransformations) {
                MakeInstructionMessage(SpvOpReturnValue, 0, 0,
                                       {{SPV_OPERAND_TYPE_ID, {39}}})}))
           .IsApplicable(context.get(), fact_manager));
+}
+
+TEST(TransformationAddFunctionTest, LoopLimiters) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+          %8 = OpConstant %6 0
+          %9 = OpConstant %6 1
+         %10 = OpConstant %6 5
+         %11 = OpTypeBool
+         %12 = OpConstantTrue %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  std::vector<protobufs::Instruction> instructions;
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpFunction, 2, 30,
+      {{SPV_OPERAND_TYPE_FUNCTION_CONTROL, {SpvFunctionControlMaskNone}},
+       {SPV_OPERAND_TYPE_TYPE_ID, {3}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 31, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpBranch, 0, 0, {{SPV_OPERAND_TYPE_ID, {20}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 20, {}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpLoopMerge, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {21}},
+       {SPV_OPERAND_TYPE_ID, {22}},
+       {SPV_OPERAND_TYPE_LOOP_CONTROL, {SpvLoopControlMaskNone}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpBranchConditional, 0, 0,
+                                                {{SPV_OPERAND_TYPE_ID, {12}},
+                                                 {SPV_OPERAND_TYPE_ID, {23}},
+                                                 {SPV_OPERAND_TYPE_ID, {21}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 23, {}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpLoopMerge, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {25}},
+       {SPV_OPERAND_TYPE_ID, {26}},
+       {SPV_OPERAND_TYPE_LOOP_CONTROL, {SpvLoopControlMaskNone}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpBranch, 0, 0, {{SPV_OPERAND_TYPE_ID, {28}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 28, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpBranchConditional, 0, 0,
+                                                {{SPV_OPERAND_TYPE_ID, {12}},
+                                                 {SPV_OPERAND_TYPE_ID, {26}},
+                                                 {SPV_OPERAND_TYPE_ID, {25}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 26, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpBranch, 0, 0, {{SPV_OPERAND_TYPE_ID, {23}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 25, {}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpLoopMerge, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {24}},
+       {SPV_OPERAND_TYPE_ID, {27}},
+       {SPV_OPERAND_TYPE_LOOP_CONTROL, {SpvLoopControlMaskNone}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpBranchConditional, 0, 0,
+                                                {{SPV_OPERAND_TYPE_ID, {12}},
+                                                 {SPV_OPERAND_TYPE_ID, {24}},
+                                                 {SPV_OPERAND_TYPE_ID, {27}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 27, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpBranch, 0, 0, {{SPV_OPERAND_TYPE_ID, {25}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 24, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpBranch, 0, 0, {{SPV_OPERAND_TYPE_ID, {22}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 22, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpBranch, 0, 0, {{SPV_OPERAND_TYPE_ID, {20}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 21, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
+
+  FactManager fact_manager;
+
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  TransformationAddFunction add_dead_function(instructions);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
+  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+  // The added function should not be deemed livesafe.
+  ASSERT_FALSE(fact_manager.FunctionIsLivesafe(30));
+
+  std::string added_as_dead_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+          %8 = OpConstant %6 0
+          %9 = OpConstant %6 1
+         %10 = OpConstant %6 5
+         %11 = OpTypeBool
+         %12 = OpConstantTrue %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %30 = OpFunction %2 None %3
+         %31 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpLoopMerge %21 %22 None
+               OpBranchConditional %12 %23 %21
+         %23 = OpLabel
+               OpLoopMerge %25 %26 None
+               OpBranch %28
+         %28 = OpLabel
+               OpBranchConditional %12 %26 %25
+         %26 = OpLabel
+               OpBranch %23
+         %25 = OpLabel
+               OpLoopMerge %24 %27 None
+               OpBranchConditional %12 %24 %27
+         %27 = OpLabel
+               OpBranch %25
+         %24 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpBranch %20
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_dead_code, context1.get()));
+
+  protobufs::LoopLimiterInfo loop_limiter1;
+  loop_limiter1.set_loop_header_id(20);
+  loop_limiter1.set_load_id(101);
+  loop_limiter1.set_increment_id(102);
+  loop_limiter1.set_compare_id(103);
+  loop_limiter1.set_new_block_id(104);
+
+  protobufs::LoopLimiterInfo loop_limiter2;
+  loop_limiter2.set_loop_header_id(23);
+  loop_limiter2.set_load_id(105);
+  loop_limiter2.set_increment_id(106);
+  loop_limiter2.set_compare_id(107);
+  loop_limiter2.set_new_block_id(108);
+
+  protobufs::LoopLimiterInfo loop_limiter3;
+  loop_limiter3.set_loop_header_id(25);
+  loop_limiter3.set_load_id(109);
+  loop_limiter3.set_increment_id(110);
+  loop_limiter3.set_compare_id(111);
+  loop_limiter3.set_new_block_id(112);
+
+  std::vector<protobufs::LoopLimiterInfo> loop_limiters = {
+      loop_limiter1, loop_limiter2, loop_limiter3};
+
+  TransformationAddFunction add_livesafe_function(instructions, 100, 10,
+                                                  loop_limiters, 0, {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
+  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context2.get()));
+  // The added function should indeed be deemed livesafe.
+  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(30));
+  std::string added_as_livesafe_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+          %8 = OpConstant %6 0
+          %9 = OpConstant %6 1
+         %10 = OpConstant %6 5
+         %11 = OpTypeBool
+         %12 = OpConstantTrue %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %30 = OpFunction %2 None %3
+         %31 = OpLabel
+        %100 = OpVariable %7 Function %8
+               OpBranch %20
+         %20 = OpLabel
+        %101 = OpLoad %6 %100
+        %102 = OpIAdd %6 %101 %9
+               OpStore %100 %102
+        %103 = OpUGreaterThanEqual %11 %101 %10
+               OpLoopMerge %21 %22 None
+               OpBranchConditional %103 %21 %104
+        %104 = OpLabel
+               OpBranchConditional %12 %23 %21
+         %23 = OpLabel
+        %105 = OpLoad %6 %100
+        %106 = OpIAdd %6 %105 %9
+               OpStore %100 %106
+        %107 = OpUGreaterThanEqual %11 %105 %10
+               OpLoopMerge %25 %26 None
+               OpBranchConditional %107 %25 %108
+        %108 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+               OpBranchConditional %12 %26 %25
+         %26 = OpLabel
+               OpBranch %23
+         %25 = OpLabel
+        %109 = OpLoad %6 %100
+        %110 = OpIAdd %6 %109 %9
+               OpStore %100 %110
+        %111 = OpUGreaterThanEqual %11 %109 %10
+               OpLoopMerge %24 %27 None
+               OpBranchConditional %111 %24 %112
+        %112 = OpLabel
+               OpBranchConditional %12 %24 %27
+         %27 = OpLabel
+               OpBranch %25
+         %24 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpBranch %20
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_livesafe_code, context2.get()));
+}
+
+TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 2
+         %14 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  std::vector<protobufs::Instruction> instructions;
+
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpFunction, 2, 10,
+      {{SPV_OPERAND_TYPE_FUNCTION_CONTROL, {SpvFunctionControlMaskNone}},
+       {SPV_OPERAND_TYPE_TYPE_ID, {8}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpFunctionParameter, 7, 9, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 11, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 12, {{SPV_OPERAND_TYPE_ID, {9}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpIEqual, 14, 15,
+      {{SPV_OPERAND_TYPE_ID, {12}}, {SPV_OPERAND_TYPE_ID, {13}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpSelectionMerge, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {17}},
+       {SPV_OPERAND_TYPE_SELECTION_CONTROL, {SpvSelectionControlMaskNone}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpBranchConditional, 0, 0,
+                                                {{SPV_OPERAND_TYPE_ID, {15}},
+                                                 {SPV_OPERAND_TYPE_ID, {16}},
+                                                 {SPV_OPERAND_TYPE_ID, {17}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 16, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpUnreachable, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 17, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
+
+  FactManager fact_manager;
+
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  TransformationAddFunction add_dead_function(instructions);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
+  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+  // The added function should not be deemed livesafe.
+  ASSERT_FALSE(fact_manager.FunctionIsLivesafe(10));
+
+  std::string added_as_dead_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 2
+         %14 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpLoad %6 %9
+         %15 = OpIEqual %14 %12 %13
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+               OpUnreachable
+         %17 = OpLabel
+               OpKill
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_dead_code, context1.get()));
+
+  TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 0,
+                                                  {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
+  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context2.get()));
+  // The added function should indeed be deemed livesafe.
+  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(10));
+  std::string added_as_livesafe_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 2
+         %14 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpLoad %6 %9
+         %15 = OpIEqual %14 %12 %13
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+               OpReturn
+         %17 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_livesafe_code, context2.get()));
+}
+
+TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %50 = OpTypeFunction %6 %7
+         %13 = OpConstant %6 2
+         %14 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  std::vector<protobufs::Instruction> instructions;
+
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpFunction, 6, 10,
+      {{SPV_OPERAND_TYPE_FUNCTION_CONTROL, {SpvFunctionControlMaskNone}},
+       {SPV_OPERAND_TYPE_TYPE_ID, {50}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpFunctionParameter, 7, 9, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 11, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 12, {{SPV_OPERAND_TYPE_ID, {9}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpIEqual, 14, 15,
+      {{SPV_OPERAND_TYPE_ID, {12}}, {SPV_OPERAND_TYPE_ID, {13}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpSelectionMerge, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {17}},
+       {SPV_OPERAND_TYPE_SELECTION_CONTROL, {SpvSelectionControlMaskNone}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpBranchConditional, 0, 0,
+                                                {{SPV_OPERAND_TYPE_ID, {15}},
+                                                 {SPV_OPERAND_TYPE_ID, {16}},
+                                                 {SPV_OPERAND_TYPE_ID, {17}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 16, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpUnreachable, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 17, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
+
+  FactManager fact_manager;
+
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  TransformationAddFunction add_dead_function(instructions);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
+  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+  // The added function should not be deemed livesafe.
+  ASSERT_FALSE(fact_manager.FunctionIsLivesafe(10));
+
+  std::string added_as_dead_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %50 = OpTypeFunction %6 %7
+         %13 = OpConstant %6 2
+         %14 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %50
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpLoad %6 %9
+         %15 = OpIEqual %14 %12 %13
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+               OpUnreachable
+         %17 = OpLabel
+               OpKill
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_dead_code, context1.get()));
+
+  TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 13,
+                                                  {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
+  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context2.get()));
+  // The added function should indeed be deemed livesafe.
+  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(10));
+  std::string added_as_livesafe_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %50 = OpTypeFunction %6 %7
+         %13 = OpConstant %6 2
+         %14 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %50
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpLoad %6 %9
+         %15 = OpIEqual %14 %12 %13
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+               OpReturnValue %13
+         %17 = OpLabel
+               OpReturnValue %13
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_livesafe_code, context2.get()));
+}
+
+TEST(TransformationAddFunctionTest, ClampedAccessChains) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+        %100 = OpTypeBool
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %15 = OpTypeInt 32 0
+        %102 = OpTypePointer Function %15
+          %8 = OpTypeFunction %2 %7 %102 %7
+         %16 = OpConstant %15 5
+         %17 = OpTypeArray %6 %16
+         %18 = OpTypeArray %17 %16
+         %19 = OpTypePointer Private %18
+         %20 = OpVariable %19 Private
+         %21 = OpConstant %6 0
+         %23 = OpTypePointer Private %6
+         %26 = OpTypePointer Function %17
+         %29 = OpTypePointer Private %17
+         %33 = OpConstant %6 4
+        %200 = OpConstant %15 4
+         %35 = OpConstant %15 10
+         %36 = OpTypeArray %6 %35
+         %37 = OpTypePointer Private %36
+         %38 = OpVariable %37 Private
+         %54 = OpTypeFloat 32
+         %55 = OpTypeVector %54 4
+         %56 = OpTypePointer Private %55
+         %57 = OpVariable %56 Private
+         %59 = OpTypeVector %54 3
+         %60 = OpTypeMatrix %59 2
+         %61 = OpTypePointer Private %60
+         %62 = OpVariable %61 Private
+         %64 = OpTypePointer Private %54
+         %69 = OpConstant %54 2
+         %71 = OpConstant %6 1
+         %72 = OpConstant %6 2
+        %201 = OpConstant %15 2
+         %73 = OpConstant %6 3
+        %202 = OpConstant %15 3
+        %203 = OpConstant %6 1
+        %204 = OpConstant %6 9
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  std::vector<protobufs::Instruction> instructions;
+
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpFunction, 2, 12,
+      {{SPV_OPERAND_TYPE_FUNCTION_CONTROL, {SpvFunctionControlMaskNone}},
+       {SPV_OPERAND_TYPE_TYPE_ID, {8}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpFunctionParameter, 7, 9, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpFunctionParameter, 102, 10, {}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpFunctionParameter, 7, 11, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 13, {}));
+
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpVariable, 7, 14,
+      {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpVariable, 26, 27,
+      {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 22, {{SPV_OPERAND_TYPE_ID, {11}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpAccessChain, 23, 24,
+                                                {{SPV_OPERAND_TYPE_ID, {20}},
+                                                 {SPV_OPERAND_TYPE_ID, {21}},
+                                                 {SPV_OPERAND_TYPE_ID, {22}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 25, {{SPV_OPERAND_TYPE_ID, {24}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpStore, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {14}}, {SPV_OPERAND_TYPE_ID, {25}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 15, 28, {{SPV_OPERAND_TYPE_ID, {10}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpAccessChain, 29, 30,
+      {{SPV_OPERAND_TYPE_ID, {20}}, {SPV_OPERAND_TYPE_ID, {28}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 17, 31, {{SPV_OPERAND_TYPE_ID, {30}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpStore, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {27}}, {SPV_OPERAND_TYPE_ID, {31}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 32, {{SPV_OPERAND_TYPE_ID, {9}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpInBoundsAccessChain, 7, 34,
+      {{SPV_OPERAND_TYPE_ID, {27}}, {SPV_OPERAND_TYPE_ID, {32}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpStore, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {34}}, {SPV_OPERAND_TYPE_ID, {33}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 39, {{SPV_OPERAND_TYPE_ID, {9}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpAccessChain, 23, 40,
+      {{SPV_OPERAND_TYPE_ID, {38}}, {SPV_OPERAND_TYPE_ID, {33}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 41, {{SPV_OPERAND_TYPE_ID, {40}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpInBoundsAccessChain, 23, 42,
+      {{SPV_OPERAND_TYPE_ID, {38}}, {SPV_OPERAND_TYPE_ID, {39}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpStore, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {42}}, {SPV_OPERAND_TYPE_ID, {41}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 15, 43, {{SPV_OPERAND_TYPE_ID, {10}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 44, {{SPV_OPERAND_TYPE_ID, {11}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 45, {{SPV_OPERAND_TYPE_ID, {9}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 15, 46, {{SPV_OPERAND_TYPE_ID, {10}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpIAdd, 6, 47,
+      {{SPV_OPERAND_TYPE_ID, {45}}, {SPV_OPERAND_TYPE_ID, {46}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpAccessChain, 23, 48,
+      {{SPV_OPERAND_TYPE_ID, {38}}, {SPV_OPERAND_TYPE_ID, {47}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 49, {{SPV_OPERAND_TYPE_ID, {48}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpInBoundsAccessChain, 23,
+                                                50,
+                                                {{SPV_OPERAND_TYPE_ID, {20}},
+                                                 {SPV_OPERAND_TYPE_ID, {43}},
+                                                 {SPV_OPERAND_TYPE_ID, {44}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 51, {{SPV_OPERAND_TYPE_ID, {50}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpIAdd, 6, 52,
+      {{SPV_OPERAND_TYPE_ID, {51}}, {SPV_OPERAND_TYPE_ID, {49}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpAccessChain, 23, 53,
+                                                {{SPV_OPERAND_TYPE_ID, {20}},
+                                                 {SPV_OPERAND_TYPE_ID, {43}},
+                                                 {SPV_OPERAND_TYPE_ID, {44}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpStore, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {53}}, {SPV_OPERAND_TYPE_ID, {52}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 15, 58, {{SPV_OPERAND_TYPE_ID, {10}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 63, {{SPV_OPERAND_TYPE_ID, {11}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpAccessChain, 64, 65,
+                                                {{SPV_OPERAND_TYPE_ID, {62}},
+                                                 {SPV_OPERAND_TYPE_ID, {21}},
+                                                 {SPV_OPERAND_TYPE_ID, {63}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpAccessChain, 64, 101,
+                                                {{SPV_OPERAND_TYPE_ID, {62}},
+                                                 {SPV_OPERAND_TYPE_ID, {45}},
+                                                 {SPV_OPERAND_TYPE_ID, {46}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 54, 66, {{SPV_OPERAND_TYPE_ID, {65}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpAccessChain, 64, 67,
+      {{SPV_OPERAND_TYPE_ID, {57}}, {SPV_OPERAND_TYPE_ID, {58}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpStore, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {67}}, {SPV_OPERAND_TYPE_ID, {66}}}));
+  instructions.push_back(
+      MakeInstructionMessage(SpvOpLoad, 6, 68, {{SPV_OPERAND_TYPE_ID, {9}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpInBoundsAccessChain, 64, 70,
+      {{SPV_OPERAND_TYPE_ID, {57}}, {SPV_OPERAND_TYPE_ID, {68}}}));
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpStore, 0, 0,
+      {{SPV_OPERAND_TYPE_ID, {70}}, {SPV_OPERAND_TYPE_ID, {69}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
+
+  FactManager fact_manager;
+
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  TransformationAddFunction add_dead_function(instructions);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
+  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  std::string added_as_dead_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+        %100 = OpTypeBool
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %15 = OpTypeInt 32 0
+        %102 = OpTypePointer Function %15
+          %8 = OpTypeFunction %2 %7 %102 %7
+         %16 = OpConstant %15 5
+         %17 = OpTypeArray %6 %16
+         %18 = OpTypeArray %17 %16
+         %19 = OpTypePointer Private %18
+         %20 = OpVariable %19 Private
+         %21 = OpConstant %6 0
+         %23 = OpTypePointer Private %6
+         %26 = OpTypePointer Function %17
+         %29 = OpTypePointer Private %17
+         %33 = OpConstant %6 4
+        %200 = OpConstant %15 4
+         %35 = OpConstant %15 10
+         %36 = OpTypeArray %6 %35
+         %37 = OpTypePointer Private %36
+         %38 = OpVariable %37 Private
+         %54 = OpTypeFloat 32
+         %55 = OpTypeVector %54 4
+         %56 = OpTypePointer Private %55
+         %57 = OpVariable %56 Private
+         %59 = OpTypeVector %54 3
+         %60 = OpTypeMatrix %59 2
+         %61 = OpTypePointer Private %60
+         %62 = OpVariable %61 Private
+         %64 = OpTypePointer Private %54
+         %69 = OpConstant %54 2
+         %71 = OpConstant %6 1
+         %72 = OpConstant %6 2
+        %201 = OpConstant %15 2
+         %73 = OpConstant %6 3
+        %202 = OpConstant %15 3
+        %203 = OpConstant %6 1
+        %204 = OpConstant %6 9
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %10 = OpFunctionParameter %102
+         %11 = OpFunctionParameter %7
+         %13 = OpLabel
+         %14 = OpVariable %7 Function
+         %27 = OpVariable %26 Function
+         %22 = OpLoad %6 %11
+         %24 = OpAccessChain %23 %20 %21 %22
+         %25 = OpLoad %6 %24
+               OpStore %14 %25
+         %28 = OpLoad %15 %10
+         %30 = OpAccessChain %29 %20 %28
+         %31 = OpLoad %17 %30
+               OpStore %27 %31
+         %32 = OpLoad %6 %9
+         %34 = OpInBoundsAccessChain %7 %27 %32
+               OpStore %34 %33
+         %39 = OpLoad %6 %9
+         %40 = OpAccessChain %23 %38 %33
+         %41 = OpLoad %6 %40
+         %42 = OpInBoundsAccessChain %23 %38 %39
+               OpStore %42 %41
+         %43 = OpLoad %15 %10
+         %44 = OpLoad %6 %11
+         %45 = OpLoad %6 %9
+         %46 = OpLoad %15 %10
+         %47 = OpIAdd %6 %45 %46
+         %48 = OpAccessChain %23 %38 %47
+         %49 = OpLoad %6 %48
+         %50 = OpInBoundsAccessChain %23 %20 %43 %44
+         %51 = OpLoad %6 %50
+         %52 = OpIAdd %6 %51 %49
+         %53 = OpAccessChain %23 %20 %43 %44
+               OpStore %53 %52
+         %58 = OpLoad %15 %10
+         %63 = OpLoad %6 %11
+         %65 = OpAccessChain %64 %62 %21 %63
+        %101 = OpAccessChain %64 %62 %45 %46
+         %66 = OpLoad %54 %65
+         %67 = OpAccessChain %64 %57 %58
+               OpStore %67 %66
+         %68 = OpLoad %6 %9
+         %70 = OpInBoundsAccessChain %64 %57 %68
+               OpStore %70 %69
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_dead_code, context1.get()));
+
+  std::vector<protobufs::AccessChainClampingInfo> access_chain_clamping_info;
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(24, {{1001, 2001}, {1002, 2002}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(30, {{1003, 2003}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(34, {{1004, 2004}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(40, {{1005, 2005}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(42, {{1006, 2006}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(48, {{1007, 2007}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(50, {{1008, 2008}, {1009, 2009}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(53, {{1010, 2010}, {1011, 2011}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(65, {{1012, 2012}, {1013, 2013}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(101, {{1014, 2014}, {1015, 2015}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(67, {{1016, 2016}}));
+  access_chain_clamping_info.push_back(
+      MakeAccessClampingInfo(70, {{1017, 2017}}));
+
+  TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 13,
+                                                  access_chain_clamping_info);
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
+  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context2.get()));
+  std::string added_as_livesafe_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+        %100 = OpTypeBool
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %15 = OpTypeInt 32 0
+        %102 = OpTypePointer Function %15
+          %8 = OpTypeFunction %2 %7 %102 %7
+         %16 = OpConstant %15 5
+         %17 = OpTypeArray %6 %16
+         %18 = OpTypeArray %17 %16
+         %19 = OpTypePointer Private %18
+         %20 = OpVariable %19 Private
+         %21 = OpConstant %6 0
+         %23 = OpTypePointer Private %6
+         %26 = OpTypePointer Function %17
+         %29 = OpTypePointer Private %17
+         %33 = OpConstant %6 4
+        %200 = OpConstant %15 4
+         %35 = OpConstant %15 10
+         %36 = OpTypeArray %6 %35
+         %37 = OpTypePointer Private %36
+         %38 = OpVariable %37 Private
+         %54 = OpTypeFloat 32
+         %55 = OpTypeVector %54 4
+         %56 = OpTypePointer Private %55
+         %57 = OpVariable %56 Private
+         %59 = OpTypeVector %54 3
+         %60 = OpTypeMatrix %59 2
+         %61 = OpTypePointer Private %60
+         %62 = OpVariable %61 Private
+         %64 = OpTypePointer Private %54
+         %69 = OpConstant %54 2
+         %71 = OpConstant %6 1
+         %72 = OpConstant %6 2
+        %201 = OpConstant %15 2
+         %73 = OpConstant %6 3
+        %202 = OpConstant %15 3
+        %203 = OpConstant %6 1
+        %204 = OpConstant %6 9
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %10 = OpFunctionParameter %102
+         %11 = OpFunctionParameter %7
+         %13 = OpLabel
+         %14 = OpVariable %7 Function
+         %27 = OpVariable %26 Function
+         %22 = OpLoad %6 %11
+       %1002 = OpULessThanEqual %100 %22 %33
+       %2002 = OpSelect %6 %1002 %22 %33
+         %24 = OpAccessChain %23 %20 %21 %2002
+         %25 = OpLoad %6 %24
+               OpStore %14 %25
+         %28 = OpLoad %15 %10
+       %1003 = OpULessThanEqual %100 %28 %200
+       %2003 = OpSelect %15 %1003 %28 %200
+         %30 = OpAccessChain %29 %20 %2003
+         %31 = OpLoad %17 %30
+               OpStore %27 %31
+         %32 = OpLoad %6 %9
+       %1004 = OpULessThanEqual %100 %32 %33
+       %2004 = OpSelect %6 %1004 %32 %33
+         %34 = OpInBoundsAccessChain %7 %27 %2004
+               OpStore %34 %33
+         %39 = OpLoad %6 %9
+         %40 = OpAccessChain %23 %38 %33
+         %41 = OpLoad %6 %40
+       %1006 = OpULessThanEqual %100 %39 %204
+       %2006 = OpSelect %6 %1006 %39 %204
+         %42 = OpInBoundsAccessChain %23 %38 %2006
+               OpStore %42 %41
+         %43 = OpLoad %15 %10
+         %44 = OpLoad %6 %11
+         %45 = OpLoad %6 %9
+         %46 = OpLoad %15 %10
+         %47 = OpIAdd %6 %45 %46
+       %1007 = OpULessThanEqual %100 %47 %204
+       %2007 = OpSelect %6 %1007 %47 %204
+         %48 = OpAccessChain %23 %38 %2007
+         %49 = OpLoad %6 %48
+       %1008 = OpULessThanEqual %100 %43 %200
+       %2008 = OpSelect %15 %1008 %43 %200
+       %1009 = OpULessThanEqual %100 %44 %33
+       %2009 = OpSelect %6 %1009 %44 %33
+         %50 = OpInBoundsAccessChain %23 %20 %2008 %2009
+         %51 = OpLoad %6 %50
+         %52 = OpIAdd %6 %51 %49
+       %1010 = OpULessThanEqual %100 %43 %200
+       %2010 = OpSelect %15 %1010 %43 %200
+       %1011 = OpULessThanEqual %100 %44 %33
+       %2011 = OpSelect %6 %1011 %44 %33
+         %53 = OpAccessChain %23 %20 %2010 %2011
+               OpStore %53 %52
+         %58 = OpLoad %15 %10
+         %63 = OpLoad %6 %11
+       %1013 = OpULessThanEqual %100 %63 %72
+       %2013 = OpSelect %6 %1013 %63 %72
+         %65 = OpAccessChain %64 %62 %21 %2013
+       %1014 = OpULessThanEqual %100 %45 %71
+       %2014 = OpSelect %6 %1014 %45 %71
+       %1015 = OpULessThanEqual %100 %46 %201
+       %2015 = OpSelect %15 %1015 %46 %201
+        %101 = OpAccessChain %64 %62 %2014 %2015
+         %66 = OpLoad %54 %65
+       %1016 = OpULessThanEqual %100 %58 %202
+       %2016 = OpSelect %15 %1016 %58 %202
+         %67 = OpAccessChain %64 %57 %2016
+               OpStore %67 %66
+         %68 = OpLoad %6 %9
+       %1017 = OpULessThanEqual %100 %68 %73
+       %2017 = OpSelect %6 %1017 %68 %73
+         %70 = OpInBoundsAccessChain %64 %57 %2017
+               OpStore %70 %69
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_livesafe_code, context2.get()));
 }
 
 }  // namespace
