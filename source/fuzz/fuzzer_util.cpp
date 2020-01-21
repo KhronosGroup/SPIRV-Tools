@@ -258,33 +258,36 @@ uint32_t WalkCompositeTypeIndices(
     auto should_be_composite_type =
         context->get_def_use_mgr()->GetDef(sub_object_type_id);
     assert(should_be_composite_type && "The type should exist.");
-    if (SpvOpTypeArray == should_be_composite_type->opcode()) {
-      auto array_length = GetArraySize(*should_be_composite_type, context);
-      if (array_length == 0 || index >= array_length) {
-        return 0;
+    switch (should_be_composite_type->opcode()) {
+      case SpvOpTypeArray: {
+        auto array_length = GetArraySize(*should_be_composite_type, context);
+        if (array_length == 0 || index >= array_length) {
+          return 0;
+        }
+        sub_object_type_id =
+            should_be_composite_type->GetSingleWordInOperand(0);
+        break;
       }
-      sub_object_type_id = should_be_composite_type->GetSingleWordInOperand(0);
-    } else if (SpvOpTypeMatrix == should_be_composite_type->opcode()) {
-      auto matrix_column_count =
-          should_be_composite_type->GetSingleWordInOperand(1);
-      if (index >= matrix_column_count) {
-        return 0;
+      case SpvOpTypeMatrix:
+      case SpvOpTypeVector: {
+        auto count = should_be_composite_type->GetSingleWordInOperand(1);
+        if (index >= count) {
+          return 0;
+        }
+        sub_object_type_id =
+            should_be_composite_type->GetSingleWordInOperand(0);
+        break;
       }
-      sub_object_type_id = should_be_composite_type->GetSingleWordInOperand(0);
-    } else if (SpvOpTypeStruct == should_be_composite_type->opcode()) {
-      if (index >= GetNumberOfStructMembers(*should_be_composite_type)) {
-        return 0;
+      case SpvOpTypeStruct: {
+        if (index >= GetNumberOfStructMembers(*should_be_composite_type)) {
+          return 0;
+        }
+        sub_object_type_id =
+            should_be_composite_type->GetSingleWordInOperand(index);
+        break;
       }
-      sub_object_type_id =
-          should_be_composite_type->GetSingleWordInOperand(index);
-    } else if (SpvOpTypeVector == should_be_composite_type->opcode()) {
-      auto vector_length = should_be_composite_type->GetSingleWordInOperand(1);
-      if (index >= vector_length) {
+      default:
         return 0;
-      }
-      sub_object_type_id = should_be_composite_type->GetSingleWordInOperand(0);
-    } else {
-      return 0;
     }
   }
   return sub_object_type_id;
@@ -345,6 +348,35 @@ bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id) {
         }
       });
   return result;
+}
+
+uint32_t FindFunctionType(opt::IRContext* ir_context,
+                          const std::vector<uint32_t>& type_ids) {
+  // Look through the existing types for a match.
+  for (auto& type_or_value : ir_context->types_values()) {
+    if (type_or_value.opcode() != SpvOpTypeFunction) {
+      // We are only interested in function types.
+      continue;
+    }
+    if (type_or_value.NumInOperands() != type_ids.size()) {
+      // Not a match: different numbers of arguments.
+      continue;
+    }
+    // Check whether the return type and argument types match (after remapping).
+    bool input_operands_match = true;
+    for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
+      if (type_ids[i] != type_or_value.GetSingleWordInOperand(i)) {
+        input_operands_match = false;
+        break;
+      }
+    }
+    if (input_operands_match) {
+      // Everything matches.
+      return type_or_value.result_id();
+    }
+  }
+  // No match was found.
+  return 0;
 }
 
 }  // namespace fuzzerutil

@@ -299,43 +299,41 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
       } break;
       case SpvOpTypeFunction: {
         // It is not OK to have multiple function types that use identical ids
-        // for their return and parameter types.  We thus first look for a
-        // matching function type in the recipient module and use the id of this
-        // type if a match is found.  Otherwise we add a remapped version of the
-        // function type.
+        // for their return and parameter types.  We thus go through all
+        // existing function types to look for a match.  We do not use the
+        // type manager here because we want to regard two function types that
+        // are structurally identical but that differ with respect to the
+        // actual ids used for pointer types as different.
+        //
+        // Example:
+        //
+        // %1 = OpTypeVoid
+        // %2 = OpTypeInt 32 0
+        // %3 = OpTypePointer Function %2
+        // %4 = OpTypePointer Function %2
+        // %5 = OpTypeFunction %1 %3
+        // %6 = OpTypeFunction %1 %4
+        //
+        // We regard %5 and %6 as distinct function types here, even though
+        // they both have the form "uint32* -> void"
 
-        // Build a sequence of types used as parameters for the function type.
-        std::vector<const opt::analysis::Type*> parameter_types;
-        // We start iterating at 1 because 0 is the function's return type.
-        for (uint32_t index = 1; index < type_or_value.NumInOperands();
-             index++) {
-          parameter_types.push_back(GetIRContext()->get_type_mgr()->GetType(
-              original_id_to_donated_id->at(
-                  type_or_value.GetSingleWordInOperand(index))));
+        std::vector<uint32_t> return_and_parameter_types;
+        for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
+          return_and_parameter_types.push_back(original_id_to_donated_id->at(
+              type_or_value.GetSingleWordInOperand(i)));
         }
-        // Make a type object corresponding to the function type.
-        opt::analysis::Function function_type(
-            GetIRContext()->get_type_mgr()->GetType(
-                original_id_to_donated_id->at(
-                    type_or_value.GetSingleWordInOperand(0))),
-            parameter_types);
-
-        // Check whether a function type corresponding to this this type object
-        // is already declared by the module.
-        auto function_type_id =
-            GetIRContext()->get_type_mgr()->GetId(&function_type);
-        if (function_type_id) {
-          // A suitable existing function was found - use its id.
-          new_result_id = function_type_id;
+        uint32_t existing_function_id = fuzzerutil::FindFunctionType(
+            GetIRContext(), return_and_parameter_types);
+        if (existing_function_id) {
+          new_result_id = existing_function_id;
         } else {
           // No match was found, so add a remapped version of the function type
           // to the module, with a fresh id.
           new_result_id = GetFuzzerContext()->GetFreshId();
           std::vector<uint32_t> argument_type_ids;
-          for (uint32_t index = 1; index < type_or_value.NumInOperands();
-               index++) {
+          for (uint32_t i = 1; i < type_or_value.NumInOperands(); i++) {
             argument_type_ids.push_back(original_id_to_donated_id->at(
-                type_or_value.GetSingleWordInOperand(index)));
+                type_or_value.GetSingleWordInOperand(i)));
           }
           ApplyTransformation(TransformationAddTypeFunction(
               new_result_id,

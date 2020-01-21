@@ -438,6 +438,58 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
   ASSERT_TRUE(IsEqual(env, after_transformation, recipient_context.get()));
 }
 
+TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
+  std::string recipient_and_donor_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %7 Function
+         %10 = OpFunctionCall %2 %11 %9
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %2 None %8
+         %12 = OpFunctionParameter %7
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto recipient_context = BuildModule(
+      env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context = BuildModule(
+      env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(), &fact_manager,
+                                      &fuzzer_context, &transformation_sequence,
+                                      {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get());
+
+  // We just check that the result is valid.  Checking to what it should be
+  // exactly equal to would be very fragile.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
 TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
   std::string recipient_shader = R"(
                OpCapability Shader

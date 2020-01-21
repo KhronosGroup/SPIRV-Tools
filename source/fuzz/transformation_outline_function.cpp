@@ -368,20 +368,6 @@ protobufs::Transformation TransformationOutlineFunction::ToMessage() const {
   return result;
 }
 
-bool TransformationOutlineFunction::
-    CheckIdIsFreshAndNotUsedByThisTransformation(
-        uint32_t id, opt::IRContext* context,
-        std::set<uint32_t>* ids_used_by_this_transformation) const {
-  if (!fuzzerutil::IsFreshId(context, id)) {
-    return false;
-  }
-  if (ids_used_by_this_transformation->count(id) != 0) {
-    return false;
-  }
-  ids_used_by_this_transformation->insert(id);
-  return true;
-}
-
 std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
     opt::IRContext* context, const std::set<opt::BasicBlock*>& region_set,
     opt::BasicBlock* region_exit_block) {
@@ -540,15 +526,16 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
   // not exist there cannot already be a function type with this struct as its
   // return type.
   if (region_output_ids.empty()) {
+    std::vector<uint32_t> return_and_parameter_types;
     opt::analysis::Void void_type;
     return_type_id = context->get_type_mgr()->GetId(&void_type);
-    std::vector<const opt::analysis::Type*> argument_types;
+    return_and_parameter_types.push_back(return_type_id);
     for (auto id : region_input_ids) {
-      argument_types.push_back(context->get_type_mgr()->GetType(
-          context->get_def_use_mgr()->GetDef(id)->type_id()));
+      return_and_parameter_types.push_back(
+          context->get_def_use_mgr()->GetDef(id)->type_id());
     }
-    opt::analysis::Function function_type(&void_type, argument_types);
-    function_type_id = context->get_type_mgr()->GetId(&function_type);
+    function_type_id =
+        fuzzerutil::FindFunctionType(context, return_and_parameter_types);
   }
 
   // If no existing function type was found, we need to create one.
