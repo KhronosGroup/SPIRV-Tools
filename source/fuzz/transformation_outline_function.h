@@ -128,15 +128,6 @@ class TransformationOutlineFunction : public Transformation {
       opt::BasicBlock* region_exit_block);
 
  private:
-  // A helper method for the applicability check.  Returns true if and only if
-  // |id| is (a) a fresh id for the module, and (b) an id that has not
-  // previously been subject to this check.  We use this to check whether the
-  // ids given for the transformation are not only fresh but also different from
-  // one another.
-  bool CheckIdIsFreshAndNotUsedByThisTransformation(
-      uint32_t id, opt::IRContext* context,
-      std::set<uint32_t>* ids_used_by_this_transformation) const;
-
   // Ensures that the module's id bound is at least the maximum of any fresh id
   // associated with the transformation.
   void UpdateModuleIdBoundForFreshIds(

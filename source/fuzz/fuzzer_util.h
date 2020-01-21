@@ -131,6 +131,12 @@ bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id);
 // Returns true if and only if |block_id| is a merge block or continue target
 bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
 
+// Returns the result id of an instruction of the form:
+//  %id = OpTypeFunction |type_ids|
+// or 0 if no such instruction exists.
+uint32_t FindFunctionType(opt::IRContext* ir_context,
+                          const std::vector<uint32_t>& type_ids);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

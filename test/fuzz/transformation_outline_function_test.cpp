@@ -2040,6 +2040,91 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous3) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationOutlineFunctionTest, Miscellaneous4) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %6 "main"
+               OpExecutionMode %6 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %21 = OpTypeBool
+        %100 = OpTypeInt 32 0
+        %101 = OpTypePointer Function %100
+        %102 = OpTypePointer Function %100
+        %103 = OpTypeFunction %2 %101
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %104 = OpVariable %102 Function
+               OpBranch %80
+         %80 = OpLabel
+        %105 = OpLoad %100 %104
+               OpBranch %106
+        %106 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 80,
+      /*exit_block*/ 106,
+      /*new_function_struct_return_type_id*/ 300,
+      /*new_function_type_id*/ 301,
+      /*new_function_id*/ 302,
+      /*new_function_region_entry_block*/ 304,
+      /*new_caller_result_id*/ 305,
+      /*new_callee_result_id*/ 306,
+      /*input_id_to_fresh_id*/ {{104, 307}},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %6 "main"
+               OpExecutionMode %6 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %21 = OpTypeBool
+        %100 = OpTypeInt 32 0
+        %101 = OpTypePointer Function %100
+        %102 = OpTypePointer Function %100
+        %103 = OpTypeFunction %2 %101
+        %301 = OpTypeFunction %2 %102
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %104 = OpVariable %102 Function
+               OpBranch %80
+         %80 = OpLabel
+        %305 = OpFunctionCall %2 %302 %104
+               OpReturn
+               OpFunctionEnd
+        %302 = OpFunction %2 None %301
+        %307 = OpFunctionParameter %102
+        %304 = OpLabel
+        %105 = OpLoad %100 %307
+               OpBranch %106
+        %106 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
