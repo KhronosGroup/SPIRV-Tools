@@ -16,6 +16,7 @@
 
 #include <cassert>
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_composite.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
@@ -157,6 +158,19 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
   }
   assert(false && "Should be unreachable as all cases must be handled above.");
   return nullptr;
+}
+
+bool Transformation::CheckIdIsFreshAndNotUsedByThisTransformation(
+    uint32_t id, opt::IRContext* context,
+    std::set<uint32_t>* ids_used_by_this_transformation) {
+  if (!fuzzerutil::IsFreshId(context, id)) {
+    return false;
+  }
+  if (ids_used_by_this_transformation->count(id) != 0) {
+    return false;
+  }
+  ids_used_by_this_transformation->insert(id);
+  return true;
 }
 
 }  // namespace fuzz
