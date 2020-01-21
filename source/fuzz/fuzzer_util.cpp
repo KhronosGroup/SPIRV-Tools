@@ -362,7 +362,7 @@ uint32_t FindFunctionType(opt::IRContext* ir_context,
       // Not a match: different numbers of arguments.
       continue;
     }
-    // Check whether the return type and argument types match (after remapping).
+    // Check whether the return type and argument types match.
     bool input_operands_match = true;
     for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
       if (type_ids[i] != type_or_value.GetSingleWordInOperand(i)) {
