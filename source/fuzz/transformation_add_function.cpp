@@ -58,7 +58,11 @@ TransformationAddFunction::TransformationAddFunction(
 bool TransformationAddFunction::IsApplicable(
     opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
+  // This transformation may use a lot of ids, all of which need to be fresh
+  // and distinct.  This set tracks them.
   std::set<uint32_t> ids_used_by_this_transformation;
+
+  // Ensure that all result ids in the new function are fresh and distinct.
   for (auto& instruction : message_.instruction()) {
     if (instruction.result_id()) {
       if (!CheckIdIsFreshAndNotUsedByThisTransformation(
@@ -68,7 +72,10 @@ bool TransformationAddFunction::IsApplicable(
       }
     }
   }
+
   if (message_.is_livesafe()) {
+    // Ensure that all ids provided for making the function livesafe are fresh
+    // and distinct.
     if (!CheckIdIsFreshAndNotUsedByThisTransformation(
             message_.loop_limiter_variable_id(), context,
             &ids_used_by_this_transformation)) {
@@ -112,31 +119,11 @@ bool TransformationAddFunction::IsApplicable(
   }
 
   if (message_.is_livesafe()) {
+    // If the function contains loop headers, check that the module contains
+    // appropriate ingredients, and that additional ingredients have been
+    // provided in the transformation, to add a limiter to every loop.
     std::vector<uint32_t> loop_header_ids = GetLoopHeaderIds();
-
     if (!loop_header_ids.empty()) {
-      auto loop_limiter_type_and_constant_ids =
-          GetLoopLimiterTypeAndConstantIds(context);
-      if (!loop_limiter_type_and_constant_ids.unsigned_int_type) {
-        // Unsigned 32-bit int type must exist.
-        return false;
-      }
-      if (!loop_limiter_type_and_constant_ids.pointer_to_unsigned_int_type) {
-        // Pointer to unsigned 32-bit int type must exist.
-        return false;
-      }
-      if (!loop_limiter_type_and_constant_ids.bool_type) {
-        // Bool type must exist.
-        return false;
-      }
-      if (!loop_limiter_type_and_constant_ids.zero) {
-        // The value 0, of unsigned 32-bit in type, must exist.
-        return false;
-      }
-      if (!loop_limiter_type_and_constant_ids.one) {
-        // The value 1, of unsigned 32-bit in type, must exist.
-        return false;
-      }
       auto loop_limit_constant_id_instr =
           context->get_def_use_mgr()->GetDef(message_.loop_limit_constant_id());
       if (!loop_limit_constant_id_instr ||
@@ -170,14 +157,24 @@ bool TransformationAddFunction::IsApplicable(
       }
     }
 
-    // TODO requires commenting.
+    // If the function contains OpKill or OpUnreachable, we must be in a
+    // position where we can replace such instructions with return instructions.
     if (FunctionContainsKillOrUnreachable()) {
+      // Get the function's return type.
       auto function_return_type_inst = context->get_def_use_mgr()->GetDef(
           message_.instruction(0).result_type_id());
       if (!function_return_type_inst) {
+        // The function's return type is not defined; we're not going to be
+        // able to add this function.
         return false;
       }
+      // If the function's return type is void, we can turn every OpKill and
+      // OpUnreachable into OpReturn, so no further ingredients are needed.
+      // Otherwise ...
       if (function_return_type_inst->opcode() != SpvOpTypeVoid) {
+        // ... we check that the id, %id, provided with the transformation
+        // specifically to turn OpKill and OpUnreachable instructions into
+        // OpReturnValue %id has the same type as the function's return type.
         if (context->get_def_use_mgr()
                 ->GetDef(message_.kill_unreachable_return_value_id())
                 ->type_id() != function_return_type_inst->result_id()) {
@@ -186,21 +183,28 @@ bool TransformationAddFunction::IsApplicable(
       }
     }
 
-    // TODO comment
+    // Check that the transformation comes equipped with sufficient ids to clamp
+    // access chain indices to be in bounds.
     for (auto& instruction : message_.instruction()) {
       switch (instruction.opcode()) {
         case SpvOpAccessChain:
         case SpvOpInBoundsAccessChain: {
           const protobufs::AccessChainClampingInfo* access_chain_clamping_info =
               nullptr;
+          // Look for an AccessChainClampingInfo message matching this access
+          // chain instruction.
           for (auto& clamping_info : message_.access_chain_clamping_info()) {
             if (clamping_info.access_chain_id() == instruction.result_id()) {
               access_chain_clamping_info = &clamping_info;
             }
           }
           if (!access_chain_clamping_info) {
+            // No access chain clamping information was found; the
+            // transformation cannot be applied.
             return false;
           }
+          // Check that there is a (compare_id, select_id) pair for every
+          // index associated with the instruction.
           if (access_chain_clamping_info->compare_and_select_ids().size() !=
               instruction.input_operand().size() - 1) {
             return false;
@@ -225,10 +229,9 @@ bool TransformationAddFunction::IsApplicable(
   if (!TryToAddFunction(cloned_module.get())) {
     return false;
   }
-  // TODO revise comment since we do not return here
   // Having managed to add the new function to the cloned module, we ascertain
-  // whether the cloned module is still valid.  If it is, the transformation is
-  // applicable.
+  // whether the cloned module is still valid.  If it is not, the transformation
+  // is not applicable.
   if (!fuzzerutil::IsValid(cloned_module.get())) {
     return false;
   }
@@ -368,56 +371,6 @@ bool TransformationAddFunction::TryToAddFunction(
   return true;
 }
 
-TransformationAddFunction::LoopLimiterTypeAndConstantIds
-TransformationAddFunction::GetLoopLimiterTypeAndConstantIds(
-    opt::IRContext* context) const {
-  // Set all fields to 0 in case they turn out to be unavailable.
-  LoopLimiterTypeAndConstantIds result = {0, 0, 0, 0, 0};
-
-  // Find the id of the "unsigned int" type.
-  opt::analysis::Integer unsigned_int_type(32, false);
-  result.unsigned_int_type = context->get_type_mgr()->GetId(&unsigned_int_type);
-  if (!result.unsigned_int_type) {
-    // Unsigned int is not available, and so no constant of this type, nor a
-    // pointer to it, can be either.
-    return result;
-  }
-  auto registered_unsigned_int_type =
-      context->get_type_mgr()->GetRegisteredType(&unsigned_int_type);
-
-  // Look for 0, adding its id if found.
-  opt::analysis::IntConstant zero(registered_unsigned_int_type->AsInteger(),
-                                  {0});
-  auto registered_zero = context->get_constant_mgr()->FindConstant(&zero);
-  if (registered_zero) {
-    result.zero = context->get_constant_mgr()
-                      ->GetDefiningInstruction(registered_zero)
-                      ->result_id();
-  }
-
-  // Look for 1, adding its id if found.
-  opt::analysis::IntConstant one(registered_unsigned_int_type->AsInteger(),
-                                 {1});
-  auto registered_one = context->get_constant_mgr()->FindConstant(&one);
-  if (registered_one) {
-    result.one = context->get_constant_mgr()
-                     ->GetDefiningInstruction(registered_one)
-                     ->result_id();
-  }
-
-  // Look for pointer-to-unsigned int type, adding its id if found.
-  opt::analysis::Pointer pointer_to_unsigned_int_type(
-      registered_unsigned_int_type, SpvStorageClassFunction);
-  result.pointer_to_unsigned_int_type =
-      context->get_type_mgr()->GetId(&pointer_to_unsigned_int_type);
-
-  // Look for bool type, adding its id if found.
-  opt::analysis::Bool bool_type;
-  result.bool_type = context->get_type_mgr()->GetId(&bool_type);
-
-  return result;
-}
-
 std::vector<uint32_t> TransformationAddFunction::GetLoopHeaderIds() const {
   std::vector<uint32_t> result;
   uint32_t last_label = 0;
@@ -465,7 +418,9 @@ bool TransformationAddFunction::TryToMakeFunctionLivesafe(
   }
   assert(added_function && "The added function should have been found.");
 
-  AddLoopLimiters(context, added_function);
+  if (!TryToAddLoopLimiters(context, added_function)) {
+    return false;
+  }
 
   // TODO comment
   for (auto& block : *added_function) {
@@ -489,36 +444,81 @@ bool TransformationAddFunction::TryToMakeFunctionLivesafe(
   return true;
 }
 
-void TransformationAddFunction::AddLoopLimiters(
+bool TransformationAddFunction::TryToAddLoopLimiters(
     opt::IRContext* context, opt::Function* added_function) const {
-  auto loop_limiter_types_and_ids = GetLoopLimiterTypeAndConstantIds(context);
-
-  if (!GetLoopHeaderIds().empty()) {
-    for (auto inst_it = added_function->begin()->begin();; ++inst_it) {
-      if (inst_it->opcode() == SpvOpVariable) {
-        continue;
-      }
-      // The current instruction is the first instruction in the function's
-      // entry block that is not OpVariable.  This is the right place to add the
-      // loop limiter variable.
-
-      // Add an instruction of the form:
-      // %loop_limiter_var = SpvOpVariable %ptr_to_uint Function %zero
-      inst_it->InsertBefore(MakeUnique<opt::Instruction>(
-          context, SpvOpVariable,
-          loop_limiter_types_and_ids.pointer_to_unsigned_int_type,
-          message_.loop_limiter_variable_id(),
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
-               {SPV_OPERAND_TYPE_ID, {loop_limiter_types_and_ids.zero}}})));
-      // Update the module's id bound since we have added the loop limiter
-      // variable id.
-      fuzzerutil::UpdateModuleIdBound(context,
-                                      message_.loop_limiter_variable_id());
-
-      break;
-    }
+  if (GetLoopHeaderIds().empty()) {
+    // There are no loops, so no need to add any loop limiters.
+    return true;
   }
+
+  // Find the id of the "unsigned int" type.
+  opt::analysis::Integer unsigned_int_type(32, false);
+  uint32_t unsigned_int_type_id =
+      context->get_type_mgr()->GetId(&unsigned_int_type);
+  if (!unsigned_int_type_id) {
+    // Unsigned int is not available; we need this type in order to add loop
+    // limiters.
+    return false;
+  }
+  auto registered_unsigned_int_type =
+      context->get_type_mgr()->GetRegisteredType(&unsigned_int_type);
+
+  // Look for 0 of type unsigned int.
+  opt::analysis::IntConstant zero(registered_unsigned_int_type->AsInteger(),
+                                  {0});
+  auto registered_zero = context->get_constant_mgr()->FindConstant(&zero);
+  if (!registered_zero) {
+    // We need 0 in order to be able to initialize loop limiters.
+    return false;
+  }
+  uint32_t zero_id = context->get_constant_mgr()
+                         ->GetDefiningInstruction(registered_zero)
+                         ->result_id();
+
+  // Look for 1 of type unsigned int.
+  opt::analysis::IntConstant one(registered_unsigned_int_type->AsInteger(),
+                                 {1});
+  auto registered_one = context->get_constant_mgr()->FindConstant(&one);
+  if (!registered_one) {
+    // We need 1 in order to be able to increment loop limiters.
+    return false;
+  }
+  uint32_t one_id = context->get_constant_mgr()
+                        ->GetDefiningInstruction(registered_one)
+                        ->result_id();
+
+  // Look for pointer-to-unsigned int type.
+  opt::analysis::Pointer pointer_to_unsigned_int_type(
+      registered_unsigned_int_type, SpvStorageClassFunction);
+  uint32_t pointer_to_unsigned_int_type_id =
+      context->get_type_mgr()->GetId(&pointer_to_unsigned_int_type);
+  if (!pointer_to_unsigned_int_type_id) {
+    // We need pointer-to-unsigned int in order to declare the loop limiter
+    // variable.
+    return false;
+  }
+
+  // Look for bool type, adding its id if found.
+  opt::analysis::Bool bool_type;
+  uint32_t bool_type_id = context->get_type_mgr()->GetId(&bool_type);
+  if (!bool_type_id) {
+    // We need bool in order to compare the loop limiter's value with the loop
+    // limit constant.
+    return false;
+  }
+
+  // Declare the loop limiter variable at the start of the function's entry
+  // block, via an instruction of the form:
+  //   %loop_limiter_var = SpvOpVariable %ptr_to_uint Function %zero
+  added_function->begin()->begin()->InsertBefore(MakeUnique<opt::Instruction>(
+      context, SpvOpVariable, pointer_to_unsigned_int_type_id,
+      message_.loop_limiter_variable_id(),
+      opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
+           {SPV_OPERAND_TYPE_ID, {zero_id}}})));
+  // Update the module's id bound since we have added the loop limiter
+  // variable id.
+  fuzzerutil::UpdateModuleIdBound(context, message_.loop_limiter_variable_id());
 
   // Collect up all the loop headers so that we can subsequently add loop
   // limiting logic.  As that logic involves splitting blocks, we cannot
@@ -530,6 +530,7 @@ void TransformationAddFunction::AddLoopLimiters(
     }
   }
 
+  // Consider each loop in turn.
   for (auto block : loop_headers) {
     // Go through the sequence of loop limiter infos and find the one
     // corresponding to this loop.
@@ -559,18 +560,17 @@ void TransformationAddFunction::AddLoopLimiters(
     // Add a load from the loop limiter variable, of the form:
     //   %t1 = OpLoad %uint32 %loop_limiter
     new_instructions.push_back(MakeUnique<opt::Instruction>(
-        context, SpvOpLoad, loop_limiter_types_and_ids.unsigned_int_type,
-        loop_limiter_info.load_id(),
+        context, SpvOpLoad, unsigned_int_type_id, loop_limiter_info.load_id(),
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {message_.loop_limiter_variable_id()}}})));
     // Increment the loaded value:
     //   %t2 = OpIAdd %uint32 %t1 %one
     new_instructions.push_back(MakeUnique<opt::Instruction>(
-        context, SpvOpIAdd, loop_limiter_types_and_ids.unsigned_int_type,
+        context, SpvOpIAdd, unsigned_int_type_id,
         loop_limiter_info.increment_id(),
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.load_id()}},
-             {SPV_OPERAND_TYPE_ID, {loop_limiter_types_and_ids.one}}})));
+             {SPV_OPERAND_TYPE_ID, {one_id}}})));
     // Store the incremented value back to the loop limiter variable:
     //   OpStore %loop_limiter %t2
     new_instructions.push_back(MakeUnique<opt::Instruction>(
@@ -582,7 +582,7 @@ void TransformationAddFunction::AddLoopLimiters(
     // Compare the loaded value with the loop limit:
     //   %t3 = OpUGreaterThanEqual %bool %t1 %loop_limit
     new_instructions.push_back(MakeUnique<opt::Instruction>(
-        context, SpvOpUGreaterThanEqual, loop_limiter_types_and_ids.bool_type,
+        context, SpvOpUGreaterThanEqual, bool_type_id,
         loop_limiter_info.compare_id(),
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.load_id()}},
@@ -610,6 +610,7 @@ void TransformationAddFunction::AddLoopLimiters(
     fuzzerutil::UpdateModuleIdBound(context, loop_limiter_info.compare_id());
     fuzzerutil::UpdateModuleIdBound(context, loop_limiter_info.new_block_id());
   }
+  return true;
 }
 
 void TransformationAddFunction::TurnKillOrUnreachableIntoReturn(

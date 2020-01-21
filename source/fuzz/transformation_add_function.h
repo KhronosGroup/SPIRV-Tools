@@ -62,22 +62,6 @@ class TransformationAddFunction : public Transformation {
       uint32_t index_id);
 
  private:
-  // A helper struct that captures the ids of types and constants that need to
-  // be used when generating the instructions to manipulate a loop limiter.
-  struct LoopLimiterTypeAndConstantIds {
-    uint32_t unsigned_int_type;
-    uint32_t pointer_to_unsigned_int_type;
-    uint32_t bool_type;
-    uint32_t zero;
-    uint32_t one;
-  };
-
-  // Provides the ids of types and constants that are needed to manipulate the
-  // loop limiter variable associated with |message_|.  If any components turn
-  // out to be unavailable, the corresponding field will be set to 0.
-  LoopLimiterTypeAndConstantIds GetLoopLimiterTypeAndConstantIds(
-      opt::IRContext* context) const;
-
   // Attempts to create a function from the series of instructions in
   // |message_.instruction| and add it to |context|.  If
   // |message_.is_livesafe| holds then the function is made "livesafe" in the
@@ -112,8 +96,8 @@ class TransformationAddFunction : public Transformation {
   bool TryToMakeFunctionLivesafe(opt::IRContext* context) const;
 
   // TODO comment
-  void AddLoopLimiters(opt::IRContext* context,
-                       opt::Function* added_function) const;
+  bool TryToAddLoopLimiters(opt::IRContext* context,
+                            opt::Function* added_function) const;
 
   // TODO comment
   void TurnKillOrUnreachableIntoReturn(
