@@ -63,10 +63,10 @@ void FuzzerPassDonateModules::Apply() {
     assert(donor_ir_context != nullptr && "Supplying of donor failed");
     // Donate the supplied module.
     //
-    // Randomly decide whether to make the module "livesafe"; doing so allows it
-    // to be used for live code injection but restricts its behaviour to allow
-    // this, and means that its functions cannot be transformed as if they were
-    // arbitrary dead code.
+    // Randomly decide whether to make the module livesafe (see
+    // FactFunctionIsLivesafe); doing so allows it to be used for live code
+    // injection but restricts its behaviour to allow this, and means that its
+    // functions cannot be transformed as if they were arbitrary dead code.
     bool make_livesafe = GetFuzzerContext()->ChoosePercentage(
         GetFuzzerContext()->ChanceOfMakingDonorLivesafe());
     DonateSingleModule(donor_ir_context.get(), make_livesafe);
@@ -427,7 +427,8 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
 
 void FuzzerPassDonateModules::HandleFunctions(
     opt::IRContext* donor_ir_context,
-    std::map<uint32_t, uint32_t>* original_id_to_donated_id, bool is_livesafe) {
+    std::map<uint32_t, uint32_t>* original_id_to_donated_id,
+    bool make_livesafe) {
   // Get the ids of functions in the donor module, topologically sorted
   // according to the donor's call graph.
   auto topological_order =
@@ -514,13 +515,16 @@ void FuzzerPassDonateModules::HandleFunctions(
               input_operands));
         });
 
-    if (is_livesafe) {
+    if (make_livesafe) {
       // Various types and constants must be in place for a function to be made
       // live-safe.  Add them if not already present.
-      FindOrCreateBoolType();
-      FindOrCreatePointerTo32BitIntegerType(false, SpvStorageClassFunction);
-      FindOrCreate32BitIntegerConstant(0, false);
-      FindOrCreate32BitIntegerConstant(1, false);
+      FindOrCreateBoolType();  // Needed for comparisons
+      FindOrCreatePointerTo32BitIntegerType(
+          false, SpvStorageClassFunction);  // Needed for adding loop limiters
+      FindOrCreate32BitIntegerConstant(
+          0, false);  // Needed for initializing loop limiters
+      FindOrCreate32BitIntegerConstant(
+          1, false);  // Needed for incrementing loop limiters
 
       // Get a fresh id for the variable that will be used as a loop limiter.
       const uint32_t loop_limiter_variable_id =
@@ -533,10 +537,7 @@ void FuzzerPassDonateModules::HandleFunctions(
       // Consider every loop header in the function to donate, and create a
       // structure capturing the ids to be used for manipulating the loop
       // limiter each time the loop is iterated.
-      // TODO update comment to discuss access chain clamping also
       std::vector<protobufs::LoopLimiterInfo> loop_limiters;
-      std::vector<protobufs::AccessChainClampingInfo>
-          access_chain_clamping_info;
       for (auto& block : *function_to_donate) {
         if (block.IsLoopHeader()) {
           protobufs::LoopLimiterInfo loop_limiter;
@@ -552,7 +553,14 @@ void FuzzerPassDonateModules::HandleFunctions(
           loop_limiter.set_new_block_id(GetFuzzerContext()->GetFreshId());
           loop_limiters.emplace_back(loop_limiter);
         }
-        // TODO comment
+      }
+
+      // Consider every access chain in the function to donate, and create a
+      // structure containing the ids necessary to clamp the access chain
+      // indices to be in-bounds.
+      std::vector<protobufs::AccessChainClampingInfo>
+          access_chain_clamping_info;
+      for (auto& block : *function_to_donate) {
         for (auto& inst : block) {
           switch (inst.opcode()) {
             case SpvOpAccessChain:
@@ -574,6 +582,10 @@ void FuzzerPassDonateModules::HandleFunctions(
                   donor_ir_context->get_def_use_mgr()->GetDef(
                       pointer_type->GetSingleWordInOperand(1));
 
+              // Walk the access chain, creating fresh ids to facilitate
+              // clamping each index.  For simplicity we do this for every
+              // index, even though constant indices will not end up being
+              // clamped.
               for (uint32_t index = 1; index < inst.NumInOperands(); index++) {
                 auto compare_and_select_ids =
                     clamping_info.add_compare_and_select_ids();
@@ -582,6 +594,7 @@ void FuzzerPassDonateModules::HandleFunctions(
                 compare_and_select_ids->set_second(
                     GetFuzzerContext()->GetFreshId());
 
+                // Get the bound for the component being indexed into.
                 uint32_t bound =
                     TransformationAddFunction::GetBoundForCompositeIndex(
                         donor_ir_context, *should_be_composite_type);
@@ -598,11 +611,11 @@ void FuzzerPassDonateModules::HandleFunctions(
                         ->GetType(index_type_inst->result_id())
                         ->AsInteger();
                 if (index_inst->opcode() != SpvOpConstant) {
-                  // We need one less than the bound, to compare against
+                  // We will have to clamp this index, so we need a constant
+                  // whose value is one less than the bound, to compare
+                  // against and to use as the clamped value.
                   FindOrCreate32BitIntegerConstant(bound - 1,
                                                    index_int_type->IsSigned());
-                  // We need boolean type to do a comparison
-                  FindOrCreateBoolType();
                 }
                 should_be_composite_type =
                     TransformationAddFunction::FollowCompositeIndex(
@@ -616,21 +629,29 @@ void FuzzerPassDonateModules::HandleFunctions(
           }
         }
       }
+
+      // If the function contains OpKill or OpUnreachable instructions, and has
+      // non-void return type, then we need a value %v to use in order to turn
+      // these into instructions of the form OpReturn %v.
       uint32_t kill_unreachable_return_value_id;
       auto function_return_type_inst =
           donor_ir_context->get_def_use_mgr()->GetDef(
               function_to_donate->type_id());
       if (function_return_type_inst->opcode() == SpvOpTypeVoid) {
+        // The return type is void, so we don't need a return value.
         kill_unreachable_return_value_id = 0;
       } else {
+        // We do need a return value; we use OpUndef.
         kill_unreachable_return_value_id =
             FindOrCreateGlobalUndef(function_return_type_inst->type_id());
       }
+      // Add the function in a livesafe manner.
       ApplyTransformation(TransformationAddFunction(
           donated_instructions, loop_limiter_variable_id, loop_limit,
           loop_limiters, kill_unreachable_return_value_id,
           access_chain_clamping_info));
     } else {
+      // Add the function in a non-livesafe manner.
       ApplyTransformation(TransformationAddFunction(donated_instructions));
     }
   }

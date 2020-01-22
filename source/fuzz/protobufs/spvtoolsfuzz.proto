@@ -215,8 +215,9 @@ message FactFunctionIsLivesafe {
 
   // Records the fact that a function is guaranteed to be "livesafe", meaning
   // that it will not make out-of-bounds accesses, does not contain reachable
-  // OpKill or OpUnreachable instructions, and does not contain loops that will
-  // execute for large numbers of iterations.
+  // OpKill or OpUnreachable instructions, does not contain loops that will
+  // execute for large numbers of iterations, and only invokes other livesafe
+  // functions.
 
   uint32 function_id = 1;
 }

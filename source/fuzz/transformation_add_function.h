@@ -43,31 +43,36 @@ class TransformationAddFunction : public Transformation {
 
   // - |message_.instruction| must correspond to a sufficiently well-formed
   //   sequence of instructions that a function can be created from them
+  // - If |message_.is_livesafe| holds then |message_| must contain suitable
+  //   ingredients to make the function livesafe, and the function must only
+  //   invoke other livesafe functions
   // - Adding the created function to the module must lead to a valid module.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // Adds the function defined by |message_.instruction| to the module
+  // Adds the function defined by |message_.instruction| to the module, making
+  // it livesafe if |message_.is_livesafe| holds.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
 
-  // TODO comment
+  // Helper method that returns the bound for indexing into a composite of type
+  // |composite_type_inst|, i.e. the number of fields of a struct, the size of
+  // an array, the number of components of a vector, or the number of columns of
+  // a matrix.
   static uint32_t GetBoundForCompositeIndex(
       opt::IRContext* context, const opt::Instruction& composite_type_inst);
 
-  // TODO comment
+  // Helper method that, given composite type |composite_type_inst|, returns the
+  // type of the sub-object at index |index_id|, which is required to be in-
+  // bounds.
   static opt::Instruction* FollowCompositeIndex(
       opt::IRContext* context, const opt::Instruction& composite_type_inst,
       uint32_t index_id);
 
  private:
   // Attempts to create a function from the series of instructions in
-  // |message_.instruction| and add it to |context|.  If
-  // |message_.is_livesafe| holds then the function is made "livesafe" in the
-  // process: loop limiters are provided for all loops, all array/vector/matrix
-  // accesses are clamped to be in bounds, and OpKill and OpUnreachable
-  // instructions are replaced with return instructions.
+  // |message_.instruction| and add it to |context|.
   //
   // Returns false if adding the function is not possible due to the messages
   // not respecting the basic structure of a function, e.g. if there is no
@@ -86,25 +91,27 @@ class TransformationAddFunction : public Transformation {
   //   to add the function.
   bool TryToAddFunction(opt::IRContext* context) const;
 
-  // TODO comment
-  std::vector<uint32_t> GetLoopHeaderIds() const;
+  // Should only be called if |message_.is_livesafe| holds.  Attempts to make
+  // the function livesafe (see FactFunctionIsLivesafe for a definition).
+  // Returns false if this is not possible, due to |message_| or |context| not
+  // containing sufficient ingredients (such as types and fresh ids) to add
+  // the instrumentation necessary to make the function livesafe.
+  bool TryToMakeFunctionLivesafe(opt::IRContext* context,
+                                 const FactManager& fact_manager) const;
 
-  // TODO comment
-  bool FunctionContainsKillOrUnreachable() const;
-
-  // TODO comment
-  bool TryToMakeFunctionLivesafe(opt::IRContext* context) const;
-
-  // TODO comment
+  // A helper for TryToMakeFunctionLivesafe that tries to add loop-limiting
+  // logic.
   bool TryToAddLoopLimiters(opt::IRContext* context,
                             opt::Function* added_function) const;
 
-  // TODO comment
-  void TurnKillOrUnreachableIntoReturn(
+  // A helper for TryToMakeFunctionLivesafe that tries to replace OpKill and
+  // OpUnreachable instructions into return instructions.
+  bool TryToTurnKillOrUnreachableIntoReturn(
       opt::IRContext* context, opt::Function* added_function,
       opt::Instruction* kill_or_unreachable_inst) const;
 
-  // TODO comment including on return type
+  // A helper for TryToMakeFunctionLivesafe that tries to clamp access chain
+  // indices so that they are guaranteed to be in-bounds.
   bool TryToClampAccessChainIndices(opt::IRContext* context,
                                     opt::Instruction* access_chain_inst) const;
 

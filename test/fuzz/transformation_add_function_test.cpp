@@ -1442,6 +1442,167 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   ASSERT_TRUE(IsEqual(env, added_as_livesafe_code, context2.get()));
 }
 
+TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  std::vector<protobufs::Instruction> instructions;
+
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpFunction, 2, 8,
+      {{SPV_OPERAND_TYPE_FUNCTION_CONTROL, {SpvFunctionControlMaskNone}},
+       {SPV_OPERAND_TYPE_TYPE_ID, {3}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 9, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionCall, 2, 11,
+                                                {{SPV_OPERAND_TYPE_ID, {6}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
+
+  FactManager fact_manager1;
+  FactManager fact_manager2;
+
+  // Mark function 6 as livesafe.
+  fact_manager2.AddFactFunctionIsLivesafe(6);
+
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  TransformationAddFunction add_dead_function(instructions);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager1));
+  add_dead_function.Apply(context1.get(), &fact_manager1);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  std::string added_as_live_or_dead_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %2 None %3
+          %9 = OpLabel
+         %11 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_live_or_dead_code, context1.get()));
+
+  TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 0,
+                                                  {});
+  ASSERT_TRUE(
+      add_livesafe_function.IsApplicable(context2.get(), fact_manager2));
+  add_livesafe_function.Apply(context2.get(), &fact_manager2);
+  ASSERT_TRUE(IsValid(env, context2.get()));
+  ASSERT_TRUE(IsEqual(env, added_as_live_or_dead_code, context2.get()));
+}
+
+TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpKill
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  std::vector<protobufs::Instruction> instructions;
+
+  instructions.push_back(MakeInstructionMessage(
+      SpvOpFunction, 2, 8,
+      {{SPV_OPERAND_TYPE_FUNCTION_CONTROL, {SpvFunctionControlMaskNone}},
+       {SPV_OPERAND_TYPE_TYPE_ID, {3}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpLabel, 0, 9, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionCall, 2, 11,
+                                                {{SPV_OPERAND_TYPE_ID, {6}}}));
+  instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
+  instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
+
+  FactManager fact_manager;
+
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  TransformationAddFunction add_dead_function(instructions);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
+  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context1.get()));
+
+  std::string added_as_dead_code = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpKill
+               OpFunctionEnd
+          %8 = OpFunction %2 None %3
+          %9 = OpLabel
+         %11 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, added_as_dead_code, context1.get()));
+
+  TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 0,
+                                                  {});
+  ASSERT_FALSE(
+      add_livesafe_function.IsApplicable(context2.get(), fact_manager));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

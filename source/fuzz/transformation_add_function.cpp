@@ -57,7 +57,7 @@ TransformationAddFunction::TransformationAddFunction(
 
 bool TransformationAddFunction::IsApplicable(
     opt::IRContext* context,
-    const spvtools::fuzz::FactManager& /*unused*/) const {
+    const spvtools::fuzz::FactManager& fact_manager) const {
   // This transformation may use a lot of ids, all of which need to be fresh
   // and distinct.  This set tracks them.
   std::set<uint32_t> ids_used_by_this_transformation;
@@ -118,104 +118,6 @@ bool TransformationAddFunction::IsApplicable(
     }
   }
 
-  if (message_.is_livesafe()) {
-    // If the function contains loop headers, check that the module contains
-    // appropriate ingredients, and that additional ingredients have been
-    // provided in the transformation, to add a limiter to every loop.
-    std::vector<uint32_t> loop_header_ids = GetLoopHeaderIds();
-    if (!loop_header_ids.empty()) {
-      auto loop_limit_constant_id_instr =
-          context->get_def_use_mgr()->GetDef(message_.loop_limit_constant_id());
-      if (!loop_limit_constant_id_instr ||
-          loop_limit_constant_id_instr->opcode() != SpvOpConstant) {
-        // The loop limit constant id instruction must exist and have an
-        // appropriate opcode.
-        return false;
-      }
-      auto loop_limit_type = context->get_def_use_mgr()->GetDef(
-          loop_limit_constant_id_instr->type_id());
-      if (loop_limit_type->opcode() != SpvOpTypeInt ||
-          loop_limit_type->GetSingleWordInOperand(0) != 32) {
-        // The type of the loop limit constant must be 32-bit integer.  It
-        // doesn't actually matter whether the integer is signed or not.
-        return false;
-      }
-
-      // Collect all the loop header ids for which loop limiter information has
-      // been supplied.
-      std::set<uint32_t> loop_headers_for_which_limiters_are_supplied;
-      for (auto& loop_limiter : message_.loop_limiter_info()) {
-        loop_headers_for_which_limiters_are_supplied.insert(
-            loop_limiter.loop_header_id());
-      }
-      for (auto loop_header_id : loop_header_ids) {
-        if (loop_headers_for_which_limiters_are_supplied.count(
-                loop_header_id) == 0) {
-          // We don't have loop limiter info for this loop header.
-          return false;
-        }
-      }
-    }
-
-    // If the function contains OpKill or OpUnreachable, we must be in a
-    // position where we can replace such instructions with return instructions.
-    if (FunctionContainsKillOrUnreachable()) {
-      // Get the function's return type.
-      auto function_return_type_inst = context->get_def_use_mgr()->GetDef(
-          message_.instruction(0).result_type_id());
-      if (!function_return_type_inst) {
-        // The function's return type is not defined; we're not going to be
-        // able to add this function.
-        return false;
-      }
-      // If the function's return type is void, we can turn every OpKill and
-      // OpUnreachable into OpReturn, so no further ingredients are needed.
-      // Otherwise ...
-      if (function_return_type_inst->opcode() != SpvOpTypeVoid) {
-        // ... we check that the id, %id, provided with the transformation
-        // specifically to turn OpKill and OpUnreachable instructions into
-        // OpReturnValue %id has the same type as the function's return type.
-        if (context->get_def_use_mgr()
-                ->GetDef(message_.kill_unreachable_return_value_id())
-                ->type_id() != function_return_type_inst->result_id()) {
-          return false;
-        }
-      }
-    }
-
-    // Check that the transformation comes equipped with sufficient ids to clamp
-    // access chain indices to be in bounds.
-    for (auto& instruction : message_.instruction()) {
-      switch (instruction.opcode()) {
-        case SpvOpAccessChain:
-        case SpvOpInBoundsAccessChain: {
-          const protobufs::AccessChainClampingInfo* access_chain_clamping_info =
-              nullptr;
-          // Look for an AccessChainClampingInfo message matching this access
-          // chain instruction.
-          for (auto& clamping_info : message_.access_chain_clamping_info()) {
-            if (clamping_info.access_chain_id() == instruction.result_id()) {
-              access_chain_clamping_info = &clamping_info;
-            }
-          }
-          if (!access_chain_clamping_info) {
-            // No access chain clamping information was found; the
-            // transformation cannot be applied.
-            return false;
-          }
-          // Check that there is a (compare_id, select_id) pair for every
-          // index associated with the instruction.
-          if (access_chain_clamping_info->compare_and_select_ids().size() !=
-              instruction.input_operand().size() - 1) {
-            return false;
-          }
-        } break;
-        default:
-          break;
-      }
-    }
-  }
-
   // Because checking all the conditions for a function to be valid is a big
   // job that the SPIR-V validator can already do, a "try it and see" approach
   // is taken here.
@@ -229,36 +131,39 @@ bool TransformationAddFunction::IsApplicable(
   if (!TryToAddFunction(cloned_module.get())) {
     return false;
   }
-  // Having managed to add the new function to the cloned module, we ascertain
-  // whether the cloned module is still valid.  If it is not, the transformation
-  // is not applicable.
-  if (!fuzzerutil::IsValid(cloned_module.get())) {
-    return false;
-  }
 
-  // TODO comment
   if (message_.is_livesafe()) {
-    if (!TryToMakeFunctionLivesafe(cloned_module.get())) {
+    // We make the cloned module livesafe.
+    if (!TryToMakeFunctionLivesafe(cloned_module.get(), fact_manager)) {
       return false;
     }
   }
 
-  return true;
+  // Having managed to add the new function to the cloned module, and
+  // potentially also made it livesafe, we ascertain whether the cloned module
+  // is still valid.  If it is, the transformation is applicable.
+  return fuzzerutil::IsValid(cloned_module.get());
 }
 
 void TransformationAddFunction::Apply(
     opt::IRContext* context, spvtools::fuzz::FactManager* fact_manager) const {
-  auto success = TryToAddFunction(context);
+  // Add the function to the module.  As the transformation is applicable, this
+  // should succeed.
+  bool success = TryToAddFunction(context);
   assert(success && "The function should be successfully added.");
   (void)(success);  // Keep release builds happy (otherwise they may complain
                     // that |success| is not used).
 
   if (message_.is_livesafe()) {
-    TryToMakeFunctionLivesafe(context);
+    // Make the function livesafe, which also should succeed.
+    success = TryToMakeFunctionLivesafe(context, *fact_manager);
+    assert(success && "It should be possible to make the function livesafe.");
+    (void)(success);  // Keep release builds happy.
+
+    // Inform the fact manager that the function is livesafe.
     assert(message_.instruction(0).opcode() == SpvOpFunction &&
            "The first instruction of an 'add function' transformation must be "
            "OpFunction.");
-    // Inform the fact manager that the function is livesafe.
     fact_manager->AddFactFunctionIsLivesafe(
         message_.instruction(0).result_id());
   } else {
@@ -282,12 +187,6 @@ bool TransformationAddFunction::TryToAddFunction(
     opt::IRContext* context) const {
   // This function returns false if |message_.instruction| was not well-formed
   // enough to actually create a function and add it to |context|.
-
-  // If |message_.loop_limiter| holds, the function is made livesafe.
-  // TODO: Right now only loop limiters are added.  Bounds clamping and
-  //  removal of OpKill and OpUnreachable will come next.  Further care will be
-  //  needed to handle constructs that can only be invoked under uniform control
-  //  flow, if violating such rules has 'catch fire' semantics.
 
   // A function must have at least some instructions.
   if (message_.instruction().empty()) {
@@ -371,44 +270,11 @@ bool TransformationAddFunction::TryToAddFunction(
   return true;
 }
 
-std::vector<uint32_t> TransformationAddFunction::GetLoopHeaderIds() const {
-  std::vector<uint32_t> result;
-  uint32_t last_label = 0;
-  // Check whether every loop header in the function has associated loop
-  // limiter information.
-  for (auto& instruction : message_.instruction()) {
-    switch (instruction.opcode()) {
-      case SpvOpLabel:
-        // Track the latest block that was encountered.
-        last_label = instruction.result_id();
-        break;
-      case SpvOpLoopMerge:
-        // When a loop merge is found, the latest block must be a loop
-        // header.
-        result.push_back(last_label);
-        break;
-      default:
-        break;
-    }
-  }
-  return result;
-}
-
-bool TransformationAddFunction::FunctionContainsKillOrUnreachable() const {
-  for (auto& instruction : message_.instruction()) {
-    switch (instruction.opcode()) {
-      case SpvOpKill:
-      case SpvOpUnreachable:
-        return true;
-      default:
-        break;
-    }
-  }
-  return false;
-}
-
 bool TransformationAddFunction::TryToMakeFunctionLivesafe(
-    opt::IRContext* context) const {
+    opt::IRContext* context, const FactManager& fact_manager) const {
+  assert(message_.is_livesafe() && "Precondition: is_livesafe must hold.");
+
+  // Get a pointer to the added function.
   opt::Function* added_function = nullptr;
   for (auto& function : *context->module()) {
     if (function.result_id() == message_.instruction(0).result_id()) {
@@ -419,16 +285,23 @@ bool TransformationAddFunction::TryToMakeFunctionLivesafe(
   assert(added_function && "The added function should have been found.");
 
   if (!TryToAddLoopLimiters(context, added_function)) {
+    // Adding loop limiters did not work; bail out.
     return false;
   }
 
-  // TODO comment
+  // Consider all the instructions in the function, and:
+  // - attempt to replace OpKill and OpUnreachable with return instructions
+  // - attempt to clamp access chains to be within bounds
+  // - check that OpFunctionCall instructions are only to livesafe functions
   for (auto& block : *added_function) {
     for (auto& inst : block) {
       switch (inst.opcode()) {
         case SpvOpKill:
         case SpvOpUnreachable:
-          TurnKillOrUnreachableIntoReturn(context, added_function, &inst);
+          if (!TryToTurnKillOrUnreachableIntoReturn(context, added_function,
+                                                    &inst)) {
+            return false;
+          }
           break;
         case SpvOpAccessChain:
         case SpvOpInBoundsAccessChain:
@@ -436,6 +309,12 @@ bool TransformationAddFunction::TryToMakeFunctionLivesafe(
             return false;
           }
           break;
+        case SpvOpFunctionCall:
+          // A livesafe function my only call other livesafe functions.
+          if (!fact_manager.FunctionIsLivesafe(
+                  inst.GetSingleWordInOperand(0))) {
+            return false;
+          }
         default:
           break;
       }
@@ -446,9 +325,39 @@ bool TransformationAddFunction::TryToMakeFunctionLivesafe(
 
 bool TransformationAddFunction::TryToAddLoopLimiters(
     opt::IRContext* context, opt::Function* added_function) const {
-  if (GetLoopHeaderIds().empty()) {
+  // Collect up all the loop headers so that we can subsequently add loop
+  // limiting logic.
+  std::vector<opt::BasicBlock*> loop_headers;
+  for (auto& block : *added_function) {
+    if (block.IsLoopHeader()) {
+      loop_headers.push_back(&block);
+    }
+  }
+
+  if (loop_headers.empty()) {
     // There are no loops, so no need to add any loop limiters.
     return true;
+  }
+
+  // Check that the module contains appropriate ingredients for declaring and
+  // manipulating a loop limiter.
+
+  auto loop_limit_constant_id_instr =
+      context->get_def_use_mgr()->GetDef(message_.loop_limit_constant_id());
+  if (!loop_limit_constant_id_instr ||
+      loop_limit_constant_id_instr->opcode() != SpvOpConstant) {
+    // The loop limit constant id instruction must exist and have an
+    // appropriate opcode.
+    return false;
+  }
+
+  auto loop_limit_type = context->get_def_use_mgr()->GetDef(
+      loop_limit_constant_id_instr->type_id());
+  if (loop_limit_type->opcode() != SpvOpTypeInt ||
+      loop_limit_type->GetSingleWordInOperand(0) != 32) {
+    // The type of the loop limit constant must be 32-bit integer.  It
+    // doesn't actually matter whether the integer is signed or not.
+    return false;
   }
 
   // Find the id of the "unsigned int" type.
@@ -498,7 +407,7 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
     return false;
   }
 
-  // Look for bool type, adding its id if found.
+  // Look for bool type.
   opt::analysis::Bool bool_type;
   uint32_t bool_type_id = context->get_type_mgr()->GetId(&bool_type);
   if (!bool_type_id) {
@@ -520,16 +429,6 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
   // variable id.
   fuzzerutil::UpdateModuleIdBound(context, message_.loop_limiter_variable_id());
 
-  // Collect up all the loop headers so that we can subsequently add loop
-  // limiting logic.  As that logic involves splitting blocks, we cannot
-  // safely do it on-the-fly.
-  std::vector<opt::BasicBlock*> loop_headers;
-  for (auto& block : *added_function) {
-    if (block.IsLoopHeader()) {
-      loop_headers.push_back(&block);
-    }
-  }
-
   // Consider each loop in turn.
   for (auto block : loop_headers) {
     // Go through the sequence of loop limiter infos and find the one
@@ -543,8 +442,33 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
         break;
       }
     }
-    assert(found && "There should be a loop limiter info for every loop.");
+    if (!found) {
+      // We don't have loop limiter info for this loop header.
+      return false;
+    }
 
+    // Suppose the loop header has the form:
+    //
+    // %l = OpLabel
+    //      ... non-merge instructions ...
+    //      OpLoopMerge %loop_merge %loop_continue Control
+    //      terminator
+    //
+    // We will turn this into:
+    //
+    //  %l = OpLabel
+    //       ... non-merge instructions ...
+    // %t1 = OpLoad %uint32 %loop_limiter
+    // %t2 = OpIAdd %uint32 %t1 %one
+    //       OpStore %loop_limiter %t2
+    // %t3 = OpUGreaterThanEqual %bool %t1 %loop_limit
+    //       OpLoopMerge %loop_merge %loop_continue Control
+    //       OpBranchConditional %t3 %loop_merge %new_block_id
+    //
+    // %new_block_id = OpLabel
+    //       terminator
+
+    // Find the merge instruction for the loop header.
     opt::Instruction* merge_inst_it = nullptr;
     opt::BasicBlock::iterator inst_it = block->begin();
     while (!inst_it->IsBlockTerminator()) {
@@ -554,15 +478,22 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
       ++inst_it;
     }
     assert(merge_inst_it && "A loop header has to have a merge instruction.");
+
+    // Split the basic block right before |inst_it|, which is guaranteed to be
+    // at the block's terminator.
+    assert(inst_it->IsBlockTerminator() &&
+           "We should have reached the block's terminator instruction.");
     block->SplitBasicBlock(context, loop_limiter_info.new_block_id(), inst_it);
 
     std::vector<std::unique_ptr<opt::Instruction>> new_instructions;
+
     // Add a load from the loop limiter variable, of the form:
     //   %t1 = OpLoad %uint32 %loop_limiter
     new_instructions.push_back(MakeUnique<opt::Instruction>(
         context, SpvOpLoad, unsigned_int_type_id, loop_limiter_info.load_id(),
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {message_.loop_limiter_variable_id()}}})));
+
     // Increment the loaded value:
     //   %t2 = OpIAdd %uint32 %t1 %one
     new_instructions.push_back(MakeUnique<opt::Instruction>(
@@ -571,6 +502,7 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.load_id()}},
              {SPV_OPERAND_TYPE_ID, {one_id}}})));
+
     // Store the incremented value back to the loop limiter variable:
     //   OpStore %loop_limiter %t2
     new_instructions.push_back(MakeUnique<opt::Instruction>(
@@ -613,25 +545,39 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
   return true;
 }
 
-void TransformationAddFunction::TurnKillOrUnreachableIntoReturn(
+bool TransformationAddFunction::TryToTurnKillOrUnreachableIntoReturn(
     opt::IRContext* context, opt::Function* added_function,
     opt::Instruction* kill_or_unreachable_inst) const {
   assert((kill_or_unreachable_inst->opcode() == SpvOpKill ||
           kill_or_unreachable_inst->opcode() == SpvOpUnreachable) &&
          "Precondition: instruction must be OpKill or OpUnreachable.");
-  if (context->get_def_use_mgr()->GetDef(added_function->type_id())->opcode() ==
-      SpvOpTypeVoid) {
+
+  // Get the function's return type.
+  auto function_return_type_inst =
+      context->get_def_use_mgr()->GetDef(added_function->type_id());
+
+  if (function_return_type_inst->opcode() == SpvOpTypeVoid) {
     // The function has void return type, so change this instruction to
     // OpReturn.
     kill_or_unreachable_inst->SetOpcode(SpvOpReturn);
   } else {
-    // The function has non-void return type, so change this insruction
+    // The function has non-void return type, so change this instruction
     // to OpReturnValue, using the value id provided with the
     // transformation.
+
+    // We first check that the id, %id, provided with the transformation
+    // specifically to turn OpKill and OpUnreachable instructions into
+    // OpReturnValue %id has the same type as the function's return type.
+    if (context->get_def_use_mgr()
+            ->GetDef(message_.kill_unreachable_return_value_id())
+            ->type_id() != function_return_type_inst->result_id()) {
+      return false;
+    }
     kill_or_unreachable_inst->SetOpcode(SpvOpReturnValue);
     kill_or_unreachable_inst->SetInOperands(
         {{SPV_OPERAND_TYPE_ID, {message_.kill_unreachable_return_value_id()}}});
   }
+  return true;
 }
 
 bool TransformationAddFunction::TryToClampAccessChainIndices(
@@ -640,6 +586,8 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
           access_chain_inst->opcode() == SpvOpInBoundsAccessChain) &&
          "Precondition: instruction must be OpAccessChain or "
          "OpInBoundsAccessChain.");
+
+  // Find the AccessChainClampingInfo associated with this access chain.
   const protobufs::AccessChainClampingInfo* access_chain_clamping_info =
       nullptr;
   for (auto& clamping_info : message_.access_chain_clamping_info()) {
@@ -648,10 +596,22 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
       break;
     }
   }
-  assert(access_chain_clamping_info &&
-         "An access chain clamping info object should have been found "
-         "for this access chain.");
+  if (!access_chain_clamping_info) {
+    // No access chain clamping information was found; the function cannot be
+    // made livesafe.
+    return false;
+  }
 
+  // Check that there is a (compare_id, select_id) pair for every
+  // index associated with the instruction.
+  if (static_cast<uint32_t>(
+          access_chain_clamping_info->compare_and_select_ids().size()) !=
+      access_chain_inst->NumInOperands() - 1) {
+    return false;
+  }
+
+  // Walk the access chain, clamping each index to be within bounds if it is
+  // not a constant.
   auto base_object = context->get_def_use_mgr()->GetDef(
       access_chain_inst->GetSingleWordInOperand(0));
   assert(base_object && "The base object must exist.");
@@ -661,10 +621,17 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
          "The base object must have pointer type.");
   auto should_be_composite_type = context->get_def_use_mgr()->GetDef(
       pointer_type->GetSingleWordInOperand(1));
+
+  // Consider each index input operand in turn (operand 0 is the base object).
   for (uint32_t index = 1; index < access_chain_inst->NumInOperands();
        index++) {
+    // Get the bound for the composite being indexed into; e.g. the number of
+    // columns of matrix or the size of an array.
     uint32_t bound =
         GetBoundForCompositeIndex(context, *should_be_composite_type);
+
+    // Get the instruction associated with the index and figure out its integer
+    // type.
     const uint32_t index_id = access_chain_inst->GetSingleWordInOperand(index);
     auto index_inst = context->get_def_use_mgr()->GetDef(index_id);
     auto index_type_inst =
@@ -677,6 +644,7 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
             ->AsInteger();
 
     if (index_inst->opcode() != SpvOpConstant) {
+      // The index is non-constant so we need to clamp it.
       assert(should_be_composite_type->opcode() != SpvOpTypeStruct &&
              "Access chain indices into structures are required to be "
              "constants.");
@@ -705,20 +673,27 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
               .second();
       std::vector<std::unique_ptr<opt::Instruction>> new_instructions;
 
-      // TODO comment using spirv-assembly
+      // Compare the index with the bound via an instruction of the form:
+      //   %t1 = OpULessThanEqual %bool %index %bound_minus_one
       new_instructions.push_back(MakeUnique<opt::Instruction>(
           context, SpvOpULessThanEqual, bool_type_id, compare_id,
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {index_inst->result_id()}},
                {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
-      // TODO comment using spirv-assembly
+
+      // Select the index if in-bounds, otherwise one less than the bound:
+      //   %t2 = OpSelect %int_type %t1 %index %bound_minus_one
       new_instructions.push_back(MakeUnique<opt::Instruction>(
           context, SpvOpSelect, index_type_inst->result_id(), select_id,
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {compare_id}},
                {SPV_OPERAND_TYPE_ID, {index_inst->result_id()}},
                {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
+
+      // Add the new instructions before the access chain
       access_chain_inst->InsertBefore(std::move(new_instructions));
+
+      // Replace %index with %t2.
       access_chain_inst->SetInOperand(index, {select_id});
       fuzzerutil::UpdateModuleIdBound(context, compare_id);
       fuzzerutil::UpdateModuleIdBound(context, select_id);
