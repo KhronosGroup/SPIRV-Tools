@@ -138,6 +138,14 @@ bool spvExtInstIsNonSemantic(const spv_ext_inst_type_t type) {
   return false;
 }
 
+bool spvExtInstIsDebugInfo(const spv_ext_inst_type_t type) {
+  if (type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100 ||
+      type == SPV_EXT_INST_TYPE_DEBUGINFO) {
+    return true;
+  }
+  return false;
+}
+
 spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
                                        const spv_ext_inst_type_t type,
                                        const char* name,
