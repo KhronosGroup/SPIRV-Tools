@@ -175,8 +175,6 @@ bool IsSupportGuaranteedOpenCL_1_2(uint32_t capability, bool embedded_profile) {
       return true;
     case SpvCapabilityInt64:
       return !embedded_profile;
-    case SpvCapabilityPipes:
-      return embedded_profile;
   }
   return false;
 }
