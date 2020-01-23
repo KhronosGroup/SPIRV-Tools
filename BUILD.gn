@@ -324,14 +324,6 @@ config("spvtools_internal_config") {
   }
 }
 
-source_set("spv_headers") {
-  sources = [
-    "$spirv_headers/include/spirv/1.2/GLSL.std.450.h",
-    "$spirv_headers/include/spirv/unified1/OpenCL.std.h",
-    "$spirv_headers/include/spirv/unified1/spirv.h",
-  ]
-}
-
 source_set("spvtools_headers") {
   sources = [
     "include/spirv-tools/instrument.hpp",
@@ -424,9 +416,9 @@ static_library("spvtools") {
   ]
 
   public_deps = [
-    ":spv_headers",
     ":spvtools_core_enums_unified1",
     ":spvtools_headers",
+    "${spirv_headers}:spv_headers",
   ]
 
   if (build_with_chromium) {
