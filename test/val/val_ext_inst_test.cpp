@@ -35,6 +35,7 @@ using ::testing::Not;
 using ValidateExtInst = spvtest::ValidateBase<bool>;
 using ValidateOldDebugInfo = spvtest::ValidateBase<std::string>;
 using ValidateOpenCL100DebugInfo = spvtest::ValidateBase<std::string>;
+using ValidateLocalDebugInfoOutOfFunction = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450SqrtLike = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450FMinLike = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450FClampLike = spvtest::ValidateBase<std::string>;
@@ -628,6 +629,8 @@ OpCapability Int64
 
 %u64_input = OpVariable %u64_ptr_input Input
 
+%u32_ptr_function = OpTypePointer Function %u32
+
 %struct_f16_u16 = OpTypeStruct %f16 %u16
 %struct_f32_f32 = OpTypeStruct %f32 %f32
 %struct_f32_f32_f32 = OpTypeStruct %f32 %f32 %f32
@@ -717,6 +720,53 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugSourceInFunction) {
                 "section 9 (types, constants, global variables) and section 10 "
                 "(function declarations)"));
 }
+
+TEST_P(ValidateLocalDebugInfoOutOfFunction, OpenCLDebugInfo100DebugScope) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() {}"
+%void_name = OpString "void"
+%main_name = OpString "main"
+%main_linkage_name = OpString "v_main"
+%int_name = OpString "int"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%void_info = OpExtInst %void %DbgExt DebugTypeBasic %void_name %u32_0 Unspecified
+%int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %u32_0 Signed
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void_info %void_info
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+%foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %int_info %dbg_src 1 1 %main_info FlagIsLocal
+%expr = OpExtInst %void %DbgExt DebugExpression
+)";
+
+  const std::string body = R"(
+%foo = OpVariable %u32_ptr_function Function
+%foo_val = OpLoad %u32 %foo
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header + GetParam(), body, extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugScope, DebugNoScope, DebugDeclare, DebugValue "
+                        "of debug info extension must appear in a function "
+                        "body"));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllLocalDebugInfo, ValidateLocalDebugInfoOutOfFunction,
+    ::testing::ValuesIn(std::vector<std::string>{
+        "%main_scope = OpExtInst %void %DbgExt DebugScope %main_info",
+        "%no_scope = OpExtInst %void %DbgExt DebugNoScope",
+    }));
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionForwardReference) {
   const std::string src = R"(
