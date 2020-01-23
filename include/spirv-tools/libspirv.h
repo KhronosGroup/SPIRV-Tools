@@ -473,6 +473,19 @@ SPIRV_TOOLS_EXPORT const char* spvTargetEnvDescription(spv_target_env env);
 // false and sets *env to SPV_ENV_UNIVERSAL_1_0.
 SPIRV_TOOLS_EXPORT bool spvParseTargetEnv(const char* s, spv_target_env* env);
 
+// Determines the target env value with the least features but which enables
+// the given Vulkan and SPIR-V versions. If such a target is supported, returns
+// true and writes the value to |env|, otherwise returns false.
+//
+// The Vulkan version is given as an unsigned 32-bit number as specified in
+// Vulkan section "29.2.1 Version Numbers": the major version number appears
+// in bits 22 to 21, and the minor version is in bits 12 to 21.  The SPIR-V
+// version is given in the SPIR-V version header word: major version in bits
+// 16 to 23, and minor version in bits 8 to 15.
+SPIRV_TOOLS_EXPORT bool spvParseVulkanEnv(uint32_t vulkan_ver,
+                                          uint32_t spirv_ver,
+                                          spv_target_env* env);
+
 // Creates a context object.  Returns null if env is invalid.
 SPIRV_TOOLS_EXPORT spv_context spvContextCreate(spv_target_env env);
 

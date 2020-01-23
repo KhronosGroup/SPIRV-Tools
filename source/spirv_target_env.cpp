@@ -153,6 +153,34 @@ bool spvParseTargetEnv(const char* s, spv_target_env* env) {
   return false;
 }
 
+#define VULKAN_VER(MAJOR, MINOR) ((MAJOR << 22) | (MINOR << 12))
+#define SPIRV_VER(MAJOR, MINOR) ((MAJOR << 16) | (MINOR << 8))
+
+struct VulkanEnv {
+  spv_target_env vulkan_env;
+  uint32_t vulkan_ver;
+  uint32_t spirv_ver;
+};
+// Maps each Vulkan target environment enum to the Vulkan version, and the
+// maximum supported SPIR-V version for that Vulkan environment.
+// Keep this ordered from least capable to most capable.
+static const VulkanEnv ordered_vulkan_envs[] = {
+    {SPV_ENV_VULKAN_1_0, VULKAN_VER(1, 0), SPIRV_VER(1, 0)},
+    {SPV_ENV_VULKAN_1_1, VULKAN_VER(1, 1), SPIRV_VER(1, 3)},
+    {SPV_ENV_VULKAN_1_1_SPIRV_1_4, VULKAN_VER(1, 1), SPIRV_VER(1, 4)},
+    {SPV_ENV_VULKAN_1_2, VULKAN_VER(1, 2), SPIRV_VER(1, 5)}};
+
+bool spvParseVulkanEnv(uint32_t vulkan_ver, uint32_t spirv_ver,
+                       spv_target_env* env) {
+  for (auto triple : ordered_vulkan_envs) {
+    if (triple.vulkan_ver >= vulkan_ver && triple.spirv_ver >= spirv_ver) {
+      *env = triple.vulkan_env;
+      return true;
+    }
+  }
+  return false;
+}
+
 bool spvIsVulkanEnv(spv_target_env env) {
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
