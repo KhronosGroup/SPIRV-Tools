@@ -14,8 +14,6 @@
 
 // Validates OpCapability instruction.
 
-#include "source/val/validate.h"
-
 #include <cassert>
 #include <string>
 #include <unordered_set>
@@ -23,6 +21,7 @@
 #include "source/diagnostic.h"
 #include "source/opcode.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
