@@ -2311,6 +2311,7 @@ TEST_F(ValidateCapability, OpenCL20FullCapability) {
 OpCapability Kernel
 OpCapability Addresses
 OpCapability Linkage
+OpCapability Groups
 OpCapability Pipes
 OpMemoryModel Physical64 OpenCL
 %u32    = OpTypeInt 32 0

@@ -165,7 +165,6 @@ bool IsSupportGuaranteedOpenCL_1_2(uint32_t capability, bool embedded_profile) {
   switch (capability) {
     case SpvCapabilityAddresses:
     case SpvCapabilityFloat16Buffer:
-    case SpvCapabilityGroups:
     case SpvCapabilityInt16:
     case SpvCapabilityInt8:
     case SpvCapabilityKernel:
@@ -184,6 +183,7 @@ bool IsSupportGuaranteedOpenCL_2_0(uint32_t capability, bool embedded_profile) {
   switch (capability) {
     case SpvCapabilityDeviceEnqueue:
     case SpvCapabilityGenericPointer:
+    case SpvCapabilityGroups:
     case SpvCapabilityPipes:
       return true;
   }
