@@ -198,33 +198,39 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
-      .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateEliminateDeadFunctionsPass())
       .RegisterPass(CreatePrivateToLocalPass())
-      .RegisterPass(CreateScalarReplacementPass())
-      .RegisterPass(CreateLocalAccessChainConvertPass())
-      .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
-      .RegisterPass(CreateLocalSingleStoreElimPass())
-      .RegisterPass(CreateAggressiveDCEPass())
-      .RegisterPass(CreateSimplificationPass())
-      .RegisterPass(CreateDeadInsertElimPass())
+      .RegisterPass(CreateScalarReplacementPass(0))
       .RegisterPass(CreateLocalMultiStoreElimPass())
-      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateCCPPass())
+      .RegisterPass(CreateLoopUnrollPass(true))
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateSimplificationPass())
+      .RegisterPass(CreateScalarReplacementPass(0))
+      .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateIfConversionPass())
+      .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
-      .RegisterPass(CreateIfConversionPass())
-      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
-      .RegisterPass(CreateSimplificationPass())
+      .RegisterPass(CreateLocalAccessChainConvertPass())
+      .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateCopyPropagateArraysPass())
+      .RegisterPass(CreateVectorDCEPass())
       .RegisterPass(CreateDeadInsertElimPass())
+      .RegisterPass(CreateEliminateDeadMembersPass())
+      .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateBlockMergePass())
+      .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
-      .RegisterPass(CreateCFGCleanupPass())
-      .RegisterPass(CreateAggressiveDCEPass());
+      .RegisterPass(CreateSimplificationPass())
+      .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateCFGCleanupPass());
 }
 
 Optimizer& Optimizer::RegisterVulkanToWebGPUPasses() {
-  return RegisterPass(CreateStripDebugInfoPass())
-      .RegisterPass(CreateStripAtomicCounterMemoryPass())
+  return RegisterPass(CreateStripAtomicCounterMemoryPass())
       .RegisterPass(CreateGenerateWebGPUInitializersPass())
       .RegisterPass(CreateLegalizeVectorShufflePass())
       .RegisterPass(CreateSplitInvalidUnreachablePass())
@@ -562,19 +568,25 @@ bool Optimizer::Run(const uint32_t* original_binary,
     return false;
   }
 
-  optimized_binary->clear();
-  context->module()->ToBinary(optimized_binary, /* skip_nop = */ true);
-
 #ifndef NDEBUG
   if (status == opt::Pass::Status::SuccessWithoutChange) {
-    auto changed = optimized_binary->size() != original_binary_size ||
-                   memcmp(optimized_binary->data(), original_binary,
-                          original_binary_size) != 0;
-    assert(!changed &&
-           "Binary unexpectedly changed despite optimizer saying there was no "
-           "change");
+    std::vector<uint32_t> optimized_binary_with_nop;
+    context->module()->ToBinary(&optimized_binary_with_nop,
+                                /* skip_nop = */ false);
+    assert(optimized_binary_with_nop.size() == original_binary_size &&
+           "Binary size unexpectedly changed despite the optimizer saying "
+           "there was no change");
+    assert(memcmp(optimized_binary_with_nop.data(), original_binary,
+                  original_binary_size) == 0 &&
+           "Binary content unexpectedly changed despite the optimizer saying "
+           "there was no change");
   }
 #endif  // !NDEBUG
+
+  // Note that |original_binary| and |optimized_binary| may share the same
+  // buffer and the below will invalidate |original_binary|.
+  optimized_binary->clear();
+  context->module()->ToBinary(optimized_binary, /* skip_nop = */ true);
 
   return true;
 }

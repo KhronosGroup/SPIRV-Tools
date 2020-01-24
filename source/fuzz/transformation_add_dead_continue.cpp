@@ -37,15 +37,8 @@ bool TransformationAddDeadContinue::IsApplicable(
     opt::IRContext* context, const FactManager& /*unused*/) const {
   // First, we check that a constant with the same value as
   // |message_.continue_condition_value| is present.
-  opt::analysis::Bool bool_type;
-  auto registered_bool_type =
-      context->get_type_mgr()->GetRegisteredType(&bool_type);
-  if (!registered_bool_type) {
-    return false;
-  }
-  opt::analysis::BoolConstant bool_constant(
-      registered_bool_type->AsBool(), message_.continue_condition_value());
-  if (!context->get_constant_mgr()->FindConstant(&bool_constant)) {
+  if (!fuzzerutil::MaybeGetBoolConstantId(
+          context, message_.continue_condition_value())) {
     // The required constant is not present, so the transformation cannot be
     // applied.
     return false;
@@ -106,34 +99,30 @@ bool TransformationAddDeadContinue::IsApplicable(
     return false;
   }
 
-  // Check that adding the continue would not violate the property that a
-  // definition must dominate all of its uses.
-  if (!fuzzerutil::NewEdgeRespectsUseDefDominance(
-          context, bb_from, context->cfg()->block(continue_block))) {
+  // Check whether the data passed to extend OpPhi instructions is appropriate.
+  if (!fuzzerutil::PhiIdsOkForNewEdge(context, bb_from,
+                                      context->cfg()->block(continue_block),
+                                      message_.phi_id())) {
     return false;
   }
 
-  // The transformation is good if and only if the given phi ids are sufficient
-  // to extend relevant OpPhi instructions in the continue block.
-  return fuzzerutil::PhiIdsOkForNewEdge(context, bb_from,
-                                        context->cfg()->block(continue_block),
-                                        message_.phi_id());
+  // Adding the dead break is only valid if SPIR-V rules related to dominance
+  // hold.  Rather than checking these rules explicitly, we defer to the
+  // validator.  We make a clone of the module, apply the transformation to the
+  // clone, and check whether the transformed clone is valid.
+  //
+  // In principle some of the above checks could be removed, with more reliance
+  // being places on the validator.  This should be revisited if we are sure
+  // the validator is complete with respect to checking structured control flow
+  // rules.
+  auto cloned_context = fuzzerutil::CloneIRContext(context);
+  ApplyImpl(cloned_context.get());
+  return fuzzerutil::IsValid(cloned_context.get());
 }
 
 void TransformationAddDeadContinue::Apply(opt::IRContext* context,
                                           FactManager* /*unused*/) const {
-  auto bb_from = context->cfg()->block(message_.from_block());
-  auto continue_block =
-      bb_from->IsLoopHeader()
-          ? bb_from->ContinueBlockId()
-          : context->GetStructuredCFGAnalysis()->LoopContinueBlock(
-                message_.from_block());
-  assert(continue_block &&
-         "Precondition for this transformation requires that "
-         "message_.from_block must be in a loop.");
-  fuzzerutil::AddUnreachableEdgeAndUpdateOpPhis(
-      context, bb_from, context->cfg()->block(continue_block),
-      message_.continue_condition_value(), message_.phi_id());
+  ApplyImpl(context);
   // Invalidate all analyses
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
@@ -142,6 +131,20 @@ protobufs::Transformation TransformationAddDeadContinue::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_dead_continue() = message_;
   return result;
+}
+
+void TransformationAddDeadContinue::ApplyImpl(
+    spvtools::opt::IRContext* context) const {
+  auto bb_from = context->cfg()->block(message_.from_block());
+  auto continue_block =
+      bb_from->IsLoopHeader()
+          ? bb_from->ContinueBlockId()
+          : context->GetStructuredCFGAnalysis()->LoopContinueBlock(
+                message_.from_block());
+  assert(continue_block && "message_.from_block must be in a loop.");
+  fuzzerutil::AddUnreachableEdgeAndUpdateOpPhis(
+      context, bb_from, context->cfg()->block(continue_block),
+      message_.continue_condition_value(), message_.phi_id());
 }
 
 }  // namespace fuzz

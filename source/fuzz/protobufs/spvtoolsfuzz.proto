@@ -21,6 +21,16 @@ syntax = "proto3";
 
 package spvtools.fuzz.protobufs;
 
+message UInt32Pair {
+
+  // A pair of uint32s; useful for defining mappings.
+
+  uint32 first = 1;
+
+  uint32 second = 2;
+
+}
+
 message InstructionDescriptor {
 
   // Describes an instruction in some block of a function with respect to a
@@ -116,6 +126,37 @@ message UniformBufferElementDescriptor {
 
 }
 
+message InstructionOperand {
+
+  // Represents an operand to a SPIR-V instruction.
+
+  // The type of the operand.
+  uint32 operand_type = 1;
+
+  // The data associated with the operand.  For most operands (e.g. ids,
+  // storage classes and literals) this will be a single word.
+  repeated uint32 operand_data = 2;
+
+}
+
+message Instruction {
+
+  // Represents a SPIR-V instruction.
+
+  // The instruction's opcode (e.g. OpLabel).
+  uint32 opcode = 1;
+
+  // The id of the instruction's result type; 0 if there is no result type.
+  uint32 result_type_id = 2;
+
+  // The id of the instruction's result; 0 if there is no result.
+  uint32 result_id = 3;
+
+  // Zero or more input operands.
+  repeated InstructionOperand input_operand = 4;
+
+}
+
 message FactSequence {
   repeated Fact fact = 1;
 }
@@ -124,7 +165,8 @@ message Fact {
   oneof fact {
     // Order the fact options by numeric id (rather than alphabetically).
     FactConstantUniform constant_uniform_fact = 1;
-    FactIdSynonym id_synonym_fact = 2;
+    FactDataSynonym data_synonym_fact = 2;
+    FactBlockIsDead block_is_dead_fact = 3;
   }
 }
 
@@ -146,20 +188,26 @@ message FactConstantUniform {
 
 }
 
-message FactIdSynonym {
+message FactDataSynonym {
 
-  // Records the fact that the data held in an id is guaranteed to be equal to
-  // the data held in a data descriptor.  spirv-fuzz can use this to replace
-  // uses of the id with references to the data described by the data
-  // descriptor.
+  // Records the fact that the data held in two data descriptors are guaranteed
+  // to be equal.  spirv-fuzz can use this to replace uses of one piece of data
+  // with a known-to-be-equal piece of data.
 
-  // An id
-  uint32 id = 1;
+  // Data descriptors guaranteed to hold identical data.
+  DataDescriptor data1 = 1;
 
-  // A data descriptor guaranteed to hold a value identical to that held by the
-  // id
-  DataDescriptor data_descriptor = 2;
+  DataDescriptor data2 = 2;
 
+}
+
+message FactBlockIsDead {
+
+  // Records the fact that a block is guaranteed to be dynamically unreachable.
+  // This is useful because it informs the fuzzer that rather arbitrary changes
+  // can be made to this block.
+
+  uint32 block_id = 1;
 }
 
 message TransformationSequence {
@@ -186,10 +234,25 @@ message Transformation {
     TransformationCopyObject copy_object = 13;
     TransformationReplaceIdWithSynonym replace_id_with_synonym = 14;
     TransformationSetSelectionControl set_selection_control = 15;
-    TransformationConstructComposite construct_composite = 16;
+    TransformationCompositeConstruct composite_construct = 16;
     TransformationSetLoopControl set_loop_control = 17;
     TransformationSetFunctionControl set_function_control = 18;
     TransformationAddNoContractionDecoration add_no_contraction_decoration = 19;
+    TransformationSetMemoryOperandsMask set_memory_operands_mask = 20;
+    TransformationCompositeExtract composite_extract = 21;
+    TransformationVectorShuffle vector_shuffle = 22;
+    TransformationOutlineFunction outline_function = 23;
+    TransformationMergeBlocks merge_blocks = 24;
+    TransformationAddTypeVector add_type_vector = 25;
+    TransformationAddTypeArray add_type_array = 26;
+    TransformationAddTypeMatrix add_type_matrix = 27;
+    TransformationAddTypeStruct add_type_struct = 28;
+    TransformationAddTypeFunction add_type_function = 29;
+    TransformationAddConstantComposite add_constant_composite = 30;
+    TransformationAddGlobalVariable add_global_variable = 31;
+    TransformationAddGlobalUndef add_global_undef = 32;
+    TransformationAddFunction add_function = 33;
+    TransformationAddDeadBlock add_dead_block = 34;
     // Add additional option using the next available number.
   }
 }
@@ -206,9 +269,24 @@ message TransformationAddConstantBoolean {
 
 }
 
+message TransformationAddConstantComposite {
+
+  // Adds a constant of the given composite type to the module.
+
+  // Fresh id for the composite
+  uint32 fresh_id = 1;
+
+  // A composite type id
+  uint32 type_id = 2;
+
+  // Constituent ids for the composite
+  repeated uint32 constituent_id = 3;
+
+}
+
 message TransformationAddConstantScalar {
 
-  // Adds a constant of the given scalar type
+  // Adds a constant of the given scalar type.
 
   // Id for the constant
   uint32 fresh_id = 1;
@@ -218,6 +296,25 @@ message TransformationAddConstantScalar {
 
   // Value of the constant
   repeated uint32 word = 3;
+
+}
+
+message TransformationAddDeadBlock {
+
+  // Adds a new block to the module that is statically reachable from an
+  // existing block, but dynamically unreachable.
+
+  // Fresh id for the dead block
+  uint32 fresh_id = 1;
+
+  // Id of an existing block terminated with OpBranch, such that this OpBranch
+  // can be replaced with an OpBranchConditional to its exiting successor or
+  // the dead block
+  uint32 existing_block = 2;
+
+  // Determines whether the condition associated with the OpBranchConditional
+  // is true or false
+  bool condition_value = 3;
 
 }
 
@@ -262,12 +359,64 @@ message TransformationAddDeadContinue {
 
 }
 
+message TransformationAddFunction {
+
+  // Adds a SPIR-V function to the module.
+
+  // The series of instructions that comprise the function.
+  repeated Instruction instruction = 1;
+
+}
+
+message TransformationAddGlobalUndef {
+
+  // Adds an undefined value of a given type to the module at global scope.
+
+  // Fresh id for the undefined value
+  uint32 fresh_id = 1;
+
+  // The type of the undefined value
+  uint32 type_id = 2;
+
+}
+
+message TransformationAddGlobalVariable {
+
+  // Adds a global variable of the given type to the module, with Private
+  // storage class and optionally with an initializer.
+
+  // Fresh id for the global variable
+  uint32 fresh_id = 1;
+
+  // The type of the global variable
+  uint32 type_id = 2;
+
+  // Optional initializer; 0 if there is no initializer
+  uint32 initializer_id = 3;
+
+}
+
 message TransformationAddNoContractionDecoration {
 
   // Applies OpDecorate NoContraction to the given result id
 
   // Result id to be decorated
   uint32 result_id = 1;
+
+}
+
+message TransformationAddTypeArray {
+
+  // Adds an array type of the given element type and size to the module
+
+  // Fresh id for the array type
+  uint32 fresh_id = 1;
+
+  // The array's element type
+  uint32 element_type_id = 2;
+
+  // The array's size
+  uint32 size_id = 3;
 
 }
 
@@ -292,6 +441,21 @@ message TransformationAddTypeFloat {
 
 }
 
+message TransformationAddTypeFunction {
+
+  // Adds a function type to the module
+
+  // Fresh id for the function type
+  uint32 fresh_id = 1;
+
+  // The function's return type
+  uint32 return_type_id = 2;
+
+  // The function's argument types
+  repeated uint32 argument_type_id = 3;
+
+}
+
 message TransformationAddTypeInt {
 
   // Adds OpTypeInt to the module with the given width and signedness
@@ -304,6 +468,22 @@ message TransformationAddTypeInt {
 
   // True if and only if this is a signed type
   bool is_signed = 3;
+
+}
+
+message TransformationAddTypeMatrix {
+
+  // Adds a matrix type to the module
+
+  // Fresh id for the matrix type
+  uint32 fresh_id = 1;
+
+  // The matrix's column type, which must be a floating-point vector (as per
+  // the "data rules" in the SPIR-V specification).
+  uint32 column_type_id = 2;
+
+  // The matrix's column count
+  uint32 column_count = 3;
 
 }
 
@@ -323,27 +503,34 @@ message TransformationAddTypePointer {
 
 }
 
-message TransformationCopyObject {
+message TransformationAddTypeStruct {
 
-  // A transformation that introduces an OpCopyObject instruction to make a
-  // copy of an object.
+  // Adds a struct type to the module
 
-  // Id of the object to be copied
-  uint32 object = 1;
+  // Fresh id for the struct type
+  uint32 fresh_id = 1;
 
-  // The id of an instruction in a block
-  uint32 base_instruction_id = 2;
-
-  // An offset, such that OpCopyObject instruction should be inserted right
-  // before the instruction |offset| instructions after |base_instruction_id|
-  uint32 offset = 3;
-
-  // A fresh id for the copied object
-  uint32 fresh_id = 4;
+  // The struct's member types
+  repeated uint32 member_type_id = 3;
 
 }
 
-message TransformationConstructComposite {
+message TransformationAddTypeVector {
+
+  // Adds a vector type to the module
+
+  // Fresh id for the vector type
+  uint32 fresh_id = 1;
+
+  // The vector's component type
+  uint32 component_type_id = 2;
+
+  // The vector's component count
+  uint32 component_count = 3;
+
+}
+
+message TransformationCompositeConstruct {
 
   // A transformation that introduces an OpCompositeConstruct instruction to
   // make a composite object.
@@ -354,16 +541,59 @@ message TransformationConstructComposite {
   // Ids of the objects that will form the components of the composite
   repeated uint32 component = 2;
 
-  // The id of an instruction in a block
-  uint32 base_instruction_id = 3;
-
-  // An offset, such that OpCompositeConstruct instruction should be inserted
-  // right before the instruction |offset| instructions after
-  // |base_instruction_id|
-  uint32 offset = 4;
+  // A descriptor for an instruction in a block before which the new
+  // OpCompositeConstruct instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 3;
 
   // A fresh id for the composite object
-  uint32 fresh_id = 5;
+  uint32 fresh_id = 4;
+
+}
+
+message TransformationCompositeExtract {
+
+  // A transformation that adds an instruction to extract an element from a
+  // composite.
+
+  // A descriptor for an instruction in a block before which the new
+  // OpCompositeExtract instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 1;
+
+  // Result id for the extract operation.
+  uint32 fresh_id = 2;
+
+  // Id of the composite from which data is to be extracted.
+  uint32 composite_id = 3;
+
+  // Indices that indicate which part of the composite should be extracted.
+  repeated uint32 index = 4;
+
+}
+
+message TransformationCopyObject {
+
+  // A transformation that introduces an OpCopyObject instruction to make a
+  // copy of an object.
+
+  // Id of the object to be copied
+  uint32 object = 1;
+
+  // A descriptor for an instruction in a block before which the new
+  // OpCopyObject instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 2;
+
+  // A fresh id for the copied object
+  uint32 fresh_id = 3;
+
+}
+
+message TransformationMergeBlocks {
+
+  // A transformation that merges a block with its predecessor.
+
+  // The id of the block that is to be merged with its predecessor; the merged
+  // block will have the *predecessor's* id.
+  uint32 block_id = 1;
 
 }
 
@@ -374,6 +604,53 @@ message TransformationMoveBlockDown {
 
   // The id of the block to move down.
   uint32 block_id = 1;
+}
+
+message TransformationOutlineFunction {
+
+  // A transformation that outlines a single-entry single-exit region of a
+  // control flow graph into a separate function, and replaces the region with
+  // a call to that function.
+
+  // Id of the entry block of the single-entry single-exit region to be outlined
+  uint32 entry_block = 1;
+
+  // Id of the exit block of the single-entry single-exit region to be outlined
+  uint32 exit_block = 2;
+
+  // Id of a struct that will store the return values of the new function
+  uint32 new_function_struct_return_type_id = 3;
+
+  // A fresh id for the type of the outlined function
+  uint32 new_function_type_id = 4;
+
+  // A fresh id for the outlined function itself
+  uint32 new_function_id = 5;
+
+  // A fresh id to represent the block in the outlined function that represents
+  // the first block of the outlined region.
+  uint32 new_function_region_entry_block = 6;
+
+  // A fresh id for the result of the OpFunctionCall instruction that will call
+  // the outlined function
+  uint32 new_caller_result_id = 7;
+
+  // A fresh id to capture the return value of the outlined function - the
+  // argument to OpReturn
+  uint32 new_callee_result_id = 8;
+
+  // Ids defined outside the region and used inside the region will become
+  // parameters to the outlined function.  This is a mapping from used ids to
+  // fresh parameter ids.
+  repeated UInt32Pair input_id_to_fresh_id = 9;
+
+  // Ids defined inside the region and used outside the region will become
+  // fresh ids defined by the outlined function, which get copied into the
+  // function's struct return value and then copied into their destination ids
+  // by the caller.  This is a mapping from original ids to corresponding fresh
+  // ids.
+  repeated UInt32Pair output_id_to_fresh_id = 10;
+
 }
 
 message TransformationReplaceBooleanConstantWithConstantBinary {
@@ -419,19 +696,15 @@ message TransformationReplaceConstantWithUniform {
 
 message TransformationReplaceIdWithSynonym {
 
-  // Replaces an id use with something known to be synonymous with that id use,
-  // e.g. because it was obtained via applying OpCopyObject
+  // Replaces a use of an id with an id that is known to be synonymous, e.g.
+  // because it was obtained via applying OpCopyObject
 
-  // Identifies the id use that is to be replaced
+  // The id use that is to be replaced
   IdUseDescriptor id_use_descriptor = 1;
 
-  // Identifies the data with which the id use is expected to be synonymous
-  DataDescriptor data_descriptor = 2;
+  // The synonymous id
+  uint32 synonymous_id = 2;
 
-  // In the case that a temporary is required to express the synonym (e.g. to
-  // obtain an element of a vector, provides a fresh id for the temporary;
-  // should be set to 0 if no temporary is required
-  uint32 fresh_id_for_temporary = 3;
 }
 
 message TransformationSetFunctionControl {
@@ -471,6 +744,25 @@ message TransformationSetLoopControl {
 
 }
 
+message TransformationSetMemoryOperandsMask {
+
+  // A transformation that sets the memory operands mask of a memory access
+  // instruction.
+
+  // A descriptor for a memory access instruction, e.g. an OpLoad
+  InstructionDescriptor memory_access_instruction = 1;
+
+  // A mask of memory operands to be applied to the instruction.  It must be the
+  // same as the original mask, except that Volatile can be added, and
+  // Nontemporal can be added or removed.
+  uint32 memory_operands_mask = 2;
+
+  // Some memory access instructions allow more than one mask to be specified;
+  // this field indicates which mask should be set
+  uint32 memory_operands_mask_index = 3;
+
+}
+
 message TransformationSetSelectionControl {
 
   // A transformation that sets the selection control operand of an
@@ -504,5 +796,27 @@ message TransformationSplitBlock {
   // earlier transformations, it may inhibit later transformations from
   // applying.
   uint32 fresh_id = 2;
+
+}
+
+message TransformationVectorShuffle {
+
+  // A transformation that adds a vector shuffle instruction.
+
+  // A descriptor for an instruction in a block before which the new
+  // OpVectorShuffle instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 1;
+
+  // Result id for the shuffle operation.
+  uint32 fresh_id = 2;
+
+  // Id of the first vector operand.
+  uint32 vector1 = 3;
+
+  // Id of the second vector operand.
+  uint32 vector2 = 4;
+
+  // Indices that indicate which components of the input vectors should be used.
+  repeated uint32 component = 5;
 
 }

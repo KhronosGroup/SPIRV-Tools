@@ -225,12 +225,22 @@ typedef enum spv_operand_type_t {
   // A sequence of zero or more pairs of (Id, Literal integer)
   LAST_VARIABLE(SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER),
 
-  // The following are concrete enum types.
+  // The following are concrete enum types from the DebugInfo extended
+  // instruction set.
   SPV_OPERAND_TYPE_DEBUG_INFO_FLAGS,  // DebugInfo Sec 3.2.  A mask.
   SPV_OPERAND_TYPE_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING,  // DebugInfo Sec 3.3
   SPV_OPERAND_TYPE_DEBUG_COMPOSITE_TYPE,                // DebugInfo Sec 3.4
   SPV_OPERAND_TYPE_DEBUG_TYPE_QUALIFIER,                // DebugInfo Sec 3.5
   SPV_OPERAND_TYPE_DEBUG_OPERATION,                     // DebugInfo Sec 3.6
+
+  // The following are concrete enum types from the OpenCL.DebugInfo.100
+  // extended instruction set.
+  SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_INFO_FLAGS,  // Sec 3.2. A Mask
+  SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING,  // Sec 3.3
+  SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_COMPOSITE_TYPE,                // Sec 3.4
+  SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_TYPE_QUALIFIER,                // Sec 3.5
+  SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_OPERATION,                     // Sec 3.6
+  SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_IMPORTED_ENTITY,               // Sec 3.7
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
@@ -248,6 +258,12 @@ typedef enum spv_ext_inst_type_t {
   SPV_EXT_INST_TYPE_SPV_AMD_GCN_SHADER,
   SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT,
   SPV_EXT_INST_TYPE_DEBUGINFO,
+  SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100,
+
+  // Multiple distinct extended instruction set types could return this
+  // value, if they are prefixed with NonSemantic. and are otherwise
+  // unrecognised
+  SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN,
 
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;
@@ -434,6 +450,7 @@ typedef enum {
   SPV_ENV_UNIVERSAL_1_4,  // SPIR-V 1.4 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_1_SPIRV_1_4,  // Vulkan 1.1 with SPIR-V 1.4 binary.
   SPV_ENV_UNIVERSAL_1_5,  // SPIR-V 1.5 latest revision, no other restrictions.
+  SPV_ENV_VULKAN_1_2,     // Vulkan 1.2 latest revision.
 } spv_target_env;
 
 // SPIR-V Validator can be parameterized with the following Universal Limits.
@@ -455,6 +472,19 @@ SPIRV_TOOLS_EXPORT const char* spvTargetEnvDescription(spv_target_env env);
 // Parses s into *env and returns true if successful.  If unparsable, returns
 // false and sets *env to SPV_ENV_UNIVERSAL_1_0.
 SPIRV_TOOLS_EXPORT bool spvParseTargetEnv(const char* s, spv_target_env* env);
+
+// Determines the target env value with the least features but which enables
+// the given Vulkan and SPIR-V versions. If such a target is supported, returns
+// true and writes the value to |env|, otherwise returns false.
+//
+// The Vulkan version is given as an unsigned 32-bit number as specified in
+// Vulkan section "29.2.1 Version Numbers": the major version number appears
+// in bits 22 to 21, and the minor version is in bits 12 to 21.  The SPIR-V
+// version is given in the SPIR-V version header word: major version in bits
+// 16 to 23, and minor version in bits 8 to 15.
+SPIRV_TOOLS_EXPORT bool spvParseVulkanEnv(uint32_t vulkan_ver,
+                                          uint32_t spirv_ver,
+                                          spv_target_env* env);
 
 // Creates a context object.  Returns null if env is invalid.
 SPIRV_TOOLS_EXPORT spv_context spvContextCreate(spv_target_env env);
@@ -626,6 +656,11 @@ SPIRV_TOOLS_EXPORT void spvFuzzerOptionsSetRandomSeed(
 // up.
 SPIRV_TOOLS_EXPORT void spvFuzzerOptionsSetShrinkerStepLimit(
     spv_fuzzer_options options, uint32_t shrinker_step_limit);
+
+// Enables running the validator after every pass is applied during a fuzzing
+// run.
+SPIRV_TOOLS_EXPORT void spvFuzzerOptionsEnableFuzzerPassValidation(
+    spv_fuzzer_options options);
 
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will

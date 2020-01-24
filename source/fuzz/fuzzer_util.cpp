@@ -14,6 +14,8 @@
 
 #include "source/fuzz/fuzzer_util.h"
 
+#include "source/opt/build_module.h"
+
 namespace spvtools {
 namespace fuzz {
 
@@ -107,6 +109,19 @@ bool PhiIdsOkForNewEdge(
   return phi_index == static_cast<uint32_t>(phi_ids.size());
 }
 
+uint32_t MaybeGetBoolConstantId(opt::IRContext* context, bool value) {
+  opt::analysis::Bool bool_type;
+  auto registered_bool_type =
+      context->get_type_mgr()->GetRegisteredType(&bool_type);
+  if (!registered_bool_type) {
+    return 0;
+  }
+  opt::analysis::BoolConstant bool_constant(registered_bool_type->AsBool(),
+                                            value);
+  return context->get_constant_mgr()->FindDeclaredConstant(
+      &bool_constant, context->get_type_mgr()->GetId(&bool_type));
+}
+
 void AddUnreachableEdgeAndUpdateOpPhis(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     bool condition_value,
@@ -117,12 +132,10 @@ void AddUnreachableEdgeAndUpdateOpPhis(
          "Precondition on terminator of bb_from is not satisfied");
 
   // Get the id of the boolean constant to be used as the condition.
-  opt::analysis::Bool bool_type;
-  opt::analysis::BoolConstant bool_constant(
-      context->get_type_mgr()->GetRegisteredType(&bool_type)->AsBool(),
-      condition_value);
-  uint32_t bool_id = context->get_constant_mgr()->FindDeclaredConstant(
-      &bool_constant, context->get_type_mgr()->GetId(&bool_type));
+  uint32_t bool_id = MaybeGetBoolConstantId(context, condition_value);
+  assert(
+      bool_id &&
+      "Precondition that condition value must be available is not satisfied");
 
   const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
   auto successor = bb_from->terminator()->GetSingleWordInOperand(0);
@@ -180,143 +193,6 @@ opt::BasicBlock::iterator GetIteratorForInstruction(
   return block->end();
 }
 
-opt::BasicBlock::iterator GetIteratorForBaseInstructionAndOffset(
-    opt::BasicBlock* block, const opt::Instruction* base_inst,
-    uint32_t offset) {
-  // The cases where |base_inst| is the block's label, vs. inside the block,
-  // are dealt with separately.
-  if (base_inst == block->GetLabelInst()) {
-    // |base_inst| is the block's label.
-    if (offset == 0) {
-      // We cannot return an iterator to the block's label.
-      return block->end();
-    }
-    // Conceptually, the first instruction in the block is [label + 1].
-    // We thus start from 1 when applying the offset.
-    auto inst_it = block->begin();
-    for (uint32_t i = 1; i < offset && inst_it != block->end(); i++) {
-      ++inst_it;
-    }
-    // This is either the desired instruction, or the end of the block.
-    return inst_it;
-  }
-  // |base_inst| is inside the block.
-  for (auto inst_it = block->begin(); inst_it != block->end(); ++inst_it) {
-    if (base_inst == &*inst_it) {
-      // We have found the base instruction; we now apply the offset.
-      for (uint32_t i = 0; i < offset && inst_it != block->end(); i++) {
-        ++inst_it;
-      }
-      // This is either the desired instruction, or the end of the block.
-      return inst_it;
-    }
-  }
-  assert(false && "The base instruction was not found.");
-  return nullptr;
-}
-
-bool NewEdgeRespectsUseDefDominance(opt::IRContext* context,
-                                    opt::BasicBlock* bb_from,
-                                    opt::BasicBlock* bb_to) {
-  assert(bb_from->terminator()->opcode() == SpvOpBranch);
-
-  // If there is *already* an edge from |bb_from| to |bb_to|, then adding
-  // another edge is fine from a dominance point of view.
-  if (bb_from->terminator()->GetSingleWordInOperand(0) == bb_to->id()) {
-    return true;
-  }
-
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2919): the
-  //  solution below to determining whether a new edge respects dominance
-  //  rules is incomplete.  Test
-  //  TransformationAddDeadContinueTest::DISABLED_Miscellaneous6 exposes the
-  //  problem.  In practice, this limitation does not bite too often, and the
-  //  worst it does is leads to SPIR-V that spirv-val rejects.
-
-  // Let us assume that the module being manipulated is valid according to the
-  // rules of the SPIR-V language.
-  //
-  // Suppose that some block Y is dominated by |bb_to| (which includes the case
-  // where Y = |bb_to|).
-  //
-  // Suppose that Y uses an id i that is defined in some other block X.
-  //
-  // Because the module is valid, X must dominate Y.  We are concerned about
-  // whether an edge from |bb_from| to |bb_to| could *stop* X from dominating
-  // Y.
-  //
-  // Because |bb_to| dominates Y, a new edge from |bb_from| to |bb_to| can
-  // only affect whether X dominates Y if X dominates |bb_to|.
-  //
-  // So let us assume that X does dominate |bb_to|, so that we have:
-  //
-  //   (X defines i) dominates |bb_to| dominates (Y uses i)
-  //
-  // The new edge from |bb_from| to |bb_to| will stop the definition of i in X
-  // from dominating the use of i in Y exactly when the new edge will stop X
-  // from dominating |bb_to|.
-  //
-  // Now, the block X that we are worried about cannot dominate |bb_from|,
-  // because in that case X would still dominate |bb_to| after we add an edge
-  // from |bb_from| to |bb_to|.
-  //
-  // Also, it cannot be that X = |bb_to|, because nothing can stop a block
-  // from dominating itself.
-  //
-  // So we are looking for a block X such that:
-  //
-  // - X strictly dominates |bb_to|
-  // - X does not dominate |bb_from|
-  // - X defines an id i
-  // - i is used in some block Y
-  // - |bb_to| dominates Y
-
-  // Walk the dominator tree backwards, starting from the immediate dominator
-  // of |bb_to|.  We can stop when we find a block that also dominates
-  // |bb_from|.
-  auto dominator_analysis = context->GetDominatorAnalysis(bb_from->GetParent());
-  for (auto dominator = dominator_analysis->ImmediateDominator(bb_to);
-       dominator != nullptr &&
-       !dominator_analysis->Dominates(dominator, bb_from);
-       dominator = dominator_analysis->ImmediateDominator(dominator)) {
-    // |dominator| is a candidate for block X in the above description.
-    // We now look through the instructions for a candidate instruction i.
-    for (auto& inst : *dominator) {
-      // Consider all the uses of this instruction.
-      if (!context->get_def_use_mgr()->WhileEachUse(
-              &inst,
-              [bb_to, context, dominator_analysis](
-                  opt::Instruction* user, uint32_t operand_index) -> bool {
-                // If this use is in an OpPhi, we need to check that dominance
-                // of the relevant *parent* block is not spoiled.  Otherwise we
-                // need to check that dominance of the block containing the use
-                // is not spoiled.
-                opt::BasicBlock* use_block_or_phi_parent =
-                    user->opcode() == SpvOpPhi
-                        ? context->cfg()->block(
-                              user->GetSingleWordOperand(operand_index + 1))
-                        : context->get_instr_block(user);
-
-                // There might not be any relevant block, e.g. if the use is in
-                // a decoration; in this case the new edge is unproblematic.
-                if (use_block_or_phi_parent == nullptr) {
-                  return true;
-                }
-
-                // With reference to the above discussion,
-                // |use_block_or_phi_parent| is a candidate for the block Y.
-                // If |bb_to| dominates this block, the new edge would be
-                // problematic.
-                return !dominator_analysis->Dominates(bb_to,
-                                                      use_block_or_phi_parent);
-              })) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 bool BlockIsReachableInItsFunction(opt::IRContext* context,
                                    opt::BasicBlock* bb) {
   auto enclosing_function = bb->GetParent();
@@ -363,6 +239,144 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context, opt::Instruction* inst) {
 bool IsCompositeType(const opt::analysis::Type* type) {
   return type && (type->AsArray() || type->AsMatrix() || type->AsStruct() ||
                   type->AsVector());
+}
+
+std::vector<uint32_t> RepeatedFieldToVector(
+    const google::protobuf::RepeatedField<uint32_t>& repeated_field) {
+  std::vector<uint32_t> result;
+  for (auto i : repeated_field) {
+    result.push_back(i);
+  }
+  return result;
+}
+
+uint32_t WalkCompositeTypeIndices(
+    opt::IRContext* context, uint32_t base_object_type_id,
+    const google::protobuf::RepeatedField<google::protobuf::uint32>& indices) {
+  uint32_t sub_object_type_id = base_object_type_id;
+  for (auto index : indices) {
+    auto should_be_composite_type =
+        context->get_def_use_mgr()->GetDef(sub_object_type_id);
+    assert(should_be_composite_type && "The type should exist.");
+    switch (should_be_composite_type->opcode()) {
+      case SpvOpTypeArray: {
+        auto array_length = GetArraySize(*should_be_composite_type, context);
+        if (array_length == 0 || index >= array_length) {
+          return 0;
+        }
+        sub_object_type_id =
+            should_be_composite_type->GetSingleWordInOperand(0);
+        break;
+      }
+      case SpvOpTypeMatrix:
+      case SpvOpTypeVector: {
+        auto count = should_be_composite_type->GetSingleWordInOperand(1);
+        if (index >= count) {
+          return 0;
+        }
+        sub_object_type_id =
+            should_be_composite_type->GetSingleWordInOperand(0);
+        break;
+      }
+      case SpvOpTypeStruct: {
+        if (index >= GetNumberOfStructMembers(*should_be_composite_type)) {
+          return 0;
+        }
+        sub_object_type_id =
+            should_be_composite_type->GetSingleWordInOperand(index);
+        break;
+      }
+      default:
+        return 0;
+    }
+  }
+  return sub_object_type_id;
+}
+
+uint32_t GetNumberOfStructMembers(
+    const opt::Instruction& struct_type_instruction) {
+  assert(struct_type_instruction.opcode() == SpvOpTypeStruct &&
+         "An OpTypeStruct instruction is required here.");
+  return struct_type_instruction.NumInOperands();
+}
+
+uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
+                      opt::IRContext* context) {
+  auto array_length_constant =
+      context->get_constant_mgr()
+          ->GetConstantFromInst(context->get_def_use_mgr()->GetDef(
+              array_type_instruction.GetSingleWordInOperand(1)))
+          ->AsIntConstant();
+  if (array_length_constant->words().size() != 1) {
+    return 0;
+  }
+  return array_length_constant->GetU32();
+}
+
+bool IsValid(opt::IRContext* context) {
+  std::vector<uint32_t> binary;
+  context->module()->ToBinary(&binary, false);
+  SpirvTools tools(context->grammar().target_env());
+  return tools.Validate(binary);
+}
+
+std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context) {
+  std::vector<uint32_t> binary;
+  context->module()->ToBinary(&binary, false);
+  return BuildModule(context->grammar().target_env(), nullptr, binary.data(),
+                     binary.size());
+}
+
+bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id) {
+  auto type = ir_context->get_type_mgr()->GetType(id);
+  return type && !type->AsFunction();
+}
+
+bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id) {
+  bool result = false;
+  ir_context->get_def_use_mgr()->WhileEachUse(
+      block_id,
+      [&result](const opt::Instruction* use_instruction,
+                uint32_t /*unused*/) -> bool {
+        switch (use_instruction->opcode()) {
+          case SpvOpLoopMerge:
+          case SpvOpSelectionMerge:
+            result = true;
+            return false;
+          default:
+            return true;
+        }
+      });
+  return result;
+}
+
+uint32_t FindFunctionType(opt::IRContext* ir_context,
+                          const std::vector<uint32_t>& type_ids) {
+  // Look through the existing types for a match.
+  for (auto& type_or_value : ir_context->types_values()) {
+    if (type_or_value.opcode() != SpvOpTypeFunction) {
+      // We are only interested in function types.
+      continue;
+    }
+    if (type_or_value.NumInOperands() != type_ids.size()) {
+      // Not a match: different numbers of arguments.
+      continue;
+    }
+    // Check whether the return type and argument types match.
+    bool input_operands_match = true;
+    for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
+      if (type_ids[i] != type_or_value.GetSingleWordInOperand(i)) {
+        input_operands_match = false;
+        break;
+      }
+    }
+    if (input_operands_match) {
+      // Everything matches.
+      return type_or_value.result_id();
+    }
+  }
+  // No match was found.
+  return 0;
 }
 
 }  // namespace fuzzerutil

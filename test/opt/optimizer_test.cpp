@@ -234,7 +234,6 @@ TEST(Optimizer, VulkanToWebGPUSetsCorrectPasses) {
                                               "eliminate-dead-code-aggressive",
                                               "eliminate-dead-const",
                                               "flatten-decorations",
-                                              "strip-debug",
                                               "strip-atomic-counter-memory",
                                               "generate-webgpu-initializers",
                                               "legalize-vector-shuffle",
@@ -330,35 +329,6 @@ INSTANTIATE_TEST_SUITE_P(
          "OpFunctionEnd\n",
          // pass
          "flatten-decorations"},
-        // Strip Debug
-        {// input
-         "OpCapability Shader\n"
-         "OpCapability VulkanMemoryModel\n"
-         "OpExtension \"SPV_KHR_vulkan_memory_model\"\n"
-         "OpMemoryModel Logical Vulkan\n"
-         "OpEntryPoint Vertex %func \"shader\"\n"
-         "OpName %main \"main\"\n"
-         "OpName %void_fn \"void_fn\"\n"
-         "%void = OpTypeVoid\n"
-         "%void_f = OpTypeFunction %void\n"
-         "%func = OpFunction %void None %void_f\n"
-         "%label = OpLabel\n"
-         "OpReturn\n"
-         "OpFunctionEnd\n",
-         // expected
-         "OpCapability Shader\n"
-         "OpCapability VulkanMemoryModel\n"
-         "OpExtension \"SPV_KHR_vulkan_memory_model\"\n"
-         "OpMemoryModel Logical Vulkan\n"
-         "OpEntryPoint Vertex %1 \"shader\"\n"
-         "%void = OpTypeVoid\n"
-         "%3 = OpTypeFunction %void\n"
-         "%1 = OpFunction %void None %3\n"
-         "%4 = OpLabel\n"
-         "OpReturn\n"
-         "OpFunctionEnd\n",
-         // pass
-         "strip-debug"},
         // Eliminate Dead Constants
         {// input
          "OpCapability Shader\n"
@@ -743,6 +713,54 @@ INSTANTIATE_TEST_SUITE_P(
          "OpFunctionEnd\n",
          // pass
          "compact-ids"}}));
+
+TEST(Optimizer, RemoveNop) {
+  // Test that OpNops are removed even if no optimizations are run.
+  const std::string before = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%2 = OpTypeFunction %void
+%3 = OpFunction %void None %2
+%4 = OpLabel
+OpNop
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%2 = OpTypeFunction %void
+%3 = OpFunction %void None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::vector<uint32_t> binary;
+  {
+    SpirvTools tools(SPV_ENV_VULKAN_1_1);
+    tools.Assemble(before, &binary);
+  }
+
+  Optimizer opt(SPV_ENV_VULKAN_1_1);
+
+  std::vector<uint32_t> optimized;
+  class ValidatorOptions validator_options;
+  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
+                      validator_options, true))
+      << before << "\n";
+  std::string disassembly;
+  {
+    SpirvTools tools(SPV_ENV_WEBGPU_0);
+    tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
+  }
+
+  EXPECT_EQ(after, disassembly)
+      << "Was expecting the OpNop to have been removed.";
+}
 
 }  // namespace
 }  // namespace opt

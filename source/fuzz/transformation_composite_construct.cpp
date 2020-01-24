@@ -12,54 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_construct_composite.h"
+#include "source/fuzz/transformation_composite_construct.h"
 
+#include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/instruction_descriptor.h"
+#include "source/opt/instruction.h"
 
 namespace spvtools {
 namespace fuzz {
 
-TransformationConstructComposite::TransformationConstructComposite(
-    const protobufs::TransformationConstructComposite& message)
+TransformationCompositeConstruct::TransformationCompositeConstruct(
+    const protobufs::TransformationCompositeConstruct& message)
     : message_(message) {}
 
-TransformationConstructComposite::TransformationConstructComposite(
+TransformationCompositeConstruct::TransformationCompositeConstruct(
     uint32_t composite_type_id, std::vector<uint32_t> component,
-    uint32_t base_instruction_id, uint32_t offset, uint32_t fresh_id) {
+    const protobufs::InstructionDescriptor& instruction_to_insert_before,
+    uint32_t fresh_id) {
   message_.set_composite_type_id(composite_type_id);
   for (auto a_component : component) {
     message_.add_component(a_component);
   }
-  message_.set_base_instruction_id(base_instruction_id);
-  message_.set_offset(offset);
+  *message_.mutable_instruction_to_insert_before() =
+      instruction_to_insert_before;
   message_.set_fresh_id(fresh_id);
 }
 
-bool TransformationConstructComposite::IsApplicable(
+bool TransformationCompositeConstruct::IsApplicable(
     opt::IRContext* context, const FactManager& /*fact_manager*/) const {
   if (!fuzzerutil::IsFreshId(context, message_.fresh_id())) {
     // We require the id for the composite constructor to be unused.
     return false;
   }
 
-  auto base_instruction =
-      context->get_def_use_mgr()->GetDef(message_.base_instruction_id());
-  if (!base_instruction) {
-    // The given id to insert after is not defined.
-    return false;
-  }
-
-  auto destination_block = context->get_instr_block(base_instruction);
-  if (!destination_block) {
-    // The given id to insert after is not in a block.
-    return false;
-  }
-
-  auto insert_before = fuzzerutil::GetIteratorForBaseInstructionAndOffset(
-      destination_block, base_instruction, message_.offset());
-
-  if (insert_before == destination_block->end()) {
-    // The offset was inappropriate.
+  auto insert_before =
+      FindInstruction(message_.instruction_to_insert_before(), context);
+  if (!insert_before) {
+    // The instruction before which the composite should be inserted was not
+    // found.
     return false;
   }
 
@@ -121,15 +112,15 @@ bool TransformationConstructComposite::IsApplicable(
   return true;
 }
 
-void TransformationConstructComposite::Apply(opt::IRContext* context,
+void TransformationCompositeConstruct::Apply(opt::IRContext* context,
                                              FactManager* fact_manager) const {
   // Use the base and offset information from the transformation to determine
   // where in the module a new instruction should be inserted.
-  auto base_instruction =
-      context->get_def_use_mgr()->GetDef(message_.base_instruction_id());
-  auto destination_block = context->get_instr_block(base_instruction);
-  auto insert_before = fuzzerutil::GetIteratorForBaseInstructionAndOffset(
-      destination_block, base_instruction, message_.offset());
+  auto insert_before_inst =
+      FindInstruction(message_.instruction_to_insert_before(), context);
+  auto destination_block = context->get_instr_block(insert_before_inst);
+  auto insert_before = fuzzerutil::GetIteratorForInstruction(
+      destination_block, insert_before_inst);
 
   // Prepare the input operands for an OpCompositeConstruct instruction.
   opt::Instruction::OperandList in_operands;
@@ -142,44 +133,48 @@ void TransformationConstructComposite::Apply(opt::IRContext* context,
       context, SpvOpCompositeConstruct, message_.composite_type_id(),
       message_.fresh_id(), in_operands));
 
+  fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
+  context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
   // Inform the fact manager that we now have new synonyms: every component of
-  // the composite is synonymous with the id used to construct that component.
+  // the composite is synonymous with the id used to construct that component,
+  // except in the case of a vector where a single vector id can span multiple
+  // components.
   auto composite_type =
       context->get_type_mgr()->GetType(message_.composite_type_id());
   uint32_t index = 0;
   for (auto component : message_.component()) {
-    protobufs::Fact fact;
-    fact.mutable_id_synonym_fact()->set_id(component);
-    fact.mutable_id_synonym_fact()->mutable_data_descriptor()->set_object(
-        message_.fresh_id());
-    fact.mutable_id_synonym_fact()->mutable_data_descriptor()->add_index(index);
-    fact_manager->AddFact(fact, context);
-    if (composite_type->AsVector()) {
-      // The vector case is a bit fiddly, because one argument to a vector
-      // constructor can cover more than one element.
-      auto component_type = context->get_type_mgr()->GetType(
-          context->get_def_use_mgr()->GetDef(component)->type_id());
-      if (component_type->AsVector()) {
-        assert(component_type->AsVector()->element_type() ==
-               composite_type->AsVector()->element_type());
-        index += component_type->AsVector()->element_count();
-      } else {
-        assert(component_type == composite_type->AsVector()->element_type());
+    auto component_type = context->get_type_mgr()->GetType(
+        context->get_def_use_mgr()->GetDef(component)->type_id());
+    if (composite_type->AsVector() && component_type->AsVector()) {
+      // The case where the composite being constructed is a vector and the
+      // component provided for construction is also a vector is special.  It
+      // requires adding a synonym fact relating each element of the sub-vector
+      // to the corresponding element of the composite being constructed.
+      assert(component_type->AsVector()->element_type() ==
+             composite_type->AsVector()->element_type());
+      assert(component_type->AsVector()->element_count() <
+             composite_type->AsVector()->element_count());
+      for (uint32_t subvector_index = 0;
+           subvector_index < component_type->AsVector()->element_count();
+           subvector_index++) {
+        fact_manager->AddFactDataSynonym(
+            MakeDataDescriptor(component, {subvector_index}),
+            MakeDataDescriptor(message_.fresh_id(), {index}), context);
         index++;
       }
     } else {
-      // The non-vector cases are all easy: the constructor has exactly the same
-      // number of arguments as the number of sub-components, so we can just
-      // increment the index.
+      // The other cases are simple: the component is made directly synonymous
+      // with the element of the composite being constructed.
+      fact_manager->AddFactDataSynonym(
+          MakeDataDescriptor(component, {}),
+          MakeDataDescriptor(message_.fresh_id(), {index}), context);
       index++;
     }
   }
-
-  fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
-  context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
-bool TransformationConstructComposite::ComponentsForArrayConstructionAreOK(
+bool TransformationCompositeConstruct::ComponentsForArrayConstructionAreOK(
     opt::IRContext* context, const opt::analysis::Array& array_type) const {
   if (array_type.length_info().words[0] !=
       opt::analysis::Array::LengthInfo::kConstant) {
@@ -216,7 +211,7 @@ bool TransformationConstructComposite::ComponentsForArrayConstructionAreOK(
   return true;
 }
 
-bool TransformationConstructComposite::ComponentsForMatrixConstructionAreOK(
+bool TransformationCompositeConstruct::ComponentsForMatrixConstructionAreOK(
     opt::IRContext* context, const opt::analysis::Matrix& matrix_type) const {
   if (static_cast<uint32_t>(message_.component().size()) !=
       matrix_type.element_count()) {
@@ -242,7 +237,7 @@ bool TransformationConstructComposite::ComponentsForMatrixConstructionAreOK(
   return true;
 }
 
-bool TransformationConstructComposite::ComponentsForStructConstructionAreOK(
+bool TransformationCompositeConstruct::ComponentsForStructConstructionAreOK(
     opt::IRContext* context, const opt::analysis::Struct& struct_type) const {
   if (static_cast<uint32_t>(message_.component().size()) !=
       struct_type.element_types().size()) {
@@ -270,7 +265,7 @@ bool TransformationConstructComposite::ComponentsForStructConstructionAreOK(
   return true;
 }
 
-bool TransformationConstructComposite::ComponentsForVectorConstructionAreOK(
+bool TransformationCompositeConstruct::ComponentsForVectorConstructionAreOK(
     opt::IRContext* context, const opt::analysis::Vector& vector_type) const {
   uint32_t base_element_count = 0;
   auto element_type = vector_type.element_type();
@@ -300,9 +295,9 @@ bool TransformationConstructComposite::ComponentsForVectorConstructionAreOK(
   return base_element_count == vector_type.element_count();
 }
 
-protobufs::Transformation TransformationConstructComposite::ToMessage() const {
+protobufs::Transformation TransformationCompositeConstruct::ToMessage() const {
   protobufs::Transformation result;
-  *result.mutable_construct_composite() = message_;
+  *result.mutable_composite_construct() = message_;
   return result;
 }
 

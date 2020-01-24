@@ -14,6 +14,7 @@
 
 #include "test/fuzz/fuzz_test_util.h"
 
+#include <fstream>
 #include <iostream>
 
 #include "tools/io.h"
@@ -75,6 +76,7 @@ bool IsValid(spv_target_env env, const opt::IRContext* ir) {
   std::vector<uint32_t> binary;
   ir->module()->ToBinary(&binary, false);
   SpirvTools t(env);
+  t.SetMessageConsumer(kConsoleMessageConsumer);
   return t.Validate(binary);
 }
 
@@ -102,6 +104,21 @@ void DumpShader(const std::vector<uint32_t>& binary, const char* filename) {
       WriteFile(filename, "wb", &binary[0], binary.size());
   if (!write_file_succeeded) {
     std::cerr << "Failed to dump shader" << std::endl;
+  }
+}
+
+void DumpTransformationsJson(
+    const protobufs::TransformationSequence& transformations,
+    const char* filename) {
+  std::string json_string;
+  auto json_options = google::protobuf::util::JsonOptions();
+  json_options.add_whitespace = true;
+  auto json_generation_status = google::protobuf::util::MessageToJsonString(
+      transformations, &json_string, json_options);
+  if (json_generation_status == google::protobuf::util::Status::OK) {
+    std::ofstream transformations_json_file(filename);
+    transformations_json_file << json_string;
+    transformations_json_file.close();
   }
 }
 
