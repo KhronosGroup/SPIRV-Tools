@@ -919,6 +919,213 @@ main() {}
               HasSubstr("forward referenced IDs have not been defined"));
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugInstructionWrongResultType) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %bool %DbgExt DebugSource %src %code
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected result type must be a result id of "
+                        "OpTypeVoid"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugCompilationUnit) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugCompilationUnitFail) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %src HLSL
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Source must be a result id of "
+                        "DebugSource"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugSourceFailFile) {
+  const std::string src = R"(
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %DbgExt %code
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand File must be a result id of "
+                        "OpString"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugSourceFailSource) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %DbgExt
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Text must be a result id of "
+                        "OpString"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeBasicFailName) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "float4 main(float arg) {
+  float foo;
+  return float4(0, 0, 0, 0);
+}
+"
+%float_name = OpString "float"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %int_32 %int_32 Float
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Name must be a result id of "
+                        "OpString"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeBasicFailSize) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "float4 main(float arg) {
+  float foo;
+  return float4(0, 0, 0, 0);
+}
+"
+%float_name = OpString "float"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %float_name Float
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Size must be a result id of "
+                        "OpConstant"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypePointerFail) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "float4 main(float arg) {
+  float foo;
+  return float4(0, 0, 0, 0);
+}
+"
+%float_name = OpString "float"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%pfloat_info = OpExtInst %void %DbgExt DebugTypePointer %dbg_src Function FlagIsLocal
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Base Type must be a result id of "
+                        "DebugTypeBasic"));
+}
+
 TEST_P(ValidateGlslStd450SqrtLike, Success) {
   const std::string ext_inst_name = GetParam();
   std::ostringstream ss;

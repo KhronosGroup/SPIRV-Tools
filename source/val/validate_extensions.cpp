@@ -2028,6 +2028,114 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         break;
       }
     }
+  } else if (ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
+    if (!_.IsVoidType(result_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << ext_inst_name() << ": "
+             << "expected result type must be a result id of "
+             << "OpTypeVoid";
+    }
+
+    const OpenCLDebugInfo100Instructions ext_inst_key =
+        OpenCLDebugInfo100Instructions(ext_inst_index);
+    switch (ext_inst_key) {
+      case OpenCLDebugInfo100DebugInfoNone:
+        break;
+      case OpenCLDebugInfo100DebugCompilationUnit: {
+        auto* src = _.FindDef(inst->word(7));
+        if (src->opcode() != SpvOpExtInst ||
+            !spvExtInstIsDebugInfo(src->ext_inst_type()) ||
+            OpenCLDebugInfo100Instructions(src->word(4)) !=
+                OpenCLDebugInfo100DebugSource) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": "
+                 << "expected operand Source must be a result id of "
+                 << "DebugSource";
+        }
+        break;
+      }
+      case OpenCLDebugInfo100DebugSource: {
+        auto* file = _.FindDef(inst->word(5));
+        if (file->opcode() != SpvOpString) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": "
+                 << "expected operand File must be a result id of "
+                 << "OpString";
+        }
+        if (num_operands == 6) {
+          auto* text = _.FindDef(inst->word(6));
+          if (text->opcode() != SpvOpString) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << ext_inst_name() << ": "
+                   << "expected operand Text must be a result id of "
+                   << "OpString";
+          }
+        }
+        break;
+      }
+      case OpenCLDebugInfo100DebugTypeBasic: {
+        auto* name = _.FindDef(inst->word(5));
+        if (name->opcode() != SpvOpString) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": "
+                 << "expected operand Name must be a result id of "
+                 << "OpString";
+        }
+        auto* size = _.FindDef(inst->word(6));
+        if (size->opcode() != SpvOpConstant) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": "
+                 << "expected operand Size must be a result id of "
+                 << "OpConstant";
+        }
+        break;
+      }
+      case OpenCLDebugInfo100DebugTypePointer:
+      case OpenCLDebugInfo100DebugTypeQualifier: {
+        auto* base_type = _.FindDef(inst->word(5));
+        if (base_type->opcode() != SpvOpString) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": "
+                 << "expected operand Base Type must be a result id of "
+                 << "DebugTypeBasic";
+        }
+        break;
+      }
+      case OpenCLDebugInfo100DebugTypeArray:
+      case OpenCLDebugInfo100DebugTypeVector:
+      case OpenCLDebugInfo100DebugTypedef:
+      case OpenCLDebugInfo100DebugTypeFunction:
+      case OpenCLDebugInfo100DebugTypeEnum:
+      case OpenCLDebugInfo100DebugTypeComposite:
+      case OpenCLDebugInfo100DebugTypeMember:
+      case OpenCLDebugInfo100DebugTypeInheritance:
+      case OpenCLDebugInfo100DebugTypePtrToMember:
+      case OpenCLDebugInfo100DebugTypeTemplate:
+      case OpenCLDebugInfo100DebugTypeTemplateParameter:
+      case OpenCLDebugInfo100DebugTypeTemplateTemplateParameter:
+      case OpenCLDebugInfo100DebugTypeTemplateParameterPack:
+      case OpenCLDebugInfo100DebugGlobalVariable:
+      case OpenCLDebugInfo100DebugFunctionDeclaration:
+      case OpenCLDebugInfo100DebugFunction:
+      case OpenCLDebugInfo100DebugLexicalBlock:
+      case OpenCLDebugInfo100DebugLexicalBlockDiscriminator:
+      case OpenCLDebugInfo100DebugScope:
+      case OpenCLDebugInfo100DebugNoScope:
+      case OpenCLDebugInfo100DebugInlinedAt:
+      case OpenCLDebugInfo100DebugLocalVariable:
+      case OpenCLDebugInfo100DebugInlinedVariable:
+      case OpenCLDebugInfo100DebugDeclare:
+      case OpenCLDebugInfo100DebugValue:
+      case OpenCLDebugInfo100DebugOperation:
+      case OpenCLDebugInfo100DebugExpression:
+      case OpenCLDebugInfo100DebugMacroDef:
+      case OpenCLDebugInfo100DebugMacroUndef:
+      case OpenCLDebugInfo100DebugImportedEntity:
+        break;
+      case OpenCLDebugInfo100InstructionsMax:
+        assert(0);
+        break;
+    }
   }
 
   return SPV_SUCCESS;
