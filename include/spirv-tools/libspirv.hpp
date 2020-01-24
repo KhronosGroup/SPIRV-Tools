@@ -312,7 +312,12 @@ class SpirvTools {
   // client API (such as Vulkan 1.1), then validate for that client API version,
   // to the extent that it is verifiable from data in the binary itself.
   bool Validate(const std::vector<uint32_t>& binary) const;
+  // Like the previous overload, but provides the binary as a pointer and size:
   // |binary_size| specifies the number of words in |binary|.
+  // Validates for SPIR-V spec rules for the SPIR-V version named in the binary's
+  // header (at word offset 1).  Additionally, if the target environment is a
+  // client API (such as Vulkan 1.1), then validate for that client API version,
+  // to the extent that it is verifiable from data in the binary itself.
   bool Validate(const uint32_t* binary, size_t binary_size) const;
   // Like the previous overload, but takes an options object.
   // Validates for SPIR-V spec rules for the SPIR-V version named in the binary's
