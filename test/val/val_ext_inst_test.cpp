@@ -37,11 +37,15 @@ using ValidateOldDebugInfo = spvtest::ValidateBase<std::string>;
 using ValidateOpenCL100DebugInfo = spvtest::ValidateBase<std::string>;
 using ValidateLocalDebugInfoOutOfFunction = spvtest::ValidateBase<std::string>;
 using ValidateOpenCL100DebugInfoDebugTypedef =
-    spvtest::ValidateBase<std::string>;
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
 using ValidateOpenCL100DebugInfoDebugTypeEnum =
-    spvtest::ValidateBase<std::string>;
-using ValidateOpenCL100DebugInfoDebugTypeFunction =
-    spvtest::ValidateBase<std::string>;
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
+using ValidateOpenCL100DebugInfoDebugTypeComposite =
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
+using ValidateOpenCL100DebugInfoDebugTypeMember =
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
+using ValidateOpenCL100DebugInfoDebugTypeInheritance =
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
 using ValidateGlslStd450SqrtLike = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450FMinLike = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450FClampLike = spvtest::ValidateBase<std::string>;
@@ -1412,13 +1416,15 @@ TEST_P(ValidateOpenCL100DebugInfoDebugTypedef, Fail) {
 %int_32 = OpConstant %u32 32
 )";
 
+  const auto& param = GetParam();
+
   std::ostringstream ss;
   ss << R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
 %foo_info = OpExtInst %void %DbgExt DebugTypedef )";
-  ss << GetParam();
+  ss << param.first;
 
   const std::string extension = R"(
 %DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
@@ -1428,16 +1434,21 @@ TEST_P(ValidateOpenCL100DebugInfoDebugTypedef, Fail) {
                                                      "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Base Type must be a result id of "));
+              HasSubstr("expected operand " + param.second +
+                        " must be a result id of "));
 }
 
 INSTANTIATE_TEST_SUITE_P(
     AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugTypedef,
-    ::testing::ValuesIn(std::vector<std::string>{
-        R"(%dbg_src %float_info %dbg_src 1 1 %comp_unit)",
-        R"(%foo_name %dbg_src %dbg_src 1 1 %comp_unit)",
-        R"(%foo_name %float_info %comp_unit 1 1 %comp_unit)",
-        R"(%foo_name %float_info %dbg_src 1 1 %dbg_src)",
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair(R"(%dbg_src %float_info %dbg_src 1 1 %comp_unit)",
+                       "Name"),
+        std::make_pair(R"(%foo_name %dbg_src %dbg_src 1 1 %comp_unit)",
+                       "Base Type"),
+        std::make_pair(R"(%foo_name %float_info %comp_unit 1 1 %comp_unit)",
+                       "Source"),
+        std::make_pair(R"(%foo_name %float_info %dbg_src 1 1 %dbg_src)",
+                       "Parent"),
     }));
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeFunction) {
@@ -1579,13 +1590,15 @@ TEST_P(ValidateOpenCL100DebugInfoDebugTypeEnum, Fail) {
 %int_32 = OpConstant %u32 32
 )";
 
+  const auto& param = GetParam();
+
   std::ostringstream ss;
   ss << R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
 %foo_info = OpExtInst %void %DbgExt DebugTypeEnum )";
-  ss << GetParam();
+  ss << param.first;
 
   const std::string extension = R"(
 %DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
@@ -1594,18 +1607,34 @@ TEST_P(ValidateOpenCL100DebugInfoDebugTypeEnum, Fail) {
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, size_const, ss.str(),
                                                      "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand "));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand " + param.second));
 }
 
 INSTANTIATE_TEST_SUITE_P(
     AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugTypeEnum,
-    ::testing::ValuesIn(std::vector<std::string>{
-        R"(%dbg_src %float_info %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %foo_name)",
-        R"(%foo_name %dbg_src %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %foo_name)",
-        R"(%foo_name %float_info %comp_unit 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %foo_name)",
-        R"(%foo_name %float_info %dbg_src 1 1 %dbg_src %int_32 FlagIsPublic %u32_0 %foo_name)",
-        R"(%foo_name %float_info %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %foo_name %foo_name)",
-        R"(%foo_name %float_info %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %u32_1)",
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair(
+            R"(%dbg_src %float_info %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %foo_name)",
+            "Name"),
+        std::make_pair(
+            R"(%foo_name %dbg_src %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %foo_name)",
+            "Underlying Types"),
+        std::make_pair(
+            R"(%foo_name %float_info %comp_unit 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %foo_name)",
+            "Source"),
+        std::make_pair(
+            R"(%foo_name %float_info %dbg_src 1 1 %dbg_src %int_32 FlagIsPublic %u32_0 %foo_name)",
+            "Parent"),
+        std::make_pair(
+            R"(%foo_name %float_info %dbg_src 1 1 %comp_unit %void FlagIsPublic %u32_0 %foo_name)",
+            "Size"),
+        std::make_pair(
+            R"(%foo_name %float_info %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %foo_name %foo_name)",
+            "Value"),
+        std::make_pair(
+            R"(%foo_name %float_info %dbg_src 1 1 %comp_unit %int_32 FlagIsPublic %u32_0 %u32_1)",
+            "Name"),
     }));
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeCompositeFunctionAndInheritance) {
@@ -1654,7 +1683,7 @@ main() {}
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_P(ValidateOpenCL100DebugInfoDebugTypeFunction, Fail) {
+TEST_P(ValidateOpenCL100DebugInfoDebugTypeComposite, Fail) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "struct VS_OUTPUT {
@@ -1678,12 +1707,14 @@ main() {}
 %int_128 = OpConstant %u32 128
 )";
 
+  const auto& param = GetParam();
+
   std::ostringstream ss;
   ss << R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %VS_OUTPUT_info = OpExtInst %void %DbgExt DebugTypeComposite )";
-  ss << GetParam();
+  ss << param.first;
   ss << R"(
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
 %v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
@@ -1701,22 +1732,155 @@ main() {}
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, size_const, ss.str(),
                                                      "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand "));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand " + param.second + " must be "));
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugTypeFunction,
-    ::testing::ValuesIn(std::vector<std::string>{
-        R"(%dbg_src Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
-        R"(%VS_OUTPUT_name Structure %comp_unit 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
-        R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %dbg_src %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
-        R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %int_128 %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
-        R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %dbg_src FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
-        R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %dbg_src %main_info %child)",
-        R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %dbg_src %child)",
-        R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %dbg_src)",
+    AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugTypeComposite,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair(
+            R"(%dbg_src Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
+            "Name"),
+        std::make_pair(
+            R"(%VS_OUTPUT_name Structure %comp_unit 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
+            "Source"),
+        std::make_pair(
+            R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %dbg_src %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
+            "Parent"),
+        std::make_pair(
+            R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %int_128 %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
+            "Linkage Name"),
+        std::make_pair(
+            R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %dbg_src FlagIsPublic %VS_OUTPUT_pos_info %main_info %child)",
+            "Size"),
+        std::make_pair(
+            R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %dbg_src %main_info %child)",
+            "Members"),
+        std::make_pair(
+            R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %dbg_src %child)",
+            "Members"),
+        std::make_pair(
+            R"(%VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %main_info %dbg_src)",
+            "Members"),
     }));
 
+TEST_P(ValidateOpenCL100DebugInfoDebugTypeMember, Fail) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "struct VS_OUTPUT {
+  float pos : SV_POSITION;
+};
+main() {}
+"
+%VS_OUTPUT_name = OpString "struct VS_OUTPUT"
+%float_name = OpString "float"
+%VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
+%VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const auto& param = GetParam();
+
+  std::ostringstream ss;
+  ss << R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%VS_OUTPUT_info = OpExtInst %void %DbgExt DebugTypeComposite %VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_32 FlagIsPublic %VS_OUTPUT_pos_info
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember )";
+  ss << param.first;
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, size_const, ss.str(),
+                                                     "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  if (!param.second.empty()) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("expected operand " + param.second +
+                          " must be a result id of "));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugTypeMember,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair(
+            R"(%dbg_src %float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_32 FlagIsPublic)",
+            "Name"),
+        std::make_pair(
+            R"(%VS_OUTPUT_pos_name %dbg_src %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_32 FlagIsPublic)",
+            ""),
+        std::make_pair(
+            R"(%VS_OUTPUT_pos_name %float_info %float_info 2 3 %VS_OUTPUT_info %u32_0 %int_32 FlagIsPublic)",
+            "Source"),
+        std::make_pair(
+            R"(%VS_OUTPUT_pos_name %float_info %dbg_src 2 3 %float_info %u32_0 %int_32 FlagIsPublic)",
+            "Parent"),
+        std::make_pair(
+            R"(%VS_OUTPUT_pos_name %float_info %dbg_src 2 3 %VS_OUTPUT_info %void %int_32 FlagIsPublic)",
+            "Offset"),
+        std::make_pair(
+            R"(%VS_OUTPUT_pos_name %float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %void FlagIsPublic)",
+            "Size"),
+    }));
+
+TEST_P(ValidateOpenCL100DebugInfoDebugTypeInheritance, Fail) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "struct VS_OUTPUT {};
+struct foo : VS_OUTPUT {};
+"
+%VS_OUTPUT_name = OpString "struct VS_OUTPUT"
+%foo_name = OpString "foo"
+)";
+
+  const auto& param = GetParam();
+
+  std::ostringstream ss;
+  ss << R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%VS_OUTPUT_info = OpExtInst %void %DbgExt DebugTypeComposite %VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_name %u32_0 FlagIsPublic %child
+%foo_info = OpExtInst %void %DbgExt DebugTypeComposite %foo_name Structure %dbg_src 1 1 %comp_unit %foo_name %u32_0 FlagIsPublic
+%bar_info = OpExtInst %void %DbgExt DebugTypeComposite %foo_name Union %dbg_src 1 1 %comp_unit %foo_name %u32_0 FlagIsPublic
+%child = OpExtInst %void %DbgExt DebugTypeInheritance )"
+     << param.first;
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", ss.str(), "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand " + param.second));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugTypeInheritance,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair(R"(%dbg_src %VS_OUTPUT_info %u32_0 %u32_0 FlagIsPublic)",
+                       "Child must be a result id of"),
+        std::make_pair(R"(%foo_info %dbg_src %u32_0 %u32_0 FlagIsPublic)",
+                       "Parent must be a result id of"),
+        std::make_pair(
+            R"(%bar_info %VS_OUTPUT_info %u32_0 %u32_0 FlagIsPublic)",
+            "Child must be class or struct debug type"),
+        std::make_pair(R"(%foo_info %bar_info %u32_0 %u32_0 FlagIsPublic)",
+                       "Parent must be class or struct debug type"),
+        std::make_pair(R"(%foo_info %VS_OUTPUT_info %void %u32_0 FlagIsPublic)",
+                       "Offset"),
+        std::make_pair(R"(%foo_info %VS_OUTPUT_info %u32_0 %void FlagIsPublic)",
+                       "Size"),
+    }));
 TEST_P(ValidateGlslStd450SqrtLike, Success) {
   const std::string ext_inst_name = GetParam();
   std::ostringstream ss;

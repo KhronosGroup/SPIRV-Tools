@@ -2142,6 +2142,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         OpenCLDebugInfo100Instructions(ext_inst_index);
     switch (ext_inst_key) {
       case OpenCLDebugInfo100DebugInfoNone:
+      case OpenCLDebugInfo100DebugNoScope:
+      case OpenCLDebugInfo100DebugOperation:
         break;
       case OpenCLDebugInfo100DebugCompilationUnit: {
         auto validate_src = ValidateDebugInfoOperand(
@@ -2310,7 +2312,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         auto validate_size = ValidateOperandForDebugInfo(
             _, "Size", SpvOpConstant, inst, 12, ext_inst_name);
         if (validate_size != SPV_SUCCESS) return validate_size;
-
         if (num_operands == 14) {
           auto validate_value = ValidateOperandForDebugInfo(
               _, "Value", SpvOpConstant, inst, 14, ext_inst_name);
@@ -2355,6 +2356,103 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         break;
       }
 
+      case OpenCLDebugInfo100DebugFunction: {
+        auto validate_name = ValidateOperandForDebugInfo(
+            _, "Name", SpvOpString, inst, 5, ext_inst_name);
+        if (validate_name != SPV_SUCCESS) return validate_name;
+        auto validate_type =
+            ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name);
+        if (validate_type != SPV_SUCCESS) return validate_type;
+        auto validate_src = ValidateDebugInfoOperand(
+            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
+        if (validate_src != SPV_SUCCESS) return validate_src;
+        auto validate_parent =
+            ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+        if (validate_parent != SPV_SUCCESS) return validate_parent;
+        auto validate_linkage_name = ValidateOperandForDebugInfo(
+            _, "Linkage Name", SpvOpString, inst, 11, ext_inst_name);
+        if (validate_linkage_name != SPV_SUCCESS) return validate_linkage_name;
+        auto validate_function = ValidateOperandForDebugInfo(
+            _, "Function", SpvOpFunction, inst, 14, ext_inst_name);
+        if (validate_function != SPV_SUCCESS) return validate_function;
+        if (num_operands == 15) {
+          auto validate_decl = ValidateDebugInfoOperand(
+              _, "Declaration", OpenCLDebugInfo100DebugFunctionDeclaration,
+              inst, 15, ext_inst_name);
+          if (validate_decl != SPV_SUCCESS) return validate_decl;
+        }
+        break;
+      }
+      case OpenCLDebugInfo100DebugLexicalBlock: {
+        auto validate_src = ValidateDebugInfoOperand(
+            _, "Source", OpenCLDebugInfo100DebugSource, inst, 5, ext_inst_name);
+        if (validate_src != SPV_SUCCESS) return validate_src;
+        auto validate_parent =
+            ValidateOperandLexicalScope(_, "Parent", inst, 8, ext_inst_name);
+        if (validate_parent != SPV_SUCCESS) return validate_parent;
+        if (num_operands == 9) {
+          auto validate_name = ValidateOperandForDebugInfo(
+              _, "Name", SpvOpString, inst, 9, ext_inst_name);
+          if (validate_name != SPV_SUCCESS) return validate_name;
+        }
+        break;
+      }
+      case OpenCLDebugInfo100DebugScope: {
+        // TODO(https://gitlab.khronos.org/spirv/SPIR-V/issues/533): We are
+        // still in spec discussion about what must be "Scope" operand of
+        // DebugScope. Update this code if the conclusion is different.
+        auto validate_scope =
+            ValidateOperandLexicalScope(_, "Scope", inst, 5, ext_inst_name);
+        if (validate_scope != SPV_SUCCESS) return validate_scope;
+        if (num_operands == 6) {
+          auto validate_inline = ValidateDebugInfoOperand(
+              _, "Inlined At", OpenCLDebugInfo100DebugInlinedAt, inst, 6,
+              ext_inst_name);
+          if (validate_inline != SPV_SUCCESS) return validate_inline;
+        }
+        break;
+      }
+      case OpenCLDebugInfo100DebugLocalVariable: {
+        auto validate_name = ValidateOperandForDebugInfo(
+            _, "Name", SpvOpString, inst, 5, ext_inst_name);
+        if (validate_name != SPV_SUCCESS) return validate_name;
+        auto validate_type =
+            ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name);
+        if (validate_type != SPV_SUCCESS) return validate_type;
+        auto validate_src = ValidateDebugInfoOperand(
+            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
+        if (validate_src != SPV_SUCCESS) return validate_src;
+        auto validate_parent =
+            ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+        if (validate_parent != SPV_SUCCESS) return validate_parent;
+        break;
+      }
+      case OpenCLDebugInfo100DebugDeclare: {
+        auto validate_var = ValidateDebugInfoOperand(
+            _, "Local Variable", OpenCLDebugInfo100DebugLocalVariable, inst, 5,
+            ext_inst_name);
+        if (validate_var != SPV_SUCCESS) return validate_var;
+        validate_var = ValidateOperandForDebugInfo(_, "Variable", SpvOpVariable,
+                                                   inst, 6, ext_inst_name);
+        if (validate_var != SPV_SUCCESS) return validate_var;
+        auto validate_expr = ValidateDebugInfoOperand(
+            _, "Expression", OpenCLDebugInfo100DebugExpression, inst, 7,
+            ext_inst_name);
+        if (validate_expr != SPV_SUCCESS) return validate_expr;
+        break;
+      }
+      case OpenCLDebugInfo100DebugExpression: {
+        for (uint32_t word_index = 5; word_index <= num_operands;
+             ++word_index) {
+          auto validate_op = ValidateDebugInfoOperand(
+              _, "Operation", OpenCLDebugInfo100DebugOperation, inst,
+              word_index, ext_inst_name);
+          if (validate_op != SPV_SUCCESS) return validate_op;
+        }
+        break;
+      }
+
+      // TODO: Add validation rules for remaining cases as well.
       case OpenCLDebugInfo100DebugTypePtrToMember:
       case OpenCLDebugInfo100DebugTypeTemplate:
       case OpenCLDebugInfo100DebugTypeTemplateParameter:
@@ -2362,18 +2460,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLDebugInfo100DebugTypeTemplateParameterPack:
       case OpenCLDebugInfo100DebugGlobalVariable:
       case OpenCLDebugInfo100DebugFunctionDeclaration:
-      case OpenCLDebugInfo100DebugFunction:
-      case OpenCLDebugInfo100DebugLexicalBlock:
       case OpenCLDebugInfo100DebugLexicalBlockDiscriminator:
-      case OpenCLDebugInfo100DebugScope:
-      case OpenCLDebugInfo100DebugNoScope:
       case OpenCLDebugInfo100DebugInlinedAt:
-      case OpenCLDebugInfo100DebugLocalVariable:
       case OpenCLDebugInfo100DebugInlinedVariable:
-      case OpenCLDebugInfo100DebugDeclare:
       case OpenCLDebugInfo100DebugValue:
-      case OpenCLDebugInfo100DebugOperation:
-      case OpenCLDebugInfo100DebugExpression:
       case OpenCLDebugInfo100DebugMacroDef:
       case OpenCLDebugInfo100DebugMacroUndef:
       case OpenCLDebugInfo100DebugImportedEntity:
