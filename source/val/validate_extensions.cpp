@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "OpenCLDebugInfo100.h"
 #include "source/diagnostic.h"
 #include "source/enum_string_mapping.h"
 #include "source/extensions.h"
