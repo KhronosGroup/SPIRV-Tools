@@ -2155,9 +2155,11 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         auto validate_file = ValidateOperandForDebugInfo(
             _, "File", SpvOpString, inst, 5, ext_inst_name);
         if (validate_file != SPV_SUCCESS) return validate_file;
-        auto validate_text = ValidateOperandForDebugInfo(
-            _, "Text", SpvOpString, inst, 6, ext_inst_name);
-        if (validate_text != SPV_SUCCESS) return validate_text;
+        if (num_operands == 6) {
+          auto validate_text = ValidateOperandForDebugInfo(
+              _, "Text", SpvOpString, inst, 6, ext_inst_name);
+          if (validate_text != SPV_SUCCESS) return validate_text;
+        }
         break;
       }
       case OpenCLDebugInfo100DebugTypeBasic: {

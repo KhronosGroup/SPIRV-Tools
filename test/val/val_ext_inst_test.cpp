@@ -1046,6 +1046,24 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugSourceFailSource) {
                         "OpString"));
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugSourceNoText) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeBasicFailName) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
