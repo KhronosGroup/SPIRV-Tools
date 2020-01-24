@@ -723,10 +723,11 @@ SPIRV_TOOLS_EXPORT void spvBinaryDestroy(spv_binary binary);
 // *diagnostic if diagnostic is non-null, otherwise the context's message
 // consumer will be used.
 //
-// Validate for SPIR-V spec rules for the SPIR-V version named in the binary's
-// header (at word offset 1).  Additionally, if the context target environment
-// is a client API (such as Vulkan 1.1), then validate for that client API
-// version, to the extent that it is verifiable from data in the binary itself.
+// Validate for SPIR-V spec rules for the SPIR-V version named in the
+// binary's header (at word offset 1).  Additionally, if the context target
+// environment is a client API (such as Vulkan 1.1), then validate for that
+// client API version, to the extent that it is verifiable from data in the
+// binary itself.
 SPIRV_TOOLS_EXPORT spv_result_t spvValidate(const spv_const_context context,
                                             const spv_const_binary binary,
                                             spv_diagnostic* diagnostic);
@@ -735,11 +736,11 @@ SPIRV_TOOLS_EXPORT spv_result_t spvValidate(const spv_const_context context,
 // options. Any errors will be written into *diagnostic if diagnostic is
 // non-null, otherwise the context's message consumer will be used.
 //
-// Validate for SPIR-V spec rules for the SPIR-V version named in the binary's
-// header (at word offset 1).  Additionally, if the context target environment
-// is a client API (such as Vulkan 1.1), then validate for that client API
-// version, to the extent that it is verifiable from data in the binary itself,
-// or in the validator options.
+// Validate for SPIR-V spec rules for the SPIR-V version named in the
+// binary's header (at word offset 1).  Additionally, if the context target
+// environment is a client API (such as Vulkan 1.1), then validate for that
+// client API version, to the extent that it is verifiable from data in the
+// binary itself, or in the validator options.
 SPIRV_TOOLS_EXPORT spv_result_t spvValidateWithOptions(
     const spv_const_context context, const spv_const_validator_options options,
     const spv_const_binary binary, spv_diagnostic* diagnostic);
