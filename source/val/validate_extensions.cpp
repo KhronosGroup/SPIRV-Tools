@@ -2355,7 +2355,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (validate_size != SPV_SUCCESS) return validate_size;
         break;
       }
-
       case OpenCLDebugInfo100DebugFunction: {
         auto validate_name = ValidateOperandForDebugInfo(
             _, "Name", SpvOpString, inst, 5, ext_inst_name);
@@ -2381,6 +2380,24 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
               inst, 15, ext_inst_name);
           if (validate_decl != SPV_SUCCESS) return validate_decl;
         }
+        break;
+      }
+      case OpenCLDebugInfo100DebugFunctionDeclaration: {
+        auto validate_name = ValidateOperandForDebugInfo(
+            _, "Name", SpvOpString, inst, 5, ext_inst_name);
+        if (validate_name != SPV_SUCCESS) return validate_name;
+        auto validate_type =
+            ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name);
+        if (validate_type != SPV_SUCCESS) return validate_type;
+        auto validate_src = ValidateDebugInfoOperand(
+            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
+        if (validate_src != SPV_SUCCESS) return validate_src;
+        auto validate_parent =
+            ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+        if (validate_parent != SPV_SUCCESS) return validate_parent;
+        auto validate_linkage_name = ValidateOperandForDebugInfo(
+            _, "Linkage Name", SpvOpString, inst, 11, ext_inst_name);
+        if (validate_linkage_name != SPV_SUCCESS) return validate_linkage_name;
         break;
       }
       case OpenCLDebugInfo100DebugLexicalBlock: {
@@ -2459,7 +2476,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLDebugInfo100DebugTypeTemplateTemplateParameter:
       case OpenCLDebugInfo100DebugTypeTemplateParameterPack:
       case OpenCLDebugInfo100DebugGlobalVariable:
-      case OpenCLDebugInfo100DebugFunctionDeclaration:
       case OpenCLDebugInfo100DebugLexicalBlockDiscriminator:
       case OpenCLDebugInfo100DebugInlinedAt:
       case OpenCLDebugInfo100DebugInlinedVariable:
