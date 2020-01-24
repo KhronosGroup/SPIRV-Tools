@@ -419,8 +419,17 @@ SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionString(void);
 SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionDetailsString(void);
 
 // Certain target environments impose additional restrictions on SPIR-V, so it's
-// often necessary to specify which one applies.  SPV_ENV_UNIVERSAL means
+// often necessary to specify which one applies.  SPV_ENV_UNIVERSAL_* implies an
 // environment-agnostic SPIR-V.
+//
+// When an API method needs to derive a SPIR-V version from a target environment
+// (from the spv_context object), the method will choose the highest version of
+// SPIR-V supported by the target environment.  Examples:
+//    SPV_ENV_VULKAN_1_0           ->  SPIR-V 1.0
+//    SPV_ENV_VULKAN_1_1           ->  SPIR-V 1.3
+//    SPV_ENV_VULKAN_1_1_SPIRV_1_4 ->  SPIR-V 1.4
+//    SPV_ENV_VULKAN_1_2           ->  SPIR-V 1.5
+// Consult the description of API entry points for specific rules.
 typedef enum {
   SPV_ENV_UNIVERSAL_1_0,  // SPIR-V 1.0 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_0,     // Vulkan 1.0 latest revision.
@@ -448,7 +457,10 @@ typedef enum {
   SPV_ENV_VULKAN_1_1,     // Vulkan 1.1 latest revision.
   SPV_ENV_WEBGPU_0,       // Work in progress WebGPU 1.0.
   SPV_ENV_UNIVERSAL_1_4,  // SPIR-V 1.4 latest revision, no other restrictions.
-  SPV_ENV_VULKAN_1_1_SPIRV_1_4,  // Vulkan 1.1 with SPIR-V 1.4 binary.
+
+  // Vulkan 1.1 with VK_KHR_spirv_1_4, i.e. SPIR-V 1.4 binary.
+  SPV_ENV_VULKAN_1_1_SPIRV_1_4,
+
   SPV_ENV_UNIVERSAL_1_5,  // SPIR-V 1.5 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_2,     // Vulkan 1.2 latest revision.
 } spv_target_env;
@@ -486,7 +498,11 @@ SPIRV_TOOLS_EXPORT bool spvParseVulkanEnv(uint32_t vulkan_ver,
                                           uint32_t spirv_ver,
                                           spv_target_env* env);
 
-// Creates a context object.  Returns null if env is invalid.
+// Creates a context object for most of the SPIRV-Tools API.
+// Returns null if env is invalid.
+//
+// See specific API calls for how the target environment is interpeted
+// (particularly assembly and validation).
 SPIRV_TOOLS_EXPORT spv_context spvContextCreate(spv_target_env env);
 
 // Destroys the given context object.
@@ -667,6 +683,8 @@ SPIRV_TOOLS_EXPORT void spvFuzzerOptionsEnableFuzzerPassValidation(
 // be stored into *binary. Any error will be written into *diagnostic if
 // diagnostic is non-null, otherwise the context's message consumer will be
 // used. The generated binary is independent of the context and may outlive it.
+// The SPIR-V binary version is set to the highest version of SPIR-V supported
+// by the context's target environment.
 SPIRV_TOOLS_EXPORT spv_result_t spvTextToBinary(const spv_const_context context,
                                                 const char* text,
                                                 const size_t length,
@@ -704,6 +722,12 @@ SPIRV_TOOLS_EXPORT void spvBinaryDestroy(spv_binary binary);
 // Validates a SPIR-V binary for correctness. Any errors will be written into
 // *diagnostic if diagnostic is non-null, otherwise the context's message
 // consumer will be used.
+//
+// Validate for SPIR-V spec rules for the SPIR-V version named in the
+// binary's header (at word offset 1).  Additionally, if the context target
+// environment is a client API (such as Vulkan 1.1), then validate for that
+// client API version, to the extent that it is verifiable from data in the
+// binary itself.
 SPIRV_TOOLS_EXPORT spv_result_t spvValidate(const spv_const_context context,
                                             const spv_const_binary binary,
                                             spv_diagnostic* diagnostic);
@@ -711,6 +735,12 @@ SPIRV_TOOLS_EXPORT spv_result_t spvValidate(const spv_const_context context,
 // Validates a SPIR-V binary for correctness. Uses the provided Validator
 // options. Any errors will be written into *diagnostic if diagnostic is
 // non-null, otherwise the context's message consumer will be used.
+//
+// Validate for SPIR-V spec rules for the SPIR-V version named in the
+// binary's header (at word offset 1).  Additionally, if the context target
+// environment is a client API (such as Vulkan 1.1), then validate for that
+// client API version, to the extent that it is verifiable from data in the
+// binary itself, or in the validator options.
 SPIRV_TOOLS_EXPORT spv_result_t spvValidateWithOptions(
     const spv_const_context context, const spv_const_validator_options options,
     const spv_const_binary binary, spv_diagnostic* diagnostic);
