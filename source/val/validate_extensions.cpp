@@ -2451,9 +2451,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             _, "Local Variable", OpenCLDebugInfo100DebugLocalVariable, inst, 5,
             ext_inst_name);
         if (validate_var != SPV_SUCCESS) return validate_var;
-        validate_var = ValidateOperandForDebugInfo(_, "Variable", SpvOpVariable,
-                                                   inst, 6, ext_inst_name);
-        if (validate_var != SPV_SUCCESS) return validate_var;
+
+        // TODO: We must discuss DebugDeclare.Variable of OpenCL.100.DebugInfo.
+        // Currently, it says "Variable must be an id of OpVariable instruction
+        // which defines the local variable.", but we want to allow
+        // OpFunctionParameter as well.
+        auto* operand = _.FindDef(inst->word(6));
+        if (operand->opcode() != SpvOpVariable &&
+            operand->opcode() != SpvOpFunctionParameter) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": "
+                 << "expected operand Variable must be a result id of "
+                    "OpVariable or OpFunctionParameter";
+        }
+
         auto validate_expr = ValidateDebugInfoOperand(
             _, "Expression", OpenCLDebugInfo100DebugExpression, inst, 7,
             ext_inst_name);

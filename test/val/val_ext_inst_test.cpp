@@ -2280,6 +2280,69 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugDeclare) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugDeclareParam) {
+  CompileSuccessfully(R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "OpenCL.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %in_var_COLOR
+          %4 = OpString "test.hlsl"
+               OpSource HLSL 620 %4 "#line 1 \"test.hlsl\"
+void main(float foo:COLOR) {}
+"
+         %11 = OpString "#line 1 \"test.hlsl\"
+void main(float foo:COLOR) {}
+"
+         %14 = OpString "float"
+         %17 = OpString "src.main"
+         %20 = OpString "foo"
+               OpName %in_var_COLOR "in.var.COLOR"
+               OpName %main "main"
+               OpName %param_var_foo "param.var.foo"
+               OpName %src_main "src.main"
+               OpName %foo "foo"
+               OpName %bb_entry "bb.entry"
+               OpDecorate %in_var_COLOR Location 0
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+      %float = OpTypeFloat 32
+%_ptr_Input_float = OpTypePointer Input %float
+       %void = OpTypeVoid
+         %23 = OpTypeFunction %void
+%_ptr_Function_float = OpTypePointer Function %float
+         %29 = OpTypeFunction %void %_ptr_Function_float
+               OpLine %4 1 21
+%in_var_COLOR = OpVariable %_ptr_Input_float Input
+         %10 = OpExtInst %void %1 DebugExpression
+         %12 = OpExtInst %void %1 DebugSource %4 %11
+         %13 = OpExtInst %void %1 DebugCompilationUnit 1 4 %12 HLSL
+         %15 = OpExtInst %void %1 DebugTypeBasic %14 %uint_32 Float
+         %16 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %void %15
+         %18 = OpExtInst %void %1 DebugFunction %17 %16 %12 1 1 %13 %17 FlagIsProtected|FlagIsPrivate 1 %src_main
+         %21 = OpExtInst %void %1 DebugLocalVariable %20 %15 %12 1 17 %18 FlagIsLocal 0
+         %22 = OpExtInst %void %1 DebugLexicalBlock %12 1 28 %18
+               OpLine %4 1 1
+       %main = OpFunction %void None %23
+         %24 = OpLabel
+               OpLine %4 1 17
+%param_var_foo = OpVariable %_ptr_Function_float Function
+         %27 = OpLoad %float %in_var_COLOR
+               OpLine %4 1 1
+         %28 = OpFunctionCall %void %src_main %param_var_foo
+               OpReturn
+               OpFunctionEnd
+   %src_main = OpFunction %void None %29
+               OpLine %4 1 17
+        %foo = OpFunctionParameter %_ptr_Function_float
+         %31 = OpExtInst %void %1 DebugDeclare %21 %foo %10
+   %bb_entry = OpLabel
+               OpLine %4 1 29
+               OpReturn
+               OpFunctionEnd
+)");
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_P(ValidateOpenCL100DebugInfoDebugDeclare, Fail) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
