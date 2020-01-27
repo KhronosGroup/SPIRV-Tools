@@ -482,6 +482,8 @@ static_library("spvtools_val") {
 
   deps = [
     ":spvtools",
+    ":spvtools_language_header_cldebuginfo100",
+    ":spvtools_language_header_debuginfo",
   ]
   public_deps = [
     ":spvtools_headers",
@@ -709,6 +711,8 @@ static_library("spvtools_opt") {
 
   deps = [
     ":spvtools",
+    ":spvtools_language_header_cldebuginfo100",
+    ":spvtools_language_header_debuginfo",
     ":spvtools_vendor_tables_spv-amd-shader-ballot",
   ]
   public_deps = [
