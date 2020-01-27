@@ -33,6 +33,9 @@ using ::testing::HasSubstr;
 using ::testing::Not;
 
 using ValidateExtInst = spvtest::ValidateBase<bool>;
+using ValidateOldDebugInfo = spvtest::ValidateBase<std::string>;
+using ValidateOpenCL100DebugInfo = spvtest::ValidateBase<std::string>;
+using ValidateLocalDebugInfoOutOfFunction = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450SqrtLike = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450FMinLike = spvtest::ValidateBase<std::string>;
 using ValidateGlslStd450FClampLike = spvtest::ValidateBase<std::string>;
@@ -428,6 +431,10 @@ OpCapability Matrix
 %f16vec8_input = OpVariable %f16vec8_ptr_input Input
 %f16_ptr_input = OpTypePointer Input %f16
 
+%u32vec8_ptr_input = OpTypePointer Input %u32vec8
+%u32vec8_input = OpVariable %u32vec8_ptr_input Input
+%u32_ptr_input = OpTypePointer Input %u32
+
 %f32_ptr_generic = OpTypePointer Generic %f32
 %u32_ptr_generic = OpTypePointer Generic %u32
 
@@ -454,6 +461,462 @@ OpReturn
 OpFunctionEnd)";
 
   return ss.str();
+}
+
+std::string GenerateShaderCodeForDebugInfo(
+    const std::string& op_string_instructions,
+    const std::string& op_const_instructions,
+    const std::string& debug_instructions_before_main, const std::string& body,
+    const std::string& capabilities_and_extensions = "",
+    const std::string& execution_model = "Fragment") {
+  std::ostringstream ss;
+  ss << R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability Float64
+OpCapability Int16
+OpCapability Int64
+)";
+
+  ss << capabilities_and_extensions;
+  ss << "%extinst = OpExtInstImport \"GLSL.std.450\"\n";
+  ss << "OpMemoryModel Logical GLSL450\n";
+  ss << "OpEntryPoint " << execution_model << " %main \"main\""
+     << " %f32_output"
+     << " %f32vec2_output"
+     << " %u32_output"
+     << " %u32vec2_output"
+     << " %u64_output"
+     << " %f32_input"
+     << " %f32vec2_input"
+     << " %u32_input"
+     << " %u32vec2_input"
+     << " %u64_input"
+     << "\n";
+  if (execution_model == "Fragment") {
+    ss << "OpExecutionMode %main OriginUpperLeft\n";
+  }
+
+  ss << op_string_instructions;
+
+  ss << R"(
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%f64 = OpTypeFloat 64
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+%u64 = OpTypeInt 64 0
+%s64 = OpTypeInt 64 1
+%u16 = OpTypeInt 16 0
+%s16 = OpTypeInt 16 1
+%f32vec2 = OpTypeVector %f32 2
+%f32vec3 = OpTypeVector %f32 3
+%f32vec4 = OpTypeVector %f32 4
+%f64vec2 = OpTypeVector %f64 2
+%f64vec3 = OpTypeVector %f64 3
+%f64vec4 = OpTypeVector %f64 4
+%u32vec2 = OpTypeVector %u32 2
+%u32vec3 = OpTypeVector %u32 3
+%s32vec2 = OpTypeVector %s32 2
+%u32vec4 = OpTypeVector %u32 4
+%s32vec4 = OpTypeVector %s32 4
+%u64vec2 = OpTypeVector %u64 2
+%s64vec2 = OpTypeVector %s64 2
+%f64mat22 = OpTypeMatrix %f64vec2 2
+%f32mat22 = OpTypeMatrix %f32vec2 2
+%f32mat23 = OpTypeMatrix %f32vec2 3
+%f32mat32 = OpTypeMatrix %f32vec3 2
+%f32mat33 = OpTypeMatrix %f32vec3 3
+
+%f32_0 = OpConstant %f32 0
+%f32_1 = OpConstant %f32 1
+%f32_2 = OpConstant %f32 2
+%f32_3 = OpConstant %f32 3
+%f32_4 = OpConstant %f32 4
+%f32_h = OpConstant %f32 0.5
+%f32vec2_01 = OpConstantComposite %f32vec2 %f32_0 %f32_1
+%f32vec2_12 = OpConstantComposite %f32vec2 %f32_1 %f32_2
+%f32vec3_012 = OpConstantComposite %f32vec3 %f32_0 %f32_1 %f32_2
+%f32vec3_123 = OpConstantComposite %f32vec3 %f32_1 %f32_2 %f32_3
+%f32vec4_0123 = OpConstantComposite %f32vec4 %f32_0 %f32_1 %f32_2 %f32_3
+%f32vec4_1234 = OpConstantComposite %f32vec4 %f32_1 %f32_2 %f32_3 %f32_4
+
+%f64_0 = OpConstant %f64 0
+%f64_1 = OpConstant %f64 1
+%f64_2 = OpConstant %f64 2
+%f64_3 = OpConstant %f64 3
+%f64vec2_01 = OpConstantComposite %f64vec2 %f64_0 %f64_1
+%f64vec3_012 = OpConstantComposite %f64vec3 %f64_0 %f64_1 %f64_2
+%f64vec4_0123 = OpConstantComposite %f64vec4 %f64_0 %f64_1 %f64_2 %f64_3
+
+%f16_0 = OpConstant %f16 0
+%f16_1 = OpConstant %f16 1
+%f16_h = OpConstant %f16 0.5
+
+%u32_0 = OpConstant %u32 0
+%u32_1 = OpConstant %u32 1
+%u32_2 = OpConstant %u32 2
+%u32_3 = OpConstant %u32 3
+
+%s32_0 = OpConstant %s32 0
+%s32_1 = OpConstant %s32 1
+%s32_2 = OpConstant %s32 2
+%s32_3 = OpConstant %s32 3
+
+%u64_0 = OpConstant %u64 0
+%u64_1 = OpConstant %u64 1
+%u64_2 = OpConstant %u64 2
+%u64_3 = OpConstant %u64 3
+
+%s64_0 = OpConstant %s64 0
+%s64_1 = OpConstant %s64 1
+%s64_2 = OpConstant %s64 2
+%s64_3 = OpConstant %s64 3
+)";
+
+  ss << op_const_instructions;
+
+  ss << R"(
+%s32vec2_01 = OpConstantComposite %s32vec2 %s32_0 %s32_1
+%u32vec2_01 = OpConstantComposite %u32vec2 %u32_0 %u32_1
+
+%s32vec2_12 = OpConstantComposite %s32vec2 %s32_1 %s32_2
+%u32vec2_12 = OpConstantComposite %u32vec2 %u32_1 %u32_2
+
+%s32vec4_0123 = OpConstantComposite %s32vec4 %s32_0 %s32_1 %s32_2 %s32_3
+%u32vec4_0123 = OpConstantComposite %u32vec4 %u32_0 %u32_1 %u32_2 %u32_3
+
+%s64vec2_01 = OpConstantComposite %s64vec2 %s64_0 %s64_1
+%u64vec2_01 = OpConstantComposite %u64vec2 %u64_0 %u64_1
+
+%f32mat22_1212 = OpConstantComposite %f32mat22 %f32vec2_12 %f32vec2_12
+%f32mat23_121212 = OpConstantComposite %f32mat23 %f32vec2_12 %f32vec2_12 %f32vec2_12
+
+%f32_ptr_output = OpTypePointer Output %f32
+%f32vec2_ptr_output = OpTypePointer Output %f32vec2
+
+%u32_ptr_output = OpTypePointer Output %u32
+%u32vec2_ptr_output = OpTypePointer Output %u32vec2
+
+%u64_ptr_output = OpTypePointer Output %u64
+
+%f32_output = OpVariable %f32_ptr_output Output
+%f32vec2_output = OpVariable %f32vec2_ptr_output Output
+
+%u32_output = OpVariable %u32_ptr_output Output
+%u32vec2_output = OpVariable %u32vec2_ptr_output Output
+
+%u64_output = OpVariable %u64_ptr_output Output
+
+%f32_ptr_input = OpTypePointer Input %f32
+%f32vec2_ptr_input = OpTypePointer Input %f32vec2
+
+%u32_ptr_input = OpTypePointer Input %u32
+%u32vec2_ptr_input = OpTypePointer Input %u32vec2
+
+%u64_ptr_input = OpTypePointer Input %u64
+
+%f32_ptr_function = OpTypePointer Function %f32
+
+%f32_input = OpVariable %f32_ptr_input Input
+%f32vec2_input = OpVariable %f32vec2_ptr_input Input
+
+%u32_input = OpVariable %u32_ptr_input Input
+%u32vec2_input = OpVariable %u32vec2_ptr_input Input
+
+%u64_input = OpVariable %u64_ptr_input Input
+
+%u32_ptr_function = OpTypePointer Function %u32
+
+%struct_f16_u16 = OpTypeStruct %f16 %u16
+%struct_f32_f32 = OpTypeStruct %f32 %f32
+%struct_f32_f32_f32 = OpTypeStruct %f32 %f32 %f32
+%struct_f32_u32 = OpTypeStruct %f32 %u32
+%struct_f32_u32_f32 = OpTypeStruct %f32 %u32 %f32
+%struct_u32_f32 = OpTypeStruct %u32 %f32
+%struct_u32_u32 = OpTypeStruct %u32 %u32
+%struct_f32_f64 = OpTypeStruct %f32 %f64
+%struct_f32vec2_f32vec2 = OpTypeStruct %f32vec2 %f32vec2
+%struct_f32vec2_u32vec2 = OpTypeStruct %f32vec2 %u32vec2
+)";
+
+  ss << debug_instructions_before_main;
+
+  ss << R"(
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+)";
+
+  ss << body;
+
+  ss << R"(
+OpReturn
+OpFunctionEnd)";
+
+  return ss.str();
+}
+
+TEST_F(ValidateOldDebugInfo, UseDebugInstructionOutOfFunction) {
+  const std::string src = R"(
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%cu = OpExtInst %void %DbgExt DebugCompilationUnit %code 1 1
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "DebugInfo"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, UseDebugInstructionOutOfFunction) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugSourceInFunction) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", "", dbg_inst,
+                                                     extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Debug info extension instructions other than DebugScope, "
+                "DebugNoScope, DebugDeclare, DebugValue must appear between "
+                "section 9 (types, constants, global variables) and section 10 "
+                "(function declarations)"));
+}
+
+TEST_P(ValidateLocalDebugInfoOutOfFunction, OpenCLDebugInfo100DebugScope) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() {}"
+%void_name = OpString "void"
+%main_name = OpString "main"
+%main_linkage_name = OpString "v_main"
+%int_name = OpString "int"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%void_info = OpExtInst %void %DbgExt DebugTypeBasic %void_name %u32_0 Unspecified
+%int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %u32_0 Signed
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void_info %void_info
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+%foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %int_info %dbg_src 1 1 %main_info FlagIsLocal
+%expr = OpExtInst %void %DbgExt DebugExpression
+)";
+
+  const std::string body = R"(
+%foo = OpVariable %u32_ptr_function Function
+%foo_val = OpLoad %u32 %foo
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header + GetParam(), body, extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugScope, DebugNoScope, DebugDeclare, DebugValue "
+                        "of debug info extension must appear in a function "
+                        "body"));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllLocalDebugInfo, ValidateLocalDebugInfoOutOfFunction,
+    ::testing::ValuesIn(std::vector<std::string>{
+        "%main_scope = OpExtInst %void %DbgExt DebugScope %main_info",
+        "%no_scope = OpExtInst %void %DbgExt DebugNoScope",
+    }));
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionForwardReference) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() {}"
+%void_name = OpString "void"
+%main_name = OpString "main"
+%main_linkage_name = OpString "v_main"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%void_info = OpExtInst %void %DbgExt DebugTypeBasic %void_name %u32_0 Unspecified
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void_info %void_info
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+)";
+
+  const std::string body = R"(
+%main_scope = OpExtInst %void %DbgExt DebugScope %main_info
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugScopeBeforeOpVariableInFunction) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "float4 main(float arg) {
+  float foo;
+  return float4(0, 0, 0, 0);
+}
+"
+%float_name = OpString "float"
+%main_name = OpString "main"
+%main_linkage_name = OpString "v4f_main_f"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %v4float_info %float_info
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main
+)";
+
+  const std::string body = R"(
+%main_scope = OpExtInst %void %DbgExt DebugScope %main_info
+%foo = OpVariable %f32_ptr_function Function
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, body, extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeCompositeForwardReference) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "struct VS_OUTPUT {
+  float4 pos : SV_POSITION;
+  float4 color : COLOR;
+};
+main() {}
+"
+%VS_OUTPUT_name = OpString "struct VS_OUTPUT"
+%float_name = OpString "float"
+%VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
+%VS_OUTPUT_color_name = OpString "color : COLOR"
+%VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+%int_128 = OpConstant %u32 128
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%VS_OUTPUT_info = OpExtInst %void %DbgExt DebugTypeComposite %VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %VS_OUTPUT_color_info
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
+%VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_pos_name %v4float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_128 FlagIsPublic
+%VS_OUTPUT_color_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_color_name %v4float_info %dbg_src 3 3 %VS_OUTPUT_info %int_128 %int_128 FlagIsPublic
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeCompositeMissingReference) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "struct VS_OUTPUT {
+  float4 pos : SV_POSITION;
+  float4 color : COLOR;
+};
+main() {}
+"
+%VS_OUTPUT_name = OpString "struct VS_OUTPUT"
+%float_name = OpString "float"
+%VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
+%VS_OUTPUT_color_name = OpString "color : COLOR"
+%VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+%int_128 = OpConstant %u32 128
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%VS_OUTPUT_info = OpExtInst %void %DbgExt DebugTypeComposite %VS_OUTPUT_name Structure %dbg_src 1 1 %comp_unit %VS_OUTPUT_linkage_name %int_128 FlagIsPublic %VS_OUTPUT_pos_info %VS_OUTPUT_color_info
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
+%VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_pos_name %v4float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_128 FlagIsPublic
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("forward referenced IDs have not been defined"));
 }
 
 TEST_P(ValidateGlslStd450SqrtLike, Success) {
@@ -4485,14 +4948,15 @@ TEST_F(ValidateExtInst, VLoadNPNotPointer) {
 
 TEST_F(ValidateExtInst, VLoadNWrongStorageClass) {
   std::ostringstream ss;
-  ss << "%ptr = OpAccessChain %u32_ptr_workgroup %u32vec8_workgroup %u32_1\n";
+  ss << "%ptr = OpAccessChain %u32_ptr_input %u32vec8_input %u32_1\n";
   ss << "%val1 = OpExtInst %u32vec2 %extinst vloadn %u32_1 %ptr 2\n";
 
   CompileSuccessfully(GenerateKernelCode(ss.str()));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpenCL.std vloadn: expected operand P storage class "
-                        "to be UniformConstant or Generic"));
+                        "to be UniformConstant, Generic, CrossWorkgroup, "
+                        "Workgroup or Function"));
 }
 
 TEST_F(ValidateExtInst, VLoadNWrongComponentType) {
@@ -4746,19 +5210,21 @@ TEST_F(ValidateExtInst, VStoreNPNotPointer) {
   CompileSuccessfully(GenerateKernelCode(ss.str()));
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 124[%_ptr_Generic_float] cannot be a type"));
+              HasSubstr("Operand 127[%_ptr_Generic_float] cannot be a type"));
 }
 
-TEST_F(ValidateExtInst, VStoreNPNotGeneric) {
+TEST_F(ValidateExtInst, VStoreNWrongStorageClass) {
   std::ostringstream ss;
-  ss << "%ptr_w = OpAccessChain %f32_ptr_workgroup %f32vec8_workgroup %u32_1\n";
+  ss << "%ptr_w = OpAccessChain %f32_ptr_uniform_constant "
+        "%f32vec8_uniform_constant %u32_1\n";
   ss << "%val1 = OpExtInst %void %extinst vstoren %f32vec2_01 %u32_1 %ptr_w\n";
 
   CompileSuccessfully(GenerateKernelCode(ss.str()));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpenCL.std vstoren: expected operand P storage class "
-                        "to be Generic"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpenCL.std vstoren: expected operand P storage class "
+                "to be Generic, CrossWorkgroup, Workgroup or Function"));
 }
 
 TEST_F(ValidateExtInst, VStorePWrongDataType) {
@@ -5060,7 +5526,7 @@ TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotPointer) {
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 134[%_ptr_UniformConstant_uchar] cannot be a "
+              HasSubstr("Operand 137[%_ptr_UniformConstant_uchar] cannot be a "
                         "type"));
 }
 
@@ -5308,10 +5774,10 @@ INSTANTIATE_TEST_SUITE_P(AllFractLike, ValidateOpenCLStdFractLike,
 
 TEST_F(ValidateExtInst, OpenCLStdRemquoSuccess) {
   const std::string body = R"(
-%var_f32 = OpVariable %f32_ptr_function Function
-%var_f32vec2 = OpVariable %f32vec2_ptr_function Function
-%val1 = OpExtInst %f32 %extinst remquo %f32_3 %f32_2 %var_f32
-%val2 = OpExtInst %f32vec2 %extinst remquo %f32vec2_01 %f32vec2_12 %var_f32vec2
+%var_u32 = OpVariable %u32_ptr_function Function
+%var_u32vec2 = OpVariable %u32vec2_ptr_function Function
+%val1 = OpExtInst %f32 %extinst remquo %f32_3 %f32_2 %var_u32
+%val2 = OpExtInst %f32vec2 %extinst remquo %f32vec2_01 %f32vec2_12 %var_u32vec2
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
@@ -5320,8 +5786,8 @@ TEST_F(ValidateExtInst, OpenCLStdRemquoSuccess) {
 
 TEST_F(ValidateExtInst, OpenCLStdRemquoIntResultType) {
   const std::string body = R"(
-%var_f32 = OpVariable %f32_ptr_function Function
-%val1 = OpExtInst %u32 %extinst remquo %f32_3 %f32_2 %var_f32
+%var_u32 = OpVariable %u32_ptr_function Function
+%val1 = OpExtInst %u32 %extinst remquo %f32_3 %f32_2 %var_u32
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
@@ -5334,8 +5800,8 @@ TEST_F(ValidateExtInst, OpenCLStdRemquoIntResultType) {
 
 TEST_F(ValidateExtInst, OpenCLStdRemquoXWrongType) {
   const std::string body = R"(
-%var_f32 = OpVariable %f32_ptr_function Function
-%val1 = OpExtInst %f32 %extinst remquo %u32_3 %f32_2 %var_f32
+%var_u32 = OpVariable %f32_ptr_function Function
+%val1 = OpExtInst %f32 %extinst remquo %u32_3 %f32_2 %var_u32
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
@@ -5348,8 +5814,8 @@ TEST_F(ValidateExtInst, OpenCLStdRemquoXWrongType) {
 
 TEST_F(ValidateExtInst, OpenCLStdRemquoYWrongType) {
   const std::string body = R"(
-%var_f32 = OpVariable %f32_ptr_function Function
-%val1 = OpExtInst %f32 %extinst remquo %f32_3 %u32_2 %var_f32
+%var_u32 = OpVariable %f32_ptr_function Function
+%val1 = OpExtInst %f32 %extinst remquo %f32_3 %u32_2 %var_u32
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
@@ -5388,17 +5854,44 @@ TEST_F(ValidateExtInst, OpenCLStdRemquoPointerWrongStorageClass) {
 
 TEST_F(ValidateExtInst, OpenCLStdRemquoPointerWrongDataType) {
   const std::string body = R"(
-%var_u32 = OpVariable %u32_ptr_function Function
-%val1 = OpExtInst %f32 %extinst remquo %f32_3 %f32_2 %var_u32
+%var_f32 = OpVariable %f32_ptr_function Function
+%val1 = OpExtInst %f32 %extinst remquo %f32_3 %f32_2 %var_f32
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpenCL.std remquo: "
+                        "expected data type of the pointer to be a 32-bit int "
+                        "scalar or vector type"));
+}
+
+TEST_F(ValidateExtInst, OpenCLStdRemquoPointerWrongDataTypeWidth) {
+  const std::string body = R"(
+%var_u64 = OpVariable %u64_ptr_function Function
+%val1 = OpExtInst %f32 %extinst remquo %f32_3 %f32_2 %var_u64
+)";
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpenCL.std remquo: "
+                        "expected data type of the pointer to be a 32-bit int "
+                        "scalar or vector type"));
+}
+
+TEST_F(ValidateExtInst, OpenCLStdRemquoPointerWrongNumberOfComponents) {
+  const std::string body = R"(
+%var_u32vec2 = OpVariable %u32vec2_ptr_function Function
+%val1 = OpExtInst %f32 %extinst remquo %f32_3 %f32_2 %var_u32vec2
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpenCL.std remquo: "
-          "expected data type of the pointer to be equal to Result Type"));
+      HasSubstr("OpenCL.std remquo: "
+                "expected data type of the pointer to have the same number "
+                "of components as Result Type"));
 }
 
 TEST_P(ValidateOpenCLStdFrexpLike, Success) {

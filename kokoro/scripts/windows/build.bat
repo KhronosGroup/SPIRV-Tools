@@ -29,6 +29,11 @@ git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv
 git clone --depth=1 https://github.com/google/googletest          external/googletest
 git clone --depth=1 https://github.com/google/effcee              external/effcee
 git clone --depth=1 https://github.com/google/re2                 external/re2
+git clone --depth=1 https://github.com/protocolbuffers/protobuf   external/protobuf
+pushd external\protobuf
+git fetch --all --tags --prune
+git checkout v3.7.1
+popd
 
 :: #########################################
 :: set up msvc build env
@@ -58,11 +63,16 @@ if "%KOKORO_GITHUB_COMMIT%." == "." (
   set BUILD_SHA=%KOKORO_GITHUB_COMMIT%
 )
 
-set CMAKE_FLAGS=-DCMAKE_INSTALL_PREFIX=%KOKORO_ARTIFACTS_DIR%\install -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe
+set CMAKE_FLAGS=-DCMAKE_INSTALL_PREFIX=%KOKORO_ARTIFACTS_DIR%\install -GNinja -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe
 
 :: Skip building tests for VS2013
 if %VS_VERSION% == 2013 (
   set CMAKE_FLAGS=%CMAKE_FLAGS% -DSPIRV_SKIP_TESTS=ON
+)
+
+:: Skip building spirv-fuzz for VS2013; it relies on protobufs which VS2013 cannot handle.
+if %VS_VERSION% NEQ 2013 (
+  set CMAKE_FLAGS=%CMAKE_FLAGS% -DSPIRV_BUILD_FUZZER=ON
 )
 
 cmake %CMAKE_FLAGS% ..

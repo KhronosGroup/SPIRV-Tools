@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/val/validate.h"
-
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -34,6 +32,7 @@
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
 #include "source/val/function.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -236,6 +235,10 @@ spv_result_t ValidateLoopMerge(ValidationState_t& _, const Instruction* inst) {
   if (!merge || merge->opcode() != SpvOpLabel) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Merge Block " << _.getIdName(merge_id) << " must be an OpLabel";
+  }
+  if (merge_id == inst->block()->id()) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Merge Block may not be the block containing the OpLoopMerge\n";
   }
 
   const auto continue_id = inst->GetOperandAs<uint32_t>(1);
@@ -489,41 +492,54 @@ spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
   std::map<uint32_t, uint32_t> num_fall_through_targeted;
   uint32_t default_case_fall_through = 0u;
   uint32_t default_target = switch_inst->GetOperandAs<uint32_t>(1u);
-  std::unordered_set<uint32_t> seen;
+  bool default_appears_multiple_times = false;
+  for (uint32_t i = 3; i < switch_inst->operands().size(); i += 2) {
+    if (default_target == switch_inst->GetOperandAs<uint32_t>(i)) {
+      default_appears_multiple_times = true;
+      break;
+    }
+  }
+  std::unordered_map<uint32_t, uint32_t> seen_to_fall_through;
   for (uint32_t i = 1; i < switch_inst->operands().size(); i += 2) {
     uint32_t target = switch_inst->GetOperandAs<uint32_t>(i);
     if (target == merge->id()) continue;
 
-    if (!seen.insert(target).second) continue;
-
-    const auto target_block = function->GetBlock(target).first;
-    // OpSwitch must dominate all its case constructs.
-    if (header->reachable() && target_block->reachable() &&
-        !header->dominates(*target_block)) {
-      return _.diag(SPV_ERROR_INVALID_CFG, header->label())
-             << "Selection header " << _.getIdName(header->id())
-             << " does not dominate its case construct " << _.getIdName(target);
-    }
-
     uint32_t case_fall_through = 0u;
-    if (auto error = FindCaseFallThrough(_, target_block, &case_fall_through,
-                                         merge, case_targets, function)) {
-      return error;
-    }
-
-    // Track how many time the fall through case has been targeted.
-    if (case_fall_through != 0u) {
-      auto where = num_fall_through_targeted.lower_bound(case_fall_through);
-      if (where == num_fall_through_targeted.end() ||
-          where->first != case_fall_through) {
-        num_fall_through_targeted.insert(where,
-                                         std::make_pair(case_fall_through, 1));
-      } else {
-        where->second++;
+    auto seen_iter = seen_to_fall_through.find(target);
+    if (seen_iter == seen_to_fall_through.end()) {
+      const auto target_block = function->GetBlock(target).first;
+      // OpSwitch must dominate all its case constructs.
+      if (header->reachable() && target_block->reachable() &&
+          !header->dominates(*target_block)) {
+        return _.diag(SPV_ERROR_INVALID_CFG, header->label())
+               << "Selection header " << _.getIdName(header->id())
+               << " does not dominate its case construct "
+               << _.getIdName(target);
       }
+
+      if (auto error = FindCaseFallThrough(_, target_block, &case_fall_through,
+                                           merge, case_targets, function)) {
+        return error;
+      }
+
+      // Track how many time the fall through case has been targeted.
+      if (case_fall_through != 0u) {
+        auto where = num_fall_through_targeted.lower_bound(case_fall_through);
+        if (where == num_fall_through_targeted.end() ||
+            where->first != case_fall_through) {
+          num_fall_through_targeted.insert(
+              where, std::make_pair(case_fall_through, 1));
+        } else {
+          where->second++;
+        }
+      }
+      seen_to_fall_through.insert(std::make_pair(target, case_fall_through));
+    } else {
+      case_fall_through = seen_iter->second;
     }
 
-    if (case_fall_through == default_target) {
+    if (case_fall_through == default_target &&
+        !default_appears_multiple_times) {
       case_fall_through = default_case_fall_through;
     }
     if (case_fall_through != 0u) {
@@ -573,9 +589,68 @@ spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
   return SPV_SUCCESS;
 }
 
+// Validates that all CFG divergences (i.e. conditional branch or switch) are
+// structured correctly. Either divergence is preceded by a merge instruction
+// or the divergence introduces at most one unseen label.
+spv_result_t ValidateStructuredSelections(
+    ValidationState_t& _, const std::vector<const BasicBlock*>& postorder) {
+  std::unordered_set<uint32_t> seen;
+  for (auto iter = postorder.rbegin(); iter != postorder.rend(); ++iter) {
+    const auto* block = *iter;
+    const auto* terminator = block->terminator();
+    if (!terminator) continue;
+    const auto index = terminator - &_.ordered_instructions()[0];
+    auto* merge = &_.ordered_instructions()[index - 1];
+    // Marks merges and continues as seen.
+    if (merge->opcode() == SpvOpSelectionMerge) {
+      seen.insert(merge->GetOperandAs<uint32_t>(0));
+    } else if (merge->opcode() == SpvOpLoopMerge) {
+      seen.insert(merge->GetOperandAs<uint32_t>(0));
+      seen.insert(merge->GetOperandAs<uint32_t>(1));
+    } else {
+      // Only track the pointer if it is a merge instruction.
+      merge = nullptr;
+    }
+
+    // Skip unreachable blocks.
+    if (!block->reachable()) continue;
+
+    if (terminator->opcode() == SpvOpBranchConditional) {
+      const auto true_label = terminator->GetOperandAs<uint32_t>(1);
+      const auto false_label = terminator->GetOperandAs<uint32_t>(2);
+      // Mark the upcoming blocks as seen now, but only error out if this block
+      // was missing a merge instruction and both labels hadn't been seen
+      // previously.
+      const bool both_unseen =
+          seen.insert(true_label).second && seen.insert(false_label).second;
+      if (!merge && both_unseen) {
+        return _.diag(SPV_ERROR_INVALID_CFG, terminator)
+               << "Selection must be structured";
+      }
+    } else if (terminator->opcode() == SpvOpSwitch) {
+      uint32_t count = 0;
+      // Mark the targets as seen now, but only error out if this block was
+      // missing a merge instruction and there were multiple unseen labels.
+      for (uint32_t i = 1; i < terminator->operands().size(); i += 2) {
+        const auto target = terminator->GetOperandAs<uint32_t>(i);
+        if (seen.insert(target).second) {
+          count++;
+        }
+      }
+      if (!merge && count > 1) {
+        return _.diag(SPV_ERROR_INVALID_CFG, terminator)
+               << "Selection must be structured";
+      }
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t StructuredControlFlowChecks(
     ValidationState_t& _, Function* function,
-    const std::vector<std::pair<uint32_t, uint32_t>>& back_edges) {
+    const std::vector<std::pair<uint32_t, uint32_t>>& back_edges,
+    const std::vector<const BasicBlock*>& postorder) {
   /// Check all backedges target only loop headers and have exactly one
   /// back-edge branching to it
 
@@ -653,10 +728,10 @@ spv_result_t StructuredControlFlowChecks(
     }
 
     Construct::ConstructBlockSet construct_blocks = construct.blocks(function);
+    std::string construct_name, header_name, exit_name;
+    std::tie(construct_name, header_name, exit_name) =
+        ConstructNames(construct.type());
     for (auto block : construct_blocks) {
-      std::string construct_name, header_name, exit_name;
-      std::tie(construct_name, header_name, exit_name) =
-          ConstructNames(construct.type());
       // Check that all exits from the construct are via structured exits.
       for (auto succ : *block->successors()) {
         if (block->reachable() && !construct_blocks.count(succ) &&
@@ -679,6 +754,26 @@ spv_result_t StructuredControlFlowChecks(
                  << header_name << " <ID> " << header->id();
         }
       }
+
+      if (block->is_type(BlockType::kBlockTypeSelection) ||
+          block->is_type(BlockType::kBlockTypeLoop)) {
+        size_t index = (block->terminator() - &_.ordered_instructions()[0]) - 1;
+        const auto& merge_inst = _.ordered_instructions()[index];
+        if (merge_inst.opcode() == SpvOpSelectionMerge ||
+            merge_inst.opcode() == SpvOpLoopMerge) {
+          uint32_t merge_id = merge_inst.GetOperandAs<uint32_t>(0);
+          auto merge_block = function->GetBlock(merge_id).first;
+          if (merge_block->reachable() &&
+              !construct_blocks.count(merge_block)) {
+            return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+                   << "Header block " << _.getIdName(block->id())
+                   << " is contained in the " << construct_name
+                   << " construct headed by " << _.getIdName(header->id())
+                   << ", but its merge block " << _.getIdName(merge_id)
+                   << " is not";
+          }
+        }
+      }
     }
 
     // Checks rules for case constructs.
@@ -690,6 +785,10 @@ spv_result_t StructuredControlFlowChecks(
         return error;
       }
     }
+  }
+
+  if (auto error = ValidateStructuredSelections(_, postorder)) {
+    return error;
   }
 
   return SPV_SUCCESS;
@@ -914,7 +1013,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
 
     /// Structured control flow checks are only required for shader capabilities
     if (_.HasCapability(SpvCapabilityShader)) {
-      if (auto error = StructuredControlFlowChecks(_, &function, back_edges))
+      if (auto error =
+              StructuredControlFlowChecks(_, &function, back_edges, postorder))
         return error;
     }
   }

@@ -133,6 +133,7 @@ bool Construct::IsStructuredExit(ValidationState_t& _, BasicBlock* dest) const {
   // - Selection:
   //  - branch to its merge
   //  - branch to nearest enclosing loop merge or continue
+  //  - branch to nearest enclosing switch selection merge
   // - Loop:
   //  - branch to its merge
   //  - branch to its continue
@@ -168,27 +169,56 @@ bool Construct::IsStructuredExit(ValidationState_t& _, BasicBlock* dest) const {
       return true;
     }
 
+    // The next block in the traversal is either:
+    //  i.  The header block that declares |block| as its merge block.
+    //  ii. The immediate dominator of |block|.
+    auto NextBlock = [](const BasicBlock* block) -> const BasicBlock* {
+      for (auto& use : block->label()->uses()) {
+        if ((use.first->opcode() == SpvOpLoopMerge ||
+             use.first->opcode() == SpvOpSelectionMerge) &&
+            use.second == 1)
+          return use.first->block();
+      }
+      return block->immediate_dominator();
+    };
+
+    bool seen_switch = false;
     auto header = entry_block();
-    auto block = header;
+    auto block = NextBlock(header);
     while (block) {
       auto terminator = block->terminator();
       auto index = terminator - &_.ordered_instructions()[0];
       auto merge_inst = &_.ordered_instructions()[index - 1];
-      if (merge_inst->opcode() == SpvOpLoopMerge) {
+      if (merge_inst->opcode() == SpvOpLoopMerge ||
+          (header->terminator()->opcode() != SpvOpSwitch &&
+           merge_inst->opcode() == SpvOpSelectionMerge &&
+           terminator->opcode() == SpvOpSwitch)) {
         auto merge_target = merge_inst->GetOperandAs<uint32_t>(0u);
         auto merge_block = merge_inst->function()->GetBlock(merge_target).first;
         if (merge_block->dominates(*header)) {
-          block = block->immediate_dominator();
+          block = NextBlock(block);
           continue;
         }
 
-        auto continue_target = merge_inst->GetOperandAs<uint32_t>(1u);
-        if (dest->id() == merge_target || dest->id() == continue_target) {
+        if ((!seen_switch || merge_inst->opcode() == SpvOpLoopMerge) &&
+            dest->id() == merge_target) {
           return true;
+        } else if (merge_inst->opcode() == SpvOpLoopMerge) {
+          auto continue_target = merge_inst->GetOperandAs<uint32_t>(1u);
+          if (dest->id() == continue_target) {
+            return true;
+          }
         }
+
+        if (terminator->opcode() == SpvOpSwitch) {
+          seen_switch = true;
+        }
+
+        // Hit an enclosing loop and didn't break or continue.
+        if (merge_inst->opcode() == SpvOpLoopMerge) return false;
       }
 
-      block = block->immediate_dominator();
+      block = NextBlock(block);
     }
   }
 

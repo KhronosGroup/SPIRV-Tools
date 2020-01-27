@@ -423,6 +423,42 @@ OpFunctionEnd
   SinglePassRunAndMatch<BlockMergePass>(text, true);
 }
 
+TEST_F(BlockMergeTest, MergeContinueWithOpLine) {
+  const std::string text = R"(
+; CHECK: OpBranch [[header:%\w+]]
+; CHECK: [[header]] = OpLabel
+; CHECK-NEXT: OpLogicalAnd
+; CHECK-NEXT: OpLine {{%\w+}} 1 1
+; CHECK-NEXT: OpLoopMerge {{%\w+}} [[header]] None
+; CHECK-NEXT: OpBranch [[header]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%src = OpString "test.shader"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse  %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranch %header
+%header = OpLabel
+OpLoopMerge %merge %continue None
+OpBranch %continue
+%continue = OpLabel
+%op = OpLogicalAnd %bool %true %false
+OpLine %src 1 1
+OpBranch %header
+%merge = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<BlockMergePass>(text, true);
+}
+
 TEST_F(BlockMergeTest, TwoHeadersCannotBeMerged) {
   const std::string text = R"(
 ; CHECK: OpBranch [[loop_header:%\w+]]
@@ -447,9 +483,52 @@ OpBranch %header
 OpLoopMerge %merge %continue None
 OpBranch %inner_header
 %inner_header = OpLabel
-OpSelectionMerge %continue None
-OpBranchConditional %true %then %continue
+OpSelectionMerge %if_merge None
+OpBranchConditional %true %then %if_merge
 %then = OpLabel
+OpBranch %continue
+%if_merge = OpLabel
+OpBranch %continue
+%continue = OpLabel
+OpBranchConditional %false %merge %header
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, CannotMergeContinue) {
+  const std::string text = R"(
+; CHECK: OpBranch [[loop_header:%\w+]]
+; CHECK: [[loop_header]] = OpLabel
+; CHECK-NEXT: OpLoopMerge {{%\w+}} [[continue:%\w+]]
+; CHECK-NEXT: OpBranchConditional {{%\w+}} [[if_header:%\w+]]
+; CHECK: [[if_header]] = OpLabel
+; CHECK-NEXT: OpSelectionMerge
+; CHECK: [[continue]] = OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse  %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranch %header
+%header = OpLabel
+OpLoopMerge %merge %continue None
+OpBranchConditional %true %inner_header %merge
+%inner_header = OpLabel
+OpSelectionMerge %if_merge None
+OpBranchConditional %true %then %if_merge
+%then = OpLabel
+OpBranch %continue
+%if_merge = OpLabel
 OpBranch %continue
 %continue = OpLabel
 OpBranchConditional %false %merge %header

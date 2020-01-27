@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "source/reduce/reducer.h"
-
 #include "source/reduce/reduction_opportunity.h"
 #include "source/reduce/remove_instruction_reduction_opportunity.h"
 #include "test/reduce/reduce_test_util.h"
@@ -23,8 +22,8 @@ namespace reduce {
 namespace {
 
 using opt::Function;
-using opt::IRContext;
 using opt::Instruction;
+using opt::IRContext;
 
 // A dumb reduction opportunity finder that finds opportunities to remove global
 // values regardless of whether they are referenced. This is very likely to make
@@ -38,7 +37,7 @@ class BlindlyRemoveGlobalValuesReductionOpportunityFinder
   ~BlindlyRemoveGlobalValuesReductionOpportunityFinder() override = default;
 
   // The name of this pass.
-  std::string GetName() const final { return "BlindlyRemoveGlobalValuesPass"; };
+  std::string GetName() const final { return "BlindlyRemoveGlobalValuesPass"; }
 
   // Finds opportunities to remove all global values.  Assuming they are all
   // referenced (directly or indirectly) from elsewhere in the module, each such
@@ -99,7 +98,7 @@ class OpVariableDuplicatorReductionOpportunityFinder
 
   std::string GetName() const final {
     return "LocalVariableAdderReductionOpportunityFinder";
-  };
+  }
 
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       IRContext* context) const final {
@@ -181,19 +180,21 @@ TEST(ValidationDuringReductionTest, CheckInvalidPassMakesNoProgress) {
          %29 = OpAccessChain %28 %27 %9
          %30 = OpLoad %24 %29
          %32 = OpFOrdGreaterThan %22 %30 %31
-               OpSelectionMerge %34 None
+               OpSelectionMerge %90 None
                OpBranchConditional %32 %33 %46
          %33 = OpLabel
          %40 = OpFAdd %24 %71 %30
          %45 = OpISub %6 %73 %21
-               OpBranch %34
+               OpBranch %90
          %46 = OpLabel
          %50 = OpFMul %24 %71 %30
          %54 = OpSDiv %6 %73 %21
-               OpBranch %34
-         %34 = OpLabel
+               OpBranch %90
+         %90 = OpLabel
          %77 = OpPhi %6 %45 %33 %54 %46
          %76 = OpPhi %24 %40 %33 %50 %46
+               OpBranch %34
+         %34 = OpLabel
          %57 = OpIAdd %6 %70 %56
                OpBranch %10
          %12 = OpLabel
@@ -303,19 +304,21 @@ TEST(ValidationDuringReductionTest, CheckNotAlwaysInvalidCanMakeProgress) {
          %29 = OpAccessChain %28 %27 %9
          %30 = OpLoad %24 %29
          %32 = OpFOrdGreaterThan %22 %30 %31
-               OpSelectionMerge %34 None
+               OpSelectionMerge %90 None
                OpBranchConditional %32 %33 %46
          %33 = OpLabel
          %40 = OpFAdd %24 %71 %30
          %45 = OpISub %6 %73 %21
-               OpBranch %34
+               OpBranch %90
          %46 = OpLabel
          %50 = OpFMul %24 %71 %30
          %54 = OpSDiv %6 %73 %21
-               OpBranch %34
-         %34 = OpLabel
+               OpBranch %90
+         %90 = OpLabel
          %77 = OpPhi %6 %45 %33 %54 %46
          %76 = OpPhi %24 %40 %33 %50 %46
+               OpBranch %34
+         %34 = OpLabel
          %57 = OpIAdd %6 %70 %56
                OpBranch %10
          %12 = OpLabel
@@ -392,19 +395,21 @@ TEST(ValidationDuringReductionTest, CheckNotAlwaysInvalidCanMakeProgress) {
          %29 = OpAccessChain %28 %27 %9
          %30 = OpLoad %24 %29
          %32 = OpFOrdGreaterThan %22 %30 %31
-               OpSelectionMerge %34 None
+               OpSelectionMerge %90 None
                OpBranchConditional %32 %33 %46
          %33 = OpLabel
          %40 = OpFAdd %24 %71 %30
          %45 = OpISub %6 %73 %21
-               OpBranch %34
+               OpBranch %90
          %46 = OpLabel
          %50 = OpFMul %24 %71 %30
          %54 = OpSDiv %6 %73 %21
-               OpBranch %34
-         %34 = OpLabel
+               OpBranch %90
+         %90 = OpLabel
          %77 = OpPhi %6 %45 %33 %54 %46
          %76 = OpPhi %24 %40 %33 %50 %46
+               OpBranch %34
+         %34 = OpLabel
          %57 = OpIAdd %6 %70 %56
                OpBranch %10
          %12 = OpLabel

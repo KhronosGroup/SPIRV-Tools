@@ -25,6 +25,7 @@
 #include "tools/util/cli_consumer.h"
 
 void print_usage(char* argv0) {
+  std::string target_env_list = spvTargetEnvList(36, 105);
   printf(
       R"(%s - Validate a SPIR-V binary file.
 
@@ -65,18 +66,15 @@ Options:
   --before-hlsl-legalization       Allows code patterns that are intended to be
                                    fixed by spirv-opt's legalization passes.
   --version                        Display validator version information.
-  --target-env                     {vulkan1.0|vulkan1.1|vulkan1.1spv1.4|opencl2.2|spv1.0|spv1.1|
-                                    spv1.2|spv1.3|spv1.4|webgpu0}
-                                   Use Vulkan 1.0, Vulkan 1.1, Vulkan 1.1 with SPIR-V 1.4,
-                                   OpenCL 2.2, SPIR-V 1.0, SPIR-V 1.1, SPIR-V 1.2, SPIR-V 1.3,
-                                   SPIR-V 1.4, or WIP WebGPU validation rules.
+  --target-env                     {%s}
+                                   Use validation rules from the specified environment.
 )",
-      argv0, argv0);
+      argv0, argv0, target_env_list.c_str());
 }
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
-  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_4;
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_5;
   spvtools::ValidatorOptions options;
   bool continue_processing = true;
   int return_code = 0;
@@ -110,12 +108,13 @@ int main(int argc, char** argv) {
         printf("%s\n", spvSoftwareVersionDetailsString());
         printf(
             "Targets:\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  "
-            "%s\n",
+            "%s\n  %s\n",
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_3),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_4),
+            spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_5),
             spvTargetEnvDescription(SPV_ENV_OPENCL_2_2),
             spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
             spvTargetEnvDescription(SPV_ENV_VULKAN_1_1),

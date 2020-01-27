@@ -27,6 +27,7 @@
 #include "source/opt/build_module.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
+#include "source/spirv_optimizer_options.h"
 #include "source/spirv_validator_options.h"
 #include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
@@ -59,18 +60,23 @@ class PassTest : public TestT {
   // from pass Process() function.
   std::tuple<std::vector<uint32_t>, Pass::Status> OptimizeToBinary(
       Pass* pass, const std::string& original, bool skip_nop) {
-    context_ =
-        std::move(BuildModule(env_, consumer_, original, assemble_options_));
+    context_ = BuildModule(env_, consumer_, original, assemble_options_);
     EXPECT_NE(nullptr, context()) << "Assembling failed for shader:\n"
                                   << original << std::endl;
     if (!context()) {
       return std::make_tuple(std::vector<uint32_t>(), Pass::Status::Failure);
     }
 
+    context()->set_preserve_bindings(OptimizerOptions()->preserve_bindings_);
+    context()->set_preserve_spec_constants(
+        OptimizerOptions()->preserve_spec_constants_);
+
     const auto status = pass->Run(context());
 
     std::vector<uint32_t> binary;
-    context()->module()->ToBinary(&binary, skip_nop);
+    if (status != Pass::Status::Failure) {
+      context()->module()->ToBinary(&binary, skip_nop);
+    }
     return std::make_tuple(binary, status);
   }
 
@@ -183,6 +189,31 @@ class PassTest : public TestT {
         << disassembly;
   }
 
+  // Runs a single pass of class |PassT| on the binary assembled from the
+  // |original| assembly. Check for failure and expect an Effcee matcher
+  // to pass when run on the diagnostic messages. This does *not* involve
+  // pass manager.  Callers are suggested to use SCOPED_TRACE() for better
+  // messages.
+  template <typename PassT, typename... Args>
+  void SinglePassRunAndFail(const std::string& original, Args&&... args) {
+    context_ = BuildModule(env_, consumer_, original, assemble_options_);
+    EXPECT_NE(nullptr, context()) << "Assembling failed for shader:\n"
+                                  << original << std::endl;
+    std::ostringstream errs;
+    auto error_consumer = [&errs](spv_message_level_t, const char*,
+                                  const spv_position_t&, const char* message) {
+      errs << message << std::endl;
+    };
+    auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
+    pass->SetMessageConsumer(error_consumer);
+    const auto status = pass->Run(context());
+    EXPECT_EQ(Pass::Status::Failure, status);
+    auto match_result = effcee::Match(errs.str(), original);
+    EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
+        << match_result.message() << "\nChecking messages:\n"
+        << errs.str();
+  }
+
   // Adds a pass to be run.
   template <typename PassT, typename... Args>
   void AddPass(Args&&... args) {
@@ -202,19 +233,25 @@ class PassTest : public TestT {
   void RunAndCheck(const std::string& original, const std::string& expected) {
     assert(manager_->NumPasses());
 
-    context_ =
-        std::move(BuildModule(env_, nullptr, original, assemble_options_));
+    context_ = BuildModule(env_, nullptr, original, assemble_options_);
     ASSERT_NE(nullptr, context());
 
-    manager_->Run(context());
+    context()->set_preserve_bindings(OptimizerOptions()->preserve_bindings_);
+    context()->set_preserve_spec_constants(
+        OptimizerOptions()->preserve_spec_constants_);
 
-    std::vector<uint32_t> binary;
-    context()->module()->ToBinary(&binary, /* skip_nop = */ false);
+    auto status = manager_->Run(context());
+    EXPECT_NE(status, Pass::Status::Failure);
 
-    std::string optimized;
-    SpirvTools tools(env_);
-    EXPECT_TRUE(tools.Disassemble(binary, &optimized, disassemble_options_));
-    EXPECT_EQ(expected, optimized);
+    if (status != Pass::Status::Failure) {
+      std::vector<uint32_t> binary;
+      context()->module()->ToBinary(&binary, /* skip_nop = */ false);
+
+      std::string optimized;
+      SpirvTools tools(env_);
+      EXPECT_TRUE(tools.Disassemble(binary, &optimized, disassemble_options_));
+      EXPECT_EQ(expected, optimized);
+    }
   }
 
   void SetAssembleOptions(uint32_t assemble_options) {
@@ -232,6 +269,8 @@ class PassTest : public TestT {
     consumer_ = msg_consumer;
   }
 
+  spv_optimizer_options OptimizerOptions() { return &optimizer_options_; }
+
   spv_validator_options ValidatorOptions() { return &validator_options_; }
 
   void SetTargetEnv(spv_target_env env) { env_ = env; }
@@ -242,6 +281,7 @@ class PassTest : public TestT {
   std::unique_ptr<PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;
   uint32_t disassemble_options_;
+  spv_optimizer_options_t optimizer_options_;
   spv_validator_options_t validator_options_;
   spv_target_env env_;
 };

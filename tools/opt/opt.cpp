@@ -59,7 +59,7 @@ std::string GetListOfPassesAsString(const spvtools::Optimizer& optimizer) {
   return ss.str();
 }
 
-const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_4;
+const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
 
 std::string GetLegalizationPasses() {
   spvtools::Optimizer optimizer(kDefaultEnvironment);
@@ -80,18 +80,19 @@ std::string GetSizePasses() {
 }
 
 std::string GetVulkanToWebGPUPasses() {
-  spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
+  spvtools::Optimizer optimizer(SPV_ENV_VULKAN_1_1);
   optimizer.RegisterVulkanToWebGPUPasses();
   return GetListOfPassesAsString(optimizer);
 }
 
 std::string GetWebGPUToVulkanPasses() {
-  spvtools::Optimizer optimizer(SPV_ENV_VULKAN_1_1);
+  spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
   optimizer.RegisterWebGPUToVulkanPasses();
   return GetListOfPassesAsString(optimizer);
 }
 
 void PrintUsage(const char* program) {
+  std::string target_env_list = spvTargetEnvList(16, 80);
   // NOTE: Please maintain flags in lexicographical order.
   printf(
       R"(%s - Optimize a SPIR-V binary file.
@@ -107,6 +108,11 @@ NOTE: The optimizer is a work in progress.
 
 Options (in lexicographical order):)",
       program, program);
+  printf(R"(
+  --amd-ext-to-khr
+               Replaces the extensions VK_AMD_shader_ballot, VK_AMD_gcn_shader,
+               and VK_AMD_shader_trinary_minmax with equivalant code using core
+               instructions and capabilities.)");
   printf(R"(
   --ccp
                Apply the conditional constant propagation transform.  This will
@@ -135,17 +141,35 @@ Options (in lexicographical order):)",
                and constant index access chains in entry point call tree
                functions.)");
   printf(R"(
+  --convert-relaxed-to-half
+               Convert all RelaxedPrecision arithmetic operations to half
+               precision, inserting conversion operations where needed.
+               Run after function scope variable load and store elimination
+               for better results. Simplify-instructions, redundancy-elimination
+               and DCE should be run after this pass to eliminate excess
+               conversions. This conversion is useful when the target platform
+               does not support RelaxedPrecision or ignores it. This pass also
+               removes all RelaxedPrecision decorations.)");
+  printf(R"(
   --copy-propagate-arrays
                Does propagation of memory references when an array is a copy of
                another.  It will only propagate an array if the source is never
                written to, and the only store to the target is the copy.)");
   printf(R"(
-  --eliminate-common-uniform
-               Perform load/load elimination for duplicate uniform values.
-               Converts any constant index access chain uniform loads into
-               its equivalent load and extract. Some loads will be moved
-               to facilitate sharing. Performed only on entry point
-               call tree functions.)");
+  --decompose-initialized-variables
+               Decomposes initialized variable declarations into a declaration
+               followed by a store of the initial value. This is done to work
+               around known issues with some Vulkan drivers for initialize
+               variables.)");
+  printf(R"(
+  --descriptor-scalar-replacement
+               Replaces every array variable |desc| that has a DescriptorSet
+               and Binding decorations with a new variable for each element of
+               the array.  Suppose |desc| was bound at binding |b|.  Then the
+               variable corresponding to |desc[i]| will have binding |b+i|.
+               The descriptor set will be the same.  All accesses to |desc|
+               must be in OpAccessChain instructions with a literal index for
+               the first index.)");
   printf(R"(
   --eliminate-dead-branches
                Convert conditional branches with constant condition to the
@@ -206,6 +230,11 @@ Options (in lexicographical order):)",
                Freeze the values of specialization constants to their default
                values.)");
   printf(R"(
+  --graphics-robust-access
+               Clamp indices used to access buffers and internal composite
+               values, providing guarantees that satisfy Vulkan's
+               robustBufferAccess rules.)");
+  printf(R"(
   --generate-webgpu-initializers
                Adds initial values to OpVariable instructions that are missing
                them, due to their storage type requiring them for WebGPU.)");
@@ -227,6 +256,11 @@ Options (in lexicographical order):)",
                Note this does not guarantee legal code. This option passes the
                option --relax-logical-pointer to the validator.)",
          GetLegalizationPasses().c_str());
+  printf(R"(
+  --legalize-vector-shuffle
+               Converts any usages of 0xFFFFFFFF for the literals in
+               OpVectorShuffle to a literal 0. This is done since 0xFFFFFFFF is
+               forbidden in WebGPU.)");
   printf(R"(
   --local-redundancy-elimination
                Looks for instructions in the same basic block that compute the
@@ -345,6 +379,14 @@ Options (in lexicographical order):)",
                --merge-blocks followed by all the transformations implied by
                -O.)");
   printf(R"(
+  --preserve-bindings
+               Ensure that the optimizer preserves all bindings declared within
+               the module, even when those bindings are unused.)");
+  printf(R"(
+  --preserve-spec-constants
+               Ensure that the optimizer preserves all specialization constants declared
+               within the module, even when those constants are unused.)");
+  printf(R"(
   --print-all
                Print SPIR-V assembly to standard error output before each pass
                and after the last pass.)");
@@ -360,6 +402,10 @@ Options (in lexicographical order):)",
   --redundancy-elimination
                Looks for instructions in the same function that compute the
                same value, and deletes the redundant ones.)");
+  printf(R"(
+  --relax-float-ops
+               Decorate all float operations with RelaxedPrecision if not already
+               so decorated. This does not decorate types or variables.)");
   printf(R"(
   --relax-struct-store
                Allow store from one struct type to a different type with
@@ -398,6 +444,13 @@ Options (in lexicographical order):)",
                Will simplify all instructions in the function as much as
                possible.)");
   printf(R"(
+  --split-invalid-unreachable
+               Attempts to legalize for WebGPU cases where an unreachable
+               merge-block is also a continue-target by splitting it into two
+               seperate blocks. There exist legal, for Vulkan, instances of this
+               pattern that cannot be converted into legal WebGPU, so this
+               conversion may not succeed.)");
+  printf(R"(
   --skip-validation
                Will not validate the SPIR-V before optimizing.  If the SPIR-V
                is invalid, the optimizer may fail or generate incorrect code.
@@ -414,13 +467,14 @@ Options (in lexicographical order):)",
   printf(R"(
   --strip-reflect
                Remove all reflection information.  For now, this covers
-               reflection information defined by SPV_GOOGLE_hlsl_functionality1.)");
+               reflection information defined by SPV_GOOGLE_hlsl_functionality1
+               and SPV_KHR_non_semantic_info)");
   printf(R"(
   --target-env=<env>
                Set the target environment. Without this flag the target
-               enviroment defaults to spv1.3.
-               <env> must be one of vulkan1.0, vulkan1.1, opencl2.2, spv1.0,
-               spv1.1, spv1.2, spv1.3, or webgpu0.)");
+               enviroment defaults to spv1.3. <env> must be one of
+               {%s})",
+         target_env_list.c_str());
   printf(R"(
   --time-report
                Print the resource utilization of each pass (e.g., CPU time,
@@ -472,6 +526,13 @@ Options (in lexicographical order):)",
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.
                Current workarounds: Avoid OpUnreachable in loops.)");
+  printf(R"(
+  --wrap-opkill
+               Replaces all OpKill instructions in functions that can be called
+               from a continue construct with a function call to a function
+               whose only instruction is an OpKill.  This is done to enable
+               inlining on these functions.
+               )");
   printf(R"(
   --unify-const
                Remove the duplicated constants.)");
@@ -674,6 +735,10 @@ OptStatus ParseFlags(int argc, const char** argv,
         optimizer_options->set_run_validator(false);
       } else if (0 == strcmp(cur_arg, "--print-all")) {
         optimizer->SetPrintAll(&std::cerr);
+      } else if (0 == strcmp(cur_arg, "--preserve-bindings")) {
+        optimizer_options->set_preserve_bindings(true);
+      } else if (0 == strcmp(cur_arg, "--preserve-spec-constants")) {
+        optimizer_options->set_preserve_spec_constants(true);
       } else if (0 == strcmp(cur_arg, "--time-report")) {
         optimizer->SetTimeReport(&std::cerr);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
@@ -697,16 +762,17 @@ OptStatus ParseFlags(int argc, const char** argv,
                                              max_id_bound);
       } else if (0 == strncmp(cur_arg,
                               "--target-env=", sizeof("--target-env=") - 1)) {
+        target_env_set = true;
         if (vulkan_to_webgpu_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
-                          "Cannot use both --vulkan-to-webgpu and --target-env "
-                          "at the same time");
+                          "--vulkan-to-webgpu defines the target environment, "
+                          "so --target-env cannot be set at the same time");
           return {OPT_STOP, 1};
         }
         if (webgpu_to_vulkan_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
-                          "Cannot use both --webgpu-to-vulkan and --target-env "
-                          "at the same time");
+                          "--webgpu-to-vulkan defines the target environment, "
+                          "so --target-env cannot be set at the same time");
           return {OPT_STOP, 1};
         }
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
@@ -719,36 +785,40 @@ OptStatus ParseFlags(int argc, const char** argv,
         }
         optimizer->SetTargetEnv(target_env);
       } else if (0 == strcmp(cur_arg, "--vulkan-to-webgpu")) {
+        vulkan_to_webgpu_set = true;
         if (target_env_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
-                          "Cannot use both --vulkan-to-webgpu and --target-env "
-                          "at the same time");
+                          "--vulkan-to-webgpu defines the target environment, "
+                          "so --target-env cannot be set at the same time");
           return {OPT_STOP, 1};
         }
         if (webgpu_to_vulkan_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
-                          "Cannot use both --vulkan-to-webgpu and "
-                          "--webgpu-to-vulkan at the same time");
+                          "Cannot use both --webgpu-to-vulkan and "
+                          "--vulkan-to-webgpu at the same time, invoke twice "
+                          "if you are wanting to go to and from");
           return {OPT_STOP, 1};
         }
 
-        optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
+        optimizer->SetTargetEnv(SPV_ENV_VULKAN_1_1);
         optimizer->RegisterVulkanToWebGPUPasses();
       } else if (0 == strcmp(cur_arg, "--webgpu-to-vulkan")) {
+        webgpu_to_vulkan_set = true;
         if (target_env_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
-                          "Cannot use both --webgpu-to-vulkan and --target-env "
-                          "at the same time");
+                          "--webgpu-to-vulkan defines the target environment, "
+                          "so --target-env cannot be set at the same time");
           return {OPT_STOP, 1};
         }
         if (vulkan_to_webgpu_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
                           "Cannot use both --webgpu-to-vulkan and "
-                          "--vulkan-to-webgpu at the same time");
+                          "--vulkan-to-webgpu at the same time, invoke twice "
+                          "if you are wanting to go to and from");
           return {OPT_STOP, 1};
         }
 
-        optimizer->SetTargetEnv(SPV_ENV_VULKAN_1_1);
+        optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
         optimizer->RegisterWebGPUToVulkanPasses();
       } else if (0 == strcmp(cur_arg, "--validate-after-all")) {
         optimizer->SetValidateAfterAll(true);
