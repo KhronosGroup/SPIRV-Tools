@@ -495,10 +495,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateGenerateWebGPUInitializersPass());
   } else if (pass_name == "legalize-vector-shuffle") {
     RegisterPass(CreateLegalizeVectorShufflePass());
-  /* UE Change Begin: Implement a fused-multiply-add pass to reduce the possibility of reassociation. */
   } else if (pass_name == "fused-multiply-add") {
     RegisterPass(CreateFusedMultiplyAddPass());
-  /* UE Change End: Implement a fused-multiply-add pass to reduce the possibility of reassociation. */
   } else if (pass_name == "split-invalid-unreachable") {
     RegisterPass(CreateLegalizeVectorShufflePass());
   } else if (pass_name == "decompose-initialized-variables") {
@@ -937,7 +935,6 @@ Optimizer::PassToken CreateSplitInvalidUnreachablePass() {
       MakeUnique<opt::SplitInvalidUnreachablePass>());
 }
 
-/* UE Change Begin: Implement a fused-multiply-add pass to reduce the possibility of reassociation. */
 Optimizer::PassToken CreateGraphicsRobustAccessPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::GraphicsRobustAccessPass>());
@@ -961,6 +958,5 @@ Optimizer::PassToken CreateFusedMultiplyAddPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FusedMultiplyAddPass>());
 }
-/* UE Change End: Implement a fused-multiply-add pass to reduce the possibility of reassociation. */
 
 }  // namespace spvtools
