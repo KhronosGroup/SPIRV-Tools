@@ -332,7 +332,8 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
   call_in_func_ = false;
   func_is_entry_point_ = false;
   private_stores_.clear();
-  // Track function-variable stores to handle intrinsics that use such variables as operands but DCE only considers the declaration of the variable.
+  // Track function-variable stores to handle intrinsics that use such variables
+  // as operands but DCE only considers the declaration of the variable.
   function_stores_.clear();
   // Stacks to keep track of when we are inside an if- or loop-construct.
   // When immediately inside an if- or loop-construct, we do not initially
@@ -361,10 +362,12 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
           if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
               IsVarOfStorage(varId, SpvStorageClassWorkgroup))
             private_stores_.push_back(&*ii);
-          // Track function-variable stores to handle intrinsics that use such variables as operands but DCE only considers the declaration of the variable.
+          // Track function-variable stores to handle intrinsics that use such
+          // variables as operands but DCE only considers the declaration of the
+          // variable.
           else if (IsVarOfStorage(varId, SpvStorageClassFunction))
-			function_stores_[varId] = &*ii;
-		  else
+            function_stores_[varId] = &*ii;
+          else
             AddToWorklist(&*ii);
         } break;
         case SpvOpCopyMemory:
@@ -428,14 +431,16 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
     // Add all operand instructions if not already live
     liveInst->ForEachInId([&liveInst, this](const uint32_t* iid) {
       Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
-      // Track function-variable stores to handle intrinsics that use such variables as operands but DCE only considers the declaration of the variable.
+      // Track function-variable stores to handle intrinsics that use such
+      // variables as operands but DCE only considers the declaration of the
+      // variable.
       SpvOp op = inInst->opcode();
       if (op == SpvOpVariable) {
         auto it = function_stores_.find(*iid);
-		if (it != function_stores_.end()) {
-		  AddToWorklist(it->second);
-		}
-	  }
+        if (it != function_stores_.end()) {
+          AddToWorklist(it->second);
+        }
+      }
       // Do not add label if an operand of a branch. This is not needed
       // as part of live code discovery and can create false live code,
       // for example, the branch to a header of a loop.

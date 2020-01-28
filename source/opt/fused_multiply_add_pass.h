@@ -20,8 +20,7 @@ namespace opt {
 // Documented in optimizer.hpp
 class FusedMultiplyAddPass : public Pass {
  public:
-  FusedMultiplyAddPass() {
-  }
+  FusedMultiplyAddPass() {}
 
   const char* name() const override { return "fused-multiply-add-pass"; }
 
@@ -36,7 +35,6 @@ class FusedMultiplyAddPass : public Pass {
   }
 
  private:
-  
 };
 
 }  // namespace opt
