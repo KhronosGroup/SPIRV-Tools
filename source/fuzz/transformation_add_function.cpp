@@ -625,6 +625,19 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
   // Consider each index input operand in turn (operand 0 is the base object).
   for (uint32_t index = 1; index < access_chain_inst->NumInOperands();
        index++) {
+
+    // We are going to turn:
+    //
+    // %result = OpAccessChain %type %object ... %index ...
+    //
+    // into:
+    //
+    // %t1 = OpULessThanEqual %bool %index %bound_minus_one
+    // %t2 = OpSelect %int_type %t1 %index %bound_minus_one
+    // %result = OpAccessChain %type %object ... %t2 ...
+    //
+    // ... unless %index is already a constant.
+
     // Get the bound for the composite being indexed into; e.g. the number of
     // columns of matrix or the size of an array.
     uint32_t bound =
@@ -698,6 +711,12 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
       fuzzerutil::UpdateModuleIdBound(context, compare_id);
       fuzzerutil::UpdateModuleIdBound(context, select_id);
     } else {
+      // TODO(afd): At present the SPIR-V spec is not clear on whether
+      //  statically out-of-bounds indices mean that a module is invalid (so
+      //  that it should be rejected by the validator), or that such accesses
+      //  yield undefined results.  Via the following assertion, we assume that
+      //  functions added to the module do not feature statically out-of-bounds
+      //  accesses.
       // Assert that the index is smaller (unsigned) than this value.
       // Return false if it is not (to keep compilers happy).
       if (index_inst->GetSingleWordInOperand(0) >= bound) {
