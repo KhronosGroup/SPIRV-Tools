@@ -1404,6 +1404,66 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFail) {
                         "DebugTypeBasic"));
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFailComponentZero) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%vfloat_info = OpExtInst %void %DbgExt DebugTypeVector %dbg_src 0
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Base Type must be a result id of "
+                        "DebugTypeBasic"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFailComponentFive) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%vfloat_info = OpExtInst %void %DbgExt DebugTypeVector %dbg_src 5
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Base Type must be a result id of "
+                        "DebugTypeBasic"));
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypedef) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"

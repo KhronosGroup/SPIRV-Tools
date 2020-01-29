@@ -2184,15 +2184,27 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         auto validate_size = ValidateOperandForDebugInfo(
             _, "Size", SpvOpConstant, inst, 6, ext_inst_name);
         if (validate_size != SPV_SUCCESS) return validate_size;
+        // "Encoding" param is already validated by the binary parsing stage.
         break;
       }
       case OpenCLDebugInfo100DebugTypePointer:
-      case OpenCLDebugInfo100DebugTypeQualifier:
+      case OpenCLDebugInfo100DebugTypeQualifier: {
+        auto validate_base_type =
+            ValidateOperandBaseType(_, inst, 5, ext_inst_name);
+        if (validate_base_type != SPV_SUCCESS) return validate_base_type;
+        break;
+      }
       case OpenCLDebugInfo100DebugTypeVector: {
         auto validate_base_type =
             ValidateOperandBaseType(_, inst, 5, ext_inst_name);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
-        // TODO: Do we need to check the number of elements for a vector?
+
+        uint32_t component_count = inst->word(6);
+        if (!component_count || component_count > 4) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": Component Count must be positive "
+                 << "integer less than or equal to 4";
+        }
         break;
       }
       case OpenCLDebugInfo100DebugTypeArray: {
