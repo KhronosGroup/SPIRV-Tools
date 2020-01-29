@@ -632,6 +632,10 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
       }
 
       // Add the new edge, by changing OpBranch to OpBranchConditional.
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3162): This
+      //  could be a problem if the merge block was originally unreachable: it
+      //  might now be dominated by other blocks that it appears earlier than in
+      //  the module.
       back_edge_block_terminator->SetOpcode(SpvOpBranchConditional);
       back_edge_block_terminator->SetInOperands(opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.compare_id()}},
