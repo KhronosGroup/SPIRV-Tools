@@ -65,6 +65,13 @@ spv_result_t ValidateOperandForDebugInfo(
   return SPV_SUCCESS;
 }
 
+#define CHECK_OPERAND(NAME, opcode, index)                                  \
+  do {                                                                      \
+    auto result = ValidateOperandForDebugInfo(_, NAME, opcode, inst, index, \
+                                              ext_inst_name);               \
+    if (result != SPV_SUCCESS) return result;                               \
+  } while (0)
+
 // True if the operand of a debug info instruction |inst| at |word_index|
 // satisifies |expectation| that is given as a function. Otherwise,
 // returns false.
@@ -110,6 +117,13 @@ spv_result_t ValidateDebugInfoOperand(
          << "expected operand " << debug_inst_name << " must be a result id of "
          << desc->name;
 }
+
+#define CHECK_DEBUG_OPERAND(NAME, debug_opcode, index)                         \
+  do {                                                                         \
+    auto result = ValidateDebugInfoOperand(_, NAME, debug_opcode, inst, index, \
+                                           ext_inst_name);                     \
+    if (result != SPV_SUCCESS) return result;                                  \
+  } while (0)
 
 // Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of an debug info instruction with DebugTypeBasic.
@@ -2173,29 +2187,17 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         // furhter checks.
         break;
       case OpenCLDebugInfo100DebugCompilationUnit: {
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         break;
       }
       case OpenCLDebugInfo100DebugSource: {
-        auto validate_file = ValidateOperandForDebugInfo(
-            _, "File", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_file != SPV_SUCCESS) return validate_file;
-        if (num_words == 7) {
-          auto validate_text = ValidateOperandForDebugInfo(
-              _, "Text", SpvOpString, inst, 6, ext_inst_name);
-          if (validate_text != SPV_SUCCESS) return validate_text;
-        }
+        CHECK_OPERAND("File", SpvOpString, 5);
+        if (num_words == 7) CHECK_OPERAND("Text", SpvOpString, 6);
         break;
       }
       case OpenCLDebugInfo100DebugTypeBasic: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
-        auto validate_size = ValidateOperandForDebugInfo(
-            _, "Size", SpvOpConstant, inst, 6, ext_inst_name);
-        if (validate_size != SPV_SUCCESS) return validate_size;
+        CHECK_OPERAND("Name", SpvOpString, 5);
+        CHECK_OPERAND("Size", SpvOpConstant, 6);
         // "Encoding" param is already validated by the binary parsing stage.
         break;
       }
@@ -2224,9 +2226,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             ValidateOperandBaseType(_, inst, 5, ext_inst_name);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
         for (uint32_t i = 6; i < num_words; ++i) {
-          auto validate_count = ValidateOperandForDebugInfo(
-              _, "Component Count", SpvOpConstant, inst, i, ext_inst_name);
-          if (validate_count != SPV_SUCCESS) return validate_count;
+          CHECK_OPERAND("Component Count", SpvOpConstant, i);
           auto* component_count = _.FindDef(inst->word(i));
           if (!_.IsIntScalarType(component_count->type_id()) ||
               !component_count->word(3)) {
@@ -2238,15 +2238,11 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         break;
       }
       case OpenCLDebugInfo100DebugTypedef: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
+        CHECK_OPERAND("Name", SpvOpString, 5);
         auto validate_base_type =
             ValidateOperandBaseType(_, inst, 6, ext_inst_name);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -2267,9 +2263,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         break;
       }
       case OpenCLDebugInfo100DebugTypeEnum: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
+        CHECK_OPERAND("Name", SpvOpString, 5);
         if (!DoesDebugInfoOperandMatchExpectation(
                 _,
                 [](OpenCLDebugInfo100Instructions dbg_inst) {
@@ -2281,49 +2275,32 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (validate_underlying_type != SPV_SUCCESS)
             return validate_underlying_type;
         }
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
-        auto validate_size = ValidateOperandForDebugInfo(
-            _, "Size", SpvOpConstant, inst, 11, ext_inst_name);
-        if (validate_size != SPV_SUCCESS) return validate_size;
+        CHECK_OPERAND("Size", SpvOpConstant, 11);
         auto* size = _.FindDef(inst->word(11));
         if (!_.IsIntScalarType(size->type_id()) || !size->word(3)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": expected operand Size is a "
                  << "positive integer";
         }
-        for (uint32_t word_index = 13; word_index < num_words;
+        for (uint32_t word_index = 13; word_index + 1 < num_words;
              word_index += 2) {
-          auto validate_value = ValidateOperandForDebugInfo(
-              _, "Value", SpvOpConstant, inst, word_index, ext_inst_name);
-          if (validate_value != SPV_SUCCESS) return validate_value;
-          assert(word_index + 1 < num_words && "Missing \"Name\" operand");
-          validate_name = ValidateOperandForDebugInfo(
-              _, "Name", SpvOpString, inst, word_index + 1, ext_inst_name);
-          if (validate_name != SPV_SUCCESS) return validate_name;
+          CHECK_OPERAND("Value", SpvOpConstant, word_index);
+          CHECK_OPERAND("Name", SpvOpString, word_index + 1);
         }
         break;
       }
       case OpenCLDebugInfo100DebugTypeComposite: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_OPERAND("Name", SpvOpString, 5);
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
-        auto validate_linkage_name = ValidateOperandForDebugInfo(
-            _, "Linkage Name", SpvOpString, inst, 11, ext_inst_name);
-        if (validate_linkage_name != SPV_SUCCESS) return validate_linkage_name;
-        auto validate_size = ValidateOperandForDebugInfo(
-            _, "Size", SpvOpConstant, inst, 12, ext_inst_name);
-        if (validate_size != SPV_SUCCESS) return validate_size;
+        CHECK_OPERAND("Linkage Name", SpvOpString, 11);
+        CHECK_OPERAND("Size", SpvOpConstant, 12);
         for (uint32_t word_index = 14; word_index < num_words; ++word_index) {
           if (!DoesDebugInfoOperandMatchExpectation(
                   _,
@@ -2343,37 +2320,19 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         break;
       }
       case OpenCLDebugInfo100DebugTypeMember: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
+        CHECK_OPERAND("Name", SpvOpString, 5);
         auto validate_type =
             ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name);
         if (validate_type != SPV_SUCCESS) return validate_type;
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
-        auto validate_parent = ValidateDebugInfoOperand(
-            _, "Parent", OpenCLDebugInfo100DebugTypeComposite, inst, 10,
-            ext_inst_name);
-        if (validate_parent != SPV_SUCCESS) return validate_parent;
-        auto validate_offset = ValidateOperandForDebugInfo(
-            _, "Offset", SpvOpConstant, inst, 11, ext_inst_name);
-        if (validate_offset != SPV_SUCCESS) return validate_offset;
-        auto validate_size = ValidateOperandForDebugInfo(
-            _, "Size", SpvOpConstant, inst, 12, ext_inst_name);
-        if (validate_size != SPV_SUCCESS) return validate_size;
-        if (num_words == 15) {
-          auto validate_value = ValidateOperandForDebugInfo(
-              _, "Value", SpvOpConstant, inst, 14, ext_inst_name);
-          if (validate_value != SPV_SUCCESS) return validate_value;
-        }
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
+        CHECK_DEBUG_OPERAND("Parent", OpenCLDebugInfo100DebugTypeComposite, 10);
+        CHECK_OPERAND("Offset", SpvOpConstant, 11);
+        CHECK_OPERAND("Size", SpvOpConstant, 12);
+        if (num_words == 15) CHECK_OPERAND("Value", SpvOpConstant, 14);
         break;
       }
       case OpenCLDebugInfo100DebugTypeInheritance: {
-        auto validate_child = ValidateDebugInfoOperand(
-            _, "Child", OpenCLDebugInfo100DebugTypeComposite, inst, 5,
-            ext_inst_name);
-        if (validate_child != SPV_SUCCESS) return validate_child;
+        CHECK_DEBUG_OPERAND("Child", OpenCLDebugInfo100DebugTypeComposite, 5);
         auto* debug_inst = _.FindDef(inst->word(5));
         auto composite_type =
             OpenCLDebugInfo100DebugCompositeType(debug_inst->word(6));
@@ -2383,10 +2342,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                  << ext_inst_name() << ": "
                  << "expected operand Child must be class or struct debug type";
         }
-        auto validate_parent = ValidateDebugInfoOperand(
-            _, "Parent", OpenCLDebugInfo100DebugTypeComposite, inst, 6,
-            ext_inst_name);
-        if (validate_parent != SPV_SUCCESS) return validate_parent;
+        CHECK_DEBUG_OPERAND("Parent", OpenCLDebugInfo100DebugTypeComposite, 6);
         debug_inst = _.FindDef(inst->word(6));
         composite_type =
             OpenCLDebugInfo100DebugCompositeType(debug_inst->word(6));
@@ -2397,71 +2353,45 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                  << "expected operand Parent must be class or struct debug "
                     "type";
         }
-        auto validate_offset = ValidateOperandForDebugInfo(
-            _, "Offset", SpvOpConstant, inst, 7, ext_inst_name);
-        if (validate_offset != SPV_SUCCESS) return validate_offset;
-        auto validate_size = ValidateOperandForDebugInfo(
-            _, "Size", SpvOpConstant, inst, 8, ext_inst_name);
-        if (validate_size != SPV_SUCCESS) return validate_size;
+        CHECK_OPERAND("Offset", SpvOpConstant, 7);
+        CHECK_OPERAND("Size", SpvOpConstant, 8);
         break;
       }
       case OpenCLDebugInfo100DebugFunction: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
+        CHECK_OPERAND("Name", SpvOpString, 5);
         auto validate_type =
             ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name);
         if (validate_type != SPV_SUCCESS) return validate_type;
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
-        auto validate_linkage_name = ValidateOperandForDebugInfo(
-            _, "Linkage Name", SpvOpString, inst, 11, ext_inst_name);
-        if (validate_linkage_name != SPV_SUCCESS) return validate_linkage_name;
-        auto validate_function = ValidateOperandForDebugInfo(
-            _, "Function", SpvOpFunction, inst, 14, ext_inst_name);
-        if (validate_function != SPV_SUCCESS) return validate_function;
+        CHECK_OPERAND("Linkage Name", SpvOpString, 11);
+        CHECK_OPERAND("Function", SpvOpFunction, 14);
         if (num_words == 16) {
-          auto validate_decl = ValidateDebugInfoOperand(
-              _, "Declaration", OpenCLDebugInfo100DebugFunctionDeclaration,
-              inst, 15, ext_inst_name);
-          if (validate_decl != SPV_SUCCESS) return validate_decl;
+          CHECK_DEBUG_OPERAND("Declaration",
+                              OpenCLDebugInfo100DebugFunctionDeclaration, 15);
         }
         break;
       }
       case OpenCLDebugInfo100DebugFunctionDeclaration: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
+        CHECK_OPERAND("Name", SpvOpString, 5);
         auto validate_type =
             ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name);
         if (validate_type != SPV_SUCCESS) return validate_type;
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
-        auto validate_linkage_name = ValidateOperandForDebugInfo(
-            _, "Linkage Name", SpvOpString, inst, 11, ext_inst_name);
-        if (validate_linkage_name != SPV_SUCCESS) return validate_linkage_name;
+        CHECK_OPERAND("Linkage Name", SpvOpString, 11);
         break;
       }
       case OpenCLDebugInfo100DebugLexicalBlock: {
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 5, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 5);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 8, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
-        if (num_words == 10) {
-          auto validate_name = ValidateOperandForDebugInfo(
-              _, "Name", SpvOpString, inst, 9, ext_inst_name);
-          if (validate_name != SPV_SUCCESS) return validate_name;
-        }
+        if (num_words == 10) CHECK_OPERAND("Name", SpvOpString, 9);
         break;
       }
       case OpenCLDebugInfo100DebugScope: {
@@ -2472,33 +2402,25 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             ValidateOperandLexicalScope(_, "Scope", inst, 5, ext_inst_name);
         if (validate_scope != SPV_SUCCESS) return validate_scope;
         if (num_words == 7) {
-          auto validate_inline = ValidateDebugInfoOperand(
-              _, "Inlined At", OpenCLDebugInfo100DebugInlinedAt, inst, 6,
-              ext_inst_name);
-          if (validate_inline != SPV_SUCCESS) return validate_inline;
+          CHECK_DEBUG_OPERAND("Inlined At", OpenCLDebugInfo100DebugInlinedAt,
+                              6);
         }
         break;
       }
       case OpenCLDebugInfo100DebugLocalVariable: {
-        auto validate_name = ValidateOperandForDebugInfo(
-            _, "Name", SpvOpString, inst, 5, ext_inst_name);
-        if (validate_name != SPV_SUCCESS) return validate_name;
+        CHECK_OPERAND("Name", SpvOpString, 5);
         auto validate_type =
             ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name);
         if (validate_type != SPV_SUCCESS) return validate_type;
-        auto validate_src = ValidateDebugInfoOperand(
-            _, "Source", OpenCLDebugInfo100DebugSource, inst, 7, ext_inst_name);
-        if (validate_src != SPV_SUCCESS) return validate_src;
+        CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
         break;
       }
       case OpenCLDebugInfo100DebugDeclare: {
-        auto validate_var = ValidateDebugInfoOperand(
-            _, "Local Variable", OpenCLDebugInfo100DebugLocalVariable, inst, 5,
-            ext_inst_name);
-        if (validate_var != SPV_SUCCESS) return validate_var;
+        CHECK_DEBUG_OPERAND("Local Variable",
+                            OpenCLDebugInfo100DebugLocalVariable, 5);
 
         // TODO: We must discuss DebugDeclare.Variable of OpenCL.100.DebugInfo.
         // Currently, it says "Variable must be an id of OpVariable instruction
@@ -2513,18 +2435,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "OpVariable or OpFunctionParameter";
         }
 
-        auto validate_expr = ValidateDebugInfoOperand(
-            _, "Expression", OpenCLDebugInfo100DebugExpression, inst, 7,
-            ext_inst_name);
-        if (validate_expr != SPV_SUCCESS) return validate_expr;
+        CHECK_DEBUG_OPERAND("Expression", OpenCLDebugInfo100DebugExpression, 7);
         break;
       }
       case OpenCLDebugInfo100DebugExpression: {
         for (uint32_t word_index = 5; word_index < num_words; ++word_index) {
-          auto validate_op = ValidateDebugInfoOperand(
-              _, "Operation", OpenCLDebugInfo100DebugOperation, inst,
-              word_index, ext_inst_name);
-          if (validate_op != SPV_SUCCESS) return validate_op;
+          CHECK_DEBUG_OPERAND("Operation", OpenCLDebugInfo100DebugOperation,
+                              word_index);
         }
         break;
       }
