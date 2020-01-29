@@ -81,6 +81,9 @@ bool DoesDebugInfoOperandMatchExpectation(
   return true;
 }
 
+// Check that the operand of a debug info instruction |inst| at |word_index|
+// is a result id of an debug info instruction whose debug instruction type
+// is |expected_debug_inst|.
 spv_result_t ValidateDebugInfoOperand(
     ValidationState_t& _, const std::string& debug_inst_name,
     OpenCLDebugInfo100Instructions expected_debug_inst, const Instruction* inst,
@@ -108,6 +111,8 @@ spv_result_t ValidateDebugInfoOperand(
          << desc->name;
 }
 
+// Check that the operand of a debug info instruction |inst| at |word_index|
+// is a result id of an debug info instruction with DebugTypeBasic.
 spv_result_t ValidateOperandBaseType(
     ValidationState_t& _, const Instruction* inst, uint32_t word_index,
     const std::function<std::string()>& ext_inst_name) {
@@ -116,6 +121,10 @@ spv_result_t ValidateOperandBaseType(
                                   word_index, ext_inst_name);
 }
 
+// Check that the operand of a debug info instruction |inst| at |word_index|
+// is a result id of a debug lexical scope instruction which is one of
+// DebugCompilationUnit, DebugFunction, DebugLexicalBlock, or
+// DebugTypeComposite.
 spv_result_t ValidateOperandLexicalScope(
     ValidationState_t& _, const std::string& debug_inst_name,
     const Instruction* inst, uint32_t word_index,
@@ -136,6 +145,9 @@ spv_result_t ValidateOperandLexicalScope(
          << " must be a result id of a lexical scope";
 }
 
+// Check that the operand of a debug info instruction |inst| at |word_index|
+// is a result id of a debug type instruction (See DebugTypeXXX in
+// "4.3. Type instructions" section of OpenCL.DebugInfo.100 spec.
 spv_result_t ValidateOperandDebugType(
     ValidationState_t& _, const std::string& debug_inst_name,
     const Instruction* inst, uint32_t word_index,
