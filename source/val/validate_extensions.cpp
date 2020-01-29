@@ -2227,6 +2227,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           auto validate_count = ValidateOperandForDebugInfo(
               _, "Component Count", SpvOpConstant, inst, i, ext_inst_name);
           if (validate_count != SPV_SUCCESS) return validate_count;
+          auto* component_count = _.FindDef(inst->word(i));
+          if (!_.IsIntScalarType(component_count->type_id()) ||
+              !component_count->word(3)) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << ext_inst_name() << ": Component Count must be positive "
+                   << "integer";
+          }
         }
         break;
       }
@@ -2283,6 +2290,12 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         auto validate_size = ValidateOperandForDebugInfo(
             _, "Size", SpvOpConstant, inst, 11, ext_inst_name);
         if (validate_size != SPV_SUCCESS) return validate_size;
+        auto* size = _.FindDef(inst->word(11));
+        if (!_.IsIntScalarType(size->type_id()) || !size->word(3)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << ext_inst_name() << ": expected operand Size is a "
+                 << "positive integer";
+        }
         for (uint32_t word_index = 13; word_index < num_words;
              word_index += 2) {
           auto validate_value = ValidateOperandForDebugInfo(
