@@ -1714,6 +1714,118 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
+TEST(TransformationOutlineFunctionTest,
+     DoOutlineRegionThatUsesPointerParameter) {
+  // The region being outlined reads from a function parameter of pointer type.
+  // This is OK: the function parameter can itself be passed on as a function
+  // parameter.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpVariable %7 Function
+         %16 = OpVariable %7 Function
+         %17 = OpLoad %6 %15
+               OpStore %16 %17
+         %18 = OpFunctionCall %2 %10 %16
+         %19 = OpLoad %6 %16
+               OpStore %15 %19
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpLoad %6 %9
+         %14 = OpIAdd %6 %12 %13
+               OpBranch %20
+         %20 = OpLabel
+               OpStore %9 %14
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 11,
+      /*exit_block*/ 11,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_region_entry_block*/ 204,
+      /*new_caller_result_id*/ 205,
+      /*new_callee_result_id*/ 206,
+      /*input_id_to_fresh_id*/ {{9, 207}},
+      /*output_id_to_fresh_id*/ {{14, 208}});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 2
+        %200 = OpTypeStruct %6
+        %201 = OpTypeFunction %200 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpVariable %7 Function
+         %16 = OpVariable %7 Function
+         %17 = OpLoad %6 %15
+               OpStore %16 %17
+         %18 = OpFunctionCall %2 %10 %16
+         %19 = OpLoad %6 %16
+               OpStore %15 %19
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+        %205 = OpFunctionCall %200 %202 %9
+         %14 = OpCompositeExtract %6 %205 0
+               OpBranch %20
+         %20 = OpLabel
+               OpStore %9 %14
+               OpReturn
+               OpFunctionEnd
+        %202 = OpFunction %200 None %201
+        %207 = OpFunctionParameter %7
+        %204 = OpLabel
+         %12 = OpLoad %6 %207
+        %208 = OpIAdd %6 %12 %13
+        %206 = OpCompositeConstruct %200 %208
+               OpReturnValue %206
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
   // This tests outlining of some non-trivial code.
 
