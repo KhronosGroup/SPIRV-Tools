@@ -260,19 +260,25 @@ message LoopLimiterInfo {
   // The header for the loop.
   uint32 loop_header_id = 1;
 
-  // A fresh id for a new block that will contain the loop header's original
-  // terminator.
-  uint32 new_block_id = 2;
-
   // A fresh id into which the loop limiter's current value can be loaded.
-  uint32 load_id = 3;
+  uint32 load_id = 2;
 
   // A fresh id that can be used to increment the loaded value by 1.
-  uint32 increment_id = 4;
+  uint32 increment_id = 3;
 
   // A fresh id that can be used to compare the loaded value with the loop
   // limit.
-  uint32 compare_id = 5;
+  uint32 compare_id = 4;
+
+  // A fresh id that can be used to compute the conjunction or disjunction of
+  // an original loop exit condition with |compare_id|, if the loop's back edge
+  // block can conditionally exit the loop.
+  uint32 logical_op_id = 5;
+
+  // A sequence of ids suitable for extending OpPhi instructions of the loop
+  // merge block if it did not previously have an incoming edge from the loop
+  // back edge block.
+  repeated uint32 phi_id = 6;
 
 }
 

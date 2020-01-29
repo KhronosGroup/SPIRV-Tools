@@ -83,11 +83,6 @@ bool TransformationAddFunction::IsApplicable(
     }
     for (auto& loop_limiter_info : message_.loop_limiter_info()) {
       if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-              loop_limiter_info.new_block_id(), context,
-              &ids_used_by_this_transformation)) {
-        return false;
-      }
-      if (!CheckIdIsFreshAndNotUsedByThisTransformation(
               loop_limiter_info.load_id(), context,
               &ids_used_by_this_transformation)) {
         return false;
@@ -99,6 +94,11 @@ bool TransformationAddFunction::IsApplicable(
       }
       if (!CheckIdIsFreshAndNotUsedByThisTransformation(
               loop_limiter_info.compare_id(), context,
+              &ids_used_by_this_transformation)) {
+        return false;
+      }
+      if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+              loop_limiter_info.logical_op_id(), context,
               &ids_used_by_this_transformation)) {
         return false;
       }
@@ -430,13 +430,31 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
   fuzzerutil::UpdateModuleIdBound(context, message_.loop_limiter_variable_id());
 
   // Consider each loop in turn.
-  for (auto block : loop_headers) {
+  for (auto loop_header : loop_headers) {
+    // Look for the loop's back-edge block.  This is a predecessor of the loop
+    // header that is dominated by the loop header.
+    uint32_t back_edge_block_id = 0;
+    for (auto pred : context->cfg()->preds(loop_header->id())) {
+      if (context->GetDominatorAnalysis(added_function)
+              ->Dominates(loop_header->id(), pred)) {
+        back_edge_block_id = pred;
+        break;
+      }
+    }
+    if (!back_edge_block_id) {
+      // The loop's back-edge block must be unreachable.  This means that the
+      // loop cannot iterate, so there is no need to make it lifesafe; we can
+      // move on from this loop.
+      continue;
+    }
+    auto back_edge_block = context->cfg()->block(back_edge_block_id);
+
     // Go through the sequence of loop limiter infos and find the one
     // corresponding to this loop.
     bool found = false;
     protobufs::LoopLimiterInfo loop_limiter_info;
     for (auto& info : message_.loop_limiter_info()) {
-      if (info.loop_header_id() == block->id()) {
+      if (info.loop_header_id() == loop_header->id()) {
         loop_limiter_info = info;
         found = true;
         break;
@@ -447,43 +465,80 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
       return false;
     }
 
-    // Suppose the loop header has the form:
+    // The back-edge block either has the form:
+    //
+    // (1)
     //
     // %l = OpLabel
-    //      ... non-merge instructions ...
-    //      OpLoopMerge %loop_merge %loop_continue Control
-    //      terminator
+    //      ... instructions ...
+    //      OpBranch %loop_header
     //
-    // We will turn this into:
+    // (2)
+    //
+    // %l = OpLabel
+    //      ... instructions ...
+    //      OpBranchConditional %c %loop_header %loop_merge
+    //
+    // (3)
+    //
+    // %l = OpLabel
+    //      ... instructions ...
+    //      OpBranchConditional %c %loop_merge %loop_header
+    //
+    // We turn these into the following:
+    //
+    // (1)
     //
     //  %l = OpLabel
-    //       ... non-merge instructions ...
+    //       ... instructions ...
     // %t1 = OpLoad %uint32 %loop_limiter
     // %t2 = OpIAdd %uint32 %t1 %one
     //       OpStore %loop_limiter %t2
     // %t3 = OpUGreaterThanEqual %bool %t1 %loop_limit
-    //       OpLoopMerge %loop_merge %loop_continue Control
-    //       OpBranchConditional %t3 %loop_merge %new_block_id
+    //       OpBranchConditional %t3 %loop_merge %loop_header
     //
-    // %new_block_id = OpLabel
-    //       terminator
+    // (2)
+    //
+    //  %l = OpLabel
+    //       ... instructions ...
+    // %t1 = OpLoad %uint32 %loop_limiter
+    // %t2 = OpIAdd %uint32 %t1 %one
+    //       OpStore %loop_limiter %t2
+    // %t3 = OpULessThan %bool %t1 %loop_limit
+    // %t4 = OpLogicalAnd %bool %c %t3
+    //       OpBranchConditional %t4 %loop_header %loop_merge
+    //
+    // (3)
+    //
+    //  %l = OpLabel
+    //       ... instructions ...
+    // %t1 = OpLoad %uint32 %loop_limiter
+    // %t2 = OpIAdd %uint32 %t1 %one
+    //       OpStore %loop_limiter %t2
+    // %t3 = OpUGreaterThanEqual %bool %t1 %loop_limit
+    // %t4 = OpLogicalOr %bool %c %t3
+    //       OpBranchConditional %t4 %loop_merge %loop_header
 
-    // Find the merge instruction for the loop header.
-    opt::Instruction* merge_inst_it = nullptr;
-    opt::BasicBlock::iterator inst_it = block->begin();
-    while (!inst_it->IsBlockTerminator()) {
-      if (inst_it->opcode() == SpvOpLoopMerge) {
-        merge_inst_it = &*inst_it;
-      }
-      ++inst_it;
+    auto back_edge_block_terminator = back_edge_block->terminator();
+    bool compare_using_greater_than_equal;
+    if (back_edge_block_terminator->opcode() == SpvOpBranch) {
+      compare_using_greater_than_equal = true;
+    } else {
+      assert(back_edge_block_terminator->opcode() == SpvOpBranchConditional);
+      assert(((back_edge_block_terminator->GetSingleWordInOperand(1) ==
+                   loop_header->id() &&
+               back_edge_block_terminator->GetSingleWordInOperand(2) ==
+                   loop_header->MergeBlockId()) ||
+              (back_edge_block_terminator->GetSingleWordInOperand(2) ==
+                   loop_header->id() &&
+               back_edge_block_terminator->GetSingleWordInOperand(1) ==
+                   loop_header->MergeBlockId())) &&
+             "A back edge edge block must branch to"
+             " either the loop header or merge");
+      compare_using_greater_than_equal =
+          back_edge_block_terminator->GetSingleWordInOperand(1) ==
+          loop_header->MergeBlockId();
     }
-    assert(merge_inst_it && "A loop header has to have a merge instruction.");
-
-    // Split the basic block right before |inst_it|, which is guaranteed to be
-    // at the block's terminator.
-    assert(inst_it->IsBlockTerminator() &&
-           "We should have reached the block's terminator instruction.");
-    block->SplitBasicBlock(context, loop_limiter_info.new_block_id(), inst_it);
 
     std::vector<std::unique_ptr<opt::Instruction>> new_instructions;
 
@@ -511,36 +566,87 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
             {{SPV_OPERAND_TYPE_ID, {message_.loop_limiter_variable_id()}},
              {SPV_OPERAND_TYPE_ID, {loop_limiter_info.increment_id()}}})));
 
-    // Compare the loaded value with the loop limit:
+    // Compare the loaded value with the loop limit; either:
     //   %t3 = OpUGreaterThanEqual %bool %t1 %loop_limit
+    // or
+    //   %t3 = OpULessThan %bool %t1 %loop_limit
     new_instructions.push_back(MakeUnique<opt::Instruction>(
-        context, SpvOpUGreaterThanEqual, bool_type_id,
-        loop_limiter_info.compare_id(),
+        context,
+        compare_using_greater_than_equal ? SpvOpUGreaterThanEqual
+                                         : SpvOpULessThan,
+        bool_type_id, loop_limiter_info.compare_id(),
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.load_id()}},
              {SPV_OPERAND_TYPE_ID, {message_.loop_limit_constant_id()}}})));
 
-    // Add the new instructions before the merge block.
-    merge_inst_it->InsertBefore(std::move(new_instructions));
+    if (back_edge_block_terminator->opcode() == SpvOpBranchConditional) {
+      new_instructions.push_back(MakeUnique<opt::Instruction>(
+          context,
+          compare_using_greater_than_equal ? SpvOpLogicalOr : SpvOpLogicalAnd,
+          bool_type_id, loop_limiter_info.logical_op_id(),
+          opt::Instruction::OperandList(
+              {{SPV_OPERAND_TYPE_ID,
+                {back_edge_block_terminator->GetSingleWordInOperand(0)}},
+               {SPV_OPERAND_TYPE_ID, {loop_limiter_info.compare_id()}}})));
+    }
 
-    // Instead of the block's original terminator, add a conditional
-    // branch to the loop's merge block (if the loop limit was reached),
-    // or to a new block otherwise:
-    //   OpBranchConditional %t3 %loop_merge %new_block_id
-    uint32_t merge_block_id = merge_inst_it->GetSingleWordInOperand(0);
-    block->AddInstruction(MakeUnique<opt::Instruction>(
-        context, SpvOpBranchConditional, 0, 0,
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.compare_id()}},
-             {SPV_OPERAND_TYPE_ID, {merge_block_id}},
-             {SPV_OPERAND_TYPE_ID, {loop_limiter_info.new_block_id()}}})));
+    // Add the new instructions at the end of the back edge block, before the
+    // terminator and any loop merge instruction (as the back edge block can
+    // be the loop header).
+    if (back_edge_block->GetLoopMergeInst()) {
+      back_edge_block->GetLoopMergeInst()->InsertBefore(
+          std::move(new_instructions));
+    } else {
+      back_edge_block_terminator->InsertBefore(std::move(new_instructions));
+    }
+
+    if (back_edge_block_terminator->opcode() == SpvOpBranchConditional) {
+      back_edge_block_terminator->SetInOperand(
+          0, {loop_limiter_info.logical_op_id()});
+    } else {
+      assert(back_edge_block_terminator->opcode() == SpvOpBranch &&
+             "Back-edge terminator must be OpBranch or OpBranchConditional");
+
+      // Check that, if the merge block starts with OpPhi instructions, suitable
+      // ids have been provided to give these instructions a value corresponding
+      // to the new incoming edge from the back edge block.
+      auto merge_block = context->cfg()->block(loop_header->MergeBlockId());
+      if (!fuzzerutil::PhiIdsOkForNewEdge(context, back_edge_block, merge_block,
+                                          loop_limiter_info.phi_id())) {
+        return false;
+      }
+
+      // Augment OpPhi instructions at the loop merge with the given ids.
+      uint32_t phi_index = 0;
+      for (auto& inst : *merge_block) {
+        if (inst.opcode() != SpvOpPhi) {
+          break;
+        }
+        assert(phi_index <
+                   static_cast<uint32_t>(loop_limiter_info.phi_id().size()) &&
+               "There should be at least one phi id per OpPhi instruction.");
+        inst.AddOperand(
+            {SPV_OPERAND_TYPE_ID, {loop_limiter_info.phi_id(phi_index)}});
+        inst.AddOperand({SPV_OPERAND_TYPE_ID, {back_edge_block_id}});
+        phi_index++;
+      }
+
+      // Add the new edge, by changing OpBranch to OpBranchConditional.
+      back_edge_block_terminator->SetOpcode(SpvOpBranchConditional);
+      back_edge_block_terminator->SetInOperands(opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.compare_id()}},
+           {SPV_OPERAND_TYPE_ID, {loop_header->MergeBlockId()}
+
+           },
+           {SPV_OPERAND_TYPE_ID, {loop_header->id()}}}));
+    }
 
     // Update the module's id bound with respect to the various ids that
     // have been used for loop limiter manipulation.
     fuzzerutil::UpdateModuleIdBound(context, loop_limiter_info.load_id());
     fuzzerutil::UpdateModuleIdBound(context, loop_limiter_info.increment_id());
     fuzzerutil::UpdateModuleIdBound(context, loop_limiter_info.compare_id());
-    fuzzerutil::UpdateModuleIdBound(context, loop_limiter_info.new_block_id());
+    fuzzerutil::UpdateModuleIdBound(context, loop_limiter_info.logical_op_id());
   }
   return true;
 }
@@ -625,7 +731,6 @@ bool TransformationAddFunction::TryToClampAccessChainIndices(
   // Consider each index input operand in turn (operand 0 is the base object).
   for (uint32_t index = 1; index < access_chain_inst->NumInOperands();
        index++) {
-
     // We are going to turn:
     //
     // %result = OpAccessChain %type %object ... %index ...

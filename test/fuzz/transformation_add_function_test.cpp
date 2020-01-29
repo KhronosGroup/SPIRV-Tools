@@ -33,17 +33,13 @@ protobufs::AccessChainClampingInfo MakeAccessClampingInfo(
   return result;
 }
 
-std::vector<protobufs::Instruction> GetInstructionsForFunction(spv_target_env
-env,
-                                                              const
-                                                              MessageConsumer&
-                                                              consumer, const
-std::string& donor, uint32_t function_id) {
+std::vector<protobufs::Instruction> GetInstructionsForFunction(
+    spv_target_env env, const MessageConsumer& consumer,
+    const std::string& donor, uint32_t function_id) {
   std::vector<protobufs::Instruction> result;
-  const auto donor_context = BuildModule(env, consumer, donor,
-                                         kFuzzAssembleOption);
-  assert (IsValid(env, donor_context.get()) &&
-  "The given donor must be valid.");
+  const auto donor_context =
+      BuildModule(env, consumer, donor, kFuzzAssembleOption);
+  assert(IsValid(env, donor_context.get()) && "The given donor must be valid.");
   for (auto& function : *donor_context->module()) {
     if (function.result_id() == function_id) {
       function.ForEachInst([&result](opt::Instruction* inst) {
@@ -51,9 +47,9 @@ std::string& donor, uint32_t function_id) {
         for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
           input_operands.push_back(inst->GetInOperand(i));
         }
-        result.push_back(MakeInstructionMessage(inst->opcode(),
-                inst->type_id(),
-                                                      inst->result_id(), input_operands));
+        result.push_back(MakeInstructionMessage(inst->opcode(), inst->type_id(),
+                                                inst->result_id(),
+                                                input_operands));
       });
       break;
     }
@@ -61,7 +57,6 @@ std::string& donor, uint32_t function_id) {
   assert(!result.empty() && "The required function should have been found.");
   return result;
 }
-
 
 TEST(TransformationAddFunctionTest, BasicTest) {
   std::string shader = R"(
@@ -641,21 +636,21 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   loop_limiter1.set_load_id(101);
   loop_limiter1.set_increment_id(102);
   loop_limiter1.set_compare_id(103);
-  loop_limiter1.set_new_block_id(104);
+  loop_limiter1.set_logical_op_id(104);
 
   protobufs::LoopLimiterInfo loop_limiter2;
   loop_limiter2.set_loop_header_id(23);
   loop_limiter2.set_load_id(105);
   loop_limiter2.set_increment_id(106);
   loop_limiter2.set_compare_id(107);
-  loop_limiter2.set_new_block_id(108);
+  loop_limiter2.set_logical_op_id(108);
 
   protobufs::LoopLimiterInfo loop_limiter3;
   loop_limiter3.set_loop_header_id(25);
   loop_limiter3.set_load_id(109);
   loop_limiter3.set_increment_id(110);
   loop_limiter3.set_compare_id(111);
-  loop_limiter3.set_new_block_id(112);
+  loop_limiter3.set_logical_op_id(112);
 
   std::vector<protobufs::LoopLimiterInfo> loop_limiters = {
       loop_limiter1, loop_limiter2, loop_limiter3};
@@ -692,42 +687,36 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
         %100 = OpVariable %7 Function %8
                OpBranch %20
          %20 = OpLabel
-        %101 = OpLoad %6 %100
-        %102 = OpIAdd %6 %101 %9
-               OpStore %100 %102
-        %103 = OpUGreaterThanEqual %11 %101 %10
                OpLoopMerge %21 %22 None
-               OpBranchConditional %103 %21 %104
-        %104 = OpLabel
                OpBranchConditional %12 %23 %21
          %23 = OpLabel
-        %105 = OpLoad %6 %100
-        %106 = OpIAdd %6 %105 %9
-               OpStore %100 %106
-        %107 = OpUGreaterThanEqual %11 %105 %10
                OpLoopMerge %25 %26 None
-               OpBranchConditional %107 %25 %108
-        %108 = OpLabel
                OpBranch %28
          %28 = OpLabel
                OpBranchConditional %12 %26 %25
          %26 = OpLabel
-               OpBranch %23
+        %105 = OpLoad %6 %100
+        %106 = OpIAdd %6 %105 %9
+               OpStore %100 %106
+        %107 = OpUGreaterThanEqual %11 %105 %10
+               OpBranchConditional %107 %25 %23
          %25 = OpLabel
+               OpLoopMerge %24 %27 None
+               OpBranchConditional %12 %24 %27
+         %27 = OpLabel
         %109 = OpLoad %6 %100
         %110 = OpIAdd %6 %109 %9
                OpStore %100 %110
         %111 = OpUGreaterThanEqual %11 %109 %10
-               OpLoopMerge %24 %27 None
-               OpBranchConditional %111 %24 %112
-        %112 = OpLabel
-               OpBranchConditional %12 %24 %27
-         %27 = OpLabel
-               OpBranch %25
+               OpBranchConditional %111 %24 %25
          %24 = OpLabel
                OpBranch %22
          %22 = OpLabel
-               OpBranch %20
+        %101 = OpLoad %6 %100
+        %102 = OpIAdd %6 %101 %9
+               OpStore %100 %102
+        %103 = OpUGreaterThanEqual %11 %101 %10
+               OpBranchConditional %103 %21 %20
          %21 = OpLabel
                OpReturn
                OpFunctionEnd
@@ -1633,6 +1622,762 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
       add_livesafe_function.IsApplicable(context2.get(), fact_manager));
 }
 
+TEST(TransformationAddFunctionTest,
+     LoopLimitersBackEdgeBlockEndsWithConditional1) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranch %15
+         %15 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+         %21 = OpLoad %8 %10
+         %23 = OpIAdd %8 %21 %22
+               OpStore %10 %23
+               OpBranchConditional %20 %12 %14
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  FactManager fact_manager;
+
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Make a sequence of instruction messages corresponding to function %8 in
+  // |donor|.
+  std::vector<protobufs::Instruction> instructions =
+      GetInstructionsForFunction(env, consumer, donor, 6);
+
+  protobufs::LoopLimiterInfo loop_limiter_info;
+  loop_limiter_info.set_loop_header_id(12);
+  loop_limiter_info.set_load_id(102);
+  loop_limiter_info.set_increment_id(103);
+  loop_limiter_info.set_compare_id(104);
+  loop_limiter_info.set_logical_op_id(105);
+  TransformationAddFunction add_livesafe_function(instructions, 100, 32,
+                                                  {loop_limiter_info}, 0, {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(), fact_manager));
+  add_livesafe_function.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %100 = OpVariable %29 Function %30
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranch %15
+         %15 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+         %21 = OpLoad %8 %10
+         %23 = OpIAdd %8 %21 %22
+               OpStore %10 %23
+        %102 = OpLoad %28 %100
+        %103 = OpIAdd %28 %102 %31
+               OpStore %100 %103
+        %104 = OpULessThan %19 %102 %32
+        %105 = OpLogicalAnd %19 %20 %104
+               OpBranchConditional %105 %12 %14
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
+}
+
+TEST(TransformationAddFunctionTest,
+     LoopLimitersBackEdgeBlockEndsWithConditional2) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranch %15
+         %15 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+         %21 = OpLoad %8 %10
+         %23 = OpIAdd %8 %21 %22
+               OpStore %10 %23
+         %50 = OpLogicalNot %19 %20
+               OpBranchConditional %50 %14 %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  FactManager fact_manager;
+
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Make a sequence of instruction messages corresponding to function %8 in
+  // |donor|.
+  std::vector<protobufs::Instruction> instructions =
+      GetInstructionsForFunction(env, consumer, donor, 6);
+
+  protobufs::LoopLimiterInfo loop_limiter_info;
+  loop_limiter_info.set_loop_header_id(12);
+  loop_limiter_info.set_load_id(102);
+  loop_limiter_info.set_increment_id(103);
+  loop_limiter_info.set_compare_id(104);
+  loop_limiter_info.set_logical_op_id(105);
+  TransformationAddFunction add_livesafe_function(instructions, 100, 32,
+                                                  {loop_limiter_info}, 0, {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(), fact_manager));
+  add_livesafe_function.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %100 = OpVariable %29 Function %30
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranch %15
+         %15 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+         %21 = OpLoad %8 %10
+         %23 = OpIAdd %8 %21 %22
+               OpStore %10 %23
+         %50 = OpLogicalNot %19 %20
+        %102 = OpLoad %28 %100
+        %103 = OpIAdd %28 %102 %31
+               OpStore %100 %103
+        %104 = OpUGreaterThanEqual %19 %102 %32
+        %105 = OpLogicalOr %19 %50 %104
+               OpBranchConditional %105 %14 %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
+}
+
+TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+         %21 = OpLoad %8 %10
+         %23 = OpIAdd %8 %21 %22
+               OpStore %10 %23
+         %50 = OpLogicalNot %19 %20
+               OpLoopMerge %14 %12 None
+               OpBranchConditional %50 %14 %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  FactManager fact_manager;
+
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Make a sequence of instruction messages corresponding to function %8 in
+  // |donor|.
+  std::vector<protobufs::Instruction> instructions =
+      GetInstructionsForFunction(env, consumer, donor, 6);
+
+  protobufs::LoopLimiterInfo loop_limiter_info;
+  loop_limiter_info.set_loop_header_id(12);
+  loop_limiter_info.set_load_id(102);
+  loop_limiter_info.set_increment_id(103);
+  loop_limiter_info.set_compare_id(104);
+  loop_limiter_info.set_logical_op_id(105);
+  TransformationAddFunction add_livesafe_function(instructions, 100, 32,
+                                                  {loop_limiter_info}, 0, {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(), fact_manager));
+  add_livesafe_function.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %100 = OpVariable %29 Function %30
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+         %21 = OpLoad %8 %10
+         %23 = OpIAdd %8 %21 %22
+               OpStore %10 %23
+         %50 = OpLogicalNot %19 %20
+        %102 = OpLoad %28 %100
+        %103 = OpIAdd %28 %102 %31
+               OpStore %100 %103
+        %104 = OpUGreaterThanEqual %19 %102 %32
+        %105 = OpLogicalOr %19 %50 %104
+               OpLoopMerge %14 %12 None
+               OpBranchConditional %105 %14 %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
+}
+
+TEST(TransformationAddFunctionTest, InfiniteLoop1) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %12 None
+               OpBranch %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  FactManager fact_manager;
+
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Make a sequence of instruction messages corresponding to function %8 in
+  // |donor|.
+  std::vector<protobufs::Instruction> instructions =
+      GetInstructionsForFunction(env, consumer, donor, 6);
+
+  protobufs::LoopLimiterInfo loop_limiter_info;
+  loop_limiter_info.set_loop_header_id(12);
+  loop_limiter_info.set_load_id(102);
+  loop_limiter_info.set_increment_id(103);
+  loop_limiter_info.set_compare_id(104);
+  loop_limiter_info.set_logical_op_id(105);
+  TransformationAddFunction add_livesafe_function(instructions, 100, 32,
+                                                  {loop_limiter_info}, 0, {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(), fact_manager));
+  add_livesafe_function.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+         %22 = OpConstant %8 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %100 = OpVariable %29 Function %30
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+        %102 = OpLoad %28 %100
+        %103 = OpIAdd %28 %102 %31
+               OpStore %100 %103
+        %104 = OpUGreaterThanEqual %19 %102 %32
+               OpLoopMerge %14 %12 None
+               OpBranchConditional %104 %14 %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
+}
+
+TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
+  // This captures the case where the loop's continue construct is statically
+  // unreachable.  In this case the loop cannot iterate and so we do not add
+  // a loop limiter.  (The reason we do not just add one anyway is that
+  // detecting which block would be the back-edge block is difficult in the
+  // absence of reliable dominance information.)
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %23 = OpConstant %8 1
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %23 = OpConstant %8 1
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+               OpBranchConditional %20 %13 %14
+         %13 = OpLabel
+               OpBranch %14
+         %15 = OpLabel
+         %22 = OpLoad %8 %10
+         %24 = OpIAdd %8 %22 %23
+               OpStore %10 %24
+               OpBranch %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  FactManager fact_manager;
+
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Make a sequence of instruction messages corresponding to function %8 in
+  // |donor|.
+  std::vector<protobufs::Instruction> instructions =
+      GetInstructionsForFunction(env, consumer, donor, 6);
+
+  protobufs::LoopLimiterInfo loop_limiter_info;
+  loop_limiter_info.set_loop_header_id(12);
+  loop_limiter_info.set_load_id(102);
+  loop_limiter_info.set_increment_id(103);
+  loop_limiter_info.set_compare_id(104);
+  loop_limiter_info.set_logical_op_id(105);
+  TransformationAddFunction add_livesafe_function(instructions, 100, 32,
+                                                  {loop_limiter_info}, 0, {});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(), fact_manager));
+  add_livesafe_function.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %18 = OpConstant %8 10
+         %19 = OpTypeBool
+         %23 = OpConstant %8 1
+         %26 = OpConstantTrue %19
+         %27 = OpConstantFalse %19
+         %28 = OpTypeInt 32 0
+         %29 = OpTypePointer Function %28
+         %30 = OpConstant %28 0
+         %31 = OpConstant %28 1
+         %32 = OpConstant %28 5
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %100 = OpVariable %29 Function %30
+         %10 = OpVariable %9 Function
+               OpStore %10 %11
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpLoad %8 %10
+         %20 = OpSLessThan %19 %17 %18
+               OpBranchConditional %20 %13 %14
+         %13 = OpLabel
+               OpBranch %14
+         %15 = OpLabel
+         %22 = OpLoad %8 %10
+         %24 = OpIAdd %8 %22 %23
+               OpStore %10 %24
+               OpBranch %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
+}
+
 TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi1) {
   // This captures the scenario where breaking a loop due to a loop limiter
   // requires patching up OpPhi instructions occurring at the loop merge block.
@@ -1729,27 +2474,30 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi1) {
   // Make a sequence of instruction messages corresponding to function %8 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
-          GetInstructionsForFunction(env, consumer, donor, 8);
+      GetInstructionsForFunction(env, consumer, donor, 8);
 
   protobufs::LoopLimiterInfo loop_limiter_info;
   loop_limiter_info.set_loop_header_id(13);
-  loop_limiter_info.set_new_block_id(101);
   loop_limiter_info.set_load_id(102);
   loop_limiter_info.set_increment_id(103);
   loop_limiter_info.set_compare_id(104);
-  TransformationAddFunction add_livesafe_function(instructions, 100, 28,
-          {loop_limiter_info}, 0, {});
+  loop_limiter_info.set_logical_op_id(105);
+
+  TransformationAddFunction no_op_phi_data(instructions, 100, 28,
+                                           {loop_limiter_info}, 0, {});
   // The loop limiter info is not good enough; it does not include ids to patch
   // up the OpPhi at the loop merge.
-  ASSERT_FALSE(
-          add_livesafe_function.IsApplicable(context.get(), fact_manager));
-}
+  ASSERT_FALSE(no_op_phi_data.IsApplicable(context.get(), fact_manager));
 
-TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
-  // This captures the scenario where the loop merge block already has an OpPhi
-  // with the loop header as a predecessor.
-
-  std::string shader = R"(
+  // Add a phi id for the new edge from the loop back edge block to the loop
+  // merge.
+  loop_limiter_info.add_phi_id(28);
+  TransformationAddFunction with_op_phi_data(instructions, 100, 28,
+                                             {loop_limiter_info}, 0, {});
+  ASSERT_TRUE(with_op_phi_data.IsApplicable(context.get(), fact_manager));
+  with_op_phi_data.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1768,47 +2516,22 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
          %12 = OpConstant %6 0
          %19 = OpConstant %6 100
          %20 = OpTypeBool
-         %54 = OpConstantTrue %20
          %23 = OpConstant %6 20
          %28 = OpConstant %6 1
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  std::string donor = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-          %7 = OpTypeFunction %6
-         %10 = OpTypePointer Function %6
-         %12 = OpConstant %6 0
-         %19 = OpConstant %6 100
-         %20 = OpTypeBool
-         %54 = OpConstantTrue %20
-         %23 = OpConstant %6 20
-         %28 = OpConstant %6 1
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-         %36 = OpFunctionCall %6 %8
                OpReturn
                OpFunctionEnd
           %8 = OpFunction %6 None %7
           %9 = OpLabel
+        %100 = OpVariable %53 Function %51
          %11 = OpVariable %10 Function
                OpStore %11 %12
                OpBranch %13
          %13 = OpLabel
          %37 = OpPhi %6 %12 %9 %32 %16
                OpLoopMerge %15 %16 None
-               OpBranchConditional %54 %17 %15
+               OpBranch %17
          %17 = OpLabel
          %21 = OpSLessThan %20 %37 %19
                OpBranchConditional %21 %14 %15
@@ -1825,49 +2548,22 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
          %16 = OpLabel
          %32 = OpIAdd %6 %37 %28
                OpStore %11 %32
-               OpBranch %13
+        %102 = OpLoad %50 %100
+        %103 = OpIAdd %50 %102 %52
+               OpStore %100 %103
+        %104 = OpUGreaterThanEqual %20 %102 %28
+               OpBranchConditional %104 %15 %13
          %15 = OpLabel
-         %38 = OpPhi %6 %37 %17 %29 %25 %23 %13
+         %38 = OpPhi %6 %37 %17 %29 %25 %28 %16
                OpReturnValue %38
                OpFunctionEnd
   )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_4;
-  const auto consumer = nullptr;
-
-  FactManager fact_manager;
-
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  // Make a sequence of instruction messages corresponding to function %8 in
-  // |donor|.
-  std::vector<protobufs::Instruction> instructions =
-          GetInstructionsForFunction(env, consumer, donor, 8);
-
-  protobufs::LoopLimiterInfo loop_limiter_info;
-  loop_limiter_info.set_loop_header_id(13);
-  loop_limiter_info.set_new_block_id(101);
-  loop_limiter_info.set_load_id(102);
-  loop_limiter_info.set_increment_id(103);
-  loop_limiter_info.set_compare_id(104);
-  TransformationAddFunction add_livesafe_function(instructions, 100, 28,
-                                                  {loop_limiter_info}, 0, {});
-  // Because the original loop header is an OpPhi predecessor for the loop
-  // merge, both it and the loop header arising due to block splitting can use
-  // the same value for their OpPhi entry.
-  ASSERT_TRUE(
-          add_livesafe_function.IsApplicable(context.get(), fact_manager));
-  add_livesafe_function.Apply(context.get(), &fact_manager);
-  ASSERT_TRUE(IsValid(env, context.get()));
-  // TODO: add syntax check.
-  FAIL();
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
 }
 
-TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi3) {
-  // This checks that if the target blocks of the loop head start with OpPhi,
-  // the OpPhi predecessors are appropriately patched up when the header block
-  // is split.
+TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
+  // This captures the scenario where the loop merge block already has an OpPhi
+  // with the loop back edge block as a predecessor.
 
   std::string shader = R"(
                OpCapability Shader
@@ -1879,16 +2575,18 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi3) {
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
-          %7 = OpTypeFunction %6
-         %10 = OpTypePointer Function %6
-         %12 = OpConstant %6 0
-         %19 = OpConstant %6 10
-         %20 = OpTypeBool
-         %23 = OpConstant %6 1
          %50 = OpTypeInt 32 0
          %51 = OpConstant %50 0
          %52 = OpConstant %50 1
          %53 = OpTypePointer Function %50
+          %7 = OpTypeFunction %6
+         %10 = OpTypePointer Function %6
+         %12 = OpConstant %6 0
+         %19 = OpConstant %6 100
+         %20 = OpTypeBool
+         %60 = OpConstantTrue %20
+         %23 = OpConstant %6 20
+         %28 = OpConstant %6 1
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn
@@ -1905,19 +2603,20 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi3) {
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
-          %7 = OpTypeFunction %6
-         %10 = OpTypePointer Function %6
-         %12 = OpConstant %6 0
-         %19 = OpConstant %6 10
-         %20 = OpTypeBool
-         %23 = OpConstant %6 1
          %50 = OpTypeInt 32 0
          %51 = OpConstant %50 0
          %52 = OpConstant %50 1
          %53 = OpTypePointer Function %50
+          %7 = OpTypeFunction %6
+         %10 = OpTypePointer Function %6
+         %12 = OpConstant %6 0
+         %19 = OpConstant %6 100
+         %20 = OpTypeBool
+         %60 = OpConstantTrue %20
+         %23 = OpConstant %6 20
+         %28 = OpConstant %6 1
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %28 = OpFunctionCall %6 %8
                OpReturn
                OpFunctionEnd
           %8 = OpFunction %6 None %7
@@ -1926,24 +2625,29 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi3) {
                OpStore %11 %12
                OpBranch %13
          %13 = OpLabel
-         %18 = OpLoad %6 %11
-         %21 = OpSLessThan %20 %18 %19
+         %37 = OpPhi %6 %12 %9 %32 %16
                OpLoopMerge %15 %16 None
-               OpBranchConditional %21 %14 %30
-         %30 = OpLabel
-         %31 = OpPhi %6 %19 %13
-               OpBranch %15
+               OpBranch %17
+         %17 = OpLabel
+         %21 = OpSLessThan %20 %37 %19
+               OpBranchConditional %21 %14 %15
          %14 = OpLabel
-         %32 = OpPhi %6 %19 %13
+         %24 = OpSGreaterThan %20 %37 %23
+               OpSelectionMerge %26 None
+               OpBranchConditional %24 %25 %26
+         %25 = OpLabel
+         %29 = OpIAdd %6 %37 %28
+               OpStore %11 %29
+               OpBranch %15
+         %26 = OpLabel
                OpBranch %16
          %16 = OpLabel
-         %22 = OpLoad %6 %11
-         %24 = OpIAdd %6 %22 %23
-               OpStore %11 %24
-               OpBranch %13
+         %32 = OpIAdd %6 %37 %28
+               OpStore %11 %32
+               OpBranchConditional %60 %15 %13
          %15 = OpLabel
-         %25 = OpLoad %6 %11
-               OpReturnValue %25
+         %38 = OpPhi %6 %37 %17 %29 %25 %23 %16
+               OpReturnValue %38
                OpFunctionEnd
   )";
 
@@ -1958,22 +2662,84 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi3) {
   // Make a sequence of instruction messages corresponding to function %8 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
-          GetInstructionsForFunction(env, consumer, donor, 8);
+      GetInstructionsForFunction(env, consumer, donor, 8);
 
   protobufs::LoopLimiterInfo loop_limiter_info;
   loop_limiter_info.set_loop_header_id(13);
-  loop_limiter_info.set_new_block_id(101);
   loop_limiter_info.set_load_id(102);
   loop_limiter_info.set_increment_id(103);
   loop_limiter_info.set_compare_id(104);
-  TransformationAddFunction add_livesafe_function(instructions, 100, 23,
-                                                  {loop_limiter_info}, 0, {});
-  ASSERT_TRUE(
-          add_livesafe_function.IsApplicable(context.get(), fact_manager));
-  add_livesafe_function.Apply(context.get(), &fact_manager);
+  loop_limiter_info.set_logical_op_id(105);
+
+  TransformationAddFunction transformation(instructions, 100, 28,
+                                           {loop_limiter_info}, 0, {});
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
-  // TODO: add syntax check.
-  FAIL();
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %50 = OpTypeInt 32 0
+         %51 = OpConstant %50 0
+         %52 = OpConstant %50 1
+         %53 = OpTypePointer Function %50
+          %7 = OpTypeFunction %6
+         %10 = OpTypePointer Function %6
+         %12 = OpConstant %6 0
+         %19 = OpConstant %6 100
+         %20 = OpTypeBool
+         %60 = OpConstantTrue %20
+         %23 = OpConstant %6 20
+         %28 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %6 None %7
+          %9 = OpLabel
+        %100 = OpVariable %53 Function %51
+         %11 = OpVariable %10 Function
+               OpStore %11 %12
+               OpBranch %13
+         %13 = OpLabel
+         %37 = OpPhi %6 %12 %9 %32 %16
+               OpLoopMerge %15 %16 None
+               OpBranch %17
+         %17 = OpLabel
+         %21 = OpSLessThan %20 %37 %19
+               OpBranchConditional %21 %14 %15
+         %14 = OpLabel
+         %24 = OpSGreaterThan %20 %37 %23
+               OpSelectionMerge %26 None
+               OpBranchConditional %24 %25 %26
+         %25 = OpLabel
+         %29 = OpIAdd %6 %37 %28
+               OpStore %11 %29
+               OpBranch %15
+         %26 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %32 = OpIAdd %6 %37 %28
+               OpStore %11 %32
+        %102 = OpLoad %50 %100
+        %103 = OpIAdd %50 %102 %52
+               OpStore %100 %103
+        %104 = OpUGreaterThanEqual %20 %102 %28
+        %105 = OpLogicalOr %20 %60 %104
+               OpBranchConditional %105 %15 %13
+         %15 = OpLabel
+         %38 = OpPhi %6 %37 %17 %29 %25 %23 %16
+               OpReturnValue %38
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
 }
 
 }  // namespace

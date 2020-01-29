@@ -550,7 +550,7 @@ void FuzzerPassDonateModules::HandleFunctions(
           loop_limiter.set_load_id(GetFuzzerContext()->GetFreshId());
           loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
           loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
-          loop_limiter.set_new_block_id(GetFuzzerContext()->GetFreshId());
+          loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
           loop_limiters.emplace_back(loop_limiter);
         }
       }

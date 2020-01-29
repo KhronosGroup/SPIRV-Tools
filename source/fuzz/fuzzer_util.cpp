@@ -103,10 +103,10 @@ bool PhiIdsOkForNewEdge(
     }
     phi_index++;
   }
-  // Return false if not all of the ids for extending OpPhi instructions are
-  // needed. This might turn out to be stricter than necessary; perhaps it would
-  // be OK just to not use the ids in this case.
-  return phi_index == static_cast<uint32_t>(phi_ids.size());
+  // We allow some of the ids provided for extending OpPhi instructions to be
+  // unused.  Their presence does no harm, and requiring a perfect match may
+  // make transformations less likely to cleanly apply.
+  return true;
 }
 
 uint32_t MaybeGetBoolConstantId(opt::IRContext* context, bool value) {
@@ -158,13 +158,11 @@ void AddUnreachableEdgeAndUpdateOpPhis(
         break;
       }
       assert(phi_index < static_cast<uint32_t>(phi_ids.size()) &&
-             "There should be exactly one phi id per OpPhi instruction.");
+             "There should be at least one phi id per OpPhi instruction.");
       inst.AddOperand({SPV_OPERAND_TYPE_ID, {phi_ids[phi_index]}});
       inst.AddOperand({SPV_OPERAND_TYPE_ID, {bb_from->id()}});
       phi_index++;
     }
-    assert(phi_index == static_cast<uint32_t>(phi_ids.size()) &&
-           "There should be exactly one phi id per OpPhi instruction.");
   }
 }
 
