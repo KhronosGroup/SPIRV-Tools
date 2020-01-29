@@ -254,11 +254,21 @@ bool TransformationOutlineFunction::IsApplicable(
     if (input_id_to_fresh_id_map.count(id) == 0) {
       return false;
     }
-    // Furthermore, no region input id is allowed to be the result of an access
-    // chain.  This is because region input ids will become function parameters,
-    // and it is not legal to pass an access chain as a function parameter.
-    if (context->get_def_use_mgr()->GetDef(id)->opcode() == SpvOpAccessChain) {
-      return false;
+    // Furthermore, if the input id has pointer type it must be an OpVariable
+    // or OpFunctionParameter.
+    auto input_id_inst = context->get_def_use_mgr()->GetDef(id);
+    if (context->get_def_use_mgr()
+            ->GetDef(input_id_inst->type_id())
+            ->opcode() == SpvOpTypePointer) {
+      switch (input_id_inst->opcode()) {
+        case SpvOpFunctionParameter:
+        case SpvOpVariable:
+          // These are OK.
+          break;
+        default:
+          // Anything else is not OK.
+          return false;
+      }
     }
   }
 

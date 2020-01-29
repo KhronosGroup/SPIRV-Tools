@@ -85,6 +85,9 @@ class FuzzerContext {
   uint32_t GetChanceOfDonatingAdditionalModule() {
     return chance_of_donating_additional_module_;
   }
+  uint32_t ChanceOfMakingDonorLivesafe() {
+    return chance_of_making_donor_livesafe_;
+  }
   uint32_t GetChanceOfMergingBlocks() { return chance_of_merging_blocks_; }
   uint32_t GetChanceOfMovingBlockDown() { return chance_of_moving_block_down_; }
   uint32_t GetChanceOfObfuscatingConstant() {
@@ -102,6 +105,9 @@ class FuzzerContext {
   }
   uint32_t GetRandomLoopControlPartialCount() {
     return random_generator_->RandomUint32(max_loop_control_partial_count_);
+  }
+  uint32_t GetRandomLoopLimit() {
+    return random_generator_->RandomUint32(max_loop_limit_);
   }
 
   // Functions to control how deeply to recurse.
@@ -129,6 +135,7 @@ class FuzzerContext {
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
+  uint32_t chance_of_making_donor_livesafe_;
   uint32_t chance_of_merging_blocks_;
   uint32_t chance_of_moving_block_down_;
   uint32_t chance_of_obfuscating_constant_;
@@ -141,6 +148,7 @@ class FuzzerContext {
   // Keep them in alphabetical order.
   uint32_t max_loop_control_partial_count_;
   uint32_t max_loop_control_peel_count_;
+  uint32_t max_loop_limit_;
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.
