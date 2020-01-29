@@ -38,6 +38,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAdjustingSelectionControl = {20,
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfMakingDonorLivesafe = {40, 60};
 const std::pair<uint32_t, uint32_t> kChanceOfMergingBlocks = {20, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
@@ -49,6 +50,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
 // Keep them in alphabetical order.
 const uint32_t kDefaultMaxLoopControlPartialCount = 100;
 const uint32_t kDefaultMaxLoopControlPeelCount = 100;
+const uint32_t kDefaultMaxLoopLimit = 20;
 
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
@@ -89,6 +91,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
+  chance_of_making_donor_livesafe_ =
+      ChooseBetweenMinAndMax(kChanceOfMakingDonorLivesafe);
   chance_of_merging_blocks_ = ChooseBetweenMinAndMax(kChanceOfMergingBlocks);
   chance_of_moving_block_down_ =
       ChooseBetweenMinAndMax(kChanceOfMovingBlockDown);
@@ -101,6 +105,7 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);
   max_loop_control_partial_count_ = kDefaultMaxLoopControlPartialCount;
   max_loop_control_peel_count_ = kDefaultMaxLoopControlPeelCount;
+  max_loop_limit_ = kDefaultMaxLoopLimit;
 }
 
 FuzzerContext::~FuzzerContext() = default;
