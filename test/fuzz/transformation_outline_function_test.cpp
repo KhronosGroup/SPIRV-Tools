@@ -1826,6 +1826,348 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationOutlineFunctionTest, OutlineLivesafe) {
+  // In the following, %30 is a livesafe function, with arbitrary parameter
+  // %200 and arbitrary local variable %201.  Variable %100 is a loop limiter,
+  // which is not arbitrary.  The test checks that the outlined function is
+  // livesafe, and that the parameters corresponding to %200 and %201 have the
+  // arbitrary fact associated with them.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+        %199 = OpTypeFunction %2 %7
+          %8 = OpConstant %6 0
+          %9 = OpConstant %6 1
+         %10 = OpConstant %6 5
+         %11 = OpTypeBool
+         %12 = OpConstantTrue %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %30 = OpFunction %2 None %199
+        %200 = OpFunctionParameter %7
+         %31 = OpLabel
+        %100 = OpVariable %7 Function %8
+        %201 = OpVariable %7 Function %8
+               OpBranch %198
+        %198 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+        %101 = OpLoad %6 %100
+        %102 = OpIAdd %6 %101 %9
+        %202 = OpLoad %6 %200
+               OpStore %201 %202
+               OpStore %100 %102
+        %103 = OpUGreaterThanEqual %11 %101 %10
+               OpLoopMerge %21 %22 None
+               OpBranchConditional %103 %21 %104
+        %104 = OpLabel
+               OpBranchConditional %12 %23 %21
+         %23 = OpLabel
+        %105 = OpLoad %6 %100
+        %106 = OpIAdd %6 %105 %9
+               OpStore %100 %106
+        %107 = OpUGreaterThanEqual %11 %105 %10
+               OpLoopMerge %25 %26 None
+               OpBranchConditional %107 %25 %108
+        %108 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+               OpBranchConditional %12 %26 %25
+         %26 = OpLabel
+               OpBranch %23
+         %25 = OpLabel
+        %109 = OpLoad %6 %100
+        %110 = OpIAdd %6 %109 %9
+               OpStore %100 %110
+        %111 = OpUGreaterThanEqual %11 %109 %10
+               OpLoopMerge %24 %27 None
+               OpBranchConditional %111 %24 %112
+        %112 = OpLabel
+               OpBranchConditional %12 %24 %27
+         %27 = OpLabel
+               OpBranch %25
+         %24 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpBranch %20
+         %21 = OpLabel
+               OpBranch %197
+        %197 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  fact_manager.AddFactFunctionIsLivesafe(30);
+  fact_manager.AddFactValueOfVariableIsArbitrary(200);
+  fact_manager.AddFactValueOfVariableIsArbitrary(201);
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 198,
+      /*exit_block*/ 197,
+      /*new_function_struct_return_type_id*/ 400,
+      /*new_function_type_id*/ 401,
+      /*new_function_id*/ 402,
+      /*new_function_region_entry_block*/ 404,
+      /*new_caller_result_id*/ 405,
+      /*new_callee_result_id*/ 406,
+      /*input_id_to_fresh_id*/ {{100, 407}, {200, 408}, {201, 409}},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // The original function should still be livesafe.
+  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(30));
+  // The outlined function should be livesafe.
+  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(402));
+  // The variable and parameter that were originally arbitrary should still be.
+  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(200));
+  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(201));
+  // The loop limiter should still be non-arbitrary.
+  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(100));
+  // The parameters for the original arbitrary variables should be arbitrary.
+  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(408));
+  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(409));
+  // The parameter for the loop limiter should not be arbitrary.
+  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(407));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+        %199 = OpTypeFunction %2 %7
+          %8 = OpConstant %6 0
+          %9 = OpConstant %6 1
+         %10 = OpConstant %6 5
+         %11 = OpTypeBool
+         %12 = OpConstantTrue %11
+        %401 = OpTypeFunction %2 %7 %7 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %30 = OpFunction %2 None %199
+        %200 = OpFunctionParameter %7
+         %31 = OpLabel
+        %100 = OpVariable %7 Function %8
+        %201 = OpVariable %7 Function %8
+               OpBranch %198
+        %198 = OpLabel
+        %405 = OpFunctionCall %2 %402 %200 %100 %201
+               OpReturn
+               OpFunctionEnd
+        %402 = OpFunction %2 None %401
+        %408 = OpFunctionParameter %7
+        %407 = OpFunctionParameter %7
+        %409 = OpFunctionParameter %7
+        %404 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+        %101 = OpLoad %6 %407
+        %102 = OpIAdd %6 %101 %9
+        %202 = OpLoad %6 %408
+               OpStore %409 %202
+               OpStore %407 %102
+        %103 = OpUGreaterThanEqual %11 %101 %10
+               OpLoopMerge %21 %22 None
+               OpBranchConditional %103 %21 %104
+        %104 = OpLabel
+               OpBranchConditional %12 %23 %21
+         %23 = OpLabel
+        %105 = OpLoad %6 %407
+        %106 = OpIAdd %6 %105 %9
+               OpStore %407 %106
+        %107 = OpUGreaterThanEqual %11 %105 %10
+               OpLoopMerge %25 %26 None
+               OpBranchConditional %107 %25 %108
+        %108 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+               OpBranchConditional %12 %26 %25
+         %26 = OpLabel
+               OpBranch %23
+         %25 = OpLabel
+        %109 = OpLoad %6 %407
+        %110 = OpIAdd %6 %109 %9
+               OpStore %407 %110
+        %111 = OpUGreaterThanEqual %11 %109 %10
+               OpLoopMerge %24 %27 None
+               OpBranchConditional %111 %24 %112
+        %112 = OpLabel
+               OpBranchConditional %12 %24 %27
+         %27 = OpLabel
+               OpBranch %25
+         %24 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpBranch %20
+         %21 = OpLabel
+               OpBranch %197
+        %197 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationOutlineFunctionTest, OutlineWithDeadBlocks1) {
+  // This checks that if all blocks in the region being outlined were dead, all
+  // blocks in the outlined function will be dead.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "foo(i1;"
+               OpName %9 "x"
+               OpName %12 "y"
+               OpName %21 "i"
+               OpName %46 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 2
+         %14 = OpTypeBool
+         %15 = OpConstantFalse %14
+         %22 = OpConstant %6 0
+         %29 = OpConstant %6 10
+         %41 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %46 = OpVariable %7 Function
+               OpStore %46 %13
+         %47 = OpFunctionCall %2 %10 %46
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %21 = OpVariable %7 Function
+               OpStore %12 %13
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+         %18 = OpLoad %6 %9
+               OpStore %12 %18
+         %19 = OpLoad %6 %9
+         %20 = OpIAdd %6 %19 %13
+               OpStore %9 %20
+               OpStore %21 %22
+               OpBranch %23
+         %23 = OpLabel
+               OpLoopMerge %25 %26 None
+               OpBranch %27
+         %27 = OpLabel
+         %28 = OpLoad %6 %21
+         %30 = OpSLessThan %14 %28 %29
+               OpBranchConditional %30 %24 %25
+         %24 = OpLabel
+         %31 = OpLoad %6 %9
+         %32 = OpLoad %6 %21
+         %33 = OpSGreaterThan %14 %31 %32
+               OpSelectionMerge %35 None
+               OpBranchConditional %33 %34 %35
+         %34 = OpLabel
+               OpBranch %26
+         %35 = OpLabel
+         %37 = OpLoad %6 %9
+         %38 = OpLoad %6 %12
+         %39 = OpIAdd %6 %38 %37
+               OpStore %12 %39
+               OpBranch %26
+         %26 = OpLabel
+         %40 = OpLoad %6 %21
+         %42 = OpIAdd %6 %40 %41
+               OpStore %21 %42
+               OpBranch %23
+         %25 = OpLabel
+               OpBranch %50
+         %50 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+         %43 = OpLoad %6 %9
+         %44 = OpLoad %6 %12
+         %45 = OpIAdd %6 %44 %43
+               OpStore %12 %45
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  for (uint32_t block_id : {16u, 23u, 24u, 26u, 27u, 34u, 35u, 50u}) {
+    fact_manager.AddFactBlockIsDead(block_id);
+  }
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 16,
+      /*exit_block*/ 50,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {{9, 206}, {12, 207}, {21, 208}},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  // All the original blocks, plus the new function entry block, should be dead.
+  for (uint32_t block_id : {16u, 23u, 24u, 26u, 27u, 34u, 35u, 50u, 203u}) {
+    ASSERT_TRUE(fact_manager.BlockIsDead(block_id));
+  }
+}
+
+TEST(TransformationOutlineFunctionTest, OutlineWithDeadBlocks2) {
+  // This checks that if some, but not all, blocks in the outlined region are
+  // dead, those (but not others) will be dead in the outlined function.
+  FAIL();
+}
+
+TEST(TransformationOutlineFunctionTest,
+     OutlineWithArbitraryVariablesAndParameters) {
+  // This checks that if the outlined region uses a mixture of arbitrary and
+  // non-arbitrary variables and parameters, these properties are preserved
+  // during outlining.
+  FAIL();
+}
+
 TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
   // This tests outlining of some non-trivial code.
 
