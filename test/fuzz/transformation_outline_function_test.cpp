@@ -2157,7 +2157,83 @@ TEST(TransformationOutlineFunctionTest, OutlineWithDeadBlocks1) {
 TEST(TransformationOutlineFunctionTest, OutlineWithDeadBlocks2) {
   // This checks that if some, but not all, blocks in the outlined region are
   // dead, those (but not others) will be dead in the outlined function.
-  FAIL();
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %8
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpTypePointer Private %6
+          %8 = OpVariable %7 Private
+          %9 = OpConstantFalse %6
+         %10 = OpTypePointer Function %6
+         %12 = OpConstantTrue %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpVariable %10 Function
+               OpBranch %30
+         %30 = OpLabel
+               OpStore %8 %9
+               OpBranch %31
+         %31 = OpLabel
+               OpStore %11 %12
+               OpSelectionMerge %36 None
+               OpBranchConditional %9 %32 %33
+         %32 = OpLabel
+               OpBranch %34
+         %33 = OpLabel
+               OpBranch %36
+         %34 = OpLabel
+               OpBranch %35
+         %35 = OpLabel
+               OpBranch %36
+         %36 = OpLabel
+               OpBranch %37
+         %37 = OpLabel
+         %13 = OpLoad %6 %8
+               OpStore %11 %13
+         %14 = OpLoad %6 %11
+               OpStore %8 %14
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  for (uint32_t block_id : {32u, 34u, 35u}) {
+    fact_manager.AddFactBlockIsDead(block_id);
+  }
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 30,
+      /*exit_block*/ 37,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {{11, 206}},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  // The blocks that were originally dead, but not others, should be dead.
+  for (uint32_t block_id : {32u, 34u, 35u}) {
+    ASSERT_TRUE(fact_manager.BlockIsDead(block_id));
+  }
+  for (uint32_t block_id : {5u, 30u, 31u, 33u, 36u, 37u, 203u}) {
+    ASSERT_FALSE(fact_manager.BlockIsDead(block_id));
+  }
 }
 
 TEST(TransformationOutlineFunctionTest,
@@ -2165,7 +2241,78 @@ TEST(TransformationOutlineFunctionTest,
   // This checks that if the outlined region uses a mixture of arbitrary and
   // non-arbitrary variables and parameters, these properties are preserved
   // during outlining.
-  FAIL();
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7 %7
+         %13 = OpConstant %6 2
+         %15 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %10 = OpFunctionParameter %7
+         %12 = OpLabel
+         %14 = OpVariable %7 Function
+         %20 = OpVariable %7 Function
+               OpBranch %50
+         %50 = OpLabel
+               OpStore %9 %13
+               OpStore %14 %15
+         %16 = OpLoad %6 %14
+               OpStore %10 %16
+         %17 = OpLoad %6 %9
+         %18 = OpLoad %6 %10
+         %19 = OpIAdd %6 %17 %18
+               OpStore %14 %19
+         %21 = OpLoad %6 %9
+               OpStore %20 %21
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  fact_manager.AddFactValueOfVariableIsArbitrary(9);
+  fact_manager.AddFactValueOfVariableIsArbitrary(14);
+
+  TransformationOutlineFunction transformation(
+      /*entry_block*/ 50,
+      /*exit_block*/ 50,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {{9, 206}, {10, 207}, {14, 208}, {20, 209}},
+      /*output_id_to_fresh_id*/ {});
+
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  // The variables that were originally abitrary, plus input parameters
+  // corresponding to them, should be arbitrary.  The rest should not be.
+  for (uint32_t variable_id : {9u, 14u, 206u, 208u}) {
+    ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(variable_id));
+  }
+  for (uint32_t variable_id : {10u, 20u, 207u, 209u}) {
+    ASSERT_FALSE(fact_manager.BlockIsDead(variable_id));
+  }
 }
 
 TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
