@@ -158,10 +158,14 @@ class TransformationOutlineFunction : public Transformation {
   // A new struct type to represent the function return type, and a new function
   // type for the function, will be added to the module (unless suitable types
   // are already present).
+  //
+  // Facts about the function containing the outlined region that are relevant
+  // to the new function are propagated via |fact_manager|.
   std::unique_ptr<opt::Function> PrepareFunctionPrototype(
-      opt::IRContext* context, const std::vector<uint32_t>& region_input_ids,
+      const std::vector<uint32_t>& region_input_ids,
       const std::vector<uint32_t>& region_output_ids,
-      const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map) const;
+      const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map,
+      opt::IRContext* context, FactManager* fact_manager) const;
 
   // Creates the body of the outlined function by cloning blocks from the
   // original region, given by |region_blocks|, adapting the cloned version
