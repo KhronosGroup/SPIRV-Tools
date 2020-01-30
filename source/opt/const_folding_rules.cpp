@@ -1248,10 +1248,23 @@ void ConstantFoldingRules::AddFoldingRules() {
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::exp)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log}].push_back(
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::log)));
+
+#ifdef __ANDROID__
+    // Android NDK r15c tageting ABI 15 doesn't have full support for C++11
+    // (no std::exp2/log2). ::exp2 is available from C99 but ::log2 isn't
+    // available up until ABI 18 so we use a shim
+    auto log2_shim = [](double v) -> double { return log(v) / log(2.0); };
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp2}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(::exp2)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log2}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(log2_shim)));
+#else
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp2}].push_back(
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::exp2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log2}].push_back(
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::log2)));
+#endif
+
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sqrt}].push_back(
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::sqrt)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atan2}].push_back(
