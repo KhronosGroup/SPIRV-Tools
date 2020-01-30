@@ -29,7 +29,8 @@ class TransformationAddGlobalVariable : public Transformation {
       const protobufs::TransformationAddGlobalVariable& message);
 
   TransformationAddGlobalVariable(uint32_t fresh_id, uint32_t type_id,
-                                  uint32_t initializer_id);
+                                  uint32_t initializer_id,
+                                  bool value_is_arbitrary);
 
   // - |message_.fresh_id| must be fresh
   // - |message_.type_id| must be the id of a pointer type with Private storage

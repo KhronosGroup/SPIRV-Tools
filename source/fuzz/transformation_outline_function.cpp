@@ -340,8 +340,16 @@ void TransformationOutlineFunction::Apply(
 
   // Make a function prototype for the outlined function, which involves
   // figuring out its required type.
-  std::unique_ptr<opt::Function> outlined_function = PrepareFunctionPrototype(
-      context, region_input_ids, region_output_ids, input_id_to_fresh_id_map);
+  std::unique_ptr<opt::Function> outlined_function =
+      PrepareFunctionPrototype(region_input_ids, region_output_ids,
+                               input_id_to_fresh_id_map, context, fact_manager);
+
+  // If the original function was livesafe, the new function should also be
+  // livesafe.
+  if (fact_manager->FunctionIsLivesafe(
+          original_region_entry_block->GetParent()->result_id())) {
+    fact_manager->AddFactFunctionIsLivesafe(message_.new_function_id());
+  }
 
   // Adapt the region to be outlined so that its input ids are replaced with the
   // ids of the outlined function's input parameters, and so that output ids
@@ -524,9 +532,10 @@ std::set<opt::BasicBlock*> TransformationOutlineFunction::GetRegionBlocks(
 
 std::unique_ptr<opt::Function>
 TransformationOutlineFunction::PrepareFunctionPrototype(
-    opt::IRContext* context, const std::vector<uint32_t>& region_input_ids,
+    const std::vector<uint32_t>& region_input_ids,
     const std::vector<uint32_t>& region_output_ids,
-    const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map) const {
+    const std::map<uint32_t, uint32_t>& input_id_to_fresh_id_map,
+    opt::IRContext* context, FactManager* fact_manager) const {
   uint32_t return_type_id = 0;
   uint32_t function_type_id = 0;
 
@@ -608,6 +617,12 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
         context, SpvOpFunctionParameter,
         context->get_def_use_mgr()->GetDef(id)->type_id(),
         input_id_to_fresh_id_map.at(id), opt::Instruction::OperandList()));
+    // If the input id is an arbitrary-valued variable, the same should be true
+    // of the corresponding parameter.
+    if (fact_manager->VariableValueIsArbitrary(id)) {
+      fact_manager->AddFactValueOfVariableIsArbitrary(
+          input_id_to_fresh_id_map.at(id));
+    }
   }
 
   return outlined_function;

@@ -64,6 +64,10 @@ class FactManager {
   // Records the fact that |function_id| is livesafe.
   void AddFactFunctionIsLivesafe(uint32_t function_id);
 
+  // Records the fact that |variable_id| has an arbitrary value and can thus be
+  // stored to without affecting the module's behaviour.
+  void AddFactValueOfVariableIsArbitrary(uint32_t variable_id);
+
   // The fact manager is responsible for managing a few distinct categories of
   // facts. In principle there could be different fact managers for each kind
   // of fact, but in practice providing one 'go to' place for facts is
@@ -153,7 +157,16 @@ class FactManager {
   // to be livesafe.
   bool FunctionIsLivesafe(uint32_t function_id) const;
 
-  // End of dead block facts
+  // End of dead livesafe function facts
+  //==============================
+
+  //==============================
+  // Querying facts about arbitrarily-valued variables
+
+  // Returns true if and ony if |variable_id| is arbitrarily-valued.
+  bool VariableValueIsArbitrary(uint32_t variable_id) const;
+
+  // End of arbitrarily-valued variable facts
   //==============================
 
  private:
@@ -177,6 +190,11 @@ class FactManager {
                                 // function facts.
   std::unique_ptr<LivesafeFunctionFacts>
       livesafe_function_facts_;  // Unique pointer to internal data.
+
+  class ArbitrarilyValuedVaribleFacts;  // Opaque class for management of
+  // facts about variables whose values should be expected to be arbitrary.
+  std::unique_ptr<ArbitrarilyValuedVaribleFacts>
+      arbitrarily_valued_variable_facts_;  // Unique pointer to internal data.
 };
 
 }  // namespace fuzz

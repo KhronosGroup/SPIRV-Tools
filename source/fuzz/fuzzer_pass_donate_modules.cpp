@@ -396,6 +396,11 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // have storage class private.  As a result, we simply add a Private
         // storage class global variable, using remapped versions of the result
         // type and initializer ids for the global variable in the donor.
+        //
+        // We regard the added variable as having an arbitrary value.  This
+        // means that future passes can add stores to the variable in any
+        // way they wish, and pass them as pointer parameters to functions
+        // without worrying about whether their data might get modified.
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationAddGlobalVariable(
             new_result_id,
@@ -403,7 +408,8 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             type_or_value.NumInOperands() == 1
                 ? 0
                 : original_id_to_donated_id->at(
-                      type_or_value.GetSingleWordInOperand(1))));
+                      type_or_value.GetSingleWordInOperand(1)),
+            true));
       } break;
       case SpvOpUndef: {
         // It is fine to have multiple Undef instructions of the same type, so

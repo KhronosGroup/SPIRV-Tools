@@ -58,6 +58,56 @@ std::vector<protobufs::Instruction> GetInstructionsForFunction(
   return result;
 }
 
+// Returns true if and only if every pointer parameter and variable associated
+// with |function_id| in |context| is known by |fact_manager| to be arbitrary,
+// with the exception of |loop_limiter_id|, which must not be arbitrary.  (It
+// can be 0 if no loop limiter is expected, and 0 should not be deemed
+// arbitrary).
+bool AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+    opt::IRContext* context, const FactManager& fact_manager,
+    uint32_t function_id, uint32_t loop_limiter_id) {
+  // Look at all the functions until the function of interest is found.
+  for (auto& function : *context->module()) {
+    if (function.result_id() != function_id) {
+      continue;
+    }
+    // Check that the parameters are all arbitrary.
+    bool found_non_arbitrary_parameter = false;
+    function.ForEachParam(
+        [context, &fact_manager,
+         &found_non_arbitrary_parameter](opt::Instruction* inst) {
+          if (context->get_def_use_mgr()->GetDef(inst->type_id())->opcode() ==
+                  SpvOpTypePointer &&
+              !fact_manager.VariableValueIsArbitrary(inst->result_id())) {
+            found_non_arbitrary_parameter = true;
+          }
+        });
+    if (found_non_arbitrary_parameter) {
+      // A non-arbitrary parameter was found.
+      return false;
+    }
+    // Look through the instructions in the function's first block.
+    for (auto& inst : *function.begin()) {
+      if (inst.opcode() != SpvOpVariable) {
+        // We have found a non-variable instruction; this means we have gotten
+        // past all variables, so we are done.
+        return true;
+      }
+      // The variable should be arbitrary if and only if it is not the loop
+      // limiter.
+      if ((inst.result_id() == loop_limiter_id) ==
+          fact_manager.VariableValueIsArbitrary(inst.result_id())) {
+        return false;
+      }
+    }
+    assert(false &&
+           "We should have processed all variables and returned by "
+           "this point.");
+  }
+  assert(false && "We should have found the function of interest.");
+  return true;
+}
+
 TEST(TransformationAddFunctionTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
@@ -570,18 +620,22 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager;
+  FactManager fact_manager1;
+  FactManager fact_manager2;
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
   TransformationAddFunction add_dead_function(instructions);
-  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
-  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager1));
+  add_dead_function.Apply(context1.get(), &fact_manager1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
-  ASSERT_FALSE(fact_manager.FunctionIsLivesafe(30));
+  ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(30));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context1.get(), fact_manager1, 30, 0));
 
   std::string added_as_dead_code = R"(
                OpCapability Shader
@@ -657,11 +711,16 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
 
   TransformationAddFunction add_livesafe_function(instructions, 100, 10,
                                                   loop_limiters, 0, {});
-  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
-  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(
+      add_livesafe_function.IsApplicable(context2.get(), fact_manager2));
+  add_livesafe_function.Apply(context2.get(), &fact_manager2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
-  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(30));
+  ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(30));
+  // All variables/parameters in the function should be deemed arbitrary,
+  // except the loop limiter.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context2.get(), fact_manager2, 30, 100));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -776,18 +835,22 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
   instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager;
+  FactManager fact_manager1;
+  FactManager fact_manager2;
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
   TransformationAddFunction add_dead_function(instructions);
-  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
-  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager1));
+  add_dead_function.Apply(context1.get(), &fact_manager1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
-  ASSERT_FALSE(fact_manager.FunctionIsLivesafe(10));
+  ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(10));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context1.get(), fact_manager1, 10, 0));
 
   std::string added_as_dead_code = R"(
                OpCapability Shader
@@ -824,11 +887,15 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
 
   TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 0,
                                                   {});
-  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
-  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(
+      add_livesafe_function.IsApplicable(context2.get(), fact_manager2));
+  add_livesafe_function.Apply(context2.get(), &fact_manager2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
-  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(10));
+  ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(10));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context2.get(), fact_manager2, 10, 0));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -916,18 +983,22 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
   instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager;
+  FactManager fact_manager1;
+  FactManager fact_manager2;
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
   TransformationAddFunction add_dead_function(instructions);
-  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
-  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager1));
+  add_dead_function.Apply(context1.get(), &fact_manager1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
-  ASSERT_FALSE(fact_manager.FunctionIsLivesafe(10));
+  ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(10));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context1.get(), fact_manager1, 10, 0));
 
   std::string added_as_dead_code = R"(
                OpCapability Shader
@@ -965,11 +1036,15 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
 
   TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 13,
                                                   {});
-  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
-  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(
+      add_livesafe_function.IsApplicable(context2.get(), fact_manager2));
+  add_livesafe_function.Apply(context2.get(), &fact_manager2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
-  ASSERT_TRUE(fact_manager.FunctionIsLivesafe(10));
+  ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(10));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context2.get(), fact_manager2, 10, 0));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1188,16 +1263,22 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager;
+  FactManager fact_manager1;
+  FactManager fact_manager2;
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
   TransformationAddFunction add_dead_function(instructions);
-  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
-  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager1));
+  add_dead_function.Apply(context1.get(), &fact_manager1);
   ASSERT_TRUE(IsValid(env, context1.get()));
+  // The function should not be deemed livesafe
+  ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(12));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context1.get(), fact_manager1, 12, 0));
 
   std::string added_as_dead_code = R"(
                OpCapability Shader
@@ -1328,9 +1409,15 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
 
   TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 13,
                                                   access_chain_clamping_info);
-  ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(), fact_manager));
-  add_livesafe_function.Apply(context2.get(), &fact_manager);
+  ASSERT_TRUE(
+      add_livesafe_function.IsApplicable(context2.get(), fact_manager2));
+  add_livesafe_function.Apply(context2.get(), &fact_manager2);
   ASSERT_TRUE(IsValid(env, context2.get()));
+  // The function should be deemed livesafe
+  ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(12));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context2.get(), fact_manager2, 12, 0));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1510,6 +1597,11 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
   ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager1));
   add_dead_function.Apply(context1.get(), &fact_manager1);
   ASSERT_TRUE(IsValid(env, context1.get()));
+  // The function should not be deemed livesafe
+  ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(8));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context1.get(), fact_manager1, 8, 0));
 
   std::string added_as_live_or_dead_code = R"(
                OpCapability Shader
@@ -1542,6 +1634,11 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
       add_livesafe_function.IsApplicable(context2.get(), fact_manager2));
   add_livesafe_function.Apply(context2.get(), &fact_manager2);
   ASSERT_TRUE(IsValid(env, context2.get()));
+  // The function should be deemed livesafe
+  ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(8));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context2.get(), fact_manager2, 8, 0));
   ASSERT_TRUE(IsEqual(env, added_as_live_or_dead_code, context2.get()));
 }
 
@@ -1580,16 +1677,22 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager;
+  FactManager fact_manager1;
+  FactManager fact_manager2;
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
   TransformationAddFunction add_dead_function(instructions);
-  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager));
-  add_dead_function.Apply(context1.get(), &fact_manager);
+  ASSERT_TRUE(add_dead_function.IsApplicable(context1.get(), fact_manager1));
+  add_dead_function.Apply(context1.get(), &fact_manager1);
   ASSERT_TRUE(IsValid(env, context1.get()));
+  // The function should not be deemed livesafe
+  ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(8));
+  // All variables/parameters in the function should be deemed arbitrary.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+      context1.get(), fact_manager1, 8, 0));
 
   std::string added_as_dead_code = R"(
                OpCapability Shader
@@ -1619,7 +1722,7 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
   TransformationAddFunction add_livesafe_function(instructions, 0, 0, {}, 0,
                                                   {});
   ASSERT_FALSE(
-      add_livesafe_function.IsApplicable(context2.get(), fact_manager));
+      add_livesafe_function.IsApplicable(context2.get(), fact_manager2));
 }
 
 TEST(TransformationAddFunctionTest,
