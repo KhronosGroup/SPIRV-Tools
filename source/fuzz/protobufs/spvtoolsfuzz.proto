@@ -340,6 +340,7 @@ message Transformation {
     TransformationAddLocalVariable add_local_variable = 35;
     TransformationLoad load = 36;
     TransformationStore store = 37;
+    TransformationFunctionCall function_call = 38;
     // Add additional option using the next available number.
   }
 }
@@ -728,6 +729,29 @@ message TransformationCopyObject {
 
   // A fresh id for the copied object
   uint32 fresh_id = 3;
+
+}
+
+message TransformationFunctionCall {
+
+  // A transformation that introduces an OpFunctionCall instruction.  The call
+  // must not make the module's call graph cyclic.  Beyond that, if the call
+  // is in a dead block it can be to any function with arbitrary suitably-typed
+  // arguments; otherwise it must be to a livesafe function, with injected
+  // variables as pointer arguments and arbitrary non-pointer arguments.
+
+  // A fresh id for the result of the call
+  uint32 fresh_id = 1;
+
+  // Id of the function to be called
+  uint32 callee_id = 2;
+
+  // Ids for arguments to the function
+  repeated uint32 argument_id = 3;
+
+  // A descriptor for an instruction in a block before which the new
+  // OpFunctionCall instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 4;
 
 }
 
