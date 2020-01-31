@@ -41,10 +41,10 @@ FuzzerPass::FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
 FuzzerPass::~FuzzerPass() = default;
 
 std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
-    const opt::Function& function, opt::BasicBlock* block,
-    opt::BasicBlock::iterator inst_it,
+    opt::Function* function, opt::BasicBlock* block,
+    const opt::BasicBlock::iterator& inst_it,
     std::function<bool(opt::IRContext*, opt::Instruction*)>
-        instruction_is_relevant) {
+        instruction_is_relevant) const {
   // TODO(afd) The following is (relatively) simple, but may end up being
   //  prohibitively inefficient, as it walks the whole dominator tree for
   //  every instruction that is considered.
@@ -57,6 +57,13 @@ std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
     }
   }
 
+  // Consider all function parameters
+  function->ForEachParam([this, &instruction_is_relevant, &result](opt::Instruction* param) {
+    if (instruction_is_relevant(GetIRContext(), param)) {
+      result.push_back(param);
+    }
+  });
+
   // Consider all previous instructions in this block
   for (auto prev_inst_it = block->begin(); prev_inst_it != inst_it;
        ++prev_inst_it) {
@@ -67,7 +74,7 @@ std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
 
   // Walk the dominator tree to consider all instructions from dominating
   // blocks
-  auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(&function);
+  auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(function);
   for (auto next_dominator = dominator_analysis->ImmediateDominator(block);
        next_dominator != nullptr;
        next_dominator =
@@ -83,7 +90,7 @@ std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
 
 void FuzzerPass::MaybeAddTransformationBeforeEachInstruction(
     std::function<
-        void(const opt::Function& function, opt::BasicBlock* block,
+        void(opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor)>
         maybe_apply_transformation) {
@@ -125,7 +132,7 @@ void FuzzerPass::MaybeAddTransformationBeforeEachInstruction(
 
         // Invoke the provided function, which might apply a transformation.
         maybe_apply_transformation(
-            function, &block, inst_it,
+            &function, &block, inst_it,
             MakeInstructionDescriptor(
                 base, opcode,
                 skip_count.count(opcode) ? skip_count.at(opcode) : 0));

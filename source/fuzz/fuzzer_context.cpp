@@ -44,6 +44,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAdjustingMemoryOperandsMask = {20,
                                                                             90};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingSelectionControl = {20,
                                                                           90};
+const std::pair<uint32_t, uint32_t> kChanceOfCallingFunction = {1, 10};
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
     20, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
@@ -112,6 +113,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAdjustingMemoryOperandsMask);
   chance_of_adjusting_selection_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingSelectionControl);
+  chance_of_calling_function_ =
+      ChooseBetweenMinAndMax(kChanceOfCallingFunction);
   chance_of_choosing_struct_type_vs_array_type_ =
       ChooseBetweenMinAndMax(kChanceOfChoosingStructTypeVsArrayType);
   chance_of_constructing_composite_ =
