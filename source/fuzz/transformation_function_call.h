@@ -33,11 +33,24 @@ class TransformationFunctionCall : public Transformation {
       const std::vector<uint32_t>& argument_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
-  // TODO comment
+  // - |message_.fresh_id| must be fresh
+  // - |message_.instruction_to_insert_before| must identify an instruction
+  //   before which an OpFunctionCall can be legitimately inserted
+  // - |message_.function_id| must be the id of a function, and calling the
+  //   function before the identified instruction must not introduce recursion
+  // - |message_.arg_id| must provide suitable arguments for the function call
+  //   (they must have the right types and be available according to dominance
+  //   rules)
+  // - If the insertion point is not in a dead block then |message_function_id|
+  //   must refer to a livesafe function, and every pointer argument in
+  //   |message_.arg_id| must refer to an arbitrary-valued variable
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an instruction of the form:
+  //   |fresh_id| = OpFunctionCall %type |callee_id| |arg_id...|
+  // before |instruction_to_insert_before|, where %type is the return type of
+  // |callee_id|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
