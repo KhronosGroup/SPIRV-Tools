@@ -25,8 +25,17 @@ TransformationFunctionCall::TransformationFunctionCall(
     const spvtools::fuzz::protobufs::TransformationFunctionCall& message)
     : message_(message) {}
 
-TransformationFunctionCall::TransformationFunctionCall(/* TODO */) {
-  assert(false && "Not implemented yet");
+TransformationFunctionCall::TransformationFunctionCall(
+    uint32_t fresh_id, uint32_t callee_id,
+    const std::vector<uint32_t>& argument_id,
+    const protobufs::InstructionDescriptor& instruction_to_insert_before) {
+  message_.set_fresh_id(fresh_id);
+  message_.set_callee_id(callee_id);
+  for (auto argument : argument_id) {
+    message_.add_argument_id(argument);
+  }
+  *message_.mutable_instruction_to_insert_before() =
+      instruction_to_insert_before;
 }
 
 bool TransformationFunctionCall::IsApplicable(
@@ -43,19 +52,24 @@ bool TransformationFunctionCall::IsApplicable(
     return false;
   }
 
-  auto callee_type_inst = context->get_def_use_mgr()->GetDef(callee_inst->GetSingleWordInOperand(1));
-  assert (callee_type_inst->opcode() == SpvOpTypeFunction && "Bad function type.");
+  auto callee_type_inst = context->get_def_use_mgr()->GetDef(
+      callee_inst->GetSingleWordInOperand(1));
+  assert(callee_type_inst->opcode() == SpvOpTypeFunction &&
+         "Bad function type.");
 
-  // The number of expected function arguments must match the number of given arguments.  The number of expected arguments is one less than the function type's number
-  // of input operands, as one operand is for the return type.
-  if (callee_type_inst->NumInOperands() - 1 != static_cast<uint32_t>(message_.argument_id().size())) {
+  // The number of expected function arguments must match the number of given
+  // arguments.  The number of expected arguments is one less than the function
+  // type's number of input operands, as one operand is for the return type.
+  if (callee_type_inst->NumInOperands() - 1 !=
+      static_cast<uint32_t>(message_.argument_id().size())) {
     return false;
   }
 
   // The instruction descriptor must refer to a position where it is valid to
   // insert the call
-  auto insert_before = FindInstruction(message_.instruction_to_insert_before(), context);
-  if (insert_before) {
+  auto insert_before =
+      FindInstruction(message_.instruction_to_insert_before(), context);
+  if (!insert_before) {
     return false;
   }
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpFunctionCall,
@@ -64,19 +78,34 @@ bool TransformationFunctionCall::IsApplicable(
   }
 
   auto block = context->get_instr_block(insert_before);
+  auto enclosing_function = block->GetParent();
 
   // If the block is not dead, the function must be livesafe
   bool block_is_dead = fact_manager.BlockIsDead(block->id());
-  if (block_is_dead && !fact_manager.FunctionIsLivesafe(message_.callee_id())) {
+  if (!block_is_dead &&
+      !fact_manager.FunctionIsLivesafe(message_.callee_id())) {
     return false;
   }
 
   // The ids must all match and have the right types and satisfy rules on
   // pointers.  If the block is not dead, pointers must be arbitrary.
-  for (uint32_t arg_index = 0; arg_index < static_cast<uint32_t>(message_.argument_id().size()); arg_index++) {
-    opt::Instruction* arg_inst = context->get_def_use_mgr()->GetDef(message_.argument_id(arg_index));
-    opt::Instruction* arg_type_inst = context->get_def_use_mgr()->GetDef(arg_inst->type_id());
-    if (arg_type_inst->result_id() != callee_type_inst->GetSingleWordInOperand(arg_index + 1)) {
+  for (uint32_t arg_index = 0;
+       arg_index < static_cast<uint32_t>(message_.argument_id().size());
+       arg_index++) {
+    opt::Instruction* arg_inst =
+        context->get_def_use_mgr()->GetDef(message_.argument_id(arg_index));
+    if (!arg_inst) {
+      // The given argument does not correspond to an instruction.
+      return false;
+    }
+    if (!arg_inst->type_id()) {
+      // The given argument does not have a type; it is thus not suitable.
+    }
+    opt::Instruction* arg_type_inst =
+        context->get_def_use_mgr()->GetDef(arg_inst->type_id());
+    if (arg_type_inst->result_id() !=
+        callee_type_inst->GetSingleWordInOperand(arg_index + 1)) {
+      // Argument type mismatch.
       return false;
     }
     if (arg_type_inst->opcode() == SpvOpTypePointer) {
@@ -89,29 +118,68 @@ bool TransformationFunctionCall::IsApplicable(
           // Other pointer ids cannot be passed as parameters
           return false;
       }
-      if (!block_is_dead && fact_manager.VariableValueIsArbitrary(arg_inst->result_id())) {
+      if (!block_is_dead &&
+          !fact_manager.VariableValueIsArbitrary(arg_inst->result_id())) {
+        // This is not a dead block, so pointer parameters passed to the called
+        // function might really have their contents modified. We thus require
+        // such pointers to be to arbitrary-valued variables, which this is not.
         return false;
       }
+    }
+
+    if (arg_inst->opcode() == SpvOpFunctionParameter) {
+      bool found = false;
+      enclosing_function->ForEachParam(
+          [arg_inst, &found](opt::Instruction* param) {
+            if (param == arg_inst) {
+              found = true;
+            }
+          });
+      if (!found) {
+        return false;
+      }
+    } else if (context->get_instr_block(arg_inst) &&
+               !context->GetDominatorAnalysis(enclosing_function)
+                    ->Dominates(arg_inst, insert_before)) {
+      // The argument instruction is not global and does not dominate the point
+      // of the function call, so it cannot be used.
+      return false;
     }
   }
 
   // Introducing the call must not lead to recursion.
-  if (message_.callee_id() == block->GetParent()->result_id()) {
+  if (message_.callee_id() == enclosing_function->result_id()) {
     // This would be direct recursion.
     return false;
   }
-  CallGraph call_graph(context);
-  if (call_graph.GetIndirectCallees(message_.callee_id()).count(block->GetParent()->result_id() != 0)) {
-    // This would be indirect recursion.
-    return false;
-  }
-  return true;
+  // Ensure the call would not lead to indirect recursion.
+  return !CallGraph(context)
+              .GetIndirectCallees(message_.callee_id())
+              .count(block->GetParent()->result_id());
 }
 
 void TransformationFunctionCall::Apply(
-    opt::IRContext* /*context*/,
-    spvtools::fuzz::FactManager* /*unused*/) const {
-  assert(false && "Not implemented yet");
+    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/) const {
+  // Update the module's bound to reflect the fresh id for the result of the
+  // function call.
+  fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
+  // Get the return type of the function being called.
+  uint32_t return_type =
+      context->get_def_use_mgr()->GetDef(message_.callee_id())->type_id();
+  // Populate the operands to the call instruction, with the function id and the
+  // arguments.
+  opt::Instruction::OperandList operands;
+  operands.push_back({SPV_OPERAND_TYPE_ID, {message_.callee_id()}});
+  for (auto arg : message_.argument_id()) {
+    operands.push_back({SPV_OPERAND_TYPE_ID, {arg}});
+  }
+  // Insert the function call before the instruction specified in the message.
+  FindInstruction(message_.instruction_to_insert_before(), context)
+      ->InsertBefore(
+          MakeUnique<opt::Instruction>(context, SpvOpFunctionCall, return_type,
+                                       message_.fresh_id(), operands));
+  // Invalidate all analyses since we have changed the module.
+  context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationFunctionCall::ToMessage() const {

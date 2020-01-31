@@ -25,13 +25,14 @@ namespace fuzz {
 
 // Represents the acyclic call graph of a SPIR-V module.
 class CallGraph {
-
  public:
   // Creates a call graph corresponding to the given SPIR-V module.
   explicit CallGraph(opt::IRContext* context);
 
   // Returns a mapping from each function to its number of distinct callers.
-  const std::map<uint32_t, uint32_t>& GetFunctionInDegree() const { return function_in_degree_; }
+  const std::map<uint32_t, uint32_t>& GetFunctionInDegree() const {
+    return function_in_degree_;
+  }
 
   // Returns the ids of the functions that |function_id| directly invokes.
   const std::set<uint32_t>& GetDirectCallees(uint32_t function_id) const {
@@ -43,17 +44,16 @@ class CallGraph {
   std::set<uint32_t> GetIndirectCallees(uint32_t function_id) const;
 
  private:
-
   // Pushes the direct callees of |function_id| on to |queue|.
-  void PushDirectCallees(uint32_t function_id, std::queue<uint32_t>* queue) const;
+  void PushDirectCallees(uint32_t function_id,
+                         std::queue<uint32_t>* queue) const;
 
-    // Maps each function id to the ids of its immediate callees.
+  // Maps each function id to the ids of its immediate callees.
   std::map<uint32_t, std::set<uint32_t>> call_graph_edges_;
 
   // For each function id, stores the number of distinct functions that call
   // the function.
   std::map<uint32_t, uint32_t> function_in_degree_;
-
 };
 
 }  // namespace fuzz

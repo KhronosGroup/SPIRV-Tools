@@ -687,7 +687,6 @@ void FuzzerPassDonateModules::HandleFunctions(
 std::vector<uint32_t>
 FuzzerPassDonateModules::GetFunctionsInCallGraphTopologicalOrder(
     opt::IRContext* context) {
-
   CallGraph call_graph(context);
 
   // This is an implementation of Kahn’s algorithm for topological sorting.
@@ -695,9 +694,10 @@ FuzzerPassDonateModules::GetFunctionsInCallGraphTopologicalOrder(
   // This is the sorted order of function ids that we will eventually return.
   std::vector<uint32_t> result;
 
-  // Get a copy of the initial in-degrees of all functions.  The algorithm involves
-  // decrementing these values, hence why we work on a copy.
-  std::map<uint32_t, uint32_t> function_in_degree = call_graph.GetFunctionInDegree();
+  // Get a copy of the initial in-degrees of all functions.  The algorithm
+  // involves decrementing these values, hence why we work on a copy.
+  std::map<uint32_t, uint32_t> function_in_degree =
+      call_graph.GetFunctionInDegree();
 
   // Populate a queue with all those function ids with in-degree zero.
   std::queue<uint32_t> queue;

@@ -28,7 +28,10 @@ class TransformationFunctionCall : public Transformation {
   explicit TransformationFunctionCall(
       const protobufs::TransformationFunctionCall& message);
 
-  TransformationFunctionCall(/* TODO */);
+  TransformationFunctionCall(
+      uint32_t fresh_id, uint32_t callee_id,
+      const std::vector<uint32_t>& argument_id,
+      const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
   // TODO comment
   bool IsApplicable(opt::IRContext* context,

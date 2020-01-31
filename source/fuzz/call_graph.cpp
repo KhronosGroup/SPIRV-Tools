@@ -53,7 +53,8 @@ CallGraph::CallGraph(opt::IRContext* context) {
   }
 }
 
-void CallGraph::PushDirectCallees(uint32_t function_id, std::queue<uint32_t>* queue) const {
+void CallGraph::PushDirectCallees(uint32_t function_id,
+                                  std::queue<uint32_t>* queue) const {
   for (auto callee : GetDirectCallees(function_id)) {
     queue->push(callee);
   }
@@ -75,7 +76,6 @@ std::set<uint32_t> CallGraph::GetIndirectCallees(uint32_t function_id) const {
   }
   return result;
 }
-
 
 }  // namespace fuzz
 }  // namespace spvtools
