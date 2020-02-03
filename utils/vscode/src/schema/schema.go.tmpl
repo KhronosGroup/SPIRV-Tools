@@ -105,6 +105,8 @@ var (
 
 {{range $i := .Instructions}}	{{$i.Opname}} = &Opcode {
 		Opname:   "{{$i.Opname}}",
+		Class:    "{{$i.Class}}",
+		Opcode:   {{$i.Opcode}},
 		Operands: []Operand {•{{range $i := $i.Operands}}
 			Operand {
 				Kind:       OperandKind{{$i.Kind}},
