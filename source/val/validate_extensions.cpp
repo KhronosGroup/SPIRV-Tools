@@ -2223,7 +2223,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       }
       case OpenCLDebugInfo100DebugTypeArray: {
         auto validate_base_type =
-            ValidateOperandBaseType(_, inst, 5, ext_inst_name);
+            ValidateOperandDebugType(_, "Base Type", inst, 5, ext_inst_name);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
         for (uint32_t i = 6; i < num_words; ++i) {
           CHECK_OPERAND("Component Count", SpvOpConstant, i);

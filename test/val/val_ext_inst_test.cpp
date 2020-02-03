@@ -1313,8 +1313,8 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailBaseType) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Base Type must be a result id of "
-                        "DebugTypeBasic"));
+              HasSubstr("expected operand Base Type is not a valid debug "
+                        "type"));
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCount) {
