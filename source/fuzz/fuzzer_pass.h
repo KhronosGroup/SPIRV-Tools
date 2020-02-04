@@ -138,6 +138,16 @@ class FuzzerPass {
   // applied to add them.
   uint32_t FindOrCreate32BitIntegerConstant(uint32_t word, bool is_signed);
 
+  // Returns the id of an OpConstant instruction, with 32-bit floating-point
+  // type, with |word| as its value.  If either the required floating-point type
+  // or the constant do not exist, transformations are applied to add them.
+  uint32_t FindOrCreate32BitFloatConstant(uint32_t word);
+
+  // Returns the id of an OpConstantTrue or OpConstantFalse instruction,
+  // according to |value|.  If either the required instruction or the bool
+  // type do not exist, transformations are applied to add them.
+  uint32_t FindOrCreateBoolConstant(bool value);
+
   // Returns the result id of an instruction of the form:
   //   %id = OpUndef %|type_id|
   // If no such instruction exists, a transformation is applied to add it.

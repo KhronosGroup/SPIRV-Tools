@@ -15,6 +15,7 @@
 #include "source/fuzz/fuzzer_pass.h"
 
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
@@ -240,6 +241,42 @@ uint32_t FuzzerPass::FindOrCreate32BitIntegerConstant(uint32_t word,
   auto result = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(
       TransformationAddConstantScalar(result, uint32_type_id, {word}));
+  return result;
+}
+
+uint32_t FuzzerPass::FindOrCreate32BitFloatConstant(uint32_t word) {
+  auto float_type_id = FindOrCreate32BitFloatType();
+  opt::analysis::FloatConstant float_constant(
+          GetIRContext()->get_type_mgr()->GetType(float_type_id)->AsFloat(),
+          {word});
+  auto existing_constant =
+          GetIRContext()->get_constant_mgr()->FindConstant(&float_constant);
+  if (existing_constant) {
+    return GetIRContext()
+            ->get_constant_mgr()
+            ->GetDefiningInstruction(existing_constant)
+            ->result_id();
+  }
+  auto result = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(
+          TransformationAddConstantScalar(result, float_type_id, {word}));
+  return result;
+}
+
+uint32_t FuzzerPass::FindOrCreateBoolConstant(bool value) {
+  auto bool_type_id = FindOrCreateBoolType();
+  opt::analysis::BoolConstant bool_constant(GetIRContext()->get_type_mgr()->GetType(bool_type_id)->AsBool(), value);
+  auto existing_constant =
+          GetIRContext()->get_constant_mgr()->FindConstant(&bool_constant);
+  if (existing_constant) {
+    return GetIRContext()
+            ->get_constant_mgr()
+            ->GetDefiningInstruction(existing_constant)
+            ->result_id();
+  }
+  auto result = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(
+          TransformationAddConstantBoolean(result, value));
   return result;
 }
 

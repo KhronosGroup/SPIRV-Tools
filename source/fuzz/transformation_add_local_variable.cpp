@@ -21,8 +21,13 @@ TransformationAddLocalVariable::TransformationAddLocalVariable(
     const spvtools::fuzz::protobufs::TransformationAddLocalVariable& message)
     : message_(message) {}
 
-TransformationAddLocalVariable::TransformationAddLocalVariable(/* TODO */) {
-  assert(false && "Not implemented yet");
+TransformationAddLocalVariable::TransformationAddLocalVariable(uint32_t fresh_id, uint32_t type_id, uint32_t function_id,
+uint32_t initializer_id, bool value_is_arbitrary) {
+  message_.set_fresh_id(fresh_id);
+  message_.set_type_id(type_id);
+  message_.set_function_id(function_id);
+  message_.set_initializer_id(initializer_id);
+  message_.set_value_is_arbitrary(value_is_arbitrary);
 }
 
 bool TransformationAddLocalVariable::IsApplicable(

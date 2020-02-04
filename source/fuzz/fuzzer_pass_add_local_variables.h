@@ -31,6 +31,11 @@ class FuzzerPassAddLocalVariables : public FuzzerPass {
   ~FuzzerPassAddLocalVariables();
 
   void Apply() override;
+
+ private:
+  // TODO comment
+  uint32_t ZeroInitializer(uint32_t scalar_or_composite_type_id);
+
 };
 
 }  // namespace fuzz
