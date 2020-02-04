@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2020.2-dev 2020-02-03
+ - Start v2020.2-dev
+
 v2020.1 2020-02-03
  - General:
    - Add support for SPV_KHR_non_semantic_info (#3110)
