@@ -108,6 +108,23 @@ class FuzzerPass {
   // transformation is applied to add it.
   uint32_t FindOrCreate32BitIntegerType(bool is_signed);
 
+  // Returns the id of an OpTypeFloat instruction, with width 32.  If such an
+  // instruction does not exist, a transformation is applied to add it.
+  uint32_t FindOrCreate32BitFloatType();
+
+  // Returns the id of an OpTypeVector instruction, with |component_type_id|
+  // (which must already exist) as its base type, and |component_count|
+  // elements (which must be in the range [2, 4]).  If such an instruction does
+  // not exist, a transformation is applied to add it.
+  uint32_t FindOrCreateVectorType(uint32_t component_type_id,
+                                  uint32_t component_count);
+
+  // Returns the id of an OpTypeMatrix instruction, with |column_count| columns
+  // and |row_count| rows (each of which must be in the range [2, 4]).  If the
+  // float and vector types required to build this matrix type or the matrix
+  // type itself do not exist, transformations are applied to add them.
+  uint32_t FindOrCreateMatrixType(uint32_t column_count, uint32_t row_count);
+
   // Returns the id of an OpTypePointer instruction, with a 32-bit integer base
   // type of signedness specified by |is_signed|.  If the pointer type or
   // required integer base type do not exist, transformations are applied to add

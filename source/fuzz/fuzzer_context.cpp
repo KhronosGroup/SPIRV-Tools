@@ -23,11 +23,16 @@ namespace {
 // Default <minimum, maximum> pairs of probabilities for applying various
 // transformations. All values are percentages. Keep them in alphabetical order.
 
+const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
+                                                                         90};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBreak = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadContinue = {5, 80};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingFunctionControl = {20,
                                                                          70};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingLoopControl = {20, 90};
@@ -35,6 +40,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfAdjustingMemoryOperandsMask = {20,
                                                                             90};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingSelectionControl = {20,
                                                                           90};
+const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
+    20, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
@@ -51,6 +58,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
 const uint32_t kDefaultMaxLoopControlPartialCount = 100;
 const uint32_t kDefaultMaxLoopControlPeelCount = 100;
 const uint32_t kDefaultMaxLoopLimit = 20;
+const uint32_t kDefaultMaxNewArraySizeLimit = 100;
 
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
@@ -70,14 +78,22 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       next_fresh_id_(min_fresh_id),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
+  chance_of_adding_another_struct_field_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingAnotherStructField);
+  chance_of_adding_array_or_struct_type_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingArrayOrStructType);
   chance_of_adding_dead_block_ =
       ChooseBetweenMinAndMax(kChanceOfAddingDeadBlock);
   chance_of_adding_dead_break_ =
       ChooseBetweenMinAndMax(kChanceOfAddingDeadBreak);
   chance_of_adding_dead_continue_ =
       ChooseBetweenMinAndMax(kChanceOfAddingDeadContinue);
+  chance_of_adding_matrix_type_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingMatrixType);
   chance_of_adding_no_contraction_decoration_ =
       ChooseBetweenMinAndMax(kChanceOfAddingNoContractionDecoration);
+  chance_of_adding_vector_type_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingVectorType);
   chance_of_adjusting_function_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingFunctionControl);
   chance_of_adjusting_loop_control_ =
@@ -86,6 +102,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAdjustingMemoryOperandsMask);
   chance_of_adjusting_selection_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingSelectionControl);
+  chance_of_choosing_struct_type_vs_array_type_ =
+      ChooseBetweenMinAndMax(kChanceOfChoosingStructTypeVsArrayType);
   chance_of_constructing_composite_ =
       ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
@@ -106,6 +124,7 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   max_loop_control_partial_count_ = kDefaultMaxLoopControlPartialCount;
   max_loop_control_peel_count_ = kDefaultMaxLoopControlPeelCount;
   max_loop_limit_ = kDefaultMaxLoopLimit;
+  max_new_array_size_limit_ = kDefaultMaxNewArraySizeLimit;
 }
 
 FuzzerContext::~FuzzerContext() = default;

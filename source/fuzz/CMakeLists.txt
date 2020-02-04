@@ -36,6 +36,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer.h
         fuzzer_context.h
         fuzzer_pass.h
+        fuzzer_pass_add_composite_types.h
         fuzzer_pass_add_dead_blocks.h
         fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_add_dead_continues.h
@@ -107,6 +108,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer.cpp
         fuzzer_context.cpp
         fuzzer_pass.cpp
+        fuzzer_pass_add_composite_types.cpp
         fuzzer_pass_add_dead_blocks.cpp
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_dead_continues.cpp
