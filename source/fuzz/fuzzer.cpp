@@ -25,6 +25,7 @@
 #include "source/fuzz/fuzzer_pass_add_dead_blocks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_continues.h"
+#include "source/fuzz/fuzzer_pass_add_local_variables.h"
 #include "source/fuzz/fuzzer_pass_add_no_contraction_decorations.h"
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
 #include "source/fuzz/fuzzer_pass_adjust_function_controls.h"
@@ -191,6 +192,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassAddDeadContinues>(&passes, ir_context.get(),
                                              &fact_manager, &fuzzer_context,
                                              transformation_sequence_out);
+    MaybeAddPass<FuzzerPassAddLocalVariables>(&passes, ir_context.get(),
+                                              &fact_manager, &fuzzer_context,
+                                              transformation_sequence_out);
     MaybeAddPass<FuzzerPassApplyIdSynonyms>(&passes, ir_context.get(),
                                             &fact_manager, &fuzzer_context,
                                             transformation_sequence_out);
