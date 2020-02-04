@@ -12,6 +12,7 @@ v2020.1-dev 2019-12-11
    - Change default version for CreatInstBindlessCheckPass to 2 (#3096, #3119)
    - Better handling of OpLine on merge blocks (#3130)
    - Use dummy switch instead of dummy loop in MergeReturn pass. (#3151)
+   - Handle TimeAMD in AmdExtensionToKhrPass. (#3168)
  - Validator
    - Fix structured exit validation (#3141)
  - Reduce
@@ -20,6 +21,7 @@ v2020.1-dev 2019-12-11
    - Transformation to add a new function to a module (#3114)
    - Add fuzzer pass to perform module donation (#3117)
    - Fuzzer passes to create and branch to new dead blocks (#3135)
+   - Fuzzer pass to add composite types (#3171)
  - Linker:
    - Remove names and decorations of imported symbols (#3081)
 
