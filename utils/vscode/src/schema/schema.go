@@ -97,9 +97,11 @@ const (
 	OperandCategoryComposite = "Composite"
 )
 
+type OpcodeMap map[string]*Opcode
+
 var (
 	// Opcodes is a map of opcode name to Opcode description.
-	Opcodes = map[string]*Opcode {
+	Opcodes = OpcodeMap {
 		"OpNop": OpNop,
 		"OpUndef": OpUndef,
 		"OpSourceContinued": OpSourceContinued,
@@ -625,6 +627,295 @@ var (
 		"OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL": OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL,
 		"OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL": OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL,
 		"OpSubgroupAvcSicGetInterRawSadsINTEL": OpSubgroupAvcSicGetInterRawSadsINTEL,
+	}
+
+	// ExtOpcodes is a map of extension name to Opcode description list.
+	ExtOpcodes = map[string]OpcodeMap {
+		"GLSL.std.450": {
+			"Round": GLSLStd450_Round,
+			"RoundEven": GLSLStd450_RoundEven,
+			"Trunc": GLSLStd450_Trunc,
+			"FAbs": GLSLStd450_FAbs,
+			"SAbs": GLSLStd450_SAbs,
+			"FSign": GLSLStd450_FSign,
+			"SSign": GLSLStd450_SSign,
+			"Floor": GLSLStd450_Floor,
+			"Ceil": GLSLStd450_Ceil,
+			"Fract": GLSLStd450_Fract,
+			"Radians": GLSLStd450_Radians,
+			"Degrees": GLSLStd450_Degrees,
+			"Sin": GLSLStd450_Sin,
+			"Cos": GLSLStd450_Cos,
+			"Tan": GLSLStd450_Tan,
+			"Asin": GLSLStd450_Asin,
+			"Acos": GLSLStd450_Acos,
+			"Atan": GLSLStd450_Atan,
+			"Sinh": GLSLStd450_Sinh,
+			"Cosh": GLSLStd450_Cosh,
+			"Tanh": GLSLStd450_Tanh,
+			"Asinh": GLSLStd450_Asinh,
+			"Acosh": GLSLStd450_Acosh,
+			"Atanh": GLSLStd450_Atanh,
+			"Atan2": GLSLStd450_Atan2,
+			"Pow": GLSLStd450_Pow,
+			"Exp": GLSLStd450_Exp,
+			"Log": GLSLStd450_Log,
+			"Exp2": GLSLStd450_Exp2,
+			"Log2": GLSLStd450_Log2,
+			"Sqrt": GLSLStd450_Sqrt,
+			"InverseSqrt": GLSLStd450_InverseSqrt,
+			"Determinant": GLSLStd450_Determinant,
+			"MatrixInverse": GLSLStd450_MatrixInverse,
+			"Modf": GLSLStd450_Modf,
+			"ModfStruct": GLSLStd450_ModfStruct,
+			"FMin": GLSLStd450_FMin,
+			"UMin": GLSLStd450_UMin,
+			"SMin": GLSLStd450_SMin,
+			"FMax": GLSLStd450_FMax,
+			"UMax": GLSLStd450_UMax,
+			"SMax": GLSLStd450_SMax,
+			"FClamp": GLSLStd450_FClamp,
+			"UClamp": GLSLStd450_UClamp,
+			"SClamp": GLSLStd450_SClamp,
+			"FMix": GLSLStd450_FMix,
+			"IMix": GLSLStd450_IMix,
+			"Step": GLSLStd450_Step,
+			"SmoothStep": GLSLStd450_SmoothStep,
+			"Fma": GLSLStd450_Fma,
+			"Frexp": GLSLStd450_Frexp,
+			"FrexpStruct": GLSLStd450_FrexpStruct,
+			"Ldexp": GLSLStd450_Ldexp,
+			"PackSnorm4x8": GLSLStd450_PackSnorm4x8,
+			"PackUnorm4x8": GLSLStd450_PackUnorm4x8,
+			"PackSnorm2x16": GLSLStd450_PackSnorm2x16,
+			"PackUnorm2x16": GLSLStd450_PackUnorm2x16,
+			"PackHalf2x16": GLSLStd450_PackHalf2x16,
+			"PackDouble2x32": GLSLStd450_PackDouble2x32,
+			"UnpackSnorm2x16": GLSLStd450_UnpackSnorm2x16,
+			"UnpackUnorm2x16": GLSLStd450_UnpackUnorm2x16,
+			"UnpackHalf2x16": GLSLStd450_UnpackHalf2x16,
+			"UnpackSnorm4x8": GLSLStd450_UnpackSnorm4x8,
+			"UnpackUnorm4x8": GLSLStd450_UnpackUnorm4x8,
+			"UnpackDouble2x32": GLSLStd450_UnpackDouble2x32,
+			"Length": GLSLStd450_Length,
+			"Distance": GLSLStd450_Distance,
+			"Cross": GLSLStd450_Cross,
+			"Normalize": GLSLStd450_Normalize,
+			"FaceForward": GLSLStd450_FaceForward,
+			"Reflect": GLSLStd450_Reflect,
+			"Refract": GLSLStd450_Refract,
+			"FindILsb": GLSLStd450_FindILsb,
+			"FindSMsb": GLSLStd450_FindSMsb,
+			"FindUMsb": GLSLStd450_FindUMsb,
+			"InterpolateAtCentroid": GLSLStd450_InterpolateAtCentroid,
+			"InterpolateAtSample": GLSLStd450_InterpolateAtSample,
+			"InterpolateAtOffset": GLSLStd450_InterpolateAtOffset,
+			"NMin": GLSLStd450_NMin,
+			"NMax": GLSLStd450_NMax,
+			"NClamp": GLSLStd450_NClamp,
+		},
+		"OpenCL.std": {
+			"acos": OpenCLStd_acos,
+			"acosh": OpenCLStd_acosh,
+			"acospi": OpenCLStd_acospi,
+			"asin": OpenCLStd_asin,
+			"asinh": OpenCLStd_asinh,
+			"asinpi": OpenCLStd_asinpi,
+			"atan": OpenCLStd_atan,
+			"atan2": OpenCLStd_atan2,
+			"atanh": OpenCLStd_atanh,
+			"atanpi": OpenCLStd_atanpi,
+			"atan2pi": OpenCLStd_atan2pi,
+			"cbrt": OpenCLStd_cbrt,
+			"ceil": OpenCLStd_ceil,
+			"copysign": OpenCLStd_copysign,
+			"cos": OpenCLStd_cos,
+			"cosh": OpenCLStd_cosh,
+			"cospi": OpenCLStd_cospi,
+			"erfc": OpenCLStd_erfc,
+			"erf": OpenCLStd_erf,
+			"exp": OpenCLStd_exp,
+			"exp2": OpenCLStd_exp2,
+			"exp10": OpenCLStd_exp10,
+			"expm1": OpenCLStd_expm1,
+			"fabs": OpenCLStd_fabs,
+			"fdim": OpenCLStd_fdim,
+			"floor": OpenCLStd_floor,
+			"fma": OpenCLStd_fma,
+			"fmax": OpenCLStd_fmax,
+			"fmin": OpenCLStd_fmin,
+			"fmod": OpenCLStd_fmod,
+			"fract": OpenCLStd_fract,
+			"frexp": OpenCLStd_frexp,
+			"hypot": OpenCLStd_hypot,
+			"ilogb": OpenCLStd_ilogb,
+			"ldexp": OpenCLStd_ldexp,
+			"lgamma": OpenCLStd_lgamma,
+			"lgamma_r": OpenCLStd_lgamma_r,
+			"log": OpenCLStd_log,
+			"log2": OpenCLStd_log2,
+			"log10": OpenCLStd_log10,
+			"log1p": OpenCLStd_log1p,
+			"logb": OpenCLStd_logb,
+			"mad": OpenCLStd_mad,
+			"maxmag": OpenCLStd_maxmag,
+			"minmag": OpenCLStd_minmag,
+			"modf": OpenCLStd_modf,
+			"nan": OpenCLStd_nan,
+			"nextafter": OpenCLStd_nextafter,
+			"pow": OpenCLStd_pow,
+			"pown": OpenCLStd_pown,
+			"powr": OpenCLStd_powr,
+			"remainder": OpenCLStd_remainder,
+			"remquo": OpenCLStd_remquo,
+			"rint": OpenCLStd_rint,
+			"rootn": OpenCLStd_rootn,
+			"round": OpenCLStd_round,
+			"rsqrt": OpenCLStd_rsqrt,
+			"sin": OpenCLStd_sin,
+			"sincos": OpenCLStd_sincos,
+			"sinh": OpenCLStd_sinh,
+			"sinpi": OpenCLStd_sinpi,
+			"sqrt": OpenCLStd_sqrt,
+			"tan": OpenCLStd_tan,
+			"tanh": OpenCLStd_tanh,
+			"tanpi": OpenCLStd_tanpi,
+			"tgamma": OpenCLStd_tgamma,
+			"trunc": OpenCLStd_trunc,
+			"half_cos": OpenCLStd_half_cos,
+			"half_divide": OpenCLStd_half_divide,
+			"half_exp": OpenCLStd_half_exp,
+			"half_exp2": OpenCLStd_half_exp2,
+			"half_exp10": OpenCLStd_half_exp10,
+			"half_log": OpenCLStd_half_log,
+			"half_log2": OpenCLStd_half_log2,
+			"half_log10": OpenCLStd_half_log10,
+			"half_powr": OpenCLStd_half_powr,
+			"half_recip": OpenCLStd_half_recip,
+			"half_rsqrt": OpenCLStd_half_rsqrt,
+			"half_sin": OpenCLStd_half_sin,
+			"half_sqrt": OpenCLStd_half_sqrt,
+			"half_tan": OpenCLStd_half_tan,
+			"native_cos": OpenCLStd_native_cos,
+			"native_divide": OpenCLStd_native_divide,
+			"native_exp": OpenCLStd_native_exp,
+			"native_exp2": OpenCLStd_native_exp2,
+			"native_exp10": OpenCLStd_native_exp10,
+			"native_log": OpenCLStd_native_log,
+			"native_log2": OpenCLStd_native_log2,
+			"native_log10": OpenCLStd_native_log10,
+			"native_powr": OpenCLStd_native_powr,
+			"native_recip": OpenCLStd_native_recip,
+			"native_rsqrt": OpenCLStd_native_rsqrt,
+			"native_sin": OpenCLStd_native_sin,
+			"native_sqrt": OpenCLStd_native_sqrt,
+			"native_tan": OpenCLStd_native_tan,
+			"s_abs": OpenCLStd_s_abs,
+			"s_abs_diff": OpenCLStd_s_abs_diff,
+			"s_add_sat": OpenCLStd_s_add_sat,
+			"u_add_sat": OpenCLStd_u_add_sat,
+			"s_hadd": OpenCLStd_s_hadd,
+			"u_hadd": OpenCLStd_u_hadd,
+			"s_rhadd": OpenCLStd_s_rhadd,
+			"u_rhadd": OpenCLStd_u_rhadd,
+			"s_clamp": OpenCLStd_s_clamp,
+			"u_clamp": OpenCLStd_u_clamp,
+			"clz": OpenCLStd_clz,
+			"ctz": OpenCLStd_ctz,
+			"s_mad_hi": OpenCLStd_s_mad_hi,
+			"u_mad_sat": OpenCLStd_u_mad_sat,
+			"s_mad_sat": OpenCLStd_s_mad_sat,
+			"s_max": OpenCLStd_s_max,
+			"u_max": OpenCLStd_u_max,
+			"s_min": OpenCLStd_s_min,
+			"u_min": OpenCLStd_u_min,
+			"s_mul_hi": OpenCLStd_s_mul_hi,
+			"rotate": OpenCLStd_rotate,
+			"s_sub_sat": OpenCLStd_s_sub_sat,
+			"u_sub_sat": OpenCLStd_u_sub_sat,
+			"u_upsample": OpenCLStd_u_upsample,
+			"s_upsample": OpenCLStd_s_upsample,
+			"popcount": OpenCLStd_popcount,
+			"s_mad24": OpenCLStd_s_mad24,
+			"u_mad24": OpenCLStd_u_mad24,
+			"s_mul24": OpenCLStd_s_mul24,
+			"u_mul24": OpenCLStd_u_mul24,
+			"u_abs": OpenCLStd_u_abs,
+			"u_abs_diff": OpenCLStd_u_abs_diff,
+			"u_mul_hi": OpenCLStd_u_mul_hi,
+			"u_mad_hi": OpenCLStd_u_mad_hi,
+			"fclamp": OpenCLStd_fclamp,
+			"degrees": OpenCLStd_degrees,
+			"fmax_common": OpenCLStd_fmax_common,
+			"fmin_common": OpenCLStd_fmin_common,
+			"mix": OpenCLStd_mix,
+			"radians": OpenCLStd_radians,
+			"step": OpenCLStd_step,
+			"smoothstep": OpenCLStd_smoothstep,
+			"sign": OpenCLStd_sign,
+			"cross": OpenCLStd_cross,
+			"distance": OpenCLStd_distance,
+			"length": OpenCLStd_length,
+			"normalize": OpenCLStd_normalize,
+			"fast_distance": OpenCLStd_fast_distance,
+			"fast_length": OpenCLStd_fast_length,
+			"fast_normalize": OpenCLStd_fast_normalize,
+			"bitselect": OpenCLStd_bitselect,
+			"select": OpenCLStd_select,
+			"vloadn": OpenCLStd_vloadn,
+			"vstoren": OpenCLStd_vstoren,
+			"vload_half": OpenCLStd_vload_half,
+			"vload_halfn": OpenCLStd_vload_halfn,
+			"vstore_half": OpenCLStd_vstore_half,
+			"vstore_half_r": OpenCLStd_vstore_half_r,
+			"vstore_halfn": OpenCLStd_vstore_halfn,
+			"vstore_halfn_r": OpenCLStd_vstore_halfn_r,
+			"vloada_halfn": OpenCLStd_vloada_halfn,
+			"vstorea_halfn": OpenCLStd_vstorea_halfn,
+			"vstorea_halfn_r": OpenCLStd_vstorea_halfn_r,
+			"shuffle": OpenCLStd_shuffle,
+			"shuffle2": OpenCLStd_shuffle2,
+			"printf": OpenCLStd_printf,
+			"prefetch": OpenCLStd_prefetch,
+		},
+		"OpenCL.DebugInfo.100": {
+			"DebugInfoNone": OpenCLDebugInfo100_DebugInfoNone,
+			"DebugCompilationUnit": OpenCLDebugInfo100_DebugCompilationUnit,
+			"DebugTypeBasic": OpenCLDebugInfo100_DebugTypeBasic,
+			"DebugTypePointer": OpenCLDebugInfo100_DebugTypePointer,
+			"DebugTypeQualifier": OpenCLDebugInfo100_DebugTypeQualifier,
+			"DebugTypeArray": OpenCLDebugInfo100_DebugTypeArray,
+			"DebugTypeVector": OpenCLDebugInfo100_DebugTypeVector,
+			"DebugTypedef": OpenCLDebugInfo100_DebugTypedef,
+			"DebugTypeFunction": OpenCLDebugInfo100_DebugTypeFunction,
+			"DebugTypeEnum": OpenCLDebugInfo100_DebugTypeEnum,
+			"DebugTypeComposite": OpenCLDebugInfo100_DebugTypeComposite,
+			"DebugTypeMember": OpenCLDebugInfo100_DebugTypeMember,
+			"DebugTypeInheritance": OpenCLDebugInfo100_DebugTypeInheritance,
+			"DebugTypePtrToMember": OpenCLDebugInfo100_DebugTypePtrToMember,
+			"DebugTypeTemplate": OpenCLDebugInfo100_DebugTypeTemplate,
+			"DebugTypeTemplateParameter": OpenCLDebugInfo100_DebugTypeTemplateParameter,
+			"DebugTypeTemplateTemplateParameter": OpenCLDebugInfo100_DebugTypeTemplateTemplateParameter,
+			"DebugTypeTemplateParameterPack": OpenCLDebugInfo100_DebugTypeTemplateParameterPack,
+			"DebugGlobalVariable": OpenCLDebugInfo100_DebugGlobalVariable,
+			"DebugFunctionDeclaration": OpenCLDebugInfo100_DebugFunctionDeclaration,
+			"DebugFunction": OpenCLDebugInfo100_DebugFunction,
+			"DebugLexicalBlock": OpenCLDebugInfo100_DebugLexicalBlock,
+			"DebugLexicalBlockDiscriminator": OpenCLDebugInfo100_DebugLexicalBlockDiscriminator,
+			"DebugScope": OpenCLDebugInfo100_DebugScope,
+			"DebugNoScope": OpenCLDebugInfo100_DebugNoScope,
+			"DebugInlinedAt": OpenCLDebugInfo100_DebugInlinedAt,
+			"DebugLocalVariable": OpenCLDebugInfo100_DebugLocalVariable,
+			"DebugInlinedVariable": OpenCLDebugInfo100_DebugInlinedVariable,
+			"DebugDeclare": OpenCLDebugInfo100_DebugDeclare,
+			"DebugValue": OpenCLDebugInfo100_DebugValue,
+			"DebugOperation": OpenCLDebugInfo100_DebugOperation,
+			"DebugExpression": OpenCLDebugInfo100_DebugExpression,
+			"DebugMacroDef": OpenCLDebugInfo100_DebugMacroDef,
+			"DebugMacroUndef": OpenCLDebugInfo100_DebugMacroUndef,
+			"DebugImportedEntity": OpenCLDebugInfo100_DebugImportedEntity,
+			"DebugSource": OpenCLDebugInfo100_DebugSource,
+		},
 	}
 
 	OpNop = &Opcode {
@@ -13353,6 +13644,4167 @@ var (
 		},
 	}
 
+	GLSLStd450_Round = &Opcode {
+		Opname:   "Round",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_RoundEven = &Opcode {
+		Opname:   "RoundEven",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Trunc = &Opcode {
+		Opname:   "Trunc",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FAbs = &Opcode {
+		Opname:   "FAbs",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_SAbs = &Opcode {
+		Opname:   "SAbs",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FSign = &Opcode {
+		Opname:   "FSign",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_SSign = &Opcode {
+		Opname:   "SSign",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Floor = &Opcode {
+		Opname:   "Floor",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Ceil = &Opcode {
+		Opname:   "Ceil",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Fract = &Opcode {
+		Opname:   "Fract",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Radians = &Opcode {
+		Opname:   "Radians",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'degrees'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Degrees = &Opcode {
+		Opname:   "Degrees",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'radians'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Sin = &Opcode {
+		Opname:   "Sin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Cos = &Opcode {
+		Opname:   "Cos",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Tan = &Opcode {
+		Opname:   "Tan",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Asin = &Opcode {
+		Opname:   "Asin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Acos = &Opcode {
+		Opname:   "Acos",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Atan = &Opcode {
+		Opname:   "Atan",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y_over_x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Sinh = &Opcode {
+		Opname:   "Sinh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Cosh = &Opcode {
+		Opname:   "Cosh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Tanh = &Opcode {
+		Opname:   "Tanh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Asinh = &Opcode {
+		Opname:   "Asinh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Acosh = &Opcode {
+		Opname:   "Acosh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Atanh = &Opcode {
+		Opname:   "Atanh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Atan2 = &Opcode {
+		Opname:   "Atan2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Pow = &Opcode {
+		Opname:   "Pow",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Exp = &Opcode {
+		Opname:   "Exp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Log = &Opcode {
+		Opname:   "Log",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Exp2 = &Opcode {
+		Opname:   "Exp2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Log2 = &Opcode {
+		Opname:   "Log2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Sqrt = &Opcode {
+		Opname:   "Sqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_InverseSqrt = &Opcode {
+		Opname:   "InverseSqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Determinant = &Opcode {
+		Opname:   "Determinant",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_MatrixInverse = &Opcode {
+		Opname:   "MatrixInverse",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Modf = &Opcode {
+		Opname:   "Modf",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'i'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_ModfStruct = &Opcode {
+		Opname:   "ModfStruct",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FMin = &Opcode {
+		Opname:   "FMin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UMin = &Opcode {
+		Opname:   "UMin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_SMin = &Opcode {
+		Opname:   "SMin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FMax = &Opcode {
+		Opname:   "FMax",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UMax = &Opcode {
+		Opname:   "UMax",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_SMax = &Opcode {
+		Opname:   "SMax",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FClamp = &Opcode {
+		Opname:   "FClamp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'minVal'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'maxVal'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UClamp = &Opcode {
+		Opname:   "UClamp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'minVal'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'maxVal'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_SClamp = &Opcode {
+		Opname:   "SClamp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'minVal'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'maxVal'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FMix = &Opcode {
+		Opname:   "FMix",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_IMix = &Opcode {
+		Opname:   "IMix",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Step = &Opcode {
+		Opname:   "Step",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'edge'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_SmoothStep = &Opcode {
+		Opname:   "SmoothStep",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'edge0'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'edge1'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Fma = &Opcode {
+		Opname:   "Fma",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'b'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'c'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Frexp = &Opcode {
+		Opname:   "Frexp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'exp'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FrexpStruct = &Opcode {
+		Opname:   "FrexpStruct",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Ldexp = &Opcode {
+		Opname:   "Ldexp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'exp'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_PackSnorm4x8 = &Opcode {
+		Opname:   "PackSnorm4x8",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_PackUnorm4x8 = &Opcode {
+		Opname:   "PackUnorm4x8",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_PackSnorm2x16 = &Opcode {
+		Opname:   "PackSnorm2x16",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_PackUnorm2x16 = &Opcode {
+		Opname:   "PackUnorm2x16",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_PackHalf2x16 = &Opcode {
+		Opname:   "PackHalf2x16",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_PackDouble2x32 = &Opcode {
+		Opname:   "PackDouble2x32",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UnpackSnorm2x16 = &Opcode {
+		Opname:   "UnpackSnorm2x16",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UnpackUnorm2x16 = &Opcode {
+		Opname:   "UnpackUnorm2x16",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UnpackHalf2x16 = &Opcode {
+		Opname:   "UnpackHalf2x16",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UnpackSnorm4x8 = &Opcode {
+		Opname:   "UnpackSnorm4x8",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UnpackUnorm4x8 = &Opcode {
+		Opname:   "UnpackUnorm4x8",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_UnpackDouble2x32 = &Opcode {
+		Opname:   "UnpackDouble2x32",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Length = &Opcode {
+		Opname:   "Length",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Distance = &Opcode {
+		Opname:   "Distance",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p0'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p1'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Cross = &Opcode {
+		Opname:   "Cross",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Normalize = &Opcode {
+		Opname:   "Normalize",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FaceForward = &Opcode {
+		Opname:   "FaceForward",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'N'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'I'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Nref'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Reflect = &Opcode {
+		Opname:   "Reflect",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'I'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'N'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_Refract = &Opcode {
+		Opname:   "Refract",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'I'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'N'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'eta'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FindILsb = &Opcode {
+		Opname:   "FindILsb",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FindSMsb = &Opcode {
+		Opname:   "FindSMsb",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_FindUMsb = &Opcode {
+		Opname:   "FindUMsb",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_InterpolateAtCentroid = &Opcode {
+		Opname:   "InterpolateAtCentroid",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'interpolant'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_InterpolateAtSample = &Opcode {
+		Opname:   "InterpolateAtSample",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'interpolant'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'sample'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_InterpolateAtOffset = &Opcode {
+		Opname:   "InterpolateAtOffset",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'interpolant'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_NMin = &Opcode {
+		Opname:   "NMin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_NMax = &Opcode {
+		Opname:   "NMax",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	GLSLStd450_NClamp = &Opcode {
+		Opname:   "NClamp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'minVal'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'maxVal'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_acos = &Opcode {
+		Opname:   "acos",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_acosh = &Opcode {
+		Opname:   "acosh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_acospi = &Opcode {
+		Opname:   "acospi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_asin = &Opcode {
+		Opname:   "asin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_asinh = &Opcode {
+		Opname:   "asinh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_asinpi = &Opcode {
+		Opname:   "asinpi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_atan = &Opcode {
+		Opname:   "atan",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_atan2 = &Opcode {
+		Opname:   "atan2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_atanh = &Opcode {
+		Opname:   "atanh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_atanpi = &Opcode {
+		Opname:   "atanpi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_atan2pi = &Opcode {
+		Opname:   "atan2pi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_cbrt = &Opcode {
+		Opname:   "cbrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_ceil = &Opcode {
+		Opname:   "ceil",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_copysign = &Opcode {
+		Opname:   "copysign",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_cos = &Opcode {
+		Opname:   "cos",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_cosh = &Opcode {
+		Opname:   "cosh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_cospi = &Opcode {
+		Opname:   "cospi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_erfc = &Opcode {
+		Opname:   "erfc",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_erf = &Opcode {
+		Opname:   "erf",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_exp = &Opcode {
+		Opname:   "exp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_exp2 = &Opcode {
+		Opname:   "exp2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_exp10 = &Opcode {
+		Opname:   "exp10",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_expm1 = &Opcode {
+		Opname:   "expm1",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fabs = &Opcode {
+		Opname:   "fabs",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fdim = &Opcode {
+		Opname:   "fdim",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_floor = &Opcode {
+		Opname:   "floor",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fma = &Opcode {
+		Opname:   "fma",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'b'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'c'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fmax = &Opcode {
+		Opname:   "fmax",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fmin = &Opcode {
+		Opname:   "fmin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fmod = &Opcode {
+		Opname:   "fmod",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fract = &Opcode {
+		Opname:   "fract",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'ptr'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_frexp = &Opcode {
+		Opname:   "frexp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'exp'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_hypot = &Opcode {
+		Opname:   "hypot",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_ilogb = &Opcode {
+		Opname:   "ilogb",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_ldexp = &Opcode {
+		Opname:   "ldexp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'k'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_lgamma = &Opcode {
+		Opname:   "lgamma",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_lgamma_r = &Opcode {
+		Opname:   "lgamma_r",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'signp'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_log = &Opcode {
+		Opname:   "log",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_log2 = &Opcode {
+		Opname:   "log2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_log10 = &Opcode {
+		Opname:   "log10",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_log1p = &Opcode {
+		Opname:   "log1p",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_logb = &Opcode {
+		Opname:   "logb",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_mad = &Opcode {
+		Opname:   "mad",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'b'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'c'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_maxmag = &Opcode {
+		Opname:   "maxmag",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_minmag = &Opcode {
+		Opname:   "minmag",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_modf = &Opcode {
+		Opname:   "modf",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'iptr'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_nan = &Opcode {
+		Opname:   "nan",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'nancode'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_nextafter = &Opcode {
+		Opname:   "nextafter",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_pow = &Opcode {
+		Opname:   "pow",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_pown = &Opcode {
+		Opname:   "pown",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_powr = &Opcode {
+		Opname:   "powr",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_remainder = &Opcode {
+		Opname:   "remainder",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_remquo = &Opcode {
+		Opname:   "remquo",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'quo'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_rint = &Opcode {
+		Opname:   "rint",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_rootn = &Opcode {
+		Opname:   "rootn",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_round = &Opcode {
+		Opname:   "round",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_rsqrt = &Opcode {
+		Opname:   "rsqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_sin = &Opcode {
+		Opname:   "sin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_sincos = &Opcode {
+		Opname:   "sincos",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'cosval'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_sinh = &Opcode {
+		Opname:   "sinh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_sinpi = &Opcode {
+		Opname:   "sinpi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_sqrt = &Opcode {
+		Opname:   "sqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_tan = &Opcode {
+		Opname:   "tan",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_tanh = &Opcode {
+		Opname:   "tanh",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_tanpi = &Opcode {
+		Opname:   "tanpi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_tgamma = &Opcode {
+		Opname:   "tgamma",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_trunc = &Opcode {
+		Opname:   "trunc",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_cos = &Opcode {
+		Opname:   "half_cos",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_divide = &Opcode {
+		Opname:   "half_divide",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_exp = &Opcode {
+		Opname:   "half_exp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_exp2 = &Opcode {
+		Opname:   "half_exp2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_exp10 = &Opcode {
+		Opname:   "half_exp10",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_log = &Opcode {
+		Opname:   "half_log",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_log2 = &Opcode {
+		Opname:   "half_log2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_log10 = &Opcode {
+		Opname:   "half_log10",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_powr = &Opcode {
+		Opname:   "half_powr",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_recip = &Opcode {
+		Opname:   "half_recip",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_rsqrt = &Opcode {
+		Opname:   "half_rsqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_sin = &Opcode {
+		Opname:   "half_sin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_sqrt = &Opcode {
+		Opname:   "half_sqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_half_tan = &Opcode {
+		Opname:   "half_tan",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_cos = &Opcode {
+		Opname:   "native_cos",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_divide = &Opcode {
+		Opname:   "native_divide",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_exp = &Opcode {
+		Opname:   "native_exp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_exp2 = &Opcode {
+		Opname:   "native_exp2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_exp10 = &Opcode {
+		Opname:   "native_exp10",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_log = &Opcode {
+		Opname:   "native_log",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_log2 = &Opcode {
+		Opname:   "native_log2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_log10 = &Opcode {
+		Opname:   "native_log10",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_powr = &Opcode {
+		Opname:   "native_powr",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_recip = &Opcode {
+		Opname:   "native_recip",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_rsqrt = &Opcode {
+		Opname:   "native_rsqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_sin = &Opcode {
+		Opname:   "native_sin",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_sqrt = &Opcode {
+		Opname:   "native_sqrt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_native_tan = &Opcode {
+		Opname:   "native_tan",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_abs = &Opcode {
+		Opname:   "s_abs",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_abs_diff = &Opcode {
+		Opname:   "s_abs_diff",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_add_sat = &Opcode {
+		Opname:   "s_add_sat",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_add_sat = &Opcode {
+		Opname:   "u_add_sat",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_hadd = &Opcode {
+		Opname:   "s_hadd",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_hadd = &Opcode {
+		Opname:   "u_hadd",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_rhadd = &Opcode {
+		Opname:   "s_rhadd",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_rhadd = &Opcode {
+		Opname:   "u_rhadd",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_clamp = &Opcode {
+		Opname:   "s_clamp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'minval'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'maxval'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_clamp = &Opcode {
+		Opname:   "u_clamp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'minval'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'maxval'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_clz = &Opcode {
+		Opname:   "clz",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_ctz = &Opcode {
+		Opname:   "ctz",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_mad_hi = &Opcode {
+		Opname:   "s_mad_hi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'b'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'c'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_mad_sat = &Opcode {
+		Opname:   "u_mad_sat",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'z'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_mad_sat = &Opcode {
+		Opname:   "s_mad_sat",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'z'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_max = &Opcode {
+		Opname:   "s_max",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_max = &Opcode {
+		Opname:   "u_max",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_min = &Opcode {
+		Opname:   "s_min",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_min = &Opcode {
+		Opname:   "u_min",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_mul_hi = &Opcode {
+		Opname:   "s_mul_hi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_rotate = &Opcode {
+		Opname:   "rotate",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'v'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'i'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_sub_sat = &Opcode {
+		Opname:   "s_sub_sat",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_sub_sat = &Opcode {
+		Opname:   "u_sub_sat",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_upsample = &Opcode {
+		Opname:   "u_upsample",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'hi'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'lo'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_upsample = &Opcode {
+		Opname:   "s_upsample",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'hi'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'lo'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_popcount = &Opcode {
+		Opname:   "popcount",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_mad24 = &Opcode {
+		Opname:   "s_mad24",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'z'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_mad24 = &Opcode {
+		Opname:   "u_mad24",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'z'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_s_mul24 = &Opcode {
+		Opname:   "s_mul24",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_mul24 = &Opcode {
+		Opname:   "u_mul24",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_abs = &Opcode {
+		Opname:   "u_abs",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_abs_diff = &Opcode {
+		Opname:   "u_abs_diff",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_mul_hi = &Opcode {
+		Opname:   "u_mul_hi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_u_mad_hi = &Opcode {
+		Opname:   "u_mad_hi",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'b'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'c'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fclamp = &Opcode {
+		Opname:   "fclamp",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'minval'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'maxval'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_degrees = &Opcode {
+		Opname:   "degrees",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'radians'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fmax_common = &Opcode {
+		Opname:   "fmax_common",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fmin_common = &Opcode {
+		Opname:   "fmin_common",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_mix = &Opcode {
+		Opname:   "mix",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_radians = &Opcode {
+		Opname:   "radians",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'degrees'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_step = &Opcode {
+		Opname:   "step",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'edge'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_smoothstep = &Opcode {
+		Opname:   "smoothstep",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'edge0'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'edge1'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_sign = &Opcode {
+		Opname:   "sign",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_cross = &Opcode {
+		Opname:   "cross",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p0'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p1'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_distance = &Opcode {
+		Opname:   "distance",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p0'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p1'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_length = &Opcode {
+		Opname:   "length",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_normalize = &Opcode {
+		Opname:   "normalize",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fast_distance = &Opcode {
+		Opname:   "fast_distance",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p0'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p1'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fast_length = &Opcode {
+		Opname:   "fast_length",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_fast_normalize = &Opcode {
+		Opname:   "fast_normalize",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_bitselect = &Opcode {
+		Opname:   "bitselect",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'b'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'c'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_select = &Opcode {
+		Opname:   "select",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'a'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'b'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'c'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vloadn = &Opcode {
+		Opname:   "vloadn",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'n'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vstoren = &Opcode {
+		Opname:   "vstoren",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'data'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vload_half = &Opcode {
+		Opname:   "vload_half",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vload_halfn = &Opcode {
+		Opname:   "vload_halfn",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'n'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vstore_half = &Opcode {
+		Opname:   "vstore_half",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'data'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vstore_half_r = &Opcode {
+		Opname:   "vstore_half_r",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'data'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindFPRoundingMode,
+				Name:       "'mode'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vstore_halfn = &Opcode {
+		Opname:   "vstore_halfn",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'data'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vstore_halfn_r = &Opcode {
+		Opname:   "vstore_halfn_r",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'data'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindFPRoundingMode,
+				Name:       "'mode'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vloada_halfn = &Opcode {
+		Opname:   "vloada_halfn",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'n'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vstorea_halfn = &Opcode {
+		Opname:   "vstorea_halfn",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'data'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_vstorea_halfn_r = &Opcode {
+		Opname:   "vstorea_halfn_r",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'data'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'p'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindFPRoundingMode,
+				Name:       "'mode'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_shuffle = &Opcode {
+		Opname:   "shuffle",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'shuffle mask'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_shuffle2 = &Opcode {
+		Opname:   "shuffle2",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'x'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'y'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'shuffle mask'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLStd_printf = &Opcode {
+		Opname:   "printf",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'format'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'additional arguments'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLStd_prefetch = &Opcode {
+		Opname:   "prefetch",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'ptr'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'num elements'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugInfoNone = &Opcode {
+		Opname:   "DebugInfoNone",
+		Operands: []Operand {
+		},
+	}
+	OpenCLDebugInfo100_DebugCompilationUnit = &Opcode {
+		Opname:   "DebugCompilationUnit",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Version'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'DWARF Version'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindSourceLanguage,
+				Name:       "'Language'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeBasic = &Opcode {
+		Opname:   "DebugTypeBasic",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Size'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugBaseTypeAttributeEncoding,
+				Name:       "'Encoding'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypePointer = &Opcode {
+		Opname:   "DebugTypePointer",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Base Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindStorageClass,
+				Name:       "'Storage Class'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeQualifier = &Opcode {
+		Opname:   "DebugTypeQualifier",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Base Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugTypeQualifier,
+				Name:       "'Type Qualifier'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeArray = &Opcode {
+		Opname:   "DebugTypeArray",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Base Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Component Counts'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeVector = &Opcode {
+		Opname:   "DebugTypeVector",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Base Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Component Count'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypedef = &Opcode {
+		Opname:   "DebugTypedef",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Base Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeFunction = &Opcode {
+		Opname:   "DebugTypeFunction",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Return Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parameter Types'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeEnum = &Opcode {
+		Opname:   "DebugTypeEnum",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Underlying Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Size'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindPairIdRefIdRef,
+				Name:       "'Value, Name, Value, Name, ...'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeComposite = &Opcode {
+		Opname:   "DebugTypeComposite",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugCompositeType,
+				Name:       "'Tag'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Linkage Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Size'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Members'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeMember = &Opcode {
+		Opname:   "DebugTypeMember",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Size'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeInheritance = &Opcode {
+		Opname:   "DebugTypeInheritance",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Child'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Size'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypePtrToMember = &Opcode {
+		Opname:   "DebugTypePtrToMember",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Member Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeTemplate = &Opcode {
+		Opname:   "DebugTypeTemplate",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Target'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parameters'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeTemplateParameter = &Opcode {
+		Opname:   "DebugTypeTemplateParameter",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Actual Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeTemplateTemplateParameter = &Opcode {
+		Opname:   "DebugTypeTemplateTemplateParameter",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Template Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugTypeTemplateParameterPack = &Opcode {
+		Opname:   "DebugTypeTemplateParameterPack",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Template Parameters'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugGlobalVariable = &Opcode {
+		Opname:   "DebugGlobalVariable",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Linkage Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Variable'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Static Member Declaration'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugFunctionDeclaration = &Opcode {
+		Opname:   "DebugFunctionDeclaration",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Linkage Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugFunction = &Opcode {
+		Opname:   "DebugFunction",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Linkage Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Scope Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Function'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Declaration'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugLexicalBlock = &Opcode {
+		Opname:   "DebugLexicalBlock",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugLexicalBlockDiscriminator = &Opcode {
+		Opname:   "DebugLexicalBlockDiscriminator",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Discriminator'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugScope = &Opcode {
+		Opname:   "DebugScope",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Scope'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Inlined At'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugNoScope = &Opcode {
+		Opname:   "DebugNoScope",
+		Operands: []Operand {
+		},
+	}
+	OpenCLDebugInfo100_DebugInlinedAt = &Opcode {
+		Opname:   "DebugInlinedAt",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Scope'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Inlined'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugLocalVariable = &Opcode {
+		Opname:   "DebugLocalVariable",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugInfoFlags,
+				Name:       "'Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Arg Number'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugInlinedVariable = &Opcode {
+		Opname:   "DebugInlinedVariable",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Variable'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Inlined'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugDeclare = &Opcode {
+		Opname:   "DebugDeclare",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Local Variable'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Variable'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Expression'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugValue = &Opcode {
+		Opname:   "DebugValue",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Local Variable'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Expression'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Indexes'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugOperation = &Opcode {
+		Opname:   "DebugOperation",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindDebugOperation,
+				Name:       "'OpCode'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Operands ...'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugExpression = &Opcode {
+		Opname:   "DebugExpression",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operands ...'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugMacroDef = &Opcode {
+		Opname:   "DebugMacroDef",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugMacroUndef = &Opcode {
+		Opname:   "DebugMacroUndef",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Macro'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugImportedEntity = &Opcode {
+		Opname:   "DebugImportedEntity",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Name'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindDebugImportedEntity,
+				Name:       "'Tag'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Source'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Entity'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Line'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Column'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Parent'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpenCLDebugInfo100_DebugSource = &Opcode {
+		Opname:   "DebugSource",
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'File'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Text'",
+				Quantifier: "?",
+			}, 
+		},
+	}
+
 
 	OperandKindImageOperands = &OperandKind {
 		Kind:       "ImageOperands",
@@ -18113,6 +22565,363 @@ var (
 		Enumerants: []Enumerant {
 		},
 		Bases:      []*OperandKind {OperandKindIdRef,OperandKindIdRef,},
+	}
+	OperandKindDebugInfoFlags = &OperandKind {
+		Kind:       "DebugInfoFlags",
+		Category:   "BitEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "FlagIsProtected",
+				Value:        0x01,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagIsPrivate",
+				Value:        0x02,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagIsPublic",
+				Value:        0x03,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagIsLocal",
+				Value:        0x04,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagIsDefinition",
+				Value:        0x08,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagFwdDecl",
+				Value:        0x10,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagArtificial",
+				Value:        0x20,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagExplicit",
+				Value:        0x40,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagPrototyped",
+				Value:        0x80,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagObjectPointer",
+				Value:        0x100,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagStaticMember",
+				Value:        0x200,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagIndirectVariable",
+				Value:        0x400,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagLValueReference",
+				Value:        0x800,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagRValueReference",
+				Value:        0x1000,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagIsOptimized",
+				Value:        0x2000,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagIsEnumClass",
+				Value:        0x4000,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagTypePassByValue",
+				Value:        0x8000,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "FlagTypePassByReference",
+				Value:        0x10000,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindDebugBaseTypeAttributeEncoding = &OperandKind {
+		Kind:       "DebugBaseTypeAttributeEncoding",
+		Category:   "ValueEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "Unspecified",
+				Value:        0,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Address",
+				Value:        1,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Boolean",
+				Value:        2,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Float",
+				Value:        3,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Signed",
+				Value:        4,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "SignedChar",
+				Value:        5,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Unsigned",
+				Value:        6,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "UnsignedChar",
+				Value:        7,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindDebugCompositeType = &OperandKind {
+		Kind:       "DebugCompositeType",
+		Category:   "ValueEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "Class",
+				Value:        0,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Structure",
+				Value:        1,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Union",
+				Value:        2,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindDebugTypeQualifier = &OperandKind {
+		Kind:       "DebugTypeQualifier",
+		Category:   "ValueEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "ConstType",
+				Value:        0,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "VolatileType",
+				Value:        1,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "RestrictType",
+				Value:        2,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "AtomicType",
+				Value:        3,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindDebugOperation = &OperandKind {
+		Kind:       "DebugOperation",
+		Category:   "ValueEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "Deref",
+				Value:        0,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Plus",
+				Value:        1,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Minus",
+				Value:        2,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "PlusUconst",
+				Value:        3,
+				Capabilities: []string{},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "BitPiece",
+				Value:        4,
+				Capabilities: []string{},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},{OperandKindLiteralInteger, ""},},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Swap",
+				Value:        5,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Xderef",
+				Value:        6,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "StackValue",
+				Value:        7,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Constu",
+				Value:        8,
+				Capabilities: []string{},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "Fragment",
+				Value:        9,
+				Capabilities: []string{},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},{OperandKindLiteralInteger, ""},},
+				Version:      "",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindDebugImportedEntity = &OperandKind {
+		Kind:       "DebugImportedEntity",
+		Category:   "ValueEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "ImportedModule",
+				Value:        0,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "ImportedDeclaration",
+				Value:        1,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+		},
+		Bases:      []*OperandKind {},
 	}
 
 )
