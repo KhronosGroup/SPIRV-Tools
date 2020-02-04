@@ -40,6 +40,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_blocks.h
         fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_add_dead_continues.h
+        fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_no_contraction_decorations.h
         fuzzer_pass_add_useful_constructs.h
         fuzzer_pass_adjust_function_controls.h
@@ -74,6 +75,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_function.h
         transformation_add_global_undef.h
         transformation_add_global_variable.h
+        transformation_add_local_variable.h
         transformation_add_no_contraction_decoration.h
         transformation_add_type_array.h
         transformation_add_type_boolean.h
@@ -112,6 +114,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_blocks.cpp
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_dead_continues.cpp
+        fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
         fuzzer_pass_add_useful_constructs.cpp
         fuzzer_pass_adjust_function_controls.cpp
@@ -145,6 +148,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_function.cpp
         transformation_add_global_undef.cpp
         transformation_add_global_variable.cpp
+        transformation_add_local_variable.cpp
         transformation_add_no_contraction_decoration.cpp
         transformation_add_type_array.cpp
         transformation_add_type_boolean.cpp
