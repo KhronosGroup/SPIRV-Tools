@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ void FuzzerPassAddCompositeTypes::Apply() {
   MaybeAddMissingVectorTypes();
   MaybeAddMissingMatrixTypes();
 
-  // (3) Randomly interleave between adding struct and array composite types
+  // Randomly interleave between adding struct and array composite types
   while (GetFuzzerContext()->ChoosePercentage(
       GetFuzzerContext()->GetChanceOfAddingArrayOrStructType())) {
     if (GetFuzzerContext()->ChoosePercentage(
@@ -119,6 +119,7 @@ uint32_t FuzzerPassAddCompositeTypes::ChooseScalarOrCompositeType() {
       case SpvOpTypeFloat:
       case SpvOpTypeInt:
       case SpvOpTypeMatrix:
+      case SpvOpTypeStruct:
       case SpvOpTypeVector:
         candidates.push_back(inst.result_id());
         break;
