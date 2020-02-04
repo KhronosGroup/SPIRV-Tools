@@ -226,6 +226,20 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context, opt::Instruction* inst) {
     // We can only make a synonym of an instruction that has a type.
     return false;
   }
+  auto type_inst = ir_context->get_def_use_mgr()->GetDef(inst->type_id());
+  if (type_inst->opcode() == SpvOpTypePointer) {
+    switch (inst->opcode()) {
+      case SpvOpConstantNull:
+      case SpvOpUndef:
+        // We disallow making synonyms of null or undefined pointers.  This is
+        // to provide the property that if the original shader exhibited no bad
+        // pointer accesses, the transformed shader will not either.
+        return false;
+      default:
+        break;
+    }
+  }
+
   // We do not make synonyms of objects that have decorations: if the synonym is
   // not decorated analogously, using the original object vs. its synonymous
   // form may not be equivalent.
