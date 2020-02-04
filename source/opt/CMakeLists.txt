@@ -49,7 +49,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   folding_rules.h
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
-  fused_multiply_add_pass.h
   function.h
   fused_multiply_add_pass.h
   generate_webgpu_initializers_pass.h

@@ -180,7 +180,7 @@ class AggressiveDCEPass : public MemPass {
   // Store instructions to variables of private storage
   std::vector<Instruction*> private_stores_;
 
-  // Store instructions to variables of private storage
+  // Track function-variable stores
   std::unordered_map<uint32_t, Instruction*> function_stores_;
 
   // Live Instructions

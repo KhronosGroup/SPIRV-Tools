@@ -23,72 +23,68 @@ Pass::Status FusedMultiplyAddPass::Process() {
   auto ctx = context();
   auto module = get_module();
 
-  uint32_t instSetId = ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
-  assert(instSetId != 0);
+  uint32_t inst_set_id = ctx->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+  assert(inst_set_id != 0);
 
   for (auto& func : *module) {
     for (auto& block : func) {
-      auto iter = block.begin();
-      while (iter != block.end()) {
+      for (auto iter = block.begin(); iter != block.end(); ++iter) {
         auto* instruction = &(*iter);
         switch (instruction->opcode()) {
           case SpvOpFMul:
-            get_def_use_mgr()->WhileEachUser(
-                instruction, [instSetId, instruction, ctx](Instruction* use) {
-                  if (use->opcode() == SpvOpFAdd &&
-                      use->type_id() == instruction->type_id()) {
-                    InstructionBuilder builder(
-                        ctx, use,
-                        IRContext::kAnalysisDefUse |
-                            IRContext::kAnalysisInstrToBlockMapping);
-
-                    std::vector<Operand> operands;
-                    operands.push_back(
-                        {SPV_OPERAND_TYPE_LITERAL_INTEGER, {instSetId}});
-                    operands.push_back(
-                        {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
-                         {GLSLstd450Fma}});
-                    operands.push_back(instruction->GetOperand(2));
-                    operands.push_back(instruction->GetOperand(3));
-
-                    auto const& AddOperandL = use->GetOperand(2);
-                    auto const& AddOperandR = use->GetOperand(3);
-                    if (AddOperandL.words.size() == 1 &&
-                        AddOperandL.words[0] == instruction->result_id()) {
-                      operands.push_back(AddOperandR);
-                    } else {
-                      operands.push_back(AddOperandL);
-                    }
-
-                    std::unique_ptr<Instruction> new_inst(new Instruction(
-                        builder.GetContext(), SpvOpExtInst, use->type_id(),
-                        builder.GetContext()->TakeNextId(), operands));
-                    uint32_t result_id = new_inst->result_id();
-                    assert(result_id != 0);
-                    builder.AddInstruction(std::move(new_inst));
-
-                    ctx->ReplaceAllUsesWith(use->result_id(), result_id);
-                  }
-                  return true;
-                });
+            if (ProcessSpvOpFMul(ctx, instruction, inst_set_id)) {
+              status = Status::SuccessWithChange;
+            }
             break;
           default:
             break;
         }
-
-        ++iter;
       }
     }
   }
-  //  for (auto& f : *get_module()) {
-  //    Status functionStatus = ProcessFunction(&f);
-  //    if (functionStatus == Status::Failure)
-  //      return functionStatus;
-  //    else if (functionStatus == Status::SuccessWithChange)
-  //      status = functionStatus;
-  //  }
 
   return status;
+}
+
+bool FusedMultiplyAddPass::ProcessSpvOpFMul(IRContext* ctx,
+                                            Instruction* instruction,
+                                            uint32_t inst_set_id) {
+  bool modified = false;
+  get_def_use_mgr()->ForEachUser(
+    instruction,
+    [inst_set_id, instruction, ctx, &modified](Instruction* use) {
+      if (use->opcode() == SpvOpFAdd &&
+	      use->type_id() == instruction->type_id()) {
+        InstructionBuilder builder(
+          ctx, use,
+          IRContext::kAnalysisDefUse |
+          IRContext::kAnalysisInstrToBlockMapping);
+
+        Instruction* new_inst = builder.AddNaryExtendedInstruction(
+          use->type_id(), inst_set_id, GLSLstd450Fma, {});
+        assert(new_inst != nullptr);
+
+        auto const& AddOperandL = use->GetOperand(2);
+        auto const& AddOperandR = use->GetOperand(3);
+
+        new_inst->AddOperand(AddOperandL);
+        new_inst->AddOperand(AddOperandR);
+
+        if (AddOperandL.words.size() == 1 &&
+            AddOperandL.words[0] == instruction->result_id()) {
+          new_inst->AddOperand(AddOperandR);
+        } else {
+          new_inst->AddOperand(AddOperandL);
+        }
+
+        ctx->ReplaceAllUsesWith(use->result_id(), new_inst->result_id());
+        ctx->UpdateDefUse(new_inst);
+
+        modified = true;
+      }
+    }
+  );
+  return modified;
 }
 
 }  // namespace opt
