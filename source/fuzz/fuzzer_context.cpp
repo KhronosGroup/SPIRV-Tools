@@ -29,6 +29,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBreak = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadContinue = {5, 80};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingGlobalVariable = {20, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingLocalVariable = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
@@ -88,6 +90,10 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingDeadBreak);
   chance_of_adding_dead_continue_ =
       ChooseBetweenMinAndMax(kChanceOfAddingDeadContinue);
+  chance_of_adding_global_variable_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingGlobalVariable);
+  chance_of_adding_local_variable_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingLocalVariable);
   chance_of_adding_matrix_type_ =
       ChooseBetweenMinAndMax(kChanceOfAddingMatrixType);
   chance_of_adding_no_contraction_decoration_ =

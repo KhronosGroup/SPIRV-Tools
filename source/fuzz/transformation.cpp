@@ -26,6 +26,7 @@
 #include "source/fuzz/transformation_add_function.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_global_variable.h"
+#include "source/fuzz/transformation_add_local_variable.h"
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
 #include "source/fuzz/transformation_add_type_array.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
@@ -85,6 +86,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddGlobalVariable:
       return MakeUnique<TransformationAddGlobalVariable>(
           message.add_global_variable());
+    case protobufs::Transformation::TransformationCase::kAddLocalVariable:
+      return MakeUnique<TransformationAddLocalVariable>(
+          message.add_local_variable());
     case protobufs::Transformation::TransformationCase::
         kAddNoContractionDecoration:
       return MakeUnique<TransformationAddNoContractionDecoration>(
