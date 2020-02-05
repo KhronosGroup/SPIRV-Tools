@@ -137,6 +137,10 @@ bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
 uint32_t FindFunctionType(opt::IRContext* ir_context,
                           const std::vector<uint32_t>& type_ids);
 
+// Returns the function with result id |function_id|, or |nullptr| if no such
+// function exists.
+opt::Function* FindFunction(opt::IRContext* ir_context, uint32_t function_id);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

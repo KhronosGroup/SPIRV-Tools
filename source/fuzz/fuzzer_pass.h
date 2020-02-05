@@ -138,12 +138,85 @@ class FuzzerPass {
   // applied to add them.
   uint32_t FindOrCreate32BitIntegerConstant(uint32_t word, bool is_signed);
 
+  // Returns the id of an OpConstant instruction, with 32-bit floating-point
+  // type, with |word| as its value.  If either the required floating-point type
+  // or the constant do not exist, transformations are applied to add them.
+  uint32_t FindOrCreate32BitFloatConstant(uint32_t word);
+
+  // Returns the id of an OpConstantTrue or OpConstantFalse instruction,
+  // according to |value|.  If either the required instruction or the bool
+  // type do not exist, transformations are applied to add them.
+  uint32_t FindOrCreateBoolConstant(bool value);
+
   // Returns the result id of an instruction of the form:
   //   %id = OpUndef %|type_id|
   // If no such instruction exists, a transformation is applied to add it.
   uint32_t FindOrCreateGlobalUndef(uint32_t type_id);
 
+  // Yields a pair, (base_type_ids, base_type_ids_to_pointers), such that:
+  // - base_type_ids captures every scalar or composite type declared in the
+  //   module (i.e., all int, bool, float, vector, matrix, struct and array
+  //   types
+  // - base_type_ids_to_pointers maps every such base type to the sequence
+  //   of all pointer types that have storage class |storage_class| and the
+  //   given base type as their pointee type.  The sequence may be empty for
+  //   some base types if no pointers to those types are defined for the given
+  //   storage class, and the sequence will have multiple elements if there are
+  //   repeated pointer declarations for the same base type and storage class.
+  std::pair<std::vector<uint32_t>, std::map<uint32_t, std::vector<uint32_t>>>
+  GetAvailableBaseTypesAndPointers(SpvStorageClass storage_class) const;
+
+  // Given a type id, |scalar_or_composite_type_id|, which must correspond to
+  // some scalar or composite type, returns the result id of an instruction
+  // defining a constant of the given type that is zero or false at everywhere.
+  // If such an instruction does not yet exist, transformations are applied to
+  // add it.
+  //
+  // Examples:
+  // --------------+-------------------------------
+  //   TYPE        | RESULT is id corresponding to
+  // --------------+-------------------------------
+  //   bool        | false
+  // --------------+-------------------------------
+  //   bvec4       | (false, false, false, false)
+  // --------------+-------------------------------
+  //   float       | 0.0
+  // --------------+-------------------------------
+  //   vec2        | (0.0, 0.0)
+  // --------------+-------------------------------
+  //   int[3]      | [0, 0, 0]
+  // --------------+-------------------------------
+  //   struct S {  |
+  //     int i;    | S(0, false, (0u, 0u))
+  //     bool b;   |
+  //     uint2 u;  |
+  //   }           |
+  // --------------+-------------------------------
+  uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id);
+
  private:
+  // Array, matrix and vector are *homogeneous* composite types in the sense
+  // that every component of one of these types has the same type.  Given a
+  // homogeneous composite type instruction, |composite_type_instruction|,
+  // returns the id of a composite constant instruction for which every element
+  // is zero/false.  If such an instruction does not yet exist, transformations
+  // are applied to add it.
+  uint32_t GetZeroConstantForHomogeneousComposite(
+      const opt::Instruction& composite_type_instruction,
+      uint32_t component_type_id, uint32_t num_components);
+
+  // Helper to find an existing composite constant instruction of the given
+  // composite type with the given constant components, or to apply
+  // transformations to create such an instruction if it does not yet exist.
+  // Parameter |composite_type_instruction| must be a composite type
+  // instruction.  The parameters |constants| and |constant_ids| must have the
+  // same size, and it must be the case that for each i, |constant_ids[i]| is
+  // the result id of an instruction that defines |constants[i]|.
+  uint32_t FindOrCreateCompositeConstant(
+      const opt::Instruction& composite_type_instruction,
+      const std::vector<const opt::analysis::Constant*>& constants,
+      const std::vector<uint32_t>& constant_ids);
+
   opt::IRContext* ir_context_;
   FactManager* fact_manager_;
   FuzzerContext* fuzzer_context_;

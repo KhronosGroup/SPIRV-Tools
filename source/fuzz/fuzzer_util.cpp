@@ -391,6 +391,15 @@ uint32_t FindFunctionType(opt::IRContext* ir_context,
   return 0;
 }
 
+opt::Function* FindFunction(opt::IRContext* ir_context, uint32_t function_id) {
+  for (auto& function : *ir_context->module()) {
+    if (function.result_id() == function_id) {
+      return &function;
+    }
+  }
+  return nullptr;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

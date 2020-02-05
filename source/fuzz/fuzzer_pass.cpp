@@ -14,7 +14,10 @@
 
 #include "source/fuzz/fuzzer_pass.h"
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/fuzz/transformation_add_constant_boolean.h"
+#include "source/fuzz/transformation_add_constant_composite.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
@@ -243,6 +246,42 @@ uint32_t FuzzerPass::FindOrCreate32BitIntegerConstant(uint32_t word,
   return result;
 }
 
+uint32_t FuzzerPass::FindOrCreate32BitFloatConstant(uint32_t word) {
+  auto float_type_id = FindOrCreate32BitFloatType();
+  opt::analysis::FloatConstant float_constant(
+      GetIRContext()->get_type_mgr()->GetType(float_type_id)->AsFloat(),
+      {word});
+  auto existing_constant =
+      GetIRContext()->get_constant_mgr()->FindConstant(&float_constant);
+  if (existing_constant) {
+    return GetIRContext()
+        ->get_constant_mgr()
+        ->GetDefiningInstruction(existing_constant)
+        ->result_id();
+  }
+  auto result = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(
+      TransformationAddConstantScalar(result, float_type_id, {word}));
+  return result;
+}
+
+uint32_t FuzzerPass::FindOrCreateBoolConstant(bool value) {
+  auto bool_type_id = FindOrCreateBoolType();
+  opt::analysis::BoolConstant bool_constant(
+      GetIRContext()->get_type_mgr()->GetType(bool_type_id)->AsBool(), value);
+  auto existing_constant =
+      GetIRContext()->get_constant_mgr()->FindConstant(&bool_constant);
+  if (existing_constant) {
+    return GetIRContext()
+        ->get_constant_mgr()
+        ->GetDefiningInstruction(existing_constant)
+        ->result_id();
+  }
+  auto result = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationAddConstantBoolean(result, value));
+  return result;
+}
+
 uint32_t FuzzerPass::FindOrCreateGlobalUndef(uint32_t type_id) {
   for (auto& inst : GetIRContext()->types_values()) {
     if (inst.opcode() == SpvOpUndef && inst.type_id() == type_id) {
@@ -252,6 +291,148 @@ uint32_t FuzzerPass::FindOrCreateGlobalUndef(uint32_t type_id) {
   auto result = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(TransformationAddGlobalUndef(result, type_id));
   return result;
+}
+
+std::pair<std::vector<uint32_t>, std::map<uint32_t, std::vector<uint32_t>>>
+FuzzerPass::GetAvailableBaseTypesAndPointers(
+    SpvStorageClass storage_class) const {
+  // Records all of the base types available in the module.
+  std::vector<uint32_t> base_types;
+
+  // For each base type, records all the associated pointer types that target
+  // that base type and that have |storage_class| as their storage class.
+  std::map<uint32_t, std::vector<uint32_t>> base_type_to_pointers;
+
+  for (auto& inst : GetIRContext()->types_values()) {
+    switch (inst.opcode()) {
+      case SpvOpTypeArray:
+      case SpvOpTypeBool:
+      case SpvOpTypeFloat:
+      case SpvOpTypeInt:
+      case SpvOpTypeMatrix:
+      case SpvOpTypeStruct:
+      case SpvOpTypeVector:
+        // These types are suitable as pointer base types.  Record the type,
+        // and the fact that we cannot yet have seen any pointers that use this
+        // as its base type.
+        base_types.push_back(inst.result_id());
+        base_type_to_pointers.insert({inst.result_id(), {}});
+        break;
+      case SpvOpTypePointer:
+        if (inst.GetSingleWordInOperand(0) == storage_class) {
+          // The pointer has the desired storage class, so we are interested in
+          // it.  Associate it with its base type.
+          base_type_to_pointers.at(inst.GetSingleWordInOperand(1))
+              .push_back(inst.result_id());
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  return {base_types, base_type_to_pointers};
+}
+
+uint32_t FuzzerPass::FindOrCreateZeroConstant(
+    uint32_t scalar_or_composite_type_id) {
+  auto type_instruction =
+      GetIRContext()->get_def_use_mgr()->GetDef(scalar_or_composite_type_id);
+  assert(type_instruction && "The type instruction must exist.");
+  switch (type_instruction->opcode()) {
+    case SpvOpTypeBool:
+      return FindOrCreateBoolConstant(false);
+    case SpvOpTypeFloat:
+      return FindOrCreate32BitFloatConstant(0);
+    case SpvOpTypeInt:
+      return FindOrCreate32BitIntegerConstant(
+          0, type_instruction->GetSingleWordInOperand(1) != 0);
+    case SpvOpTypeArray: {
+      return GetZeroConstantForHomogeneousComposite(
+          *type_instruction, type_instruction->GetSingleWordInOperand(0),
+          fuzzerutil::GetArraySize(*type_instruction, GetIRContext()));
+    }
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector: {
+      return GetZeroConstantForHomogeneousComposite(
+          *type_instruction, type_instruction->GetSingleWordInOperand(0),
+          type_instruction->GetSingleWordInOperand(1));
+    }
+    case SpvOpTypeStruct: {
+      std::vector<const opt::analysis::Constant*> field_zero_constants;
+      std::vector<uint32_t> field_zero_ids;
+      for (uint32_t index = 0; index < type_instruction->NumInOperands();
+           index++) {
+        uint32_t field_constant_id = FindOrCreateZeroConstant(
+            type_instruction->GetSingleWordInOperand(index));
+        field_zero_ids.push_back(field_constant_id);
+        field_zero_constants.push_back(
+            GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
+                field_constant_id));
+      }
+      return FindOrCreateCompositeConstant(
+          *type_instruction, field_zero_constants, field_zero_ids);
+    }
+    default:
+      assert(false && "Unknown type.");
+      return 0;
+  }
+}
+
+uint32_t FuzzerPass::FindOrCreateCompositeConstant(
+    const opt::Instruction& composite_type_instruction,
+    const std::vector<const opt::analysis::Constant*>& constants,
+    const std::vector<uint32_t>& constant_ids) {
+  assert(constants.size() == constant_ids.size() &&
+         "Precondition: |constants| and |constant_ids| must be in "
+         "correspondence.");
+
+  opt::analysis::Type* composite_type = GetIRContext()->get_type_mgr()->GetType(
+      composite_type_instruction.result_id());
+  std::unique_ptr<opt::analysis::Constant> composite_constant;
+  if (composite_type->AsArray()) {
+    composite_constant = MakeUnique<opt::analysis::ArrayConstant>(
+        composite_type->AsArray(), constants);
+  } else if (composite_type->AsMatrix()) {
+    composite_constant = MakeUnique<opt::analysis::MatrixConstant>(
+        composite_type->AsMatrix(), constants);
+  } else if (composite_type->AsStruct()) {
+    composite_constant = MakeUnique<opt::analysis::StructConstant>(
+        composite_type->AsStruct(), constants);
+  } else if (composite_type->AsVector()) {
+    composite_constant = MakeUnique<opt::analysis::VectorConstant>(
+        composite_type->AsVector(), constants);
+  } else {
+    assert(false &&
+           "Precondition: |composite_type| must declare a composite type.");
+    return 0;
+  }
+
+  uint32_t existing_constant =
+      GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
+          composite_constant.get(), composite_type_instruction.result_id());
+  if (existing_constant) {
+    return existing_constant;
+  }
+  uint32_t result = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationAddConstantComposite(
+      result, composite_type_instruction.result_id(), constant_ids));
+  return result;
+}
+
+uint32_t FuzzerPass::GetZeroConstantForHomogeneousComposite(
+    const opt::Instruction& composite_type_instruction,
+    uint32_t component_type_id, uint32_t num_components) {
+  std::vector<const opt::analysis::Constant*> zero_constants;
+  std::vector<uint32_t> zero_ids;
+  uint32_t zero_component = FindOrCreateZeroConstant(component_type_id);
+  const opt::analysis::Constant* registered_zero_component =
+      GetIRContext()->get_constant_mgr()->FindDeclaredConstant(zero_component);
+  for (uint32_t i = 0; i < num_components; i++) {
+    zero_constants.push_back(registered_zero_component);
+    zero_ids.push_back(zero_component);
+  }
+  return FindOrCreateCompositeConstant(composite_type_instruction,
+                                       zero_constants, zero_ids);
 }
 
 }  // namespace fuzz
