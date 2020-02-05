@@ -2367,7 +2367,19 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
         CHECK_OPERAND("Linkage Name", SpvOpString, 11);
-        CHECK_OPERAND("Function", SpvOpFunction, 14);
+        // TODO: The current OpenCL.100.DebugInfo spec says "Function
+        // is an OpFunction which is described by this instruction.".
+        // However, the function definition can be opted-out e.g.,
+        // inlining. We assume that Function operand can be a
+        // DebugInfoNone, but we must discuss it and update the spec.
+        if (!DoesDebugInfoOperandMatchExpectation(
+                _,
+                [](OpenCLDebugInfo100Instructions dbg_inst) {
+                  return dbg_inst == OpenCLDebugInfo100DebugInfoNone;
+                },
+                inst, 14)) {
+          CHECK_OPERAND("Function", SpvOpFunction, 14);
+        }
         if (num_words == 16) {
           CHECK_DEBUG_OPERAND("Declaration",
                               OpenCLDebugInfo100DebugFunctionDeclaration, 15);

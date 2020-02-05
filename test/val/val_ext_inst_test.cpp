@@ -818,6 +818,37 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionForwardReference) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionMissingOpFunction) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() {}"
+%void_name = OpString "void"
+%main_name = OpString "main"
+%main_linkage_name = OpString "v_main"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbgNone = OpExtInst %void %DbgExt DebugInfoNone
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%void_info = OpExtInst %void %DbgExt DebugTypeBasic %void_name %u32_0 Unspecified
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void_info %void_info
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %dbgNone
+)";
+
+  const std::string body = R"(
+%main_scope = OpExtInst %void %DbgExt DebugScope %main_info
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugScopeBeforeOpVariableInFunction) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
