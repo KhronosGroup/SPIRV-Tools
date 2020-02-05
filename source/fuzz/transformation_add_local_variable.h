@@ -28,8 +28,9 @@ class TransformationAddLocalVariable : public Transformation {
   explicit TransformationAddLocalVariable(
       const protobufs::TransformationAddLocalVariable& message);
 
-  TransformationAddLocalVariable(uint32_t fresh_id, uint32_t type_id, uint32_t function_id,
-  uint32_t initializer_id, bool value_is_arbitrary);
+  TransformationAddLocalVariable(uint32_t fresh_id, uint32_t type_id,
+                                 uint32_t function_id, uint32_t initializer_id,
+                                 bool value_is_arbitrary);
 
   // - |message_.fresh_id| must not be used by the module
   // - |message_.type_id| must be the id of a pointer type with Function

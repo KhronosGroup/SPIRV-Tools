@@ -83,13 +83,13 @@ TEST(TransformationAddLocalVariableTest, BasicTest) {
   // A few cases of inapplicable transformations:
   // Id 4 is already in use
   ASSERT_FALSE(TransformationAddLocalVariable(4, 50, 4, 51, true)
-  .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
   // Type mismatch between initializer and pointer
   ASSERT_FALSE(TransformationAddLocalVariable(105, 46, 4, 51, true)
-    .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
   // Id 5 is not a function
   ASSERT_FALSE(TransformationAddLocalVariable(105, 50, 5, 51, true)
-                       .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // %105 = OpVariable %50 Function %51
   {
@@ -100,45 +100,35 @@ TEST(TransformationAddLocalVariableTest, BasicTest) {
 
   // %104 = OpVariable %41 Function %46
   {
-    TransformationAddLocalVariable transformation(104, 41,
-                                                  4, 46,
-                                                  false);
+    TransformationAddLocalVariable transformation(104, 41, 4, 46, false);
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
   }
 
   // %103 = OpVariable %35 Function %38
   {
-    TransformationAddLocalVariable transformation(103, 35,
-                                                  4, 38,
-                                                  true);
+    TransformationAddLocalVariable transformation(103, 35, 4, 38, true);
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
   }
 
   // %102 = OpVariable %31 Function %33
   {
-    TransformationAddLocalVariable transformation(102, 31,
-                                                  4, 33,
-                                                  false);
+    TransformationAddLocalVariable transformation(102, 31, 4, 33, false);
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
   }
 
   // %101 = OpVariable %19 Function %29
   {
-    TransformationAddLocalVariable transformation(101, 19,
-                                                  4, 29,
-                                                  true);
+    TransformationAddLocalVariable transformation(101, 19, 4, 29, true);
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
   }
 
   // %100 = OpVariable %8 Function %12
   {
-    TransformationAddLocalVariable transformation(100, 8,
-                                                  4, 12,
-                                                  false);
+    TransformationAddLocalVariable transformation(100, 8, 4, 12, false);
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
   }

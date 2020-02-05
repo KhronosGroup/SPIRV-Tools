@@ -40,6 +40,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_blocks.h
         fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_add_dead_continues.h
+        fuzzer_pass_add_global_variables.h
         fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_no_contraction_decorations.h
         fuzzer_pass_add_useful_constructs.h
@@ -114,6 +115,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_blocks.cpp
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_dead_continues.cpp
+        fuzzer_pass_add_global_variables.cpp
         fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
         fuzzer_pass_add_useful_constructs.cpp
