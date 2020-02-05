@@ -17,6 +17,9 @@
 
 #include "source/fuzz/fuzzer_pass.h"
 
+#include <utility>
+#include <vector>
+
 namespace spvtools {
 namespace fuzz {
 
@@ -33,9 +36,27 @@ class FuzzerPassAddLocalVariables : public FuzzerPass {
   void Apply() override;
 
  private:
-  // TODO comment
-  uint32_t ZeroInitializer(uint32_t scalar_or_composite_type_id);
+  using CompositeConstantSupplier =
+      std::function<std::unique_ptr<opt::analysis::Constant>(
+          const opt::analysis::Type& composite_type,
+          const std::vector<const opt::analysis::Constant*>&
+              component_constants)>;
 
+  // TODO comment
+  uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id);
+
+  // TODO comment; must be array, vector or matrix
+  uint32_t GetZeroConstantForHomogeneousComposite(
+      const opt::Instruction& composite_type_instruction,
+      uint32_t component_type_id, uint32_t num_components,
+      const CompositeConstantSupplier& composite_constant_supplier);
+
+  // TODO comment
+  uint32_t FindOrCreateCompositeConstant(
+      const opt::Instruction& composite_type_instruction,
+      const std::vector<const opt::analysis::Constant*>& constants,
+      const std::vector<uint32_t>& constant_ids,
+      const CompositeConstantSupplier& composite_constant_supplier);
 };
 
 }  // namespace fuzz

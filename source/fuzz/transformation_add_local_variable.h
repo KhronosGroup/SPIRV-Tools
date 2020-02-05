@@ -31,11 +31,20 @@ class TransformationAddLocalVariable : public Transformation {
   TransformationAddLocalVariable(uint32_t fresh_id, uint32_t type_id, uint32_t function_id,
   uint32_t initializer_id, bool value_is_arbitrary);
 
-  // TODO comment
+  // - |message_.fresh_id| must not be used by the module
+  // - |message_.type_id| must be the id of a pointer type with Function
+  //   storage class
+  // - |message_.initializer_id| must be the id of a constant with the same
+  //   type as the pointer's pointee type
+  // - |message_.function_id| must be the id of a function
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an instruction to the start of |message_.function_id|, of the form:
+  //   |message_.fresh_id| = OpVariable |message_.type_id| Function
+  //                         |message_.initializer_id|
+  // If |message_.value_is_arbitrary| holds, adds a corresponding fact to
+  // |fact_manager|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
