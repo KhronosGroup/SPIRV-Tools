@@ -297,11 +297,11 @@ std::pair<std::vector<uint32_t>, std::map<uint32_t, std::vector<uint32_t>>>
 FuzzerPass::GetAvailableBaseTypesAndPointers(
     SpvStorageClass storage_class) const {
   // Records all of the base types available in the module.
-  std::vector<uint32_t> base_type_ids;
+  std::vector<uint32_t> base_types;
 
   // For each base type, records all the associated pointer types that target
   // that base type and that have |storage_class| as their storage class.
-  std::map<uint32_t, std::vector<uint32_t>> base_type_to_pointer;
+  std::map<uint32_t, std::vector<uint32_t>> base_type_to_pointers;
 
   for (auto& inst : GetIRContext()->types_values()) {
     switch (inst.opcode()) {
@@ -315,14 +315,14 @@ FuzzerPass::GetAvailableBaseTypesAndPointers(
         // These types are suitable as pointer base types.  Record the type,
         // and the fact that we cannot yet have seen any pointers that use this
         // as its base type.
-        base_type_ids.push_back(inst.result_id());
-        base_type_to_pointer.insert({inst.result_id(), {}});
+        base_types.push_back(inst.result_id());
+        base_type_to_pointers.insert({inst.result_id(), {}});
         break;
       case SpvOpTypePointer:
         if (inst.GetSingleWordInOperand(0) == storage_class) {
           // The pointer has the desired storage class, so we are interested in
           // it.  Associate it with its base type.
-          base_type_to_pointer.at(inst.GetSingleWordInOperand(1))
+          base_type_to_pointers.at(inst.GetSingleWordInOperand(1))
               .push_back(inst.result_id());
         }
         break;
@@ -330,7 +330,7 @@ FuzzerPass::GetAvailableBaseTypesAndPointers(
         break;
     }
   }
-  return {base_type_ids, base_type_to_pointer};
+  return {base_types, base_type_to_pointers};
 }
 
 uint32_t FuzzerPass::FindOrCreateZeroConstant(
@@ -351,7 +351,8 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
           *type_instruction, type_instruction->GetSingleWordInOperand(0),
           fuzzerutil::GetArraySize(*type_instruction, GetIRContext()));
     }
-    case SpvOpTypeMatrix: {
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector: {
       return GetZeroConstantForHomogeneousComposite(
           *type_instruction, type_instruction->GetSingleWordInOperand(0),
           type_instruction->GetSingleWordInOperand(1));
@@ -370,11 +371,6 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
       }
       return FindOrCreateCompositeConstant(
           *type_instruction, field_zero_constants, field_zero_ids);
-    }
-    case SpvOpTypeVector: {
-      return GetZeroConstantForHomogeneousComposite(
-          *type_instruction, type_instruction->GetSingleWordInOperand(0),
-          type_instruction->GetSingleWordInOperand(1));
     }
     default:
       assert(false && "Unknown type.");
@@ -430,8 +426,7 @@ uint32_t FuzzerPass::GetZeroConstantForHomogeneousComposite(
   std::vector<uint32_t> zero_ids;
   uint32_t zero_component = FindOrCreateZeroConstant(component_type_id);
   const opt::analysis::Constant* registered_zero_component =
-      GetIRContext()->get_constant_mgr()->GetConstantFromInst(
-          GetIRContext()->get_def_use_mgr()->GetDef(zero_component));
+      GetIRContext()->get_constant_mgr()->FindDeclaredConstant(zero_component);
   for (uint32_t i = 0; i < num_components; i++) {
     zero_constants.push_back(registered_zero_component);
     zero_ids.push_back(zero_component);

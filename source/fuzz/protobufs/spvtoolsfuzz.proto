@@ -508,11 +508,9 @@ message TransformationAddGlobalVariable {
   // Optional initializer; 0 if there is no initializer
   uint32 initializer_id = 3;
 
-  // True if and only if the value of the variable should be regarded, in
-  // general, as totally unknown and subject to change (even if, due to an
-  // initializer, the original value is known).  This is the case for variables
-  // added when a module is donated, for example, and means that stores to such
-  // variables can be performed in an arbitrary fashion.
+  // True if and only if the behaviour of the module should not depend on the
+  // value of the variable, in which case stores to the variable can be
+  // performed in an arbitrary fashion.
   bool value_is_arbitrary = 4;
 
 }
@@ -535,9 +533,9 @@ message TransformationAddLocalVariable {
   // Initial value of the variable
   uint32 initializer_id = 4;
 
-  // True if and only if the value of the variable should be regarded, in
-  // general, as totally unknown and subject to change.  Stores to such
-  // variables can be performed in an arbitrary fashion.
+  // True if and only if the behaviour of the module should not depend on the
+  // value of the variable, in which case stores to the variable can be
+  // performed in an arbitrary fashion.
   bool value_is_arbitrary = 5;
 
 }

@@ -56,15 +56,8 @@ bool TransformationAddLocalVariable::IsApplicable(
     return false;
   }
   // ... be a constant, ...
-  switch (initializer_instruction->opcode()) {
-    case SpvOpConstant:
-    case SpvOpConstantComposite:
-    case SpvOpConstantFalse:
-    case SpvOpConstantNull:
-    case SpvOpConstantTrue:
-      break;
-    default:
-      return false;
+  if (!spvOpcodeIsConstant(initializer_instruction->opcode())) {
+    return false;
   }
   // ... and have the same type as the pointee type.
   if (initializer_instruction->type_id() !=
