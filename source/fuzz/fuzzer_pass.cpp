@@ -366,8 +366,8 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
             type_instruction->GetSingleWordInOperand(index));
         field_zero_ids.push_back(field_constant_id);
         field_zero_constants.push_back(
-            GetIRContext()->get_constant_mgr()->GetConstantFromInst(
-                GetIRContext()->get_def_use_mgr()->GetDef(field_constant_id)));
+            GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
+                field_constant_id));
       }
       return FindOrCreateCompositeConstant(
           *type_instruction, field_zero_constants, field_zero_ids);
