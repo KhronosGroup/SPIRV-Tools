@@ -341,11 +341,18 @@ message Transformation {
     TransformationLoad load = 36;
     TransformationStore store = 37;
     TransformationFunctionCall function_call = 38;
+    TransformationAccessChain access_chain = 39;
     // Add additional option using the next available number.
   }
 }
 
 // Keep transformation message types in alphabetical order:
+
+message TransformationAccessChain {
+
+  // TODO comment and populate
+
+}
 
 message TransformationAddConstantBoolean {
 

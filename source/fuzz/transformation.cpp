@@ -17,6 +17,7 @@
 #include <cassert>
 
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/transformation_access_chain.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_composite.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
@@ -65,6 +66,8 @@ Transformation::~Transformation() = default;
 std::unique_ptr<Transformation> Transformation::FromMessage(
     const protobufs::Transformation& message) {
   switch (message.transformation_case()) {
+    case protobufs::Transformation::TransformationCase::kAccessChain:
+      return MakeUnique<TransformationAccessChain>(message.access_chain());
     case protobufs::Transformation::TransformationCase::kAddConstantBoolean:
       return MakeUnique<TransformationAddConstantBoolean>(
           message.add_constant_boolean());
