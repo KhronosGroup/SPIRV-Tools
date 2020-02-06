@@ -97,14 +97,14 @@ bool TransformationStore::IsApplicable(
   }
 
   // The pointer needs to be available at the insertion point.
-  if (!fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
-                                                   message_.pointer_id())) {
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(context, insert_before,
+                                                  message_.pointer_id())) {
     return false;
   }
 
   // The value needs to be available at the insertion point.
-  return fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
-                                                     message_.value_id());
+  return fuzzerutil::IdIsAvailableBeforeInstruction(context, insert_before,
+                                                    message_.value_id());
 }
 
 void TransformationStore::Apply(opt::IRContext* context,

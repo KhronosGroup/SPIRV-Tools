@@ -76,8 +76,8 @@ bool TransformationLoad::IsApplicable(
   }
 
   // The pointer needs to be available at the insertion point.
-  return fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
-                                                     message_.pointer_id());
+  return fuzzerutil::IdIsAvailableBeforeInstruction(context, insert_before,
+                                                    message_.pointer_id());
 }
 
 void TransformationLoad::Apply(opt::IRContext* context,

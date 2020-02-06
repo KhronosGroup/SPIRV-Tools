@@ -84,8 +84,8 @@ bool TransformationCompositeConstruct::IsApplicable(
   // Now check whether every component being used to initialize the composite is
   // available at the desired program point.
   for (auto& component : message_.component()) {
-    if (!fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
-                                                     component)) {
+    if (!fuzzerutil::IdIsAvailableBeforeInstruction(context, insert_before,
+                                                    component)) {
       return false;
     }
   }

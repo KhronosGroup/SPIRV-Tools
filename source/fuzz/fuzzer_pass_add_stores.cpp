@@ -46,12 +46,13 @@ void FuzzerPassAddStores::Apply() {
           return;
         }
 
-        // Randomly decide whether to try inserting an object copy here.
+        // Randomly decide whether to try inserting a store here.
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfAddingStore())) {
           return;
         }
 
+        // Look for pointers we might consider storing to.
         std::vector<opt::Instruction*> relevant_pointers =
             FindAvailableInstructions(
                 function, block, inst_it,
@@ -63,11 +64,23 @@ void FuzzerPassAddStores::Apply() {
                   auto type_inst = context->get_def_use_mgr()->GetDef(
                       instruction->type_id());
                   if (type_inst->opcode() != SpvOpTypePointer) {
+                    // Not a pointer.
                     return false;
                   }
                   if (type_inst->GetSingleWordInOperand(0) ==
                       SpvStorageClassInput) {
+                    // Read-only: cannot store to it.
                     return false;
+                  }
+                  switch (instruction->result_id()) {
+                    case SpvOpConstantNull:
+                    case SpvOpUndef:
+                      // Do not allow storing to a null or undefined pointer;
+                      // this might be OK if the block is dead, but for now we
+                      // conservatively avoid it.
+                      return false;
+                    default:
+                      break;
                   }
                   return GetFactManager()->BlockIsDead(block->id()) ||
                          GetFactManager()->PointeeValueIsIrrelevant(

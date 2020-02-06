@@ -66,8 +66,8 @@ bool TransformationCopyObject::IsApplicable(
 
   // |message_object| must be available directly before the point where we want
   // to add the copy.
-  return fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
-                                                     message_.object());
+  return fuzzerutil::IdIsAvailableBeforeInstruction(context, insert_before,
+                                                    message_.object());
 }
 
 void TransformationCopyObject::Apply(opt::IRContext* context,

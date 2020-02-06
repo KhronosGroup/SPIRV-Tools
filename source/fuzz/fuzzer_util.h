@@ -144,15 +144,14 @@ opt::Function* FindFunction(opt::IRContext* ir_context, uint32_t function_id);
 // Checks whether |id| is available (according to dominance rules) at the use
 // point defined by input operand |use_input_operand_index| of
 // |use_instruction|.
-bool IdsIsAvailableAtUse(opt::IRContext* context,
-                         opt::Instruction* use_instruction,
-                         uint32_t use_input_operand_index, uint32_t id);
+bool IdIsAvailableAtUse(opt::IRContext* context,
+                        opt::Instruction* use_instruction,
+                        uint32_t use_input_operand_index, uint32_t id);
 
 // Checks whether |id| is available (according to dominance rules) at the
 // program point directly before |instruction|.
-bool IdsIsAvailableBeforeInstruction(opt::IRContext* context,
-                                     opt::Instruction* instruction,
-                                     uint32_t id);
+bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
+                                    opt::Instruction* instruction, uint32_t id);
 
 // Returns true if and only if |instruction| is an OpFunctionParameter
 // associated with |function|.

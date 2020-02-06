@@ -65,7 +65,7 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
 
   // The transformation is applicable if the synonymous id is available at the
   // use point.
-  return fuzzerutil::IdsIsAvailableAtUse(
+  return fuzzerutil::IdIsAvailableAtUse(
       context, use_instruction, message_.id_use_descriptor().in_operand_index(),
       message_.synonymous_id());
 }

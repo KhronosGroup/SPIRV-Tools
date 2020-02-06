@@ -45,7 +45,7 @@ void FuzzerPassAddLoads::Apply() {
           return;
         }
 
-        // Randomly decide whether to try inserting an object copy here.
+        // Randomly decide whether to try inserting a load here.
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfAddingLoad())) {
           return;
@@ -58,6 +58,16 @@ void FuzzerPassAddLoads::Apply() {
                    opt::Instruction* instruction) -> bool {
                   if (!instruction->result_id() || !instruction->type_id()) {
                     return false;
+                  }
+                  switch (instruction->result_id()) {
+                    case SpvOpConstantNull:
+                    case SpvOpUndef:
+                      // Do not allow loading from a null or undefined pointer;
+                      // this might be OK if the block is dead, but for now we
+                      // conservatively avoid it.
+                      return false;
+                    default:
+                      break;
                   }
                   return context->get_def_use_mgr()
                              ->GetDef(instruction->type_id())
