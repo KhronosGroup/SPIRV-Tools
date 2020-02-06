@@ -105,6 +105,10 @@ void TransformationCopyObject::Apply(opt::IRContext* context,
   fact_manager->AddFactDataSynonym(MakeDataDescriptor(message_.object(), {}),
                                    MakeDataDescriptor(message_.fresh_id(), {}),
                                    context);
+
+  if (fact_manager->PointeeValueIsIrrelevant(message_.object())) {
+    fact_manager->AddFactValueOfPointeeIsIrrelevant(message_.fresh_id());
+  }
 }
 
 protobufs::Transformation TransformationCopyObject::ToMessage() const {

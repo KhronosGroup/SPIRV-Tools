@@ -125,12 +125,12 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
   }
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(100));
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(102));
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(104));
-  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(101));
-  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(103));
-  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(105));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(100));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(102));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(104));
+  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(101));
+  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(103));
+  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(105));
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -234,9 +234,9 @@ TEST(TransformationAddGlobalVariableTest, TestEntryPointInterfaceEnlargement) {
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
   }
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(100));
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(102));
-  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(101));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(100));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(102));
+  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(101));
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(

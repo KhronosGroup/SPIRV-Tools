@@ -141,6 +141,17 @@ uint32_t FindFunctionType(opt::IRContext* ir_context,
 // function exists.
 opt::Function* FindFunction(opt::IRContext* ir_context, uint32_t function_id);
 
+// Checks whether |id| is available (according to dominance rules) at the
+// program point directly before |instruction|.
+bool IdsIsAvailableBeforeInstruction(opt::IRContext* context,
+                                     opt::Instruction* instruction,
+                                     uint32_t id);
+
+// Returns true if and only if |instruction| is an OpFunctionParameter
+// associated with |function|.
+bool InstructionIsFunctionParameter(opt::Instruction* instruction,
+                                    opt::Function* function);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

@@ -72,6 +72,7 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingGlobalVariable() {
     return chance_of_adding_global_variable_;
   }
+  uint32_t GetChanceOfAddingLoad() { return chance_of_adding_load_; }
   uint32_t GetChanceOfAddingLocalVariable() {
     return chance_of_adding_local_variable_;
   }
@@ -81,6 +82,7 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingNoContractionDecoration() {
     return chance_of_adding_no_contraction_decoration_;
   }
+  uint32_t GetChanceOfAddingStore() { return chance_of_adding_store_; }
   uint32_t GetChanceOfAddingVectorType() {
     return chance_of_adding_vector_type_;
   }
@@ -155,9 +157,11 @@ class FuzzerContext {
   uint32_t chance_of_adding_dead_break_;
   uint32_t chance_of_adding_dead_continue_;
   uint32_t chance_of_adding_global_variable_;
+  uint32_t chance_of_adding_load_;
   uint32_t chance_of_adding_local_variable_;
   uint32_t chance_of_adding_matrix_type_;
   uint32_t chance_of_adding_no_contraction_decoration_;
+  uint32_t chance_of_adding_store_;
   uint32_t chance_of_adding_vector_type_;
   uint32_t chance_of_adjusting_function_control_;
   uint32_t chance_of_adjusting_loop_control_;

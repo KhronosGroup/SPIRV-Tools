@@ -30,7 +30,7 @@ class TransformationAddLocalVariable : public Transformation {
 
   TransformationAddLocalVariable(uint32_t fresh_id, uint32_t type_id,
                                  uint32_t function_id, uint32_t initializer_id,
-                                 bool value_is_arbitrary);
+                                 bool value_is_irrelevant);
 
   // - |message_.fresh_id| must not be used by the module
   // - |message_.type_id| must be the id of a pointer type with Function
@@ -44,7 +44,7 @@ class TransformationAddLocalVariable : public Transformation {
   // Adds an instruction to the start of |message_.function_id|, of the form:
   //   |message_.fresh_id| = OpVariable |message_.type_id| Function
   //                         |message_.initializer_id|
-  // If |message_.value_is_arbitrary| holds, adds a corresponding fact to
+  // If |message_.value_is_irrelevant| holds, adds a corresponding fact to
   // |fact_manager|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 

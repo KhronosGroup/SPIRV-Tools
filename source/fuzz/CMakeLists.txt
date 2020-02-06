@@ -41,8 +41,10 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_add_dead_continues.h
         fuzzer_pass_add_global_variables.h
+        fuzzer_pass_add_loads.h
         fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_no_contraction_decorations.h
+        fuzzer_pass_add_stores.h
         fuzzer_pass_add_useful_constructs.h
         fuzzer_pass_adjust_function_controls.h
         fuzzer_pass_adjust_loop_controls.h
@@ -90,6 +92,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_construct.h
         transformation_composite_extract.h
         transformation_copy_object.h
+        transformation_load.h
         transformation_merge_blocks.h
         transformation_move_block_down.h
         transformation_outline_function.h
@@ -101,6 +104,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_set_memory_operands_mask.h
         transformation_set_selection_control.h
         transformation_split_block.h
+        transformation_store.h
         transformation_vector_shuffle.h
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
@@ -116,8 +120,10 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_dead_continues.cpp
         fuzzer_pass_add_global_variables.cpp
+        fuzzer_pass_add_loads.cpp
         fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
+        fuzzer_pass_add_stores.cpp
         fuzzer_pass_add_useful_constructs.cpp
         fuzzer_pass_adjust_function_controls.cpp
         fuzzer_pass_adjust_loop_controls.cpp
@@ -164,6 +170,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_construct.cpp
         transformation_composite_extract.cpp
         transformation_copy_object.cpp
+        transformation_load.cpp
         transformation_merge_blocks.cpp
         transformation_move_block_down.cpp
         transformation_outline_function.cpp
@@ -175,6 +182,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_set_memory_operands_mask.cpp
         transformation_set_selection_control.cpp
         transformation_split_block.cpp
+        transformation_store.cpp
         transformation_vector_shuffle.cpp
         uniform_buffer_element_descriptor.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc

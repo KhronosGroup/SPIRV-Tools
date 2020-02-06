@@ -400,6 +400,44 @@ opt::Function* FindFunction(opt::IRContext* ir_context, uint32_t function_id) {
   return nullptr;
 }
 
+bool IdsIsAvailableBeforeInstruction(opt::IRContext* context,
+                                     opt::Instruction* instruction,
+                                     uint32_t id) {
+  auto defining_instruction = context->get_def_use_mgr()->GetDef(id);
+  auto enclosing_function = context->get_instr_block(instruction)->GetParent();
+  // If the id a function parameter, it needs to be associated with the
+  // function containing the instruction.
+  if (defining_instruction->opcode() == SpvOpFunctionParameter) {
+    return InstructionIsFunctionParameter(defining_instruction,
+                                          enclosing_function);
+  }
+  if (!context->get_instr_block(id)) {
+    // The id is at global scope.
+    return true;
+  }
+  if (defining_instruction == instruction) {
+    // The instruction is not available right before its own definition.
+    return false;
+  }
+  return context->GetDominatorAnalysis(enclosing_function)
+      ->Dominates(defining_instruction, instruction);
+}
+
+bool InstructionIsFunctionParameter(opt::Instruction* instruction,
+                                    opt::Function* function) {
+  if (instruction->opcode() != SpvOpFunctionParameter) {
+    return false;
+  }
+  bool found_parameter = false;
+  function->ForEachParam(
+      [instruction, &found_parameter](opt::Instruction* param) {
+        if (param == instruction) {
+          found_parameter = true;
+        }
+      });
+  return found_parameter;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
