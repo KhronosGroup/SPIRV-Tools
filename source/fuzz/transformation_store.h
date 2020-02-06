@@ -31,11 +31,24 @@ class TransformationStore : public Transformation {
       uint32_t pointer_id, uint32_t value_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
-  // TODO comment
+  // - |message_.pointer_id| must be the id of a pointer
+  // - The pointer type must not have read-only storage class
+  // - The pointer must not be OpConstantNull or OpUndef
+  // - |message_.value_id| must be an instruction result id that has the same
+  //   type as the pointee type of |message_.pointer_id|
+  // - |message_.instruction_to_insert_before| must identify an instruction
+  //   before which it is valid to insert an OpStore, and where both
+  //   |message_.pointer_id| and |message_.value_id| are available (according
+  //   to dominance rules)
+  // - Either the insertion point must be in a dead block, or it must be known
+  //   that the pointee value of |message_.pointer_id| is irrelevant
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an instruction of the form:
+  //   OpStore |pointer_id| |value_id|
+  // before the instruction identified by
+  // |message_.instruction_to_insert_before|.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

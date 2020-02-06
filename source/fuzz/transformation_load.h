@@ -31,11 +31,20 @@ class TransformationLoad : public Transformation {
       uint32_t fresh_id, uint32_t pointer_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
-  // TODO comment
+  // - |message_.fresh_id| must be fresh
+  // - |message_.pointer_id| must be the id of a pointer
+  // - The pointer must not be OpConstantNull or OpUndef
+  // - |message_.instruction_to_insert_before| must identify an instruction
+  //   before which it is valid to insert an OpLoad, and where
+  //   |message_.pointer_id| is available (according to dominance rules)
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an instruction of the form:
+  //   |message_.fresh_id| = OpLoad %type |message_.pointer_id|
+  // before the instruction identified by
+  // |message_.instruction_to_insert_before|, where %type is the pointer's
+  // pointee type.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;

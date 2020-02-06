@@ -36,49 +36,74 @@ TransformationStore::TransformationStore(
 bool TransformationStore::IsApplicable(
     opt::IRContext* context,
     const spvtools::fuzz::FactManager& fact_manager) const {
+  // The pointer must exist and have a type.
   auto pointer = context->get_def_use_mgr()->GetDef(message_.pointer_id());
   if (!pointer || !pointer->type_id()) {
     return false;
   }
+
+  // The pointer type must indeed be a pointer.
   auto pointer_type = context->get_def_use_mgr()->GetDef(pointer->type_id());
   assert(pointer_type && "Type id must be defined.");
   if (pointer_type->opcode() != SpvOpTypePointer) {
     return false;
   }
+
+  // The pointer must not be read only.
+  if (pointer_type->GetSingleWordInOperand(0) == SpvStorageClassInput) {
+    return false;
+  }
+
+  // We do not want to allow storing to null or undefined pointers.
   switch (pointer->opcode()) {
     case SpvOpConstantNull:
     case SpvOpUndef:
-      // Do not store to a null or undefined pointer.
       return false;
     default:
       break;
   }
 
+  // Determine which instruction we should be inserting before.
   auto insert_before =
       FindInstruction(message_.instruction_to_insert_before(), context);
+  // It must exist, ...
+  if (!insert_before) {
+    return false;
+  }
+  // ... and it must be legitimate to insert a store before it.
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore,
                                                     insert_before)) {
     return false;
   }
 
+  // The block we are inserting into needs to be dead, or else the pointee type
+  // of the pointer we are storing to needs to be irrelevant (otherwise the
+  // store could impact on the observable behaviour of the module).
   if (!fact_manager.BlockIsDead(
           context->get_instr_block(insert_before)->id()) &&
       !fact_manager.PointeeValueIsIrrelevant(message_.pointer_id())) {
     return false;
   }
 
-  if (pointer_type->GetSingleWordInOperand(1) !=
-      context->get_def_use_mgr()->GetDef(message_.value_id())->type_id()) {
+  // The value being stored needs to exist and have a type.
+  auto value = context->get_def_use_mgr()->GetDef(message_.value_id());
+  if (!value || !value->type_id()) {
     return false;
   }
 
-  if (pointer_type->GetSingleWordInOperand(0) == SpvStorageClassInput) {
+  // The type of the value must match the pointee type.
+  if (pointer_type->GetSingleWordInOperand(1) != value->type_id()) {
     return false;
   }
 
+  // The pointer needs to be available at the insertion point.
+  if (!fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
+                                                   message_.pointer_id())) {
+    return false;
+  }
+
+  // The value needs to be available at the insertion point.
   return fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
-                                                     message_.pointer_id()) &&
-         fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
                                                      message_.value_id());
 }
 

@@ -36,33 +36,46 @@ TransformationLoad::TransformationLoad(
 bool TransformationLoad::IsApplicable(
     opt::IRContext* context,
     const spvtools::fuzz::FactManager& /*unused*/) const {
+  // The result id must be fresh.
   if (!fuzzerutil::IsFreshId(context, message_.fresh_id())) {
     return false;
   }
+
+  // The pointer must exist and have a type.
   auto pointer = context->get_def_use_mgr()->GetDef(message_.pointer_id());
   if (!pointer || !pointer->type_id()) {
     return false;
   }
+  // The type must indeed be a pointer type.
   auto pointer_type = context->get_def_use_mgr()->GetDef(pointer->type_id());
   assert(pointer_type && "Type id must be defined.");
   if (pointer_type->opcode() != SpvOpTypePointer) {
     return false;
   }
+  // We do not want to allow loading from null or undefined pointers, as it is
+  // not clear how punishing the consequences of doing so are from a semantics
+  // point of view.
   switch (pointer->opcode()) {
     case SpvOpConstantNull:
     case SpvOpUndef:
-      // Do not load from a null or undefined pointer.
       return false;
     default:
       break;
   }
 
+  // Determine which instruction we should be inserting before.
   auto insert_before =
       FindInstruction(message_.instruction_to_insert_before(), context);
+  // It must exist, ...
+  if (!insert_before) {
+    return false;
+  }
+  // ... and it must be legitimate to insert a store before it.
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, insert_before)) {
     return false;
   }
 
+  // The pointer needs to be available at the insertion point.
   return fuzzerutil::IdsIsAvailableBeforeInstruction(context, insert_before,
                                                      message_.pointer_id());
 }

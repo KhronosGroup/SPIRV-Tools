@@ -400,6 +400,39 @@ opt::Function* FindFunction(opt::IRContext* ir_context, uint32_t function_id) {
   return nullptr;
 }
 
+bool IdsIsAvailableAtUse(opt::IRContext* context,
+                         opt::Instruction* use_instruction,
+                         uint32_t use_input_operand_index, uint32_t id) {
+  auto defining_instruction = context->get_def_use_mgr()->GetDef(id);
+  auto enclosing_function =
+      context->get_instr_block(use_instruction)->GetParent();
+  // If the id a function parameter, it needs to be associated with the
+  // function containing the use.
+  if (defining_instruction->opcode() == SpvOpFunctionParameter) {
+    return InstructionIsFunctionParameter(defining_instruction,
+                                          enclosing_function);
+  }
+  if (!context->get_instr_block(id)) {
+    // The id must be at global scope.
+    return true;
+  }
+  if (defining_instruction == use_instruction) {
+    // It is not OK for a definition to use itself.
+    return false;
+  }
+  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
+  if (use_instruction->opcode() == SpvOpPhi) {
+    // In the case where the use is an operand to OpPhi, it is actually the
+    // *parent* block associated with the operand that must be dominated by
+    // the synonym.
+    auto parent_block =
+        use_instruction->GetSingleWordInOperand(use_input_operand_index + 1);
+    return dominator_analysis->Dominates(
+        context->get_instr_block(defining_instruction)->id(), parent_block);
+  }
+  return dominator_analysis->Dominates(defining_instruction, use_instruction);
+}
+
 bool IdsIsAvailableBeforeInstruction(opt::IRContext* context,
                                      opt::Instruction* instruction,
                                      uint32_t id) {

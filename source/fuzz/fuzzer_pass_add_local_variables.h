@@ -17,9 +17,6 @@
 
 #include "source/fuzz/fuzzer_pass.h"
 
-#include <utility>
-#include <vector>
-
 namespace spvtools {
 namespace fuzz {
 

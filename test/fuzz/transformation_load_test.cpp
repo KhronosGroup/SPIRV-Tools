@@ -86,11 +86,11 @@ TEST(TransformationLoadTest, BasicTest) {
 
   FactManager fact_manager;
 
-  fact_manager.PointeeValueIsIrrelevant(27);
-  fact_manager.PointeeValueIsIrrelevant(11);
-  fact_manager.PointeeValueIsIrrelevant(46);
-  fact_manager.PointeeValueIsIrrelevant(16);
-  fact_manager.PointeeValueIsIrrelevant(52);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(27);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(11);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(46);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(16);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(52);
 
   fact_manager.AddFactBlockIsDead(36);
 
@@ -170,6 +170,11 @@ TEST(TransformationLoadTest, BasicTest) {
   ASSERT_FALSE(
       TransformationLoad(100, 40, MakeInstructionDescriptor(37, SpvOpReturn, 0))
           .IsApplicable(context.get(), fact_manager));
+
+  // Bad: The described instruction does not exist
+  ASSERT_FALSE(TransformationLoad(
+                   100, 33, MakeInstructionDescriptor(1000, SpvOpReturn, 0))
+                   .IsApplicable(context.get(), fact_manager));
 
   {
     TransformationLoad transformation(
