@@ -30,10 +30,12 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBreak = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadContinue = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingGlobalVariable = {20, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingLoad = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingLocalVariable = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingStore = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingFunctionControl = {20,
                                                                          70};
@@ -92,12 +94,14 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingDeadContinue);
   chance_of_adding_global_variable_ =
       ChooseBetweenMinAndMax(kChanceOfAddingGlobalVariable);
+  chance_of_adding_load_ = ChooseBetweenMinAndMax(kChanceOfAddingLoad);
   chance_of_adding_local_variable_ =
       ChooseBetweenMinAndMax(kChanceOfAddingLocalVariable);
   chance_of_adding_matrix_type_ =
       ChooseBetweenMinAndMax(kChanceOfAddingMatrixType);
   chance_of_adding_no_contraction_decoration_ =
       ChooseBetweenMinAndMax(kChanceOfAddingNoContractionDecoration);
+  chance_of_adding_store_ = ChooseBetweenMinAndMax(kChanceOfAddingStore);
   chance_of_adding_vector_type_ =
       ChooseBetweenMinAndMax(kChanceOfAddingVectorType);
   chance_of_adjusting_function_control_ =

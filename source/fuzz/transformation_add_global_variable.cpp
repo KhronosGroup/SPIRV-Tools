@@ -25,11 +25,11 @@ TransformationAddGlobalVariable::TransformationAddGlobalVariable(
 
 TransformationAddGlobalVariable::TransformationAddGlobalVariable(
     uint32_t fresh_id, uint32_t type_id, uint32_t initializer_id,
-    bool value_is_arbitrary) {
+    bool value_is_irrelevant) {
   message_.set_fresh_id(fresh_id);
   message_.set_type_id(type_id);
   message_.set_initializer_id(initializer_id);
-  message_.set_value_is_arbitrary(value_is_arbitrary);
+  message_.set_value_is_irrelevant(value_is_irrelevant);
 }
 
 bool TransformationAddGlobalVariable::IsApplicable(
@@ -101,8 +101,8 @@ void TransformationAddGlobalVariable::Apply(
     }
   }
 
-  if (message_.value_is_arbitrary()) {
-    fact_manager->AddFactValueOfVariableIsArbitrary(message_.fresh_id());
+  if (message_.value_is_irrelevant()) {
+    fact_manager->AddFactValueOfPointeeIsIrrelevant(message_.fresh_id());
   }
 
   // We have added an instruction to the module, so need to be careful about the

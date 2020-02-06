@@ -860,30 +860,30 @@ bool FactManager::LivesafeFunctionFacts::FunctionIsLivesafe(
 //==============================
 
 //==============================
-// Arbitrarily-valued variable facts
+// Irrelevant pointee value facts
 
 // The purpose of this class is to group the fields and data used to represent
-// facts about livesafe functions.
-class FactManager::ArbitrarilyValuedVaribleFacts {
+// facts about pointers whose pointee values are irrelevant.
+class FactManager::IrrelevantPointeeValueFacts {
  public:
   // See method in FactManager which delegates to this method.
-  void AddFact(const protobufs::FactValueOfVariableIsArbitrary& fact);
+  void AddFact(const protobufs::FactPointeeValueIsIrrelevant& fact);
 
   // See method in FactManager which delegates to this method.
-  bool VariableValueIsArbitrary(uint32_t variable_id) const;
+  bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;
 
  private:
-  std::set<uint32_t> arbitrary_valued_varible_ids_;
+  std::set<uint32_t> pointers_to_irrelevant_pointees_ids_;
 };
 
-void FactManager::ArbitrarilyValuedVaribleFacts::AddFact(
-    const protobufs::FactValueOfVariableIsArbitrary& fact) {
-  arbitrary_valued_varible_ids_.insert(fact.variable_id());
+void FactManager::IrrelevantPointeeValueFacts::AddFact(
+    const protobufs::FactPointeeValueIsIrrelevant& fact) {
+  pointers_to_irrelevant_pointees_ids_.insert(fact.pointer_id());
 }
 
-bool FactManager::ArbitrarilyValuedVaribleFacts::VariableValueIsArbitrary(
-    uint32_t variable_id) const {
-  return arbitrary_valued_varible_ids_.count(variable_id) != 0;
+bool FactManager::IrrelevantPointeeValueFacts::PointeeValueIsIrrelevant(
+    uint32_t pointer_id) const {
+  return pointers_to_irrelevant_pointees_ids_.count(pointer_id) != 0;
 }
 
 // End of arbitrarily-valued variable facts
@@ -894,8 +894,8 @@ FactManager::FactManager()
       data_synonym_facts_(MakeUnique<DataSynonymFacts>()),
       dead_block_facts_(MakeUnique<DeadBlockFacts>()),
       livesafe_function_facts_(MakeUnique<LivesafeFunctionFacts>()),
-      arbitrarily_valued_variable_facts_(
-          MakeUnique<ArbitrarilyValuedVaribleFacts>()) {}
+      irrelevant_pointee_value_facts_(
+          MakeUnique<IrrelevantPointeeValueFacts>()) {}
 
 FactManager::~FactManager() = default;
 
@@ -1017,15 +1017,14 @@ void FactManager::AddFactFunctionIsLivesafe(uint32_t function_id) {
   livesafe_function_facts_->AddFact(fact);
 }
 
-bool FactManager::VariableValueIsArbitrary(uint32_t variable_id) const {
-  return arbitrarily_valued_variable_facts_->VariableValueIsArbitrary(
-      variable_id);
+bool FactManager::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
+  return irrelevant_pointee_value_facts_->PointeeValueIsIrrelevant(pointer_id);
 }
 
-void FactManager::AddFactValueOfVariableIsArbitrary(uint32_t variable_id) {
-  protobufs::FactValueOfVariableIsArbitrary fact;
-  fact.set_variable_id(variable_id);
-  arbitrarily_valued_variable_facts_->AddFact(fact);
+void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id) {
+  protobufs::FactPointeeValueIsIrrelevant fact;
+  fact.set_pointer_id(pointer_id);
+  irrelevant_pointee_value_facts_->AddFact(fact);
 }
 
 }  // namespace fuzz

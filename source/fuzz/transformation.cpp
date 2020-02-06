@@ -40,6 +40,7 @@
 #include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_copy_object.h"
+#include "source/fuzz/transformation_load.h"
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_outline_function.h"
@@ -51,6 +52,7 @@
 #include "source/fuzz/transformation_set_memory_operands_mask.h"
 #include "source/fuzz/transformation_set_selection_control.h"
 #include "source/fuzz/transformation_split_block.h"
+#include "source/fuzz/transformation_store.h"
 #include "source/fuzz/transformation_vector_shuffle.h"
 #include "source/util/make_unique.h"
 
@@ -122,6 +124,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.composite_extract());
     case protobufs::Transformation::TransformationCase::kCopyObject:
       return MakeUnique<TransformationCopyObject>(message.copy_object());
+    case protobufs::Transformation::TransformationCase::kLoad:
+      return MakeUnique<TransformationLoad>(message.load());
     case protobufs::Transformation::TransformationCase::kMergeBlocks:
       return MakeUnique<TransformationMergeBlocks>(message.merge_blocks());
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
@@ -154,6 +158,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.set_selection_control());
     case protobufs::Transformation::TransformationCase::kSplitBlock:
       return MakeUnique<TransformationSplitBlock>(message.split_block());
+    case protobufs::Transformation::TransformationCase::kStore:
+      return MakeUnique<TransformationStore>(message.store());
     case protobufs::Transformation::TransformationCase::kVectorShuffle:
       return MakeUnique<TransformationVectorShuffle>(message.vector_shuffle());
     case protobufs::Transformation::TRANSFORMATION_NOT_SET:
