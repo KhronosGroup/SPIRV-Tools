@@ -397,7 +397,7 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // storage class global variable, using remapped versions of the result
         // type and initializer ids for the global variable in the donor.
         //
-        // We regard the added variable as having an arbitrary value.  This
+        // We regard the added variable as having an irrelevant value.  This
         // means that future passes can add stores to the variable in any
         // way they wish, and pass them as pointer parameters to functions
         // without worrying about whether their data might get modified.

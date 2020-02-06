@@ -59,11 +59,11 @@ std::vector<protobufs::Instruction> GetInstructionsForFunction(
 }
 
 // Returns true if and only if every pointer parameter and variable associated
-// with |function_id| in |context| is known by |fact_manager| to be arbitrary,
-// with the exception of |loop_limiter_id|, which must not be arbitrary.  (It
+// with |function_id| in |context| is known by |fact_manager| to be irrelevant,
+// with the exception of |loop_limiter_id|, which must not be irrelevant.  (It
 // can be 0 if no loop limiter is expected, and 0 should not be deemed
-// arbitrary).
-bool AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+// irrelevant).
+bool AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
     opt::IRContext* context, const FactManager& fact_manager,
     uint32_t function_id, uint32_t loop_limiter_id) {
   // Look at all the functions until the function of interest is found.
@@ -71,19 +71,19 @@ bool AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
     if (function.result_id() != function_id) {
       continue;
     }
-    // Check that the parameters are all arbitrary.
-    bool found_non_arbitrary_parameter = false;
+    // Check that the parameters are all irrelevant.
+    bool found_non_irrelevant_parameter = false;
     function.ForEachParam(
         [context, &fact_manager,
-         &found_non_arbitrary_parameter](opt::Instruction* inst) {
+         &found_non_irrelevant_parameter](opt::Instruction* inst) {
           if (context->get_def_use_mgr()->GetDef(inst->type_id())->opcode() ==
                   SpvOpTypePointer &&
-              !fact_manager.VariableValueIsArbitrary(inst->result_id())) {
-            found_non_arbitrary_parameter = true;
+              !fact_manager.PointeeValueIsIrrelevant(inst->result_id())) {
+            found_non_irrelevant_parameter = true;
           }
         });
-    if (found_non_arbitrary_parameter) {
-      // A non-arbitrary parameter was found.
+    if (found_non_irrelevant_parameter) {
+      // A non-irrelevant parameter was found.
       return false;
     }
     // Look through the instructions in the function's first block.
@@ -93,10 +93,10 @@ bool AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
         // past all variables, so we are done.
         return true;
       }
-      // The variable should be arbitrary if and only if it is not the loop
+      // The variable should be irrelevant if and only if it is not the loop
       // limiter.
       if ((inst.result_id() == loop_limiter_id) ==
-          fact_manager.VariableValueIsArbitrary(inst.result_id())) {
+          fact_manager.PointeeValueIsIrrelevant(inst.result_id())) {
         return false;
       }
     }
@@ -633,8 +633,8 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(30));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context1.get(), fact_manager1, 30, 0));
 
   std::string added_as_dead_code = R"(
@@ -717,9 +717,9 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(30));
-  // All variables/parameters in the function should be deemed arbitrary,
+  // All variables/parameters in the function should be deemed irrelevant,
   // except the loop limiter.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context2.get(), fact_manager2, 30, 100));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
@@ -848,8 +848,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(10));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context1.get(), fact_manager1, 10, 0));
 
   std::string added_as_dead_code = R"(
@@ -893,8 +893,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(10));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context2.get(), fact_manager2, 10, 0));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
@@ -996,8 +996,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(10));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context1.get(), fact_manager1, 10, 0));
 
   std::string added_as_dead_code = R"(
@@ -1042,8 +1042,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(10));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context2.get(), fact_manager2, 10, 0));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
@@ -1276,8 +1276,8 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The function should not be deemed livesafe
   ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(12));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context1.get(), fact_manager1, 12, 0));
 
   std::string added_as_dead_code = R"(
@@ -1415,8 +1415,8 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The function should be deemed livesafe
   ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(12));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context2.get(), fact_manager2, 12, 0));
   std::string added_as_livesafe_code = R"(
                OpCapability Shader
@@ -1599,8 +1599,8 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The function should not be deemed livesafe
   ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(8));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context1.get(), fact_manager1, 8, 0));
 
   std::string added_as_live_or_dead_code = R"(
@@ -1636,8 +1636,8 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The function should be deemed livesafe
   ASSERT_TRUE(fact_manager2.FunctionIsLivesafe(8));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context2.get(), fact_manager2, 8, 0));
   ASSERT_TRUE(IsEqual(env, added_as_live_or_dead_code, context2.get()));
 }
@@ -1690,8 +1690,8 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The function should not be deemed livesafe
   ASSERT_FALSE(fact_manager1.FunctionIsLivesafe(8));
-  // All variables/parameters in the function should be deemed arbitrary.
-  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreArbitrary(
+  // All variables/parameters in the function should be deemed irrelevant.
+  ASSERT_TRUE(AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       context1.get(), fact_manager1, 8, 0));
 
   std::string added_as_dead_code = R"(

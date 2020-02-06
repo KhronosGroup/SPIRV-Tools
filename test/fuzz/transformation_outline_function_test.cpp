@@ -1827,11 +1827,11 @@ TEST(TransformationOutlineFunctionTest,
 }
 
 TEST(TransformationOutlineFunctionTest, OutlineLivesafe) {
-  // In the following, %30 is a livesafe function, with arbitrary parameter
-  // %200 and arbitrary local variable %201.  Variable %100 is a loop limiter,
-  // which is not arbitrary.  The test checks that the outlined function is
+  // In the following, %30 is a livesafe function, with irrelevant parameter
+  // %200 and irrelevant local variable %201.  Variable %100 is a loop limiter,
+  // which is not irrelevant.  The test checks that the outlined function is
   // livesafe, and that the parameters corresponding to %200 and %201 have the
-  // arbitrary fact associated with them.
+  // irrelevant fact associated with them.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1914,8 +1914,8 @@ TEST(TransformationOutlineFunctionTest, OutlineLivesafe) {
 
   FactManager fact_manager;
   fact_manager.AddFactFunctionIsLivesafe(30);
-  fact_manager.AddFactValueOfVariableIsArbitrary(200);
-  fact_manager.AddFactValueOfVariableIsArbitrary(201);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(200);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(201);
 
   TransformationOutlineFunction transformation(
       /*entry_block*/ 198,
@@ -1937,16 +1937,16 @@ TEST(TransformationOutlineFunctionTest, OutlineLivesafe) {
   ASSERT_TRUE(fact_manager.FunctionIsLivesafe(30));
   // The outlined function should be livesafe.
   ASSERT_TRUE(fact_manager.FunctionIsLivesafe(402));
-  // The variable and parameter that were originally arbitrary should still be.
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(200));
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(201));
-  // The loop limiter should still be non-arbitrary.
-  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(100));
-  // The parameters for the original arbitrary variables should be arbitrary.
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(408));
-  ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(409));
-  // The parameter for the loop limiter should not be arbitrary.
-  ASSERT_FALSE(fact_manager.VariableValueIsArbitrary(407));
+  // The variable and parameter that were originally irrelevant should still be.
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(200));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(201));
+  // The loop limiter should still be non-irrelevant.
+  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(100));
+  // The parameters for the original irrelevant variables should be irrelevant.
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(408));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(409));
+  // The parameter for the loop limiter should not be irrelevant.
+  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(407));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -2237,9 +2237,9 @@ TEST(TransformationOutlineFunctionTest, OutlineWithDeadBlocks2) {
 }
 
 TEST(TransformationOutlineFunctionTest,
-     OutlineWithArbitraryVariablesAndParameters) {
-  // This checks that if the outlined region uses a mixture of arbitrary and
-  // non-arbitrary variables and parameters, these properties are preserved
+     OutlineWithIrrelevantVariablesAndParameters) {
+  // This checks that if the outlined region uses a mixture of irrelevant and
+  // non-irrelevant variables and parameters, these properties are preserved
   // during outlining.
   std::string shader = R"(
                OpCapability Shader
@@ -2287,8 +2287,8 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
-  fact_manager.AddFactValueOfVariableIsArbitrary(9);
-  fact_manager.AddFactValueOfVariableIsArbitrary(14);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(9);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(14);
 
   TransformationOutlineFunction transformation(
       /*entry_block*/ 50,
@@ -2305,10 +2305,10 @@ TEST(TransformationOutlineFunctionTest,
   ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
   transformation.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
-  // The variables that were originally abitrary, plus input parameters
-  // corresponding to them, should be arbitrary.  The rest should not be.
+  // The variables that were originally irrelevant, plus input parameters
+  // corresponding to them, should be irrelevant.  The rest should not be.
   for (uint32_t variable_id : {9u, 14u, 206u, 208u}) {
-    ASSERT_TRUE(fact_manager.VariableValueIsArbitrary(variable_id));
+    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(variable_id));
   }
   for (uint32_t variable_id : {10u, 20u, 207u, 209u}) {
     ASSERT_FALSE(fact_manager.BlockIsDead(variable_id));

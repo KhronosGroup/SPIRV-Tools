@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_pass_copy_objects.h"
+#include "source/fuzz/fuzzer_pass_add_loads.h"
 
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/transformation_copy_object.h"
+#include "source/fuzz/transformation_load.h"
 
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPassCopyObjects::FuzzerPassCopyObjects(
+FuzzerPassAddLoads::FuzzerPassAddLoads(
     opt::IRContext* ir_context, FactManager* fact_manager,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
 
-FuzzerPassCopyObjects::~FuzzerPassCopyObjects() = default;
+FuzzerPassAddLoads::~FuzzerPassAddLoads() = default;
 
-void FuzzerPassCopyObjects::Apply() {
+void FuzzerPassAddLoads::Apply() {
   MaybeAddTransformationBeforeEachInstruction(
       [this](const opt::Function& function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
@@ -39,36 +39,55 @@ void FuzzerPassCopyObjects::Apply() {
                "The opcode of the instruction we might insert before must be "
                "the same as the opcode in the descriptor for the instruction");
 
-        // Check whether it is legitimate to insert a copy before this
+        // Check whether it is legitimate to insert a load before this
         // instruction.
-        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyObject,
-                                                          inst_it)) {
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, inst_it)) {
           return;
         }
 
-        // Randomly decide whether to try inserting an object copy here.
+        // Randomly decide whether to try inserting a load here.
         if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()->GetChanceOfCopyingObject())) {
+                GetFuzzerContext()->GetChanceOfAddingLoad())) {
           return;
         }
 
         std::vector<opt::Instruction*> relevant_instructions =
-            FindAvailableInstructions(function, block, inst_it,
-                                      fuzzerutil::CanMakeSynonymOf);
+            FindAvailableInstructions(
+                function, block, inst_it,
+                [](opt::IRContext* context,
+                   opt::Instruction* instruction) -> bool {
+                  if (!instruction->result_id() || !instruction->type_id()) {
+                    return false;
+                  }
+                  switch (instruction->result_id()) {
+                    case SpvOpConstantNull:
+                    case SpvOpUndef:
+                      // Do not allow loading from a null or undefined pointer;
+                      // this might be OK if the block is dead, but for now we
+                      // conservatively avoid it.
+                      return false;
+                    default:
+                      break;
+                  }
+                  return context->get_def_use_mgr()
+                             ->GetDef(instruction->type_id())
+                             ->opcode() == SpvOpTypePointer;
+                });
 
-        // At this point, |relevant_instructions| contains all the instructions
-        // we might think of copying.
+        // At this point, |relevant_instructions| contains all the pointers
+        // we might think of loading from.
         if (relevant_instructions.empty()) {
           return;
         }
 
-        // Choose a copyable instruction at random, and create and apply an
-        // object copying transformation based on it.
-        ApplyTransformation(TransformationCopyObject(
+        // Choose a pointer at random, and create and apply a loading
+        // transformation based on it.
+        ApplyTransformation(TransformationLoad(
+            GetFuzzerContext()->GetFreshId(),
             relevant_instructions[GetFuzzerContext()->RandomIndex(
                                       relevant_instructions)]
                 ->result_id(),
-            instruction_descriptor, GetFuzzerContext()->GetFreshId()));
+            instruction_descriptor));
       });
 }
 

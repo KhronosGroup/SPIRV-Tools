@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_LOCAL_VARIABLES_H_
-#define SOURCE_FUZZ_FUZZER_PASS_ADD_LOCAL_VARIABLES_H_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_LOADS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_ADD_LOADS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// Fuzzer pass that randomly adds local variables, with Function storage class,
-// to the module.
-class FuzzerPassAddLocalVariables : public FuzzerPass {
+// Fuzzer pass that adds stores, at random, from pointers in the module.
+class FuzzerPassAddLoads : public FuzzerPass {
  public:
-  FuzzerPassAddLocalVariables(
-      opt::IRContext* ir_context, FactManager* fact_manager,
-      FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
+  FuzzerPassAddLoads(opt::IRContext* ir_context, FactManager* fact_manager,
+                     FuzzerContext* fuzzer_context,
+                     protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassAddLocalVariables();
+  ~FuzzerPassAddLoads();
 
   void Apply() override;
 };
@@ -37,4 +35,4 @@ class FuzzerPassAddLocalVariables : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_ADD_LOCAL_VARIABLES_H_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_ADD_LOADS_H_
