@@ -98,6 +98,10 @@ bool IsCompositeType(const opt::analysis::Type* type);
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field);
 
+// TODO comment
+uint32_t WalkOneCompositeTypeIndex(opt::IRContext* context,
+                                   uint32_t base_object_type_id, uint32_t index);
+
 // Given a type id, |base_object_type_id|, checks that the given sequence of
 // |indices| is suitable for indexing into this type.  Returns the id of the
 // type of the final sub-object reached via the indices if they are valid, and

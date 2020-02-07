@@ -15,6 +15,8 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_ACCESS_CHAIN_H_
 #define SOURCE_FUZZ_TRANSFORMATION_ACCESS_CHAIN_H_
 
+#include <utility>
+
 #include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -28,7 +30,7 @@ class TransformationAccessChain : public Transformation {
   explicit TransformationAccessChain(
       const protobufs::TransformationAccessChain& message);
 
-  TransformationAccessChain(/* TODO */);
+  TransformationAccessChain(uint32_t fresh_id, uint32_t pointer_id, const std::vector<uint32_t>& index, const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
   // TODO comment
   bool IsApplicable(opt::IRContext* context,
@@ -40,7 +42,11 @@ class TransformationAccessChain : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  protobufs::TransformationAccessChain message_;
+
+  // TODO comment
+  std::pair<bool, uint32_t> GetIndexValue(opt::IRContext* context, uint32_t index) const;
+
+   protobufs::TransformationAccessChain message_;
 };
 
 }  // namespace fuzz

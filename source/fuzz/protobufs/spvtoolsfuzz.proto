@@ -350,7 +350,20 @@ message Transformation {
 
 message TransformationAccessChain {
 
-  // TODO comment and populate
+  // Adds an access chain instruction based on a given pointer and indices.
+
+  // Result id for the access chain
+  uint32 fresh_id = 1;
+
+  // The pointer from which the access chain starts
+  uint32 pointer_id = 2;
+
+  // Zero or more access chain indices
+  repeated uint32 index = 3;
+
+  // A descriptor for an instruction in a block before which the new
+  // OpAccessChain instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 4;
 
 }
 
