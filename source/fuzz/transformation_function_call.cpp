@@ -52,6 +52,11 @@ bool TransformationFunctionCall::IsApplicable(
     return false;
   }
 
+  // The function must not be an entry point
+  if (FunctionIsEntryPoint(context, message_.callee_id())) {
+    return false;
+  }
+
   auto callee_type_inst = context->get_def_use_mgr()->GetDef(
       callee_inst->GetSingleWordInOperand(1));
   assert(callee_type_inst->opcode() == SpvOpTypeFunction &&
@@ -119,7 +124,7 @@ bool TransformationFunctionCall::IsApplicable(
           return false;
       }
       if (!block_is_dead &&
-          !fact_manager.VariableValueIsArbitrary(arg_inst->result_id())) {
+          !fact_manager.PointeeValueIsIrrelevant(arg_inst->result_id())) {
         // This is not a dead block, so pointer parameters passed to the called
         // function might really have their contents modified. We thus require
         // such pointers to be to arbitrary-valued variables, which this is not.
@@ -186,6 +191,16 @@ protobufs::Transformation TransformationFunctionCall::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_function_call() = message_;
   return result;
+}
+
+bool TransformationFunctionCall::FunctionIsEntryPoint(opt::IRContext* context,
+                                                      uint32_t function_id) {
+  for (auto& entry_point : context->module()->entry_points()) {
+    if (entry_point.GetSingleWordInOperand(1) == function_id) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace fuzz

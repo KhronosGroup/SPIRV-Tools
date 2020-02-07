@@ -58,11 +58,12 @@ std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
   }
 
   // Consider all function parameters
-  function->ForEachParam([this, &instruction_is_relevant, &result](opt::Instruction* param) {
-    if (instruction_is_relevant(GetIRContext(), param)) {
-      result.push_back(param);
-    }
-  });
+  function->ForEachParam(
+      [this, &instruction_is_relevant, &result](opt::Instruction* param) {
+        if (instruction_is_relevant(GetIRContext(), param)) {
+          result.push_back(param);
+        }
+      });
 
   // Consider all previous instructions in this block
   for (auto prev_inst_it = block->begin(); prev_inst_it != inst_it;

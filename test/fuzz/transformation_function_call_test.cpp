@@ -143,15 +143,15 @@ TEST(TransformationFunctionCallTest, BasicTest) {
   fact_manager.AddFactBlockIsDead(205);
   fact_manager.AddFactFunctionIsLivesafe(21);
   fact_manager.AddFactFunctionIsLivesafe(200);
-  fact_manager.AddFactValueOfVariableIsArbitrary(71);
-  fact_manager.AddFactValueOfVariableIsArbitrary(72);
-  fact_manager.AddFactValueOfVariableIsArbitrary(19);
-  fact_manager.AddFactValueOfVariableIsArbitrary(20);
-  fact_manager.AddFactValueOfVariableIsArbitrary(23);
-  fact_manager.AddFactValueOfVariableIsArbitrary(44);
-  fact_manager.AddFactValueOfVariableIsArbitrary(46);
-  fact_manager.AddFactValueOfVariableIsArbitrary(51);
-  fact_manager.AddFactValueOfVariableIsArbitrary(52);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(71);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(72);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(19);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(20);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(23);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(44);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(46);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(51);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(52);
 
   // Livesafe functions with argument types: 21(7, 13), 200(7, 13)
   // Non-livesafe functions with argument types: 4(), 10(7), 17(7, 13), 24(7)
@@ -401,6 +401,41 @@ TEST(TransformationFunctionCallTest, BasicTest) {
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationFunctionCallTest, DoNotInvokeEntryPoint) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %3
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  fact_manager.AddFactBlockIsDead(11);
+
+  // 4 is an entry point, so it is not legal for it to be the target of a call.
+  ASSERT_FALSE(TransformationFunctionCall(
+                   100, 4, {}, MakeInstructionDescriptor(11, SpvOpReturn, 0))
+                   .IsApplicable(context.get(), fact_manager));
 }
 
 }  // namespace
