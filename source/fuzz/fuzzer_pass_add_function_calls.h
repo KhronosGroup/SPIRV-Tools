@@ -20,7 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO comment
+// Fuzzer pass that adds calls at random to (a) livesafe functions, from
+// anywhere, and (b) any functions, from dead blocks.
 class FuzzerPassAddFunctionCalls : public FuzzerPass {
  public:
   FuzzerPassAddFunctionCalls(
@@ -31,6 +32,24 @@ class FuzzerPassAddFunctionCalls : public FuzzerPass {
   ~FuzzerPassAddFunctionCalls();
 
   void Apply() override;
+
+ private:
+  // Identify all instructions available at |instr_it|, in block |block| of
+  // |function|, that are potentially suitable as function call actual
+  // parameters.  The results are grouped by type.
+  std::map<uint32_t, std::vector<opt::Instruction*>>
+  GetAvailableInstructionsSuitableForActualParameters(
+      opt::Function* function, opt::BasicBlock* block,
+      const opt::BasicBlock::iterator& inst_it);
+
+  // Randomly chooses suitable arguments to invoke |callee| right before
+  // instruction |caller_inst_it| of block |caller_block| in |caller_function|,
+  // based on both existing available instructions and the addition of new
+  // instructions to the module.
+  std::vector<uint32_t> ChooseFunctionCallArguments(
+      const opt::Function& callee, opt::Function* caller_function,
+      opt::BasicBlock* caller_block,
+      const opt::BasicBlock::iterator& caller_inst_it);
 };
 
 }  // namespace fuzz

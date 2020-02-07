@@ -52,7 +52,8 @@ class FuzzerContext {
         static_cast<uint32_t>(sequence.size()));
   }
 
-  // TODO comment
+  // Selects a random index into |sequence|, removes the element at that index
+  // and returns it.
   template <typename T>
   T RemoveAtRandomIndex(std::vector<T>* sequence) const {
     uint32_t index = RandomIndex(*sequence);
