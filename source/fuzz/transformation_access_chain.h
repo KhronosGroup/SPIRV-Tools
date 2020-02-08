@@ -30,7 +30,10 @@ class TransformationAccessChain : public Transformation {
   explicit TransformationAccessChain(
       const protobufs::TransformationAccessChain& message);
 
-  TransformationAccessChain(uint32_t fresh_id, uint32_t pointer_id, const std::vector<uint32_t>& index, const protobufs::InstructionDescriptor& instruction_to_insert_before);
+  TransformationAccessChain(
+      uint32_t fresh_id, uint32_t pointer_id,
+      const std::vector<uint32_t>& index,
+      const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
   // TODO comment
   bool IsApplicable(opt::IRContext* context,
@@ -42,11 +45,11 @@ class TransformationAccessChain : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-
   // TODO comment
-  std::pair<bool, uint32_t> GetIndexValue(opt::IRContext* context, uint32_t index) const;
+  std::pair<bool, uint32_t> GetIndexValue(opt::IRContext* context,
+                                          uint32_t index_id) const;
 
-   protobufs::TransformationAccessChain message_;
+  protobufs::TransformationAccessChain message_;
 };
 
 }  // namespace fuzz

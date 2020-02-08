@@ -23,6 +23,7 @@ namespace {
 // Default <minimum, maximum> pairs of probabilities for applying various
 // transformations. All values are percentages. Keep them in alphabetical order.
 
+const std::pair<uint32_t, uint32_t> kChanceOfAddingAccessChain = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
@@ -50,6 +51,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
+    {50, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfMakingDonorLivesafe = {40, 60};
 const std::pair<uint32_t, uint32_t> kChanceOfMergingBlocks = {20, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
@@ -81,8 +84,14 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
                              uint32_t min_fresh_id)
     : random_generator_(random_generator),
       next_fresh_id_(min_fresh_id),
+      max_loop_control_partial_count_(kDefaultMaxLoopControlPartialCount),
+      max_loop_control_peel_count_(kDefaultMaxLoopControlPeelCount),
+      max_loop_limit_(kDefaultMaxLoopLimit),
+      max_new_array_size_limit_(kDefaultMaxNewArraySizeLimit),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
+  chance_of_adding_access_chain_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingAccessChain);
   chance_of_adding_another_struct_field_ =
       ChooseBetweenMinAndMax(kChanceOfAddingAnotherStructField);
   chance_of_adding_array_or_struct_type_ =
@@ -122,6 +131,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
+  chance_of_going_deeper_when_making_access_chain_ =
+      ChooseBetweenMinAndMax(kChanceOfGoingDeeperWhenMakingAccessChain);
   chance_of_making_donor_livesafe_ =
       ChooseBetweenMinAndMax(kChanceOfMakingDonorLivesafe);
   chance_of_merging_blocks_ = ChooseBetweenMinAndMax(kChanceOfMergingBlocks);
@@ -134,10 +145,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_replacing_id_with_synonym_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingIdWithSynonym);
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);
-  max_loop_control_partial_count_ = kDefaultMaxLoopControlPartialCount;
-  max_loop_control_peel_count_ = kDefaultMaxLoopControlPeelCount;
-  max_loop_limit_ = kDefaultMaxLoopLimit;
-  max_new_array_size_limit_ = kDefaultMaxNewArraySizeLimit;
 }
 
 FuzzerContext::~FuzzerContext() = default;

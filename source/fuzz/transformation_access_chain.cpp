@@ -26,13 +26,16 @@ TransformationAccessChain::TransformationAccessChain(
     const spvtools::fuzz::protobufs::TransformationAccessChain& message)
     : message_(message) {}
 
-TransformationAccessChain::TransformationAccessChain(uint32_t fresh_id, uint32_t pointer_id, const std::vector<uint32_t>& index, const protobufs::InstructionDescriptor& instruction_to_insert_before) {
+TransformationAccessChain::TransformationAccessChain(
+    uint32_t fresh_id, uint32_t pointer_id, const std::vector<uint32_t>& index,
+    const protobufs::InstructionDescriptor& instruction_to_insert_before) {
   message_.set_fresh_id(fresh_id);
   message_.set_pointer_id(pointer_id);
   for (auto an_index : index) {
     message_.add_index(an_index);
   }
-  *message_.mutable_instruction_to_insert_before() = instruction_to_insert_before;
+  *message_.mutable_instruction_to_insert_before() =
+      instruction_to_insert_before;
 }
 
 bool TransformationAccessChain::IsApplicable(
@@ -53,45 +56,74 @@ bool TransformationAccessChain::IsApplicable(
     return false;
   }
 
-  // TODO Check availability
-  // TODO Check suitability of insertion point
+  auto instruction_to_insert_before =
+      FindInstruction(message_.instruction_to_insert_before(), context);
+  if (!instruction_to_insert_before) {
+    return false;
+  }
+  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
+          SpvOpAccessChain, instruction_to_insert_before)) {
+    return false;
+  }
+
+  switch (pointer->opcode()) {
+    case SpvOpConstantNull:
+    case SpvOpUndef:
+      return false;
+    default:
+      break;
+  }
+
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+          context, instruction_to_insert_before, message_.pointer_id())) {
+    return false;
+  }
 
   // TODO comment this method
   uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
-  for (uint32_t index = 0; index < static_cast<uint32_t>(message_.index_size()); index++) {
-    std::pair<bool, uint32_t> maybe_index_value = GetIndexValue(context, index);
+  for (auto index_id : message_.index()) {
+    std::pair<bool, uint32_t> maybe_index_value =
+        GetIndexValue(context, index_id);
     if (!maybe_index_value.first) {
       return false;
     }
-    subobject_type_id = fuzzerutil::WalkOneCompositeTypeIndex(context, subobject_type_id, maybe_index_value.second);
+    subobject_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
+        context, subobject_type_id, maybe_index_value.second);
     if (!subobject_type_id) {
       return false;
     }
   }
-  auto result_type_and_ptr = context->get_type_mgr()->GetTypeAndPointerType(subobject_type_id, static_cast<SpvStorageClass>(pointer_type->GetSingleWordInOperand(0)));
+  auto result_type_and_ptr = context->get_type_mgr()->GetTypeAndPointerType(
+      subobject_type_id,
+      static_cast<SpvStorageClass>(pointer_type->GetSingleWordInOperand(0)));
   return context->get_type_mgr()->GetId(result_type_and_ptr.second.get()) != 0;
 }
 
 void TransformationAccessChain::Apply(
-    opt::IRContext* context,
-    spvtools::fuzz::FactManager* fact_manager) const {
+    opt::IRContext* context, spvtools::fuzz::FactManager* fact_manager) const {
   opt::Instruction::OperandList operands;
-  operands.push_back({ SPV_OPERAND_TYPE_ID, { message_.pointer_id()} });
-  auto pointer_type = context->get_def_use_mgr()->GetDef(context->get_def_use_mgr()->GetDef(message_.pointer_id())->type_id());
+  operands.push_back({SPV_OPERAND_TYPE_ID, {message_.pointer_id()}});
+  auto pointer_type = context->get_def_use_mgr()->GetDef(
+      context->get_def_use_mgr()->GetDef(message_.pointer_id())->type_id());
   uint32_t subobject_type = pointer_type->GetSingleWordInOperand(1);
-  for (auto index : message_.index()) {
-    uint32_t index_value = GetIndexValue(context, index).second;
-    operands.push_back({ SPV_OPERAND_TYPE_ID, { index_value }});
-    subobject_type = fuzzerutil::WalkOneCompositeTypeIndex(context, subobject_type, index_value);
+  for (auto index_id : message_.index()) {
+    uint32_t index_value = GetIndexValue(context, index_id).second;
+    operands.push_back({SPV_OPERAND_TYPE_ID, {index_id}});
+    subobject_type = fuzzerutil::WalkOneCompositeTypeIndex(
+        context, subobject_type, index_value);
   }
   uint32_t result_type = context->get_type_mgr()->GetId(
-          context->get_type_mgr()->GetTypeAndPointerType(subobject_type, static_cast<SpvStorageClass>(pointer_type->GetSingleWordInOperand(0))).second.get());
+      context->get_type_mgr()
+          ->GetTypeAndPointerType(subobject_type,
+                                  static_cast<SpvStorageClass>(
+                                      pointer_type->GetSingleWordInOperand(0)))
+          .second.get());
 
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
   FindInstruction(message_.instruction_to_insert_before(), context)
-          ->InsertBefore(MakeUnique<opt::Instruction>(
-                  context, SpvOpAccessChain, result_type, message_.fresh_id(),
-                  operands));
+      ->InsertBefore(
+          MakeUnique<opt::Instruction>(context, SpvOpAccessChain, result_type,
+                                       message_.fresh_id(), operands));
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
   if (fact_manager->PointeeValueIsIrrelevant(message_.pointer_id())) {
@@ -105,17 +137,22 @@ protobufs::Transformation TransformationAccessChain::ToMessage() const {
   return result;
 }
 
-std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValue(opt::IRContext* context, uint32_t index) const {
-  auto index_instruction = context->get_def_use_mgr()->GetDef(message_.index(index));
+std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValue(
+    opt::IRContext* context, uint32_t index_id) const {
+  auto index_instruction = context->get_def_use_mgr()->GetDef(index_id);
   if (!index_instruction || !spvOpcodeIsConstant(index_instruction->opcode())) {
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3179) We could
+    //  allow non-constant indices when looking up non-structs, using clamping
+    //  to ensure they are in-bounds.
     return {false, 0};
   }
-  auto index_type = context->get_def_use_mgr()->GetDef(index_instruction->type_id());
-  if (index_type->opcode() != SpvOpTypeInt || index_type->GetSingleWordInOperand(0) != 32) {
+  auto index_type =
+      context->get_def_use_mgr()->GetDef(index_instruction->type_id());
+  if (index_type->opcode() != SpvOpTypeInt ||
+      index_type->GetSingleWordInOperand(0) != 32) {
     return {false, 0};
   }
   return {true, index_instruction->GetSingleWordInOperand(0)};
-
 }
 
 }  // namespace fuzz

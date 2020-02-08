@@ -263,9 +263,10 @@ std::vector<uint32_t> RepeatedFieldToVector(
 }
 
 uint32_t WalkOneCompositeTypeIndex(opt::IRContext* context,
-        uint32_t base_object_type_id, uint32_t index) {
+                                   uint32_t base_object_type_id,
+                                   uint32_t index) {
   auto should_be_composite_type =
-          context->get_def_use_mgr()->GetDef(base_object_type_id);
+      context->get_def_use_mgr()->GetDef(base_object_type_id);
   assert(should_be_composite_type && "The type should exist.");
   switch (should_be_composite_type->opcode()) {
     case SpvOpTypeArray: {
@@ -299,7 +300,8 @@ uint32_t WalkCompositeTypeIndices(
     const google::protobuf::RepeatedField<google::protobuf::uint32>& indices) {
   uint32_t sub_object_type_id = base_object_type_id;
   for (auto index : indices) {
-    sub_object_type_id = WalkOneCompositeTypeIndex(context, sub_object_type_id, index);
+    sub_object_type_id =
+        WalkOneCompositeTypeIndex(context, sub_object_type_id, index);
     if (!sub_object_type_id) {
       return 0;
     }

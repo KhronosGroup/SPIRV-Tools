@@ -100,7 +100,8 @@ std::vector<uint32_t> RepeatedFieldToVector(
 
 // TODO comment
 uint32_t WalkOneCompositeTypeIndex(opt::IRContext* context,
-                                   uint32_t base_object_type_id, uint32_t index);
+                                   uint32_t base_object_type_id,
+                                   uint32_t index);
 
 // Given a type id, |base_object_type_id|, checks that the given sequence of
 // |indices| is suitable for indexing into this type.  Returns the id of the

@@ -14,6 +14,8 @@
 
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 
+#include "source/fuzz/fuzzer_util.h"
+
 namespace spvtools {
 namespace fuzz {
 
@@ -25,7 +27,125 @@ FuzzerPassAddAccessChains::FuzzerPassAddAccessChains(
 
 FuzzerPassAddAccessChains::~FuzzerPassAddAccessChains() = default;
 
-void FuzzerPassAddAccessChains::Apply() { assert(false && "Implement"); }
+void FuzzerPassAddAccessChains::Apply() {
+  MaybeAddTransformationBeforeEachInstruction(
+      [this](const opt::Function& function, opt::BasicBlock* block,
+             opt::BasicBlock::iterator inst_it,
+             const protobufs::InstructionDescriptor& instruction_descriptor)
+          -> void {
+        assert(inst_it->opcode() ==
+                   instruction_descriptor.target_instruction_opcode() &&
+               "The opcode of the instruction we might insert before must be "
+               "the same as the opcode in the descriptor for the instruction");
+
+        // Check whether it is legitimate to insert an access chain
+        // instruction before this instruction.
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpAccessChain,
+                                                          inst_it)) {
+          return;
+        }
+
+        // Randomly decide whether to try inserting a load here.
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfAddingAccessChain())) {
+          return;
+        }
+
+        std::vector<opt::Instruction*> relevant_pointer_instructions =
+            FindAvailableInstructions(
+                function, block, inst_it,
+                [](opt::IRContext* context,
+                   opt::Instruction* instruction) -> bool {
+                  if (!instruction->result_id() || !instruction->type_id()) {
+                    return false;
+                  }
+                  switch (instruction->result_id()) {
+                    case SpvOpConstantNull:
+                    case SpvOpUndef:
+                      // Do not allow making an access chain from a null or
+                      // undefined pointer.
+                      return false;
+                    default:
+                      break;
+                  }
+                  return context->get_def_use_mgr()
+                             ->GetDef(instruction->type_id())
+                             ->opcode() == SpvOpTypePointer;
+                });
+
+        // At this point, |relevant_instructions| contains all the pointers
+        // we might think of making an access chain from.
+        if (relevant_pointer_instructions.empty()) {
+          return;
+        }
+
+        auto chosen_pointer =
+            relevant_pointer_instructions[GetFuzzerContext()->RandomIndex(
+                relevant_pointer_instructions)];
+        std::vector<uint32_t> index_ids;
+        auto pointer_type = GetIRContext()->get_def_use_mgr()->GetDef(
+            chosen_pointer->type_id());
+        uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
+        while (true) {
+          auto subobject_type =
+              GetIRContext()->get_def_use_mgr()->GetDef(subobject_type_id);
+          if (!spvOpcodeIsComposite(subobject_type->opcode())) {
+            break;
+          }
+          if (!GetFuzzerContext()->ChoosePercentage(
+                  GetFuzzerContext()
+                      ->GetChanceOfGoingDeeperWhenMakingAccessChain())) {
+            break;
+          }
+          uint32_t bound;
+          switch (subobject_type->opcode()) {
+            case SpvOpTypeArray:
+              bound = fuzzerutil::GetArraySize(*subobject_type, GetIRContext());
+              break;
+            case SpvOpTypeMatrix:
+            case SpvOpTypeVector:
+              bound = subobject_type->GetSingleWordInOperand(0);
+              break;
+            case SpvOpTypeStruct:
+              bound = fuzzerutil::GetNumberOfStructMembers(*subobject_type);
+              break;
+            default:
+              assert(false && "Not a composite type opcode.");
+          }
+          if (bound == 0) {
+            // It is possible for a composite type to have zero
+            // sub-components, at least in the case of a struct, which
+            // can have no fields.
+            break;
+          }
+
+          // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3179) We
+          // could
+          //  allow non-constant indices when looking up non-structs, using
+          //  clamping to ensure they are in-bounds.
+          uint32_t index_value =
+              GetFuzzerContext()->GetRandomIndexForAccessChain(bound);
+          index_ids.push_back(FindOrCreate32BitIntegerConstant(
+              index_value, GetFuzzerContext()->ChooseEven()));
+          switch (subobject_type->opcode()) {
+            case SpvOpTypeArray:
+            case SpvOpTypeMatrix:
+            case SpvOpTypeVector:
+              subobject_type_id = subobject_type->GetSingleWordInOperand(0);
+              break;
+            case SpvOpTypeStruct:
+              subobject_type_id =
+                  subobject_type->GetSingleWordInOperand(index_value);
+              break;
+            default:
+              assert(false && "Not a composite type opcode.");
+          }
+        }
+        FindOrCreatePointerType(subobject_type_id,
+                                static_cast<SpvStorageClass>(
+                                    pointer_type->GetSingleWordInOperand(0)));
+      });
+}
 
 }  // namespace fuzz
 }  // namespace spvtools
