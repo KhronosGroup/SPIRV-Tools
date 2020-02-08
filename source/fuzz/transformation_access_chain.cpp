@@ -27,12 +27,13 @@ TransformationAccessChain::TransformationAccessChain(
     : message_(message) {}
 
 TransformationAccessChain::TransformationAccessChain(
-    uint32_t fresh_id, uint32_t pointer_id, const std::vector<uint32_t>& index,
+    uint32_t fresh_id, uint32_t pointer_id,
+    const std::vector<uint32_t>& index_id,
     const protobufs::InstructionDescriptor& instruction_to_insert_before) {
   message_.set_fresh_id(fresh_id);
   message_.set_pointer_id(pointer_id);
-  for (auto an_index : index) {
-    message_.add_index(an_index);
+  for (auto id : index_id) {
+    message_.add_index_id(id);
   }
   *message_.mutable_instruction_to_insert_before() =
       instruction_to_insert_before;
@@ -94,7 +95,7 @@ bool TransformationAccessChain::IsApplicable(
   uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
 
   // Consider the given index ids in turn.
-  for (auto index_id : message_.index()) {
+  for (auto index_id : message_.index_id()) {
     // Try to get the integer value associated with this index is.  The first
     // component of the result will be false if the id did not correspond to an
     // integer.  Otherwise, the integer with which the id is associated is the
@@ -128,19 +129,36 @@ bool TransformationAccessChain::IsApplicable(
 
 void TransformationAccessChain::Apply(
     opt::IRContext* context, spvtools::fuzz::FactManager* fact_manager) const {
-  // TODO: this deserves some comments.
-
+  // The operands to the access chain are the pointer followed by the indices.
+  // The result type of the access chain is determined by where the indices
+  // lead.  We thus push the pointer to a sequence of operands, and then follow
+  // the indices, pushing each to the operand list and tracking the type
+  // obtained by following it.  Ultimately this yields the type of the
+  // component reached by following all the indices, and the result type is
+  // a pointer to this component type.
   opt::Instruction::OperandList operands;
+
+  // Add the pointer id itself.
   operands.push_back({SPV_OPERAND_TYPE_ID, {message_.pointer_id()}});
+
+  // Start walking the indices, starting with the pointer's base type.
   auto pointer_type = context->get_def_use_mgr()->GetDef(
       context->get_def_use_mgr()->GetDef(message_.pointer_id())->type_id());
   uint32_t subobject_type = pointer_type->GetSingleWordInOperand(1);
-  for (auto index_id : message_.index()) {
-    uint32_t index_value = GetIndexValue(context, index_id).second;
+
+  // Go through the index ids in turn.
+  for (auto index_id : message_.index_id()) {
+    // Add the index id to the operands.
     operands.push_back({SPV_OPERAND_TYPE_ID, {index_id}});
+    // Get the integer value associated with the index id.
+    uint32_t index_value = GetIndexValue(context, index_id).second;
+    // Walk to the next type in the composite object using this index.
     subobject_type = fuzzerutil::WalkOneCompositeTypeIndex(
         context, subobject_type, index_value);
   }
+  // The access chain's result type is a pointer to the composite component that
+  // was reached after following all indices.  The storage class is that of the
+  // original pointer.
   uint32_t result_type = context->get_type_mgr()->GetId(
       context->get_type_mgr()
           ->GetTypeAndPointerType(subobject_type,
@@ -148,13 +166,19 @@ void TransformationAccessChain::Apply(
                                       pointer_type->GetSingleWordInOperand(0)))
           .second.get());
 
+  // Add the access chain instruction to the module, and update the module's id
+  // bound.
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
   FindInstruction(message_.instruction_to_insert_before(), context)
       ->InsertBefore(
           MakeUnique<opt::Instruction>(context, SpvOpAccessChain, result_type,
                                        message_.fresh_id(), operands));
+
+  // Conservatively invalidate all analyses.
   context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
+  // If the base pointer's pointee value was irrelevant, the same is true of the
+  // pointee value of the result of this access chain.
   if (fact_manager->PointeeValueIsIrrelevant(message_.pointer_id())) {
     fact_manager->AddFactValueOfPointeeIsIrrelevant(message_.fresh_id());
   }

@@ -32,20 +32,42 @@ class TransformationAccessChain : public Transformation {
 
   TransformationAccessChain(
       uint32_t fresh_id, uint32_t pointer_id,
-      const std::vector<uint32_t>& index,
+      const std::vector<uint32_t>& index_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
-  // TODO comment
+  // - |message_.fresh_id| must be fresh
+  // - |message_.instruction_to_insert_before| must identify an instruction
+  //   before which it is legitimate to insert an OpAccessChain instruction
+  // - |message_.pointer_id| must be a result id with pointer type that is
+  //   available (according to dominance rules) at the insertion point.
+  // - The pointer must not be OpConstantNull or OpUndef
+  // - |message_.index_id| must be a sequence of ids of 32-bit integer constants
+  //   such that it is possible to walk the pointee type of
+  //   |message_.pointer_id| using these indices, remaining in-bounds.
+  // - If type t is the final type reached by walking these indices, the module
+  //   must include an instruction "OpTypePointer SC %t" where SC is the storage
+  //   class associated with |message_.pointer_id|
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an instruction of the form:
+  //   |message_.fresh_id| = OpAccessChain %ptr |message_.index_id|
+  // where %ptr is the result if of an instruction declaring a pointer to the
+  // type reached by walking the pointee type of |message_.pointer_id| using
+  // the indices in |message_.index_id|, and with the same storage class as
+  // |message_.pointer_id|.
+  //
+  // If |fact_manager| reports that |message_.pointer_id| has an irrelevant
+  // pointee value, then the fact that |message_.fresh_id| (the result of the
+  // access chain) also has an irrelevant pointee value is also recorded.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // TODO comment
+  // Returns {false, 0} if |index_id| does not correspond to a 32-bit integer
+  // constant.  Otherwise, returns {true, value}, where value is the value of
+  // the 32-bit integer constant to which |index_id| corresponds.
   std::pair<bool, uint32_t> GetIndexValue(opt::IRContext* context,
                                           uint32_t index_id) const;
 

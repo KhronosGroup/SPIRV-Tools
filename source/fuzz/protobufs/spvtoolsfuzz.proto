@@ -359,7 +359,7 @@ message TransformationAccessChain {
   uint32 pointer_id = 2;
 
   // Zero or more access chain indices
-  repeated uint32 index = 3;
+  repeated uint32 index_id = 3;
 
   // A descriptor for an instruction in a block before which the new
   // OpAccessChain instruction should be inserted
