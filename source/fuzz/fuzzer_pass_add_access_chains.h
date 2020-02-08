@@ -20,7 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO comment
+// Fuzzer pass that randomly adds access chains based on pointers available in
+// the module.  Other passes can use these access chains, e.g. by loading from
+// them.
 class FuzzerPassAddAccessChains : public FuzzerPass {
  public:
   FuzzerPassAddAccessChains(opt::IRContext* ir_context,

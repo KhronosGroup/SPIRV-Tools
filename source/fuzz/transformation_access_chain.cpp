@@ -56,6 +56,8 @@ bool TransformationAccessChain::IsApplicable(
     return false;
   }
 
+  // The described instruction to insert before must exist and be a suitable
+  // point where an OpAccessChain instruction could be inserted.
   auto instruction_to_insert_before =
       FindInstruction(message_.instruction_to_insert_before(), context);
   if (!instruction_to_insert_before) {
@@ -66,6 +68,9 @@ bool TransformationAccessChain::IsApplicable(
     return false;
   }
 
+  // Do not allow making an access chain from a null or undefined pointer, as
+  // we do not want to allow accessing such pointers.  This might be acceptable
+  // in dead blocks, but we conservatively avoid it.
   switch (pointer->opcode()) {
     case SpvOpConstantNull:
     case SpvOpUndef:
@@ -74,25 +79,47 @@ bool TransformationAccessChain::IsApplicable(
       break;
   }
 
+  // The pointer on which the access chain is to be based needs to be available
+  // (according to dominance rules) at the insertion point.
   if (!fuzzerutil::IdIsAvailableBeforeInstruction(
           context, instruction_to_insert_before, message_.pointer_id())) {
     return false;
   }
 
-  // TODO comment this method
+  // We now need to use the given indices to walk the type structure of the
+  // base type of the pointer, making sure that (a) the indices correspond to
+  // integers, and (b) these integer values are in-bounds.
+
+  // Start from the base type of the pointer.
   uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
+
+  // Consider the given index ids in turn.
   for (auto index_id : message_.index()) {
+    // Try to get the integer value associated with this index is.  The first
+    // component of the result will be false if the id did not correspond to an
+    // integer.  Otherwise, the integer with which the id is associated is the
+    // second component.
     std::pair<bool, uint32_t> maybe_index_value =
         GetIndexValue(context, index_id);
     if (!maybe_index_value.first) {
+      // There was no integer: this index is no good.
       return false;
     }
+    // Try to walk down the type using this index.  This will yield 0 if the
+    // type is not a composite or the index is out of bounds, and the id of
+    // the next type otherwise.
     subobject_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
         context, subobject_type_id, maybe_index_value.second);
     if (!subobject_type_id) {
+      // Either the type was not a composite (so that too many indices were
+      // provided), or the index was out of bounds.
       return false;
     }
   }
+  // At this point, |subobject_type_id| is the type of the value targeted by
+  // the new access chain.  The result type of the access chain should be a
+  // pointer to this type, with the same storage class as for the original
+  // pointer.  Such a pointer type needs to exist in the module.
   auto result_type_and_ptr = context->get_type_mgr()->GetTypeAndPointerType(
       subobject_type_id,
       static_cast<SpvStorageClass>(pointer_type->GetSingleWordInOperand(0)));
@@ -101,6 +128,8 @@ bool TransformationAccessChain::IsApplicable(
 
 void TransformationAccessChain::Apply(
     opt::IRContext* context, spvtools::fuzz::FactManager* fact_manager) const {
+  // TODO: this deserves some comments.
+
   opt::Instruction::OperandList operands;
   operands.push_back({SPV_OPERAND_TYPE_ID, {message_.pointer_id()}});
   auto pointer_type = context->get_def_use_mgr()->GetDef(

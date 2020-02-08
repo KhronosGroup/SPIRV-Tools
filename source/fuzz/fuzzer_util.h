@@ -98,7 +98,17 @@ bool IsCompositeType(const opt::analysis::Type* type);
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field);
 
-// TODO comment
+// Given a type id, |base_object_type_id|, returns 0 if the type is not a
+// composite type or if |index| is too large to be used as an index into the
+// composite.  Otherwise returns the type id of the type associated with the
+// composite's index.
+//
+// Example: if |base_object_type_id| is 10, and we have:
+//
+// %10 = OpTypeStruct %3 %4 %5
+//
+// then 3 will be returned if |index| is 0, 5 if |index| is 2, and 0 if index
+// is 3 or larger.
 uint32_t WalkOneCompositeTypeIndex(opt::IRContext* context,
                                    uint32_t base_object_type_id,
                                    uint32_t index);

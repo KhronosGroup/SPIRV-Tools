@@ -125,7 +125,9 @@ class FuzzerPass {
   // type itself do not exist, transformations are applied to add them.
   uint32_t FindOrCreateMatrixType(uint32_t column_count, uint32_t row_count);
 
-  // TODO comment
+  // Returns the id of a pointer type with base type |base_type_id| (which must
+  // already exist) and storage class |storage_class|.  A transformation is
+  // applied to add the pointer if it does not already exist.
   uint32_t FindOrCreatePointerType(uint32_t base_type_id,
                                    SpvStorageClass storage_class);
 
