@@ -471,6 +471,36 @@ bool InstructionIsFunctionParameter(opt::Instruction* instruction,
   return found_parameter;
 }
 
+uint32_t GetTypeId(opt::IRContext* context, uint32_t result_id) {
+  return context->get_def_use_mgr()->GetDef(result_id)->type_id();
+}
+
+uint32_t GetPointeeTypeIdFromPointerType(opt::Instruction* pointer_type_inst) {
+  assert(pointer_type_inst && pointer_type_inst->opcode() == SpvOpTypePointer &&
+         "Precondition: |pointer_type_inst| must be OpTypePointer.");
+  return pointer_type_inst->GetSingleWordInOperand(1);
+}
+
+uint32_t GetPointeeTypeIdFromPointerType(opt::IRContext* context,
+                                         uint32_t pointer_type_id) {
+  return GetPointeeTypeIdFromPointerType(
+      context->get_def_use_mgr()->GetDef(pointer_type_id));
+}
+
+SpvStorageClass GetStorageClassFromPointerType(
+    opt::Instruction* pointer_type_inst) {
+  assert(pointer_type_inst && pointer_type_inst->opcode() == SpvOpTypePointer &&
+         "Precondition: |pointer_type_inst| must be OpTypePointer.");
+  return static_cast<SpvStorageClass>(
+      pointer_type_inst->GetSingleWordInOperand(0));
+}
+
+SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
+                                               uint32_t pointer_type_id) {
+  return GetStorageClassFromPointerType(
+      context->get_def_use_mgr()->GetDef(pointer_type_id));
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
