@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -106,13 +106,13 @@ bool TransformationFunctionCall::IsApplicable(
     if (!arg_inst->type_id()) {
       // The given argument does not have a type; it is thus not suitable.
     }
-    opt::Instruction* arg_type_inst =
-        context->get_def_use_mgr()->GetDef(arg_inst->type_id());
-    if (arg_type_inst->result_id() !=
+    if (arg_inst->type_id() !=
         callee_type_inst->GetSingleWordInOperand(arg_index + 1)) {
       // Argument type mismatch.
       return false;
     }
+    opt::Instruction* arg_type_inst =
+        context->get_def_use_mgr()->GetDef(arg_inst->type_id());
     if (arg_type_inst->opcode() == SpvOpTypePointer) {
       switch (arg_inst->opcode()) {
         case SpvOpFunctionParameter:
@@ -132,22 +132,10 @@ bool TransformationFunctionCall::IsApplicable(
       }
     }
 
-    if (arg_inst->opcode() == SpvOpFunctionParameter) {
-      bool found = false;
-      enclosing_function->ForEachParam(
-          [arg_inst, &found](opt::Instruction* param) {
-            if (param == arg_inst) {
-              found = true;
-            }
-          });
-      if (!found) {
-        return false;
-      }
-    } else if (context->get_instr_block(arg_inst) &&
-               !context->GetDominatorAnalysis(enclosing_function)
-                    ->Dominates(arg_inst, insert_before)) {
-      // The argument instruction is not global and does not dominate the point
-      // of the function call, so it cannot be used.
+    // The argument id needs to be available (according to dominance rules) at
+    // the point where the call will occur.
+    if (!fuzzerutil::IdIsAvailableBeforeInstruction(context, insert_before,
+                                                    arg_inst->result_id())) {
       return false;
     }
   }

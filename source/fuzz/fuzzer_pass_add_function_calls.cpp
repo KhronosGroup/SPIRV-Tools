@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -182,11 +182,12 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
             ->GetDef(function_type->GetSingleWordInOperand(arg_index))
             ->result_id();
     if (type_to_available_instructions.count(arg_type_id)) {
-      std::vector<opt::Instruction*> candidate_arguments =
+      std::vector<opt::Instruction*>& candidate_arguments =
           type_to_available_instructions.at(arg_type_id);
       // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177) The value
-      //  selected here is arbitrary.  We should consider adding a fact to log
-      //  that it could be transformed.
+      //  selected here is arbitrary.  We should consider adding this
+      //  information as a fact so that the passed parameter could be
+      //  transformed/changed.
       result.push_back(candidate_arguments[GetFuzzerContext()->RandomIndex(
                                                candidate_arguments)]
                            ->result_id());

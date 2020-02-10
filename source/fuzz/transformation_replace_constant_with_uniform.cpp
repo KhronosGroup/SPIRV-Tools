@@ -154,7 +154,7 @@ bool TransformationReplaceConstantWithUniform::IsApplicable(
     return false;
   }
 
-  // The use must not be a variable inializer; these are required to be
+  // The use must not be a variable initializer; these are required to be
   // constants, so it would be illegal to replace one with a uniform access.
   if (instruction_using_constant->opcode() == SpvOpVariable) {
     return false;
