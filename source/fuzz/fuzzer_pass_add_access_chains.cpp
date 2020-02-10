@@ -30,7 +30,7 @@ FuzzerPassAddAccessChains::~FuzzerPassAddAccessChains() = default;
 
 void FuzzerPassAddAccessChains::Apply() {
   MaybeAddTransformationBeforeEachInstruction(
-      [this](const opt::Function& function, opt::BasicBlock* block,
+      [this](opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor)
           -> void {
