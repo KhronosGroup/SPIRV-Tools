@@ -402,14 +402,22 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // way they wish, and pass them as pointer parameters to functions
         // without worrying about whether their data might get modified.
         new_result_id = GetFuzzerContext()->GetFreshId();
+        uint32_t remapped_pointer_type =
+            original_id_to_donated_id->at(type_or_value.type_id());
+        uint32_t initializer_id;
+        if (type_or_value.NumInOperands() == 1) {
+          // The variable did not have an initializer; initialize it to zero.
+          // This is to limit problems associated with uninitialized data.
+          initializer_id = FindOrCreateZeroConstant(
+              fuzzerutil::GetPointeeTypeIdFromPointerType(
+                  GetIRContext(), remapped_pointer_type));
+        } else {
+          // The variable already had an initializer; use its remapped id.
+          initializer_id = original_id_to_donated_id->at(
+              type_or_value.GetSingleWordInOperand(1));
+        }
         ApplyTransformation(TransformationAddGlobalVariable(
-            new_result_id,
-            original_id_to_donated_id->at(type_or_value.type_id()),
-            type_or_value.NumInOperands() == 1
-                ? 0
-                : original_id_to_donated_id->at(
-                      type_or_value.GetSingleWordInOperand(1)),
-            true));
+            new_result_id, remapped_pointer_type, initializer_id, true));
       } break;
       case SpvOpUndef: {
         // It is fine to have multiple Undef instructions of the same type, so
@@ -473,53 +481,65 @@ void FuzzerPassDonateModules::HandleFunctions(
     });
 
     // Consider every instruction of the donor function.
-    function_to_donate->ForEachInst(
-        [&donated_instructions,
-         &original_id_to_donated_id](const opt::Instruction* instruction) {
-          // Get the instruction's input operands into donation-ready form,
-          // remapping any id uses in the process.
-          opt::Instruction::OperandList input_operands;
+    function_to_donate->ForEachInst([this, &donated_instructions,
+                                     &original_id_to_donated_id](
+                                        const opt::Instruction* instruction) {
+      // Get the instruction's input operands into donation-ready form,
+      // remapping any id uses in the process.
+      opt::Instruction::OperandList input_operands;
 
-          // Consider each input operand in turn.
-          for (uint32_t in_operand_index = 0;
-               in_operand_index < instruction->NumInOperands();
-               in_operand_index++) {
-            std::vector<uint32_t> operand_data;
-            const opt::Operand& in_operand =
-                instruction->GetInOperand(in_operand_index);
-            switch (in_operand.type) {
-              case SPV_OPERAND_TYPE_ID:
-              case SPV_OPERAND_TYPE_TYPE_ID:
-              case SPV_OPERAND_TYPE_RESULT_ID:
-              case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-              case SPV_OPERAND_TYPE_SCOPE_ID:
-                // This is an id operand - it consists of a single word of data,
-                // which needs to be remapped so that it is replaced with the
-                // donated form of the id.
-                operand_data.push_back(
-                    original_id_to_donated_id->at(in_operand.words[0]));
-                break;
-              default:
-                // For non-id operands, we just add each of the data words.
-                for (auto word : in_operand.words) {
-                  operand_data.push_back(word);
-                }
-                break;
+      // Consider each input operand in turn.
+      for (uint32_t in_operand_index = 0;
+           in_operand_index < instruction->NumInOperands();
+           in_operand_index++) {
+        std::vector<uint32_t> operand_data;
+        const opt::Operand& in_operand =
+            instruction->GetInOperand(in_operand_index);
+        switch (in_operand.type) {
+          case SPV_OPERAND_TYPE_ID:
+          case SPV_OPERAND_TYPE_TYPE_ID:
+          case SPV_OPERAND_TYPE_RESULT_ID:
+          case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+          case SPV_OPERAND_TYPE_SCOPE_ID:
+            // This is an id operand - it consists of a single word of data,
+            // which needs to be remapped so that it is replaced with the
+            // donated form of the id.
+            operand_data.push_back(
+                original_id_to_donated_id->at(in_operand.words[0]));
+            break;
+          default:
+            // For non-id operands, we just add each of the data words.
+            for (auto word : in_operand.words) {
+              operand_data.push_back(word);
             }
-            input_operands.push_back({in_operand.type, operand_data});
-          }
-          // Remap the result type and result id (if present) of the
-          // instruction, and turn it into a protobuf message.
-          donated_instructions.push_back(MakeInstructionMessage(
-              instruction->opcode(),
-              instruction->type_id()
-                  ? original_id_to_donated_id->at(instruction->type_id())
-                  : 0,
-              instruction->result_id()
-                  ? original_id_to_donated_id->at(instruction->result_id())
-                  : 0,
-              input_operands));
-        });
+            break;
+        }
+        input_operands.push_back({in_operand.type, operand_data});
+      }
+
+      if (instruction->opcode() == SpvOpVariable &&
+          instruction->NumInOperands() == 1) {
+        // This is an uninitialized local variable.  Initialize it to zero.
+        input_operands.push_back(
+            {SPV_OPERAND_TYPE_ID,
+             {FindOrCreateZeroConstant(
+                 fuzzerutil::GetPointeeTypeIdFromPointerType(
+                     GetIRContext(),
+                     original_id_to_donated_id->at(instruction->type_id())))}});
+      }
+
+      // Remap the result type and result id (if present) of the
+      // instruction, and turn it into a protobuf message.
+      donated_instructions.push_back(MakeInstructionMessage(
+          instruction->opcode(),
+          instruction->type_id()
+              ? original_id_to_donated_id->at(instruction->type_id())
+              : 0,
+          instruction->result_id()
+              ? original_id_to_donated_id->at(instruction->result_id())
+              : 0,
+          input_operands));
+    });
 
     if (make_livesafe) {
       // Various types and constants must be in place for a function to be made

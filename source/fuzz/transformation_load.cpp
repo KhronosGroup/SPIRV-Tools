@@ -82,11 +82,8 @@ bool TransformationLoad::IsApplicable(
 
 void TransformationLoad::Apply(opt::IRContext* context,
                                spvtools::fuzz::FactManager* /*unused*/) const {
-  uint32_t result_type = context->get_def_use_mgr()
-                             ->GetDef(context->get_def_use_mgr()
-                                          ->GetDef(message_.pointer_id())
-                                          ->type_id())
-                             ->GetSingleWordInOperand(1);
+  uint32_t result_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
+      context, fuzzerutil::GetTypeId(context, message_.pointer_id()));
   fuzzerutil::UpdateModuleIdBound(context, message_.fresh_id());
   FindInstruction(message_.instruction_to_insert_before(), context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
