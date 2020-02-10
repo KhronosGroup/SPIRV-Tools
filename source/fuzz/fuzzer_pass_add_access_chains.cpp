@@ -15,6 +15,7 @@
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/transformation_access_chain.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -104,7 +105,7 @@ void FuzzerPassAddAccessChains::Apply() {
               break;
             case SpvOpTypeMatrix:
             case SpvOpTypeVector:
-              bound = subobject_type->GetSingleWordInOperand(0);
+              bound = subobject_type->GetSingleWordInOperand(1);
               break;
             case SpvOpTypeStruct:
               bound = fuzzerutil::GetNumberOfStructMembers(*subobject_type);
@@ -124,9 +125,8 @@ void FuzzerPassAddAccessChains::Apply() {
           }
 
           // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3179) We
-          // could
-          //  allow non-constant indices when looking up non-structs, using
-          //  clamping to ensure they are in-bounds.
+          //  could allow non-constant indices when looking up non-structs,
+          //  using clamping to ensure they are in-bounds.
           uint32_t index_value =
               GetFuzzerContext()->GetRandomIndexForAccessChain(bound);
           index_ids.push_back(FindOrCreate32BitIntegerConstant(
@@ -145,9 +145,16 @@ void FuzzerPassAddAccessChains::Apply() {
               assert(false && "Not a composite type opcode.");
           }
         }
+        // The transformation we are about to create will only apply if a
+        // pointer suitable for the access chain's result type exists, so we
+        // create one if it does not.
         FindOrCreatePointerType(subobject_type_id,
                                 static_cast<SpvStorageClass>(
                                     pointer_type->GetSingleWordInOperand(0)));
+        // Apply the transformation to add an access chain.
+        ApplyTransformation(TransformationAccessChain(
+            GetFuzzerContext()->GetFreshId(), chosen_pointer->result_id(),
+            index_ids, instruction_descriptor));
       });
 }
 
