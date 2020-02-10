@@ -133,6 +133,13 @@ bool TransformationAddFunction::IsApplicable(
   }
 
   if (message_.is_livesafe()) {
+    // We check whether the cloned module is valid before trying to make the
+    // function livesafe.  This is necessary because the logic for making a
+    // function livesafe depends on some analyses being performed on the module
+    // (including def-use analysis), which require the module to be valid.
+    if (!fuzzerutil::IsValid(cloned_module.get())) {
+      return false;
+    }
     // We make the cloned module livesafe.
     if (!TryToMakeFunctionLivesafe(cloned_module.get(), fact_manager)) {
       return false;
