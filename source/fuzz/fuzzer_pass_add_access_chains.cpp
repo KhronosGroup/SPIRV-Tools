@@ -111,9 +111,13 @@ void FuzzerPassAddAccessChains::Apply() {
               break;
             default:
               assert(false && "Not a composite type opcode.");
+              // Set the bound to a value in order to keep release compilers
+              // happy.
+              bound = 0;
+              break;
           }
           if (bound == 0) {
-            // It is possible for a composite type to have zero
+            // It is possible for a composite type to legitimately have zero
             // sub-components, at least in the case of a struct, which
             // can have no fields.
             break;
