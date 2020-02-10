@@ -40,6 +40,7 @@
 #include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_copy_object.h"
+#include "source/fuzz/transformation_function_call.h"
 #include "source/fuzz/transformation_load.h"
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"
@@ -124,6 +125,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.composite_extract());
     case protobufs::Transformation::TransformationCase::kCopyObject:
       return MakeUnique<TransformationCopyObject>(message.copy_object());
+    case protobufs::Transformation::TransformationCase::kFunctionCall:
+      return MakeUnique<TransformationFunctionCall>(message.function_call());
     case protobufs::Transformation::TransformationCase::kLoad:
       return MakeUnique<TransformationLoad>(message.load());
     case protobufs::Transformation::TransformationCase::kMergeBlocks:

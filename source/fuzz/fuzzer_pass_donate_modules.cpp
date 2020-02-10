@@ -18,6 +18,7 @@
 #include <queue>
 #include <set>
 
+#include "source/fuzz/call_graph.h"
 #include "source/fuzz/instruction_message.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_composite.h"
@@ -686,52 +687,17 @@ void FuzzerPassDonateModules::HandleFunctions(
 std::vector<uint32_t>
 FuzzerPassDonateModules::GetFunctionsInCallGraphTopologicalOrder(
     opt::IRContext* context) {
+  CallGraph call_graph(context);
+
   // This is an implementation of Kahn’s algorithm for topological sorting.
-
-  // For each function id, stores the number of distinct functions that call
-  // the function.
-  std::map<uint32_t, uint32_t> function_in_degree;
-
-  // We first build a call graph for the module, and compute the in-degree for
-  // each function in the process.
-  // TODO(afd): If there is functionality elsewhere in the SPIR-V tools
-  //  framework to construct call graphs it could be nice to re-use it here.
-  std::map<uint32_t, std::set<uint32_t>> call_graph_edges;
-
-  // Initialize function in-degree and call graph edges to 0 and empty.
-  for (auto& function : *context->module()) {
-    function_in_degree[function.result_id()] = 0;
-    call_graph_edges[function.result_id()] = std::set<uint32_t>();
-  }
-
-  // Consider every function.
-  for (auto& function : *context->module()) {
-    // Avoid considering the same callee of this function multiple times by
-    // recording known callees.
-    std::set<uint32_t> known_callees;
-    // Consider every function call instruction in every block.
-    for (auto& block : function) {
-      for (auto& instruction : block) {
-        if (instruction.opcode() != SpvOpFunctionCall) {
-          continue;
-        }
-        // Get the id of the function being called.
-        uint32_t callee = instruction.GetSingleWordInOperand(0);
-        if (known_callees.count(callee)) {
-          // We have already considered a call to this function - ignore it.
-          continue;
-        }
-        // Increase the callee's in-degree and add an edge to the call graph.
-        function_in_degree[callee]++;
-        call_graph_edges[function.result_id()].insert(callee);
-        // Mark the callee as 'known'.
-        known_callees.insert(callee);
-      }
-    }
-  }
 
   // This is the sorted order of function ids that we will eventually return.
   std::vector<uint32_t> result;
+
+  // Get a copy of the initial in-degrees of all functions.  The algorithm
+  // involves decrementing these values, hence why we work on a copy.
+  std::map<uint32_t, uint32_t> function_in_degree =
+      call_graph.GetFunctionInDegree();
 
   // Populate a queue with all those function ids with in-degree zero.
   std::queue<uint32_t> queue;
@@ -748,7 +714,7 @@ FuzzerPassDonateModules::GetFunctionsInCallGraphTopologicalOrder(
     auto next = queue.front();
     queue.pop();
     result.push_back(next);
-    for (auto successor : call_graph_edges.at(next)) {
+    for (auto successor : call_graph.GetDirectCallees(next)) {
       assert(function_in_degree.at(successor) > 0 &&
              "The in-degree cannot be zero if the function is a successor.");
       function_in_degree[successor] = function_in_degree.at(successor) - 1;

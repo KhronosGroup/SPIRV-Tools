@@ -25,6 +25,7 @@
 #include "source/fuzz/fuzzer_pass_add_dead_blocks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_continues.h"
+#include "source/fuzz/fuzzer_pass_add_function_calls.h"
 #include "source/fuzz/fuzzer_pass_add_global_variables.h"
 #include "source/fuzz/fuzzer_pass_add_loads.h"
 #include "source/fuzz/fuzzer_pass_add_local_variables.h"
@@ -193,6 +194,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
                                           &fact_manager, &fuzzer_context,
                                           transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddDeadContinues>(&passes, ir_context.get(),
+                                             &fact_manager, &fuzzer_context,
+                                             transformation_sequence_out);
+    MaybeAddPass<FuzzerPassAddFunctionCalls>(&passes, ir_context.get(),
                                              &fact_manager, &fuzzer_context,
                                              transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddGlobalVariables>(&passes, ir_context.get(),

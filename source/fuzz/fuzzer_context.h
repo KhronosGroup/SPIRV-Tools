@@ -46,10 +46,20 @@ class FuzzerContext {
   // method, and which must be non-empty.  Typically 'HasSizeMethod' will be an
   // std::vector.
   template <typename HasSizeMethod>
-  uint32_t RandomIndex(const HasSizeMethod& sequence) {
+  uint32_t RandomIndex(const HasSizeMethod& sequence) const {
     assert(sequence.size() > 0);
     return random_generator_->RandomUint32(
         static_cast<uint32_t>(sequence.size()));
+  }
+
+  // Selects a random index into |sequence|, removes the element at that index
+  // and returns it.
+  template <typename T>
+  T RemoveAtRandomIndex(std::vector<T>* sequence) const {
+    uint32_t index = RandomIndex(*sequence);
+    T result = sequence->at(index);
+    sequence->erase(sequence->begin() + index);
+    return result;
   }
 
   // Yields an id that is guaranteed not to be used in the module being fuzzed,
@@ -98,6 +108,7 @@ class FuzzerContext {
   uint32_t GetChanceOfAdjustingSelectionControl() {
     return chance_of_adjusting_selection_control_;
   }
+  uint32_t GetChanceOfCallingFunction() { return chance_of_calling_function_; }
   uint32_t GetChanceOfChoosingStructTypeVsArrayType() {
     return chance_of_choosing_struct_type_vs_array_type_;
   }
@@ -167,6 +178,7 @@ class FuzzerContext {
   uint32_t chance_of_adjusting_loop_control_;
   uint32_t chance_of_adjusting_memory_operands_mask_;
   uint32_t chance_of_adjusting_selection_control_;
+  uint32_t chance_of_calling_function_;
   uint32_t chance_of_choosing_struct_type_vs_array_type_;
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
