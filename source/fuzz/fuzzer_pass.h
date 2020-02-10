@@ -61,10 +61,10 @@ class FuzzerPass {
   // |instruction_is_relevant| predicate.  This, for instance, could ignore all
   // instructions that have a particular decoration.
   std::vector<opt::Instruction*> FindAvailableInstructions(
-      const opt::Function& function, opt::BasicBlock* block,
-      opt::BasicBlock::iterator inst_it,
+      opt::Function* function, opt::BasicBlock* block,
+      const opt::BasicBlock::iterator& inst_it,
       std::function<bool(opt::IRContext*, opt::Instruction*)>
-          instruction_is_relevant);
+          instruction_is_relevant) const;
 
   // A helper method that iterates through each instruction in each block, at
   // all times tracking an instruction descriptor that allows the latest
@@ -84,7 +84,7 @@ class FuzzerPass {
   // apply it.
   void MaybeAddTransformationBeforeEachInstruction(
       std::function<
-          void(const opt::Function& function, opt::BasicBlock* block,
+          void(opt::Function* function, opt::BasicBlock* block,
                opt::BasicBlock::iterator inst_it,
                const protobufs::InstructionDescriptor& instruction_descriptor)>
           maybe_apply_transformation);
