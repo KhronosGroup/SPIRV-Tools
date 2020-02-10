@@ -505,7 +505,7 @@ message TransformationAddGlobalVariable {
   // The type of the global variable
   uint32 type_id = 2;
 
-  // Optional initializer; 0 if there is no initializer
+  // Initial value of the variable
   uint32 initializer_id = 3;
 
   // True if and only if the behaviour of the module should not depend on the

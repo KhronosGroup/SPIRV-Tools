@@ -53,21 +53,19 @@ bool TransformationAddGlobalVariable::IsApplicable(
   if (pointer_type->storage_class() != SpvStorageClassPrivate) {
     return false;
   }
-  if (message_.initializer_id()) {
-    // The initializer id must be the id of a constant.  Check this with the
-    // constant manager.
-    auto constant_id = context->get_constant_mgr()->GetConstantsFromIds(
-        {message_.initializer_id()});
-    if (constant_id.empty()) {
-      return false;
-    }
-    assert(constant_id.size() == 1 &&
-           "We asked for the constant associated with a single id; we should "
-           "get a single constant.");
-    // The type of the constant must match the pointee type of the pointer.
-    if (pointer_type->pointee_type() != constant_id[0]->type()) {
-      return false;
-    }
+  // The initializer id must be the id of a constant.  Check this with the
+  // constant manager.
+  auto constant_id = context->get_constant_mgr()->GetConstantsFromIds(
+      {message_.initializer_id()});
+  if (constant_id.empty()) {
+    return false;
+  }
+  assert(constant_id.size() == 1 &&
+         "We asked for the constant associated with a single id; we should "
+         "get a single constant.");
+  // The type of the constant must match the pointee type of the pointer.
+  if (pointer_type->pointee_type() != constant_id[0]->type()) {
+    return false;
   }
   return true;
 }

@@ -158,6 +158,29 @@ bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
 bool InstructionIsFunctionParameter(opt::Instruction* instruction,
                                     opt::Function* function);
 
+// Returns the type id of the instruction defined by |result_id|, or 0 if there
+// is no such result id.
+uint32_t GetTypeId(opt::IRContext* context, uint32_t result_id);
+
+// Given |pointer_type_inst|, which must be an OpTypePointer instruction,
+// returns the id of the associated pointee type.
+uint32_t GetPointeeTypeIdFromPointerType(opt::Instruction* pointer_type_inst);
+
+// Given |pointer_type_id|, which must be the id of a pointer type, returns the
+// id of the associated pointee type.
+uint32_t GetPointeeTypeIdFromPointerType(opt::IRContext* context,
+                                         uint32_t pointer_type_id);
+
+// Given |pointer_type_inst|, which must be an OpTypePointer instruction,
+// returns the associated storage class.
+SpvStorageClass GetStorageClassFromPointerType(
+    opt::Instruction* pointer_type_inst);
+
+// Given |pointer_type_id|, which must be the id of a pointer type, returns the
+// associated storage class.
+SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
+                                               uint32_t pointer_type_id);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
