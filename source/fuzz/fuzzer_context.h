@@ -68,6 +68,9 @@ class FuzzerContext {
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
+  uint32_t GetChanceOfAddingAccessChain() {
+    return chance_of_adding_access_chain_;
+  }
   uint32_t GetChanceOfAddingAnotherStructField() {
     return chance_of_adding_another_struct_field_;
   }
@@ -119,6 +122,9 @@ class FuzzerContext {
   uint32_t GetChanceOfDonatingAdditionalModule() {
     return chance_of_donating_additional_module_;
   }
+  uint32_t GetChanceOfGoingDeeperWhenMakingAccessChain() {
+    return chance_of_going_deeper_when_making_access_chain_;
+  }
   uint32_t ChanceOfMakingDonorLivesafe() {
     return chance_of_making_donor_livesafe_;
   }
@@ -148,8 +154,11 @@ class FuzzerContext {
     return random_generator_->RandomUint32(max_new_array_size_limit_ - 1) + 1;
   }
 
-  // Functions to control how deeply to recurse.
-  // Keep them in alphabetical order.
+  // Other functions to control transformations. Keep them in alphabetical
+  // order.
+  uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
+    return random_generator_->RandomUint32(composite_size_bound);
+  }
   bool GoDeeperInConstantObfuscation(uint32_t depth) {
     return go_deeper_in_constant_obfuscation_(depth, random_generator_);
   }
@@ -162,6 +171,7 @@ class FuzzerContext {
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
+  uint32_t chance_of_adding_access_chain_;
   uint32_t chance_of_adding_another_struct_field_;
   uint32_t chance_of_adding_array_or_struct_type_;
   uint32_t chance_of_adding_dead_block_;
@@ -183,6 +193,7 @@ class FuzzerContext {
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
+  uint32_t chance_of_going_deeper_when_making_access_chain_;
   uint32_t chance_of_making_donor_livesafe_;
   uint32_t chance_of_merging_blocks_;
   uint32_t chance_of_moving_block_down_;
