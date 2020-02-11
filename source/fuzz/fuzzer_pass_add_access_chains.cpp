@@ -52,23 +52,30 @@ void FuzzerPassAddAccessChains::Apply() {
           return;
         }
 
+        // Get all of the pointers that are currently in scope, excluding
+        // explicitly null and undefined pointers.
         std::vector<opt::Instruction*> relevant_pointer_instructions =
             FindAvailableInstructions(
                 function, block, inst_it,
                 [](opt::IRContext* context,
                    opt::Instruction* instruction) -> bool {
                   if (!instruction->result_id() || !instruction->type_id()) {
+                    // A pointer needs both a result and type id.
                     return false;
                   }
-                  switch (instruction->result_id()) {
+                  switch (instruction->opcode()) {
                     case SpvOpConstantNull:
                     case SpvOpUndef:
                       // Do not allow making an access chain from a null or
-                      // undefined pointer.
+                      // undefined pointer.  (We can eliminate these cases
+                      // before actually checking that the instruction is a
+                      // pointer.)
                       return false;
                     default:
                       break;
                   }
+                  // If the instruction has pointer type, we can legitimately
+                  // make an access chain from it.
                   return context->get_def_use_mgr()
                              ->GetDef(instruction->type_id())
                              ->opcode() == SpvOpTypePointer;
