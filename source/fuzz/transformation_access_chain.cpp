@@ -75,8 +75,9 @@ bool TransformationAccessChain::IsApplicable(
   switch (pointer->opcode()) {
     case SpvOpConstantNull:
     case SpvOpUndef:
-      assert(false &&
-             "Attempt to make access chain from null/undefined pointer.");
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3185): When
+      //  fuzzing for real we would like an 'assert(false)' here.  But we also
+      //  want to be able to write negative unit tests.
       return false;
     default:
       break;
@@ -123,10 +124,13 @@ bool TransformationAccessChain::IsApplicable(
   // the new access chain.  The result type of the access chain should be a
   // pointer to this type, with the same storage class as for the original
   // pointer.  Such a pointer type needs to exist in the module.
-  auto result_type_and_ptr = context->get_type_mgr()->GetTypeAndPointerType(
-      subobject_type_id,
-      static_cast<SpvStorageClass>(pointer_type->GetSingleWordInOperand(0)));
-  return context->get_type_mgr()->GetId(result_type_and_ptr.second.get()) != 0;
+  //
+  // We do not use the type manager to look up this type, due to problems
+  // associated with pointers to isomorphic structs being regarded as the same.
+  return fuzzerutil::MaybeGetPointerType(
+             context, subobject_type_id,
+             static_cast<SpvStorageClass>(
+                 pointer_type->GetSingleWordInOperand(0))) != 0;
 }
 
 void TransformationAccessChain::Apply(
@@ -146,7 +150,7 @@ void TransformationAccessChain::Apply(
   // Start walking the indices, starting with the pointer's base type.
   auto pointer_type = context->get_def_use_mgr()->GetDef(
       context->get_def_use_mgr()->GetDef(message_.pointer_id())->type_id());
-  uint32_t subobject_type = pointer_type->GetSingleWordInOperand(1);
+  uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
 
   // Go through the index ids in turn.
   for (auto index_id : message_.index_id()) {
@@ -155,18 +159,15 @@ void TransformationAccessChain::Apply(
     // Get the integer value associated with the index id.
     uint32_t index_value = GetIndexValue(context, index_id).second;
     // Walk to the next type in the composite object using this index.
-    subobject_type = fuzzerutil::WalkOneCompositeTypeIndex(
-        context, subobject_type, index_value);
+    subobject_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
+        context, subobject_type_id, index_value);
   }
   // The access chain's result type is a pointer to the composite component that
   // was reached after following all indices.  The storage class is that of the
   // original pointer.
-  uint32_t result_type = context->get_type_mgr()->GetId(
-      context->get_type_mgr()
-          ->GetTypeAndPointerType(subobject_type,
-                                  static_cast<SpvStorageClass>(
-                                      pointer_type->GetSingleWordInOperand(0)))
-          .second.get());
+  uint32_t result_type = fuzzerutil::MaybeGetPointerType(
+      context, subobject_type_id,
+      static_cast<SpvStorageClass>(pointer_type->GetSingleWordInOperand(0)));
 
   // Add the access chain instruction to the module, and update the module's id
   // bound.

@@ -196,6 +196,11 @@ SpvStorageClass GetStorageClassFromPointerType(
 SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
                                                uint32_t pointer_type_id);
 
+// Returns the id of a pointer with pointee type |pointee_type_id| and storage
+// class |storage_class|, if it exists, and 0 otherwise.
+uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
+                             SpvStorageClass storage_class);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

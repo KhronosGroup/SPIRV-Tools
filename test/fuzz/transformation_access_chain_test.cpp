@@ -372,6 +372,77 @@ TEST(TransformationAccessChainTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationAccessChainTest, IsomorphicStructs) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %11 %12
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeStruct %6
+          %8 = OpTypePointer Private %7
+          %9 = OpTypeStruct %6
+         %10 = OpTypePointer Private %9
+         %11 = OpVariable %8 Private
+         %12 = OpVariable %10 Private
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  {
+    TransformationAccessChain transformation(
+        100, 11, {}, MakeInstructionDescriptor(5, SpvOpReturn, 0));
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+  {
+    TransformationAccessChain transformation(
+        101, 12, {}, MakeInstructionDescriptor(5, SpvOpReturn, 0));
+    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+    transformation.Apply(context.get(), &fact_manager);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %11 %12
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeStruct %6
+          %8 = OpTypePointer Private %7
+          %9 = OpTypeStruct %6
+         %10 = OpTypePointer Private %9
+         %11 = OpVariable %8 Private
+         %12 = OpVariable %10 Private
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %100 = OpAccessChain %8 %11
+        %101 = OpAccessChain %10 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

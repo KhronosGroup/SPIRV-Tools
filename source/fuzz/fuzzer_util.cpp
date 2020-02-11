@@ -505,6 +505,23 @@ SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
       context->get_def_use_mgr()->GetDef(pointer_type_id));
 }
 
+uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
+                             SpvStorageClass storage_class) {
+  for (auto& inst : context->types_values()) {
+    switch (inst.opcode()) {
+      case SpvOpTypePointer:
+        if (inst.GetSingleWordInOperand(0) == storage_class &&
+            inst.GetSingleWordInOperand(1) == pointee_type_id) {
+          return inst.result_id();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  return 0;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

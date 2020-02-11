@@ -221,9 +221,10 @@ uint32_t FuzzerPass::FindOrCreateMatrixType(uint32_t column_count,
 
 uint32_t FuzzerPass::FindOrCreatePointerType(uint32_t base_type_id,
                                              SpvStorageClass storage_class) {
-  opt::analysis::Pointer pointer_type(
-      GetIRContext()->get_type_mgr()->GetType(base_type_id), storage_class);
-  auto existing_id = GetIRContext()->get_type_mgr()->GetId(&pointer_type);
+  // We do not use the type manager here, due to problems related to isomorphic
+  // but distinct structs not being regarded as different.
+  auto existing_id = fuzzerutil::MaybeGetPointerType(
+      GetIRContext(), base_type_id, storage_class);
   if (existing_id) {
     return existing_id;
   }
