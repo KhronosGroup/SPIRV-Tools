@@ -341,11 +341,31 @@ message Transformation {
     TransformationLoad load = 36;
     TransformationStore store = 37;
     TransformationFunctionCall function_call = 38;
+    TransformationAccessChain access_chain = 39;
     // Add additional option using the next available number.
   }
 }
 
 // Keep transformation message types in alphabetical order:
+
+message TransformationAccessChain {
+
+  // Adds an access chain instruction based on a given pointer and indices.
+
+  // Result id for the access chain
+  uint32 fresh_id = 1;
+
+  // The pointer from which the access chain starts
+  uint32 pointer_id = 2;
+
+  // Zero or more access chain indices
+  repeated uint32 index_id = 3;
+
+  // A descriptor for an instruction in a block before which the new
+  // OpAccessChain instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 4;
+
+}
 
 message TransformationAddConstantBoolean {
 

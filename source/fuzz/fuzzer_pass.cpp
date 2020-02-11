@@ -219,19 +219,25 @@ uint32_t FuzzerPass::FindOrCreateMatrixType(uint32_t column_count,
   return result;
 }
 
-uint32_t FuzzerPass::FindOrCreatePointerTo32BitIntegerType(
-    bool is_signed, SpvStorageClass storage_class) {
-  auto uint32_type_id = FindOrCreate32BitIntegerType(is_signed);
-  opt::analysis::Pointer pointer_type(
-      GetIRContext()->get_type_mgr()->GetType(uint32_type_id), storage_class);
-  auto existing_id = GetIRContext()->get_type_mgr()->GetId(&pointer_type);
+uint32_t FuzzerPass::FindOrCreatePointerType(uint32_t base_type_id,
+                                             SpvStorageClass storage_class) {
+  // We do not use the type manager here, due to problems related to isomorphic
+  // but distinct structs not being regarded as different.
+  auto existing_id = fuzzerutil::MaybeGetPointerType(
+      GetIRContext(), base_type_id, storage_class);
   if (existing_id) {
     return existing_id;
   }
   auto result = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(
-      TransformationAddTypePointer(result, storage_class, uint32_type_id));
+      TransformationAddTypePointer(result, storage_class, base_type_id));
   return result;
+}
+
+uint32_t FuzzerPass::FindOrCreatePointerTo32BitIntegerType(
+    bool is_signed, SpvStorageClass storage_class) {
+  return FindOrCreatePointerType(FindOrCreate32BitIntegerType(is_signed),
+                                 storage_class);
 }
 
 uint32_t FuzzerPass::FindOrCreate32BitIntegerConstant(uint32_t word,

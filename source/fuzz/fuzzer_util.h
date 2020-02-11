@@ -98,6 +98,21 @@ bool IsCompositeType(const opt::analysis::Type* type);
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field);
 
+// Given a type id, |base_object_type_id|, returns 0 if the type is not a
+// composite type or if |index| is too large to be used as an index into the
+// composite.  Otherwise returns the type id of the type associated with the
+// composite's index.
+//
+// Example: if |base_object_type_id| is 10, and we have:
+//
+// %10 = OpTypeStruct %3 %4 %5
+//
+// then 3 will be returned if |index| is 0, 5 if |index| is 2, and 0 if index
+// is 3 or larger.
+uint32_t WalkOneCompositeTypeIndex(opt::IRContext* context,
+                                   uint32_t base_object_type_id,
+                                   uint32_t index);
+
 // Given a type id, |base_object_type_id|, checks that the given sequence of
 // |indices| is suitable for indexing into this type.  Returns the id of the
 // type of the final sub-object reached via the indices if they are valid, and
@@ -180,6 +195,11 @@ SpvStorageClass GetStorageClassFromPointerType(
 // associated storage class.
 SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
                                                uint32_t pointer_type_id);
+
+// Returns the id of a pointer with pointee type |pointee_type_id| and storage
+// class |storage_class|, if it exists, and 0 otherwise.
+uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
+                             SpvStorageClass storage_class);
 
 }  // namespace fuzzerutil
 

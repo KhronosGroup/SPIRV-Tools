@@ -262,44 +262,48 @@ std::vector<uint32_t> RepeatedFieldToVector(
   return result;
 }
 
+uint32_t WalkOneCompositeTypeIndex(opt::IRContext* context,
+                                   uint32_t base_object_type_id,
+                                   uint32_t index) {
+  auto should_be_composite_type =
+      context->get_def_use_mgr()->GetDef(base_object_type_id);
+  assert(should_be_composite_type && "The type should exist.");
+  switch (should_be_composite_type->opcode()) {
+    case SpvOpTypeArray: {
+      auto array_length = GetArraySize(*should_be_composite_type, context);
+      if (array_length == 0 || index >= array_length) {
+        return 0;
+      }
+      return should_be_composite_type->GetSingleWordInOperand(0);
+    }
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector: {
+      auto count = should_be_composite_type->GetSingleWordInOperand(1);
+      if (index >= count) {
+        return 0;
+      }
+      return should_be_composite_type->GetSingleWordInOperand(0);
+    }
+    case SpvOpTypeStruct: {
+      if (index >= GetNumberOfStructMembers(*should_be_composite_type)) {
+        return 0;
+      }
+      return should_be_composite_type->GetSingleWordInOperand(index);
+    }
+    default:
+      return 0;
+  }
+}
+
 uint32_t WalkCompositeTypeIndices(
     opt::IRContext* context, uint32_t base_object_type_id,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& indices) {
   uint32_t sub_object_type_id = base_object_type_id;
   for (auto index : indices) {
-    auto should_be_composite_type =
-        context->get_def_use_mgr()->GetDef(sub_object_type_id);
-    assert(should_be_composite_type && "The type should exist.");
-    switch (should_be_composite_type->opcode()) {
-      case SpvOpTypeArray: {
-        auto array_length = GetArraySize(*should_be_composite_type, context);
-        if (array_length == 0 || index >= array_length) {
-          return 0;
-        }
-        sub_object_type_id =
-            should_be_composite_type->GetSingleWordInOperand(0);
-        break;
-      }
-      case SpvOpTypeMatrix:
-      case SpvOpTypeVector: {
-        auto count = should_be_composite_type->GetSingleWordInOperand(1);
-        if (index >= count) {
-          return 0;
-        }
-        sub_object_type_id =
-            should_be_composite_type->GetSingleWordInOperand(0);
-        break;
-      }
-      case SpvOpTypeStruct: {
-        if (index >= GetNumberOfStructMembers(*should_be_composite_type)) {
-          return 0;
-        }
-        sub_object_type_id =
-            should_be_composite_type->GetSingleWordInOperand(index);
-        break;
-      }
-      default:
-        return 0;
+    sub_object_type_id =
+        WalkOneCompositeTypeIndex(context, sub_object_type_id, index);
+    if (!sub_object_type_id) {
+      return 0;
     }
   }
   return sub_object_type_id;
@@ -499,6 +503,23 @@ SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
                                                uint32_t pointer_type_id) {
   return GetStorageClassFromPointerType(
       context->get_def_use_mgr()->GetDef(pointer_type_id));
+}
+
+uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
+                             SpvStorageClass storage_class) {
+  for (auto& inst : context->types_values()) {
+    switch (inst.opcode()) {
+      case SpvOpTypePointer:
+        if (inst.GetSingleWordInOperand(0) == storage_class &&
+            inst.GetSingleWordInOperand(1) == pointee_type_id) {
+          return inst.result_id();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  return 0;
 }
 
 }  // namespace fuzzerutil
