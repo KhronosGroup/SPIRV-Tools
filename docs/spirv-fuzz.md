@@ -57,3 +57,27 @@ In the case of `TransformationSetSelectionControl`, `IsApplicable` involves chec
 
 The `Apply` method should have a comment in the header file summarising the result of applying the transformation.  It should be implemented in the `.cpp` file, and you should assume that `IsApplicable` holds whenever `Apply` is invoked.
 
+## Writing tests for the transformation class
+
+Whenever you add a transformation class, `TransformationSomeThing`, you should add an associated test file, `transformation_some_thing_test.cpp`, under `test/fuzz`, adding it to the associated `CMakeLists.txt` file.
+
+For example `test/fuzz/transformation_set_selection_control_test.cpp` contains tests for `TransformationSetSelectionControl`.  Your tests should aim to cover one example from each scenario where the transformation is inapplicable, and check that it is indeed deemed inapplicable, and then check that the transformation does the right thing when applied in a few different ways.
+
+For example, the tests for `TransformationSetSelectionControl` check that a transformation of this kind is inapplicable if the `block_id` field of the transformation is not a block, or does not end in `OpSelectionMerge`, or if the `selection_control` mask has an illegal value.  It also checks that applying a sequence of valid transformations to a SPIR-V shader leads to a shader with appropriately modified selection controls.
+
+## Adding a new fuzzer pass class
+
+A *fuzzer pass* traverses a SPIR-V module looking for places to apply a certain kind of transformation, and randomly decides at which of these points to actually apply the transformation.  It might be necessary to apply other transformations in order to apply a given transformation (for example, if a transformation requires a certain type to be present in the module, said type can be added if not already present via another transformation).
+
+A fuzzer pass implements the `FuzzerPass` interface, and overrides its `Apply` method.  If your fuzzer pass is named `FuzzerPassSomeThing` then it should be represented by `fuzzer_pass_some_thing.h` and `fuzzer_pass_some_thing.cpp`, under `source/fuzz`; these should be added to the associated `CMakeLists.txt` file.
+
+Have a look at the source filed for `FuzzerPassAdjustSelectionControls`.  This pass considers every block that ends with `OpSelectionMerge`.  It decides randomly whether to adjust the selection control of this merge instruction via:
+
+```
+if (!GetFuzzerContext()->ChoosePercentage(
+        GetFuzzerContext()->GetChanceOfAdjustingSelectionControl())) {
+  continue;
+}
+```
+
+The `GetChanceOfAddingSelectionControl()` method has been added to `FuzzerContext` specifically to support this pass, and returns a percentage between 0 and 100.  It returns the `chance_of_adjusting_selection_control_` of `FuzzerContext`, which is randomly initialized to lie with the interval defined by `kChanceOfAdjustingSelectionControl` in `fuzzer_context.cpp`.  For any pass you write, you will need to add an analogous `GetChanceOf...` method to `FuzzerContext`, backed by an appropriate field, and you will need to decide on lower and upper bounds for this field and specify these via a `kChanceOf...` constant.
