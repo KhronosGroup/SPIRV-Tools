@@ -62,6 +62,8 @@ void FuzzerPassDonateModules::Apply() {
     std::unique_ptr<opt::IRContext> donor_ir_context = donor_suppliers_.at(
         GetFuzzerContext()->RandomIndex(donor_suppliers_))();
     assert(donor_ir_context != nullptr && "Supplying of donor failed");
+    assert(fuzzerutil::IsValid(donor_ir_context.get()) &&
+           "The donor module must be valid");
     // Donate the supplied module.
     //
     // Randomly decide whether to make the module livesafe (see
@@ -668,9 +670,12 @@ void FuzzerPassDonateModules::HandleFunctions(
         // The return type is void, so we don't need a return value.
         kill_unreachable_return_value_id = 0;
       } else {
-        // We do need a return value; we use OpUndef.
+        // We do need a return value; we use zero.
+        assert(function_return_type_inst->opcode() != SpvOpTypePointer &&
+               "Function return type must not be a pointer.");
         kill_unreachable_return_value_id =
-            FindOrCreateGlobalUndef(function_return_type_inst->type_id());
+            FindOrCreateZeroConstant(original_id_to_donated_id->at(
+                function_return_type_inst->result_id()));
       }
       // Add the function in a livesafe manner.
       ApplyTransformation(TransformationAddFunction(
