@@ -115,6 +115,8 @@ var (
 
 {{range $i := .SPIRV.Instructions}}	{{Title $i.Opname}} = &Opcode {
 		Opname:   "{{$i.Opname}}",
+		Class:    "{{$i.Class}}",
+		Opcode:   {{$i.Opcode}},
 		Operands: []Operand {•{{range $i := $i.Operands}}
 			Operand {
 				Kind:       OperandKind{{$i.Kind}},
