@@ -75,18 +75,8 @@ class EquivalenceRelation {
     // Register each value if necessary.
     for (auto value : {value1, value2}) {
       if (!Exists(value)) {
-        // Register the value in the equivalence relation.  This relies on
-        // T having a copy constructor.
-        auto unique_pointer_to_value = MakeUnique<T>(value);
-        auto pointer_to_value = unique_pointer_to_value.get();
-        owned_values_.push_back(std::move(unique_pointer_to_value));
-        value_set_.insert(pointer_to_value);
-
-        // Initially say that the value is its own parent and that it has no
-        // children.
-        assert(pointer_to_value && "Representatives should never be null.");
-        parent_[pointer_to_value] = pointer_to_value;
-        children_[pointer_to_value] = std::vector<const T*>();
+        // Register the value in the equivalence relation.
+        Register(value);
       }
     }
 
@@ -110,6 +100,25 @@ class EquivalenceRelation {
       parent_[representative1] = representative2;
       children_[representative2].push_back(representative1);
     }
+  }
+
+  // TODO comment
+  const T* Register(T& value) {
+    assert(!Exists(value));
+
+    // This relies on T having a copy constructor.
+    auto unique_pointer_to_value = MakeUnique<T>(value);
+    auto pointer_to_value = unique_pointer_to_value.get();
+    owned_values_.push_back(std::move(unique_pointer_to_value));
+    value_set_.insert(pointer_to_value);
+
+    // Initially say that the value is its own parent and that it has no
+    // children.
+    assert(pointer_to_value && "Representatives should never be null.");
+    parent_[pointer_to_value] = pointer_to_value;
+    children_[pointer_to_value] = std::vector<const T*>();
+
+    return pointer_to_value;
   }
 
   // Returns exactly one representative per equivalence class.
@@ -168,7 +177,6 @@ class EquivalenceRelation {
     return value_set_.find(&value) != value_set_.end();
   }
 
- private:
   // Returns the representative of the equivalence class of |value|, which must
   // already be known to the equivalence relation.  This is the 'Find' operation
   // in a classic union-find data structure.
@@ -197,7 +205,7 @@ class EquivalenceRelation {
       parent_[current] = result;
       children_[result].push_back(current);
       auto child_iterator =
-          std::find(children_[next].begin(), children_[next].end(), current);
+              std::find(children_[next].begin(), children_[next].end(), current);
       assert(child_iterator != children_[next].end() &&
              "'next' is the parent of 'current', so 'current' should be a "
              "child of 'next'");
@@ -206,6 +214,8 @@ class EquivalenceRelation {
     }
     return result;
   }
+
+ private:
 
   // Maps every value to a parent.  The representative of an equivalence class
   // is its own parent.  A value's representative can be found by walking its

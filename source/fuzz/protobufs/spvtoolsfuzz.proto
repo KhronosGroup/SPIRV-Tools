@@ -169,10 +169,20 @@ message Fact {
     FactBlockIsDead block_is_dead_fact = 3;
     FactFunctionIsLivesafe function_is_livesafe_fact = 4;
     FactPointeeValueIsIrrelevant pointee_value_is_irrelevant = 5;
+    FactIdEquation id_equation = 6;
   }
 }
 
 // Keep fact message types in alphabetical order:
+
+message FactBlockIsDead {
+
+  // Records the fact that a block is guaranteed to be dynamically unreachable.
+  // This is useful because it informs the fuzzer that rather arbitrary changes
+  // can be made to this block.
+
+  uint32 block_id = 1;
+}
 
 message FactConstantUniform {
 
@@ -203,15 +213,6 @@ message FactDataSynonym {
 
 }
 
-message FactBlockIsDead {
-
-  // Records the fact that a block is guaranteed to be dynamically unreachable.
-  // This is useful because it informs the fuzzer that rather arbitrary changes
-  // can be made to this block.
-
-  uint32 block_id = 1;
-}
-
 message FactFunctionIsLivesafe {
 
   // Records the fact that a function is guaranteed to be "livesafe", meaning
@@ -221,6 +222,18 @@ message FactFunctionIsLivesafe {
   // functions.
 
   uint32 function_id = 1;
+}
+
+message FactIdEquation {
+
+  // TODO write it
+
+  uint32 lhs_id = 1;
+
+  uint32 opcode = 2;
+
+  repeated uint32 rhs_id = 3;
+
 }
 
 message FactPointeeValueIsIrrelevant {
