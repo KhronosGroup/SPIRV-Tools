@@ -766,6 +766,9 @@ SPIRV_TOOLS_EXPORT void spvDiagnosticDestroy(spv_diagnostic diagnostic);
 SPIRV_TOOLS_EXPORT spv_result_t
 spvDiagnosticPrint(const spv_diagnostic diagnostic);
 
+// Gets the name of an instruction, without the "Op" prefix.
+SPIRV_TOOLS_EXPORT const char* spvOpcodeString(const uint32_t opcode);
+
 // The binary parser interface.
 
 // A pointer to a function that accepts a parsed SPIR-V header.
