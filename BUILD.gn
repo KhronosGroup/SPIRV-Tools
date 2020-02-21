@@ -37,6 +37,8 @@ template("spvtools_core_tables") {
 
     sources = [
       core_json_file,
+      debuginfo_insts_file,
+      cldebuginfo100_insts_file,
     ]
     outputs = [
       core_insts_file,
