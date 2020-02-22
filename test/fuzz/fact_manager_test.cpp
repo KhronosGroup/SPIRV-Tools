@@ -1388,7 +1388,6 @@ TEST(FactManagerTest, AddSubNegateFacts2) {
   ASSERT_TRUE(fact_manager.IsSynonymous(
           MakeDataDescriptor(23, {}), MakeDataDescriptor(16, {}), context
                   .get()));
-
 }
 
 }  // namespace

@@ -168,8 +168,8 @@ message Fact {
     FactDataSynonym data_synonym_fact = 2;
     FactBlockIsDead block_is_dead_fact = 3;
     FactFunctionIsLivesafe function_is_livesafe_fact = 4;
-    FactPointeeValueIsIrrelevant pointee_value_is_irrelevant = 5;
-    FactIdEquation id_equation = 6;
+    FactPointeeValueIsIrrelevant pointee_value_is_irrelevant_fact = 5;
+    FactIdEquation id_equation_fact = 6;
   }
 }
 
