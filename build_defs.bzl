@@ -167,7 +167,7 @@ def generate_vendor_tables(extension, operand_kind_prefix = ""):
 def generate_extinst_lang_headers(name, grammar = None):
     if not grammar:
         fail("Must specify grammar", "grammar")
-    outs = [name + ".h"],
+    outs = [name + ".h"]
     fmtargs = outs
     native.genrule(
         name = "gen_extinst_lang_headers_" + name,
