@@ -32,6 +32,8 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
           %7 = OpConstant %6 24
+         %40 = OpTypeBool
+         %41 = OpConstantTrue %40
          %20 = OpUndef %6
          %12 = OpFunction %2 None %3
          %13 = OpLabel
@@ -83,6 +85,26 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
                (context
                        .get(), fact_manager));
 
+  // Bad: too many arguments to OpSNegate.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpSNegate, {7, 7}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+
+  // Bad: 40 is a type id.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpSNegate, {40}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+
+  // Bad: wrong type of argument to OpSNegate.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpSNegate, {41}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+
+  // Bad: OpLoad is not a suitable opcode for an equation.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpLoad, {41}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+
   auto transformation1 = TransformationEquationInstruction(
           14, SpvOpSNegate, {7}, return_instruction);
   ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
@@ -109,6 +131,8 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
           %7 = OpConstant %6 24
+         %40 = OpTypeBool
+         %41 = OpConstantTrue %40
          %20 = OpUndef %6
          %12 = OpFunction %2 None %3
          %13 = OpLabel
@@ -134,6 +158,8 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
           %3 = OpTypeFunction %2
           %6 = OpTypeBool
           %7 = OpConstantTrue %6
+         %20 = OpTypeInt 32 0
+         %21 = OpConstant %20 5
          %12 = OpFunction %2 None %3
          %13 = OpLabel
                OpReturn
@@ -149,6 +175,21 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
 
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Bad: too few arguments to OpLogicalNot.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpLogicalNot, {}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+
+  // Bad: 6 is a type id.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpLogicalNot, {6}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+
+  // Bad: wrong type of argument to OpLogicalNot.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpLogicalNot, {21}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
 
   auto transformation1 = TransformationEquationInstruction(
       14, SpvOpLogicalNot, {7}, return_instruction);
@@ -176,6 +217,8 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
           %3 = OpTypeFunction %2
           %6 = OpTypeBool
           %7 = OpConstantTrue %6
+         %20 = OpTypeInt 32 0
+         %21 = OpConstant %20 5
          %12 = OpFunction %2 None %3
          %13 = OpLabel
          %14 = OpLogicalNot %6 %7
@@ -198,8 +241,12 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
+         %20 = OpTypeVector %6 3
          %15 = OpConstant %6 24
          %16 = OpConstant %6 37
+         %21 = OpConstantComposite %20 %15 %16 %15
+         %23 = OpTypeBool
+         %22 = OpConstantTrue %23
          %12 = OpFunction %2 None %3
          %13 = OpLabel
                OpReturn
@@ -215,6 +262,27 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
 
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Bad: too many arguments to OpIAdd.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpIAdd, {15, 16, 16}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+  // Bad: boolean argument to OpIAdd.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpIAdd, {15, 22}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+  // Bad: type as argument to OpIAdd.
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpIAdd, {23, 16}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+  // Bad: arguments of mismatched widths
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpIAdd, {15, 21}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
+  // Bad: arguments of mismatched widths
+  ASSERT_FALSE(TransformationEquationInstruction(
+                       14, SpvOpIAdd, {21, 15}, return_instruction).IsApplicable(context
+                       .get(), fact_manager));
 
   auto transformation1 = TransformationEquationInstruction(
       14, SpvOpIAdd, {15, 16}, return_instruction);
@@ -262,8 +330,12 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
+         %20 = OpTypeVector %6 3
          %15 = OpConstant %6 24
          %16 = OpConstant %6 37
+         %21 = OpConstantComposite %20 %15 %16 %15
+         %23 = OpTypeBool
+         %22 = OpConstantTrue %23
          %12 = OpFunction %2 None %3
          %13 = OpLabel
          %14 = OpIAdd %6 %15 %16
