@@ -109,6 +109,7 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
           %7 = OpConstant %6 24
+         %20 = OpUndef %6
          %12 = OpFunction %2 None %3
          %13 = OpLabel
          %30 = OpCopyObject %6 %7
