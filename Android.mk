@@ -235,9 +235,8 @@ $(1)/$(2).h : \
         $(LOCAL_PATH)/utils/generate_language_headers.py \
         $(3)
 		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_language_headers.py \
-		    --extinst-name=$(2) \
 		    --extinst-grammar=$(3) \
-		    --extinst-output-base=$(1)/$(2)
+		    --extinst-output-path=$(1)/$(2).h
 		@echo "[$(TARGET_ARCH_ABI)] Generate language specific header for $(2): headers <= grammar"
 $(foreach F,$(SPVTOOLS_SRC_FILES) $(SPVTOOLS_OPT_SRC_FILES),$(LOCAL_PATH)/$F ) \
 	: $(1)/$(2).h
