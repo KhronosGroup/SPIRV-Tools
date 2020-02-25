@@ -23,7 +23,8 @@ FuzzerPassAddEquationInstructions::FuzzerPassAddEquationInstructions(
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
 
-FuzzerPassAddEquationInstructions::~FuzzerPassAddEquationInstructions() = default;
+FuzzerPassAddEquationInstructions::~FuzzerPassAddEquationInstructions() =
+    default;
 
 void FuzzerPassAddEquationInstructions::Apply() {
   assert(false && "Implement");

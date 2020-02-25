@@ -30,9 +30,10 @@ class TransformationEquationInstruction : public Transformation {
   explicit TransformationEquationInstruction(
       const protobufs::TransformationEquationInstruction& message);
 
-  TransformationEquationInstruction(uint32_t fresh_id, SpvOp opcode, const
-  std::vector<uint32_t>& in_operand_id, const
-  protobufs::InstructionDescriptor& instruction_to_insert_before);
+  TransformationEquationInstruction(
+      uint32_t fresh_id, SpvOp opcode,
+      const std::vector<uint32_t>& in_operand_id,
+      const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
   // TODO comment
   bool IsApplicable(opt::IRContext* context,
@@ -44,7 +45,6 @@ class TransformationEquationInstruction : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-
   // TODO comment
   uint32_t MaybeGetResultType(opt::IRContext* context) const;
 

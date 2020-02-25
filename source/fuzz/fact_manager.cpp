@@ -426,8 +426,8 @@ class FactManager::DataSynonymAndIdEquationFacts {
   // into sub-components of the data descriptors, if they are composites, to
   // record that their components are pairwise-synonymous.
   void AddDataSynonymFactRecursive(const protobufs::DataDescriptor& dd1,
-          const protobufs::DataDescriptor& dd2,
-                        opt::IRContext* context);
+                                   const protobufs::DataDescriptor& dd2,
+                                   opt::IRContext* context);
 
   // Inspects all known facts and adds corollary facts; e.g. if we know that
   // a.x == b.x and a.y == b.y, where a and b have vec2 type, we can record
@@ -554,7 +554,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
                 // Equation form: "a = (d - c) + c"
                 // We can thus infer "a = d"
                 AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0],
-                        context);
+                                            context);
               }
               if (equation.operands[0] == rhs_dds[1]) {
                 // Equation form: "a = (c - e) + c"
@@ -661,8 +661,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
           if (equation.opcode == opcode) {
             // Equation form: "a = !!b" or "a = -(-b)"
             // We can thus infer "a = b"
-            AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0],
-                                        context);
+            AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0], context);
           }
         }
       }
@@ -675,10 +674,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
 
 void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
     const protobufs::DataDescriptor& dd1, const protobufs::DataDescriptor& dd2,
-    opt::IRContext*
-    context) {
-  assert(DataDescriptorsAreWellFormedAndComparable(context, dd1,
-                                                   dd2));
+    opt::IRContext* context) {
+  assert(DataDescriptorsAreWellFormedAndComparable(context, dd1, dd2));
 
   // Record that the data descriptors provided in the fact are equivalent.
   synonymous_.MakeEquivalent(dd1, dd2);
@@ -694,8 +691,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
   // Get the type of the object referred to by the first data descriptor in the
   // synonym fact.
   uint32_t type_id = fuzzerutil::WalkCompositeTypeIndices(
-      context,
-      context->get_def_use_mgr()->GetDef(dd1.object())->type_id(),
+      context, context->get_def_use_mgr()->GetDef(dd1.object())->type_id(),
       dd1.index());
   auto type = context->get_type_mgr()->GetType(type_id);
   auto type_instruction = context->get_def_use_mgr()->GetDef(type_id);
@@ -731,10 +727,10 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
     std::vector<uint32_t> extended_indices2 =
         fuzzerutil::RepeatedFieldToVector(dd2.index());
     extended_indices2.push_back(i);
-    AddDataSynonymFactRecursive(MakeDataDescriptor(dd1.object(), std::move(extended_indices1)),
-                                MakeDataDescriptor(dd2.object(), std::move
-                                (extended_indices2)),
-                                context);
+    AddDataSynonymFactRecursive(
+        MakeDataDescriptor(dd1.object(), std::move(extended_indices1)),
+        MakeDataDescriptor(dd2.object(), std::move(extended_indices2)),
+        context);
   }
 }
 

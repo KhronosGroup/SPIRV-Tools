@@ -205,7 +205,7 @@ class EquivalenceRelation {
       parent_[current] = result;
       children_[result].push_back(current);
       auto child_iterator =
-              std::find(children_[next].begin(), children_[next].end(), current);
+          std::find(children_[next].begin(), children_[next].end(), current);
       assert(child_iterator != children_[next].end() &&
              "'next' is the parent of 'current', so 'current' should be a "
              "child of 'next'");
@@ -216,7 +216,6 @@ class EquivalenceRelation {
   }
 
  private:
-
   // Maps every value to a parent.  The representative of an equivalence class
   // is its own parent.  A value's representative can be found by walking its
   // chain of ancestors.

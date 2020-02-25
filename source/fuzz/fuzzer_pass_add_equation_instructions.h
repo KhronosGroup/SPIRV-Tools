@@ -23,9 +23,10 @@ namespace fuzz {
 // TODO comment
 class FuzzerPassAddEquationInstructions : public FuzzerPass {
  public:
-  FuzzerPassAddEquationInstructions(opt::IRContext* ir_context, FactManager* fact_manager,
-                        FuzzerContext* fuzzer_context,
-                        protobufs::TransformationSequence* transformations);
+  FuzzerPassAddEquationInstructions(
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassAddEquationInstructions();
 

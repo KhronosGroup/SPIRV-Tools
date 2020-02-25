@@ -69,8 +69,9 @@ class FactManager {
   void AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id);
 
   // TODO comment
-  void AddFactIdEquation(uint32_t lhs_id, SpvOp opcode, const
-  std::vector<uint32_t>& rhs_id, opt::IRContext* context);
+  void AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
+                         const std::vector<uint32_t>& rhs_id,
+                         opt::IRContext* context);
 
   // The fact manager is responsible for managing a few distinct categories of
   // facts. In principle there could be different fact managers for each kind
@@ -183,7 +184,8 @@ class FactManager {
   std::unique_ptr<ConstantUniformFacts>
       uniform_constant_facts_;  // Unique pointer to internal data.
 
-  class DataSynonymAndIdEquationFacts;  // Opaque class for management of data synonym and id equation facts.
+  class DataSynonymAndIdEquationFacts;  // Opaque class for management of data
+                                        // synonym and id equation facts.
   std::unique_ptr<DataSynonymAndIdEquationFacts>
       data_synonym_and_id_equation_facts_;  // Unique pointer to internal data.
 

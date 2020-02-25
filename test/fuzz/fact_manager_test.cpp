@@ -1210,17 +1210,13 @@ TEST(FactManagerTest, LogicalNotEquationFacts) {
   fact_manager.AddFactIdEquation(17, SpvOpLogicalNot, {16}, context.get());
 
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context
-          .get()));
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(17, {}), MakeDataDescriptor(7, {}), context
-                  .get()));
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(7, {}), context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(15, {}), MakeDataDescriptor(17, {}), context
-                  .get()));
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(17, {}), context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(16, {}), MakeDataDescriptor(14, {}), context
-                  .get()));
+      MakeDataDescriptor(16, {}), MakeDataDescriptor(14, {}), context.get()));
 }
 
 TEST(FactManagerTest, SignedNegateEquationFacts) {
@@ -1254,8 +1250,7 @@ TEST(FactManagerTest, SignedNegateEquationFacts) {
   fact_manager.AddFactIdEquation(15, SpvOpSNegate, {14}, context.get());
 
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(7, {}), MakeDataDescriptor(15, {}), context
-                  .get()));
+      MakeDataDescriptor(7, {}), MakeDataDescriptor(15, {}), context.get()));
 }
 
 TEST(FactManagerTest, AddSubNegateFacts1) {
@@ -1294,31 +1289,25 @@ TEST(FactManagerTest, AddSubNegateFacts1) {
   FactManager fact_manager;
 
   fact_manager.AddFactIdEquation(14, SpvOpIAdd, {15, 16}, context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(17, {}), MakeDataDescriptor
-  (15, {}), context.get());
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(17, {}),
+                                  MakeDataDescriptor(15, {}), context.get());
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(18, {}),
-          MakeDataDescriptor
-          (16, {}), context.get());
+                                  MakeDataDescriptor(16, {}), context.get());
   fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 18}, context.get());
   fact_manager.AddFactIdEquation(20, SpvOpISub, {14, 17}, context.get());
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {}),
-                                  MakeDataDescriptor
-                                          (14, {}), context.get());
+                                  MakeDataDescriptor(14, {}), context.get());
   fact_manager.AddFactIdEquation(22, SpvOpISub, {16, 21}, context.get());
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(23, {}),
-                                  MakeDataDescriptor
-                                          (22, {}), context.get());
+                                  MakeDataDescriptor(22, {}), context.get());
   fact_manager.AddFactIdEquation(24, SpvOpSNegate, {23}, context.get());
 
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(19, {}), MakeDataDescriptor(15, {}), context
-                  .get()));
+      MakeDataDescriptor(19, {}), MakeDataDescriptor(15, {}), context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context
-                  .get()));
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(24, {}), MakeDataDescriptor(15, {}), context
-                  .get()));
+      MakeDataDescriptor(24, {}), MakeDataDescriptor(15, {}), context.get()));
 }
 
 TEST(FactManagerTest, AddSubNegateFacts2) {
@@ -1359,35 +1348,29 @@ TEST(FactManagerTest, AddSubNegateFacts2) {
   fact_manager.AddFactIdEquation(17, SpvOpIAdd, {14, 16}, context.get());
 
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(17, {}), MakeDataDescriptor(15, {}), context
-                  .get()));
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(15, {}), context.get()));
 
   fact_manager.AddFactIdEquation(18, SpvOpIAdd, {16, 14}, context.get());
 
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(18, {}), MakeDataDescriptor(15, {}), context
-                  .get()));
+      MakeDataDescriptor(18, {}), MakeDataDescriptor(15, {}), context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(17, {}), MakeDataDescriptor(18, {}), context
-                  .get()));
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(18, {}), context.get()));
 
   fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 15}, context.get());
   fact_manager.AddFactIdEquation(20, SpvOpSNegate, {19}, context.get());
 
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context
-                  .get()));
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context.get()));
 
   fact_manager.AddFactIdEquation(21, SpvOpISub, {14, 19}, context.get());
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(21, {}), MakeDataDescriptor(15, {}), context
-                  .get()));
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(15, {}), context.get()));
 
   fact_manager.AddFactIdEquation(22, SpvOpISub, {14, 18}, context.get());
   fact_manager.AddFactIdEquation(23, SpvOpSNegate, {22}, context.get());
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(23, {}), MakeDataDescriptor(16, {}), context
-                  .get()));
+      MakeDataDescriptor(23, {}), MakeDataDescriptor(16, {}), context.get()));
 }
 
 }  // namespace

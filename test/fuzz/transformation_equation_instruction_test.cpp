@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_equation_instruction.h"
+#include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -46,21 +46,20 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
   FactManager fact_manager;
 
   protobufs::InstructionDescriptor return_instruction =
-          MakeInstructionDescriptor(13, SpvOpReturn, 0);
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
-  auto transformation1 = TransformationEquationInstruction(14,
-          SpvOpLogicalNot, {7}, return_instruction);
+  auto transformation1 = TransformationEquationInstruction(
+      14, SpvOpLogicalNot, {7}, return_instruction);
   ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
   transformation1.Apply(context.get(), &fact_manager);
 
-  auto transformation2 = TransformationEquationInstruction(15,
-                                                           SpvOpLogicalNot,
-                                                           {14}, return_instruction);
+  auto transformation2 = TransformationEquationInstruction(
+      15, SpvOpLogicalNot, {14}, return_instruction);
   ASSERT_TRUE(transformation2.IsApplicable(context.get(), fact_manager));
   transformation2.Apply(context.get(), &fact_manager);
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
-          MakeDataDescriptor(7, {}), context.get()));
+  ASSERT_TRUE(fact_manager.IsSynonymous(
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -82,7 +81,6 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-
 }
 
 TEST(TransformationEquationInstructionTest, SignedNegate) {
@@ -110,6 +108,22 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
 
   FactManager fact_manager;
 
+  protobufs::InstructionDescriptor return_instruction =
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  auto transformation1 = TransformationEquationInstruction(
+      14, SpvOpSNegate, {7}, return_instruction);
+  ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
+  transformation1.Apply(context.get(), &fact_manager);
+
+  auto transformation2 = TransformationEquationInstruction(
+      15, SpvOpSNegate, {14}, return_instruction);
+  ASSERT_TRUE(transformation2.IsApplicable(context.get(), fact_manager));
+  transformation2.Apply(context.get(), &fact_manager);
+
+  ASSERT_TRUE(fact_manager.IsSynonymous(
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -130,8 +144,6 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL(); // Assert facts
-
 }
 
 TEST(TransformationEquationInstructionTest, AddSubNegate1) {
@@ -160,6 +172,40 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
 
   FactManager fact_manager;
 
+  protobufs::InstructionDescriptor return_instruction =
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  auto transformation1 = TransformationEquationInstruction(
+      14, SpvOpIAdd, {15, 16}, return_instruction);
+  ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
+  transformation1.Apply(context.get(), &fact_manager);
+
+  auto transformation2 = TransformationEquationInstruction(
+      19, SpvOpISub, {14, 16}, return_instruction);
+  ASSERT_TRUE(transformation2.IsApplicable(context.get(), fact_manager));
+  transformation2.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(fact_manager.IsSynonymous(
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(19, {}), context.get()));
+
+  auto transformation3 = TransformationEquationInstruction(
+      20, SpvOpISub, {14, 15}, return_instruction);
+  ASSERT_TRUE(transformation3.IsApplicable(context.get(), fact_manager));
+  transformation3.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(fact_manager.IsSynonymous(
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context.get()));
+
+  auto transformation4 = TransformationEquationInstruction(
+      22, SpvOpISub, {16, 14}, return_instruction);
+  ASSERT_TRUE(transformation4.IsApplicable(context.get(), fact_manager));
+  transformation4.Apply(context.get(), &fact_manager);
+
+  auto transformation5 = TransformationEquationInstruction(
+      24, SpvOpSNegate, {22}, return_instruction);
+  ASSERT_TRUE(transformation5.IsApplicable(context.get(), fact_manager));
+  transformation5.Apply(context.get(), &fact_manager);
+  ASSERT_TRUE(fact_manager.IsSynonymous(
+      MakeDataDescriptor(24, {}), MakeDataDescriptor(15, {}), context.get()));
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -175,25 +221,18 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
          %12 = OpFunction %2 None %3
          %13 = OpLabel
          %14 = OpIAdd %6 %15 %16
-         %17 = OpCopyObject %6 %15
-         %18 = OpCopyObject %6 %16
-         %19 = OpISub %6 %14 %18 ; ==> synonymous(%19, %15)
-         %20 = OpISub %6 %14 %17 ; ==> synonymous(%20, %16)
-         %21 = OpCopyObject %6 %14
-         %22 = OpISub %6 %16 %21
-         %23 = OpCopyObject %6 %22
-         %24 = OpSNegate %6 %23 ; ==> synonymous(%24, %15)
+         %19 = OpISub %6 %14 %16 ; ==> synonymous(%19, %15)
+         %20 = OpISub %6 %14 %15 ; ==> synonymous(%20, %16)
+         %22 = OpISub %6 %16 %14
+         %24 = OpSNegate %6 %22 ; ==> synonymous(%24, %15)
                OpReturn
                OpFunctionEnd
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL(); // Assert facts
-
 }
 
 TEST(TransformationEquationInstructionTest, AddSubNegate2) {
-
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -218,6 +257,22 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
+
+  protobufs::InstructionDescriptor return_instruction =
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  auto transformation1 = TransformationEquationInstruction(
+      14, SpvOpSNegate, {7}, return_instruction);
+  ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
+  transformation1.Apply(context.get(), &fact_manager);
+
+  auto transformation2 = TransformationEquationInstruction(
+      15, SpvOpSNegate, {14}, return_instruction);
+  ASSERT_TRUE(transformation2.IsApplicable(context.get(), fact_manager));
+  transformation2.Apply(context.get(), &fact_manager);
+
+  ASSERT_TRUE(fact_manager.IsSynonymous(
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -246,8 +301,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
-  FAIL(); // Assert facts
-
+  FAIL();  // Assert facts
 }
 
 }  // namespace
