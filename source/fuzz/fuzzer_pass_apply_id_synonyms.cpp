@@ -86,7 +86,8 @@ void FuzzerPassApplyIdSynonyms::Apply() {
         synonyms_to_try.erase(synonyms_to_try.begin() + synonym_index);
 
         if (synonym_to_try->index_size() > 0 &&
-            use_inst->opcode() == SpvOpPhi) {
+            !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCompositeExtract,
+                                                          use_inst)) {
           // We are trying to replace an operand to an OpPhi.  This means
           // we cannot use a composite synonym, because that requires
           // extracting a component from a composite and we cannot insert
@@ -111,22 +112,16 @@ void FuzzerPassApplyIdSynonyms::Apply() {
           id_with_which_to_replace_use = synonym_to_try->object();
         } else {
           id_with_which_to_replace_use = GetFuzzerContext()->GetFreshId();
-          protobufs::InstructionDescriptor instruction_to_insert_before =
-              MakeInstructionDescriptor(GetIRContext(), use_inst);
-          TransformationCompositeExtract composite_extract_transformation(
-              instruction_to_insert_before, id_with_which_to_replace_use,
-              synonym_to_try->object(),
-              fuzzerutil::RepeatedFieldToVector(synonym_to_try->index()));
-          ApplyTransformation(composite_extract_transformation);
+          ApplyTransformation(TransformationCompositeExtract(
+              MakeInstructionDescriptor(GetIRContext(), use_inst),
+              id_with_which_to_replace_use, synonym_to_try->object(),
+              fuzzerutil::RepeatedFieldToVector(synonym_to_try->index())));
         }
 
-        TransformationReplaceIdWithSynonym replace_id_transformation(
+        ApplyTransformation(TransformationReplaceIdWithSynonym(
             MakeIdUseDescriptorFromUse(GetIRContext(), use_inst,
                                        use_in_operand_index),
-            id_with_which_to_replace_use);
-
-        // The transformation should be applicable by construction.
-        ApplyTransformation(replace_id_transformation);
+            id_with_which_to_replace_use));
         break;
       }
     }

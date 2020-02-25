@@ -82,6 +82,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingDeadContinue() {
     return chance_of_adding_dead_continue_;
   }
+  uint32_t GetChanceOfAddingEquationInstruction() {
+    return chance_of_adding_equation_instruction_;
+  }
   uint32_t GetChanceOfAddingGlobalVariable() {
     return chance_of_adding_global_variable_;
   }
@@ -177,6 +180,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_dead_block_;
   uint32_t chance_of_adding_dead_break_;
   uint32_t chance_of_adding_dead_continue_;
+  uint32_t chance_of_adding_equation_instruction_;
   uint32_t chance_of_adding_global_variable_;
   uint32_t chance_of_adding_load_;
   uint32_t chance_of_adding_local_variable_;

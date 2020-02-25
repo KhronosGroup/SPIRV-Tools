@@ -439,7 +439,7 @@ class FactManager::DataSynonymAndIdEquationFacts {
   void ComputeClosureOfFacts(opt::IRContext* context) const;
 
   // Returns true if and only if |dd1| and |dd2| are valid data descriptors
-  // whose associated data have the same type.
+  // whose associated data have the same type (modulo integer signedness).
   bool DataDescriptorsAreWellFormedAndComparable(
       opt::IRContext* context, const protobufs::DataDescriptor& dd1,
       const protobufs::DataDescriptor& dd2) const;
@@ -1014,13 +1014,36 @@ bool FactManager::DataSynonymAndIdEquationFacts::
     DataDescriptorsAreWellFormedAndComparable(
         opt::IRContext* context, const protobufs::DataDescriptor& dd1,
         const protobufs::DataDescriptor& dd2) const {
-  auto end_type_1 = fuzzerutil::WalkCompositeTypeIndices(
+  auto end_type_id_1 = fuzzerutil::WalkCompositeTypeIndices(
       context, context->get_def_use_mgr()->GetDef(dd1.object())->type_id(),
       dd1.index());
-  auto end_type_2 = fuzzerutil::WalkCompositeTypeIndices(
+  auto end_type_id_2 = fuzzerutil::WalkCompositeTypeIndices(
       context, context->get_def_use_mgr()->GetDef(dd2.object())->type_id(),
       dd2.index());
-  return end_type_1 && end_type_1 == end_type_2;
+  // The end types of the data descriptors must exist.
+  if (end_type_id_1 == 0 || end_type_id_2 == 0) {
+    return false;
+  }
+  // If the end types are the same, the data descriptors are comparable.
+  if (end_type_id_1 == end_type_id_2) {
+    return true;
+  }
+  // Otherwise they are only comparable if they are integer scalars or integer
+  // vectors that differ only in signedness.
+  // TODO look into refactoring the following.
+  auto type_1 = context->get_type_mgr()->GetType(end_type_id_1);
+  auto type_2 = context->get_type_mgr()->GetType(end_type_id_2);
+  if (type_1->AsInteger()) {
+    return type_2->AsInteger() &&
+           type_1->AsInteger()->width() == type_2->AsInteger()->width();
+  } else if (type_1->AsVector() &&
+             type_1->AsVector()->element_type()->AsInteger()) {
+    return type_2->AsVector() &&
+           type_2->AsVector()->element_type()->AsInteger() &&
+           type_2->AsVector()->element_type()->AsInteger()->width() ==
+               type_1->AsVector()->element_type()->AsInteger()->width();
+  }
+  return false;
 }
 
 std::vector<const protobufs::DataDescriptor*>

@@ -50,75 +50,69 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
   FactManager fact_manager;
 
   protobufs::InstructionDescriptor return_instruction =
-          MakeInstructionDescriptor(13, SpvOpReturn, 0);
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Bad: id already in use.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       7, SpvOpSNegate, {7}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(7, SpvOpSNegate, {7},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: identified instruction does not exist.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpSNegate, {7}, MakeInstructionDescriptor(13,
-                                                                        SpvOpLoad, 0)).IsApplicable
-               (context
-                       .get(), fact_manager));
+  ASSERT_FALSE(
+      TransformationEquationInstruction(
+          14, SpvOpSNegate, {7}, MakeInstructionDescriptor(13, SpvOpLoad, 0))
+          .IsApplicable(context.get(), fact_manager));
 
   // Bad: id 100 does not exist
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpSNegate, {100}, return_instruction).IsApplicable
-               (context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpSNegate, {100},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: id 20 is an OpUndef
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpSNegate, {20}, return_instruction).IsApplicable
-               (context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpSNegate, {20},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: id 30 is not available right before its definition
   ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpSNegate, {30}, MakeInstructionDescriptor(30,
-                                                                         SpvOpCopyObject, 0)
-               )
-                       .IsApplicable
-               (context
-                       .get(), fact_manager));
+                   14, SpvOpSNegate, {30},
+                   MakeInstructionDescriptor(30, SpvOpCopyObject, 0))
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: too many arguments to OpSNegate.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpSNegate, {7, 7}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpSNegate, {7, 7},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: 40 is a type id.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpSNegate, {40}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpSNegate, {40},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: wrong type of argument to OpSNegate.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpSNegate, {41}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpSNegate, {41},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: OpLoad is not a suitable opcode for an equation.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpLoad, {41}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(
+      TransformationEquationInstruction(14, SpvOpLoad, {41}, return_instruction)
+          .IsApplicable(context.get(), fact_manager));
 
   auto transformation1 = TransformationEquationInstruction(
-          14, SpvOpSNegate, {7}, return_instruction);
+      14, SpvOpSNegate, {7}, return_instruction);
   ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
   transformation1.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation2 = TransformationEquationInstruction(
-          15, SpvOpSNegate, {14}, return_instruction);
+      15, SpvOpSNegate, {14}, return_instruction);
   ASSERT_TRUE(transformation2.IsApplicable(context.get(), fact_manager));
   transformation2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -177,19 +171,19 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Bad: too few arguments to OpLogicalNot.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpLogicalNot, {}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpLogicalNot, {},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: 6 is a type id.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpLogicalNot, {6}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpLogicalNot, {6},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   // Bad: wrong type of argument to OpLogicalNot.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpLogicalNot, {21}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpLogicalNot, {21},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   auto transformation1 = TransformationEquationInstruction(
       14, SpvOpLogicalNot, {7}, return_instruction);
@@ -264,25 +258,25 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Bad: too many arguments to OpIAdd.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpIAdd, {15, 16, 16}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {15, 16, 16},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
   // Bad: boolean argument to OpIAdd.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpIAdd, {15, 22}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {15, 22},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
   // Bad: type as argument to OpIAdd.
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpIAdd, {23, 16}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {23, 16},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
   // Bad: arguments of mismatched widths
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpIAdd, {15, 21}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {15, 21},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
   // Bad: arguments of mismatched widths
-  ASSERT_FALSE(TransformationEquationInstruction(
-                       14, SpvOpIAdd, {21, 15}, return_instruction).IsApplicable(context
-                       .get(), fact_manager));
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {21, 15},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), fact_manager));
 
   auto transformation1 = TransformationEquationInstruction(
       14, SpvOpIAdd, {15, 16}, return_instruction);
@@ -386,65 +380,58 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation2 = TransformationEquationInstruction(
-          17, SpvOpIAdd, {14, 16}, return_instruction);
+      17, SpvOpIAdd, {14, 16}, return_instruction);
   ASSERT_TRUE(transformation2.IsApplicable(context.get(), fact_manager));
   transformation2.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(17, {}), MakeDataDescriptor(15, {}), context.get
-                  ()));
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(15, {}), context.get()));
 
   auto transformation3 = TransformationEquationInstruction(
-          18, SpvOpIAdd, {16, 14}, return_instruction);
+      18, SpvOpIAdd, {16, 14}, return_instruction);
   ASSERT_TRUE(transformation3.IsApplicable(context.get(), fact_manager));
   transformation3.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(17, {}), MakeDataDescriptor(18, {}), context.get
-                  ()));
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(18, {}), context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(18, {}), MakeDataDescriptor(15, {}), context.get
-                  ()));
+      MakeDataDescriptor(18, {}), MakeDataDescriptor(15, {}), context.get()));
 
   auto transformation4 = TransformationEquationInstruction(
-          19, SpvOpISub, {14, 15}, return_instruction);
+      19, SpvOpISub, {14, 15}, return_instruction);
   ASSERT_TRUE(transformation4.IsApplicable(context.get(), fact_manager));
   transformation4.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation5 = TransformationEquationInstruction(
-          20, SpvOpSNegate, {19}, return_instruction);
+      20, SpvOpSNegate, {19}, return_instruction);
   ASSERT_TRUE(transformation5.IsApplicable(context.get(), fact_manager));
   transformation5.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context.get
-                  ()));
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context.get()));
 
   auto transformation6 = TransformationEquationInstruction(
-          21, SpvOpISub, {14, 19}, return_instruction);
+      21, SpvOpISub, {14, 19}, return_instruction);
   ASSERT_TRUE(transformation6.IsApplicable(context.get(), fact_manager));
   transformation6.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(21, {}), MakeDataDescriptor(15, {}), context.get
-          ()));
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(15, {}), context.get()));
 
   auto transformation7 = TransformationEquationInstruction(
-          22, SpvOpISub, {14, 18}, return_instruction);
+      22, SpvOpISub, {14, 18}, return_instruction);
   ASSERT_TRUE(transformation7.IsApplicable(context.get(), fact_manager));
   transformation7.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation8 = TransformationEquationInstruction(
-          23, SpvOpSNegate, {22}, return_instruction);
+      23, SpvOpSNegate, {22}, return_instruction);
   ASSERT_TRUE(transformation8.IsApplicable(context.get(), fact_manager));
   transformation8.Apply(context.get(), &fact_manager);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(fact_manager.IsSynonymous(
-          MakeDataDescriptor(23, {}), MakeDataDescriptor(16, {}), context.get
-          ()));
-
+      MakeDataDescriptor(23, {}), MakeDataDescriptor(16, {}), context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader

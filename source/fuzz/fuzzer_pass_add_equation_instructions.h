@@ -15,6 +15,8 @@
 #ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_EQUATION_INSTRUCTIONS_H_
 #define SOURCE_FUZZ_FUZZER_PASS_ADD_EQUATION_INSTRUCTIONS_H_
 
+#include <vector>
+
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
@@ -31,6 +33,23 @@ class FuzzerPassAddEquationInstructions : public FuzzerPass {
   ~FuzzerPassAddEquationInstructions();
 
   void Apply() override;
+
+ private:
+  // Yields those instructions in |instructions| that have integer scalar or
+  // vector result type.
+  std::vector<opt::Instruction*> GetIntegerInstructions(
+      const std::vector<opt::Instruction*>& instructions) const;
+
+  // Yields those instructions in |instructions| that have boolean scalar or
+  // vector result type.
+  std::vector<opt::Instruction*> GetBooleanInstructions(
+      const std::vector<opt::Instruction*>& instructions) const;
+
+  // Assuming that |instructions| are scalars or vectors of some type, returns
+  // only those instructions whose width is |width|. If |width| is 1 this means
+  // the scalars.
+  std::vector<opt::Instruction*> RestrictToWidth(
+      const std::vector<opt::Instruction*>& instructions, uint32_t width) const;
 };
 
 }  // namespace fuzz
