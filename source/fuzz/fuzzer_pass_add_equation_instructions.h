@@ -22,7 +22,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO comment
+// Fuzzer pass that sprinkles instructions through the module that define
+// equations using various arithmetic and logical operators.
 class FuzzerPassAddEquationInstructions : public FuzzerPass {
  public:
   FuzzerPassAddEquationInstructions(
@@ -45,11 +46,19 @@ class FuzzerPassAddEquationInstructions : public FuzzerPass {
   std::vector<opt::Instruction*> GetBooleanInstructions(
       const std::vector<opt::Instruction*>& instructions) const;
 
-  // Assuming that |instructions| are scalars or vectors of some type, returns
+  // Requires that |instructions| are scalars or vectors of some type.  Returns
   // only those instructions whose width is |width|. If |width| is 1 this means
   // the scalars.
-  std::vector<opt::Instruction*> RestrictToWidth(
-      const std::vector<opt::Instruction*>& instructions, uint32_t width) const;
+  std::vector<opt::Instruction*> RestrictToVectorWidth(
+      const std::vector<opt::Instruction*>& instructions,
+      uint32_t vector_width) const;
+
+  // Requires that |instructions| are integer scalars or vectors.  Returns only
+  // those instructions for which the bit-width of the underlying integer type
+  // is |bit_width|.
+  std::vector<opt::Instruction*> RestrictToElementBitWidth(
+      const std::vector<opt::Instruction*>& instructions,
+      uint32_t bit_width) const;
 };
 
 }  // namespace fuzz

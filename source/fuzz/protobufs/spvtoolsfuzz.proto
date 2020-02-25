@@ -226,12 +226,25 @@ message FactFunctionIsLivesafe {
 
 message FactIdEquation {
 
-  // TODO write it
+  // Records the fact that the equation:
+  //
+  // lhs_id = opcode rhs_id[0] rhs_id[1] ... rhs_id[N-1]
+  //
+  // holds; e.g. that the equation:
+  //
+  // %12 = OpIAdd %13 %14
+  //
+  // holds in the case where lhs_id is 12, rhs_id is [13, 14], and the opcode is
+  // OpIAdd.
 
+  // The left-hand-side of the equation.
   uint32 lhs_id = 1;
 
+  // A SPIR-V opcode, from a restricted set of instructions for which equation
+  // facts make sense.
   uint32 opcode = 2;
 
+  // The operands to the right-hand-side of the equation.
   repeated uint32 rhs_id = 3;
 
 }

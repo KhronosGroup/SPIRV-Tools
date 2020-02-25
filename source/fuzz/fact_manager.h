@@ -68,7 +68,10 @@ class FactManager {
   // is irrelevant: it does not affect the observable behaviour of the module.
   void AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id);
 
-  // TODO comment
+  // Records the fact that |lhs_id| is defined by the equation:
+  //
+  //   |lhs_id| = |opcode| |rhs_id[0]| ... |rhs_id[N-1]|
+  //
   void AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
                          const std::vector<uint32_t>& rhs_id,
                          opt::IRContext* context);

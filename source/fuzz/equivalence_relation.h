@@ -102,7 +102,9 @@ class EquivalenceRelation {
     }
   }
 
-  // TODO comment
+  // Requires that |value| is not known to the equivalence relation. Registers
+  // it in its own equivalence class and returns a pointer to the equivalence
+  // class representative.
   const T* Register(T& value) {
     assert(!Exists(value));
 

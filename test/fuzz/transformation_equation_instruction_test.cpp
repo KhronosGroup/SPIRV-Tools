@@ -235,12 +235,12 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
-         %20 = OpTypeVector %6 3
+         %30 = OpTypeVector %6 3
          %15 = OpConstant %6 24
          %16 = OpConstant %6 37
-         %21 = OpConstantComposite %20 %15 %16 %15
-         %23 = OpTypeBool
-         %22 = OpConstantTrue %23
+         %31 = OpConstantComposite %30 %15 %16 %15
+         %33 = OpTypeBool
+         %32 = OpConstantTrue %33
          %12 = OpFunction %2 None %3
          %13 = OpLabel
                OpReturn
@@ -262,19 +262,19 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
                                                  return_instruction)
                    .IsApplicable(context.get(), fact_manager));
   // Bad: boolean argument to OpIAdd.
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {15, 22},
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {15, 32},
                                                  return_instruction)
                    .IsApplicable(context.get(), fact_manager));
   // Bad: type as argument to OpIAdd.
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {23, 16},
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {33, 16},
                                                  return_instruction)
                    .IsApplicable(context.get(), fact_manager));
   // Bad: arguments of mismatched widths
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {15, 21},
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {15, 31},
                                                  return_instruction)
                    .IsApplicable(context.get(), fact_manager));
   // Bad: arguments of mismatched widths
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {21, 15},
+  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpIAdd, {31, 15},
                                                  return_instruction)
                    .IsApplicable(context.get(), fact_manager));
 
@@ -324,12 +324,12 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
-         %20 = OpTypeVector %6 3
+         %30 = OpTypeVector %6 3
          %15 = OpConstant %6 24
          %16 = OpConstant %6 37
-         %21 = OpConstantComposite %20 %15 %16 %15
-         %23 = OpTypeBool
-         %22 = OpConstantTrue %23
+         %31 = OpConstantComposite %30 %15 %16 %15
+         %33 = OpTypeBool
+         %32 = OpConstantTrue %33
          %12 = OpFunction %2 None %3
          %13 = OpLabel
          %14 = OpIAdd %6 %15 %16

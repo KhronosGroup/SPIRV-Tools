@@ -35,17 +35,36 @@ class TransformationEquationInstruction : public Transformation {
       const std::vector<uint32_t>& in_operand_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
-  // TODO comment
+  // - |message_.fresh_id| must be fresh.
+  // - |message_.instruction_to_insert_before| must identify an instruction
+  //   before which an equation instruction can legitimately be inserted.
+  // - Each id in |message_.in_operand_id| must exist, not be an OpUndef, and
+  //   be available before |message_.instruction_to_insert_before|.
+  // - |message_.opcode| must be an opcode for which we know how to handle
+  //   equations, the types of the ids in |message_.in_operand_id| must be
+  //   suitable for use with this opcode, and the module must contain an
+  //   appropriate result type id.
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
-  // TODO comment
+  // Adds an instruction to the module, right before
+  // |message_.instruction_to_insert_before|, of the form:
+  //
+  // |message_.fresh_id| = |message_.opcode| %type |message_.in_operand_ids|
+  //
+  // where %type is a type id that already exists in the module and that is
+  // compatible with the opcode and input operands.
+  //
+  // The fact manager is also updated to inform it of this equation fact.
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // TODO comment
+  // A helper that, in one fell swoop, checks that |message_.opcode| and the ids
+  // in |message_.in_operand_id| are compatible, and that the module contains
+  // an appropriate result type id.  If all is well, the result type id is
+  // returned.  Otherwise, 0 is returned.
   uint32_t MaybeGetResultType(opt::IRContext* context) const;
 
   protobufs::TransformationEquationInstruction message_;

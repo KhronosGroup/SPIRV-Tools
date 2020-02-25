@@ -71,20 +71,50 @@ void FuzzerPassAddEquationInstructions::Apply() {
           switch (opcode) {
             case SpvOpIAdd:
             case SpvOpISub: {
+              // Instructions of integer (scalar or vector) result type are
+              // suitable for these opcodes.
               auto integer_instructions =
                   GetIntegerInstructions(available_instructions);
               if (!integer_instructions.empty()) {
+                // There is at least one such instruction, so pick one at random
+                // for the LHS of an equation.
                 auto lhs = integer_instructions.at(
                     GetFuzzerContext()->RandomIndex(integer_instructions));
+
+                // For the RHS, we can use any instruction with an integer
+                // scalar/vector result type of the same number of components
+                // and the same bit-width for the underlying integer type.
+
+                // Work out the element count and bit-width.
                 auto lhs_type =
                     GetIRContext()->get_type_mgr()->GetType(lhs->type_id());
-                auto candidate_rhs_instructions = RestrictToWidth(
-                    integer_instructions,
-                    lhs_type->AsVector() ? lhs_type->AsVector()->element_count()
-                                         : 1);
+                uint32_t lhs_element_count;
+                uint32_t lhs_bit_width;
+                if (lhs_type->AsVector()) {
+                  lhs_element_count = lhs_type->AsVector()->element_count();
+                  lhs_bit_width = lhs_type->AsVector()
+                                      ->element_type()
+                                      ->AsInteger()
+                                      ->width();
+                } else {
+                  lhs_element_count = 1;
+                  lhs_bit_width = lhs_type->AsInteger()->width();
+                }
+
+                // Get all the instructions that match on element count and
+                // bit-width.
+                auto candidate_rhs_instructions = RestrictToElementBitWidth(
+                    RestrictToVectorWidth(integer_instructions,
+                                          lhs_element_count),
+                    lhs_bit_width);
+
+                // Choose a RHS instruction at random; there is guaranteed to
+                // be at least one choice as the LHS will be available.
                 auto rhs = candidate_rhs_instructions.at(
                     GetFuzzerContext()->RandomIndex(
                         candidate_rhs_instructions));
+
+                // Add the equation instruction.
                 ApplyTransformation(TransformationEquationInstruction(
                     GetFuzzerContext()->GetFreshId(), opcode,
                     {lhs->result_id(), rhs->result_id()},
@@ -94,6 +124,8 @@ void FuzzerPassAddEquationInstructions::Apply() {
               break;
             }
             case SpvOpLogicalNot: {
+              // Choose any available instruction of boolean scalar/vector
+              // result type and equate its negation with a fresh id.
               auto boolean_instructions =
                   GetBooleanInstructions(available_instructions);
               if (!boolean_instructions.empty()) {
@@ -109,6 +141,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
               break;
             }
             case SpvOpSNegate: {
+              // Similar to OpLogicalNot, but for signed integer negation.
               auto integer_instructions =
                   GetIntegerInstructions(available_instructions);
               if (!integer_instructions.empty()) {
@@ -162,13 +195,36 @@ FuzzerPassAddEquationInstructions::GetBooleanInstructions(
 }
 
 std::vector<opt::Instruction*>
-FuzzerPassAddEquationInstructions::RestrictToWidth(
-    const std::vector<opt::Instruction*>& instructions, uint32_t width) const {
+FuzzerPassAddEquationInstructions::RestrictToVectorWidth(
+    const std::vector<opt::Instruction*>& instructions,
+    uint32_t vector_width) const {
   std::vector<opt::Instruction*> result;
   for (auto& inst : instructions) {
     auto type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
-    if ((width == 1 && !type->AsVector()) ||
-        (width > 1 && type->AsVector()->element_count() == width)) {
+    if ((vector_width == 1 && !type->AsVector()) ||
+        (vector_width > 1 &&
+         type->AsVector()->element_count() == vector_width)) {
+      result.push_back(inst);
+    }
+  }
+  return result;
+}
+
+std::vector<opt::Instruction*>
+FuzzerPassAddEquationInstructions::RestrictToElementBitWidth(
+    const std::vector<opt::Instruction*>& instructions,
+    uint32_t bit_width) const {
+  std::vector<opt::Instruction*> result;
+  for (auto& inst : instructions) {
+    const opt::analysis::Type* type =
+        GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+    if (type->AsVector()) {
+      type = type->AsVector()->element_type();
+    }
+    assert(type->AsInteger() &&
+           "Precondition: all input instructions must "
+           "have integer scalar or vector type.");
+    if (type->AsInteger()->width() == bit_width) {
       result.push_back(inst);
     }
   }

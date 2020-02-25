@@ -350,15 +350,16 @@ FactManager::ConstantUniformFacts::GetConstantUniformFactsAndTypes() const {
 //==============================
 
 //==============================
-// Data synonym facts
+// Data synonym and id equation facts
 
-// TODO comment
+// This helper struct represents the right hand side of an equation as an
+// operator applied to a number of data descriptor operands.
 struct Operation {
   SpvOp opcode;
   std::vector<const protobufs::DataDescriptor*> operands;
 };
 
-// TODO comment.
+// Hashing for operations, to allow deterministic unordered sets.
 struct OperationHash {
   size_t operator()(const Operation& operation) const {
     std::u32string hash;
@@ -370,15 +371,20 @@ struct OperationHash {
   }
 };
 
-// Equality function for data descriptors.
+// Equality for operations, to allow deterministic unordered sets.
 struct OperationEquals {
   bool operator()(const Operation& first, const Operation& second) const {
+    // Equal operations require...
+    //
+    // Equal opcodes.
     if (first.opcode != second.opcode) {
       return false;
     }
+    // Matching operand counds.
     if (first.operands.size() != second.operands.size()) {
       return false;
     }
+    // Equal operands.
     for (uint32_t i = 0; i < first.operands.size(); i++) {
       if (!DataDescriptorEquals()(first.operands[i], second.operands[i])) {
         return false;
@@ -388,6 +394,7 @@ struct OperationEquals {
   }
 };
 
+// A helper, for debugging, to represent an operation as a string.
 std::string ToString(const Operation& operation) {
   std::stringstream stream;
   stream << operation.opcode;
@@ -398,7 +405,7 @@ std::string ToString(const Operation& operation) {
 }
 
 // The purpose of this class is to group the fields and data used to represent
-// facts about data synonyms.
+// facts about data synonyms and id equations.
 class FactManager::DataSynonymAndIdEquationFacts {
  public:
   // See method in FactManager which delegates to this method.
@@ -444,8 +451,12 @@ class FactManager::DataSynonymAndIdEquationFacts {
       opt::IRContext* context, const protobufs::DataDescriptor& dd1,
       const protobufs::DataDescriptor& dd2) const;
 
-  // TODO comment
-  void AddIdEquationFactRecursive(
+  // Requires that |lhs_dd| and every element of |rhs_dds| is present in the
+  // |synonymous_| equivalence relation and is its own representative.  Records
+  // the fact that the equation "|lhs_dd| |opcode| |rhs_dds|" holds, and adds
+  // any corollaries, in the form of data synonym or equation facts, that
+  // follow from this and other known facts.
+  void AddEquationFactRecursive(
       const protobufs::DataDescriptor& lhs_dd, SpvOp opcode,
       const std::vector<const protobufs::DataDescriptor*>& rhs_dds,
       opt::IRContext* context);
@@ -475,11 +486,16 @@ class FactManager::DataSynonymAndIdEquationFacts {
   // demand.
   mutable bool closure_computation_required_ = false;
 
-  // TODO comment
+  // Represents a set of equations on data descriptors as a map indexed by
+  // left-hand-side, mapping a left-hand-side to a set of operations, each of
+  // which (together with the left-hand-side) defines an equation.
+  //
+  // All data descriptors occurring in equations are required to be present in
+  // the |synonymous_| equivalence relation, and to be their own representatives
+  // in that relation.
   std::unordered_map<
       const protobufs::DataDescriptor*,
-      std::unordered_set<Operation, OperationHash, OperationEquals>,
-      DataDescriptorHash, DataDescriptorEquals>
+      std::unordered_set<Operation, OperationHash, OperationEquals>>
       id_equations_;
 };
 
@@ -493,36 +509,51 @@ void FactManager::DataSynonymAndIdEquationFacts::AddFact(
 void FactManager::DataSynonymAndIdEquationFacts::AddFact(
     const protobufs::FactIdEquation& fact, opt::IRContext* context) {
   protobufs::DataDescriptor lhs_dd = MakeDataDescriptor(fact.lhs_id(), {});
+
+  // Register the LHS in the equivalence relation if needed, and get a pointer
+  // to its representative.
   if (!synonymous_.Exists(lhs_dd)) {
     synonymous_.Register(lhs_dd);
   }
   const protobufs::DataDescriptor* lhs_dd_ptr = synonymous_.Find(&lhs_dd);
-  assert(id_equations_.count(lhs_dd_ptr) == 0);
+
+  // Get equivalence class representatives for all ids used on the RHS of the
+  // equation.
   std::vector<const protobufs::DataDescriptor*> rhs_dd_ptrs;
   for (auto rhs_id : fact.rhs_id()) {
+    // Register a data descriptor based on this id in the equivalence relation
+    // if needed, and then record the equivalence class representative.
     protobufs::DataDescriptor rhs_dd = MakeDataDescriptor(rhs_id, {});
     if (!synonymous_.Exists(rhs_dd)) {
       synonymous_.Register(rhs_dd);
     }
     rhs_dd_ptrs.push_back(synonymous_.Find(&rhs_dd));
   }
-  AddIdEquationFactRecursive(*lhs_dd_ptr, static_cast<SpvOp>(fact.opcode()),
-                             rhs_dd_ptrs, context);
+  // We now have the equation in a form where it refers exclusively to
+  // equivalence class representatives.  Add it to our set of facts and work
+  // out any follow-on facts.
+  AddEquationFactRecursive(*lhs_dd_ptr, static_cast<SpvOp>(fact.opcode()),
+                           rhs_dd_ptrs, context);
 }
 
-void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
+void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     const protobufs::DataDescriptor& lhs_dd, SpvOp opcode,
     const std::vector<const protobufs::DataDescriptor*>& rhs_dds,
     opt::IRContext* context) {
-  // TODO comment and add assertion strings
+  // Precondition: all data descriptors referenced in this equation must be
+  // equivalence class representatives - i.e. the equation must be in canonical
+  // form.
   assert(synonymous_.Exists(lhs_dd));
   assert(synonymous_.Find(&lhs_dd) == &lhs_dd);
   for (auto rhs_dd : rhs_dds) {
+    (void)(rhs_dd);  // Keep compilers happy in release mode.
     assert(synonymous_.Exists(*rhs_dd));
     assert(synonymous_.Find(rhs_dd) == rhs_dd);
   }
 
   if (id_equations_.count(&lhs_dd) == 0) {
+    // We have not seen an equation with this LHS before, so associate the LHS
+    // with an initially empty set.
     id_equations_.insert(
         {&lhs_dd,
          std::unordered_set<Operation, OperationHash, OperationEquals>()});
@@ -535,12 +566,15 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
 
     Operation new_operation = {opcode, rhs_dds};
     if (existing_equations->second.count(new_operation)) {
-      // This equation is known.
+      // This equation is known, so there is nothing further to be done.
       return;
     }
+    // Add the equation to the set of known equations.
     existing_equations->second.insert(new_operation);
   }
 
+  // Now try to work out corollaries implied by the new equation and existing
+  // facts.
   switch (opcode) {
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
@@ -559,8 +593,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
               if (equation.operands[0] == rhs_dds[1]) {
                 // Equation form: "a = (c - e) + c"
                 // We can thus infer "a = -e"
-                AddIdEquationFactRecursive(lhs_dd, SpvOpSNegate,
-                                           {equation.operands[1]}, context);
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
+                                         {equation.operands[1]}, context);
               }
             }
           }
@@ -585,8 +619,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
       break;
     }
     case SpvOpISub: {
+      // Equation form: "a = b - c"
       {
-        // Equation form: "a = b - c"
         auto existing_first_operand_equations = id_equations_.find(rhs_dds[0]);
         if (existing_first_operand_equations != id_equations_.end()) {
           for (auto equation : existing_first_operand_equations->second) {
@@ -611,8 +645,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
               if (equation.operands[0] == rhs_dds[1]) {
                 // Equation form: "a = (c - e) - c"
                 // We can thus infer "a = -e"
-                AddIdEquationFactRecursive(lhs_dd, SpvOpSNegate,
-                                           {equation.operands[1]}, context);
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
+                                         {equation.operands[1]}, context);
               }
             }
           }
@@ -628,14 +662,14 @@ void FactManager::DataSynonymAndIdEquationFacts::AddIdEquationFactRecursive(
               if (equation.operands[0] == rhs_dds[0]) {
                 // Equation form: "a = b - (b + e)"
                 // We can thus infer "a = -e"
-                AddIdEquationFactRecursive(lhs_dd, SpvOpSNegate,
-                                           {equation.operands[1]}, context);
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
+                                         {equation.operands[1]}, context);
               }
               if (equation.operands[1] == rhs_dds[0]) {
                 // Equation form: "a = b - (d + b)"
                 // We can thus infer "a = -d"
-                AddIdEquationFactRecursive(lhs_dd, SpvOpSNegate,
-                                           {equation.operands[0]}, context);
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
+                                         {equation.operands[0]}, context);
               }
             }
             if (equation.opcode == SpvOpISub) {
@@ -1030,20 +1064,32 @@ bool FactManager::DataSynonymAndIdEquationFacts::
   }
   // Otherwise they are only comparable if they are integer scalars or integer
   // vectors that differ only in signedness.
-  // TODO look into refactoring the following.
-  auto type_1 = context->get_type_mgr()->GetType(end_type_id_1);
-  auto type_2 = context->get_type_mgr()->GetType(end_type_id_2);
-  if (type_1->AsInteger()) {
-    return type_2->AsInteger() &&
-           type_1->AsInteger()->width() == type_2->AsInteger()->width();
-  } else if (type_1->AsVector() &&
-             type_1->AsVector()->element_type()->AsInteger()) {
-    return type_2->AsVector() &&
-           type_2->AsVector()->element_type()->AsInteger() &&
-           type_2->AsVector()->element_type()->AsInteger()->width() ==
-               type_1->AsVector()->element_type()->AsInteger()->width();
+
+  // Get both types.
+  const opt::analysis::Type* type_1 =
+      context->get_type_mgr()->GetType(end_type_id_1);
+  const opt::analysis::Type* type_2 =
+      context->get_type_mgr()->GetType(end_type_id_2);
+
+  // If the first type is a vector, check that the second type is a vector of
+  // the same width, and drill down to the vector element types.
+  if (type_1->AsVector()) {
+    if (!type_2->AsVector()) {
+      return false;
+    }
+    if (type_1->AsVector()->element_count() !=
+        type_2->AsVector()->element_count()) {
+      return false;
+    }
+    type_1 = type_1->AsVector()->element_type();
+    type_2 = type_2->AsVector()->element_type();
   }
-  return false;
+  // Check that type_1 and type_2 are both integer types of the same bit-width
+  // (but with potentially different signedness).
+  auto integer_type_1 = type_1->AsInteger();
+  auto integer_type_2 = type_2->AsInteger();
+  return integer_type_1 && integer_type_2 &&
+         integer_type_1->width() == integer_type_2->width();
 }
 
 std::vector<const protobufs::DataDescriptor*>
