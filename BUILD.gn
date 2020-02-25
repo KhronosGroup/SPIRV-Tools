@@ -186,21 +186,19 @@ template("spvtools_language_header") {
     script = "utils/generate_language_headers.py"
 
     name = invoker.name
-    extinst_output_base = "${target_gen_dir}/${name}"
+    extinst_output_path = "${target_gen_dir}/${name}.h"
 
     args = [
-      "--extinst-name",
-      "${name}",
       "--extinst-grammar",
       rebase_path(invoker.grammar_file, root_build_dir),
-      "--extinst-output-base",
-      rebase_path(extinst_output_base, root_build_dir),
+      "--extinst-output-path",
+      rebase_path(extinst_output_path, root_build_dir),
     ]
     inputs = [
       invoker.grammar_file,
     ]
     outputs = [
-      "${extinst_output_base}.h",
+      "${extinst_output_path}",
     ]
   }
 }
