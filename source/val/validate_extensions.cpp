@@ -2184,7 +2184,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLDebugInfo100DebugOperation:
         // The binary parser validates the opcode for DebugInfoNone,
         // DebugNoScope, DebugOperation, and the literal values don't need
-        // furhter checks.
+        // further checks.
         break;
       case OpenCLDebugInfo100DebugCompilationUnit: {
         CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
