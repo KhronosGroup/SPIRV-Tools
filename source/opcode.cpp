@@ -289,6 +289,7 @@ bool spvOpcodeReturnsLogicalVariablePointer(const SpvOp opcode) {
     case SpvOpInBoundsPtrAccessChain:
     case SpvOpLoad:
     case SpvOpConstantNull:
+    case SpvOpUndef:
       return true;
     default:
       return false;
@@ -306,6 +307,7 @@ bool spvOpcodeGeneratesVariablePointer(const SpvOp opcode) {
     case SpvOpInBoundsPtrAccessChain:
     case SpvOpLoad:
     case SpvOpConstantNull:
+    case SpvOpUndef:
       return true;
     default:
       return false;
