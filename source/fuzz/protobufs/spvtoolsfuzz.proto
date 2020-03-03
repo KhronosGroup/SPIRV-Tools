@@ -369,6 +369,7 @@ message Transformation {
     TransformationFunctionCall function_call = 38;
     TransformationAccessChain access_chain = 39;
     TransformationEquationInstruction equation_instruction = 40;
+    TransformationSwapCommutableOperands swap_commutable_operands = 41;
     // Add additional option using the next available number.
   }
 }
@@ -1065,6 +1066,18 @@ message TransformationStore {
   // A descriptor for an instruction in a block before which the new OpStore
   // instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 3;
+
+}
+
+message TransformationSwapCommutableOperands {
+
+  // A transformation that swaps the operands of a commutative instruction.
+
+  // A descriptor for a commutative instruction
+  InstructionDescriptor instruction_descriptor = 1;
+
+  // The commutable operands
+  repeated uint32 operands = 2;
 
 }
 
