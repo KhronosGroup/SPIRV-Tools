@@ -89,12 +89,12 @@ std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
   return result;
 }
 
-void FuzzerPass::MaybeAddTransformationBeforeEachInstruction(
+void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
     std::function<
         void(opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor)>
-        maybe_apply_transformation) {
+        action) {
   // Consider every block in every function.
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
@@ -132,11 +132,10 @@ void FuzzerPass::MaybeAddTransformationBeforeEachInstruction(
         const SpvOp opcode = inst_it->opcode();
 
         // Invoke the provided function, which might apply a transformation.
-        maybe_apply_transformation(
-            &function, &block, inst_it,
-            MakeInstructionDescriptor(
-                base, opcode,
-                skip_count.count(opcode) ? skip_count.at(opcode) : 0));
+        action(&function, &block, inst_it,
+               MakeInstructionDescriptor(
+                   base, opcode,
+                   skip_count.count(opcode) ? skip_count.at(opcode) : 0));
 
         if (!inst_it->HasResultId()) {
           skip_count[opcode] =
