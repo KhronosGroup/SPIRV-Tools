@@ -481,7 +481,7 @@ class FactManager::DataSynonymAndIdEquationFacts {
   // whether a new fact has been added since the last time such a computation
   // was performed.
   //
-  // It is mutable so facilitate having const methods, that provide answers to
+  // It is mutable to facilitate having const methods, that provide answers to
   // questions about data synonym facts, triggering closure computation on
   // demand.
   mutable bool closure_computation_required_ = false;
@@ -554,9 +554,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
   if (id_equations_.count(&lhs_dd) == 0) {
     // We have not seen an equation with this LHS before, so associate the LHS
     // with an initially empty set.
-    id_equations_.insert(
-        {&lhs_dd,
-         std::unordered_set<Operation, OperationHash, OperationEquals>()});
+    id_equations_.insert({&lhs_dd, {}});
   }
 
   {

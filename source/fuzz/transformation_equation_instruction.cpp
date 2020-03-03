@@ -177,7 +177,7 @@ uint32_t TransformationEquationInstruction::MaybeGetResultType(
     }
 
     default:
-      // We do not know what to do with an equation that uses this opcode.
+      assert(false && "Inappropriate opcode for equation instruction.");
       return 0;
   }
 }
