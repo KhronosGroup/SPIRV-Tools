@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Google LLC
+// Copyright (c) 2020 André Perez Maselco
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,31 +21,42 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationSwapCommutableOperands::TransformationSwapCommutableOperands(
-  const spvtools::fuzz::protobufs::TransformationSwapCommutableOperands& message
-) : message_(message) {}
+    const spvtools::fuzz::protobufs::TransformationSwapCommutableOperands&
+        message)
+    : message_(message) {}
 
 TransformationSwapCommutableOperands::TransformationSwapCommutableOperands(
-  const protobufs::InstructionDescriptor& instruction_descriptor
-) {
+    const protobufs::InstructionDescriptor& instruction_descriptor) {
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
 }
 
 bool TransformationSwapCommutableOperands::IsApplicable(
-  opt::IRContext* /*unused*/,
-  const spvtools::fuzz::FactManager& /*unused*/
-) const {
-  SpvOp opcode = static_cast<SpvOp>(message_.instruction_descriptor().target_instruction_opcode());
-  return spvOpcodeIsCommutative(opcode);
+    opt::IRContext* context, const spvtools::fuzz::FactManager& /*unused*/
+    ) const {
+  auto instruction =
+      FindInstruction(message_.instruction_descriptor(), context);
+  if (instruction == nullptr) return false;
+
+  SpvOp opcode = static_cast<SpvOp>(
+      message_.instruction_descriptor().target_instruction_opcode());
+  assert(instruction->opcode() == opcode &&
+         "The located instruction must have the same opcode as in the "
+         "descriptor.");
+  return spvOpcodeIsCommutativeBinaryOperator(opcode);
 }
 
 void TransformationSwapCommutableOperands::Apply(
-  opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/
-) const {
-  auto instruction = FindInstruction(message_.instruction_descriptor(), context);
-  std::swap(instruction->GetOperand(2), instruction->GetOperand(3));
+    opt::IRContext* context, spvtools::fuzz::FactManager* /*unused*/
+    ) const {
+  auto instruction =
+      FindInstruction(message_.instruction_descriptor(), context);
+  // By design, the instructions defined to be commutative have exactly two
+  // input parameters.
+  std::swap(instruction->GetInOperand(0), instruction->GetInOperand(1));
 }
 
-protobufs::Transformation TransformationSwapCommutableOperands::ToMessage() const {
+protobufs::Transformation TransformationSwapCommutableOperands::ToMessage()
+    const {
   protobufs::Transformation result;
   *result.mutable_swap_commutable_operands() = message_;
   return result;

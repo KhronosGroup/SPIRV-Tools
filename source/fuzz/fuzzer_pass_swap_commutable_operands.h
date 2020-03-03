@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Google LLC
+// Copyright (c) 2020 André Perez Maselco
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@
 namespace spvtools {
 namespace fuzz {
 
-// Fuzzer pass that swaps the operands of a commutative instruction, at random.
+// This fuzzer pass searches for all commutative instructions in the module,
+// probabilistically choosing which of these instructions will have its input
+// operands swapped.
 class FuzzerPassSwapCommutableOperands : public FuzzerPass {
  public:
   FuzzerPassSwapCommutableOperands(
-    opt::IRContext* ir_context,
-    FactManager* fact_manager,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations
-  );
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassSwapCommutableOperands();
 

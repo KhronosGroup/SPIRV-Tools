@@ -172,7 +172,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kStore:
       return MakeUnique<TransformationStore>(message.store());
     case protobufs::Transformation::TransformationCase::kSwapCommutableOperands:
-      return MakeUnique<TransformationSwapCommutableOperands>(message.swap_commutable_operands());
+      return MakeUnique<TransformationSwapCommutableOperands>(
+          message.swap_commutable_operands());
     case protobufs::Transformation::TransformationCase::kVectorShuffle:
       return MakeUnique<TransformationVectorShuffle>(message.vector_shuffle());
     case protobufs::Transformation::TRANSFORMATION_NOT_SET:

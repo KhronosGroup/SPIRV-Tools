@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Google LLC
+// Copyright (c) 2020 André Perez Maselco
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,26 +22,28 @@ namespace spvtools {
 namespace fuzz {
 
 FuzzerPassSwapCommutableOperands::FuzzerPassSwapCommutableOperands(
-  opt::IRContext* ir_context,
-  FactManager* fact_manager,
-  FuzzerContext* fuzzer_context,
-  protobufs::TransformationSequence* transformations
-) : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
+    opt::IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformations)
+    : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
 
 FuzzerPassSwapCommutableOperands::~FuzzerPassSwapCommutableOperands() = default;
 
 void FuzzerPassSwapCommutableOperands::Apply() {
   auto context = GetIRContext();
-  // Iterates over the module's instructions and checks whether it is commutative.
-  // In this case, the transformation is probabilistically applied.
-  context->module()->ForEachInst([this, context](opt::Instruction* instruction) {
-    if (spvOpcodeIsCommutative(instruction->opcode()) &&
-        GetFuzzerContext()->ChooseEven()) {
-      auto instructionDescriptor = MakeInstructionDescriptor(context, instruction);
-      auto transformation = TransformationSwapCommutableOperands(instructionDescriptor);
-      ApplyTransformation(transformation);
-    }
-  });
+  // Iterates over the module's instructions and checks whether it is
+  // commutative. In this case, the transformation is probabilistically applied.
+  context->module()->ForEachInst(
+      [this, context](opt::Instruction* instruction) {
+        if (spvOpcodeIsCommutativeBinaryOperator(instruction->opcode()) &&
+            GetFuzzerContext()->ChooseEven()) {
+          auto instructionDescriptor =
+              MakeInstructionDescriptor(context, instruction);
+          auto transformation =
+              TransformationSwapCommutableOperands(instructionDescriptor);
+          ApplyTransformation(transformation);
+        }
+      });
 }
 
 }  // namespace fuzz

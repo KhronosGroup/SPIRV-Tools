@@ -612,7 +612,7 @@ bool spvOpcodeIsDebug(SpvOp opcode) {
   }
 }
 
-bool spvOpcodeIsCommutative(SpvOp opcode) {
+bool spvOpcodeIsCommutativeBinaryOperator(SpvOp opcode) {
   switch (opcode) {
     case SpvOpPtrEqual:
     case SpvOpPtrNotEqual:

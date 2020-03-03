@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Google LLC
+// Copyright (c) 2020 André Perez Maselco
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,15 +26,13 @@ namespace fuzz {
 class TransformationSwapCommutableOperands : public Transformation {
  public:
   explicit TransformationSwapCommutableOperands(
-    const protobufs::TransformationSwapCommutableOperands& message
-  );
+      const protobufs::TransformationSwapCommutableOperands& message);
 
   TransformationSwapCommutableOperands(
-    const protobufs::InstructionDescriptor& instruction_descriptor
-  );
+      const protobufs::InstructionDescriptor& instruction_descriptor);
 
-  // The transformation is applicable if the opcode represents
-  // a commutative instruction.
+  // - |message_.instruction_descriptor| must identify an existing
+  // commutative instruction
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 

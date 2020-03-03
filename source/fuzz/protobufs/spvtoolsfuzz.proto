@@ -1076,9 +1076,6 @@ message TransformationSwapCommutableOperands {
   // A descriptor for a commutative instruction
   InstructionDescriptor instruction_descriptor = 1;
 
-  // The commutable operands
-  repeated uint32 operands = 2;
-
 }
 
 message TransformationVectorShuffle {
