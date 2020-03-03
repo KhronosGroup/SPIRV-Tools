@@ -554,7 +554,9 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
   if (id_equations_.count(&lhs_dd) == 0) {
     // We have not seen an equation with this LHS before, so associate the LHS
     // with an initially empty set.
-    id_equations_.insert({&lhs_dd, {}});
+    id_equations_.insert(
+        {&lhs_dd,
+         std::unordered_set<Operation, OperationHash, OperationEquals>()});
   }
 
   {
