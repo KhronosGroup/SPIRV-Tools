@@ -94,11 +94,6 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
                                                  return_instruction)
                    .IsApplicable(context.get(), fact_manager));
 
-  // Bad: OpLoad is not a suitable opcode for an equation.
-  ASSERT_FALSE(
-      TransformationEquationInstruction(14, SpvOpLoad, {41}, return_instruction)
-          .IsApplicable(context.get(), fact_manager));
-
   auto transformation1 = TransformationEquationInstruction(
       14, SpvOpSNegate, {7}, return_instruction);
   ASSERT_TRUE(transformation1.IsApplicable(context.get(), fact_manager));
