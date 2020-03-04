@@ -533,7 +533,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       if (!IsAllowedTypeOrArrayOfSame(
               _, pointee,
               {SpvOpTypeImage, SpvOpTypeSampler, SpvOpTypeSampledImage,
-               SpvOpTypeAccelerationStructureNV})) {
+               SpvOpTypeAccelerationStructureNV, SpvOpTypeAccelerationStructureKHR,
+               SpvOpTypeRayQueryProvisionalKHR})) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "UniformConstant OpVariable <id> '" << _.getIdName(inst->id())
                << "' has illegal type.\n"
@@ -541,7 +542,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                << "Variables identified with the UniformConstant storage class "
                << "are used only as handles to refer to opaque resources. Such "
                << "variables must be typed as OpTypeImage, OpTypeSampler, "
-               << "OpTypeSampledImage, OpTypeAccelerationStructureNV, "
+               << "OpTypeSampledImage, OpTypeAccelerationStructureNV, OpTypeAccelerationStructureKHR, OpTypeRayQueryProvisionalKHR, "
                << "or an array of one of these types.";
       }
     }
