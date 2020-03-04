@@ -119,10 +119,11 @@ class Module {
   // Appends a function to this module.
   inline void AddFunction(std::unique_ptr<Function> f);
 
-  // Adds a mapping between a result id of local variable OpVariable and
-  // a Instruction object for a DebugDeclare whose operand is the local
-  // variable.
-  inline void AddDebugDeclare(uint32_t id, std::unique_ptr<Instruction> di);
+  // Adds a mapping between a result id of local variable OpVariable or
+  // a value of a local variable and a Instruction object for a
+  // DebugDeclare or a DebugValue whose operand is the local variable.
+  inline void AddDebugLocalVariableInfo(uint32_t id,
+                                        std::unique_ptr<Instruction> di);
 
   // Sets |contains_debug_scope_| as true.
   inline void SetContainDebugScope();
@@ -309,10 +310,9 @@ class Module {
   // This module contains DebugScope or DebugNoScope.
   bool contains_debug_scope_;
 
-  // A map between a result id of a local variable and its corresponding
-  // DebugDeclare.
-  std::unordered_map<uint32_t, std::unique_ptr<Instruction>>
-      local_var_to_dbg_decl_;
+  // A map between a result id of a local variable or a value of a local
+  // variable and its corresponding DebugDeclare or DebugValue.
+  std::unordered_map<uint32_t, std::unique_ptr<Instruction>> local_var_info_;
 };
 
 // Pretty-prints |module| to |str|. Returns |str|.
@@ -374,9 +374,9 @@ inline void Module::AddFunction(std::unique_ptr<Function> f) {
   functions_.emplace_back(std::move(f));
 }
 
-inline void Module::AddDebugDeclare(uint32_t id,
-                                    std::unique_ptr<Instruction> di) {
-  local_var_to_dbg_decl_[id] = std::move(di);
+inline void Module::AddDebugLocalVariableInfo(uint32_t id,
+                                              std::unique_ptr<Instruction> di) {
+  local_var_info_[id] = std::move(di);
 }
 
 inline void Module::SetContainDebugScope() { contains_debug_scope_ = true; }

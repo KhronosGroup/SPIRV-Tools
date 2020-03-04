@@ -194,24 +194,13 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
           switch (ext_inst_key) {
             case OpenCLDebugInfo100DebugDeclare: {
               const uint32_t local_var_id = inst->words[kLocalVariableIdIndex];
-              module_->AddDebugDeclare(local_var_id, std::move(spv_inst));
+              module_->AddDebugLocalVariableInfo(local_var_id,
+                                                 std::move(spv_inst));
               break;
             }
             case OpenCLDebugInfo100DebugValue: {
-              if (block_ == nullptr) {  // Inside function but outside blocks
-                // It is weird that we use DebugValue outside a block.
-                // In this case, an operand of DebugValue must be an
-                // OpFunctionParameter.
-                // TODO: We do not allow this case for the simplicity but
-                //       we need a discussion. If we allow it, will we put
-                //       it in function::params_?
-                Errorf(consumer_, src, loc,
-                       "DebugValue outside a basic block is not allowed.",
-                       opcode);
-                return false;
-              } else {
-                block_->AddInstruction(std::move(spv_inst));
-              }
+              const uint32_t value_id = inst->words[kLocalVariableIdIndex];
+              module_->AddDebugLocalVariableInfo(value_id, std::move(spv_inst));
               break;
             }
             default: {
@@ -229,24 +218,13 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
           switch (ext_inst_key) {
             case DebugInfoDebugDeclare: {
               const uint32_t local_var_id = inst->words[6];
-              module_->AddDebugDeclare(local_var_id, std::move(spv_inst));
+              module_->AddDebugLocalVariableInfo(local_var_id,
+                                                 std::move(spv_inst));
               break;
             }
             case DebugInfoDebugValue: {
-              if (block_ == nullptr) {  // Inside function but outside blocks
-                // It is weird that we use DebugValue outside a block.
-                // In this case, an operand of DebugValue must be an
-                // OpFunctionParameter.
-                // TODO: We do not allow this case for the simplicity but
-                //       we need a discussion. If we allow it, will we put
-                //       it in function::params_?
-                Errorf(consumer_, src, loc,
-                       "DebugValue outside a basic block is not allowed.",
-                       opcode);
-                return false;
-              } else {
-                block_->AddInstruction(std::move(spv_inst));
-              }
+              const uint32_t value_id = inst->words[kLocalVariableIdIndex];
+              module_->AddDebugLocalVariableInfo(value_id, std::move(spv_inst));
               break;
             }
             default: {

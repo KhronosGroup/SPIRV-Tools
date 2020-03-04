@@ -178,8 +178,8 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
         last_scope = scope;
 
         i->ToBinaryWithoutAttachedDebugInsts(binary);
-        auto it = local_var_to_dbg_decl_.find(i->result_id());
-        if (it != local_var_to_dbg_decl_.end())
+        auto it = local_var_info_.find(i->result_id());
+        if (it != local_var_info_.end())
           it->second->ToBinaryWithoutAttachedDebugInsts(binary);
       }
     };
