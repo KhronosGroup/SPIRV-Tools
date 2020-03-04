@@ -168,11 +168,21 @@ message Fact {
     FactDataSynonym data_synonym_fact = 2;
     FactBlockIsDead block_is_dead_fact = 3;
     FactFunctionIsLivesafe function_is_livesafe_fact = 4;
-    FactPointeeValueIsIrrelevant pointee_value_is_irrelevant = 5;
+    FactPointeeValueIsIrrelevant pointee_value_is_irrelevant_fact = 5;
+    FactIdEquation id_equation_fact = 6;
   }
 }
 
 // Keep fact message types in alphabetical order:
+
+message FactBlockIsDead {
+
+  // Records the fact that a block is guaranteed to be dynamically unreachable.
+  // This is useful because it informs the fuzzer that rather arbitrary changes
+  // can be made to this block.
+
+  uint32 block_id = 1;
+}
 
 message FactConstantUniform {
 
@@ -203,15 +213,6 @@ message FactDataSynonym {
 
 }
 
-message FactBlockIsDead {
-
-  // Records the fact that a block is guaranteed to be dynamically unreachable.
-  // This is useful because it informs the fuzzer that rather arbitrary changes
-  // can be made to this block.
-
-  uint32 block_id = 1;
-}
-
 message FactFunctionIsLivesafe {
 
   // Records the fact that a function is guaranteed to be "livesafe", meaning
@@ -221,6 +222,31 @@ message FactFunctionIsLivesafe {
   // functions.
 
   uint32 function_id = 1;
+}
+
+message FactIdEquation {
+
+  // Records the fact that the equation:
+  //
+  // lhs_id = opcode rhs_id[0] rhs_id[1] ... rhs_id[N-1]
+  //
+  // holds; e.g. that the equation:
+  //
+  // %12 = OpIAdd %13 %14
+  //
+  // holds in the case where lhs_id is 12, rhs_id is [13, 14], and the opcode is
+  // OpIAdd.
+
+  // The left-hand-side of the equation.
+  uint32 lhs_id = 1;
+
+  // A SPIR-V opcode, from a restricted set of instructions for which equation
+  // facts make sense.
+  uint32 opcode = 2;
+
+  // The operands to the right-hand-side of the equation.
+  repeated uint32 rhs_id = 3;
+
 }
 
 message FactPointeeValueIsIrrelevant {
@@ -342,6 +368,7 @@ message Transformation {
     TransformationStore store = 37;
     TransformationFunctionCall function_call = 38;
     TransformationAccessChain access_chain = 39;
+    TransformationEquationInstruction equation_instruction = 40;
     // Add additional option using the next available number.
   }
 }
@@ -749,6 +776,28 @@ message TransformationCopyObject {
 
   // A fresh id for the copied object
   uint32 fresh_id = 3;
+
+}
+
+message TransformationEquationInstruction {
+
+  // A transformation that adds an instruction to the module that defines an
+  // equation between its result id and input operand ids, such that the
+  // equation is guaranteed to hold at any program point where all ids involved
+  // are available (i.e. at any program point dominated by the instruction).
+
+  // The result id of the new instruction
+  uint32 fresh_id = 1;
+
+  // The instruction's opcode
+  uint32 opcode = 2;
+
+  // The input operands to the instruction
+  repeated uint32 in_operand_id = 3;
+
+  // A descriptor for an instruction in a block before which the new
+  // instruction should be inserted
+  InstructionDescriptor instruction_to_insert_before = 4;
 
 }
 
