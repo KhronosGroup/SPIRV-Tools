@@ -38,7 +38,8 @@ Instruction::Instruction(IRContext* c)
       opcode_(SpvOpNop),
       has_type_id_(false),
       has_result_id_(false),
-      unique_id_(c->TakeNextUniqueId()) {}
+      unique_id_(c->TakeNextUniqueId()),
+      dbg_scope_(0, 0) {}
 
 Instruction::Instruction(IRContext* c, SpvOp op)
     : utils::IntrusiveNodeBase<Instruction>(),
@@ -46,7 +47,8 @@ Instruction::Instruction(IRContext* c, SpvOp op)
       opcode_(op),
       has_type_id_(false),
       has_result_id_(false),
-      unique_id_(c->TakeNextUniqueId()) {}
+      unique_id_(c->TakeNextUniqueId()),
+      dbg_scope_(0, 0) {}
 
 Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
                          std::vector<Instruction>&& dbg_line)
@@ -55,9 +57,27 @@ Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
       has_type_id_(inst.type_id != 0),
       has_result_id_(inst.result_id != 0),
       unique_id_(c->TakeNextUniqueId()),
-      dbg_line_insts_(std::move(dbg_line)) {
+      dbg_line_insts_(std::move(dbg_line)),
+      dbg_scope_(0, 0) {
   assert((!IsDebugLineInst(opcode_) || dbg_line.empty()) &&
          "Op(No)Line attaching to Op(No)Line found");
+  for (uint32_t i = 0; i < inst.num_operands; ++i) {
+    const auto& current_payload = inst.operands[i];
+    std::vector<uint32_t> words(
+        inst.words + current_payload.offset,
+        inst.words + current_payload.offset + current_payload.num_words);
+    operands_.emplace_back(current_payload.type, std::move(words));
+  }
+}
+
+Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
+                         const DebugScope& dbg_scope)
+    : context_(c),
+      opcode_(static_cast<SpvOp>(inst.opcode)),
+      has_type_id_(inst.type_id != 0),
+      has_result_id_(inst.result_id != 0),
+      unique_id_(c->TakeNextUniqueId()),
+      dbg_scope_(dbg_scope) {
   for (uint32_t i = 0; i < inst.num_operands; ++i) {
     const auto& current_payload = inst.operands[i];
     std::vector<uint32_t> words(
@@ -75,7 +95,8 @@ Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
       has_type_id_(ty_id != 0),
       has_result_id_(res_id != 0),
       unique_id_(c->TakeNextUniqueId()),
-      operands_() {
+      operands_(),
+      dbg_scope_(0, 0) {
   if (has_type_id_) {
     operands_.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_TYPE_ID,
                            std::initializer_list<uint32_t>{ty_id});
@@ -94,7 +115,8 @@ Instruction::Instruction(Instruction&& that)
       has_result_id_(that.has_result_id_),
       unique_id_(that.unique_id_),
       operands_(std::move(that.operands_)),
-      dbg_line_insts_(std::move(that.dbg_line_insts_)) {}
+      dbg_line_insts_(std::move(that.dbg_line_insts_)),
+      dbg_scope_(that.dbg_scope_) {}
 
 Instruction& Instruction::operator=(Instruction&& that) {
   opcode_ = that.opcode_;
@@ -103,6 +125,7 @@ Instruction& Instruction::operator=(Instruction&& that) {
   unique_id_ = that.unique_id_;
   operands_ = std::move(that.operands_);
   dbg_line_insts_ = std::move(that.dbg_line_insts_);
+  dbg_scope_ = that.dbg_scope_;
   return *this;
 }
 
@@ -114,6 +137,7 @@ Instruction* Instruction::Clone(IRContext* c) const {
   clone->unique_id_ = c->TakeNextUniqueId();
   clone->operands_ = operands_;
   clone->dbg_line_insts_ = dbg_line_insts_;
+  clone->dbg_scope_ = dbg_scope_;
   return clone;
 }
 

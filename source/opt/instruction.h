@@ -91,6 +91,21 @@ inline bool operator!=(const Operand& o1, const Operand& o2) {
   return !(o1 == o2);
 }
 
+// Source level scope information. When a SPIR-V module contains rich
+// debug information written in OpenCL.100.DebugInfo extension, each
+// instruction in a function is wrapped by DebugScope/DebugNoScope,
+// which denotes a lexical scope and/or inlining information for the
+// scope.
+struct DebugScope {
+  DebugScope(uint32_t id0, uint32_t id1)
+      : lexical_scope(id0), inlined_at(id1) {}
+  inline bool operator!=(const DebugScope& d) const {
+    return lexical_scope != d.lexical_scope || inlined_at != d.inlined_at;
+  }
+  uint32_t lexical_scope;  // result id of debug instruction for lexical scope
+  uint32_t inlined_at;     // result id of DebugInlinedAt
+};
+
 // A SPIR-V instruction. It contains the opcode and any additional logical
 // operand, including the result id (if any) and result type id (if any). It
 // may also contain line-related debug instruction (OpLine, OpNoLine) directly
@@ -111,7 +126,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
         opcode_(SpvOpNop),
         has_type_id_(false),
         has_result_id_(false),
-        unique_id_(0) {}
+        unique_id_(0),
+        dbg_scope_(0, 0) {}
 
   // Creates a default OpNop instruction.
   Instruction(IRContext*);
@@ -124,6 +140,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // instruction, if any.
   Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
               std::vector<Instruction>&& dbg_line = {});
+
+  Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
+              const DebugScope& dbg_scope);
 
   // Creates an instruction with the given opcode |op|, type id: |ty_id|,
   // result id: |res_id| and input operands: |in_operands|.
@@ -221,6 +240,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
   inline bool HasResultId() const { return has_result_id_; }
+  // Sets DebugScope.
+  inline void SetDebugScope(const DebugScope& scope) { dbg_scope_ = scope; }
+  inline const DebugScope& GetDebugScope() const { return dbg_scope_; }
   // Remove the |index|-th operand
   void RemoveOperand(uint32_t index) {
     operands_.erase(operands_.begin() + index);
@@ -472,6 +494,11 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Instructions representing OpLine or OpNonLine itself, this field should be
   // empty.
   std::vector<Instruction> dbg_line_insts_;
+
+  // Debug scope information. If this Instruction is included in a scope,
+  // |dbg_scope_| must have non-zero |lexical_scope|. Otherwise,
+  // |dbg_scope_.lexical_scope| must be 0.
+  DebugScope dbg_scope_;
 
   friend InstructionList;
 };
