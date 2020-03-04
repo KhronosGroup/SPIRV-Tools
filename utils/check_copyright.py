@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +32,8 @@ AUTHORS = ['The Khronos Group Inc.',
            'Google Inc.',
            'Google LLC',
            'Pierre Moreau',
-           'Samsung Inc']
+           'Samsung Inc',
+           'André Perez Maselco']
 CURRENT_YEAR='2020'
 
 YEARS = '(2014-2016|2015-2016|2016|2016-2017|2017|2017-2019|2018|2019|2020)'
