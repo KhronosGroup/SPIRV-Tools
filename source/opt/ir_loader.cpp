@@ -185,17 +185,93 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         last_dbg_scope_ = DebugScope(0, 0);
       if (last_dbg_scope_.lexical_scope)
         spv_inst->SetDebugScope(last_dbg_scope_);
-      if (block_ == nullptr) {  // Inside function but outside blocks
-        if (opcode != SpvOpFunctionParameter) {
-          Errorf(consumer_, src, loc,
-                 "Non-OpFunctionParameter (opcode: %d) found inside "
-                 "function but outside basic block",
-                 opcode);
-          return false;
+      if (opcode == SpvOpExtInst &&
+          spvExtInstIsDebugInfo(inst->ext_inst_type)) {
+        const uint32_t ext_inst_index = inst->words[kExtensionInstructionIndex];
+        if (inst->ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
+          const OpenCLDebugInfo100Instructions ext_inst_key =
+              OpenCLDebugInfo100Instructions(ext_inst_index);
+          switch (ext_inst_key) {
+            case OpenCLDebugInfo100DebugDeclare: {
+              const uint32_t local_var_id = inst->words[kLocalVariableIdIndex];
+              module_->AddDebugDeclare(local_var_id, std::move(spv_inst));
+              break;
+            }
+            case OpenCLDebugInfo100DebugValue: {
+              if (block_ == nullptr) {  // Inside function but outside blocks
+                // It is weird that we use DebugValue outside a block.
+                // In this case, an operand of DebugValue must be an
+                // OpFunctionParameter.
+                // TODO: We do not allow this case for the simplicity but
+                //       we need a discussion. If we allow it, will we put
+                //       it in function::params_?
+                Errorf(consumer_, src, loc,
+                       "DebugValue outside a basic block is not allowed.",
+                       opcode);
+                return false;
+              } else {
+                block_->AddInstruction(std::move(spv_inst));
+              }
+              break;
+            }
+            default: {
+              Errorf(consumer_, src, loc,
+                     "Debug info extension instruction other than DebugScope, "
+                     "DebugNoScope, DebugDeclare, and DebugValue found inside "
+                     "function",
+                     opcode);
+              return false;
+            }
+          }
+        } else {
+          const DebugInfoInstructions ext_inst_key =
+              DebugInfoInstructions(ext_inst_index);
+          switch (ext_inst_key) {
+            case DebugInfoDebugDeclare: {
+              const uint32_t local_var_id = inst->words[6];
+              module_->AddDebugDeclare(local_var_id, std::move(spv_inst));
+              break;
+            }
+            case DebugInfoDebugValue: {
+              if (block_ == nullptr) {  // Inside function but outside blocks
+                // It is weird that we use DebugValue outside a block.
+                // In this case, an operand of DebugValue must be an
+                // OpFunctionParameter.
+                // TODO: We do not allow this case for the simplicity but
+                //       we need a discussion. If we allow it, will we put
+                //       it in function::params_?
+                Errorf(consumer_, src, loc,
+                       "DebugValue outside a basic block is not allowed.",
+                       opcode);
+                return false;
+              } else {
+                block_->AddInstruction(std::move(spv_inst));
+              }
+              break;
+            }
+            default: {
+              Errorf(consumer_, src, loc,
+                     "Debug info extension instruction other than DebugScope, "
+                     "DebugNoScope, DebugDeclare, and DebugValue found inside "
+                     "function",
+                     opcode);
+              return false;
+            }
+          }
         }
-        function_->AddParameter(std::move(spv_inst));
       } else {
-        block_->AddInstruction(std::move(spv_inst));
+        if (block_ == nullptr) {  // Inside function but outside blocks
+          if (opcode != SpvOpFunctionParameter) {
+            Errorf(consumer_, src, loc,
+                   "Non-OpFunctionParameter (opcode: %d) found inside "
+                   "function but outside basic block",
+                   opcode);
+            return false;
+          }
+          function_->AddParameter(std::move(spv_inst));
+        } else {
+          block_->AddInstruction(std::move(spv_inst));
+        }
       }
     }
   }
