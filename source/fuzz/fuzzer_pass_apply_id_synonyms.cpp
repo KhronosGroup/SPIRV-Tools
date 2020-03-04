@@ -117,13 +117,7 @@ void FuzzerPassApplyIdSynonyms::Apply() {
               instruction_to_insert_before, id_with_which_to_replace_use,
               synonym_to_try->object(),
               fuzzerutil::RepeatedFieldToVector(synonym_to_try->index()));
-          assert(composite_extract_transformation.IsApplicable(
-                     GetIRContext(), *GetFactManager()) &&
-                 "Transformation should be applicable by construction.");
-          composite_extract_transformation.Apply(GetIRContext(),
-                                                 GetFactManager());
-          *GetTransformations()->add_transformation() =
-              composite_extract_transformation.ToMessage();
+          ApplyTransformation(composite_extract_transformation);
         }
 
         TransformationReplaceIdWithSynonym replace_id_transformation(
@@ -132,11 +126,7 @@ void FuzzerPassApplyIdSynonyms::Apply() {
             id_with_which_to_replace_use);
 
         // The transformation should be applicable by construction.
-        assert(replace_id_transformation.IsApplicable(GetIRContext(),
-                                                      *GetFactManager()));
-        replace_id_transformation.Apply(GetIRContext(), GetFactManager());
-        *GetTransformations()->add_transformation() =
-            replace_id_transformation.ToMessage();
+        ApplyTransformation(replace_id_transformation);
         break;
       }
     }
