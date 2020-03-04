@@ -569,7 +569,8 @@ bool Optimizer::Run(const uint32_t* original_binary,
   }
 
 #ifndef NDEBUG
-  if (status == opt::Pass::Status::SuccessWithoutChange) {
+  if (status == opt::Pass::Status::SuccessWithoutChange &&
+      !context->module()->ContainDebugScope()) {
     std::vector<uint32_t> optimized_binary_with_nop;
     context->module()->ToBinary(&optimized_binary_with_nop,
                                 /* skip_nop = */ false);

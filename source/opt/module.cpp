@@ -137,10 +137,54 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.bound);
   binary->push_back(header_.reserved);
 
-  auto write_inst = [binary, skip_nop](const Instruction* i) {
-    if (!(skip_nop && i->IsNop())) i->ToBinaryWithoutAttachedDebugInsts(binary);
-  };
-  ForEachInst(write_inst, true);
+  if (ext_inst_debuginfo_.empty()) {
+    auto write_inst = [binary, skip_nop](const Instruction* i) {
+      if (!(skip_nop && i->IsNop()))
+        i->ToBinaryWithoutAttachedDebugInsts(binary);
+    };
+    ForEachInst(write_inst, true);
+  } else {
+    DebugScope last_scope(0, 0);
+    auto write_inst = [binary, skip_nop, &last_scope,
+                       this](const Instruction* i) {
+      if (!(skip_nop && i->IsNop())) {
+        const auto& scope = i->GetDebugScope();
+        if (scope != last_scope) {
+          // Create a new DebugScope instruction
+          std::unique_ptr<Instruction> dscope(
+              ext_inst_debuginfo_.begin()->Clone(context()));
+          std::vector<Operand> operands(dscope->begin(), dscope->begin() + 4);
+          operands[1] = Operand(
+              SPV_OPERAND_TYPE_RESULT_ID,
+              utils::SmallVector<uint32_t, 2>({context()->TakeNextId()}));
+          if (scope.lexical_scope) {
+            operands[3] = Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                                  utils::SmallVector<uint32_t, 2>({23}));
+            operands.emplace_back(
+                SPV_OPERAND_TYPE_RESULT_ID,
+                utils::SmallVector<uint32_t, 2>({scope.lexical_scope}));
+            if (scope.inlined_at) {
+              operands.emplace_back(
+                  SPV_OPERAND_TYPE_RESULT_ID,
+                  utils::SmallVector<uint32_t, 2>({scope.inlined_at}));
+            }
+          } else {
+            operands[3] = Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                                  utils::SmallVector<uint32_t, 2>({24}));
+          }
+          dscope->ReplaceOperands(operands);
+          dscope->ToBinaryWithoutAttachedDebugInsts(binary);
+        }
+        last_scope = scope;
+
+        i->ToBinaryWithoutAttachedDebugInsts(binary);
+        auto it = local_var_to_dbg_decl_.find(i->result_id());
+        if (it != local_var_to_dbg_decl_.end())
+          it->second->ToBinaryWithoutAttachedDebugInsts(binary);
+      }
+    };
+    ForEachInst(write_inst, true);
+  }
 }
 
 uint32_t Module::ComputeIdBound() const {

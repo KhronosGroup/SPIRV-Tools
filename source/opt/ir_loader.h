@@ -78,6 +78,12 @@ class IrLoader {
   std::unique_ptr<BasicBlock> block_;
   // Line related debug instructions accumulated thus far.
   std::vector<Instruction> dbg_line_info_;
+
+  // The last DebugScope information. If |last_dbg_scope_.lexical_scope|
+  // is not zero, AddInstruction() lets Instruction::dbg_scope_ be the
+  // same with |last_dbg_scope_|. Otherwise, AddInstruction() lets
+  // Instruction::dbg_scope_ have DebugScope(0, 0) which means DebugNoScope.
+  DebugScope last_dbg_scope_;
 };
 
 }  // namespace opt
