@@ -612,6 +612,39 @@ bool spvOpcodeIsDebug(SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsCommutativeBinaryOperator(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpPtrEqual:
+    case SpvOpPtrNotEqual:
+    case SpvOpIAdd:
+    case SpvOpFAdd:
+    case SpvOpIMul:
+    case SpvOpFMul:
+    case SpvOpDot:
+    case SpvOpIAddCarry:
+    case SpvOpUMulExtended:
+    case SpvOpSMulExtended:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+    case SpvOpOrdered:
+    case SpvOpUnordered:
+    case SpvOpLogicalEqual:
+    case SpvOpLogicalNotEqual:
+    case SpvOpLogicalOr:
+    case SpvOpLogicalAnd:
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+    case SpvOpFOrdEqual:
+    case SpvOpFUnordEqual:
+    case SpvOpFOrdNotEqual:
+    case SpvOpFUnordNotEqual:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
   switch (opcode) {
     case SpvOpMemoryBarrier:
