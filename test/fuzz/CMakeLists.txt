@@ -65,6 +65,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_split_block_test.cpp
           transformation_store_test.cpp
           transformation_swap_commutable_operands_test.cpp
+          transformation_toggle_access_chain_instruction_test.cpp
           transformation_vector_shuffle_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
 
