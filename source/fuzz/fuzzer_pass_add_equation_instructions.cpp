@@ -32,7 +32,7 @@ FuzzerPassAddEquationInstructions::~FuzzerPassAddEquationInstructions() =
     default;
 
 void FuzzerPassAddEquationInstructions::Apply() {
-  MaybeAddTransformationBeforeEachInstruction(
+  ForEachInstructionWithInstructionDescriptor(
       [this](opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor) {
