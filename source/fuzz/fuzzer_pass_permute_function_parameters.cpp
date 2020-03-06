@@ -52,6 +52,8 @@ void FuzzerPassPermuteFunctionParameters::Apply() {
 
     // Don't take return type into account
     uint32_t arg_size = function_type->NumInOperands() - 1;
+
+    // Create a vector, fill it with [0, n-1] values and shuffle it
     std::vector<uint32_t> permutation(arg_size);
     std::iota(permutation.begin(), permutation.end(), 0);
     GetFuzzerContext()->Shuffle(&permutation);

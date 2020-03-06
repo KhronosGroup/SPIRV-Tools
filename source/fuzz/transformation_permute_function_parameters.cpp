@@ -64,20 +64,20 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
     return false;
   }
 
-  std::unordered_set<uint32_t> set;
+  // Check that all indices are valid
+  // and unique integers from the [0, n-1] set
+  std::unordered_set<uint32_t> unique_indices;
   for (auto index : permutation) {
-    // Don't compare an unsigned integer with 0
+    // We don't compare |index| with 0 since it's an unsigned integer
     if (index >= arg_size) {
       return false;
     }
 
-    set.insert(index);
+    unique_indices.insert(index);
   }
 
   // Check that permutation doesn't have duplicated values
-  if (set.size() != arg_size) {
-    return false;
-  }
+  assert(unique_indices.size() == arg_size && "Permutation has duplicates");
 
   return true;
 }

@@ -21,7 +21,7 @@ namespace spvtools {
 namespace fuzz {
 
 // Fuzzer pass that, given a non-entry-point function taking n parameters
-// and a permutation of the set [1, n]:
+// and a permutation of the set [0, n - 1]:
 //   1. Introduces a new function type that is the same as the original
 //      function's type but with the order of arguments permuted
 //      (only add this if it doesn't already exist)
