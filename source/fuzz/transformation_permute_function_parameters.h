@@ -36,7 +36,7 @@ class TransformationPermuteFunctionParameters : public Transformation {
   // - |function_id| is a valid non-entry-point OpFunction instruction
   // - |fresh_type_id| is a fresh id
   // - |permutation| is a set of [0..(n - 1)], where n is a number of arguments
-  //   to the function, |permutation[0]| is always 0
+  //   to the function
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 

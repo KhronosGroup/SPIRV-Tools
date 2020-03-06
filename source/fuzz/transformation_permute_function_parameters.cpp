@@ -57,22 +57,16 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
 
   const auto& permutation = message_.permutation();
 
-  uint32_t arg_size = function_type->NumInOperands();
+  // Don't take return type into account
+  uint32_t arg_size = function_type->NumInOperands() - 1;
 
   if (static_cast<uint32_t>(permutation.size()) != arg_size) {
     return false;
   }
 
-  // Return type can't change its position
-  // Also, return type is always defined, so |permutation| is never empty
-  if (permutation.empty() || permutation[0] != 0) {
-    return false;
-  }
-
   std::unordered_set<uint32_t> set;
-
   for (auto index : permutation) {
-    // Don't compare a signed integer with 0
+    // Don't compare an unsigned integer with 0
     if (index >= arg_size) {
       return false;
     }
@@ -104,11 +98,18 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
   assert(function_type && "Function type is null");
 
   // Create a vector of permuted arguments
-  opt::Instruction::OperandList operands;
-  std::vector<uint32_t> operand_data;
+  opt::Instruction::OperandList operands = {
+    function_type->GetInOperand(0) // Function's return type
+  };
+
+  std::vector<uint32_t> operand_data = {
+    function_type->GetSingleWordInOperand(0) // Function's return type
+  };
+
   for (auto index : permutation) {
-    operands.push_back(function_type->GetInOperand(index));
-    operand_data.push_back(operands.back().words[0]);
+    // Take return type into account
+    operands.push_back(function_type->GetInOperand(index + 1));
+    operand_data.push_back(function_type->GetSingleWordInOperand(index + 1));
   }
 
   // Check if there is already a type with permuted arguments
@@ -125,24 +126,24 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
     function->DefInst().SetInOperand(1, {fresh_type_id});
   }
 
+  // Adjust OpFunctionParameter instructions
 
-  std::vector<uint32_t> param_id = {0}; // account for return type
+  // Collect ids of OpFunctionParameter instructions
+  std::vector<uint32_t> param_id;
   function->ForEachParam([&param_id](const opt::Instruction* param) {
     param_id.push_back(param->result_id());
   });
 
-  // TODO: too many vectors, perhaps better to use in-place algorithm
-  // or add getter/setter for function parameters
+  // Permute parameters' ids
   std::vector<uint32_t> permuted_param_id;
   for (auto index : permutation) {
     permuted_param_id.push_back(param_id[index]);
   }
 
-  // Set OpFunctionParam instructions to point to new parameters
-  // i == 1 because we don't take function return type into account
-  size_t i = 1;
+  // Set OpFunctionParameter instructions to point to new parameters
+  size_t i = 0;
   function->ForEachParam([&](opt::Instruction* param) {
-    param->SetResultType(operand_data[i]);
+    param->SetResultType(operand_data[i + 1]); // Take return type into account
     param->SetResultId(permuted_param_id[i]);
     ++i;
   });
@@ -155,9 +156,13 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
           return;
         }
 
-        opt::Instruction::OperandList call_operands;
+        opt::Instruction::OperandList call_operands = {
+          call->GetInOperand(0) // Function id
+        };
+
         for (auto index : permutation) {
-          call_operands.push_back(call->GetInOperand(index));
+          // Take function id into account
+          call_operands.push_back(call->GetInOperand(index + 1));
         }
 
         call->SetInOperands(std::move(call_operands));

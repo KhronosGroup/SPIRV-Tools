@@ -86,6 +86,13 @@ class FuzzerContext {
     }
   }
 
+  template <typename T>
+  void Shuffle(std::vector<T>* sequence) const {
+    if (!sequence->empty()) {
+      Shuffle(sequence, 0, sequence->size() - 1);
+    }
+  }
+
   // Yields an id that is guaranteed not to be used in the module being fuzzed,
   // or to have been issued before.
   uint32_t GetFreshId();

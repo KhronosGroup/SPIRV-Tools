@@ -50,10 +50,11 @@ void FuzzerPassPermuteFunctionParameters::Apply() {
     auto* function_type = fuzzerutil::GetFunctionType(GetIRContext(), &function);
     assert(function_type && "Function type is null");
 
-    std::vector<uint32_t> permutation(function_type->NumInOperands());
+    // Don't take return type into account
+    uint32_t arg_size = function_type->NumInOperands() - 1;
+    std::vector<uint32_t> permutation(arg_size);
     std::iota(permutation.begin(), permutation.end(), 0);
-    // Return type always remains the same
-    GetFuzzerContext()->Shuffle(&permutation, 1, permutation.size() - 1);
+    GetFuzzerContext()->Shuffle(&permutation);
 
     uint32_t fresh_type_id = GetFuzzerContext()->GetFreshId();
 

@@ -911,7 +911,7 @@ message TransformationOutlineFunction {
 message TransformationPermuteFunctionParameters {
 
   // A transformation that, given a non-entry-point function taking n
-  // parameters and a permutation of the set [1, n]:
+  // parameters and a permutation of the set [0, n-1]:
   //   - Introduces a new function type that is the same as the original
   //     function's type but with the order of arguments permuted
   //     (only if it doesn't already exist)
@@ -924,7 +924,12 @@ message TransformationPermuteFunctionParameters {
   // An id for a new function type that might be created
   uint32 fresh_type_id = 2;
 
-  // Permutation for the function's parameters
+  // An array of size |n|, where |n| is a number of arguments to a function
+  // with |function_id|. For each i: 0 <= permutation[i] < n.
+  //
+  // i-th element of this array contains a position for an i-th
+  // function's argument (i.e. i-th argument will be permutation[i]-th
+  // after running this transformation)
   repeated uint32 permutation = 3;
 
 }
