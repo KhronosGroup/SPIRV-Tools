@@ -48,6 +48,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_composite_construct_test.cpp
           transformation_composite_extract_test.cpp
           transformation_copy_object_test.cpp
+          transformation_equation_instruction_test.cpp
           transformation_function_call_test.cpp
           transformation_load_test.cpp
           transformation_merge_blocks_test.cpp
@@ -63,6 +64,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_set_selection_control_test.cpp
           transformation_split_block_test.cpp
           transformation_store_test.cpp
+          transformation_swap_commutable_operands_test.cpp
           transformation_vector_shuffle_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
 

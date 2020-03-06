@@ -85,15 +85,18 @@ void FuzzerPassApplyIdSynonyms::Apply() {
         auto synonym_to_try = synonyms_to_try[synonym_index];
         synonyms_to_try.erase(synonyms_to_try.begin() + synonym_index);
 
+        // If the synonym's |index_size| is zero, the synonym represents an id.
+        // Otherwise it represents some element of a composite structure, in
+        // which case we need to be able to add an extract instruction to get
+        // that element out.
         if (synonym_to_try->index_size() > 0 &&
-            use_inst->opcode() == SpvOpPhi) {
-          // We are trying to replace an operand to an OpPhi.  This means
-          // we cannot use a composite synonym, because that requires
-          // extracting a component from a composite and we cannot insert
-          // an extract instruction before an OpPhi.
+            !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCompositeExtract,
+                                                          use_inst)) {
+          // We cannot insert an extract before this instruction, so this
+          // synonym is no good.
           //
-          // TODO(afd): We could consider inserting the extract instruction
-          //  into the relevant parent block of the OpPhi.
+          // TODO(afd): In the case of an OpPhi, we could consider inserting the
+          //  extract instruction into the relevant parent block of the OpPhi.
           continue;
         }
 
@@ -103,40 +106,25 @@ void FuzzerPassApplyIdSynonyms::Apply() {
           continue;
         }
 
-        // We either replace the use with an id known to be synonymous, or
-        // an id that will hold the result of extracting a synonym from a
-        // composite.
+        // We either replace the use with an id known to be synonymous (when
+        // the synonym's |index_size| is 0), or an id that will hold the result
+        // of extracting a synonym from a composite (when the synonym's
+        // |index_size| is > 0).
         uint32_t id_with_which_to_replace_use;
         if (synonym_to_try->index_size() == 0) {
           id_with_which_to_replace_use = synonym_to_try->object();
         } else {
           id_with_which_to_replace_use = GetFuzzerContext()->GetFreshId();
-          protobufs::InstructionDescriptor instruction_to_insert_before =
-              MakeInstructionDescriptor(GetIRContext(), use_inst);
-          TransformationCompositeExtract composite_extract_transformation(
-              instruction_to_insert_before, id_with_which_to_replace_use,
-              synonym_to_try->object(),
-              fuzzerutil::RepeatedFieldToVector(synonym_to_try->index()));
-          assert(composite_extract_transformation.IsApplicable(
-                     GetIRContext(), *GetFactManager()) &&
-                 "Transformation should be applicable by construction.");
-          composite_extract_transformation.Apply(GetIRContext(),
-                                                 GetFactManager());
-          *GetTransformations()->add_transformation() =
-              composite_extract_transformation.ToMessage();
+          ApplyTransformation(TransformationCompositeExtract(
+              MakeInstructionDescriptor(GetIRContext(), use_inst),
+              id_with_which_to_replace_use, synonym_to_try->object(),
+              fuzzerutil::RepeatedFieldToVector(synonym_to_try->index())));
         }
 
-        TransformationReplaceIdWithSynonym replace_id_transformation(
+        ApplyTransformation(TransformationReplaceIdWithSynonym(
             MakeIdUseDescriptorFromUse(GetIRContext(), use_inst,
                                        use_in_operand_index),
-            id_with_which_to_replace_use);
-
-        // The transformation should be applicable by construction.
-        assert(replace_id_transformation.IsApplicable(GetIRContext(),
-                                                      *GetFactManager()));
-        replace_id_transformation.Apply(GetIRContext(), GetFactManager());
-        *GetTransformations()->add_transformation() =
-            replace_id_transformation.ToMessage();
+            id_with_which_to_replace_use));
         break;
       }
     }
