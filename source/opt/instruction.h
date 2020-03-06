@@ -241,7 +241,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline void SetResultId(uint32_t res_id);
   inline bool HasResultId() const { return has_result_id_; }
   // Sets DebugScope.
-  inline void SetDebugScope(const DebugScope& scope) { dbg_scope_ = scope; }
+  inline void SetDebugScope(const DebugScope& scope);
   inline const DebugScope& GetDebugScope() const { return dbg_scope_; }
   // Remove the |index|-th operand
   void RemoveOperand(uint32_t index) {
@@ -569,6 +569,13 @@ inline void Instruction::SetResultId(uint32_t res_id) {
 
   auto ridx = has_type_id_ ? 1 : 0;
   operands_[ridx].words = {res_id};
+}
+
+inline void Instruction::SetDebugScope(const DebugScope& scope) {
+  dbg_scope_ = scope;
+  for (auto& i : dbg_line_insts_) {
+    i.dbg_scope_ = scope;
+  }
 }
 
 inline void Instruction::SetResultType(uint32_t ty_id) {

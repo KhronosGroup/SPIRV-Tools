@@ -116,7 +116,11 @@ Instruction::Instruction(Instruction&& that)
       unique_id_(that.unique_id_),
       operands_(std::move(that.operands_)),
       dbg_line_insts_(std::move(that.dbg_line_insts_)),
-      dbg_scope_(that.dbg_scope_) {}
+      dbg_scope_(that.dbg_scope_) {
+  for (auto& i : dbg_line_insts_) {
+    i.dbg_scope_ = that.dbg_scope_;
+  }
+}
 
 Instruction& Instruction::operator=(Instruction&& that) {
   opcode_ = that.opcode_;
@@ -126,6 +130,9 @@ Instruction& Instruction::operator=(Instruction&& that) {
   operands_ = std::move(that.operands_);
   dbg_line_insts_ = std::move(that.dbg_line_insts_);
   dbg_scope_ = that.dbg_scope_;
+  for (auto& i : dbg_line_insts_) {
+    i.dbg_scope_ = that.dbg_scope_;
+  }
   return *this;
 }
 
@@ -138,6 +145,9 @@ Instruction* Instruction::Clone(IRContext* c) const {
   clone->operands_ = operands_;
   clone->dbg_line_insts_ = dbg_line_insts_;
   clone->dbg_scope_ = dbg_scope_;
+  for (auto& i : clone->dbg_line_insts_) {
+    i.dbg_scope_ = dbg_scope_;
+  }
   return clone;
 }
 
