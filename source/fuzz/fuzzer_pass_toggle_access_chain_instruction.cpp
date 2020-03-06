@@ -39,7 +39,8 @@ void FuzzerPassToggleAccessChainInstruction::Apply() {
                                   context](opt::Instruction* instruction) {
     SpvOp opcode = instruction->opcode();
     if ((opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain) &&
-        GetFuzzerContext()->ChooseEven()) {
+        GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()->GetChanceOfTogglingAccessChainInstruction())) {
       auto instructionDescriptor =
           MakeInstructionDescriptor(context, instruction);
       auto transformation =

@@ -37,7 +37,9 @@ bool TransformationToggleAccessChainInstruction::IsApplicable(
     ) const {
   auto instruction =
       FindInstruction(message_.instruction_descriptor(), context);
-  if (instruction == nullptr) return false;
+  if (instruction == nullptr) {
+    return false;
+  }
 
   SpvOp opcode = static_cast<SpvOp>(
       message_.instruction_descriptor().target_instruction_opcode());
@@ -46,10 +48,11 @@ bool TransformationToggleAccessChainInstruction::IsApplicable(
          "The located instruction must have the same opcode as in the "
          "descriptor.");
 
-  if (opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain)
+  if (opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain) {
     return true;
-  else
-    return false;
+  }
+
+  return false;
 }
 
 void TransformationToggleAccessChainInstruction::Apply(
@@ -59,10 +62,14 @@ void TransformationToggleAccessChainInstruction::Apply(
       FindInstruction(message_.instruction_descriptor(), context);
   SpvOp opcode = instruction->opcode();
 
-  if (opcode == SpvOpAccessChain)
+  if (opcode == SpvOpAccessChain) {
     instruction->SetOpcode(SpvOpInBoundsAccessChain);
-  else if (opcode == SpvOpInBoundsAccessChain)
+  } else {
+    assert(opcode == SpvOpInBoundsAccessChain &&
+           "The located instruction must be an OpInBoundsAccessChain "
+           "instruction.");
     instruction->SetOpcode(SpvOpAccessChain);
+  }
 }
 
 protobufs::Transformation

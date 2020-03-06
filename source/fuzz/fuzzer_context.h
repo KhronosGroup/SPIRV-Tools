@@ -180,6 +180,9 @@ class FuzzerContext {
     return chance_of_replacing_id_with_synonym_;
   }
   uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
+  uint32_t GetChanceOfTogglingAccessChainInstruction() {
+    return chance_of_toggling_access_chain_instruction_;
+  }
   uint32_t GetRandomLoopControlPeelCount() {
     return random_generator_->RandomUint32(max_loop_control_peel_count_);
   }
@@ -243,6 +246,7 @@ class FuzzerContext {
   uint32_t chance_of_permuting_parameters_;
   uint32_t chance_of_replacing_id_with_synonym_;
   uint32_t chance_of_splitting_block_;
+  uint32_t chance_of_toggling_access_chain_instruction_;
 
   // Limits associated with various quantities for which random values are
   // chosen during fuzzing.

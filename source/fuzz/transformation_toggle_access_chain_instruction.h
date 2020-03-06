@@ -32,7 +32,7 @@ class TransformationToggleAccessChainInstruction : public Transformation {
       const protobufs::InstructionDescriptor& instruction_descriptor);
 
   // - |message_.instruction_descriptor| must identify an existing
-  // access chain instruction
+  //   access chain instruction
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 
