@@ -62,19 +62,27 @@ class FuzzerContext {
     return result;
   }
 
-  // Randomly shuffles a |sequence|
+  // Randomly shuffles a |sequence| between |lo| and |hi| indices inclusively
   // |lo| and |hi| must be valid indices to the |sequence|
   template <typename T>
   void Shuffle(std::vector<T>* sequence, size_t lo, size_t hi) const {
     auto& array = *sequence;
+
+    if (array.empty()) {
+      return;
+    }
+
     assert(lo <= hi && hi < array.size() && "lo and/or hi indices are invalid");
-    if (array.empty()) return;
 
     // i > lo to account for potential infinite loop when lo == 0
     for (size_t i = hi; i > lo; --i) {
-      using std::swap;
-      auto index = random_generator_->RandomUint32(static_cast<uint32_t>(i + 1));
-      swap(array[index], array[i]);
+      auto index = random_generator_->RandomUint32(
+          static_cast<uint32_t>(i - lo + 1));
+
+      if (lo + index != i) {
+        using std::swap;
+        swap(array[lo + index], array[i]);
+      }
     }
   }
 
