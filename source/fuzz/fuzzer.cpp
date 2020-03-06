@@ -44,6 +44,7 @@
 #include "source/fuzz/fuzzer_pass_merge_blocks.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
+#include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
@@ -239,6 +240,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
                                                &fact_manager, &fuzzer_context,
                                                transformation_sequence_out);
     MaybeAddPass<FuzzerPassOutlineFunctions>(&passes, ir_context.get(),
+                                             &fact_manager, &fuzzer_context,
+                                             transformation_sequence_out);
+    MaybeAddPass<FuzzerPassPermuteFunctionParameters>(&passes, ir_context.get(),
                                              &fact_manager, &fuzzer_context,
                                              transformation_sequence_out);
     MaybeAddPass<FuzzerPassPermuteBlocks>(&passes, ir_context.get(),
