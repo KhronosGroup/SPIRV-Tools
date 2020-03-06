@@ -70,7 +70,7 @@ class FuzzerPass {
   // all times tracking an instruction descriptor that allows the latest
   // instruction to be located even if it has no result id.
   //
-  // The code to manipulate the instruction descriptor is a bit fiddly, and the
+  // The code to manipulate the instruction descriptor is a bit fiddly.  The
   // point of this method is to avoiding having to duplicate it in multiple
   // transformation passes.
   //
