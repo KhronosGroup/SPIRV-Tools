@@ -62,7 +62,7 @@ class FuzzerContext {
     return result;
   }
 
-  // Randomly shuffles a |sequence| between |lo| and |hi| indices inclusively
+  // Randomly shuffles a |sequence| between |lo| and |hi| indices inclusively.
   // |lo| and |hi| must be valid indices to the |sequence|
   template <typename T>
   void Shuffle(std::vector<T>* sequence, size_t lo, size_t hi) const {
@@ -86,6 +86,7 @@ class FuzzerContext {
     }
   }
 
+  // Ramdomly shuffles a |sequence|
   template <typename T>
   void Shuffle(std::vector<T>* sequence) const {
     if (!sequence->empty()) {
