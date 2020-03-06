@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_permute_function_parameters.h"
 
 namespace spvtools {
@@ -29,17 +28,12 @@ TransformationPermuteFunctionParameters::TransformationPermuteFunctionParameters
 TransformationPermuteFunctionParameters::TransformationPermuteFunctionParameters(
     uint32_t function_id,
     uint32_t fresh_type_id,
-    const std::vector<uint32_t>& permutation,
-    const std::vector<protobufs::InstructionDescriptor>& call_site) {
+    const std::vector<uint32_t>& permutation) {
   message_.set_function_id(function_id);
   message_.set_fresh_type_id(fresh_type_id);
 
   for (auto index : permutation) {
     message_.add_permutation(index);
-  }
-
-  for (const auto& instruction : call_site) {
-    *message_.add_call_site() = instruction;
   }
 }
 
@@ -91,16 +85,6 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
     return false;
   }
 
-  // Check that call instructions are valid
-  for (const auto& descriptor : message_.call_site()) {
-    const auto* instruction = FindInstruction(descriptor, context);
-    if (!instruction ||
-        instruction->opcode() != SpvOpFunctionCall ||
-        instruction->GetSingleWordInOperand(0) != message_.function_id()) {
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -110,7 +94,6 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
   uint32_t function_id = message_.function_id();
   uint32_t fresh_type_id = message_.fresh_type_id();
   const auto& permutation = message_.permutation();
-  const auto& call_site = message_.call_site();
 
   // Find the function that will be transformed
   auto* function = fuzzerutil::FindFunction(context, function_id);
@@ -165,17 +148,20 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
   });
 
   // Fix all OpFunctionCall instructions
-  for (const auto& descriptor : call_site) {
-    auto* call = FindInstruction(descriptor, context);
-    assert(call && "Call instruction is null");
+  context->get_def_use_mgr()->ForEachUser(&function->DefInst(),
+      [function_id, &permutation](opt::Instruction* call) {
+        if (call->opcode() != SpvOpFunctionCall ||
+            call->GetSingleWordInOperand(0) != function_id) {
+          return;
+        }
 
-    opt::Instruction::OperandList call_operands;
-    for (auto index : permutation) {
-      call_operands.push_back(call->GetInOperand(index));
-    }
+        opt::Instruction::OperandList call_operands;
+        for (auto index : permutation) {
+          call_operands.push_back(call->GetInOperand(index));
+        }
 
-    call->SetInOperands(std::move(call_operands));
-  }
+        call->SetInOperands(std::move(call_operands));
+      });
 }
 
 protobufs::Transformation TransformationPermuteFunctionParameters::ToMessage() const {

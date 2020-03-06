@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_permute_function_parameters.h"
-#include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -203,60 +202,41 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
   FactManager fact_manager;
 
   // Can't permute main function
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 106, {}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 106, {})
       .IsApplicable(context.get(), fact_manager));
 
   // Can't permute invalid instruction
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(101, 106, {}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(101, 106, {})
       .IsApplicable(context.get(), fact_manager));
 
   // Can't permute with non-fresh id
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 105, {}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 105, {})
       .IsApplicable(context.get(), fact_manager));
 
   // Permutation has too many values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 3, 2, 1, 4}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 3, 2, 1, 4})
       .IsApplicable(context.get(), fact_manager));
 
   // Permutation has too few values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 2, 1}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 2, 1})
       .IsApplicable(context.get(), fact_manager));
 
   // First permutation value is not 0
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {3, 0, 2, 1}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {3, 0, 2, 1})
       .IsApplicable(context.get(), fact_manager));
 
   // Permutation has invalid values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 4, 2, 1}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 4, 2, 1})
       .IsApplicable(context.get(), fact_manager));
 
   // Permutation has repeatable values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 2, 2, 1}, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 2, 2, 1})
       .IsApplicable(context.get(), fact_manager));
-
-  // call_site has incorrect instructions
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 3, 2, 1}, {
-      MakeInstructionDescriptor(96, SpvOpFunctionCall, 0),
-      MakeInstructionDescriptor(83, SpvOpLabel, 0),
-      MakeInstructionDescriptor(104, SpvOpFunctionCall, 0)
-    })
-    .IsApplicable(context.get(), fact_manager));
-
-  // call_site has calls to different functions
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 3, 2, 1}, {
-      MakeInstructionDescriptor(96, SpvOpFunctionCall, 0),
-      MakeInstructionDescriptor(68, SpvOpFunctionCall, 0),
-      MakeInstructionDescriptor(104, SpvOpFunctionCall, 0)
-    })
-    .IsApplicable(context.get(), fact_manager));
 
   // Successful transformations
   {
     TransformationPermuteFunctionParameters transformation(
-        22, 106, {0, 3, 2, 1}, {
-          MakeInstructionDescriptor(96, SpvOpFunctionCall, 0),
-          MakeInstructionDescriptor(104, SpvOpFunctionCall, 0)
-        });
+        22, 106, {0, 3, 2, 1});
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));
@@ -265,10 +245,7 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
     // Type with the same permuted arguments already exists,
     // should not create a new one
     TransformationPermuteFunctionParameters transformation(
-        28, 107, {0, 2, 1}, {
-          MakeInstructionDescriptor(68, SpvOpFunctionCall, 0),
-          MakeInstructionDescriptor(87, SpvOpFunctionCall, 0)
-        });
+        28, 107, {0, 2, 1});
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));

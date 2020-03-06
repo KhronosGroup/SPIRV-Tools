@@ -31,16 +31,12 @@ class TransformationPermuteFunctionParameters : public Transformation {
   TransformationPermuteFunctionParameters(
       uint32_t function_id,
       uint32_t fresh_type_id,
-      const std::vector<uint32_t>& permutation,
-      const std::vector<protobufs::InstructionDescriptor>& call_site);
+      const std::vector<uint32_t>& permutation);
 
   // - |function_id| is a valid non-entry-point OpFunction instruction
   // - |fresh_type_id| is a fresh id
   // - |permutation| is a set of [0..(n - 1)], where n is a number of arguments
   //   to the function, |permutation[0]| is always 0
-  // - |call_site| has valid OpFunctionCall instructions that call |function_id|
-  // TODO: perhaps we should add a check that call_site has all the OpFunctionCall instructions
-  // for some |function_id|
   bool IsApplicable(opt::IRContext* context,
                     const FactManager& fact_manager) const override;
 

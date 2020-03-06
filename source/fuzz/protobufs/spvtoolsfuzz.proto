@@ -924,11 +924,8 @@ message TransformationPermuteFunctionParameters {
   // An id for a new function type that might be created
   uint32 fresh_type_id = 2;
 
-  // OpFunctionCall instructions that call our function
-  repeated InstructionDescriptor call_site = 3;
-
   // Permutation for the function's parameters
-  repeated uint32 permutation = 4;
+  repeated uint32 permutation = 3;
 
 }
 

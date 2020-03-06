@@ -57,21 +57,8 @@ void FuzzerPassPermuteFunctionParameters::Apply() {
 
     uint32_t fresh_type_id = GetFuzzerContext()->GetFreshId();
 
-    std::vector<protobufs::InstructionDescriptor> call_sites;
-    GetIRContext()->get_def_use_mgr()->ForEachUser(&function.DefInst(),
-        [this, &call_sites, function_id](opt::Instruction* instruction) {
-          if (instruction->opcode() != SpvOpFunctionCall) {
-            return;
-          }
-
-          assert(instruction->GetSingleWordInOperand(0) == function_id &&
-              "OpFunctionCall has wrong function id");
-
-          call_sites.push_back(MakeInstructionDescriptor(GetIRContext(), instruction));
-        });
-
     ApplyTransformation(TransformationPermuteFunctionParameters(
-        function_id, fresh_type_id, permutation, call_sites));
+        function_id, fresh_type_id, permutation));
   }
 }
 
