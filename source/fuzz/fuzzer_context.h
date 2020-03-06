@@ -62,6 +62,22 @@ class FuzzerContext {
     return result;
   }
 
+  // Randomly shuffles a |sequence|
+  // |lo| and |hi| must be valid indices to the |sequence|
+  template <typename T>
+  void Shuffle(std::vector<T>* sequence, size_t lo, size_t hi) const {
+    auto& array = *sequence;
+    assert(lo <= hi && hi < array.size() && "lo and/or hi indices are invalid");
+    if (array.empty()) return;
+
+    // i > lo to account for potential infinite loop when lo == 0
+    for (size_t i = hi; i > lo; --i) {
+      using std::swap;
+      auto index = random_generator_->RandomUint32(static_cast<uint32_t>(i + 1));
+      swap(array[index], array[i]);
+    }
+  }
+
   // Yields an id that is guaranteed not to be used in the module being fuzzed,
   // or to have been issued before.
   uint32_t GetFreshId();
@@ -136,6 +152,9 @@ class FuzzerContext {
   uint32_t GetChanceOfOutliningFunction() {
     return chance_of_outlining_function_;
   }
+  uint32_t GetChanceOfPermutingParameters() {
+    return chance_of_permuting_parameters_;
+  }
   uint32_t GetChanceOfReplacingIdWithSynonym() {
     return chance_of_replacing_id_with_synonym_;
   }
@@ -199,6 +218,7 @@ class FuzzerContext {
   uint32_t chance_of_moving_block_down_;
   uint32_t chance_of_obfuscating_constant_;
   uint32_t chance_of_outlining_function_;
+  uint32_t chance_of_permuting_parameters_;
   uint32_t chance_of_replacing_id_with_synonym_;
   uint32_t chance_of_splitting_block_;
 

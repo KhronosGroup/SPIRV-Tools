@@ -46,6 +46,7 @@
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_outline_function.h"
+#include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
@@ -139,6 +140,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kOutlineFunction:
       return MakeUnique<TransformationOutlineFunction>(
           message.outline_function());
+    case protobufs::Transformation::TransformationCase::kPermuteFunctionParameters:
+      return MakeUnique<TransformationPermuteFunctionParameters>(
+          message.permute_function_parameters());
     case protobufs::Transformation::TransformationCase::
         kReplaceBooleanConstantWithConstantBinary:
       return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(

@@ -342,6 +342,7 @@ message Transformation {
     TransformationStore store = 37;
     TransformationFunctionCall function_call = 38;
     TransformationAccessChain access_chain = 39;
+    TransformationPermuteFunctionParameters permute_function_parameters = 40;
     // Add additional option using the next available number.
   }
 }
@@ -854,6 +855,30 @@ message TransformationOutlineFunction {
   // by the caller.  This is a mapping from original ids to corresponding fresh
   // ids.
   repeated UInt32Pair output_id_to_fresh_id = 10;
+
+}
+
+message TransformationPermuteFunctionParameters {
+
+  // A transformation that, given a non-entry-point function taking n
+  // parameters and a permutation of the set [1, n]:
+  //   - Introduces a new function type that is the same as the original
+  //     function's type but with the order of arguments permuted
+  //     (only if it doesn't already exist)
+  //   - Changes the type of the function to this type
+  //   - Adjusts all calls to the function so that their arguments are permuted
+
+  // Function, whose parameters will be permuted
+  uint32 function_id = 1;
+
+  // An id for a new function type that might be created
+  uint32 fresh_type_id = 2;
+
+  // OpFunctionCall instructions that call our function
+  repeated InstructionDescriptor call_site = 3;
+
+  // Permutation for the function's parameters
+  repeated uint32 permutation = 4;
 
 }
 
