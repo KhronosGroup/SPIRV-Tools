@@ -73,7 +73,7 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %18 = OpTypeFunction %8 %7 %15 %17
          %24 = OpTypeBool
          %25 = OpTypeFunction %24 %15 %7
-         %105 = OpTypeFunction %24 %7 %15    ; predefined type with permuted arguments
+         %105 = OpTypeFunction %24 %7 %15    ; predefined type for %28
          %31 = OpConstant %6 255
          %33 = OpConstant %6 0
          %34 = OpConstant %6 1
@@ -202,46 +202,50 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
   FactManager fact_manager;
 
   // Can't permute main function
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 106, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 0, {})
       .IsApplicable(context.get(), fact_manager));
 
   // Can't permute invalid instruction
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(101, 106, {})
-      .IsApplicable(context.get(), fact_manager));
-
-  // Can't permute with non-fresh id
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 105, {})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(101, 0, {})
       .IsApplicable(context.get(), fact_manager));
 
   // Permutation has too many values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {2, 1, 0, 3})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {2, 1, 0, 3})
       .IsApplicable(context.get(), fact_manager));
 
   // Permutation has too few values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {0, 1})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {0, 1})
       .IsApplicable(context.get(), fact_manager));
 
   // Permutation has invalid values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {3, 1, 0})
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {3, 1, 0})
       .IsApplicable(context.get(), fact_manager));
 
-  // Permutation has repeatable values
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 106, {1, 1, 0})
+  // Type id is not an OpTypeFunction instruction
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 42, {2, 1, 0})
+      .IsApplicable(context.get(), fact_manager));
+
+  // Type id has incorrect number of operands
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 9, {2, 1, 0})
+      .IsApplicable(context.get(), fact_manager));
+
+  // OpTypeFunction has operands out of order
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 18, {2, 1, 0})
       .IsApplicable(context.get(), fact_manager));
 
   // Successful transformations
   {
+    // Function has two operands of the same type:
+    // initial OpTypeFunction should be enough
     TransformationPermuteFunctionParameters transformation(
-        22, 106, {2, 1, 0});
+        12, 9, {1, 0});
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
-    // Type with the same permuted arguments already exists,
-    // should not create a new one
     TransformationPermuteFunctionParameters transformation(
-        28, 107, {1, 0});
+        28, 105, {1, 0});
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));
@@ -300,7 +304,7 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %18 = OpTypeFunction %8 %7 %15 %17
          %24 = OpTypeBool
          %25 = OpTypeFunction %24 %15 %7
-         %105 = OpTypeFunction %24 %7 %15    ; predefined type with permuted arguments
+         %105 = OpTypeFunction %24 %7 %15    ; predefined type for %28
          %31 = OpConstant %6 255
          %33 = OpConstant %6 0
          %34 = OpConstant %6 1
@@ -317,7 +321,6 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %84 = OpConstant %14 5
          %90 = OpConstant %6 3
          %98 = OpConstant %6 4
-         %106 = OpTypeFunction %8 %17 %15 %7
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %66 = OpVariable %15 Function
@@ -344,7 +347,7 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %80 = OpAccessChain %76 %74 %49
          %81 = OpLoad %6 %80
                OpStore %79 %81
-         %82 = OpFunctionCall %8 %12 %75 %79
+         %82 = OpFunctionCall %8 %12 %79 %75
                OpStore %72 %82
                OpBranch %70
          %83 = OpLabel
@@ -359,7 +362,7 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %94 = OpLoad %8 %74
          %95 = OpVectorShuffle %16 %94 %94 0 1
                OpStore %93 %95
-         %96 = OpFunctionCall %8 %22 %93 %92 %91
+         %96 = OpFunctionCall %8 %22 %91 %92 %93
                OpStore %72 %96
                OpBranch %89
          %97 = OpLabel
@@ -368,7 +371,7 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
         %102 = OpLoad %8 %74
         %103 = OpVectorShuffle %16 %102 %102 0 1
                OpStore %101 %103
-        %104 = OpFunctionCall %8 %22 %101 %100 %99
+        %104 = OpFunctionCall %8 %22 %99 %100 %101
                OpStore %72 %104
                OpBranch %89
          %89 = OpLabel
@@ -377,8 +380,8 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
                OpReturn
                OpFunctionEnd
          %12 = OpFunction %8 None %9
-         %10 = OpFunctionParameter %7
          %11 = OpFunctionParameter %7
+         %10 = OpFunctionParameter %7
          %13 = OpLabel
          %30 = OpLoad %6 %10
          %32 = OpFDiv %6 %30 %31
@@ -388,10 +391,10 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %38 = OpCompositeConstruct %8 %32 %33 %37 %34
                OpReturnValue %38
                OpFunctionEnd
-         %22 = OpFunction %8 None %106
-         %21 = OpFunctionParameter %17
-         %20 = OpFunctionParameter %15
+         %22 = OpFunction %8 None %18
          %19 = OpFunctionParameter %7
+         %20 = OpFunctionParameter %15
+         %21 = OpFunctionParameter %17
          %23 = OpLabel
          %53 = OpVariable %7 Function
          %54 = OpVariable %7 Function
@@ -406,7 +409,7 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %52 = OpFAdd %6 %48 %51
                OpStore %53 %46
                OpStore %54 %52
-         %55 = OpFunctionCall %8 %12 %53 %54
+         %55 = OpFunctionCall %8 %12 %54 %53
                OpReturnValue %55
                OpFunctionEnd
          %28 = OpFunction %24 None %105

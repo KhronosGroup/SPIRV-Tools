@@ -30,11 +30,15 @@ class TransformationPermuteFunctionParameters : public Transformation {
 
   TransformationPermuteFunctionParameters(
       uint32_t function_id,
-      uint32_t fresh_type_id,
+      uint32_t new_type_id,
       const std::vector<uint32_t>& permutation);
 
   // - |function_id| is a valid non-entry-point OpFunction instruction
-  // - |fresh_type_id| is a fresh id
+  // - |new_type_id| is a result id of a valid OpTypeFunction instruction.
+  //   New type is valid if:
+  //     - it has the same number of operands as the old one
+  //     - function's result type is the same as the old one
+  //     - function's arguments are permuted according to |permutation| vector
   // - |permutation| is a set of [0..(n - 1)], where n is a number of arguments
   //   to the function
   bool IsApplicable(opt::IRContext* context,
@@ -42,8 +46,7 @@ class TransformationPermuteFunctionParameters : public Transformation {
 
   // - OpFunction instruction with |result_id == function_id| is changed.
   //   Its arguments are permuted according to the |permutation| vector
-  // - A new function type is introduced with the order of arguments permuted
-  //   (only if it doesn't exist)
+  // - Changed function gets a new type specified by |type_id|
   // - Calls to the function are adjusted accordingly
   void Apply(opt::IRContext* context, FactManager* fact_manager) const override;
 

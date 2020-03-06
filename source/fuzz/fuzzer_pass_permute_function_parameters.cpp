@@ -58,10 +58,21 @@ void FuzzerPassPermuteFunctionParameters::Apply() {
     std::iota(permutation.begin(), permutation.end(), 0);
     GetFuzzerContext()->Shuffle(&permutation);
 
-    uint32_t fresh_type_id = GetFuzzerContext()->GetFreshId();
+    // Create a new OpFunctionType instruction with permuted arguments
+    // if needed
+    auto result_type_id = function_type->GetSingleWordInOperand(0);
+    std::vector<uint32_t> argument_ids;
 
+    for (auto index : permutation) {
+      // +1 to take function's return type into account
+      argument_ids.push_back(function_type->GetSingleWordInOperand(index + 1));
+    }
+
+    auto type_id = FindOrCreateFunctionType(result_type_id, argument_ids);
+
+    // Apply our transformation
     ApplyTransformation(TransformationPermuteFunctionParameters(
-        function_id, fresh_type_id, permutation));
+        function_id, type_id, permutation));
   }
 }
 

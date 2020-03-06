@@ -80,6 +80,8 @@ class FuzzerContext {
           static_cast<uint32_t>(i - lo + 1));
 
       if (lo + index != i) {
+        // Introduce std::swap to the scope but don't use it
+        // directly since there might be a better overload
         using std::swap;
         swap(array[lo + index], array[i]);
       }

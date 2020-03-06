@@ -921,8 +921,12 @@ message TransformationPermuteFunctionParameters {
   // Function, whose parameters will be permuted
   uint32 function_id = 1;
 
-  // An id for a new function type that might be created
-  uint32 fresh_type_id = 2;
+  // |new_type_id| is a result id of a valid OpTypeFunction instruction.
+  // New type is valid if:
+  //   - it has the same number of operands as the old one
+  //   - function's result type is the same as the old one
+  //   - function's arguments are permuted according to |permutation| vector
+  uint32 new_type_id = 2;
 
   // An array of size |n|, where |n| is a number of arguments to a function
   // with |function_id|. For each i: 0 <= permutation[i] < n.
