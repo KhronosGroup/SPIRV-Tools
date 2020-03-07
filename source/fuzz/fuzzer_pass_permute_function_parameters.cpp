@@ -30,7 +30,8 @@ FuzzerPassPermuteFunctionParameters::FuzzerPassPermuteFunctionParameters(
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations) {}
 
-FuzzerPassPermuteFunctionParameters::~FuzzerPassPermuteFunctionParameters() = default;
+FuzzerPassPermuteFunctionParameters::~FuzzerPassPermuteFunctionParameters() =
+    default;
 
 void FuzzerPassPermuteFunctionParameters::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
@@ -42,12 +43,13 @@ void FuzzerPassPermuteFunctionParameters::Apply() {
     }
 
     if (!GetFuzzerContext()->ChoosePercentage(
-        GetFuzzerContext()->GetChanceOfPermutingParameters())) {
+            GetFuzzerContext()->GetChanceOfPermutingParameters())) {
       continue;
     }
 
     // Compute permutation for parameters
-    auto* function_type = fuzzerutil::GetFunctionType(GetIRContext(), &function);
+    auto* function_type =
+        fuzzerutil::GetFunctionType(GetIRContext(), &function);
     assert(function_type && "Function type is null");
 
     // Don't take return type into account
@@ -76,5 +78,5 @@ void FuzzerPassPermuteFunctionParameters::Apply() {
   }
 }
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools

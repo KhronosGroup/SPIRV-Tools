@@ -29,8 +29,7 @@ class TransformationPermuteFunctionParameters : public Transformation {
       const protobufs::TransformationPermuteFunctionParameters& message);
 
   TransformationPermuteFunctionParameters(
-      uint32_t function_id,
-      uint32_t new_type_id,
+      uint32_t function_id, uint32_t new_type_id,
       const std::vector<uint32_t>& permutation);
 
   // - |function_id| is a valid non-entry-point OpFunction instruction

@@ -195,8 +195,8 @@ uint32_t FuzzerPass::FindOrCreateFunctionType(
   }
 
   auto result = GetFuzzerContext()->GetFreshId();
-  ApplyTransformation(TransformationAddTypeFunction(
-      result, return_type_id, argument_id));
+  ApplyTransformation(
+      TransformationAddTypeFunction(result, return_type_id, argument_id));
   return result;
 }
 

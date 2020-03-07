@@ -76,8 +76,8 @@ class FuzzerContext {
 
     // i > lo to account for potential infinite loop when lo == 0
     for (size_t i = hi; i > lo; --i) {
-      auto index = random_generator_->RandomUint32(
-          static_cast<uint32_t>(i - lo + 1));
+      auto index =
+          random_generator_->RandomUint32(static_cast<uint32_t>(i - lo + 1));
 
       if (lo + index != i) {
         // Introduce std::swap to the scope but don't use it

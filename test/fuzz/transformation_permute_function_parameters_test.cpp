@@ -202,50 +202,48 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
   FactManager fact_manager;
 
   // Can't permute main function
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 0, {})
-      .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 0, {}).IsApplicable(
+      context.get(), fact_manager));
 
   // Can't permute invalid instruction
   ASSERT_FALSE(TransformationPermuteFunctionParameters(101, 0, {})
-      .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // Permutation has too many values
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {2, 1, 0, 3})
-      .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // Permutation has too few values
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {0, 1})
-      .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // Permutation has invalid values
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {3, 1, 0})
-      .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // Type id is not an OpTypeFunction instruction
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 42, {2, 1, 0})
-      .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // Type id has incorrect number of operands
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 9, {2, 1, 0})
-      .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // OpTypeFunction has operands out of order
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 18, {2, 1, 0})
-      .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), fact_manager));
 
   // Successful transformations
   {
     // Function has two operands of the same type:
     // initial OpTypeFunction should be enough
-    TransformationPermuteFunctionParameters transformation(
-        12, 9, {1, 0});
+    TransformationPermuteFunctionParameters transformation(12, 9, {1, 0});
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
-    TransformationPermuteFunctionParameters transformation(
-        28, 105, {1, 0});
+    TransformationPermuteFunctionParameters transformation(28, 105, {1, 0});
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
     transformation.Apply(context.get(), &fact_manager);
     ASSERT_TRUE(IsValid(env, context.get()));

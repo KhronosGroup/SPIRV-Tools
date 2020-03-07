@@ -145,7 +145,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kOutlineFunction:
       return MakeUnique<TransformationOutlineFunction>(
           message.outline_function());
-    case protobufs::Transformation::TransformationCase::kPermuteFunctionParameters:
+    case protobufs::Transformation::TransformationCase::
+        kPermuteFunctionParameters:
       return MakeUnique<TransformationPermuteFunctionParameters>(
           message.permute_function_parameters());
     case protobufs::Transformation::TransformationCase::

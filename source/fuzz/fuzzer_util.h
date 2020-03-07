@@ -162,7 +162,8 @@ opt::Instruction* GetFunctionType(opt::IRContext* context,
 opt::Function* FindFunction(opt::IRContext* ir_context, uint32_t function_id);
 
 // Returns |true| if one of entry points has function id |function_id|
-// TODO: TransformationAddFunctionCall also has this functionality as a static method
+// TODO: TransformationAddFunctionCall also has this functionality as a static
+// method
 bool FunctionIsEntryPoint(opt::IRContext* context, uint32_t function_id);
 
 // Checks whether |id| is available (according to dominance rules) at the use

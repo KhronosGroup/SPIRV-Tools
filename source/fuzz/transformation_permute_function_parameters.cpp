@@ -21,14 +21,16 @@
 namespace spvtools {
 namespace fuzz {
 
-TransformationPermuteFunctionParameters::TransformationPermuteFunctionParameters(
-    const spvtools::fuzz::protobufs::TransformationPermuteFunctionParameters& message)
+TransformationPermuteFunctionParameters::
+    TransformationPermuteFunctionParameters(
+        const spvtools::fuzz::protobufs::
+            TransformationPermuteFunctionParameters& message)
     : message_(message) {}
 
-TransformationPermuteFunctionParameters::TransformationPermuteFunctionParameters(
-    uint32_t function_id,
-    uint32_t new_type_id,
-    const std::vector<uint32_t>& permutation) {
+TransformationPermuteFunctionParameters::
+    TransformationPermuteFunctionParameters(
+        uint32_t function_id, uint32_t new_type_id,
+        const std::vector<uint32_t>& permutation) {
   message_.set_function_id(function_id);
   message_.set_new_type_id(new_type_id);
 
@@ -40,9 +42,9 @@ TransformationPermuteFunctionParameters::TransformationPermuteFunctionParameters
 bool TransformationPermuteFunctionParameters::IsApplicable(
     opt::IRContext* context, const FactManager& /*unused*/) const {
   // Check that function exists
-  const auto* function = fuzzerutil::FindFunction(context, message_.function_id());
-  if (!function ||
-      function->DefInst().opcode() != SpvOpFunction ||
+  const auto* function =
+      fuzzerutil::FindFunction(context, message_.function_id());
+  if (!function || function->DefInst().opcode() != SpvOpFunction ||
       fuzzerutil::FunctionIsEntryPoint(context, function->result_id())) {
     return false;
   }
@@ -83,8 +85,7 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
   auto new_type_id = message_.new_type_id();
   const auto* new_type = context->get_def_use_mgr()->GetDef(new_type_id);
 
-  if (!new_type ||
-      new_type->opcode() != SpvOpTypeFunction ||
+  if (!new_type || new_type->opcode() != SpvOpTypeFunction ||
       new_type->NumInOperands() != function_type->NumInOperands()) {
     return false;
   }
@@ -107,8 +108,8 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
   return true;
 }
 
-void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
-                                              FactManager* /*unused*/) const {
+void TransformationPermuteFunctionParameters::Apply(
+    opt::IRContext* context, FactManager* /*unused*/) const {
   // Retrieve all data from the message
   uint32_t function_id = message_.function_id();
   uint32_t new_type_id = message_.new_type_id();
@@ -150,7 +151,8 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
   });
 
   // Fix all OpFunctionCall instructions
-  context->get_def_use_mgr()->ForEachUser(&function->DefInst(),
+  context->get_def_use_mgr()->ForEachUser(
+      &function->DefInst(),
       [function_id, &permutation](opt::Instruction* call) {
         if (call->opcode() != SpvOpFunctionCall ||
             call->GetSingleWordInOperand(0) != function_id) {
@@ -158,7 +160,7 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
         }
 
         opt::Instruction::OperandList call_operands = {
-          call->GetInOperand(0) // Function id
+            call->GetInOperand(0) // Function id
         };
 
         for (auto index : permutation) {
@@ -170,7 +172,8 @@ void TransformationPermuteFunctionParameters::Apply(opt::IRContext* context,
       });
 }
 
-protobufs::Transformation TransformationPermuteFunctionParameters::ToMessage() const {
+protobufs::Transformation TransformationPermuteFunctionParameters::ToMessage()
+    const {
   protobufs::Transformation result;
   *result.mutable_permute_function_parameters() = message_;
   return result;
