@@ -119,10 +119,6 @@ void TransformationPermuteFunctionParameters::Apply(
   auto* function = fuzzerutil::FindFunction(context, function_id);
   assert(function && "Can't find the function");
 
-  // Find the type to transform
-  auto* function_type = fuzzerutil::GetFunctionType(context, function);
-  assert(function_type && "Function type is null");
-
   // Change function's type
   function->DefInst().SetInOperand(1, {new_type_id});
 
