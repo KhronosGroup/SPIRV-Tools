@@ -48,6 +48,7 @@
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
+#include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/opt/build_module.h"
@@ -286,6 +287,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
       &final_passes, ir_context.get(), &fact_manager, &fuzzer_context,
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassSwapCommutableOperands>(
+      &final_passes, ir_context.get(), &fact_manager, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassToggleAccessChainInstruction>(
       &final_passes, ir_context.get(), &fact_manager, &fuzzer_context,
       transformation_sequence_out);
   for (auto& pass : final_passes) {

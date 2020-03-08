@@ -63,6 +63,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfOutliningFunction = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingParameters = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingIdWithSynonym = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
+const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
+    20, 90};
 
 // Default limits for various quantities that are chosen during fuzzing.
 // Keep them in alphabetical order.
@@ -152,6 +154,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_replacing_id_with_synonym_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingIdWithSynonym);
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);
+  chance_of_toggling_access_chain_instruction_ =
+      ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
 }
 
 FuzzerContext::~FuzzerContext() = default;
