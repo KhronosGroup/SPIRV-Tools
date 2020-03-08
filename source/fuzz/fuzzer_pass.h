@@ -112,6 +112,12 @@ class FuzzerPass {
   // instruction does not exist, a transformation is applied to add it.
   uint32_t FindOrCreate32BitFloatType();
 
+  // Returns the id of an OpTypeFunction %<return_type_id> %<...argument_id>
+  // instruction. If such an instruction doesn't exist, a transformation
+  // is applied to create a new one.
+  uint32_t FindOrCreateFunctionType(uint32_t return_type_id,
+                                    const std::vector<uint32_t>& argument_id);
+
   // Returns the id of an OpTypeVector instruction, with |component_type_id|
   // (which must already exist) as its base type, and |component_count|
   // elements (which must be in the range [2, 4]).  If such an instruction does
