@@ -22,6 +22,7 @@
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
 #include "source/fuzz/transformation_add_type_float.h"
+#include "source/fuzz/transformation_add_type_function.h"
 #include "source/fuzz/transformation_add_type_int.h"
 #include "source/fuzz/transformation_add_type_matrix.h"
 #include "source/fuzz/transformation_add_type_pointer.h"
@@ -176,6 +177,26 @@ uint32_t FuzzerPass::FindOrCreate32BitFloatType() {
   }
   auto result = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(TransformationAddTypeFloat(result, 32));
+  return result;
+}
+
+uint32_t FuzzerPass::FindOrCreateFunctionType(
+    uint32_t return_type_id, const std::vector<uint32_t>& argument_id) {
+  // FindFunctionType has a sigle argument for OpTypeFunction operands
+  // so we will have to copy them all in this vector
+  std::vector<uint32_t> type_ids(argument_id.size() + 1);
+  type_ids[0] = return_type_id;
+  std::copy(argument_id.begin(), argument_id.end(), type_ids.begin() + 1);
+
+  // Check if type exists
+  auto existing_id = fuzzerutil::FindFunctionType(GetIRContext(), type_ids);
+  if (existing_id) {
+    return existing_id;
+  }
+
+  auto result = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(
+      TransformationAddTypeFunction(result, return_type_id, argument_id));
   return result;
 }
 

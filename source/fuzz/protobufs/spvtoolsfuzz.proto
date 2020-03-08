@@ -370,6 +370,7 @@ message Transformation {
     TransformationAccessChain access_chain = 39;
     TransformationEquationInstruction equation_instruction = 40;
     TransformationSwapCommutableOperands swap_commutable_operands = 41;
+    TransformationPermuteFunctionParameters permute_function_parameters = 42;
     // Add additional option using the next available number.
   }
 }
@@ -904,6 +905,36 @@ message TransformationOutlineFunction {
   // by the caller.  This is a mapping from original ids to corresponding fresh
   // ids.
   repeated UInt32Pair output_id_to_fresh_id = 10;
+
+}
+
+message TransformationPermuteFunctionParameters {
+
+  // A transformation that, given a non-entry-point function taking n
+  // parameters and a permutation of the set [0, n-1]:
+  //   - Introduces a new function type that is the same as the original
+  //     function's type but with the order of arguments permuted
+  //     (only if it doesn't already exist)
+  //   - Changes the type of the function to this type
+  //   - Adjusts all calls to the function so that their arguments are permuted
+
+  // Function, whose parameters will be permuted
+  uint32 function_id = 1;
+
+  // |new_type_id| is a result id of a valid OpTypeFunction instruction.
+  // New type is valid if:
+  //   - it has the same number of operands as the old one
+  //   - function's result type is the same as the old one
+  //   - function's arguments are permuted according to |permutation| vector
+  uint32 new_type_id = 2;
+
+  // An array of size |n|, where |n| is a number of arguments to a function
+  // with |function_id|. For each i: 0 <= permutation[i] < n.
+  //
+  // i-th element of this array contains a position for an i-th
+  // function's argument (i.e. i-th argument will be permutation[i]-th
+  // after running this transformation)
+  repeated uint32 permutation = 3;
 
 }
 
