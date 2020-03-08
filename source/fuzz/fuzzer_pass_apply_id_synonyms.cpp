@@ -85,6 +85,12 @@ void FuzzerPassApplyIdSynonyms::Apply() {
         auto synonym_to_try = synonyms_to_try[synonym_index];
         synonyms_to_try.erase(synonyms_to_try.begin() + synonym_index);
 
+        if (!fuzzerutil::IdIsAvailableAtUse(GetIRContext(), use_inst,
+                                            use_in_operand_index,
+                                            synonym_to_try->object())) {
+          continue;
+        }
+
         // If the synonym's |index_size| is zero, the synonym represents an id.
         // Otherwise it represents some element of a composite structure, in
         // which case we need to be able to add an extract instruction to get
@@ -95,14 +101,30 @@ void FuzzerPassApplyIdSynonyms::Apply() {
           // We cannot insert an extract before this instruction, so this
           // synonym is no good.
           //
-          // TODO(afd): In the case of an OpPhi, we could consider inserting the
-          //  extract instruction into the relevant parent block of the OpPhi.
-          continue;
-        }
+          // In the case of an OpPhi, we insert the extract instruction at the
+          // end of the relevant parent block.
+          if (use_inst->opcode() == SpvOpPhi) {
+            auto parentBlockId =
+                use_inst->GetSingleWordInOperand(use_in_operand_index + 1);
+            auto parentBlockInstruction =
+                GetIRContext()->get_def_use_mgr()->GetDef(parentBlockId);
+            auto parentBlock =
+                GetIRContext()->get_instr_block(parentBlockInstruction);
+            uint32_t compositeExtractId = GetFuzzerContext()->GetFreshId();
 
-        if (!fuzzerutil::IdIsAvailableAtUse(GetIRContext(), use_inst,
-                                            use_in_operand_index,
-                                            synonym_to_try->object())) {
+            ApplyTransformation(TransformationCompositeExtract(
+                MakeInstructionDescriptor(GetIRContext(),
+                                          parentBlock->terminator()),
+                compositeExtractId, synonym_to_try->object(),
+                fuzzerutil::RepeatedFieldToVector(synonym_to_try->index())));
+
+            ApplyTransformation(TransformationReplaceIdWithSynonym(
+                MakeIdUseDescriptorFromUse(GetIRContext(), use_inst,
+                                           use_in_operand_index),
+                compositeExtractId));
+            break;
+          }
+
           continue;
         }
 
