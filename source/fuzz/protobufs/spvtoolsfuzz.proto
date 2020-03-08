@@ -371,6 +371,7 @@ message Transformation {
     TransformationEquationInstruction equation_instruction = 40;
     TransformationSwapCommutableOperands swap_commutable_operands = 41;
     TransformationPermuteFunctionParameters permute_function_parameters = 42;
+    TransformationToggleAccessChainInstruction toggle_access_chain_instruction = 43;
     // Add additional option using the next available number.
   }
 }
@@ -1105,6 +1106,15 @@ message TransformationSwapCommutableOperands {
   // A transformation that swaps the operands of a commutative instruction.
 
   // A descriptor for a commutative instruction
+  InstructionDescriptor instruction_descriptor = 1;
+
+}
+
+message TransformationToggleAccessChainInstruction {
+
+  // A transformation that toggles an access chain instruction.
+
+  // A descriptor for an access chain instruction
   InstructionDescriptor instruction_descriptor = 1;
 
 }
