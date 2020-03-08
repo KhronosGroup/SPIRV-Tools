@@ -113,8 +113,8 @@ class FuzzerPass {
   uint32_t FindOrCreate32BitFloatType();
 
   // Returns the id of an OpTypeFunction %<return_type_id> %<...argument_id>
-  // instruction. If such instruction doesn't exist, transformation
-  // is applied to create a new one
+  // instruction. If such an instruction doesn't exist, a transformation
+  // is applied to create a new one.
   uint32_t FindOrCreateFunctionType(uint32_t return_type_id,
                                     const std::vector<uint32_t>& argument_id);
 

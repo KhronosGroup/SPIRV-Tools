@@ -70,11 +70,10 @@ void FuzzerPassPermuteFunctionParameters::Apply() {
       argument_ids.push_back(function_type->GetSingleWordInOperand(index + 1));
     }
 
-    auto type_id = FindOrCreateFunctionType(result_type_id, argument_ids);
-
     // Apply our transformation
     ApplyTransformation(TransformationPermuteFunctionParameters(
-        function_id, type_id, permutation));
+        function_id, FindOrCreateFunctionType(result_type_id, argument_ids),
+        permutation));
   }
 }
 

@@ -126,10 +126,11 @@ void TransformationPermuteFunctionParameters::Apply(
 
   // Collect ids and types from OpFunctionParameter instructions
   std::vector<uint32_t> param_id, param_type;
-  function->ForEachParam([&](const opt::Instruction* param) {
-    param_id.push_back(param->result_id());
-    param_type.push_back(param->type_id());
-  });
+  function->ForEachParam(
+      [&param_id, &param_type](const opt::Instruction* param) {
+        param_id.push_back(param->result_id());
+        param_type.push_back(param->type_id());
+      });
 
   // Permute parameters' ids and types
   std::vector<uint32_t> permuted_param_id, permuted_param_type;
@@ -140,11 +141,12 @@ void TransformationPermuteFunctionParameters::Apply(
 
   // Set OpFunctionParameter instructions to point to new parameters
   size_t i = 0;
-  function->ForEachParam([&](opt::Instruction* param) {
-    param->SetResultType(permuted_param_type[i]);
-    param->SetResultId(permuted_param_id[i]);
-    ++i;
-  });
+  function->ForEachParam(
+      [&i, &permuted_param_id, &permuted_param_type](opt::Instruction* param) {
+        param->SetResultType(permuted_param_type[i]);
+        param->SetResultId(permuted_param_id[i]);
+        ++i;
+      });
 
   // Fix all OpFunctionCall instructions
   context->get_def_use_mgr()->ForEachUser(
@@ -156,7 +158,7 @@ void TransformationPermuteFunctionParameters::Apply(
         }
 
         opt::Instruction::OperandList call_operands = {
-            call->GetInOperand(0) // Function id
+            call->GetInOperand(0)  // Function id
         };
 
         for (auto index : permutation) {
@@ -166,6 +168,9 @@ void TransformationPermuteFunctionParameters::Apply(
 
         call->SetInOperands(std::move(call_operands));
       });
+
+  // Make sure our changes are analyzed
+  context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationPermuteFunctionParameters::ToMessage()

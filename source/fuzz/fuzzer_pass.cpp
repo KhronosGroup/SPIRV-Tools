@@ -183,7 +183,8 @@ uint32_t FuzzerPass::FindOrCreate32BitFloatType() {
 
 uint32_t FuzzerPass::FindOrCreateFunctionType(
     uint32_t return_type_id, const std::vector<uint32_t>& argument_id) {
-  // Unfortunately, FindFunctionType requires us to use additional memory
+  // FindFunctionType has a sigle argument for OpTypeFunction operands
+  // so we will have to copy them all in this vector
   std::vector<uint32_t> type_ids(argument_id.size() + 1);
   type_ids[0] = return_type_id;
   std::copy(argument_id.begin(), argument_id.end(), type_ids.begin() + 1);
