@@ -62,8 +62,8 @@ void FuzzerPassAddFunctionCalls::Apply() {
         std::vector<opt::Function*> candidate_functions;
         for (auto& other_function : *GetIRContext()->module()) {
           if (&other_function != function &&
-              !TransformationFunctionCall::FunctionIsEntryPoint(
-                  GetIRContext(), other_function.result_id())) {
+              !fuzzerutil::FunctionIsEntryPoint(GetIRContext(),
+                                                other_function.result_id())) {
             candidate_functions.push_back(&other_function);
           }
         }
