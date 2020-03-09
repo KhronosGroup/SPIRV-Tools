@@ -81,9 +81,8 @@ void FuzzerPassApplyIdSynonyms::Apply() {
         synonyms_to_try.push_back(data_descriptor);
       }
       while (!synonyms_to_try.empty()) {
-        auto synonym_index = GetFuzzerContext()->RandomIndex(synonyms_to_try);
-        auto synonym_to_try = synonyms_to_try[synonym_index];
-        synonyms_to_try.erase(synonyms_to_try.begin() + synonym_index);
+        auto synonym_to_try =
+            GetFuzzerContext()->RemoveAtRandomIndex(&synonyms_to_try);
 
         // If the synonym's |index_size| is zero, the synonym represents an id.
         // Otherwise it represents some element of a composite structure, in
@@ -91,12 +90,10 @@ void FuzzerPassApplyIdSynonyms::Apply() {
         // that element out.
         if (synonym_to_try->index_size() > 0 &&
             !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCompositeExtract,
-                                                          use_inst)) {
+                                                          use_inst) &&
+            use_inst->opcode() != SpvOpPhi) {
           // We cannot insert an extract before this instruction, so this
           // synonym is no good.
-          //
-          // TODO(afd): In the case of an OpPhi, we could consider inserting the
-          //  extract instruction into the relevant parent block of the OpPhi.
           continue;
         }
 
@@ -115,8 +112,26 @@ void FuzzerPassApplyIdSynonyms::Apply() {
           id_with_which_to_replace_use = synonym_to_try->object();
         } else {
           id_with_which_to_replace_use = GetFuzzerContext()->GetFreshId();
+          opt::Instruction* instruction_to_insert_before = nullptr;
+
+          if (use_inst->opcode() != SpvOpPhi) {
+            instruction_to_insert_before = use_inst;
+          } else {
+            auto parent_block_id =
+                use_inst->GetSingleWordInOperand(use_in_operand_index + 1);
+            auto parent_block_instruction =
+                GetIRContext()->get_def_use_mgr()->GetDef(parent_block_id);
+            auto parent_block =
+                GetIRContext()->get_instr_block(parent_block_instruction);
+
+            instruction_to_insert_before = parent_block->GetMergeInst()
+                                               ? parent_block->GetMergeInst()
+                                               : parent_block->terminator();
+          }
+
           ApplyTransformation(TransformationCompositeExtract(
-              MakeInstructionDescriptor(GetIRContext(), use_inst),
+              MakeInstructionDescriptor(GetIRContext(),
+                                        instruction_to_insert_before),
               id_with_which_to_replace_use, synonym_to_try->object(),
               fuzzerutil::RepeatedFieldToVector(synonym_to_try->index())));
         }
