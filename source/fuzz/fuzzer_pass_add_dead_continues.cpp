@@ -32,13 +32,13 @@ void FuzzerPassAddDeadContinues::Apply() {
   // Consider every block in every function.
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
-      auto block_id = block.GetLabelInst()->result_id();
       // Get the label id of the continue target
       // of the innermost loop.
-      auto continue_block_id = block.IsLoopHeader()
-                         ? block.ContinueBlockId()
-                         : GetIRContext()->GetStructuredCFGAnalysis()->LoopContinueBlock(
-                               block_id);
+      auto continue_block_id =
+          block.IsLoopHeader()
+              ? block.ContinueBlockId()
+              : GetIRContext()->GetStructuredCFGAnalysis()->LoopContinueBlock(
+                    block.id());
 
       // This transformation is not applicable
       // if current block is not inside a loop.
@@ -56,14 +56,13 @@ void FuzzerPassAddDeadContinues::Apply() {
       // Check whether current block has an edge to the continue target.
       // If this is the case, we don't need to do anything.
       if (!block.IsSuccessor(continue_block)) {
-        continue_block->ForEachPhiInst(
-          [this, &phi_ids](opt::Instruction* phi) {
-            // Add an additional operand for OpPhi instruction.
-            // TODO: this will create a constant regardless of whether
-            // current transformation will be applied or not.
-            // Perhaps there is a better approach.
-            phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id()));
-          });
+        continue_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {
+          // Add an additional operand for OpPhi instruction.
+          // TODO: this will create a constant regardless of whether
+          // current transformation will be applied or not.
+          // Perhaps there is a better approach.
+          phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id()));
+        });
       }
 
       // Make a transformation to add a dead continue from this node; if the
@@ -71,7 +70,9 @@ void FuzzerPassAddDeadContinues::Apply() {
       // precondition for the transformation will fail and it will be ignored.
       //
       // TODO: right now we are relying on IsApplicable method to do
-      // all the necessary checks for us. Perhaps there is a better approach.
+      // all the necessary checks for us. Perhaps it would be better to
+      // provide this funcionality here (e.g. IsApplicable checks whether
+      // there is an appropriate bool constant and bails out if there is none).
       auto candidate_transformation = TransformationAddDeadContinue(
           block.id(), GetFuzzerContext()->ChooseEven(), std::move(phi_ids));
       // Probabilistically decide whether to apply the transformation in the

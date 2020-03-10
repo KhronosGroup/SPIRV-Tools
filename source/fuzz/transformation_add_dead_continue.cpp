@@ -58,8 +58,10 @@ bool TransformationAddDeadContinue::IsApplicable(
     return false;
   }
 
+  // NOTE: this check seems needless. (We are checking for nullptr above).
   assert(bb_from != nullptr &&
          "We should have found a block if this line of code is reached.");
+  // NOTE: this check seems needless.
   assert(
       bb_from->id() == message_.from_block() &&
       "The id of the block we found should match the source id for the break.");
@@ -101,8 +103,9 @@ bool TransformationAddDeadContinue::IsApplicable(
 
   // Check whether the data passed to extend OpPhi instructions is appropriate.
   assert(fuzzerutil::PhiIdsOkForNewEdge(context, bb_from,
-      context->cfg()->block(continue_block), message_.phi_id()) &&
-      "Provided ids for OpPhi are invalid");
+                                        context->cfg()->block(continue_block),
+                                        message_.phi_id()) &&
+         "Provided ids for OpPhi instruction are invalid");
 
   // Adding the dead break is only valid if SPIR-V rules related to dominance
   // hold.  Rather than checking these rules explicitly, we defer to the

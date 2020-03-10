@@ -1940,28 +1940,35 @@ TEST(TransformationAddDeadBreakTest, PhiInstructions) {
   // Some inapplicable transformations
   // Not applicable because there is already an edge 19->20, so the OpPhis at 20
   // do not need to be updated
-  ASSERT_FALSE(TransformationAddDeadBreak(19, 20, true, {13, 21})
-                   .IsApplicable(context.get(), fact_manager));
+  EXPECT_DEATH(TransformationAddDeadBreak(19, 20, true, {13, 21})
+                   .IsApplicable(context.get(), fact_manager),
+               "");
   // Not applicable because two OpPhis (not zero) need to be updated at 20
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {})
-                   .IsApplicable(context.get(), fact_manager));
+  EXPECT_DEATH(TransformationAddDeadBreak(23, 20, true, {})
+                   .IsApplicable(context.get(), fact_manager),
+               "");
   // Not applicable because two OpPhis (not just one) need to be updated at 20
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {13})
-                   .IsApplicable(context.get(), fact_manager));
+  EXPECT_DEATH(TransformationAddDeadBreak(23, 20, true, {13})
+                   .IsApplicable(context.get(), fact_manager),
+               "");
   // Not applicable because the given ids do not have types that match the
   // OpPhis at 20, in order
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {21, 13})
-                   .IsApplicable(context.get(), fact_manager));
+  EXPECT_DEATH(TransformationAddDeadBreak(23, 20, true, {21, 13})
+                   .IsApplicable(context.get(), fact_manager),
+               "");
   // Not applicable because id 23 is a label
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {21, 23})
-                   .IsApplicable(context.get(), fact_manager));
+  EXPECT_DEATH(TransformationAddDeadBreak(23, 20, true, {21, 23})
+                   .IsApplicable(context.get(), fact_manager),
+               "");
   // Not applicable because 101 is not an id
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {21, 101})
-                   .IsApplicable(context.get(), fact_manager));
+  EXPECT_DEATH(TransformationAddDeadBreak(23, 20, true, {21, 101})
+                   .IsApplicable(context.get(), fact_manager),
+               "");
   // Not applicable because ids 51 and 47 are not available at the end of block
   // 23
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {51, 47})
-                   .IsApplicable(context.get(), fact_manager));
+  EXPECT_DEATH(TransformationAddDeadBreak(23, 20, true, {51, 47})
+                   .IsApplicable(context.get(), fact_manager),
+               "");
 
   // Not applicable because OpConstantFalse is not present in the module
   ASSERT_FALSE(TransformationAddDeadBreak(19, 20, false, {})
