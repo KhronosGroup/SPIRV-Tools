@@ -100,11 +100,9 @@ bool TransformationAddDeadContinue::IsApplicable(
   }
 
   // Check whether the data passed to extend OpPhi instructions is appropriate.
-  if (!fuzzerutil::PhiIdsOkForNewEdge(context, bb_from,
-                                      context->cfg()->block(continue_block),
-                                      message_.phi_id())) {
-    return false;
-  }
+  assert(fuzzerutil::PhiIdsOkForNewEdge(context, bb_from,
+      context->cfg()->block(continue_block), message_.phi_id()) &&
+      "Provided ids for OpPhi are invalid");
 
   // Adding the dead break is only valid if SPIR-V rules related to dominance
   // hold.  Rather than checking these rules explicitly, we defer to the
@@ -112,7 +110,7 @@ bool TransformationAddDeadContinue::IsApplicable(
   // clone, and check whether the transformed clone is valid.
   //
   // In principle some of the above checks could be removed, with more reliance
-  // being places on the validator.  This should be revisited if we are sure
+  // being placed on the validator.  This should be revisited if we are sure
   // the validator is complete with respect to checking structured control flow
   // rules.
   auto cloned_context = fuzzerutil::CloneIRContext(context);
