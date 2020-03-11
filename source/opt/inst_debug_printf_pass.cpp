@@ -75,7 +75,7 @@ void InstDebugPrintfPass::GenOutputValues(Instruction* val_inst,
         default:
           assert(false && "unsupported float width");
           return;
-	  }
+      }
     }
     case analysis::Type::kInteger: {
       analysis::Integer* i_ty = val_ty->AsInteger();
@@ -127,7 +127,7 @@ void InstDebugPrintfPass::GenOutputValues(Instruction* val_inst,
           // TODO(greg-lunarg): Support non-32-bit int
           assert(false && "unsupported int width");
           return;
-	  }
+      }
     }
     default:
       assert(false && "unsupported type");
