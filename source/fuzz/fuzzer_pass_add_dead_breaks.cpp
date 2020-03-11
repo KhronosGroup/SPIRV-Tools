@@ -55,7 +55,7 @@ void FuzzerPassAddDeadBreaks::Apply() {
       for (auto* merge_block : merge_blocks) {
         std::vector<uint32_t> phi_ids;
 
-        // Determine how we need to adjust OpPhi instruction operands
+        // Determine how we need to adjust OpPhi instructions' operands
         // for this transformation to be valid.
         if (!block.IsSuccessor(merge_block)) {
           merge_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {

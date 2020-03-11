@@ -51,7 +51,7 @@ void FuzzerPassAddDeadContinues::Apply() {
       assert(continue_block && "Continue block is null");
 
       // Analyze return type of each OpPhi instruction in the continue target
-      // and provide an id for transformation if needed.
+      // and provide an id for the transformation if needed.
       std::vector<uint32_t> phi_ids;
       // Check whether current block has an edge to the continue target.
       // If this is the case, we don't need to do anything.
