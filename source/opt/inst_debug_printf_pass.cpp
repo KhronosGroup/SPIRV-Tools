@@ -1,6 +1,6 @@
-// Copyright (c) 2018 The Khronos Group Inc.
-// Copyright (c) 2018 Valve Corporation
-// Copyright (c) 2018 LunarG Inc.
+// Copyright (c) 2020 The Khronos Group Inc.
+// Copyright (c) 2020 Valve Corporation
+// Copyright (c) 2020 LunarG Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,103 +27,112 @@ void InstDebugPrintfPass::GenOutputValues(Instruction* val_inst,
   uint32_t val_ty_id = val_inst->type_id();
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::Type* val_ty = type_mgr->GetType(val_ty_id);
-  analysis::Vector* v_ty = val_ty->AsVector();
-  if (v_ty != nullptr) {
-    const analysis::Type* c_ty = v_ty->element_type();
-    uint32_t c_ty_id = type_mgr->GetId(c_ty);
-    for (uint32_t c = 0; c < v_ty->element_count(); ++c) {
-      Instruction* c_inst = builder->AddIdLiteralOp(
-          c_ty_id, SpvOpCompositeExtract, val_inst->result_id(), c);
-      GenOutputValues(c_inst, val_ids, builder);
-    }
-    return;
-  }
-  analysis::Bool* b_ty = val_ty->AsBool();
-  if (b_ty != nullptr) {
-    // Select between uint32 zero or one
-    uint32_t zero_id = builder->GetUintConstantId(0);
-    uint32_t one_id = builder->GetUintConstantId(1);
-    Instruction* sel_inst = builder->AddTernaryOp(
-        GetUintId(), SpvOpSelect, val_inst->result_id(), one_id, zero_id);
-    val_ids->push_back(sel_inst->result_id());
-    return;
-  }
-  analysis::Float* f_ty = val_ty->AsFloat();
-  if (f_ty != nullptr) {
-    if (f_ty->width() == 16) {
-      // Convert float16 to float32 and recurse
-      Instruction* f32_inst = builder->AddUnaryOp(GetFloatId(), SpvOpFConvert,
-                                                  val_inst->result_id());
-      GenOutputValues(f32_inst, val_ids, builder);
+  switch (val_ty->kind()) {
+    case analysis::Type::kVector: {
+      analysis::Vector* v_ty = val_ty->AsVector();
+      const analysis::Type* c_ty = v_ty->element_type();
+      uint32_t c_ty_id = type_mgr->GetId(c_ty);
+      for (uint32_t c = 0; c < v_ty->element_count(); ++c) {
+        Instruction* c_inst = builder->AddIdLiteralOp(
+            c_ty_id, SpvOpCompositeExtract, val_inst->result_id(), c);
+        GenOutputValues(c_inst, val_ids, builder);
+      }
       return;
     }
-    if (f_ty->width() == 64) {
-      // Bitcast float64 to uint64 and recurse
-      Instruction* ui64_inst = builder->AddUnaryOp(GetUint64Id(), SpvOpBitcast,
-                                                   val_inst->result_id());
-      GenOutputValues(ui64_inst, val_ids, builder);
+    case analysis::Type::kBool: {
+      // Select between uint32 zero or one
+      uint32_t zero_id = builder->GetUintConstantId(0);
+      uint32_t one_id = builder->GetUintConstantId(1);
+      Instruction* sel_inst = builder->AddTernaryOp(
+          GetUintId(), SpvOpSelect, val_inst->result_id(), one_id, zero_id);
+      val_ids->push_back(sel_inst->result_id());
       return;
     }
-    if (f_ty->width() != 32) {
-      assert(false && "unsupported float width");
+    case analysis::Type::kFloat: {
+      analysis::Float* f_ty = val_ty->AsFloat();
+      switch (f_ty->width()) {
+        case 16: {
+          // Convert float16 to float32 and recurse
+          Instruction* f32_inst = builder->AddUnaryOp(
+              GetFloatId(), SpvOpFConvert, val_inst->result_id());
+          GenOutputValues(f32_inst, val_ids, builder);
+          return;
+        }
+        case 64: {
+          // Bitcast float64 to uint64 and recurse
+          Instruction* ui64_inst = builder->AddUnaryOp(
+              GetUint64Id(), SpvOpBitcast, val_inst->result_id());
+          GenOutputValues(ui64_inst, val_ids, builder);
+          return;
+        }
+        case 32: {
+          // Bitcase float32 to uint32
+          Instruction* bc_inst = builder->AddUnaryOp(GetUintId(), SpvOpBitcast,
+                                                     val_inst->result_id());
+          val_ids->push_back(bc_inst->result_id());
+          return;
+        }
+        default:
+          assert(false && "unsupported float width");
+          return;
+	  }
+    }
+    case analysis::Type::kInteger: {
+      analysis::Integer* i_ty = val_ty->AsInteger();
+      switch (i_ty->width()) {
+        case 64: {
+          Instruction* ui64_inst = val_inst;
+          if (i_ty->IsSigned()) {
+            // Bitcast sint64 to uint64
+            ui64_inst = builder->AddUnaryOp(GetUint64Id(), SpvOpBitcast,
+                                            val_inst->result_id());
+          }
+          // Break uint64 into 2x uint32
+          Instruction* lo_ui64_inst = builder->AddUnaryOp(
+              GetUintId(), SpvOpUConvert, ui64_inst->result_id());
+          Instruction* rshift_ui64_inst = builder->AddBinaryOp(
+              GetUint64Id(), SpvOpShiftRightLogical, ui64_inst->result_id(),
+              builder->GetUintConstantId(32));
+          Instruction* hi_ui64_inst = builder->AddUnaryOp(
+              GetUintId(), SpvOpUConvert, rshift_ui64_inst->result_id());
+          val_ids->push_back(lo_ui64_inst->result_id());
+          val_ids->push_back(hi_ui64_inst->result_id());
+          return;
+        }
+        case 8: {
+          Instruction* ui8_inst = val_inst;
+          if (i_ty->IsSigned()) {
+            // Bitcast sint8 to uint8
+            ui8_inst = builder->AddUnaryOp(GetUint8Id(), SpvOpBitcast,
+                                           val_inst->result_id());
+          }
+          // Convert uint8 to uint32
+          Instruction* ui32_inst = builder->AddUnaryOp(
+              GetUintId(), SpvOpUConvert, ui8_inst->result_id());
+          val_ids->push_back(ui32_inst->result_id());
+          return;
+        }
+        case 32: {
+          Instruction* ui32_inst = val_inst;
+          if (i_ty->IsSigned()) {
+            // Bitcast sint32 to uint32
+            ui32_inst = builder->AddUnaryOp(GetUintId(), SpvOpBitcast,
+                                            val_inst->result_id());
+          }
+          // uint32 needs no further processing
+          val_ids->push_back(ui32_inst->result_id());
+          return;
+        }
+        default:
+          // TODO(greg-lunarg): Support non-32-bit int
+          assert(false && "unsupported int width");
+          return;
+	  }
+    }
+    default:
+      assert(false && "unsupported type");
       return;
-    }
-    // Bitcase float32 to uint32
-    Instruction* bc_inst =
-        builder->AddUnaryOp(GetUintId(), SpvOpBitcast, val_inst->result_id());
-    val_ids->push_back(bc_inst->result_id());
-    return;
   }
-  analysis::Integer* i_ty = val_ty->AsInteger();
-  if (i_ty == nullptr) {
-    assert(false && "unsupported type");
-    return;
-  }
-  if (i_ty->width() == 64) {
-    Instruction* ui64_inst = val_inst;
-    if (i_ty->IsSigned()) {
-      // Bitcast sint64 to uint64
-      ui64_inst = builder->AddUnaryOp(GetUint64Id(), SpvOpBitcast,
-                                      val_inst->result_id());
-    }
-    // Break uint64 into 2x uint32
-    Instruction* lo_ui64_inst =
-        builder->AddUnaryOp(GetUintId(), SpvOpUConvert, ui64_inst->result_id());
-    Instruction* rshift_ui64_inst = builder->AddBinaryOp(
-        GetUint64Id(), SpvOpShiftRightLogical, ui64_inst->result_id(),
-        builder->GetUintConstantId(32));
-    Instruction* hi_ui64_inst = builder->AddUnaryOp(
-        GetUintId(), SpvOpUConvert, rshift_ui64_inst->result_id());
-    val_ids->push_back(lo_ui64_inst->result_id());
-    val_ids->push_back(hi_ui64_inst->result_id());
-    return;
-  }
-  if (i_ty->width() == 8) {
-    Instruction* ui8_inst = val_inst;
-    if (i_ty->IsSigned()) {
-      // Bitcast sint8 to uint8
-      ui8_inst = builder->AddUnaryOp(GetUint8Id(), SpvOpBitcast,
-                                     val_inst->result_id());
-    }
-    // Convert uint8 to uint32
-    Instruction* ui32_inst =
-        builder->AddUnaryOp(GetUintId(), SpvOpUConvert, ui8_inst->result_id());
-    val_ids->push_back(ui32_inst->result_id());
-    return;
-  }
-  if (i_ty->width() != 32) {
-    // TODO(greg-lunarg): Support non-32-bit int
-    assert(false && "unsupported int width");
-    return;
-  }
-  Instruction* ui32_inst = val_inst;
-  if (i_ty->IsSigned()) {
-    // Bitcast sint32 to uint32
-    ui32_inst =
-        builder->AddUnaryOp(GetUintId(), SpvOpBitcast, val_inst->result_id());
-  }
-  // uint32 needs no further processing
-  val_ids->push_back(ui32_inst->result_id());
 }
 
 void InstDebugPrintfPass::GenOutputCode(
@@ -139,12 +148,12 @@ void InstDebugPrintfPass::GenOutputCode(
   // and uint64 will need to be converted to two uint32 values. float32 will
   // need to be bitcast to uint32. int32 will need to be bitcast to uint32.
   std::vector<uint32_t> val_ids;
-  bool set_seen = false;
+  bool is_first_operand = false;
   printf_inst->ForEachInId(
-      [&set_seen, &val_ids, &builder, this](const uint32_t* iid) {
+      [&is_first_operand, &val_ids, &builder, this](const uint32_t* iid) {
         // skip set operand
-        if (!set_seen) {
-          set_seen = true;
+        if (!is_first_operand) {
+          is_first_operand = true;
           return;
         }
         Instruction* opnd_inst = get_def_use_mgr()->GetDef(*iid);
@@ -167,7 +176,7 @@ void InstDebugPrintfPass::GenDebugPrintfCode(
   // If not DebugPrintf OpExtInst, return.
   Instruction* printf_inst = &*ref_inst_itr;
   if (printf_inst->opcode() != SpvOpExtInst) return;
-  if (printf_inst->GetSingleWordInOperand(0) != ext_inst_import_id_) return;
+  if (printf_inst->GetSingleWordInOperand(0) != ext_inst_printf_id_) return;
   if (printf_inst->GetSingleWordInOperand(1) !=
       NonSemanticDebugPrintfDebugPrintf)
     return;
@@ -215,7 +224,7 @@ Pass::Status InstDebugPrintfPass::ProcessImpl() {
   (void)InstProcessEntryPointCallTree(pfn);
   // Remove DebugPrintf OpExtInstImport instruction
   Instruction* ext_inst_import_inst =
-      get_def_use_mgr()->GetDef(ext_inst_import_id_);
+      get_def_use_mgr()->GetDef(ext_inst_printf_id_);
   context()->KillInst(ext_inst_import_inst);
   // If no remaining non-semantic instruction sets, remove non-semantic debug
   // info extension from module and feature manager
@@ -246,9 +255,9 @@ Pass::Status InstDebugPrintfPass::ProcessImpl() {
 }
 
 Pass::Status InstDebugPrintfPass::Process() {
-  ext_inst_import_id_ =
+  ext_inst_printf_id_ =
       get_module()->GetExtInstImportId("NonSemantic.DebugPrintf");
-  if (ext_inst_import_id_ == 0) return Status::SuccessWithoutChange;
+  if (ext_inst_printf_id_ == 0) return Status::SuccessWithoutChange;
   InitializeInstDebugPrintf();
   return ProcessImpl();
 }

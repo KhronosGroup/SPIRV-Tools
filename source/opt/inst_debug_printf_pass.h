@@ -1,6 +1,6 @@
-// Copyright (c) 2018 The Khronos Group Inc.
-// Copyright (c) 2018 Valve Corporation
-// Copyright (c) 2018 LunarG Inc.
+// Copyright (c) 2020 The Khronos Group Inc.
+// Copyright (c) 2020 Valve Corporation
+// Copyright (c) 2020 LunarG Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,9 +22,8 @@
 namespace spvtools {
 namespace opt {
 
-// This class/pass is designed to support the bindless (descriptor indexing)
-// GPU-assisted validation layer of
-// https://github.com/KhronosGroup/Vulkan-ValidationLayers. Its internal and
+// This class/pass is designed to support the debug printf GPU-assisted layer
+// of https://github.com/KhronosGroup/Vulkan-ValidationLayers. Its internal and
 // external design may change as the layer evolves.
 class InstDebugPrintfPass : public InstrumentPass {
  public:
@@ -88,7 +87,7 @@ class InstDebugPrintfPass : public InstrumentPass {
   // Apply GenDebugPrintfCode to every instruction in module.
   Pass::Status ProcessImpl();
 
-  uint32_t ext_inst_import_id_;
+  uint32_t ext_inst_printf_id_;
 };
 
 }  // namespace opt
