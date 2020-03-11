@@ -126,8 +126,8 @@ class Module {
                                         std::unique_ptr<Instruction> di);
 
   // Sets |contains_debug_scope_| as true.
-  inline void SetContainDebugScope();
-  inline bool ContainDebugScope() { return contains_debug_scope_; }
+  inline void SetContainsDebugScope();
+  inline bool ContainsDebugScope() { return contains_debug_scope_; }
 
   // Returns a vector of pointers to type-declaration instructions in this
   // module.
@@ -379,7 +379,7 @@ inline void Module::AddDebugLocalVariableInfo(uint32_t id,
   local_var_info_[id] = std::move(di);
 }
 
-inline void Module::SetContainDebugScope() { contains_debug_scope_ = true; }
+inline void Module::SetContainsDebugScope() { contains_debug_scope_ = true; }
 
 inline Module::inst_iterator Module::capability_begin() {
   return capabilities_.begin();

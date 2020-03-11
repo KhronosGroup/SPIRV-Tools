@@ -130,9 +130,6 @@ Instruction& Instruction::operator=(Instruction&& that) {
   operands_ = std::move(that.operands_);
   dbg_line_insts_ = std::move(that.dbg_line_insts_);
   dbg_scope_ = that.dbg_scope_;
-  for (auto& i : dbg_line_insts_) {
-    i.dbg_scope_ = that.dbg_scope_;
-  }
   return *this;
 }
 
@@ -145,9 +142,6 @@ Instruction* Instruction::Clone(IRContext* c) const {
   clone->operands_ = operands_;
   clone->dbg_line_insts_ = dbg_line_insts_;
   clone->dbg_scope_ = dbg_scope_;
-  for (auto& i : clone->dbg_line_insts_) {
-    i.dbg_scope_ = dbg_scope_;
-  }
   return clone;
 }
 
@@ -767,6 +761,29 @@ bool Instruction::IsOpcodeSafeToDelete() const {
     default:
       return false;
   }
+}
+
+void DebugScope::ToBinary(uint32_t type_id, uint32_t result_id,
+                          uint32_t ext_set,
+                          std::vector<uint32_t>* binary) const {
+  uint32_t num_words = 7;
+  uint32_t dbg_opcode = 23;
+  if (!lexical_scope_) {
+    num_words = 5;
+    dbg_opcode = 24;
+  } else if (!inlined_at_) {
+    num_words = 6;
+  }
+  std::vector<uint32_t> operands = {
+      (num_words << 16) | static_cast<uint16_t>(SpvOpExtInst),
+      type_id,
+      result_id,
+      ext_set,
+      dbg_opcode,
+  };
+  binary->insert(binary->end(), operands.begin(), operands.end());
+  if (lexical_scope_) binary->push_back(lexical_scope_);
+  if (inlined_at_) binary->push_back(inlined_at_);
 }
 
 }  // namespace opt

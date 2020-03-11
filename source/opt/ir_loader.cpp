@@ -23,7 +23,7 @@
 #include "source/opt/reflect.h"
 #include "source/util/make_unique.h"
 
-static const uint32_t kExtensionInstructionIndex = 4;
+static const uint32_t kExtInstSetIndex = 4;
 static const uint32_t kLocalVariableIdIndex = 6;
 static const uint32_t kLexicalScopeIndex = 5;
 static const uint32_t kInlinedAtIndex = 6;
@@ -51,7 +51,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   // create a new instruction, but simply keep the information in
   // struct DebugScope.
   if (opcode == SpvOpExtInst && spvExtInstIsDebugInfo(inst->ext_inst_type)) {
-    const uint32_t ext_inst_index = inst->words[kExtensionInstructionIndex];
+    const uint32_t ext_inst_index = inst->words[kExtInstSetIndex];
     if (inst->ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
       const OpenCLDebugInfo100Instructions ext_inst_key =
           OpenCLDebugInfo100Instructions(ext_inst_index);
@@ -61,12 +61,12 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
           inlined_at = inst->words[kInlinedAtIndex];
         last_dbg_scope_ =
             DebugScope(inst->words[kLexicalScopeIndex], inlined_at);
-        module()->SetContainDebugScope();
+        module()->SetContainsDebugScope();
         return true;
       }
       if (ext_inst_key == OpenCLDebugInfo100DebugNoScope) {
         last_dbg_scope_ = DebugScope(0, 0);
-        module()->SetContainDebugScope();
+        module()->SetContainsDebugScope();
         return true;
       }
     } else {
@@ -78,12 +78,12 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
           inlined_at = inst->words[kInlinedAtIndex];
         last_dbg_scope_ =
             DebugScope(inst->words[kLexicalScopeIndex], inlined_at);
-        module()->SetContainDebugScope();
+        module()->SetContainsDebugScope();
         return true;
       }
       if (ext_inst_key == DebugInfoDebugNoScope) {
         last_dbg_scope_ = DebugScope(0, 0);
-        module()->SetContainDebugScope();
+        module()->SetContainsDebugScope();
         return true;
       }
     }
@@ -183,11 +183,11 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
     } else {
       if (opcode == SpvOpLoopMerge || opcode == SpvOpSelectionMerge)
         last_dbg_scope_ = DebugScope(0, 0);
-      if (last_dbg_scope_.lexical_scope)
+      if (last_dbg_scope_.GetLexicalScope())
         spv_inst->SetDebugScope(last_dbg_scope_);
       if (opcode == SpvOpExtInst &&
           spvExtInstIsDebugInfo(inst->ext_inst_type)) {
-        const uint32_t ext_inst_index = inst->words[kExtensionInstructionIndex];
+        const uint32_t ext_inst_index = inst->words[kExtInstSetIndex];
         if (inst->ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
           const OpenCLDebugInfo100Instructions ext_inst_key =
               OpenCLDebugInfo100Instructions(ext_inst_index);

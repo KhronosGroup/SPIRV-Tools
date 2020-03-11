@@ -91,19 +91,44 @@ inline bool operator!=(const Operand& o1, const Operand& o2) {
   return !(o1 == o2);
 }
 
-// Source level scope information. When a SPIR-V module contains rich
-// debug information written in OpenCL.100.DebugInfo extension, each
-// instruction in a function is wrapped by DebugScope/DebugNoScope,
-// which denotes a lexical scope and/or inlining information for the
-// scope.
-struct DebugScope {
+// This structure is used to represent a DebugScope instruction from
+// the OpenCL.100.DebugInfo extened instruction set. Since this
+// structure is added to Instruction class as a member variable, we
+// want to reduce the size of structure. Hence, we keep only its Scope
+// and InlinedAt operands but not its result id. Note that losing its
+// result id will result in a different binary even when there is no
+// optimization. We skip the sanity check in Optimizer::Run(..) when
+// the module contains a DebugScope instruction.
+class DebugScope {
+ public:
   DebugScope(uint32_t id0, uint32_t id1)
-      : lexical_scope(id0), inlined_at(id1) {}
+      : lexical_scope_(id0), inlined_at_(id1) {}
+
   inline bool operator!=(const DebugScope& d) const {
-    return lexical_scope != d.lexical_scope || inlined_at != d.inlined_at;
+    return lexical_scope_ != d.lexical_scope_ || inlined_at_ != d.inlined_at_;
   }
-  uint32_t lexical_scope;  // result id of debug instruction for lexical scope
-  uint32_t inlined_at;     // result id of DebugInlinedAt
+
+  // Accessor functions for |lexical_scope_|.
+  uint32_t GetLexicalScope() const { return lexical_scope_; }
+  void SetLexicalScope(uint32_t scope) { lexical_scope_ = scope; }
+
+  // Accessor functions for |inlined_at_|.
+  uint32_t GetInlinedAt() const { return inlined_at_; }
+  void SetInlinedAt(uint32_t at) { inlined_at_ = at; }
+
+  // Pushes the binary segments for this DebugScope instruction into
+  // the back of *|binary|.
+  void ToBinary(uint32_t type_id, uint32_t result_id, uint32_t ext_set,
+                std::vector<uint32_t>* binary) const;
+
+ private:
+  // The result id of the lexical scope in which this debug scope is
+  // contained. The value is |0| if there is no scope.
+  uint32_t lexical_scope_;
+
+  // The result id of DebugInlinedAt if instruction in this debug scope
+  // is inlined. The value is |0| if it is not inlined.
+  uint32_t inlined_at_;
 };
 
 // A SPIR-V instruction. It contains the opcode and any additional logical
@@ -495,9 +520,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // empty.
   std::vector<Instruction> dbg_line_insts_;
 
-  // Debug scope information. If this Instruction is included in a scope,
-  // |dbg_scope_| must have non-zero |lexical_scope|. Otherwise,
-  // |dbg_scope_.lexical_scope| must be 0.
+  // DebugScope that wraps this instruction.
   DebugScope dbg_scope_;
 
   friend InstructionList;
