@@ -1,5 +1,5 @@
-// Copyright (c) 2017 Valve Corporation
-// Copyright (c) 2017 LunarG Inc.
+// Copyright (c) 2020 Valve Corporation
+// Copyright (c) 2020 LunarG Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,30 +99,16 @@ OpDecorate %4 Location 0
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %4 = OpVariable %_ptr_Output_v4float Output
 ; CHECK: %uint = OpTypeInt 32 0
-; CHECK: %uint_5 = OpConstant %uint 5
 ; CHECK: %38 = OpTypeFunction %void %uint %uint %uint %uint %uint %uint
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
 ; CHECK: %_struct_47 = OpTypeStruct %uint %_runtimearr_uint
 ; CHECK: %_ptr_StorageBuffer__struct_47 = OpTypePointer StorageBuffer %_struct_47
 ; CHECK: %49 = OpVariable %_ptr_StorageBuffer__struct_47 StorageBuffer
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
-; CHECK: %uint_0 = OpConstant %uint 0
-; CHECK: %uint_12 = OpConstant %uint 12
-; CHECK: %uint_4 = OpConstant %uint 4
 ; CHECK: %bool = OpTypeBool
-; CHECK: %uint_1 = OpConstant %uint 1
-; CHECK: %uint_23 = OpConstant %uint 23
-; CHECK: %uint_2 = OpConstant %uint 2
-; CHECK: %uint_3 = OpConstant %uint 3
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 ; CHECK: %v4uint = OpTypeVector %uint 4
-; CHECK: %uint_7 = OpConstant %uint 7
-; CHECK: %uint_8 = OpConstant %uint 8
-; CHECK: %uint_9 = OpConstant %uint 9
-; CHECK: %uint_10 = OpConstant %uint 10
-; CHECK: %uint_11 = OpConstant %uint 11
-; CHECK: %uint_36 = OpConstant %uint 36
 )";
 
   const std::string main =
