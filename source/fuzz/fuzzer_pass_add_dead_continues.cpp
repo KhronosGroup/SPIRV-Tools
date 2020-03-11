@@ -58,9 +58,6 @@ void FuzzerPassAddDeadContinues::Apply() {
       if (!block.IsSuccessor(continue_block)) {
         continue_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {
           // Add an additional operand for OpPhi instruction.
-          // TODO: this will create a constant regardless of whether
-          // current transformation will be applied or not.
-          // Perhaps there is a better approach.
           phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id()));
         });
       }
@@ -68,11 +65,6 @@ void FuzzerPassAddDeadContinues::Apply() {
       // Make a transformation to add a dead continue from this node; if the
       // node turns out to be inappropriate (e.g. by not being in a loop) the
       // precondition for the transformation will fail and it will be ignored.
-      //
-      // TODO: right now we are relying on IsApplicable method to do
-      // all the necessary checks for us. Perhaps it would be better to
-      // provide this funcionality here (e.g. IsApplicable checks whether
-      // there is an appropriate bool constant and bails out if there is none).
       auto candidate_transformation = TransformationAddDeadContinue(
           block.id(), GetFuzzerContext()->ChooseEven(), std::move(phi_ids));
       // Probabilistically decide whether to apply the transformation in the

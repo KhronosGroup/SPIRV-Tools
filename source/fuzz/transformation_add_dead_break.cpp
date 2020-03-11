@@ -145,18 +145,6 @@ bool TransformationAddDeadBreak::IsApplicable(
     return false;
   }
 
-  // NOTE: this check seems needless.
-  assert(bb_from != nullptr &&
-         "We should have found a block if this line of code is reached.");
-  assert(
-      bb_from->id() == message_.from_block() &&
-      "The id of the block we found should match the source id for the break.");
-  assert(bb_to != nullptr &&
-         "We should have found a block if this line of code is reached.");
-  assert(
-      bb_to->id() == message_.to_block() &&
-      "The id of the block we found should match the target id for the break.");
-
   // Check whether the data passed to extend OpPhi instructions is appropriate.
   assert(fuzzerutil::PhiIdsOkForNewEdge(context, bb_from, bb_to,
                                         message_.phi_id()) &&

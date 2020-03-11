@@ -58,14 +58,6 @@ bool TransformationAddDeadContinue::IsApplicable(
     return false;
   }
 
-  // NOTE: this check seems needless. (We are checking for nullptr above).
-  assert(bb_from != nullptr &&
-         "We should have found a block if this line of code is reached.");
-  // NOTE: this check seems needless.
-  assert(
-      bb_from->id() == message_.from_block() &&
-      "The id of the block we found should match the source id for the break.");
-
   // Get the header for the innermost loop containing |message_.from_block|.
   // Because the structured CFG analysis does not regard a loop header as part
   // of the loop it heads, we check first whether bb_from is a loop header

@@ -60,9 +60,6 @@ void FuzzerPassAddDeadBreaks::Apply() {
         if (!block.IsSuccessor(merge_block)) {
           merge_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {
             // Add an additional operand for OpPhi instruction.
-            // TODO: this will create a constant regardless of whether
-            // current transformation will be applied or not.
-            // Perhaps there is a better approach.
             phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id()));
           });
         }
