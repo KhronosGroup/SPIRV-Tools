@@ -312,7 +312,7 @@ class Module {
 
   // A map between a result id of a local variable or a value of a local
   // variable and its corresponding DebugDeclare or DebugValue.
-  std::unordered_map<uint32_t, std::unique_ptr<Instruction>> local_var_info_;
+  std::unordered_map<uint32_t, std::unique_ptr<Instruction>> debug_declare_;
 };
 
 // Pretty-prints |module| to |str|. Returns |str|.
@@ -376,7 +376,7 @@ inline void Module::AddFunction(std::unique_ptr<Function> f) {
 
 inline void Module::AddDebugLocalVariableInfo(uint32_t id,
                                               std::unique_ptr<Instruction> di) {
-  local_var_info_[id] = std::move(di);
+  debug_declare_[id] = std::move(di);
 }
 
 inline void Module::SetContainsDebugScope() { contains_debug_scope_ = true; }
