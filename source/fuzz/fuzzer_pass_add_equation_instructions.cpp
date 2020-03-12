@@ -201,9 +201,12 @@ FuzzerPassAddEquationInstructions::RestrictToVectorWidth(
   std::vector<opt::Instruction*> result;
   for (auto& inst : instructions) {
     auto type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
-    if ((vector_width == 1 && !type->AsVector()) ||
-        (vector_width > 1 &&
-         type->AsVector()->element_count() == vector_width)) {
+    // Get the vector width of |inst|, which is 1 if |inst| is a scalar and is
+    // otherwise derived from its vector type.
+    uint32_t other_vector_width =
+        type->AsVector() ? type->AsVector()->element_count() : 1;
+    // Keep |inst| if the vector widths match.
+    if (vector_width == other_vector_width) {
       result.push_back(inst);
     }
   }
