@@ -58,6 +58,12 @@ bool TransformationAddDeadContinue::IsApplicable(
     return false;
   }
 
+  assert(bb_from != nullptr &&
+         "We should have found a block if this line of code is reached.");
+  assert(
+      bb_from->id() == message_.from_block() &&
+      "The id of the block we found should match the source id for the break.");
+
   // Get the header for the innermost loop containing |message_.from_block|.
   // Because the structured CFG analysis does not regard a loop header as part
   // of the loop it heads, we check first whether bb_from is a loop header
@@ -94,10 +100,11 @@ bool TransformationAddDeadContinue::IsApplicable(
   }
 
   // Check whether the data passed to extend OpPhi instructions is appropriate.
-  assert(fuzzerutil::PhiIdsOkForNewEdge(context, bb_from,
-                                        context->cfg()->block(continue_block),
-                                        message_.phi_id()) &&
-         "Provided ids for OpPhi instruction are invalid");
+  if (!fuzzerutil::PhiIdsOkForNewEdge(context, bb_from,
+                                      context->cfg()->block(continue_block),
+                                      message_.phi_id())) {
+    return false;
+  }
 
   // Adding the dead break is only valid if SPIR-V rules related to dominance
   // hold.  Rather than checking these rules explicitly, we defer to the
