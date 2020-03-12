@@ -590,6 +590,8 @@ static_library("spvtools_opt") {
     "source/opt/inst_bindless_check_pass.h",
     "source/opt/inst_buff_addr_check_pass.cpp",
     "source/opt/inst_buff_addr_check_pass.h",
+    "source/opt/inst_debug_printf_pass.cpp",
+    "source/opt/inst_debug_printf_pass.h",
     "source/opt/instruction.cpp",
     "source/opt/instruction.h",
     "source/opt/instruction_list.cpp",
