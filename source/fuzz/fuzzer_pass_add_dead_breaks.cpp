@@ -40,9 +40,8 @@ void FuzzerPassAddDeadBreaks::Apply() {
       if (maybe_merge_id) {
         auto merge_block =
             fuzzerutil::MaybeFindBlock(GetIRContext(), maybe_merge_id);
-        if (merge_block == nullptr) {
-          continue;
-        }
+
+        assert(merge_block && "Merge block can't be null");
 
         merge_blocks.push_back(merge_block);
       }
@@ -53,13 +52,26 @@ void FuzzerPassAddDeadBreaks::Apply() {
     // ones that turn out to be no good.
     for (auto& block : function) {
       for (auto* merge_block : merge_blocks) {
+        // Populate this vector with ids that are available at the branch point
+        // of this basic block. We will use these ids to update OpPhi
+        // instructions later.
         std::vector<uint32_t> phi_ids;
 
         // Determine how we need to adjust OpPhi instructions' operands
         // for this transformation to be valid.
+        //
+        // If |block| has a branch to |merge_block|, the latter must have all of
+        // its OpPhi instructions set up correctly - we don't need to adjust
+        // anything.
         if (!block.IsSuccessor(merge_block)) {
           merge_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {
             // Add an additional operand for OpPhi instruction.
+            //
+            // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+            // If we have a way to communicate to the fact manager
+            // that a specific id use is irrelevant and could be replaced with
+            // something else, we should add such a fact about the zero
+            // provided as an OpPhi operand
             phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id()));
           });
         }

@@ -32,16 +32,15 @@ void FuzzerPassAddDeadContinues::Apply() {
   // Consider every block in every function.
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
-      // Get the label id of the continue target
-      // of the innermost loop.
+      // Get the label id of the continue target of the innermost loop.
       auto continue_block_id =
           block.IsLoopHeader()
               ? block.ContinueBlockId()
               : GetIRContext()->GetStructuredCFGAnalysis()->LoopContinueBlock(
                     block.id());
 
-      // This transformation is not applicable
-      // if current block is not inside a loop.
+      // This transformation is not applicable if current block is not inside a
+      // loop.
       if (continue_block_id == 0) {
         continue;
       }
@@ -58,6 +57,12 @@ void FuzzerPassAddDeadContinues::Apply() {
       if (!block.IsSuccessor(continue_block)) {
         continue_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {
           // Add an additional operand for OpPhi instruction.
+          //
+          // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+          // If we have a way to communicate to the fact manager
+          // that a specific id use is irrelevant and could be replaced with
+          // something else, we should add such a fact about the zero
+          // provided as an OpPhi operand
           phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id()));
         });
       }
