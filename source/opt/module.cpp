@@ -137,6 +137,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.bound);
   binary->push_back(header_.reserved);
 
+  size_t bound_idx = binary->size() - 2;
   DebugScope last_scope(0, 0);
   auto write_inst = [binary, skip_nop, &last_scope,
                      this](const Instruction* i) {
@@ -157,6 +158,9 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
     }
   };
   ForEachInst(write_inst, true);
+
+  // We create new instructions for DebugScope. The bound must be updated.
+  binary->data()[bound_idx] = header_.bound;
 }
 
 uint32_t Module::ComputeIdBound() const {
