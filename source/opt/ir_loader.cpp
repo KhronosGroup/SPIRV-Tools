@@ -24,7 +24,6 @@
 #include "source/util/make_unique.h"
 
 static const uint32_t kExtInstSetIndex = 4;
-static const uint32_t kLocalVariableIdIndex = 6;
 static const uint32_t kLexicalScopeIndex = 5;
 static const uint32_t kInlinedAtIndex = 6;
 
@@ -36,7 +35,7 @@ IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
       module_(m),
       source_("<instruction>"),
       inst_index_(0),
-      last_dbg_scope_(0, 0) {}
+      last_dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
 
 bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   ++inst_index_;
@@ -65,7 +64,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         return true;
       }
       if (ext_inst_key == OpenCLDebugInfo100DebugNoScope) {
-        last_dbg_scope_ = DebugScope(0, 0);
+        last_dbg_scope_ = DebugScope(kNoDebugScope, kNoInlinedAt);
         module()->SetContainsDebugScope();
         return true;
       }
@@ -82,7 +81,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         return true;
       }
       if (ext_inst_key == DebugInfoDebugNoScope) {
-        last_dbg_scope_ = DebugScope(0, 0);
+        last_dbg_scope_ = DebugScope(kNoDebugScope, kNoInlinedAt);
         module()->SetContainsDebugScope();
         return true;
       }
@@ -139,7 +138,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
     block_->AddInstruction(std::move(spv_inst));
     function_->AddBasicBlock(std::move(block_));
     block_ = nullptr;
-    last_dbg_scope_ = DebugScope(0, 0);
+    last_dbg_scope_ = DebugScope(kNoDebugScope, kNoInlinedAt);
   } else {
     if (function_ == nullptr) {  // Outside function definition
       SPIRV_ASSERT(consumer_, block_ == nullptr);
@@ -182,8 +181,8 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       }
     } else {
       if (opcode == SpvOpLoopMerge || opcode == SpvOpSelectionMerge)
-        last_dbg_scope_ = DebugScope(0, 0);
-      if (last_dbg_scope_.GetLexicalScope())
+        last_dbg_scope_ = DebugScope(kNoDebugScope, kNoInlinedAt);
+      if (last_dbg_scope_.GetLexicalScope() != kNoDebugScope)
         spv_inst->SetDebugScope(last_dbg_scope_);
       if (opcode == SpvOpExtInst &&
           spvExtInstIsDebugInfo(inst->ext_inst_type)) {
@@ -193,14 +192,17 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
               OpenCLDebugInfo100Instructions(ext_inst_index);
           switch (ext_inst_key) {
             case OpenCLDebugInfo100DebugDeclare: {
-              const uint32_t local_var_id = inst->words[kLocalVariableIdIndex];
-              module_->AddDebugLocalVariableInfo(local_var_id,
-                                                 std::move(spv_inst));
+              if (block_ == nullptr)  // Inside function but outside blocks
+                function_->AddDebugInstructionInHeader(std::move(spv_inst));
+              else
+                block_->AddInstruction(std::move(spv_inst));
               break;
             }
             case OpenCLDebugInfo100DebugValue: {
-              const uint32_t value_id = inst->words[kLocalVariableIdIndex];
-              module_->AddDebugLocalVariableInfo(value_id, std::move(spv_inst));
+              if (block_ == nullptr)  // Inside function but outside blocks
+                function_->AddDebugInstructionInHeader(std::move(spv_inst));
+              else
+                block_->AddInstruction(std::move(spv_inst));
               break;
             }
             default: {
@@ -217,14 +219,17 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
               DebugInfoInstructions(ext_inst_index);
           switch (ext_inst_key) {
             case DebugInfoDebugDeclare: {
-              const uint32_t local_var_id = inst->words[6];
-              module_->AddDebugLocalVariableInfo(local_var_id,
-                                                 std::move(spv_inst));
+              if (block_ == nullptr)  // Inside function but outside blocks
+                function_->AddDebugInstructionInHeader(std::move(spv_inst));
+              else
+                block_->AddInstruction(std::move(spv_inst));
               break;
             }
             case DebugInfoDebugValue: {
-              const uint32_t value_id = inst->words[kLocalVariableIdIndex];
-              module_->AddDebugLocalVariableInfo(value_id, std::move(spv_inst));
+              if (block_ == nullptr)  // Inside function but outside blocks
+                function_->AddDebugInstructionInHeader(std::move(spv_inst));
+              else
+                block_->AddInstruction(std::move(spv_inst));
               break;
             }
             default: {

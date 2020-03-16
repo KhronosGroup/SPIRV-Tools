@@ -39,7 +39,7 @@ Instruction::Instruction(IRContext* c)
       has_type_id_(false),
       has_result_id_(false),
       unique_id_(c->TakeNextUniqueId()),
-      dbg_scope_(0, 0) {}
+      dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
 
 Instruction::Instruction(IRContext* c, SpvOp op)
     : utils::IntrusiveNodeBase<Instruction>(),
@@ -48,7 +48,7 @@ Instruction::Instruction(IRContext* c, SpvOp op)
       has_type_id_(false),
       has_result_id_(false),
       unique_id_(c->TakeNextUniqueId()),
-      dbg_scope_(0, 0) {}
+      dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
 
 Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
                          std::vector<Instruction>&& dbg_line)
@@ -58,7 +58,7 @@ Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
       has_result_id_(inst.result_id != 0),
       unique_id_(c->TakeNextUniqueId()),
       dbg_line_insts_(std::move(dbg_line)),
-      dbg_scope_(0, 0) {
+      dbg_scope_(kNoDebugScope, kNoInlinedAt) {
   assert((!IsDebugLineInst(opcode_) || dbg_line.empty()) &&
          "Op(No)Line attaching to Op(No)Line found");
   for (uint32_t i = 0; i < inst.num_operands; ++i) {
@@ -96,7 +96,7 @@ Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
       has_result_id_(res_id != 0),
       unique_id_(c->TakeNextUniqueId()),
       operands_(),
-      dbg_scope_(0, 0) {
+      dbg_scope_(kNoDebugScope, kNoInlinedAt) {
   if (has_type_id_) {
     operands_.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_TYPE_ID,
                            std::initializer_list<uint32_t>{ty_id});

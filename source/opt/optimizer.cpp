@@ -569,6 +569,10 @@ bool Optimizer::Run(const uint32_t* original_binary,
   }
 
 #ifndef NDEBUG
+  // We do not keep the result id of DebugScope in struct DebugScope.
+  // Instead, we assign random ids for them, which results in sanity
+  // check failures. We want to skip the sanity check when the module
+  // contains DebugScope instructions.
   if (status == opt::Pass::Status::SuccessWithoutChange &&
       !context->module()->ContainsDebugScope()) {
     std::vector<uint32_t> optimized_binary_with_nop;

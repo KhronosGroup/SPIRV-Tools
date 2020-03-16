@@ -907,9 +907,9 @@ OpLine %7 6 1
 %76 = OpExtInst %void %1 DebugScope %49
 OpLine %7 6 23
 %pos = OpFunctionParameter %_ptr_Function_v4float
-%63 = OpExtInst %void %1 DebugDeclare %50 %pos %40
 OpLine %7 7 23
 %color = OpFunctionParameter %_ptr_Function_v4float
+%63 = OpExtInst %void %1 DebugDeclare %50 %pos %40
 %64 = OpExtInst %void %1 DebugDeclare %51 %color %40
 %77 = OpExtInst %void %1 DebugNoScope
 %bb_entry = OpLabel

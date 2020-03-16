@@ -152,9 +152,6 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
       }
 
       i->ToBinaryWithoutAttachedDebugInsts(binary);
-      auto it = debug_declare_.find(i->result_id());
-      if (it != debug_declare_.end())
-        it->second->ToBinaryWithoutAttachedDebugInsts(binary);
     }
   };
   ForEachInst(write_inst, true);

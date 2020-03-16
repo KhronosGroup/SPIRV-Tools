@@ -32,6 +32,9 @@
 #include "source/opt/reflect.h"
 #include "spirv-tools/libspirv.h"
 
+const uint32_t kNoDebugScope = 0;
+const uint32_t kNoInlinedAt = 0;
+
 namespace spvtools {
 namespace opt {
 
@@ -92,13 +95,11 @@ inline bool operator!=(const Operand& o1, const Operand& o2) {
 }
 
 // This structure is used to represent a DebugScope instruction from
-// the OpenCL.100.DebugInfo extened instruction set. Since this
-// structure is added to Instruction class as a member variable, we
-// want to reduce the size of structure. Hence, we keep only its Scope
-// and InlinedAt operands but not its result id. Note that losing its
-// result id will result in a different binary even when there is no
-// optimization. We skip the sanity check in Optimizer::Run(..) when
-// the module contains a DebugScope instruction.
+// the OpenCL.100.DebugInfo extened instruction set. Note that we can
+// ignore the result id of DebugScope instruction because it is not
+// used for anything. We do not keep it to reduce the size of
+// structure.
+// TODO: Let validator check that the result id is not used anywhere.
 class DebugScope {
  public:
   DebugScope(uint32_t id0, uint32_t id1)
@@ -123,11 +124,11 @@ class DebugScope {
 
  private:
   // The result id of the lexical scope in which this debug scope is
-  // contained. The value is |0| if there is no scope.
+  // contained. The value is kNoDebugScope if there is no scope.
   uint32_t lexical_scope_;
 
   // The result id of DebugInlinedAt if instruction in this debug scope
-  // is inlined. The value is |0| if it is not inlined.
+  // is inlined. The value is kNoInlinedAt if it is not inlined.
   uint32_t inlined_at_;
 };
 
@@ -152,7 +153,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
         has_type_id_(false),
         has_result_id_(false),
         unique_id_(0),
-        dbg_scope_(0, 0) {}
+        dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
 
   // Creates a default OpNop instruction.
   Instruction(IRContext*);
