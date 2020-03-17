@@ -16,6 +16,7 @@
 
 #include <initializer_list>
 
+#include "OpenCLDebugInfo100.h"
 #include "source/disassemble.h"
 #include "source/opt/fold.h"
 #include "source/opt/ir_context.h"
