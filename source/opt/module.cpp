@@ -138,7 +138,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.reserved);
 
   size_t bound_idx = binary->size() - 2;
-  DebugScope last_scope(0, 0);
+  DebugScope last_scope(kNoDebugScope, kNoInlinedAt);
   auto write_inst = [binary, skip_nop, &last_scope,
                      this](const Instruction* i) {
     if (!(skip_nop && i->IsNop())) {

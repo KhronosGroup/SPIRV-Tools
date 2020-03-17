@@ -30,6 +30,11 @@ const uint32_t kTypeImageDimIndex = 1;
 const uint32_t kLoadBaseIndex = 0;
 const uint32_t kVariableStorageClassIndex = 0;
 const uint32_t kTypeImageSampledIndex = 5;
+
+// Constants for OpenCL.DebugInfo.100 extension instructions.
+const uint32_t kDebugScopeNumWords = 7;
+const uint32_t kDebugScopeNumWordsWithoutInlinedAt = 6;
+const uint32_t kDebugNoScopeNumWords = 5;
 }  // namespace
 
 Instruction::Instruction(IRContext* c)
@@ -766,24 +771,24 @@ bool Instruction::IsOpcodeSafeToDelete() const {
 void DebugScope::ToBinary(uint32_t type_id, uint32_t result_id,
                           uint32_t ext_set,
                           std::vector<uint32_t>* binary) const {
-  uint32_t num_words = 7;
-  uint32_t dbg_opcode = 23;
-  if (!lexical_scope_) {
-    num_words = 5;
-    dbg_opcode = 24;
-  } else if (!inlined_at_) {
-    num_words = 6;
+  uint32_t num_words = kDebugScopeNumWords;
+  OpenCLDebugInfo100Instructions dbg_opcode = OpenCLDebugInfo100DebugScope;
+  if (GetLexicalScope() == kNoDebugScope) {
+    num_words = kDebugNoScopeNumWords;
+    dbg_opcode = OpenCLDebugInfo100DebugNoScope;
+  } else if (GetInlinedAt() == kNoInlinedAt) {
+    num_words = kDebugScopeNumWordsWithoutInlinedAt;
   }
   std::vector<uint32_t> operands = {
       (num_words << 16) | static_cast<uint16_t>(SpvOpExtInst),
       type_id,
       result_id,
       ext_set,
-      dbg_opcode,
+      static_cast<uint32_t>(dbg_opcode),
   };
   binary->insert(binary->end(), operands.begin(), operands.end());
-  if (lexical_scope_) binary->push_back(lexical_scope_);
-  if (inlined_at_) binary->push_back(inlined_at_);
+  if (GetLexicalScope() != kNoDebugScope) binary->push_back(GetLexicalScope());
+  if (GetInlinedAt() != kNoInlinedAt) binary->push_back(GetInlinedAt());
 }
 
 }  // namespace opt

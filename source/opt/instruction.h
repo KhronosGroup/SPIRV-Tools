@@ -102,8 +102,8 @@ inline bool operator!=(const Operand& o1, const Operand& o2) {
 // TODO: Let validator check that the result id is not used anywhere.
 class DebugScope {
  public:
-  DebugScope(uint32_t id0, uint32_t id1)
-      : lexical_scope_(id0), inlined_at_(id1) {}
+  DebugScope(uint32_t lexical_scope, uint32_t inlined_at)
+      : lexical_scope_(lexical_scope), inlined_at_(inlined_at) {}
 
   inline bool operator!=(const DebugScope& d) const {
     return lexical_scope_ != d.lexical_scope_ || inlined_at_ != d.inlined_at_;
