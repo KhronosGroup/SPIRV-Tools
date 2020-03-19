@@ -14,6 +14,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -58,6 +59,18 @@ TEST(InstructionTest, CreateWithOpcodeAndNoOperands) {
   EXPECT_EQ(0u, inst.NumInOperandWords());
   EXPECT_EQ(inst.cend(), inst.cbegin());
   EXPECT_EQ(inst.end(), inst.begin());
+}
+
+TEST(InstructionTest, OperandAsCString) {
+  Operand::OperandData abcde{0x64636261, 0x65};
+  Operand operand(SPV_OPERAND_TYPE_LITERAL_STRING, std::move(abcde));
+  EXPECT_STREQ("abcde", operand.AsCString());
+}
+
+TEST(InstructionTest, OperandAsString) {
+  Operand::OperandData abcde{0x64636261, 0x65};
+  Operand operand(SPV_OPERAND_TYPE_LITERAL_STRING, std::move(abcde));
+  EXPECT_EQ("abcde", operand.AsString());
 }
 
 // The words for an OpTypeInt for 32-bit signed integer resulting in Id 44.
