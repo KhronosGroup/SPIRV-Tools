@@ -4401,6 +4401,108 @@ OpFunctionEnd
               HasSubstr("Result type cannot be OpTypeSampledImage"));
 }
 
+TEST_F(ValidateCFG, PhiResultValidPreLegalizationSampler) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%f32 = OpTypeFloat 32
+%sampler = OpTypeSampler
+%ptr_uc_sampler = OpTypePointer UniformConstant %sampler
+%sampler_var = OpVariable %ptr_uc_sampler UniformConstant
+%undef_bool = OpUndef %bool
+%undef_sampler = OpUndef %sampler
+%void_fn = OpTypeFunction %void
+%fn = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld_sampler = OpLoad %sampler %sampler_var
+OpBranch %loop
+%loop = OpLabel
+%phi = OpPhi %sampler %undef_sampler %entry %ld_sampler %loop
+OpLoopMerge %exit %loop None
+OpBranchConditional %undef_bool %exit %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->before_hlsl_legalization = true;
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, PhiResultValidPreLegalizationImage) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%f32 = OpTypeFloat 32
+%image = OpTypeImage %f32 2D 0 0 0 1 Rgba32f
+%ptr_uc_image = OpTypePointer UniformConstant %image
+%image_var = OpVariable %ptr_uc_image UniformConstant
+%undef_bool = OpUndef %bool
+%undef_image = OpUndef %image
+%void_fn = OpTypeFunction %void
+%fn = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld_image = OpLoad %image %image_var
+OpBranch %loop
+%loop = OpLabel
+%phi = OpPhi %image %undef_image %entry %ld_image %loop
+OpLoopMerge %exit %loop None
+OpBranchConditional %undef_bool %exit %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->before_hlsl_legalization = true;
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, PhiResultValidPreLegalizationSampledImage) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%f32 = OpTypeFloat 32
+%sampler = OpTypeSampler
+%ptr_uc_sampler = OpTypePointer UniformConstant %sampler
+%sampler_var = OpVariable %ptr_uc_sampler UniformConstant
+%image = OpTypeImage %f32 2D 0 0 0 1 Rgba32f
+%ptr_uc_image = OpTypePointer UniformConstant %image
+%image_var = OpVariable %ptr_uc_image UniformConstant
+%sampled_image = OpTypeSampledImage %image
+%undef_bool = OpUndef %bool
+%undef_sampled_image = OpUndef %sampled_image
+%void_fn = OpTypeFunction %void
+%fn = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld_image = OpLoad %image %image_var
+%ld_sampler = OpLoad %sampler %sampler_var
+OpBranch %loop
+%loop = OpLabel
+%phi = OpPhi %sampled_image %undef_sampled_image %entry %sample %loop
+%sample = OpSampledImage %sampled_image %ld_image %ld_sampler
+OpLoopMerge %exit %loop None
+OpBranchConditional %undef_bool %exit %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->before_hlsl_legalization = true;
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
