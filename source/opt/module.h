@@ -49,7 +49,7 @@ class Module {
   using const_inst_iterator = InstructionList::const_iterator;
 
   // Creates an empty module with zero'd header.
-  Module() : header_({}), contains_debug_scope_(false) {}
+  Module() : header_({}), contains_debug_scope_(false), contains_opencl_100_debug_insts_(false) {}
 
   // Sets the header to the given |header|.
   void SetHeader(const ModuleHeader& header) { header_ = header; }
@@ -122,6 +122,14 @@ class Module {
   // Sets |contains_debug_scope_| as true.
   inline void SetContainsDebugScope();
   inline bool ContainsDebugScope() { return contains_debug_scope_; }
+
+  // Sets |contains_opencl_100_debug_insts_| as true.
+  inline void SetContainsOpenCL100DebugInstrunctions() {
+    contains_opencl_100_debug_insts_ = true;
+  }
+  inline bool ContainsOpenCL100DebugInstrunctions() {
+    return contains_opencl_100_debug_insts_;
+  }
 
   // Returns a vector of pointers to type-declaration instructions in this
   // module.
@@ -303,6 +311,9 @@ class Module {
 
   // This module contains DebugScope or DebugNoScope.
   bool contains_debug_scope_;
+
+  // This module contains OpenCL.100.DebugInfo extension instructions.
+  bool contains_opencl_100_debug_insts_;
 };
 
 // Pretty-prints |module| to |str|. Returns |str|.

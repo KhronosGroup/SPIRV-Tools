@@ -162,7 +162,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
         has_type_id_(false),
         has_result_id_(false),
         unique_id_(0),
-        dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
+        dbg_scope_(kNoDebugScope, kNoInlinedAt),
+        is_cl100_dbg_inst_(false) {}
 
   // Creates a default OpNop instruction.
   Instruction(IRContext*);
@@ -275,8 +276,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
   inline bool HasResultId() const { return has_result_id_; }
+  // Sets |is_cl100_dbg_inst_| as true, which means it is an
+  // OpenCL.100.DebugInfo instruction.
+  inline void SetOpenCL100DebugInstrunction() { is_cl100_dbg_inst_ = true; }
   // Sets DebugScope.
   inline void SetDebugScope(const DebugScope& scope);
+  inline void SetDebugScope(uint32_t scope);
   inline const DebugScope& GetDebugScope() const { return dbg_scope_; }
   // Remove the |index|-th operand
   void RemoveOperand(uint32_t index) {
@@ -538,6 +543,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // DebugScope that wraps this instruction.
   DebugScope dbg_scope_;
 
+  // True if the instruction is an OpenCL.100.DebugInfo instruction.
+  bool is_cl100_dbg_inst_;
+
   friend InstructionList;
 };
 
@@ -613,6 +621,13 @@ inline void Instruction::SetDebugScope(const DebugScope& scope) {
   dbg_scope_ = scope;
   for (auto& i : dbg_line_insts_) {
     i.dbg_scope_ = scope;
+  }
+}
+
+inline void Instruction::SetDebugScope(uint32_t scope) {
+  dbg_scope_.SetLexicalScope(scope);
+  for (auto& i : dbg_line_insts_) {
+    i.dbg_scope_.SetLexicalScope(scope);
   }
 }
 

@@ -58,14 +58,24 @@ class InlinePass : public Pass {
 
   // Add store of valId to ptrId to end of block block_ptr.
   void AddStore(uint32_t ptrId, uint32_t valId,
-                std::unique_ptr<BasicBlock>* block_ptr);
+                std::unique_ptr<BasicBlock>* block_ptr,
+                const std::vector<Instruction>& line_insts, uint32_t dbg_scope);
 
   // Add load of ptrId into resultId to end of block block_ptr.
   void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
-               std::unique_ptr<BasicBlock>* block_ptr);
+               std::unique_ptr<BasicBlock>* block_ptr,
+               const std::vector<Instruction>& line_insts, uint32_t dbg_scope);
 
   // Return new label.
   std::unique_ptr<Instruction> NewLabel(uint32_t label_id);
+
+  // Return new DebugInlinedAt. Its Line operand is the line number of
+  // |lines[0]| if |lines| is not empty. Otherwise, its Line operand
+  // is the line number of lexical scope of |fn_call_scope|. Scope and
+  // Inlined operands of the DebugInlinedAt are lexical scope and
+  // inlined_at of |fn_call_scope|.
+  uint32_t CreateDebugInlinedAt(const std::vector<Instruction>& lines,
+                                const DebugScope& fn_call_scope);
 
   // Returns the id for the boolean false value. Looks in the module first
   // and creates it if not found. Remembers it for future calls.  Returns 0 if
@@ -155,6 +165,14 @@ class InlinePass : public Pass {
   // Map from block's label id to block. TODO(dnovillo): This is superfluous wrt
   // CFG. It has functionality not present in CFG. Consolidate.
   std::unordered_map<uint32_t, BasicBlock*> id2block_;
+
+  // Map from result id of lexical scope debug instruction (DebugFunction,
+  // DebugTypeComposite, DebugLexicalBlock, DebugCompilationUnit) to its
+  // Instruction.
+  std::unordered_map<uint32_t, Instruction*> id2lexical_scope_;
+
+  // Map from function's id to DebugFunction id whose operand is the function.
+  std::unordered_map<uint32_t, uint32_t> func_id2dbg_func_id_;
 
   // Set of ids of functions with early return.
   std::set<uint32_t> early_return_funcs_;

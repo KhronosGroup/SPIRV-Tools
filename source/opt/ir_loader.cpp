@@ -52,6 +52,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   if (opcode == SpvOpExtInst && spvExtInstIsDebugInfo(inst->ext_inst_type)) {
     const uint32_t ext_inst_index = inst->words[kExtInstSetIndex];
     if (inst->ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
+      module()->SetContainsOpenCL100DebugInstrunctions();
       const OpenCLDebugInfo100Instructions ext_inst_key =
           OpenCLDebugInfo100Instructions(ext_inst_index);
       if (ext_inst_key == OpenCLDebugInfo100DebugScope) {
@@ -90,6 +91,10 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
 
   std::unique_ptr<Instruction> spv_inst(
       new Instruction(module()->context(), *inst, std::move(dbg_line_info_)));
+  if (opcode == SpvOpExtInst &&
+      inst->ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100) {
+    spv_inst->SetOpenCL100DebugInstrunction();
+  }
   dbg_line_info_.clear();
 
   const char* src = source_.c_str();

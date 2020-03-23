@@ -19,6 +19,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "OpenCLDebugInfo100.h"
 #include "source/cfa.h"
 #include "source/util/make_unique.h"
 
@@ -27,6 +28,16 @@
 static const int kSpvFunctionCallFunctionId = 2;
 static const int kSpvFunctionCallArgumentId = 3;
 static const int kSpvReturnValueId = 0;
+
+// Constants related to rich debug information
+
+static const uint32_t kDebugExtensionOperand = 2;
+static const uint32_t kOpCodeDebugInlinedAt = 25;
+static const uint32_t kDebugResultIdIndex = 1;
+static const uint32_t kOpLineOperandLineIndex = 1;
+static const uint32_t kLineOperandIndexDebugFunction = 7;
+static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
+static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
 
 namespace spvtools {
 namespace opt {
@@ -83,19 +94,33 @@ void InlinePass::AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
 }
 
 void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
-                          std::unique_ptr<BasicBlock>* block_ptr) {
+                          std::unique_ptr<BasicBlock>* block_ptr,
+                          const std::vector<Instruction>& line_insts,
+                          uint32_t dbg_scope) {
   std::unique_ptr<Instruction> newStore(
       new Instruction(context(), SpvOpStore, 0, 0,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}},
                        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {val_id}}}));
+  if (!line_insts.empty()) {
+    auto& new_lines = newStore->dbg_line_insts();
+    new_lines.insert(new_lines.end(), line_insts.begin(), line_insts.end());
+  }
+  if (dbg_scope) newStore->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newStore));
 }
 
 void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
-                         std::unique_ptr<BasicBlock>* block_ptr) {
+                         std::unique_ptr<BasicBlock>* block_ptr,
+                         const std::vector<Instruction>& line_insts,
+                         uint32_t dbg_scope) {
   std::unique_ptr<Instruction> newLoad(
       new Instruction(context(), SpvOpLoad, type_id, resultId,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}}}));
+  if (!line_insts.empty()) {
+    auto& new_lines = newLoad->dbg_line_insts();
+    new_lines.insert(new_lines.end(), line_insts.begin(), line_insts.end());
+  }
+  if (dbg_scope) newLoad->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newLoad));
 }
 
@@ -103,6 +128,60 @@ std::unique_ptr<Instruction> InlinePass::NewLabel(uint32_t label_id) {
   std::unique_ptr<Instruction> newLabel(
       new Instruction(context(), SpvOpLabel, 0, label_id, {}));
   return newLabel;
+}
+
+uint32_t InlinePass::CreateDebugInlinedAt(const std::vector<Instruction>& lines,
+                                          const DebugScope& fn_call_scope) {
+  if (!get_module()->ContainsOpenCL100DebugInstrunctions()) return 0;
+
+  uint32_t line_number = 0;
+  if (lines.empty()) {
+    auto it = id2lexical_scope_.find(fn_call_scope.GetLexicalScope());
+    if (it == id2lexical_scope_.end()) return 0;
+    OpenCLDebugInfo100Instructions debug_opcode =
+        it->second->GetOpenCL100DebugOpcode();
+    switch (debug_opcode) {
+      case OpenCLDebugInfo100DebugFunction:
+      case OpenCLDebugInfo100DebugTypeComposite:
+        line_number =
+            it->second->GetSingleWordOperand(kLineOperandIndexDebugFunction);
+        break;
+      case OpenCLDebugInfo100DebugLexicalBlock:
+        line_number = it->second->GetSingleWordOperand(
+            kLineOperandIndexDebugLexicalBlock);
+        break;
+      case OpenCLDebugInfo100DebugCompilationUnit:
+        break;
+      default:
+        // Unreachable!
+        break;
+    }
+  } else {
+    line_number = lines[0].GetSingleWordOperand(kOpLineOperandLineIndex);
+  }
+
+  Instruction& first_dbg_inst = *(get_module()->ext_inst_debuginfo_begin());
+  uint32_t ret_id = context()->TakeNextId();
+  std::unique_ptr<Instruction> inlined_at(new Instruction(
+      context(), SpvOpExtInst, first_dbg_inst.type_id(), ret_id,
+      {
+          first_dbg_inst.GetOperand(kDebugExtensionOperand),
+          {spv_operand_type_t::SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+           {static_cast<uint32_t>(OpenCLDebugInfo100DebugInlinedAt)}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {line_number}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_RESULT_ID,
+           {fn_call_scope.GetLexicalScope()}},
+      }));
+  // The function call instruction itself already has DebugInlinedAt
+  // information. DebugInlinedAt of the closest caller of the instruction
+  // must come first. We put the DebugInlinedAt of the function call at the
+  // tail in the recurive DebugInlinedAt chain.
+  if (fn_call_scope.GetInlinedAt()) {
+    inlined_at->AddOperand({spv_operand_type_t::SPV_OPERAND_TYPE_RESULT_ID,
+                            {fn_call_scope.GetInlinedAt()}});
+  }
+  get_module()->AddExtInstDebugInfo(std::move(inlined_at));
+  return ret_id;
 }
 
 uint32_t InlinePass::GetFalseId() {
@@ -266,6 +345,13 @@ bool InlinePass::GenInlineCode(
     return false;
   }
 
+  // Get the DebugScope of callee function. We want to set the DebugScope
+  // of newly added variable/store/load for return statements as the
+  // callee's scope.
+  auto it_scope = func_id2dbg_func_id_.find(calleeFn->result_id());
+  uint32_t debug_scope = 0;
+  if (it_scope != func_id2dbg_func_id_.end()) debug_scope = it_scope->second;
+
   // Create return var if needed.
   const uint32_t calleeTypeId = calleeFn->type_id();
   uint32_t returnVarId = 0;
@@ -309,12 +395,15 @@ bool InlinePass::GenInlineCode(
   // of the first callee block.  It is appended to new_blocks only when
   // it is complete.
   std::unique_ptr<BasicBlock> new_blk_ptr;
+  // Instructions that were not parts of callee function.
+  std::vector<Instruction*> not_inlined_insts;
   bool successful = calleeFn->WhileEachInst(
       [&new_blocks, &callee2caller, &call_block_itr, &call_inst_itr,
        &new_blk_ptr, &prevInstWasReturn, &returnLabelId, &returnVarId,
        caller_is_loop_header, callee_begins_with_structured_header,
        &calleeTypeId, &multiBlocks, &postCallSB, &preCallSB, earlyReturn,
        &singleTripLoopHeaderId, &singleTripLoopContinueId, &callee_result_ids,
+       &not_inlined_insts, &debug_scope,
        this](const Instruction* cpi) {
         switch (cpi->opcode()) {
           case SpvOpFunction:
@@ -330,7 +419,8 @@ bool InlinePass::GenInlineCode(
               // The initializer must be a constant or global value.  No mapped
               // should be used.
               uint32_t val_id = cpi->GetSingleWordInOperand(1);
-              AddStore(new_var_id, val_id, &new_blk_ptr);
+              AddStore(new_var_id, val_id, &new_blk_ptr,
+                       call_inst_itr->dbg_line_insts(), debug_scope);
             }
             break;
           case SpvOpUnreachable:
@@ -392,6 +482,8 @@ bool InlinePass::GenInlineCode(
                 Instruction* inst = &*cii;
                 inst->RemoveFromList();
                 std::unique_ptr<Instruction> cp_inst(inst);
+                if (get_module()->ContainsOpenCL100DebugInstrunctions())
+                  not_inlined_insts.push_back(cp_inst.get());
                 // Remember same-block ops for possible regeneration.
                 if (IsSameBlockOp(&*cp_inst)) {
                   auto* sb_inst_ptr = cp_inst.get();
@@ -399,6 +491,7 @@ bool InlinePass::GenInlineCode(
                 }
                 new_blk_ptr->AddInstruction(std::move(cp_inst));
               }
+
               if (caller_is_loop_header &&
                   callee_begins_with_structured_header) {
                 // We can't place both the caller's merge instruction and
@@ -473,7 +566,8 @@ bool InlinePass::GenInlineCode(
             if (mapItr != callee2caller.end()) {
               valId = mapItr->second;
             }
-            AddStore(returnVarId, valId, &new_blk_ptr);
+            AddStore(returnVarId, valId, &new_blk_ptr,
+                     call_inst_itr->dbg_line_insts(), debug_scope);
 
             // Remember we saw a return; if followed by a label, will need to
             // insert branch.
@@ -515,13 +609,16 @@ bool InlinePass::GenInlineCode(
             if (returnVarId != 0) {
               const uint32_t resId = call_inst_itr->result_id();
               assert(resId != 0);
-              AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
+              AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr,
+                      call_inst_itr->dbg_line_insts(), debug_scope);
             }
             // Copy remaining instructions from caller block.
             for (Instruction* inst = call_inst_itr->NextNode(); inst;
                  inst = call_inst_itr->NextNode()) {
               inst->RemoveFromList();
               std::unique_ptr<Instruction> cp_inst(inst);
+              if (get_module()->ContainsOpenCL100DebugInstrunctions())
+                not_inlined_insts.push_back(cp_inst.get());
               // If multiple blocks generated, regenerate any same-block
               // instruction that has not been seen in this last block.
               if (multiBlocks) {
@@ -610,6 +707,70 @@ bool InlinePass::GenInlineCode(
     // Remove the loop merge from the last block.
     loop_merge_itr->RemoveFromList();
     delete &*loop_merge_itr;
+  }
+
+  // Add DebugInlineAt instructions for the function inlining information.
+  // |new_blocks| has three types of instruction at this point:
+  // Type1. instructions that were not parts of callee function
+  // Type2. inlined instructions from callee function
+  // Type3. inlined instructions from another function to callee
+  //        function which are now recursively inlined to the caller function
+  //        once more.
+  // We can simply add DebugInlineAt instructions for Type2 and will skip it
+  // for Type1. Type3 is complicated. We must create recurive DebugInlineAt
+  // instructions.
+  // For example, assuming that `%color = OpLoad %v4float %in_var_COLOR` was
+  // initially generated for an expression in a function `foo` but it was
+  // already inlined to `bar` with `DebugInlinedAt %bar` information, we must
+  // create `%inlined_to_main = DebugInlinedAt %main` and use recursive inlining
+  // information like `DebugInlinedAt %bar %inlined_to_main` when we inline
+  // `bar` to `main`.
+  if (get_module()->ContainsOpenCL100DebugInstrunctions()) {
+    Instruction* caller = &*call_inst_itr;
+    const auto& caller_dbg_scope = caller->GetDebugScope();
+    if (caller_dbg_scope.GetLexicalScope()) {
+      const uint32_t inlined_at =
+          CreateDebugInlinedAt(caller->dbg_line_insts(), caller_dbg_scope);
+      if (!inlined_at) return false;
+
+      uint32_t last_inlined_at = 0;
+      uint32_t last_recursive_inlined_at = inlined_at;
+      uint32_t skip_dbg_inlined_at_idx = 0;
+
+      auto fn_update_inlined_at = [&not_inlined_insts,
+                                   &skip_dbg_inlined_at_idx, &inlined_at,
+                                   &last_inlined_at, &last_recursive_inlined_at,
+                                   this](Instruction* cpi) {
+        // Type1. instructions that were not parts of callee function.
+        if (skip_dbg_inlined_at_idx < not_inlined_insts.size() &&
+            cpi == not_inlined_insts[skip_dbg_inlined_at_idx]) {
+          ++skip_dbg_inlined_at_idx;
+          return true;
+        }
+
+        const auto& dbg_scope = cpi->GetDebugScope();
+        if (!dbg_scope.GetLexicalScope()) return true;
+
+        // Type2. inlined instructions from callee function.
+        DebugScope new_scope(dbg_scope.GetLexicalScope(), 0);
+        if (!dbg_scope.GetInlinedAt()) {
+          new_scope.SetInlinedAt(inlined_at);
+          cpi->SetDebugScope(new_scope);
+          return true;
+        }
+
+        // TODO: handle Type3, the function call already has a DebugInlinedAt
+        return true;
+      };
+      for (auto& var : *new_vars) {
+        successful = var->WhileEachInst(fn_update_inlined_at);
+        if (!successful) return false;
+      }
+      for (auto& blk : *new_blocks) {
+        successful = blk->WhileEachInst(fn_update_inlined_at);
+        if (!successful) return false;
+      }
+    }
   }
 
   // Update block map given replacement blocks.
@@ -748,6 +909,33 @@ void InlinePass::InitializeInline() {
     }
     // Compute inlinability
     if (IsInlinableFunction(&fn)) inlinable_.insert(fn.result_id());
+  }
+
+  if (get_module()->ContainsOpenCL100DebugInstrunctions()) {
+    id2lexical_scope_.clear();
+    func_id2dbg_func_id_.clear();
+
+    // Initialize debug lexical scope and debug function maps.
+    for (auto& i : get_module()->ext_inst_debuginfo()) {
+      OpenCLDebugInfo100Instructions opcode = i.GetOpenCL100DebugOpcode();
+      switch (opcode) {
+        case OpenCLDebugInfo100DebugFunction: {
+          // TODO: Report a validation error if multiple DebugFunction
+          //       have the same OpFunction operand.
+          func_id2dbg_func_id_[i.GetSingleWordOperand(
+              kDebugFunctionOperandFunctionIndex)] = i.result_id();
+          id2lexical_scope_[i.result_id()] = &i;
+          break;
+        }
+        case OpenCLDebugInfo100DebugTypeComposite:
+        case OpenCLDebugInfo100DebugLexicalBlock:
+        case OpenCLDebugInfo100DebugCompilationUnit:
+          id2lexical_scope_[i.result_id()] = &i;
+          break;
+        default:
+          break;
+      }
+    }
   }
 }
 
