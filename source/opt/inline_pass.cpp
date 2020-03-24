@@ -38,6 +38,7 @@ static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
+static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 
 namespace spvtools {
 namespace opt {
@@ -204,17 +205,41 @@ uint32_t InlinePass::GetFalseId() {
   return false_id_;
 }
 
+Instruction* InlinePass::CloneFunctionParamDebugDeclare(uint32_t from,
+                                                        uint32_t to) {
+  auto it = param_id2debugdecl_.find(from);
+  if (it == param_id2debugdecl_.end()) return nullptr;
+
+  auto* clone = it->second->Clone(context());
+  clone->SetResultId(context()->TakeNextId());
+  clone->GetOperand(kDebugDeclareOperandVariableIndex).words[0] = to;
+
+  if (param_id2debugdecl_.find(to) == param_id2debugdecl_.end())
+    param_id2debugdecl_[to] = clone;
+  return clone;
+}
+
 void InlinePass::MapParams(
     Function* calleeFn, BasicBlock::iterator call_inst_itr,
-    std::unordered_map<uint32_t, uint32_t>* callee2caller) {
+    std::unordered_map<uint32_t, uint32_t>* callee2caller,
+    std::vector<Instruction*>* dbg_insts_in_callee_header) {
   int param_idx = 0;
-  calleeFn->ForEachParam(
-      [&call_inst_itr, &param_idx, &callee2caller](const Instruction* cpi) {
-        const uint32_t pid = cpi->result_id();
-        (*callee2caller)[pid] = call_inst_itr->GetSingleWordOperand(
-            kSpvFunctionCallArgumentId + param_idx);
-        ++param_idx;
-      });
+  calleeFn->ForEachParam([&call_inst_itr, &param_idx, &callee2caller,
+                          &dbg_insts_in_callee_header,
+                          this](const Instruction* cpi) {
+    const uint32_t pid = cpi->result_id();
+    const uint32_t operandId = call_inst_itr->GetSingleWordOperand(
+        kSpvFunctionCallArgumentId + param_idx);
+    (*callee2caller)[pid] = operandId;
+    // Clone DebugDeclare for OpFunctionParameter and update its
+    // Variable operand to the operand of the function call. We will
+    // put it in caller function's header.
+    auto* dbgDecl = CloneFunctionParamDebugDeclare(pid, operandId);
+    if (dbgDecl) {
+      dbg_insts_in_callee_header->push_back(dbgDecl);
+    }
+    ++param_idx;
+  });
 }
 
 bool InlinePass::CloneAndMapLocals(
@@ -233,6 +258,10 @@ bool InlinePass::CloneAndMapLocals(
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
     ++callee_var_itr;
+    // Note that we do not have to clone DebugDeclare/DebugValue for
+    // local variables of callee because InlinePass::GenInlineCode()
+    // will iterate all instructions of callee to copy them and update
+    // all operands properly using callee2caller.
   }
   return true;
 }
@@ -267,6 +296,10 @@ uint32_t InlinePass::CreateReturnVar(
                         {SpvStorageClassFunction}}}));
   new_vars->push_back(std::move(var_inst));
   get_decoration_mgr()->CloneDecorations(calleeFn->result_id(), returnVarId);
+  // Note that we do not have to handle DebugDeclare/DebugValue similar
+  // to DebugDeclare/DebugValue for local variables of callee.
+  // CloneSameBlockOps() will handle DebugDeclare/DebugValue for return
+  // value properly.
   return returnVarId;
 }
 
@@ -323,6 +356,9 @@ bool InlinePass::GenInlineCode(
   std::unordered_map<uint32_t, Instruction*> preCallSB;
   // Post-call same-block op ids
   std::unordered_map<uint32_t, uint32_t> postCallSB;
+  // DebugDeclare or DebugValue instructions in the header of callee
+  // that links DebugLocalVariable instructions to OpFunctionParameter.
+  std::vector<Instruction*> dbg_insts_in_callee_header;
 
   // Invalidate the def-use chains.  They are not kept up to date while
   // inlining.  However, certain calls try to keep them up-to-date if they are
@@ -337,7 +373,8 @@ bool InlinePass::GenInlineCode(
   const bool earlyReturn = fi != early_return_funcs_.end();
 
   // Map parameters to actual arguments.
-  MapParams(calleeFn, call_inst_itr, &callee2caller);
+  MapParams(calleeFn, call_inst_itr, &callee2caller,
+            &dbg_insts_in_callee_header);
 
   // Define caller local variables for all callee variables and create map to
   // them.
@@ -403,8 +440,17 @@ bool InlinePass::GenInlineCode(
        caller_is_loop_header, callee_begins_with_structured_header,
        &calleeTypeId, &multiBlocks, &postCallSB, &preCallSB, earlyReturn,
        &singleTripLoopHeaderId, &singleTripLoopContinueId, &callee_result_ids,
-       &not_inlined_insts, &debug_scope,
+       &not_inlined_insts, &debug_scope, &dbg_insts_in_callee_header,
        this](const Instruction* cpi) {
+        // DebugDeclare for function parameters are already processed.
+        if (get_module()->ContainsOpenCL100DebugInstrunctions() &&
+            (cpi->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+             cpi->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue)) {
+          auto id =
+              cpi->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
+          if (param_id2debugdecl_.find(id) != param_id2debugdecl_.end())
+            return true;
+        }
         switch (cpi->opcode()) {
           case SpvOpFunction:
           case SpvOpFunctionParameter:
@@ -490,6 +536,13 @@ bool InlinePass::GenInlineCode(
                   preCallSB[cp_inst->result_id()] = sb_inst_ptr;
                 }
                 new_blk_ptr->AddInstruction(std::move(cp_inst));
+              }
+
+              // Add DebugDeclare instructions for callee's function
+              // parameters to caller's body.
+              for (auto* i : dbg_insts_in_callee_header) {
+                new_blk_ptr->AddInstruction(
+                    std::move(std::unique_ptr<Instruction>(i)));
               }
 
               if (caller_is_loop_header &&
@@ -735,16 +788,16 @@ bool InlinePass::GenInlineCode(
 
       uint32_t last_inlined_at = 0;
       uint32_t last_recursive_inlined_at = inlined_at;
-      uint32_t skip_dbg_inlined_at_idx = 0;
+      uint32_t not_inlined_insts_idx = 0;
 
-      auto fn_update_inlined_at = [&not_inlined_insts,
-                                   &skip_dbg_inlined_at_idx, &inlined_at,
-                                   &last_inlined_at, &last_recursive_inlined_at,
+      auto fn_update_inlined_at = [&not_inlined_insts, &not_inlined_insts_idx,
+                                   &inlined_at, &last_inlined_at,
+                                   &last_recursive_inlined_at,
                                    this](Instruction* cpi) {
         // Type1. instructions that were not parts of callee function.
-        if (skip_dbg_inlined_at_idx < not_inlined_insts.size() &&
-            cpi == not_inlined_insts[skip_dbg_inlined_at_idx]) {
-          ++skip_dbg_inlined_at_idx;
+        if (not_inlined_insts_idx < not_inlined_insts.size() &&
+            cpi == not_inlined_insts[not_inlined_insts_idx]) {
+          ++not_inlined_insts_idx;
           return true;
         }
 
@@ -912,6 +965,21 @@ void InlinePass::InitializeInline() {
   }
 
   if (get_module()->ContainsOpenCL100DebugInstrunctions()) {
+    param_id2debugdecl_.clear();
+    for (auto& fn : *get_module()) {
+      fn.ForEachHeaderDebugInstructions([this](Instruction* cpi) {
+        OpenCLDebugInfo100Instructions opcode = cpi->GetOpenCL100DebugOpcode();
+        if (opcode == OpenCLDebugInfo100DebugDeclare ||
+            opcode == OpenCLDebugInfo100DebugValue) {
+          auto id =
+              cpi->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
+          if (param_id2debugdecl_.find(id) == param_id2debugdecl_.end()) {
+            param_id2debugdecl_[id] = cpi;
+          }
+        }
+      });
+    }
+
     id2lexical_scope_.clear();
     func_id2dbg_func_id_.clear();
 

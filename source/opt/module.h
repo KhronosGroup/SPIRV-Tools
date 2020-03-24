@@ -49,7 +49,10 @@ class Module {
   using const_inst_iterator = InstructionList::const_iterator;
 
   // Creates an empty module with zero'd header.
-  Module() : header_({}), contains_debug_scope_(false), contains_opencl_100_debug_insts_(false) {}
+  Module()
+      : header_({}),
+        contains_debug_scope_(false),
+        contains_opencl_100_debug_insts_(false) {}
 
   // Sets the header to the given |header|.
   void SetHeader(const ModuleHeader& header) { header_ = header; }

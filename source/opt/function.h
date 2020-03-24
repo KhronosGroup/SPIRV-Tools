@@ -129,6 +129,16 @@ class Function {
   void ForEachParam(const std::function<void(Instruction*)>& f,
                     bool run_on_debug_line_insts = false);
 
+  // Runs the given function |f| on each DebugDeclare instruction in this
+  // function's header, in order, and optionally on debug line instructions
+  // that might precede them.
+  void ForEachHeaderDebugInstructions(
+      const std::function<void(const Instruction*)>& f,
+      bool run_on_debug_line_insts = false) const;
+  void ForEachHeaderDebugInstructions(
+      const std::function<void(Instruction*)>& f,
+      bool run_on_debug_line_insts = false);
+
   BasicBlock* InsertBasicBlockAfter(std::unique_ptr<BasicBlock>&& new_block,
                                     BasicBlock* position);
 

@@ -70,6 +70,21 @@ void Function::ForEachInst(const std::function<void(const Instruction*)>& f,
       run_on_debug_line_insts);
 }
 
+void Function::ForEachHeaderDebugInstructions(
+    const std::function<void(Instruction*)>& f, bool run_on_debug_line_insts) {
+  for (auto& di : debug_insts_in_header_) {
+    di.ForEachInst(f, run_on_debug_line_insts);
+  }
+}
+
+void Function::ForEachHeaderDebugInstructions(
+    const std::function<void(const Instruction*)>& f,
+    bool run_on_debug_line_insts) const {
+  for (const auto& di : debug_insts_in_header_) {
+    di.ForEachInst(f, run_on_debug_line_insts);
+  }
+}
+
 bool Function::WhileEachInst(const std::function<bool(Instruction*)>& f,
                              bool run_on_debug_line_insts) {
   if (def_inst_) {

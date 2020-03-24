@@ -82,9 +82,15 @@ class InlinePass : public Pass {
   // the value could not be created.
   uint32_t GetFalseId();
 
+  // Clone DebugDeclare for a function parameter whose result id is
+  // |from|. Set Variable operand of the new DebugDeclare as |to|.
+  // Return the new DebugDeclare.
+  Instruction* CloneFunctionParamDebugDeclare(uint32_t from, uint32_t to);
+
   // Map callee params to caller args
   void MapParams(Function* calleeFn, BasicBlock::iterator call_inst_itr,
-                 std::unordered_map<uint32_t, uint32_t>* callee2caller);
+                 std::unordered_map<uint32_t, uint32_t>* callee2caller,
+                 std::vector<Instruction*>* dbg_insts_in_callee_header);
 
   // Clone and map callee locals.  Return true if successful.
   bool CloneAndMapLocals(Function* calleeFn,
@@ -170,6 +176,10 @@ class InlinePass : public Pass {
   // DebugTypeComposite, DebugLexicalBlock, DebugCompilationUnit) to its
   // Instruction.
   std::unordered_map<uint32_t, Instruction*> id2lexical_scope_;
+
+  // Map from result id of OpFunctionParameter to its first DebugDeclare
+  // Instruction.
+  std::unordered_map<uint32_t, Instruction*> param_id2debugdecl_;
 
   // Map from function's id to DebugFunction id whose operand is the function.
   std::unordered_map<uint32_t, uint32_t> func_id2dbg_func_id_;
