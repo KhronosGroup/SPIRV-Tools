@@ -4293,49 +4293,48 @@ OpDecorate %4 Location 0
 %66 = OpExtInst %void %1 DebugInlinedAt 10 %32
 %68 = OpExtInst %void %1 DebugInlinedAt 7 %37 %66
 %67 = OpExtInst %void %1 DebugInlinedAt 4 %35 %68
-%69 = OpExtInst %void %1 DebugInlinedAt 7 %37 %66
 %2 = OpFunction %void None %24
 %41 = OpLabel
 %62 = OpVariable %_ptr_Function_v4float Function
-%70 = OpExtInst %void %1 DebugScope %33 %67
+%69 = OpExtInst %void %1 DebugScope %33 %67
 %63 = OpLoad %v4float %3
-%71 = OpExtInst %void %1 DebugScope %35 %69
+%70 = OpExtInst %void %1 DebugScope %35 %68
 %64 = OpFAdd %v4float %63 %19
-%72 = OpExtInst %void %1 DebugScope %37 %66
+%71 = OpExtInst %void %1 DebugScope %37 %66
 %65 = OpFAdd %v4float %64 %20
 OpStore %62 %65
 %43 = OpLoad %v4float %62
-%73 = OpExtInst %void %1 DebugScope %32
+%72 = OpExtInst %void %1 DebugScope %32
 %44 = OpLoad %v4float %3
 %45 = OpFAdd %v4float %43 %44
 OpStore %4 %45
-%74 = OpExtInst %void %1 DebugNoScope
+%73 = OpExtInst %void %1 DebugNoScope
 OpReturn
 OpFunctionEnd
 %38 = OpFunction %v4float None %25
 %47 = OpLabel
-%75 = OpExtInst %void %1 DebugScope %33 %40
+%74 = OpExtInst %void %1 DebugScope %33 %40
 %49 = OpLoad %v4float %3
-%76 = OpExtInst %void %1 DebugScope %35 %39
+%75 = OpExtInst %void %1 DebugScope %35 %39
 %51 = OpFAdd %v4float %49 %19
-%77 = OpExtInst %void %1 DebugScope %37
+%76 = OpExtInst %void %1 DebugScope %37
 %53 = OpFAdd %v4float %51 %20
-%78 = OpExtInst %void %1 DebugNoScope
+%77 = OpExtInst %void %1 DebugNoScope
 OpReturnValue %53
 OpFunctionEnd
 %34 = OpFunction %v4float None %25
 %55 = OpLabel
-%79 = OpExtInst %void %1 DebugScope %33
+%78 = OpExtInst %void %1 DebugScope %33
 %56 = OpLoad %v4float %3
-%80 = OpExtInst %void %1 DebugNoScope
+%79 = OpExtInst %void %1 DebugNoScope
 OpReturnValue %56
 OpFunctionEnd
 %36 = OpFunction %v4float None %25
 %58 = OpLabel
-%81 = OpExtInst %void %1 DebugScope %35
+%80 = OpExtInst %void %1 DebugScope %35
 %59 = OpFunctionCall %v4float %34
 %60 = OpFAdd %v4float %59 %19
-%82 = OpExtInst %void %1 DebugNoScope
+%81 = OpExtInst %void %1 DebugNoScope
 OpReturnValue %60
 OpFunctionEnd
 )";
@@ -4643,90 +4642,88 @@ OpDecorate %4 Location 0
 %41 = OpExtInst %void %1 DebugInlinedAt 4 %35
 %83 = OpExtInst %void %1 DebugInlinedAt 10 %32
 %84 = OpExtInst %void %1 DebugInlinedAt 7 %37 %83
-%86 = OpExtInst %void %1 DebugInlinedAt 7 %37 %83
-%85 = OpExtInst %void %1 DebugInlinedAt 4 %35 %86
-%87 = OpExtInst %void %1 DebugInlinedAt 7 %37 %83
-%90 = OpExtInst %void %1 DebugInlinedAt 4 %35 %84
-%93 = OpExtInst %void %1 DebugInlinedAt 10 %32
-%97 = OpExtInst %void %1 DebugInlinedAt 10 %32
-%98 = OpExtInst %void %1 DebugInlinedAt 4 %35 %97
+%85 = OpExtInst %void %1 DebugInlinedAt 4 %35 %84
+%88 = OpExtInst %void %1 DebugInlinedAt 4 %35 %84
+%91 = OpExtInst %void %1 DebugInlinedAt 10 %32
+%95 = OpExtInst %void %1 DebugInlinedAt 10 %32
+%96 = OpExtInst %void %1 DebugInlinedAt 4 %35 %95
 %2 = OpFunction %void None %24
 %42 = OpLabel
-%94 = OpVariable %_ptr_Function_v4float Function
-%91 = OpVariable %_ptr_Function_v4float Function
-%88 = OpVariable %_ptr_Function_v4float Function
+%92 = OpVariable %_ptr_Function_v4float Function
+%89 = OpVariable %_ptr_Function_v4float Function
+%86 = OpVariable %_ptr_Function_v4float Function
 %75 = OpVariable %_ptr_Function_v4float Function
-%99 = OpExtInst %void %1 DebugScope %33 %90
-%89 = OpLoad %v4float %3
-OpStore %88 %89
-%76 = OpLoad %v4float %88
-%100 = OpExtInst %void %1 DebugScope %35 %84
+%97 = OpExtInst %void %1 DebugScope %33 %88
+%87 = OpLoad %v4float %3
+OpStore %86 %87
+%76 = OpLoad %v4float %86
+%98 = OpExtInst %void %1 DebugScope %35 %84
 %77 = OpFAdd %v4float %76 %19
-%101 = OpExtInst %void %1 DebugScope %33 %84
+%99 = OpExtInst %void %1 DebugScope %33 %84
 %78 = OpLoad %v4float %3
-%102 = OpExtInst %void %1 DebugScope %37 %83
+%100 = OpExtInst %void %1 DebugScope %37 %83
 %79 = OpFAdd %v4float %77 %78
-%103 = OpExtInst %void %1 DebugScope %33 %85
+%101 = OpExtInst %void %1 DebugScope %33 %85
 %80 = OpLoad %v4float %3
-%104 = OpExtInst %void %1 DebugScope %35 %87
+%102 = OpExtInst %void %1 DebugScope %35 %84
 %81 = OpFAdd %v4float %80 %19
-%105 = OpExtInst %void %1 DebugScope %37 %83
+%103 = OpExtInst %void %1 DebugScope %37 %83
 %82 = OpFAdd %v4float %79 %81
 OpStore %75 %82
 %44 = OpLoad %v4float %75
-%106 = OpExtInst %void %1 DebugScope %32
+%104 = OpExtInst %void %1 DebugScope %32
 %45 = OpLoad %v4float %3
 %46 = OpFAdd %v4float %44 %45
-%107 = OpExtInst %void %1 DebugScope %33 %93
-%92 = OpLoad %v4float %3
-OpStore %91 %92
-%47 = OpLoad %v4float %91
-%108 = OpExtInst %void %1 DebugScope %32
+%105 = OpExtInst %void %1 DebugScope %33 %91
+%90 = OpLoad %v4float %3
+OpStore %89 %90
+%47 = OpLoad %v4float %89
+%106 = OpExtInst %void %1 DebugScope %32
 %48 = OpFAdd %v4float %47 %46
-%109 = OpExtInst %void %1 DebugScope %33 %98
-%95 = OpLoad %v4float %3
-%110 = OpExtInst %void %1 DebugScope %35 %97
-%96 = OpFAdd %v4float %95 %19
-OpStore %94 %96
-%49 = OpLoad %v4float %94
-%111 = OpExtInst %void %1 DebugScope %32
+%107 = OpExtInst %void %1 DebugScope %33 %96
+%93 = OpLoad %v4float %3
+%108 = OpExtInst %void %1 DebugScope %35 %95
+%94 = OpFAdd %v4float %93 %19
+OpStore %92 %94
+%49 = OpLoad %v4float %92
+%109 = OpExtInst %void %1 DebugScope %32
 %50 = OpFAdd %v4float %49 %46
 OpStore %4 %50
-%112 = OpExtInst %void %1 DebugNoScope
+%110 = OpExtInst %void %1 DebugNoScope
 OpReturn
 OpFunctionEnd
 %34 = OpFunction %v4float None %25
 %52 = OpLabel
-%113 = OpExtInst %void %1 DebugScope %33
+%111 = OpExtInst %void %1 DebugScope %33
 %53 = OpLoad %v4float %3
-%114 = OpExtInst %void %1 DebugNoScope
+%112 = OpExtInst %void %1 DebugNoScope
 OpReturnValue %53
 OpFunctionEnd
 %38 = OpFunction %v4float None %25
 %55 = OpLabel
-%115 = OpExtInst %void %1 DebugScope %35 %39
+%113 = OpExtInst %void %1 DebugScope %35 %39
 %57 = OpFunctionCall %v4float %34
 %58 = OpFAdd %v4float %57 %19
-%116 = OpExtInst %void %1 DebugScope %33 %39
+%114 = OpExtInst %void %1 DebugScope %33 %39
 %60 = OpLoad %v4float %3
-%117 = OpExtInst %void %1 DebugScope %37
+%115 = OpExtInst %void %1 DebugScope %37
 %62 = OpFAdd %v4float %58 %60
-%118 = OpExtInst %void %1 DebugScope %33 %40
+%116 = OpExtInst %void %1 DebugScope %33 %40
 %64 = OpLoad %v4float %3
-%119 = OpExtInst %void %1 DebugScope %35 %39
+%117 = OpExtInst %void %1 DebugScope %35 %39
 %66 = OpFAdd %v4float %64 %19
-%120 = OpExtInst %void %1 DebugScope %37
+%118 = OpExtInst %void %1 DebugScope %37
 %68 = OpFAdd %v4float %62 %66
-%121 = OpExtInst %void %1 DebugNoScope
+%119 = OpExtInst %void %1 DebugNoScope
 OpReturnValue %68
 OpFunctionEnd
 %36 = OpFunction %v4float None %25
 %69 = OpLabel
-%122 = OpExtInst %void %1 DebugScope %33 %41
+%120 = OpExtInst %void %1 DebugScope %33 %41
 %71 = OpLoad %v4float %3
-%123 = OpExtInst %void %1 DebugScope %35
+%121 = OpExtInst %void %1 DebugScope %35
 %73 = OpFAdd %v4float %71 %19
-%124 = OpExtInst %void %1 DebugNoScope
+%122 = OpExtInst %void %1 DebugNoScope
 OpReturnValue %73
 OpFunctionEnd
 )";

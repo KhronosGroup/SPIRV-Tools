@@ -187,6 +187,20 @@ class InlinePass : public Pass {
   // Map from function's id to DebugFunction id whose operand is the function.
   std::unordered_map<uint32_t, uint32_t> func_id2dbg_func_id_;
 
+  // A functor for hashing a pair of integers.
+  struct PairHash {
+    std::size_t operator()(const std::pair<uint32_t, uint32_t> pair) const {
+      const uint32_t a = pair.first;
+      const uint32_t b = pair.second;
+      const uint32_t rotated_b = (b >> 2) | ((b & 3) << 30);
+      return a ^ rotated_b;
+    }
+  };
+  // Map from a DebugInlinedAt path from |key.first| to |key.second|
+  // to existing DebugInlinedAt.
+  std::unordered_map<std::pair<uint32_t, uint32_t>, uint32_t, PairHash>
+      inlined_at_chain_;
+
   // Set of ids of functions with early return.
   std::set<uint32_t> early_return_funcs_;
 
