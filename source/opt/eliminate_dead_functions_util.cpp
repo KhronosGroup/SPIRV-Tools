@@ -24,6 +24,7 @@ Module::iterator EliminateFunction(IRContext* context,
   (*func_iter)
       ->ForEachInst([context](Instruction* inst) { context->KillInst(inst); },
                     true);
+  // TODO: Kill DebugInlinedAt used only by DebugScope in a killed function.
   return func_iter->Erase();
 }
 

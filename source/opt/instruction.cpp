@@ -33,6 +33,7 @@ const uint32_t kVariableStorageClassIndex = 0;
 const uint32_t kTypeImageSampledIndex = 5;
 
 // Constants for OpenCL.DebugInfo.100 extension instructions.
+const uint32_t kDebugOperandOpcodeIndex = 3;
 const uint32_t kDebugScopeNumWords = 7;
 const uint32_t kDebugScopeNumWordsWithoutInlinedAt = 6;
 const uint32_t kDebugNoScopeNumWords = 5;
@@ -45,7 +46,8 @@ Instruction::Instruction(IRContext* c)
       has_type_id_(false),
       has_result_id_(false),
       unique_id_(c->TakeNextUniqueId()),
-      dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
+      dbg_scope_(kNoDebugScope, kNoInlinedAt),
+      is_cl100_dbg_inst_(false) {}
 
 Instruction::Instruction(IRContext* c, SpvOp op)
     : utils::IntrusiveNodeBase<Instruction>(),
@@ -54,7 +56,8 @@ Instruction::Instruction(IRContext* c, SpvOp op)
       has_type_id_(false),
       has_result_id_(false),
       unique_id_(c->TakeNextUniqueId()),
-      dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
+      dbg_scope_(kNoDebugScope, kNoInlinedAt),
+      is_cl100_dbg_inst_(false) {}
 
 Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
                          std::vector<Instruction>&& dbg_line)
@@ -64,7 +67,8 @@ Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
       has_result_id_(inst.result_id != 0),
       unique_id_(c->TakeNextUniqueId()),
       dbg_line_insts_(std::move(dbg_line)),
-      dbg_scope_(kNoDebugScope, kNoInlinedAt) {
+      dbg_scope_(kNoDebugScope, kNoInlinedAt),
+      is_cl100_dbg_inst_(false) {
   assert((!IsDebugLineInst(opcode_) || dbg_line.empty()) &&
          "Op(No)Line attaching to Op(No)Line found");
   for (uint32_t i = 0; i < inst.num_operands; ++i) {
@@ -83,7 +87,8 @@ Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
       has_type_id_(inst.type_id != 0),
       has_result_id_(inst.result_id != 0),
       unique_id_(c->TakeNextUniqueId()),
-      dbg_scope_(dbg_scope) {
+      dbg_scope_(dbg_scope),
+      is_cl100_dbg_inst_(false) {
   for (uint32_t i = 0; i < inst.num_operands; ++i) {
     const auto& current_payload = inst.operands[i];
     std::vector<uint32_t> words(
@@ -102,7 +107,8 @@ Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
       has_result_id_(res_id != 0),
       unique_id_(c->TakeNextUniqueId()),
       operands_(),
-      dbg_scope_(kNoDebugScope, kNoInlinedAt) {
+      dbg_scope_(kNoDebugScope, kNoInlinedAt),
+      is_cl100_dbg_inst_(false) {
   if (has_type_id_) {
     operands_.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_TYPE_ID,
                            std::initializer_list<uint32_t>{ty_id});
@@ -122,7 +128,8 @@ Instruction::Instruction(Instruction&& that)
       unique_id_(that.unique_id_),
       operands_(std::move(that.operands_)),
       dbg_line_insts_(std::move(that.dbg_line_insts_)),
-      dbg_scope_(that.dbg_scope_) {
+      dbg_scope_(that.dbg_scope_),
+      is_cl100_dbg_inst_(that.is_cl100_dbg_inst_) {
   for (auto& i : dbg_line_insts_) {
     i.dbg_scope_ = that.dbg_scope_;
   }
@@ -136,6 +143,7 @@ Instruction& Instruction::operator=(Instruction&& that) {
   operands_ = std::move(that.operands_);
   dbg_line_insts_ = std::move(that.dbg_line_insts_);
   dbg_scope_ = that.dbg_scope_;
+  is_cl100_dbg_inst_ = that.is_cl100_dbg_inst_;
   return *this;
 }
 
@@ -148,6 +156,7 @@ Instruction* Instruction::Clone(IRContext* c) const {
   clone->operands_ = operands_;
   clone->dbg_line_insts_ = dbg_line_insts_;
   clone->dbg_scope_ = dbg_scope_;
+  clone->is_cl100_dbg_inst_ = is_cl100_dbg_inst_;
   return clone;
 }
 
@@ -508,6 +517,12 @@ bool Instruction::IsValidBasePointer() const {
     return true;
   }
   return false;
+}
+
+OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
+  if (!is_cl100_dbg_inst_) return OpenCLDebugInfo100InstructionsMax;
+  return OpenCLDebugInfo100Instructions(
+      GetSingleWordOperand(kDebugOperandOpcodeIndex));
 }
 
 bool Instruction::IsValidBaseImage() const {

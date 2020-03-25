@@ -426,6 +426,9 @@ class IRContext {
   // Kill all name and decorate ops targeting the result id of |inst|.
   void KillNamesAndDecorates(Instruction* inst);
 
+  // Change operands of debug instruction to DebugInfoNone.
+  void KillOperandFromDebugInstructions(Instruction* inst);
+
   // Returns the next unique id for use by an instruction.
   inline uint32_t TakeNextUniqueId() {
     assert(unique_id_ != std::numeric_limits<uint32_t>::max());

@@ -16,6 +16,7 @@
 
 #include <cstring>
 
+#include "OpenCLDebugInfo100.h"
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/opt/log.h"
 #include "source/opt/mem_pass.h"
@@ -28,6 +29,11 @@ static const int kSpvDecorateDecorationInIdx = 1;
 static const int kSpvDecorateBuiltinInIdx = 2;
 static const int kEntryPointInterfaceInIdx = 3;
 static const int kEntryPointFunctionIdInIdx = 1;
+static const uint32_t kExtInstSetIdIdx = 2;
+
+// Constants for OpenCL.DebugInfo.100 extension instructions.
+static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
+static const uint32_t kDebugGlobalVariableOperandVariableIndex = 11;
 
 }  // anonymous namespace
 
@@ -152,6 +158,8 @@ Instruction* IRContext::KillInst(Instruction* inst) {
   }
 
   KillNamesAndDecorates(inst);
+
+  KillOperandFromDebugInstructions(inst);
 
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->ClearInst(inst);
@@ -363,6 +371,49 @@ void IRContext::KillNamesAndDecorates(Instruction* inst) {
   const uint32_t rId = inst->result_id();
   if (rId == 0) return;
   KillNamesAndDecorates(rId);
+}
+
+void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
+  const uint32_t opcode = inst->opcode();
+  const uint32_t id = inst->result_id();
+  // Kill id of OpFunction from DebugFunction.
+  if (opcode == SpvOpFunction) {
+    for (auto it = module()->ext_inst_debuginfo_begin();
+         it != module()->ext_inst_debuginfo_end(); ++it) {
+      if (it->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100DebugFunction)
+        continue;
+      auto& operand = it->GetOperand(kDebugFunctionOperandFunctionIndex);
+      if (operand.words[0] == id) {
+        operand.words[0] =
+            module()
+                ->GetDebugInfoNone(it->type_id(), TakeNextId(),
+                                   it->GetSingleWordOperand(kExtInstSetIdIdx))
+                ->result_id();
+      }
+    }
+  }
+  // Kill id of OpVariable for global variable from DebugGlobalVariable.
+  if (opcode == SpvOpVariable ||
+      (SpvOpConstantTrue <= opcode && opcode <= SpvOpConstantNull)) {
+    for (auto it = module()->ext_inst_debuginfo_begin();
+         it != module()->ext_inst_debuginfo_end(); ++it) {
+      if (it->GetOpenCL100DebugOpcode() !=
+          OpenCLDebugInfo100DebugGlobalVariable)
+        continue;
+      auto& operand = it->GetOperand(kDebugGlobalVariableOperandVariableIndex);
+      if (operand.words[0] == id) {
+        operand.words[0] =
+            module()
+                ->GetDebugInfoNone(it->type_id(), TakeNextId(),
+                                   it->GetSingleWordOperand(kExtInstSetIdIdx))
+                ->result_id();
+      }
+    }
+  }
+  // Notice that we do not need anythings to do for local variables.
+  // DebugLocalVariable does not have an OpVariable operand. Instead,
+  // DebugDeclare/DebugValue has an OpVariable operand for a local
+  // variable. The function inlining pass handles it properly.
 }
 
 void IRContext::AddCombinatorsForCapability(uint32_t capability) {
