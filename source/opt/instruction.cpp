@@ -234,8 +234,10 @@ bool Instruction::IsVulkanStorageImage() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray || base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(base_type->GetSingleWordInOperand(0));
+  if (base_type->opcode() == SpvOpTypeArray ||
+      base_type->opcode() == SpvOpTypeRuntimeArray) {
+    base_type = context()->get_def_use_mgr()->GetDef(
+        base_type->GetSingleWordInOperand(0));
   }
 
   if (base_type->opcode() != SpvOpTypeImage) {
@@ -266,8 +268,10 @@ bool Instruction::IsVulkanSampledImage() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray || base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(base_type->GetSingleWordInOperand(0));
+  if (base_type->opcode() == SpvOpTypeArray ||
+      base_type->opcode() == SpvOpTypeRuntimeArray) {
+    base_type = context()->get_def_use_mgr()->GetDef(
+        base_type->GetSingleWordInOperand(0));
   }
 
   if (base_type->opcode() != SpvOpTypeImage) {
@@ -298,8 +302,10 @@ bool Instruction::IsVulkanStorageTexelBuffer() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray || base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(base_type->GetSingleWordInOperand(0));
+  if (base_type->opcode() == SpvOpTypeArray ||
+      base_type->opcode() == SpvOpTypeRuntimeArray) {
+    base_type = context()->get_def_use_mgr()->GetDef(
+        base_type->GetSingleWordInOperand(0));
   }
 
   if (base_type->opcode() != SpvOpTypeImage) {
@@ -326,8 +332,10 @@ bool Instruction::IsVulkanStorageBuffer() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray || base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(base_type->GetSingleWordInOperand(0));
+  if (base_type->opcode() == SpvOpTypeArray ||
+      base_type->opcode() == SpvOpTypeRuntimeArray) {
+    base_type = context()->get_def_use_mgr()->GetDef(
+        base_type->GetSingleWordInOperand(0));
   }
 
   if (base_type->opcode() != SpvOpTypeStruct) {
@@ -365,8 +373,10 @@ bool Instruction::IsVulkanUniformBuffer() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray || base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(base_type->GetSingleWordInOperand(0));
+  if (base_type->opcode() == SpvOpTypeArray ||
+      base_type->opcode() == SpvOpTypeRuntimeArray) {
+    base_type = context()->get_def_use_mgr()->GetDef(
+        base_type->GetSingleWordInOperand(0));
   }
 
   if (base_type->opcode() != SpvOpTypeStruct) {
