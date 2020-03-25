@@ -37,6 +37,7 @@ static const uint32_t kDebugResultIdIndex = 1;
 static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
+static const uint32_t kDebugInlinedAtOperandInlinedIndex = 6;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
 static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 
@@ -181,6 +182,7 @@ uint32_t InlinePass::CreateDebugInlinedAt(const std::vector<Instruction>& lines,
     inlined_at->AddOperand({spv_operand_type_t::SPV_OPERAND_TYPE_RESULT_ID,
                             {fn_call_scope.GetInlinedAt()}});
   }
+  id2inlined_at_[ret_id] = inlined_at.get();
   get_module()->AddExtInstDebugInfo(std::move(inlined_at));
   return ret_id;
 }
@@ -779,20 +781,19 @@ bool InlinePass::GenInlineCode(
   // information like `DebugInlinedAt %bar %inlined_to_main` when we inline
   // `bar` to `main`.
   if (get_module()->ContainsOpenCL100DebugInstrunctions()) {
-    Instruction* caller = &*call_inst_itr;
-    const auto& caller_dbg_scope = caller->GetDebugScope();
-    if (caller_dbg_scope.GetLexicalScope()) {
-      const uint32_t inlined_at =
-          CreateDebugInlinedAt(caller->dbg_line_insts(), caller_dbg_scope);
+    const auto& call_inst_dbg_scope = call_inst_itr->GetDebugScope();
+    if (call_inst_dbg_scope.GetLexicalScope()) {
+      const uint32_t inlined_at = CreateDebugInlinedAt(
+          call_inst_itr->dbg_line_insts(), call_inst_dbg_scope);
       if (!inlined_at) return false;
 
-      uint32_t last_inlined_at = 0;
-      uint32_t last_recursive_inlined_at = inlined_at;
+      uint32_t prev_inlined_at = 0;
+      uint32_t last_inlined_at_chain = inlined_at;
       uint32_t not_inlined_insts_idx = 0;
 
       auto fn_update_inlined_at = [&not_inlined_insts, &not_inlined_insts_idx,
-                                   &inlined_at, &last_inlined_at,
-                                   &last_recursive_inlined_at,
+                                   &inlined_at, &prev_inlined_at,
+                                   &last_inlined_at_chain,
                                    this](Instruction* cpi) {
         // Type1. instructions that were not parts of callee function.
         if (not_inlined_insts_idx < not_inlined_insts.size() &&
@@ -801,18 +802,102 @@ bool InlinePass::GenInlineCode(
           return true;
         }
 
-        const auto& dbg_scope = cpi->GetDebugScope();
-        if (!dbg_scope.GetLexicalScope()) return true;
+        if (!cpi->GetDebugScope().GetLexicalScope()) return true;
 
         // Type2. inlined instructions from callee function.
-        DebugScope new_scope(dbg_scope.GetLexicalScope(), 0);
-        if (!dbg_scope.GetInlinedAt()) {
+        DebugScope new_scope(cpi->GetDebugScope().GetLexicalScope(), 0);
+        if (!cpi->GetDebugScope().GetInlinedAt()) {
           new_scope.SetInlinedAt(inlined_at);
           cpi->SetDebugScope(new_scope);
           return true;
         }
 
-        // TODO: handle Type3, the function call already has a DebugInlinedAt
+        // We want to reuse the DebugInlinedAt previously created
+        // if the current DebugInlinedAt initially had the same
+        // DebugInlinedAt with the previous one.
+        if (cpi->GetDebugScope().GetInlinedAt() == prev_inlined_at) {
+          new_scope.SetInlinedAt(last_inlined_at_chain);
+          cpi->SetDebugScope(new_scope);
+          return true;
+        }
+        prev_inlined_at = cpi->GetDebugScope().GetInlinedAt();
+
+        // Type3. inlined instructions from another function to callee and
+        // now recursively inlined to the caller.
+        //
+        // For example, initially, we had three functions: foo() { bar(); },
+        // bar() { /* some code */ zoo(); }, zoo() { /* some code */ }.
+        //
+        // Now zoo() is inlined to bar():
+        // bar() {
+        //   /* some code of bar() */
+        //   /* some code of zoo(), which is DebugInlinedAt bar() */
+        // }
+        //
+        // After zoo() is inlined to foo():
+        // foo() {
+        //   /* some code of bar() */
+        //   /* some code of zoo(), which is DebugInlinedAt bar() %bar_to_zoo
+        //                          where %bar_to_zoo = DebugInlinedAt zoo() */
+        // }
+        //
+        // When we change `DebugInlinedAt bar()` to
+        // `DebugInlinedAt bar() %bar_to_zoo` and create `%bar_to_zoo`, we need
+        // two new DebugInlinedAt. If the instruction already has a chain of
+        // DebugInlinedAt, we must clone the chain and put DebugInlinedAt for
+        // this function call at the end of the new chain.
+        uint32_t chain_iter_id = cpi->GetDebugScope().GetInlinedAt();
+        uint32_t head_inlined_at_id_of_chain = 0;
+        std::vector<Instruction*> new_inlined_at_insts;
+        do {
+          auto it_inlined_at = id2inlined_at_.find(chain_iter_id);
+          if (it_inlined_at == id2inlined_at_.end()) return false;
+          Instruction* new_inlined_at = it_inlined_at->second->Clone(context());
+          new_inlined_at->SetResultId(context()->TakeNextId());
+          // Previous DebugInlinedAt must have the current new DebugInlinedAt
+          // as its Inlined operand, which makes a recursive DebugInlinedAt
+          // chain.
+          if (!new_inlined_at_insts.empty()) {
+            new_inlined_at_insts.back()
+                ->GetOperand(kDebugInlinedAtOperandInlinedIndex)
+                .words[0] = new_inlined_at->result_id();
+          }
+          new_inlined_at_insts.push_back(new_inlined_at);
+          if (!head_inlined_at_id_of_chain)
+            head_inlined_at_id_of_chain = new_inlined_at->result_id();
+          if (new_inlined_at->NumOperands() <=
+              kDebugInlinedAtOperandInlinedIndex) {
+            break;
+          }
+          chain_iter_id = new_inlined_at->GetSingleWordOperand(
+              kDebugInlinedAtOperandInlinedIndex);
+        } while (chain_iter_id);
+
+        // |inlined_at| must be the tail of the DebugInlinedAt chain.
+        if (!new_inlined_at_insts.empty()) {
+          if (new_inlined_at_insts.back()->NumOperands() <=
+              kDebugInlinedAtOperandInlinedIndex) {
+            new_inlined_at_insts.back()->AddOperand(
+                {SPV_OPERAND_TYPE_RESULT_ID, {inlined_at}});
+          } else {
+            new_inlined_at_insts.back()
+                ->GetOperand(kDebugInlinedAtOperandInlinedIndex)
+                .words[0] = inlined_at;
+          }
+        }
+
+        // Add all new DebugInlinedAt to module.
+        for (int i = static_cast<int>(new_inlined_at_insts.size()) - 1; i >= 0;
+             --i) {
+          id2inlined_at_[new_inlined_at_insts[i]->result_id()] =
+              new_inlined_at_insts[i];
+          get_module()->AddExtInstDebugInfo(
+              std::move(std::unique_ptr<Instruction>(new_inlined_at_insts[i])));
+        }
+
+        new_scope.SetInlinedAt(head_inlined_at_id_of_chain);
+        cpi->SetDebugScope(new_scope);
+        last_inlined_at_chain = head_inlined_at_id_of_chain;
         return true;
       };
       for (auto& var : *new_vars) {
@@ -980,6 +1065,7 @@ void InlinePass::InitializeInline() {
       });
     }
 
+    id2inlined_at_.clear();
     id2lexical_scope_.clear();
     func_id2dbg_func_id_.clear();
 
@@ -987,6 +1073,10 @@ void InlinePass::InitializeInline() {
     for (auto& i : get_module()->ext_inst_debuginfo()) {
       OpenCLDebugInfo100Instructions opcode = i.GetOpenCL100DebugOpcode();
       switch (opcode) {
+        case OpenCLDebugInfo100DebugInlinedAt: {
+          id2inlined_at_[i.result_id()] = &i;
+          break;
+        }
         case OpenCLDebugInfo100DebugFunction: {
           // TODO: Report a validation error if multiple DebugFunction
           //       have the same OpFunction operand.

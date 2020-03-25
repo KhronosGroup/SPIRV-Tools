@@ -172,6 +172,9 @@ class InlinePass : public Pass {
   // CFG. It has functionality not present in CFG. Consolidate.
   std::unordered_map<uint32_t, BasicBlock*> id2block_;
 
+  // Map from DebugInlinedAt's result id to its Instruction.
+  std::unordered_map<uint32_t, Instruction*> id2inlined_at_;
+
   // Map from result id of lexical scope debug instruction (DebugFunction,
   // DebugTypeComposite, DebugLexicalBlock, DebugCompilationUnit) to its
   // Instruction.

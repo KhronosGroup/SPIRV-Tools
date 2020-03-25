@@ -3978,6 +3978,762 @@ OpFunctionEnd
   SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
 }
 
+TEST_F(InlineTest, NestedWithAnExistingDebugInlinedAt) {
+  const std::string before =
+      R"(OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name "#line 1 \"ps.hlsl\"
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return color;
+}
+"
+%float_name = OpString "float"
+%main_name = OpString "main"
+%foo_name = OpString "foo"
+%bar_name = OpString "bar"
+%zoo_name = OpString "zoo"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%v4f2 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%v4f3 = OpConstantComposite %v4float %float_3 %float_3 %float_3 %float_3
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%foo_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 10 1 %cu %main_name FlagIsProtected|FlagIsPrivate 10 %main
+%dbg_foo = OpExtInst %void %ext DebugFunction %foo_name %foo_ty %src 1 1 %cu %foo_name FlagIsProtected|FlagIsPrivate 1 %foo
+%dbg_bar = OpExtInst %void %ext DebugFunction %bar_name %foo_ty %src 4 1 %cu %bar_name FlagIsProtected|FlagIsPrivate 4 %bar
+%dbg_zoo = OpExtInst %void %ext DebugFunction %zoo_name %foo_ty %src 7 1 %cu %zoo_name FlagIsProtected|FlagIsPrivate 7 %zoo
+%inlined_to_zoo = OpExtInst %void %ext DebugInlinedAt 7 %dbg_zoo
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%scope0 = OpExtInst %void %ext DebugScope %dbg_main
+%zoo_val = OpFunctionCall %v4float %zoo
+%color = OpLoad %v4float %in_var_COLOR
+%result = OpFAdd %v4float %zoo_val %color
+OpStore %out_var_SV_TARGET %result
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %v4float None %v4f_fn_type
+%scope1 = OpExtInst %void %ext DebugScope %dbg_foo
+%foo_bb = OpLabel
+OpReturnValue %v4f1
+OpFunctionEnd
+%zoo = OpFunction %v4float None %v4f_fn_type
+%scope3 = OpExtInst %void %ext DebugScope %dbg_zoo
+%zoo_bb = OpLabel
+%scope2 = OpExtInst %void %ext DebugScope %dbg_bar %inlined_to_zoo
+%foo_val = OpFunctionCall %v4float %foo
+%bar_val = OpFAdd %v4float %foo_val %v4f2
+%scope4 = OpExtInst %void %ext DebugScope %dbg_zoo
+%zoo_ret = OpFAdd %v4float %bar_val %v4f3
+OpReturnValue %zoo_ret
+OpFunctionEnd
+%bar = OpFunction %v4float None %v4f_fn_type
+%scope5 = OpExtInst %void %ext DebugScope %dbg_bar
+%bar_bb = OpLabel
+%foo_val0 = OpFunctionCall %v4float %foo
+%bar_ret = OpFAdd %v4float %foo_val0 %v4f2
+OpReturnValue %bar_ret
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main" %3 %4
+OpExecutionMode %2 OriginUpperLeft
+%5 = OpString "ps.hlsl"
+OpSource HLSL 600 %5 "#line 1 \"ps.hlsl\"
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return color;
+}
+"
+%6 = OpString "float"
+%7 = OpString "main"
+%8 = OpString "foo"
+%9 = OpString "bar"
+%10 = OpString "zoo"
+OpDecorate %3 Location 0
+OpDecorate %4 Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%v4float = OpTypeVector %float 4
+%18 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%19 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%20 = OpConstantComposite %v4float %float_3 %float_3 %float_3 %float_3
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%24 = OpTypeFunction %void
+%25 = OpTypeFunction %v4float
+%3 = OpVariable %_ptr_Input_v4float Input
+%4 = OpVariable %_ptr_Output_v4float Output
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%26 = OpExtInst %void %1 DebugSource %5
+%27 = OpExtInst %void %1 DebugCompilationUnit 1 4 %26 HLSL
+%28 = OpExtInst %void %1 DebugTypeBasic %6 %uint_32 Float
+%29 = OpExtInst %void %1 DebugTypeVector %28 4
+%30 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %29 %29
+%31 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %29
+%32 = OpExtInst %void %1 DebugFunction %7 %30 %26 10 1 %27 %7 FlagIsProtected|FlagIsPrivate 10 %2
+%33 = OpExtInst %void %1 DebugFunction %8 %31 %26 1 1 %27 %8 FlagIsProtected|FlagIsPrivate 1 %34
+%35 = OpExtInst %void %1 DebugFunction %9 %31 %26 4 1 %27 %9 FlagIsProtected|FlagIsPrivate 4 %36
+%37 = OpExtInst %void %1 DebugFunction %10 %31 %26 7 1 %27 %10 FlagIsProtected|FlagIsPrivate 7 %38
+%39 = OpExtInst %void %1 DebugInlinedAt 7 %37
+%63 = OpExtInst %void %1 DebugInlinedAt 10 %32
+%64 = OpExtInst %void %1 DebugInlinedAt 7 %37 %63
+%66 = OpExtInst %void %1 DebugInlinedAt 4 %35 %64
+%2 = OpFunction %void None %24
+%40 = OpLabel
+%65 = OpVariable %_ptr_Function_v4float Function
+%59 = OpVariable %_ptr_Function_v4float Function
+%67 = OpExtInst %void %1 DebugScope %33 %66
+OpStore %65 %18
+%60 = OpLoad %v4float %65
+%68 = OpExtInst %void %1 DebugScope %35 %64
+%61 = OpFAdd %v4float %60 %19
+%69 = OpExtInst %void %1 DebugScope %37 %63
+%62 = OpFAdd %v4float %61 %20
+OpStore %59 %62
+%42 = OpLoad %v4float %59
+%70 = OpExtInst %void %1 DebugScope %32
+%43 = OpLoad %v4float %3
+%44 = OpFAdd %v4float %42 %43
+OpStore %4 %44
+%71 = OpExtInst %void %1 DebugNoScope
+OpReturn
+OpFunctionEnd
+%34 = OpFunction %v4float None %25
+%46 = OpLabel
+OpReturnValue %18
+OpFunctionEnd
+%38 = OpFunction %v4float None %25
+%48 = OpLabel
+%72 = OpExtInst %void %1 DebugScope %35 %39
+%50 = OpFunctionCall %v4float %34
+%51 = OpFAdd %v4float %50 %19
+%73 = OpExtInst %void %1 DebugScope %37
+%53 = OpFAdd %v4float %51 %20
+%74 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %53
+OpFunctionEnd
+%36 = OpFunction %v4float None %25
+%55 = OpLabel
+%75 = OpExtInst %void %1 DebugScope %35
+%56 = OpFunctionCall %v4float %34
+%57 = OpFAdd %v4float %56 %19
+%76 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %57
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
+}
+
+TEST_F(InlineTest, NestedWithTwoExistingDebugInlinedAt) {
+  const std::string before =
+      R"(OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name "#line 1 \"ps.hlsl\"
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return color;
+}
+"
+%float_name = OpString "float"
+%main_name = OpString "main"
+%foo_name = OpString "foo"
+%bar_name = OpString "bar"
+%zoo_name = OpString "zoo"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%v4f2 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%v4f3 = OpConstantComposite %v4float %float_3 %float_3 %float_3 %float_3
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%foo_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 10 1 %cu %main_name FlagIsProtected|FlagIsPrivate 10 %main
+%dbg_foo = OpExtInst %void %ext DebugFunction %foo_name %foo_ty %src 1 1 %cu %foo_name FlagIsProtected|FlagIsPrivate 1 %foo
+%dbg_bar = OpExtInst %void %ext DebugFunction %bar_name %foo_ty %src 4 1 %cu %bar_name FlagIsProtected|FlagIsPrivate 4 %bar
+%dbg_zoo = OpExtInst %void %ext DebugFunction %zoo_name %foo_ty %src 7 1 %cu %zoo_name FlagIsProtected|FlagIsPrivate 7 %zoo
+%inlined_to_zoo = OpExtInst %void %ext DebugInlinedAt 7 %dbg_zoo
+%inlined_to_bar = OpExtInst %void %ext DebugInlinedAt 4 %dbg_bar %inlined_to_zoo
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%scope0 = OpExtInst %void %ext DebugScope %dbg_main
+%zoo_val = OpFunctionCall %v4float %zoo
+%color = OpLoad %v4float %in_var_COLOR
+%result = OpFAdd %v4float %zoo_val %color
+OpStore %out_var_SV_TARGET %result
+OpReturn
+OpFunctionEnd
+%zoo = OpFunction %v4float None %v4f_fn_type
+%scope1 = OpExtInst %void %ext DebugScope %dbg_zoo
+%zoo_bb = OpLabel
+%scope2 = OpExtInst %void %ext DebugScope %dbg_foo %inlined_to_bar
+%foo_val = OpLoad %v4float %in_var_COLOR
+%scope3 = OpExtInst %void %ext DebugScope %dbg_bar %inlined_to_zoo
+%bar_val = OpFAdd %v4float %foo_val %v4f2
+%scope4 = OpExtInst %void %ext DebugScope %dbg_zoo
+%zoo_ret = OpFAdd %v4float %bar_val %v4f3
+OpReturnValue %zoo_ret
+OpFunctionEnd
+%foo = OpFunction %v4float None %v4f_fn_type
+%scope5 = OpExtInst %void %ext DebugScope %dbg_foo
+%foo_bb = OpLabel
+%result0 = OpLoad %v4float %in_var_COLOR
+OpReturnValue %result0
+OpFunctionEnd
+%bar = OpFunction %v4float None %v4f_fn_type
+%scope6 = OpExtInst %void %ext DebugScope %dbg_bar
+%bar_bb = OpLabel
+%foo_val0 = OpFunctionCall %v4float %foo
+%bar_ret = OpFAdd %v4float %foo_val0 %v4f2
+OpReturnValue %bar_ret
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main" %3 %4
+OpExecutionMode %2 OriginUpperLeft
+%5 = OpString "ps.hlsl"
+OpSource HLSL 600 %5 "#line 1 \"ps.hlsl\"
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return color;
+}
+"
+%6 = OpString "float"
+%7 = OpString "main"
+%8 = OpString "foo"
+%9 = OpString "bar"
+%10 = OpString "zoo"
+OpDecorate %3 Location 0
+OpDecorate %4 Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%v4float = OpTypeVector %float 4
+%18 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%19 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%20 = OpConstantComposite %v4float %float_3 %float_3 %float_3 %float_3
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%24 = OpTypeFunction %void
+%25 = OpTypeFunction %v4float
+%3 = OpVariable %_ptr_Input_v4float Input
+%4 = OpVariable %_ptr_Output_v4float Output
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%26 = OpExtInst %void %1 DebugSource %5
+%27 = OpExtInst %void %1 DebugCompilationUnit 1 4 %26 HLSL
+%28 = OpExtInst %void %1 DebugTypeBasic %6 %uint_32 Float
+%29 = OpExtInst %void %1 DebugTypeVector %28 4
+%30 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %29 %29
+%31 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %29
+%32 = OpExtInst %void %1 DebugFunction %7 %30 %26 10 1 %27 %7 FlagIsProtected|FlagIsPrivate 10 %2
+%33 = OpExtInst %void %1 DebugFunction %8 %31 %26 1 1 %27 %8 FlagIsProtected|FlagIsPrivate 1 %34
+%35 = OpExtInst %void %1 DebugFunction %9 %31 %26 4 1 %27 %9 FlagIsProtected|FlagIsPrivate 4 %36
+%37 = OpExtInst %void %1 DebugFunction %10 %31 %26 7 1 %27 %10 FlagIsProtected|FlagIsPrivate 7 %38
+%39 = OpExtInst %void %1 DebugInlinedAt 7 %37
+%40 = OpExtInst %void %1 DebugInlinedAt 4 %35 %39
+%66 = OpExtInst %void %1 DebugInlinedAt 10 %32
+%68 = OpExtInst %void %1 DebugInlinedAt 7 %37 %66
+%67 = OpExtInst %void %1 DebugInlinedAt 4 %35 %68
+%69 = OpExtInst %void %1 DebugInlinedAt 7 %37 %66
+%2 = OpFunction %void None %24
+%41 = OpLabel
+%62 = OpVariable %_ptr_Function_v4float Function
+%70 = OpExtInst %void %1 DebugScope %33 %67
+%63 = OpLoad %v4float %3
+%71 = OpExtInst %void %1 DebugScope %35 %69
+%64 = OpFAdd %v4float %63 %19
+%72 = OpExtInst %void %1 DebugScope %37 %66
+%65 = OpFAdd %v4float %64 %20
+OpStore %62 %65
+%43 = OpLoad %v4float %62
+%73 = OpExtInst %void %1 DebugScope %32
+%44 = OpLoad %v4float %3
+%45 = OpFAdd %v4float %43 %44
+OpStore %4 %45
+%74 = OpExtInst %void %1 DebugNoScope
+OpReturn
+OpFunctionEnd
+%38 = OpFunction %v4float None %25
+%47 = OpLabel
+%75 = OpExtInst %void %1 DebugScope %33 %40
+%49 = OpLoad %v4float %3
+%76 = OpExtInst %void %1 DebugScope %35 %39
+%51 = OpFAdd %v4float %49 %19
+%77 = OpExtInst %void %1 DebugScope %37
+%53 = OpFAdd %v4float %51 %20
+%78 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %53
+OpFunctionEnd
+%34 = OpFunction %v4float None %25
+%55 = OpLabel
+%79 = OpExtInst %void %1 DebugScope %33
+%56 = OpLoad %v4float %3
+%80 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %56
+OpFunctionEnd
+%36 = OpFunction %v4float None %25
+%58 = OpLabel
+%81 = OpExtInst %void %1 DebugScope %35
+%59 = OpFunctionCall %v4float %34
+%60 = OpFAdd %v4float %59 %19
+%82 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %60
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
+}
+
+TEST_F(InlineTest, DebugMultipleInlining) {
+  const std::string before =
+      R"(OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name "#line 1 \"ps.hlsl\"
+float4 foo() {
+  return 1;
+}
+float4 bar() {
+  return 1;
+}
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return foo() + bar() + color;
+}
+"
+%float_name = OpString "float"
+%main_name = OpString "main"
+%foo_name = OpString "foo"
+%bar_name = OpString "bar"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%foo_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 7 1 %cu %main_name FlagIsProtected|FlagIsPrivate 7 %main
+%dbg_foo = OpExtInst %void %ext DebugFunction %foo_name %foo_ty %src 1 1 %cu %foo_name FlagIsProtected|FlagIsPrivate 1 %foo
+%dbg_bar = OpExtInst %void %ext DebugFunction %bar_name %foo_ty %src 4 1 %cu %bar_name FlagIsProtected|FlagIsPrivate 4 %bar
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%scope0 = OpExtInst %void %ext DebugScope %dbg_main
+%foo_val = OpFunctionCall %v4float %foo
+%color = OpLoad %v4float %in_var_COLOR
+%add = OpFAdd %v4float %foo_val %color
+%bar_val = OpFunctionCall %v4float %bar
+%result = OpFAdd %v4float %bar_val %add
+OpStore %out_var_SV_TARGET %result
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %v4float None %v4f_fn_type
+%scope1 = OpExtInst %void %ext DebugScope %dbg_foo
+%foo_bb = OpLabel
+OpReturnValue %v4f1
+OpFunctionEnd
+%bar = OpFunction %v4float None %v4f_fn_type
+%scope2 = OpExtInst %void %ext DebugScope %dbg_bar
+%bar_bb = OpLabel
+OpReturnValue %v4f1
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main" %3 %4
+OpExecutionMode %2 OriginUpperLeft
+%5 = OpString "ps.hlsl"
+OpSource HLSL 600 %5 "#line 1 \"ps.hlsl\"
+float4 foo() {
+  return 1;
+}
+float4 bar() {
+  return 1;
+}
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return foo() + bar() + color;
+}
+"
+%6 = OpString "float"
+%7 = OpString "main"
+%8 = OpString "foo"
+%9 = OpString "bar"
+OpDecorate %3 Location 0
+OpDecorate %4 Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%v4float = OpTypeVector %float 4
+%15 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%19 = OpTypeFunction %void
+%20 = OpTypeFunction %v4float
+%3 = OpVariable %_ptr_Input_v4float Input
+%4 = OpVariable %_ptr_Output_v4float Output
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%21 = OpExtInst %void %1 DebugSource %5
+%22 = OpExtInst %void %1 DebugCompilationUnit 1 4 %21 HLSL
+%23 = OpExtInst %void %1 DebugTypeBasic %6 %uint_32 Float
+%24 = OpExtInst %void %1 DebugTypeVector %23 4
+%25 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %24 %24
+%26 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %24
+%27 = OpExtInst %void %1 DebugFunction %7 %25 %21 7 1 %22 %7 FlagIsProtected|FlagIsPrivate 7 %2
+%28 = OpExtInst %void %1 DebugFunction %8 %26 %21 1 1 %22 %8 FlagIsProtected|FlagIsPrivate 1 %29
+%30 = OpExtInst %void %1 DebugFunction %9 %26 %21 4 1 %22 %9 FlagIsProtected|FlagIsPrivate 4 %31
+%45 = OpExtInst %void %1 DebugInlinedAt 7 %27
+%47 = OpExtInst %void %1 DebugInlinedAt 7 %27
+%2 = OpFunction %void None %19
+%32 = OpLabel
+%46 = OpVariable %_ptr_Function_v4float Function
+%44 = OpVariable %_ptr_Function_v4float Function
+%48 = OpExtInst %void %1 DebugScope %28 %45
+OpStore %44 %15
+%34 = OpLoad %v4float %44
+%49 = OpExtInst %void %1 DebugScope %27
+%35 = OpLoad %v4float %3
+%36 = OpFAdd %v4float %34 %35
+%50 = OpExtInst %void %1 DebugScope %30 %47
+OpStore %46 %15
+%37 = OpLoad %v4float %46
+%51 = OpExtInst %void %1 DebugScope %27
+%38 = OpFAdd %v4float %37 %36
+OpStore %4 %38
+%52 = OpExtInst %void %1 DebugNoScope
+OpReturn
+OpFunctionEnd
+%29 = OpFunction %v4float None %20
+%40 = OpLabel
+OpReturnValue %15
+OpFunctionEnd
+%31 = OpFunction %v4float None %20
+%42 = OpLabel
+OpReturnValue %15
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
+}
+
+TEST_F(InlineTest, DebugManyNested) {
+  const std::string before =
+      R"(OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name "#line 1 \"ps.hlsl\"
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return color;
+}
+"
+%float_name = OpString "float"
+%main_name = OpString "main"
+%foo_name = OpString "foo"
+%bar_name = OpString "bar"
+%zoo_name = OpString "zoo"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%v4f2 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%v4f3 = OpConstantComposite %v4float %float_3 %float_3 %float_3 %float_3
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%foo_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 10 1 %cu %main_name FlagIsProtected|FlagIsPrivate 10 %main
+%dbg_foo = OpExtInst %void %ext DebugFunction %foo_name %foo_ty %src 1 1 %cu %foo_name FlagIsProtected|FlagIsPrivate 1 %foo
+%dbg_bar = OpExtInst %void %ext DebugFunction %bar_name %foo_ty %src 4 1 %cu %bar_name FlagIsProtected|FlagIsPrivate 4 %bar
+%dbg_zoo = OpExtInst %void %ext DebugFunction %zoo_name %foo_ty %src 7 1 %cu %zoo_name FlagIsProtected|FlagIsPrivate 7 %zoo
+%inlined_to_zoo = OpExtInst %void %ext DebugInlinedAt 7 %dbg_zoo
+%inlined_to_bar_and_zoo = OpExtInst %void %ext DebugInlinedAt 4 %dbg_bar %inlined_to_zoo
+%inlined_to_bar = OpExtInst %void %ext DebugInlinedAt 4 %dbg_bar
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%s0 = OpExtInst %void %ext DebugScope %dbg_main
+%zoo_val = OpFunctionCall %v4float %zoo
+%color = OpLoad %v4float %in_var_COLOR
+%r0 = OpFAdd %v4float %zoo_val %color
+%foo_val = OpFunctionCall %v4float %foo
+%r1 = OpFAdd %v4float %foo_val %r0
+%bar_val = OpFunctionCall %v4float %bar
+%r2 = OpFAdd %v4float %bar_val %r0
+OpStore %out_var_SV_TARGET %r2
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %v4float None %v4f_fn_type
+%s1 = OpExtInst %void %ext DebugScope %dbg_foo
+%foo_bb = OpLabel
+%foo_ret = OpLoad %v4float %in_var_COLOR
+OpReturnValue %foo_ret
+OpFunctionEnd
+%zoo = OpFunction %v4float None %v4f_fn_type
+%s2 = OpExtInst %void %ext DebugScope %dbg_zoo
+%zoo_bb = OpLabel
+%s3 = OpExtInst %void %ext DebugScope %dbg_bar %inlined_to_zoo
+%foo0 = OpFunctionCall %v4float %foo
+%bar0 = OpFAdd %v4float %foo0 %v4f2
+%s4 = OpExtInst %void %ext DebugScope %dbg_foo %inlined_to_zoo
+%foo1 = OpLoad %v4float %in_var_COLOR
+%s5 = OpExtInst %void %ext DebugScope %dbg_zoo
+%zoo0 = OpFAdd %v4float %bar0 %foo1
+%s6 = OpExtInst %void %ext DebugScope %dbg_foo %inlined_to_bar_and_zoo
+%foo2 = OpLoad %v4float %in_var_COLOR
+%s7 = OpExtInst %void %ext DebugScope %dbg_bar %inlined_to_zoo
+%bar1 = OpFAdd %v4float %foo2 %v4f2
+%s8 = OpExtInst %void %ext DebugScope %dbg_zoo
+%zoo_ret = OpFAdd %v4float %zoo0 %bar1
+OpReturnValue %zoo_ret
+OpFunctionEnd
+%bar = OpFunction %v4float None %v4f_fn_type
+%bar_bb = OpLabel
+%s9 = OpExtInst %void %ext DebugScope %dbg_foo %inlined_to_bar
+%foo3 = OpLoad %v4float %in_var_COLOR
+%s10 = OpExtInst %void %ext DebugScope %dbg_bar
+%bar_ret = OpFAdd %v4float %foo3 %v4f2
+OpReturnValue %bar_ret
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main" %3 %4
+OpExecutionMode %2 OriginUpperLeft
+%5 = OpString "ps.hlsl"
+OpSource HLSL 600 %5 "#line 1 \"ps.hlsl\"
+float4 main(float4 color : COLOR) : SV_TARGET {
+  return color;
+}
+"
+%6 = OpString "float"
+%7 = OpString "main"
+%8 = OpString "foo"
+%9 = OpString "bar"
+%10 = OpString "zoo"
+OpDecorate %3 Location 0
+OpDecorate %4 Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%v4float = OpTypeVector %float 4
+%18 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%19 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%20 = OpConstantComposite %v4float %float_3 %float_3 %float_3 %float_3
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%24 = OpTypeFunction %void
+%25 = OpTypeFunction %v4float
+%3 = OpVariable %_ptr_Input_v4float Input
+%4 = OpVariable %_ptr_Output_v4float Output
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%26 = OpExtInst %void %1 DebugSource %5
+%27 = OpExtInst %void %1 DebugCompilationUnit 1 4 %26 HLSL
+%28 = OpExtInst %void %1 DebugTypeBasic %6 %uint_32 Float
+%29 = OpExtInst %void %1 DebugTypeVector %28 4
+%30 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %29 %29
+%31 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %29
+%32 = OpExtInst %void %1 DebugFunction %7 %30 %26 10 1 %27 %7 FlagIsProtected|FlagIsPrivate 10 %2
+%33 = OpExtInst %void %1 DebugFunction %8 %31 %26 1 1 %27 %8 FlagIsProtected|FlagIsPrivate 1 %34
+%35 = OpExtInst %void %1 DebugFunction %9 %31 %26 4 1 %27 %9 FlagIsProtected|FlagIsPrivate 4 %36
+%37 = OpExtInst %void %1 DebugFunction %10 %31 %26 7 1 %27 %10 FlagIsProtected|FlagIsPrivate 7 %38
+%39 = OpExtInst %void %1 DebugInlinedAt 7 %37
+%40 = OpExtInst %void %1 DebugInlinedAt 4 %35 %39
+%41 = OpExtInst %void %1 DebugInlinedAt 4 %35
+%83 = OpExtInst %void %1 DebugInlinedAt 10 %32
+%84 = OpExtInst %void %1 DebugInlinedAt 7 %37 %83
+%86 = OpExtInst %void %1 DebugInlinedAt 7 %37 %83
+%85 = OpExtInst %void %1 DebugInlinedAt 4 %35 %86
+%87 = OpExtInst %void %1 DebugInlinedAt 7 %37 %83
+%90 = OpExtInst %void %1 DebugInlinedAt 4 %35 %84
+%93 = OpExtInst %void %1 DebugInlinedAt 10 %32
+%97 = OpExtInst %void %1 DebugInlinedAt 10 %32
+%98 = OpExtInst %void %1 DebugInlinedAt 4 %35 %97
+%2 = OpFunction %void None %24
+%42 = OpLabel
+%94 = OpVariable %_ptr_Function_v4float Function
+%91 = OpVariable %_ptr_Function_v4float Function
+%88 = OpVariable %_ptr_Function_v4float Function
+%75 = OpVariable %_ptr_Function_v4float Function
+%99 = OpExtInst %void %1 DebugScope %33 %90
+%89 = OpLoad %v4float %3
+OpStore %88 %89
+%76 = OpLoad %v4float %88
+%100 = OpExtInst %void %1 DebugScope %35 %84
+%77 = OpFAdd %v4float %76 %19
+%101 = OpExtInst %void %1 DebugScope %33 %84
+%78 = OpLoad %v4float %3
+%102 = OpExtInst %void %1 DebugScope %37 %83
+%79 = OpFAdd %v4float %77 %78
+%103 = OpExtInst %void %1 DebugScope %33 %85
+%80 = OpLoad %v4float %3
+%104 = OpExtInst %void %1 DebugScope %35 %87
+%81 = OpFAdd %v4float %80 %19
+%105 = OpExtInst %void %1 DebugScope %37 %83
+%82 = OpFAdd %v4float %79 %81
+OpStore %75 %82
+%44 = OpLoad %v4float %75
+%106 = OpExtInst %void %1 DebugScope %32
+%45 = OpLoad %v4float %3
+%46 = OpFAdd %v4float %44 %45
+%107 = OpExtInst %void %1 DebugScope %33 %93
+%92 = OpLoad %v4float %3
+OpStore %91 %92
+%47 = OpLoad %v4float %91
+%108 = OpExtInst %void %1 DebugScope %32
+%48 = OpFAdd %v4float %47 %46
+%109 = OpExtInst %void %1 DebugScope %33 %98
+%95 = OpLoad %v4float %3
+%110 = OpExtInst %void %1 DebugScope %35 %97
+%96 = OpFAdd %v4float %95 %19
+OpStore %94 %96
+%49 = OpLoad %v4float %94
+%111 = OpExtInst %void %1 DebugScope %32
+%50 = OpFAdd %v4float %49 %46
+OpStore %4 %50
+%112 = OpExtInst %void %1 DebugNoScope
+OpReturn
+OpFunctionEnd
+%34 = OpFunction %v4float None %25
+%52 = OpLabel
+%113 = OpExtInst %void %1 DebugScope %33
+%53 = OpLoad %v4float %3
+%114 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %53
+OpFunctionEnd
+%38 = OpFunction %v4float None %25
+%55 = OpLabel
+%115 = OpExtInst %void %1 DebugScope %35 %39
+%57 = OpFunctionCall %v4float %34
+%58 = OpFAdd %v4float %57 %19
+%116 = OpExtInst %void %1 DebugScope %33 %39
+%60 = OpLoad %v4float %3
+%117 = OpExtInst %void %1 DebugScope %37
+%62 = OpFAdd %v4float %58 %60
+%118 = OpExtInst %void %1 DebugScope %33 %40
+%64 = OpLoad %v4float %3
+%119 = OpExtInst %void %1 DebugScope %35 %39
+%66 = OpFAdd %v4float %64 %19
+%120 = OpExtInst %void %1 DebugScope %37
+%68 = OpFAdd %v4float %62 %66
+%121 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %68
+OpFunctionEnd
+%36 = OpFunction %v4float None %25
+%69 = OpLabel
+%122 = OpExtInst %void %1 DebugScope %33 %41
+%71 = OpLoad %v4float %3
+%123 = OpExtInst %void %1 DebugScope %35
+%73 = OpFAdd %v4float %71 %19
+%124 = OpExtInst %void %1 DebugNoScope
+OpReturnValue %73
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules
