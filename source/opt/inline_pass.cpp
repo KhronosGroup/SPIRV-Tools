@@ -29,11 +29,9 @@ static const int kSpvFunctionCallFunctionId = 2;
 static const int kSpvFunctionCallArgumentId = 3;
 static const int kSpvReturnValueId = 0;
 
-// Constants related to rich debug information
+// Constants for OpenCL.DebugInfo.100 extension instructions.
 
 static const uint32_t kDebugExtensionOperand = 2;
-static const uint32_t kOpCodeDebugInlinedAt = 25;
-static const uint32_t kDebugResultIdIndex = 1;
 static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
@@ -546,8 +544,7 @@ bool InlinePass::GenInlineCode(
               // Add DebugDeclare instructions for callee's function
               // parameters to caller's body.
               for (auto* i : dbg_insts_in_callee_header) {
-                new_blk_ptr->AddInstruction(
-                    std::move(std::unique_ptr<Instruction>(i)));
+                new_blk_ptr->AddInstruction(std::unique_ptr<Instruction>(i));
               }
 
               if (caller_is_loop_header &&
@@ -909,7 +906,7 @@ bool InlinePass::GenInlineCode(
           id2inlined_at_[new_inlined_at_insts[i]->result_id()] =
               new_inlined_at_insts[i];
           get_module()->AddExtInstDebugInfo(
-              std::move(std::unique_ptr<Instruction>(new_inlined_at_insts[i])));
+              std::unique_ptr<Instruction>(new_inlined_at_insts[i]));
         }
 
         new_scope.SetInlinedAt(head_inlined_at_id_of_chain);
