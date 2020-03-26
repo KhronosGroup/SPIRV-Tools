@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2020.2-dev 2020-02-03
+v2020.2 2020-03-26
  - General:
    - Support extended instructions in the vscode language server
    - Make spvOpcodeString part of the public API (#3174)
