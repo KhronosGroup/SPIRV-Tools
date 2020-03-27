@@ -169,18 +169,21 @@ class FuzzerPass {
   // If no such instruction exists, a transformation is applied to add it.
   uint32_t FindOrCreateGlobalUndef(uint32_t type_id);
 
-  // Yields a pair, (base_type_ids, base_type_ids_to_pointers), such that:
-  // - base_type_ids captures every scalar or composite type declared in the
-  //   module (i.e., all int, bool, float, vector, matrix, struct and array
-  //   types
-  // - base_type_ids_to_pointers maps every such base type to the sequence
+  // Define a *basic type* to be an integer, boolean or floating-point type,
+  // or a matrix, vector, struct or fixed-size array built from basic types.  In
+  // particular, a basic type cannot contain an opaque type (such as an image),
+  // or a runtime-sized array.
+  //
+  // Yields a pair, (basic_type_ids, basic_type_ids_to_pointers), such that:
+  // - basic_type_ids captures every basic type declared in the module.
+  // - basic_type_ids_to_pointers maps every such basic type to the sequence
   //   of all pointer types that have storage class |storage_class| and the
-  //   given base type as their pointee type.  The sequence may be empty for
-  //   some base types if no pointers to those types are defined for the given
+  //   given basic type as their pointee type.  The sequence may be empty for
+  //   some basic types if no pointers to those types are defined for the given
   //   storage class, and the sequence will have multiple elements if there are
-  //   repeated pointer declarations for the same base type and storage class.
+  //   repeated pointer declarations for the same basic type and storage class.
   std::pair<std::vector<uint32_t>, std::map<uint32_t, std::vector<uint32_t>>>
-  GetAvailableBaseTypesAndPointers(SpvStorageClass storage_class) const;
+  GetAvailableBasicTypesAndPointers(SpvStorageClass storage_class) const;
 
   // Given a type id, |scalar_or_composite_type_id|, which must correspond to
   // some scalar or composite type, returns the result id of an instruction
