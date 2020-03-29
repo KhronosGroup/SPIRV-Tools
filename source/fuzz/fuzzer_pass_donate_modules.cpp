@@ -22,6 +22,7 @@
 #include "source/fuzz/instruction_message.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_composite.h"
+#include "source/fuzz/transformation_add_constant_null.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_function.h"
 #include "source/fuzz/transformation_add_global_undef.h"
@@ -393,6 +394,20 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             new_result_id,
             original_id_to_donated_id->at(type_or_value.type_id()),
             constituent_ids));
+      } break;
+      case SpvOpConstantNull: {
+        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
+          // We did not denote the type associated with this null constant, so
+          // we cannot donate the null constant.
+          continue;
+        }
+
+        // It is fine to have multiple OpConstantNull instructions of the same
+        // type, so we just add this to the recipient module.
+        new_result_id = GetFuzzerContext()->GetFreshId();
+        ApplyTransformation(TransformationAddConstantNull(
+            new_result_id,
+            original_id_to_donated_id->at(type_or_value.type_id())));
       } break;
       case SpvOpVariable: {
         // This is a global variable that could have one of various storage
