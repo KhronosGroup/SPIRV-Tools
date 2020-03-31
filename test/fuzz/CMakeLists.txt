@@ -22,6 +22,7 @@ if (${SPIRV_BUILD_FUZZER})
           fact_manager_test.cpp
           fuzz_test_util.cpp
           fuzzer_pass_add_useful_constructs_test.cpp
+          fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           instruction_descriptor_test.cpp
           transformation_access_chain_test.cpp
