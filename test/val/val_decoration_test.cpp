@@ -700,6 +700,61 @@ TEST_F(ValidateDecorations, RuntimeArrayOfDescriptorSetsIsAllowed) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, BlockDecoratingArrayBad) {
+  std::string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+     %Output = OpTypeArray %float %int_3
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Block decoration on a non-struct type"));
+}
+
+TEST_F(ValidateDecorations, BlockDecoratingIntBad) {
+  std::string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+     %Output = OpTypeInt 32 1
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Block decoration on a non-struct type"));
+}
+
 TEST_F(ValidateDecorations, BlockMissingOffsetBad) {
   std::string spirv = R"(
                OpCapability Shader
