@@ -53,7 +53,7 @@ class FuzzerPassConstructComposites : public FuzzerPass {
   // Attempts to find suitable instruction result ids from the values of
   // |type_id_to_available_instructions| that would allow a composite of type
   // |array_type_instruction| to be constructed.  Returns said ids if they can
-  // be found.  Returns |nullptr| otherwise.
+  // be found and |nullptr| otherwise.
   std::unique_ptr<std::vector<uint32_t>> TryConstructingArrayComposite(
       const opt::Instruction& array_type_instruction,
       const TypeIdToInstructions& type_id_to_available_instructions);
