@@ -88,7 +88,7 @@ void FuzzerPassConstructComposites::Apply() {
         // for constructing a composite of that type.  Otherwise these variables
         // will remain 0 and null respectively.
         uint32_t chosen_composite_type = 0;
-        std::unique_ptr<std::vector<uint32_t>> constructor_arguments = nullptr;
+        std::vector<uint32_t> constructor_arguments;
 
         // Initially, all composite type ids are available for us to try.  Keep
         // trying until we run out of options.
@@ -106,19 +106,19 @@ void FuzzerPassConstructComposites::Apply() {
               next_composite_to_try_constructing);
           switch (composite_type_inst->opcode()) {
             case SpvOpTypeArray:
-              constructor_arguments = TryConstructingArrayComposite(
+              constructor_arguments = FindComponentsToConstructArray(
                   *composite_type_inst, type_id_to_available_instructions);
               break;
             case SpvOpTypeMatrix:
-              constructor_arguments = TryConstructingMatrixComposite(
+              constructor_arguments = FindComponentsToConstructMatrix(
                   *composite_type_inst, type_id_to_available_instructions);
               break;
             case SpvOpTypeStruct:
-              constructor_arguments = TryConstructingStructComposite(
+              constructor_arguments = FindComponentsToConstructStruct(
                   *composite_type_inst, type_id_to_available_instructions);
               break;
             case SpvOpTypeVector:
-              constructor_arguments = TryConstructingVectorComposite(
+              constructor_arguments = FindComponentsToConstructVector(
                   *composite_type_inst, type_id_to_available_instructions);
               break;
             default:
@@ -127,7 +127,7 @@ void FuzzerPassConstructComposites::Apply() {
                      "by the above cases.");
               break;
           }
-          if (constructor_arguments != nullptr) {
+          if (!constructor_arguments.empty()) {
             // We succeeded!  Note the composite type we finally settled on, and
             // exit from the loop.
             chosen_composite_type = next_composite_to_try_constructing;
@@ -138,14 +138,14 @@ void FuzzerPassConstructComposites::Apply() {
         if (!chosen_composite_type) {
           // We did not manage to make a composite; return 0 to indicate that no
           // instructions were added.
-          assert(constructor_arguments == nullptr);
+          assert(constructor_arguments.empty());
           return;
         }
-        assert(constructor_arguments != nullptr);
+        assert(!constructor_arguments.empty());
 
         // Make and apply a transformation.
         ApplyTransformation(TransformationCompositeConstruct(
-            chosen_composite_type, *constructor_arguments,
+            chosen_composite_type, constructor_arguments,
             instruction_descriptor, GetFuzzerContext()->GetFreshId()));
       });
 }
@@ -159,14 +159,12 @@ void FuzzerPassConstructComposites::RecordAvailableInstruction(
   type_id_to_available_instructions->at(inst->type_id()).push_back(inst);
 }
 
-std::unique_ptr<std::vector<uint32_t>>
-FuzzerPassConstructComposites::TryConstructingArrayComposite(
+std::vector<uint32_t>
+FuzzerPassConstructComposites::FindComponentsToConstructArray(
     const opt::Instruction& array_type_instruction,
     const TypeIdToInstructions& type_id_to_available_instructions) {
   assert(array_type_instruction.opcode() == SpvOpTypeArray &&
          "Precondition: instruction must be an array type.");
-
-  auto result = MakeUnique<std::vector<uint32_t>>();
 
   // Get the element type for the array.
   auto element_type_id = array_type_instruction.GetSingleWordInOperand(0);
@@ -180,7 +178,7 @@ FuzzerPassConstructComposites::TryConstructingArrayComposite(
     // If there are not any instructions available that compute the element type
     // of the array then we are not in a position to construct a composite with
     // this array type.
-    return nullptr;
+    return {};
   }
 
   uint32_t array_length =
@@ -189,22 +187,22 @@ FuzzerPassConstructComposites::TryConstructingArrayComposite(
           ->GetDef(array_type_instruction.GetSingleWordInOperand(1))
           ->GetSingleWordInOperand(0);
 
+  std::vector<uint32_t> result;
   for (uint32_t index = 0; index < array_length; index++) {
-    result->push_back(available_instructions
-                          ->second[GetFuzzerContext()->RandomIndex(
-                              available_instructions->second)]
-                          ->result_id());
+    result.push_back(available_instructions
+                         ->second[GetFuzzerContext()->RandomIndex(
+                             available_instructions->second)]
+                         ->result_id());
   }
   return result;
 }
 
-std::unique_ptr<std::vector<uint32_t>>
-FuzzerPassConstructComposites::TryConstructingMatrixComposite(
+std::vector<uint32_t>
+FuzzerPassConstructComposites::FindComponentsToConstructMatrix(
     const opt::Instruction& matrix_type_instruction,
     const TypeIdToInstructions& type_id_to_available_instructions) {
   assert(matrix_type_instruction.opcode() == SpvOpTypeMatrix &&
          "Precondition: instruction must be a matrix type.");
-  auto result = MakeUnique<std::vector<uint32_t>>();
 
   // Get the element type for the matrix.
   auto element_type_id = matrix_type_instruction.GetSingleWordInOperand(0);
@@ -218,25 +216,26 @@ FuzzerPassConstructComposites::TryConstructingMatrixComposite(
     // If there are not any instructions available that compute the element type
     // of the matrix then we are not in a position to construct a composite with
     // this matrix type.
-    return nullptr;
+    return {};
   }
+  std::vector<uint32_t> result;
   for (uint32_t index = 0;
        index < matrix_type_instruction.GetSingleWordInOperand(1); index++) {
-    result->push_back(available_instructions
-                          ->second[GetFuzzerContext()->RandomIndex(
-                              available_instructions->second)]
-                          ->result_id());
+    result.push_back(available_instructions
+                         ->second[GetFuzzerContext()->RandomIndex(
+                             available_instructions->second)]
+                         ->result_id());
   }
   return result;
 }
 
-std::unique_ptr<std::vector<uint32_t>>
-FuzzerPassConstructComposites::TryConstructingStructComposite(
+std::vector<uint32_t>
+FuzzerPassConstructComposites::FindComponentsToConstructStruct(
     const opt::Instruction& struct_type_instruction,
     const TypeIdToInstructions& type_id_to_available_instructions) {
   assert(struct_type_instruction.opcode() == SpvOpTypeStruct &&
          "Precondition: instruction must be a struct type.");
-  auto result = MakeUnique<std::vector<uint32_t>>();
+  std::vector<uint32_t> result;
   // Consider the type of each field of the struct.
   for (uint32_t in_operand_index = 0;
        in_operand_index < struct_type_instruction.NumInOperands();
@@ -250,18 +249,18 @@ FuzzerPassConstructComposites::TryConstructingStructComposite(
     if (available_instructions == type_id_to_available_instructions.cend()) {
       // If there are no such instructions, we cannot construct a composite of
       // this struct type.
-      return nullptr;
+      return {};
     }
-    result->push_back(available_instructions
-                          ->second[GetFuzzerContext()->RandomIndex(
-                              available_instructions->second)]
-                          ->result_id());
+    result.push_back(available_instructions
+                         ->second[GetFuzzerContext()->RandomIndex(
+                             available_instructions->second)]
+                         ->result_id());
   }
   return result;
 }
 
-std::unique_ptr<std::vector<uint32_t>>
-FuzzerPassConstructComposites::TryConstructingVectorComposite(
+std::vector<uint32_t>
+FuzzerPassConstructComposites::FindComponentsToConstructVector(
     const opt::Instruction& vector_type_instruction,
     const TypeIdToInstructions& type_id_to_available_instructions) {
   assert(vector_type_instruction.opcode() == SpvOpTypeVector &&
@@ -337,7 +336,7 @@ FuzzerPassConstructComposites::TryConstructingVectorComposite(
       // another manner, so we could opt to retry a few times here, but it is
       // simpler to just give up on the basis that this will not happen
       // frequently.
-      return nullptr;
+      return {};
     }
     auto instruction_to_use =
         instructions_to_choose_from[GetFuzzerContext()->RandomIndex(
@@ -358,14 +357,14 @@ FuzzerPassConstructComposites::TryConstructingVectorComposite(
   }
   assert(vector_slots_used == element_count);
 
-  auto result = MakeUnique<std::vector<uint32_t>>();
+  std::vector<uint32_t> result;
   std::vector<uint32_t> operands;
   while (!instructions_to_use.empty()) {
     auto index = GetFuzzerContext()->RandomIndex(instructions_to_use);
-    result->push_back(instructions_to_use[index]->result_id());
+    result.push_back(instructions_to_use[index]->result_id());
     instructions_to_use.erase(instructions_to_use.begin() + index);
   }
-  assert(result->size() > 1);
+  assert(result.size() > 1);
   return result;
 }
 

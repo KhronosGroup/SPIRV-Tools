@@ -82,13 +82,16 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicStructs) {
     ASSERT_TRUE(IsValid(env, context.get()));
 
     FactManager fact_manager;
+    spvtools::ValidatorOptions validator_options;
+    TransformationContext transformation_context(&fact_manager,
+                                                 validator_options);
 
     FuzzerContext fuzzer_context(prng.get(), 100);
     protobufs::TransformationSequence transformation_sequence;
 
-    FuzzerPassConstructComposites fuzzer_pass(context.get(), &fact_manager,
-                                              &fuzzer_context,
-                                              &transformation_sequence);
+    FuzzerPassConstructComposites fuzzer_pass(
+        context.get(), &transformation_context, &fuzzer_context,
+        &transformation_sequence);
 
     fuzzer_pass.Apply();
 
@@ -161,13 +164,16 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicArrays) {
     ASSERT_TRUE(IsValid(env, context.get()));
 
     FactManager fact_manager;
+    spvtools::ValidatorOptions validator_options;
+    TransformationContext transformation_context(&fact_manager,
+                                                 validator_options);
 
     FuzzerContext fuzzer_context(prng.get(), 100);
     protobufs::TransformationSequence transformation_sequence;
 
-    FuzzerPassConstructComposites fuzzer_pass(context.get(), &fact_manager,
-                                              &fuzzer_context,
-                                              &transformation_sequence);
+    FuzzerPassConstructComposites fuzzer_pass(
+        context.get(), &transformation_context, &fuzzer_context,
+        &transformation_sequence);
 
     fuzzer_pass.Apply();
 
