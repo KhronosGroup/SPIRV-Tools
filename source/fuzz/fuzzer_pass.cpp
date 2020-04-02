@@ -31,11 +31,12 @@
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPass::FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
+FuzzerPass::FuzzerPass(opt::IRContext* ir_context,
+                       TransformationContext* transformation_context,
                        FuzzerContext* fuzzer_context,
                        protobufs::TransformationSequence* transformations)
     : ir_context_(ir_context),
-      fact_manager_(fact_manager),
+      transformation_context_(transformation_context),
       fuzzer_context_(fuzzer_context),
       transformations_(transformations) {}
 

@@ -64,10 +64,14 @@ TEST(FuzzerPassAddUsefulConstructsTest, CheckBasicStuffIsAdded) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
   FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
-  FuzzerPassAddUsefulConstructs pass(context.get(), &fact_manager,
+  FuzzerPassAddUsefulConstructs pass(context.get(), &transformation_context,
                                      &fuzzer_context, &transformation_sequence);
   pass.Apply();
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -173,6 +177,10 @@ TEST(FuzzerPassAddUsefulConstructsTest,
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
   FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
@@ -292,7 +300,7 @@ TEST(FuzzerPassAddUsefulConstructsTest,
               context->get_constant_mgr()->FindConstant(&int_constant_8));
   }
 
-  FuzzerPassAddUsefulConstructs pass(context.get(), &fact_manager,
+  FuzzerPassAddUsefulConstructs pass(context.get(), &transformation_context,
                                      &fuzzer_context, &transformation_sequence);
   pass.Apply();
   ASSERT_TRUE(IsValid(env, context.get()));

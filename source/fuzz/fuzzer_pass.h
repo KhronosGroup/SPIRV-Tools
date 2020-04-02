@@ -18,9 +18,9 @@
 #include <functional>
 #include <vector>
 
-#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/transformation_context.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -29,22 +29,25 @@ namespace fuzz {
 // Interface for applying a pass of transformations to a module.
 class FuzzerPass {
  public:
-  FuzzerPass(opt::IRContext* ir_context, FactManager* fact_manager,
+  FuzzerPass(opt::IRContext* ir_context,
+             TransformationContext* transformation_context,
              FuzzerContext* fuzzer_context,
              protobufs::TransformationSequence* transformations);
 
   virtual ~FuzzerPass();
 
   // Applies the pass to the module |ir_context_|, assuming and updating
-  // facts from |fact_manager_|, and using |fuzzer_context_| to guide the
-  // process.  Appends to |transformations_| all transformations that were
-  // applied during the pass.
+  // information from |transformation_context_|, and using |fuzzer_context_| to
+  // guide the process.  Appends to |transformations_| all transformations that
+  // were applied during the pass.
   virtual void Apply() = 0;
 
  protected:
   opt::IRContext* GetIRContext() const { return ir_context_; }
 
-  FactManager* GetFactManager() const { return fact_manager_; }
+  TransformationContext* GetTransformationContext() const {
+    return transformation_context_;
+  }
 
   FuzzerContext* GetFuzzerContext() const { return fuzzer_context_; }
 
@@ -93,9 +96,10 @@ class FuzzerPass {
   // by construction, and adding it to the sequence of applied transformations.
   template <typename TransformationType>
   void ApplyTransformation(const TransformationType& transformation) {
-    assert(transformation.IsApplicable(GetIRContext(), *GetFactManager()) &&
+    assert(transformation.IsApplicable(GetIRContext(),
+                                       *GetTransformationContext()) &&
            "Transformation should be applicable by construction.");
-    transformation.Apply(GetIRContext(), GetFactManager());
+    transformation.Apply(GetIRContext(), GetTransformationContext());
     *GetTransformations()->add_transformation() = transformation.ToMessage();
   }
 
@@ -230,7 +234,7 @@ class FuzzerPass {
       const std::vector<uint32_t>& constant_ids);
 
   opt::IRContext* ir_context_;
-  FactManager* fact_manager_;
+  TransformationContext* transformation_context_;
   FuzzerContext* fuzzer_context_;
   protobufs::TransformationSequence* transformations_;
 };

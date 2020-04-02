@@ -329,11 +329,11 @@ uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
   return array_length_constant->GetU32();
 }
 
-bool IsValid(opt::IRContext* context) {
+bool IsValid(opt::IRContext* context, spv_validator_options validator_options) {
   std::vector<uint32_t> binary;
   context->module()->ToBinary(&binary, false);
   SpirvTools tools(context->grammar().target_env());
-  return tools.Validate(binary);
+  return tools.Validate(binary.data(), binary.size(), validator_options);
 }
 
 std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context) {
