@@ -132,8 +132,9 @@ uint32_t GetNumberOfStructMembers(
 uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
                       opt::IRContext* context);
 
-// Returns true if and only if |context| is valid, according to the validator.
-bool IsValid(opt::IRContext* context);
+// Returns true if and only if |context| is valid, according to the validator
+// instantiated with |validator_options|.
+bool IsValid(opt::IRContext* context, spv_validator_options validator_options);
 
 // Returns a clone of |context|, by writing |context| to a binary and then
 // parsing it again.

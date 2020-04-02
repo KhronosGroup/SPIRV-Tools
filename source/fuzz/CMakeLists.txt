@@ -99,6 +99,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_vector.h
         transformation_composite_construct.h
         transformation_composite_extract.h
+        transformation_context.h
         transformation_copy_object.h
         transformation_equation_instruction.h
         transformation_function_call.h
@@ -190,6 +191,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_vector.cpp
         transformation_composite_construct.cpp
         transformation_composite_extract.cpp
+        transformation_context.cpp
         transformation_copy_object.cpp
         transformation_equation_instruction.cpp
         transformation_function_call.cpp

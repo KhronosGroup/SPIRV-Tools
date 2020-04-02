@@ -26,6 +26,7 @@
 #include "source/fuzz/transformation_add_type_float.h"
 #include "source/fuzz/transformation_add_type_int.h"
 #include "source/fuzz/transformation_add_type_pointer.h"
+#include "source/fuzz/transformation_context.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
@@ -99,16 +100,19 @@ Replayer::ReplayerResultStatus Replayer::Run(
 
   FactManager fact_manager;
   fact_manager.AddFacts(impl_->consumer, initial_facts, ir_context.get());
+  TransformationContext transformation_context(&fact_manager,
+                                               impl_->validator_options);
 
   // Consider the transformation proto messages in turn.
   for (auto& message : transformation_sequence_in.transformation()) {
     auto transformation = Transformation::FromMessage(message);
 
     // Check whether the transformation can be applied.
-    if (transformation->IsApplicable(ir_context.get(), fact_manager)) {
+    if (transformation->IsApplicable(ir_context.get(),
+                                     transformation_context)) {
       // The transformation is applicable, so apply it, and copy it to the
       // sequence of transformations that were applied.
-      transformation->Apply(ir_context.get(), &fact_manager);
+      transformation->Apply(ir_context.get(), &transformation_context);
       *transformation_sequence_out->add_transformation() = message;
 
       if (impl_->validate_during_replay) {
