@@ -1602,8 +1602,9 @@ void RunFuzzerAndReplayer(const std::string& shader,
     std::vector<uint32_t> fuzzer_binary_out;
     protobufs::TransformationSequence fuzzer_transformation_sequence_out;
 
-    Fuzzer fuzzer(env, seed, true);
-    fuzzer.SetMessageConsumer(kSilentConsumer);
+    spvtools::ValidatorOptions validator_options;
+    Fuzzer fuzzer(env, seed, true, validator_options);
+    fuzzer.SetMessageConsumer(kConsoleMessageConsumer);
     auto fuzzer_result_status =
         fuzzer.Run(binary_in, initial_facts, donor_suppliers,
                    &fuzzer_binary_out, &fuzzer_transformation_sequence_out);
@@ -1613,8 +1614,8 @@ void RunFuzzerAndReplayer(const std::string& shader,
     std::vector<uint32_t> replayer_binary_out;
     protobufs::TransformationSequence replayer_transformation_sequence_out;
 
-    Replayer replayer(env, false);
-    replayer.SetMessageConsumer(kSilentConsumer);
+    Replayer replayer(env, false, validator_options);
+    replayer.SetMessageConsumer(kConsoleMessageConsumer);
     auto replayer_result_status = replayer.Run(
         binary_in, initial_facts, fuzzer_transformation_sequence_out,
         &replayer_binary_out, &replayer_transformation_sequence_out);

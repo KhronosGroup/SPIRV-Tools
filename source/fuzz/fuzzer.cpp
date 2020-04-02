@@ -86,26 +86,31 @@ void MaybeAddPass(
 }  // namespace
 
 struct Fuzzer::Impl {
-  explicit Impl(spv_target_env env, uint32_t random_seed,
-                bool validate_after_each_pass)
+  Impl(spv_target_env env, uint32_t random_seed, bool validate_after_each_pass,
+       spv_validator_options options)
       : target_env(env),
         seed(random_seed),
-        validate_after_each_fuzzer_pass(validate_after_each_pass) {}
+        validate_after_each_fuzzer_pass(validate_after_each_pass),
+        validator_options(options) {}
 
   bool ApplyPassAndCheckValidity(FuzzerPass* pass,
                                  const opt::IRContext& ir_context,
                                  const spvtools::SpirvTools& tools) const;
 
   const spv_target_env target_env;       // Target environment.
+  MessageConsumer consumer;              // Message consumer.
   const uint32_t seed;                   // Seed for random number generator.
   bool validate_after_each_fuzzer_pass;  // Determines whether the validator
-  // should be invoked after every fuzzer pass.
-  MessageConsumer consumer;  // Message consumer.
+                                         // should be invoked after every fuzzer
+                                         // pass.
+  spv_validator_options validator_options;  // Options to control validation.
 };
 
 Fuzzer::Fuzzer(spv_target_env env, uint32_t seed,
-               bool validate_after_each_fuzzer_pass)
-    : impl_(MakeUnique<Impl>(env, seed, validate_after_each_fuzzer_pass)) {}
+               bool validate_after_each_fuzzer_pass,
+               spv_validator_options validator_options)
+    : impl_(MakeUnique<Impl>(env, seed, validate_after_each_fuzzer_pass,
+                             validator_options)) {}
 
 Fuzzer::~Fuzzer() = default;
 
@@ -120,7 +125,8 @@ bool Fuzzer::Impl::ApplyPassAndCheckValidity(
   if (validate_after_each_fuzzer_pass) {
     std::vector<uint32_t> binary_to_validate;
     ir_context.module()->ToBinary(&binary_to_validate, false);
-    if (!tools.Validate(&binary_to_validate[0], binary_to_validate.size())) {
+    if (!tools.Validate(&binary_to_validate[0], binary_to_validate.size(),
+                        validator_options)) {
       consumer(SPV_MSG_INFO, nullptr, {},
                "Binary became invalid during fuzzing (set a breakpoint to "
                "inspect); stopping.");
@@ -149,7 +155,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   }
 
   // Initial binary should be valid.
-  if (!tools.Validate(&binary_in[0], binary_in.size())) {
+  if (!tools.Validate(&binary_in[0], binary_in.size(),
+                      impl_->validator_options)) {
     impl_->consumer(SPV_MSG_ERROR, nullptr, {},
                     "Initial binary is invalid; stopping.");
     return Fuzzer::FuzzerResultStatus::kInitialBinaryInvalid;

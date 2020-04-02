@@ -37,18 +37,22 @@ namespace spvtools {
 namespace fuzz {
 
 struct Replayer::Impl {
-  explicit Impl(spv_target_env env, bool validate)
-      : target_env(env), validate_during_replay(validate) {}
+  Impl(spv_target_env env, bool validate, spv_validator_options options)
+      : target_env(env),
+        validate_during_replay(validate),
+        validator_options(options) {}
 
-  const spv_target_env target_env;  // Target environment.
-  MessageConsumer consumer;         // Message consumer.
-
+  const spv_target_env target_env;    // Target environment.
+  MessageConsumer consumer;           // Message consumer.
   const bool validate_during_replay;  // Controls whether the validator should
                                       // be run after every replay step.
+  spv_validator_options validator_options;  // Options to control
+                                            // validation
 };
 
-Replayer::Replayer(spv_target_env env, bool validate_during_replay)
-    : impl_(MakeUnique<Impl>(env, validate_during_replay)) {}
+Replayer::Replayer(spv_target_env env, bool validate_during_replay,
+                   spv_validator_options validator_options)
+    : impl_(MakeUnique<Impl>(env, validate_during_replay, validator_options)) {}
 
 Replayer::~Replayer() = default;
 
@@ -74,7 +78,8 @@ Replayer::ReplayerResultStatus Replayer::Run(
   }
 
   // Initial binary should be valid.
-  if (!tools.Validate(&binary_in[0], binary_in.size())) {
+  if (!tools.Validate(&binary_in[0], binary_in.size(),
+                      impl_->validator_options)) {
     impl_->consumer(SPV_MSG_INFO, nullptr, {},
                     "Initial binary is invalid; stopping.");
     return Replayer::ReplayerResultStatus::kInitialBinaryInvalid;
@@ -111,8 +116,8 @@ Replayer::ReplayerResultStatus Replayer::Run(
         ir_context->module()->ToBinary(&binary_to_validate, false);
 
         // Check whether the latest transformation led to a valid binary.
-        if (!tools.Validate(&binary_to_validate[0],
-                            binary_to_validate.size())) {
+        if (!tools.Validate(&binary_to_validate[0], binary_to_validate.size(),
+                            impl_->validator_options)) {
           impl_->consumer(SPV_MSG_INFO, nullptr, {},
                           "Binary became invalid during replay (set a "
                           "breakpoint to inspect); stopping.");
