@@ -40,11 +40,12 @@ namespace spvtools {
 namespace fuzz {
 
 FuzzerPassDonateModules::FuzzerPassDonateModules(
-    opt::IRContext* ir_context, FactManager* fact_manager,
+    opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations,
     const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers)
-    : FuzzerPass(ir_context, fact_manager, fuzzer_context, transformations),
+    : FuzzerPass(ir_context, transformation_context, fuzzer_context,
+                 transformations),
       donor_suppliers_(donor_suppliers) {}
 
 FuzzerPassDonateModules::~FuzzerPassDonateModules() = default;
@@ -62,7 +63,9 @@ void FuzzerPassDonateModules::Apply() {
     std::unique_ptr<opt::IRContext> donor_ir_context = donor_suppliers_.at(
         GetFuzzerContext()->RandomIndex(donor_suppliers_))();
     assert(donor_ir_context != nullptr && "Supplying of donor failed");
-    assert(fuzzerutil::IsValid(donor_ir_context.get()) &&
+    assert(fuzzerutil::IsValid(
+               donor_ir_context.get(),
+               GetTransformationContext()->GetValidatorOptions()) &&
            "The donor module must be valid");
     // Donate the supplied module.
     //

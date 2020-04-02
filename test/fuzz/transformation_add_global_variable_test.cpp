@@ -60,49 +60,52 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
   // Id already in use
   ASSERT_FALSE(TransformationAddGlobalVariable(4, 10, 0, true)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
   // %1 is not a type
   ASSERT_FALSE(TransformationAddGlobalVariable(100, 1, 0, false)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // %7 is not a pointer type
   ASSERT_FALSE(TransformationAddGlobalVariable(100, 7, 0, true)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // %9 does not have Private storage class
   ASSERT_FALSE(TransformationAddGlobalVariable(100, 9, 0, false)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // %15 does not have Private storage class
   ASSERT_FALSE(TransformationAddGlobalVariable(100, 15, 0, true)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // %10 is a pointer to float, while %16 is an int constant
   ASSERT_FALSE(TransformationAddGlobalVariable(100, 10, 16, false)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // %10 is a Private pointer to float, while %15 is a variable with type
   // Uniform float pointer
   ASSERT_FALSE(TransformationAddGlobalVariable(100, 10, 15, true)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // %12 is a Private pointer to int, while %10 is a variable with type
   // Private float pointer
   ASSERT_FALSE(TransformationAddGlobalVariable(100, 12, 10, false)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // %10 is pointer-to-float, and %14 has type pointer-to-float; that's not OK
   // since the initializer's type should be the *pointee* type.
   ASSERT_FALSE(TransformationAddGlobalVariable(104, 10, 14, true)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   // This would work in principle, but logical addressing does not allow
   // a pointer to a pointer.
   ASSERT_FALSE(TransformationAddGlobalVariable(104, 17, 14, false)
-                   .IsApplicable(context.get(), fact_manager));
+                   .IsApplicable(context.get(), transformation_context));
 
   TransformationAddGlobalVariable transformations[] = {
       // %100 = OpVariable %12 Private
@@ -124,15 +127,22 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
       TransformationAddGlobalVariable(105, 19, 22, false)};
 
   for (auto& transformation : transformations) {
-    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
-    transformation.Apply(context.get(), &fact_manager);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
   }
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(100));
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(102));
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(104));
-  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(101));
-  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(103));
-  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(105));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(104));
+  ASSERT_FALSE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
+  ASSERT_FALSE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
+  ASSERT_FALSE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(105));
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -223,6 +233,9 @@ TEST(TransformationAddGlobalVariableTest, TestEntryPointInterfaceEnlargement) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
   TransformationAddGlobalVariable transformations[] = {
       // %100 = OpVariable %12 Private
@@ -235,12 +248,16 @@ TEST(TransformationAddGlobalVariableTest, TestEntryPointInterfaceEnlargement) {
       TransformationAddGlobalVariable(102, 19, 21, true)};
 
   for (auto& transformation : transformations) {
-    ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
-    transformation.Apply(context.get(), &fact_manager);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
   }
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(100));
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(102));
-  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(101));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
+  ASSERT_FALSE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(

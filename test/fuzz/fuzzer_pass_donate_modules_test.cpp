@@ -194,14 +194,17 @@ TEST(FuzzerPassDonateModulesTest, BasicDonation) {
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
   auto prng = MakeUnique<PseudoRandomGenerator>(0);
   FuzzerContext fuzzer_context(prng.get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
-  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(), &fact_manager,
-                                      &fuzzer_context, &transformation_sequence,
-                                      {});
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
@@ -269,13 +272,16 @@ TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
   FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
-  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(), &fact_manager,
-                                      &fuzzer_context, &transformation_sequence,
-                                      {});
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
@@ -393,13 +399,16 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
   FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
-  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(), &fact_manager,
-                                      &fuzzer_context, &transformation_sequence,
-                                      {});
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
@@ -481,13 +490,16 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
   FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
-  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(), &fact_manager,
-                                      &fuzzer_context, &transformation_sequence,
-                                      {});
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
@@ -658,13 +670,16 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
   FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
   FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
-  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(), &fact_manager,
-                                      &fuzzer_context, &transformation_sequence,
-                                      {});
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 

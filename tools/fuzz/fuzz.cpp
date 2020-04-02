@@ -580,7 +580,8 @@ int main(int argc, const char** argv) {
 
   switch (status.action) {
     case FuzzActions::FORCE_RENDER_RED:
-      if (!spvtools::fuzz::ForceRenderRed(target_env, binary_in, initial_facts,
+      if (!spvtools::fuzz::ForceRenderRed(target_env, validator_options,
+                                          binary_in, initial_facts,
                                           &binary_out)) {
         return 1;
       }

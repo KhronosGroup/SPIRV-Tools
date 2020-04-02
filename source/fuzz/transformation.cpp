@@ -195,9 +195,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
 }
 
 bool Transformation::CheckIdIsFreshAndNotUsedByThisTransformation(
-    uint32_t id, opt::IRContext* context,
+    uint32_t id, opt::IRContext* ir_context,
     std::set<uint32_t>* ids_used_by_this_transformation) {
-  if (!fuzzerutil::IsFreshId(context, id)) {
+  if (!fuzzerutil::IsFreshId(ir_context, id)) {
     return false;
   }
   if (ids_used_by_this_transformation->count(id) != 0) {
