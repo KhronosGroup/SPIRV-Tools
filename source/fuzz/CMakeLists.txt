@@ -79,6 +79,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_access_chain.h
         transformation_add_constant_boolean.h
         transformation_add_constant_composite.h
+        transformation_add_constant_null.h
         transformation_add_constant_scalar.h
         transformation_add_dead_block.h
         transformation_add_dead_break.h
@@ -171,6 +172,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_access_chain.cpp
         transformation_add_constant_boolean.cpp
         transformation_add_constant_composite.cpp
+        transformation_add_constant_null.cpp
         transformation_add_constant_scalar.cpp
         transformation_add_dead_block.cpp
         transformation_add_dead_break.cpp
