@@ -397,7 +397,7 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
       } break;
       case SpvOpConstantNull: {
         if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not denote the type associated with this null constant, so
+          // We did not donate the type associated with this null constant, so
           // we cannot donate the null constant.
           continue;
         }

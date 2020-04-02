@@ -537,6 +537,13 @@ uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
   return 0;
 }
 
+bool IsNullConstantSupported(const opt::analysis::Type& type) {
+  return type.AsBool() || type.AsInteger() || type.AsFloat() ||
+         type.AsMatrix() || type.AsVector() || type.AsArray() ||
+         type.AsStruct() || type.AsPointer() || type.AsEvent() ||
+         type.AsDeviceEvent() || type.AsReserveId() || type.AsQueue();
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

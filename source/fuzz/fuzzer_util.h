@@ -210,6 +210,10 @@ SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
 uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
                              SpvStorageClass storage_class);
 
+// Returns true if and only if |type| is one of the types for which it is legal
+// to have an OpConstantNull value.
+bool IsNullConstantSupported(const opt::analysis::Type& type);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

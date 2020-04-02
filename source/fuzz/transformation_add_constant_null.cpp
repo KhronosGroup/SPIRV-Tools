@@ -42,10 +42,7 @@ bool TransformationAddConstantNull::IsApplicable(
   }
   // The type must be one of the types for which null constants are allowed,
   // according to the SPIR-V spec.
-  return type->AsBool() || type->AsInteger() || type->AsFloat() ||
-         type->AsMatrix() || type->AsVector() || type->AsArray() ||
-         type->AsStruct() || type->AsPointer() || type->AsEvent() ||
-         type->AsDeviceEvent() || type->AsReserveId() || type->AsQueue();
+  return fuzzerutil::IsNullConstantSupported(*type);
 }
 
 void TransformationAddConstantNull::Apply(
