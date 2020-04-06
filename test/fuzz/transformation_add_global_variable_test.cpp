@@ -350,6 +350,14 @@ TEST(TransformationAddGlobalVariableTest, TestAddingWorkgroupGlobals) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      TransformationAddGlobalVariable(8, 7, SpvStorageClassWorkgroup, 50, true)
+          .IsApplicable(context.get(), transformation_context),
+      "By construction this transformation should not have an.*initializer "
+      "when Workgroup storage class is used");
+#endif
+
   TransformationAddGlobalVariable transformations[] = {
       // %8 = OpVariable %7 Workgroup
       TransformationAddGlobalVariable(8, 7, SpvStorageClassWorkgroup, 0, true),
