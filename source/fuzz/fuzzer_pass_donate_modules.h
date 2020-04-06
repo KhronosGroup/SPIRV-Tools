@@ -80,8 +80,10 @@ class FuzzerPassDonateModules : public FuzzerPass {
   // During donation we will have to ignore some instructions, e.g. because they
   // use opcodes that we cannot support or because they reference the ids of
   // instructions that have not been donated.  This function encapsulates the
-  // logic for deciding which instructions should be ignored.
-  bool IgnoreInstruction(const opt::Instruction* instruction);
+  // logic for deciding which whether instruction |instruction| from
+  // |donor_ir_context| should be ignored.
+  bool IgnoreInstruction(opt::IRContext* donor_ir_context,
+                         const opt::Instruction* instruction);
 
   // Returns the ids of all functions in |context| in a topological order in
   // relation to the call graph of |context|, which is assumed to be recursion-

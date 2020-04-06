@@ -180,6 +180,13 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
     // that its component types will have been considered previously, and that
     // |original_id_to_donated_id| will already contain an entry for them.
     switch (type_or_value.opcode()) {
+      case SpvOpTypeImage:
+      case SpvOpTypeSampledImage:
+      case SpvOpTypeSampler:
+        // We do not donate types and variables that relate to images and
+        // samplers, so we skip these types and subsequently skip anything that
+        // depends on them.
+        continue;
       case SpvOpTypeVoid: {
         // Void has to exist already in order for us to have an entry point.
         // Get the existing id of void.
@@ -282,6 +289,11 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // we go ahead and add a remapped version of the type declared by the
         // donor.
         uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
+        if (!original_id_to_donated_id->count(component_type_id)) {
+          // We did not donate the component type of this array type, so we
+          // cannot donate the array type.
+          continue;
+        }
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationAddTypeArray(
             new_result_id, original_id_to_donated_id->at(component_type_id),
@@ -299,6 +311,11 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // is rewritten to yield the fixed length that is used for the array.
 
         uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
+        if (!original_id_to_donated_id->count(component_type_id)) {
+          // We did not donate the component type of this runtime array type, so
+          // we cannot donate it as a fixed-size array.
+          continue;
+        }
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationAddTypeArray(
             new_result_id, original_id_to_donated_id->at(component_type_id),
@@ -308,10 +325,20 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
       case SpvOpTypeStruct: {
         // Similar to SpvOpTypeArray.
         std::vector<uint32_t> member_type_ids;
+        bool can_donate = true;
         for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
           auto component_type_id = type_or_value.GetSingleWordInOperand(i);
+          if (!original_id_to_donated_id->count(component_type_id)) {
+            // We did not donate every member type for this struct type, so we
+            // cannot donate the struct type.
+            can_donate = false;
+            break;
+          }
           member_type_ids.push_back(
               original_id_to_donated_id->at(component_type_id));
+        }
+        if (!can_donate) {
+          continue;
         }
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(
@@ -320,6 +347,11 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
       case SpvOpTypePointer: {
         // Similar to SpvOpTypeArray.
         uint32_t pointee_type_id = type_or_value.GetSingleWordInOperand(1);
+        if (!original_id_to_donated_id->count(pointee_type_id)) {
+          // We did not donate the pointee type for this pointer type, so we
+          // cannot donate the pointer type.
+          continue;
+        }
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationAddTypePointer(
             new_result_id,
@@ -348,11 +380,21 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // they both have the form "uint32* -> void"
 
         std::vector<uint32_t> return_and_parameter_types;
+        bool can_donate = true;
         for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
           uint32_t return_or_parameter_type =
               type_or_value.GetSingleWordInOperand(i);
+          if (!original_id_to_donated_id->count(return_or_parameter_type)) {
+            // We did not donate every return/parameter type for this function
+            // type, so we cannot donate the function type.
+            can_donate = false;
+            break;
+          }
           return_and_parameter_types.push_back(
               original_id_to_donated_id->at(return_or_parameter_type));
+        }
+        if (!can_donate) {
+          continue;
         }
         uint32_t existing_function_id = fuzzerutil::FindFunctionType(
             GetIRContext(), return_and_parameter_types);
@@ -421,6 +463,12 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             constituent_ids));
       } break;
       case SpvOpConstantNull: {
+        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
+          // We did not donate the type associated with this null constant, so
+          // we cannot donate the null constant.
+          continue;
+        }
+
         // It is fine to have multiple OpConstantNull instructions of the same
         // type, so we just add this to the recipient module.
         new_result_id = GetFuzzerContext()->GetFreshId();
@@ -429,6 +477,12 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             original_id_to_donated_id->at(type_or_value.type_id())));
       } break;
       case SpvOpVariable: {
+        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
+          // We did not donate the pointer type associated with this variable,
+          // so we cannot donate the variable.
+          continue;
+        }
+
         // This is a global variable that could have one of various storage
         // classes.  However, we change all global variable pointer storage
         // classes (such as Uniform, Input and Output) to private when donating
@@ -480,6 +534,12 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             true));
       } break;
       case SpvOpUndef: {
+        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
+          // We did not donate the type associated with this undef, so we cannot
+          // donate the undef.
+          continue;
+        }
+
         // It is fine to have multiple Undef instructions of the same type, so
         // we just add this to the recipient module.
         new_result_id = GetFuzzerContext()->GetFreshId();
@@ -525,156 +585,185 @@ void FuzzerPassDonateModules::HandleFunctions(
     }
     assert(function_to_donate && "Function to be donated was not found.");
 
+    if (!original_id_to_donated_id->count(function_to_donate->DefInst().GetSingleWordInOperand(1))) {
+      // We were not able to donate this function's type, so we cannot donate
+      // the function.
+      continue;
+    }
+
     // We will collect up protobuf messages representing the donor function's
     // instructions here, and use them to create an AddFunction transformation.
     std::vector<protobufs::Instruction> donated_instructions;
 
-    // Scan through the function, remapping each result id that it generates to
-    // a fresh id.  This is necessary because functions include forward
-    // references, e.g. to labels.
-    function_to_donate->ForEachInst([this, donor_ir_context,
-                                     &original_id_to_donated_id](
-                                        const opt::Instruction* instruction) {
-      if (!instruction->result_id()) {
-        return;
-      }
-      if (IgnoreInstruction(instruction)) {
-        if (instruction->opcode() == SpvOpArrayLength) {
-          // We treat the OpArrayLength instruction specially.  In the donor
-          // shader this gets the length of a runtime array that is the final
-          // member of a struct.  During donation, we will have converted the
-          // runtime array type, and the associated struct field, into a fixed-
-          // size array.  We can then use the constant size of this fixed-sized
-          // array wherever we would have used the result of an OpArrayLength
-          // instruction.
-          uint32_t donated_variable_id = original_id_to_donated_id->at(
-              instruction->GetSingleWordInOperand(0));
-          auto donated_variable_instruction =
-              GetIRContext()->get_def_use_mgr()->GetDef(donated_variable_id);
-          auto pointer_to_struct_instruction =
-              GetIRContext()->get_def_use_mgr()->GetDef(
-                  donated_variable_instruction->type_id());
-          assert(pointer_to_struct_instruction->opcode() == SpvOpTypePointer &&
-                 "Type of variable must be pointer.");
-          auto donated_struct_type_instruction =
-              GetIRContext()->get_def_use_mgr()->GetDef(
-                  pointer_to_struct_instruction->GetSingleWordInOperand(1));
-          assert(
-              donated_struct_type_instruction->opcode() == SpvOpTypeStruct &&
-              "Pointee type of pointer used by OpArrayLength must be struct.");
-          assert(donated_struct_type_instruction->NumInOperands() ==
-                     instruction->GetSingleWordInOperand(1) + 1 &&
-                 "OpArrayLength must refer to the final member of the given "
-                 "struct.");
-          uint32_t fixed_size_array_type_id =
-              donated_struct_type_instruction->GetSingleWordInOperand(
-                  donated_struct_type_instruction->NumInOperands() - 1);
-          auto fixed_size_array_type_instruction =
-              GetIRContext()->get_def_use_mgr()->GetDef(
-                  fixed_size_array_type_id);
-          assert(fixed_size_array_type_instruction->opcode() ==
-                     SpvOpTypeArray &&
-                 "The donated array type must be fixed-size.");
-          auto array_size_id =
-              fixed_size_array_type_instruction->GetSingleWordInOperand(1);
-          original_id_to_donated_id->insert(
-              {instruction->result_id(), array_size_id});
-        } else if (instruction->type_id()) {
-          // If the ignored instruction has a basic result type then we
-          // associate its result id with a constant of that type, so that
-          // instructions that use the result id will use the constant instead.
-          // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-          //  Using this particular constant is arbitrary, so if we have a
-          //  mechanism for noting that an id use is arbitrary and could be
-          //  fuzzed we should use it here.
-          auto type_inst = donor_ir_context->get_def_use_mgr()->GetDef(
-              instruction->type_id());
-          switch (type_inst->opcode()) {
-            case SpvOpTypeArray:
-            case SpvOpTypeBool:
-            case SpvOpTypeFloat:
-            case SpvOpTypeInt:
-            case SpvOpTypeStruct:
-            case SpvOpTypeVector:
-            case SpvOpTypeMatrix:
-              original_id_to_donated_id->insert(
-                  {instruction->result_id(),
-                   FindOrCreateZeroConstant(
-                       original_id_to_donated_id->at(instruction->type_id()))});
-            default:
-              break;
-          }
-        }
-      } else {
-        original_id_to_donated_id->insert(
-            {instruction->result_id(), GetFuzzerContext()->GetFreshId()});
-      }
-    });
+    std::set<uint32_t> skipped_result_ids;
 
     // Consider every instruction of the donor function.
-    function_to_donate->ForEachInst([this, &donated_instructions,
-                                     &original_id_to_donated_id](
-                                        const opt::Instruction* instruction) {
-      if (IgnoreInstruction(instruction)) {
-        return;
-      }
+    function_to_donate->ForEachInst(
+        [this, &donated_instructions, donor_ir_context,
+         &original_id_to_donated_id, &skipped_result_ids](const opt::Instruction* instruction) {
 
-      // Get the instruction's input operands into donation-ready form,
-      // remapping any id uses in the process.
-      opt::Instruction::OperandList input_operands;
-
-      // Consider each input operand in turn.
-      for (uint32_t in_operand_index = 0;
-           in_operand_index < instruction->NumInOperands();
-           in_operand_index++) {
-        std::vector<uint32_t> operand_data;
-        const opt::Operand& in_operand =
-            instruction->GetInOperand(in_operand_index);
-        switch (in_operand.type) {
-          case SPV_OPERAND_TYPE_ID:
-          case SPV_OPERAND_TYPE_TYPE_ID:
-          case SPV_OPERAND_TYPE_RESULT_ID:
-          case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-          case SPV_OPERAND_TYPE_SCOPE_ID:
-            // This is an id operand - it consists of a single word of data,
-            // which needs to be remapped so that it is replaced with the
-            // donated form of the id.
-            operand_data.push_back(
-                original_id_to_donated_id->at(in_operand.words[0]));
-            break;
-          default:
-            // For non-id operands, we just add each of the data words.
-            for (auto word : in_operand.words) {
-              operand_data.push_back(word);
+          if (IgnoreInstruction(donor_ir_context, instruction)) {
+            if (instruction->result_id()) {
+              skipped_result_ids.insert(instruction->result_id());
             }
-            break;
-        }
-        input_operands.push_back({in_operand.type, operand_data});
-      }
+            return;
+          }
 
-      if (instruction->opcode() == SpvOpVariable &&
-          instruction->NumInOperands() == 1) {
-        // This is an uninitialized local variable.  Initialize it to zero.
-        input_operands.push_back(
-            {SPV_OPERAND_TYPE_ID,
-             {FindOrCreateZeroConstant(
-                 fuzzerutil::GetPointeeTypeIdFromPointerType(
-                     GetIRContext(),
-                     original_id_to_donated_id->at(instruction->type_id())))}});
-      }
+          if (instruction->type_id() && !original_id_to_donated_id->count(instruction->type_id())) {
+            // We cannot donate this instruction because we have not been able to donate its result type.
+            assert ((!instruction->result_id() || !original_id_to_donated_id->count(instruction->result_id())) && "Donation of an instruction that will not be donated has been assumed.");
+            return;
+          }
 
-      // Remap the result type and result id (if present) of the
-      // instruction, and turn it into a protobuf message.
-      donated_instructions.push_back(MakeInstructionMessage(
-          instruction->opcode(),
-          instruction->type_id()
-              ? original_id_to_donated_id->at(instruction->type_id())
-              : 0,
-          instruction->result_id()
-              ? original_id_to_donated_id->at(instruction->result_id())
-              : 0,
-          input_operands));
-    });
+          if (instruction->opcode() == SpvOpArrayLength) {
+            // We treat the OpArrayLength instruction specially.  In the donor
+            // shader this gets the length of a runtime array that is the final
+            // member of a struct.  During donation, we will have converted the
+            // runtime array type, and the associated struct field, into a fixed-
+            // size array.  We can then use the constant size of this fixed-sized
+            // array wherever we would have used the result of an OpArrayLength
+            // instruction.
+            uint32_t donated_variable_id = original_id_to_donated_id->at(
+                instruction->GetSingleWordInOperand(0));
+            auto donated_variable_instruction =
+                GetIRContext()->get_def_use_mgr()->GetDef(donated_variable_id);
+            auto pointer_to_struct_instruction =
+                GetIRContext()->get_def_use_mgr()->GetDef(
+                    donated_variable_instruction->type_id());
+            assert(pointer_to_struct_instruction->opcode() == SpvOpTypePointer &&
+                   "Type of variable must be pointer.");
+            auto donated_struct_type_instruction =
+                GetIRContext()->get_def_use_mgr()->GetDef(
+                    pointer_to_struct_instruction->GetSingleWordInOperand(1));
+            assert(
+                donated_struct_type_instruction->opcode() == SpvOpTypeStruct &&
+                "Pointee type of pointer used by OpArrayLength must be struct.");
+            assert(donated_struct_type_instruction->NumInOperands() ==
+                       instruction->GetSingleWordInOperand(1) + 1 &&
+                   "OpArrayLength must refer to the final member of the given "
+                   "struct.");
+            uint32_t fixed_size_array_type_id =
+                donated_struct_type_instruction->GetSingleWordInOperand(
+                    donated_struct_type_instruction->NumInOperands() - 1);
+            auto fixed_size_array_type_instruction =
+                GetIRContext()->get_def_use_mgr()->GetDef(
+                    fixed_size_array_type_id);
+            assert(fixed_size_array_type_instruction->opcode() ==
+                       SpvOpTypeArray &&
+                   "The donated array type must be fixed-size.");
+            auto array_size_id =
+                fixed_size_array_type_instruction->GetSingleWordInOperand(1);
+
+            if (instruction->result_id() && !original_id_to_donated_id->count(instruction->result_id())) {
+              original_id_to_donated_id->insert({instruction->result_id(), GetFuzzerContext()->GetFreshId()});
+            }
+
+            donated_instructions.push_back(MakeInstructionMessage(
+                    SpvOpCopyObject,
+                    original_id_to_donated_id->at(instruction->type_id()),
+                    instruction->result_id(),
+                    opt::Instruction::OperandList({{ SPV_OPERAND_TYPE_ID, { array_size_id }}})));
+
+            return;
+          }
+
+          // Get the instruction's input operands into donation-ready form,
+          // remapping any id uses in the process.
+          opt::Instruction::OperandList input_operands;
+
+          // Consider each input operand in turn.
+          for (uint32_t in_operand_index = 0;
+               in_operand_index < instruction->NumInOperands();
+               in_operand_index++) {
+            std::vector<uint32_t> operand_data;
+            const opt::Operand& in_operand =
+                instruction->GetInOperand(in_operand_index);
+            if (spvIsIdType(in_operand.type)) {
+              // This is an id operand - it consists of a single word of data,
+              // which needs to be remapped so that it is replaced with the
+              // donated form of the id.
+              auto operand_id = in_operand.words[0];
+              auto operand_inst = donor_ir_context->get_def_use_mgr()->GetDef(operand_id);
+              if (!original_id_to_donated_id->count(operand_id)) {
+                // We do not have a corresponding id for this operand.  That means either that we skipped the definition of the operand, or that it is a forward reference.
+                if (operand_inst->opcode() == SpvOpFunction) {
+                  assert (instruction->opcode() == SpvOpFunctionCall && "Unexpected use of OpFunction.");
+                  // We did not donate the function associated with this function call instruction, so we cannot donate the function call instruction.
+                  skipped_result_ids.insert(instruction->result_id());
+                  return;
+                } else if (skipped_result_ids.count(operand_id)) {
+                  // We skipped this operand's definition, so try to substitute the operand with some other id; if that doesn't work we need to skip this instruction.
+                  auto operand_type_inst = donor_ir_context->get_def_use_mgr()->GetDef(operand_inst->type_id());
+                  switch (operand_type_inst->opcode()) {
+                    case SpvOpTypeArray:
+                    case SpvOpTypeBool:
+                    case SpvOpTypeFloat:
+                    case SpvOpTypeInt:
+                    case SpvOpTypeStruct:
+                    case SpvOpTypeVector:
+                    case SpvOpTypeMatrix:
+                      // The required type is basic, so we can use a constant of the
+                      // basic type.
+                      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+                      //  Using this particular constant is arbitrary, so if we have a
+                      //  mechanism for noting that an id use is arbitrary and could be
+                      //  fuzzed we should use it here.
+                      operand_data.push_back(FindOrCreateZeroConstant(original_id_to_donated_id->at(operand_type_inst->result_id())));
+                      break;
+                    default:
+                      // We do not have a way to generate a substitute for this operand, so we will need to skip it.
+                      if (instruction->result_id()) {
+                        skipped_result_ids.insert(instruction->result_id());
+                      }
+                      return;
+                    }
+                } else {
+                  // This is a forward reference.  We will choose a corresponding donor id for the referenced id and update the mapping to reflect it.
+                  assert ((operand_inst->opcode() == SpvOpLabel || instruction->opcode() == SpvOpPhi) && "Unsupported forward reference.");
+                  auto new_id = GetFuzzerContext()->GetFreshId();
+                  operand_data.push_back(new_id);
+                  original_id_to_donated_id->insert({operand_id, new_id});
+                }
+              } else {
+                operand_data.push_back(
+                        original_id_to_donated_id->at(operand_id));
+              }
+            } else {
+              // For non-id operands, we just add each of the data words.
+              for (auto word : in_operand.words) {
+                operand_data.push_back(word);
+              }
+            }
+            input_operands.push_back({in_operand.type, operand_data});
+          }
+
+          if (instruction->opcode() == SpvOpVariable &&
+              instruction->NumInOperands() == 1) {
+            // This is an uninitialized local variable.  Initialize it to zero.
+            input_operands.push_back(
+                {SPV_OPERAND_TYPE_ID,
+                 {FindOrCreateZeroConstant(
+                     fuzzerutil::GetPointeeTypeIdFromPointerType(
+                         GetIRContext(), original_id_to_donated_id->at(
+                                             instruction->type_id())))}});
+          }
+
+          if (instruction->result_id() && !original_id_to_donated_id->count(instruction->result_id())) {
+            original_id_to_donated_id->insert({instruction->result_id(), GetFuzzerContext()->GetFreshId()});
+          }
+
+          // Remap the result type and result id (if present) of the
+          // instruction, and turn it into a protobuf message.
+          donated_instructions.push_back(MakeInstructionMessage(
+              instruction->opcode(),
+              instruction->type_id()
+                  ? original_id_to_donated_id->at(instruction->type_id())
+                  : 0,
+              instruction->result_id()
+                  ? original_id_to_donated_id->at(instruction->result_id())
+                  : 0,
+              input_operands));
+        });
 
     if (make_livesafe) {
       // Various types and constants must be in place for a function to be made
@@ -841,7 +930,7 @@ void FuzzerPassDonateModules::HandleFunctions(
 }
 
 bool FuzzerPassDonateModules::IgnoreInstruction(
-    const opt::Instruction* instruction) {
+    opt::IRContext* donor_ir_context, const opt::Instruction* instruction) {
   switch (instruction->opcode()) {
     case SpvOpArrayLength:
       // We ignore instructions that get the length of runtime arrays, because
@@ -865,7 +954,56 @@ bool FuzzerPassDonateModules::IgnoreInstruction(
       // We conservatively ignore all atomic instructions at present.
       // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3276): Consider
       //  being less conservative here.
+    case SpvOpImageSampleImplicitLod:
+    case SpvOpImageSampleExplicitLod:
+    case SpvOpImageSampleDrefImplicitLod:
+    case SpvOpImageSampleDrefExplicitLod:
+    case SpvOpImageSampleProjImplicitLod:
+    case SpvOpImageSampleProjExplicitLod:
+    case SpvOpImageSampleProjDrefImplicitLod:
+    case SpvOpImageSampleProjDrefExplicitLod:
+    case SpvOpImageFetch:
+    case SpvOpImageGather:
+    case SpvOpImageDrefGather:
+    case SpvOpImageRead:
+    case SpvOpImageWrite:
+    case SpvOpImageSparseSampleImplicitLod:
+    case SpvOpImageSparseSampleExplicitLod:
+    case SpvOpImageSparseSampleDrefImplicitLod:
+    case SpvOpImageSparseSampleDrefExplicitLod:
+    case SpvOpImageSparseSampleProjImplicitLod:
+    case SpvOpImageSparseSampleProjExplicitLod:
+    case SpvOpImageSparseSampleProjDrefImplicitLod:
+    case SpvOpImageSparseSampleProjDrefExplicitLod:
+    case SpvOpImageSparseFetch:
+    case SpvOpImageSparseGather:
+    case SpvOpImageSparseDrefGather:
+    case SpvOpImageSparseRead:
+    case SpvOpImageSampleFootprintNV:
+    case SpvOpImage:
+    case SpvOpImageQueryFormat:
+    case SpvOpImageQueryLevels:
+    case SpvOpImageQueryLod:
+    case SpvOpImageQueryOrder:
+    case SpvOpImageQuerySamples:
+    case SpvOpImageQuerySize:
+    case SpvOpImageQuerySizeLod:
+    case SpvOpSampledImage:
+      // We ignore all instructions related to accessing images, since we do not
+      // donate images.
       return true;
+    case SpvOpLoad:
+      switch (donor_ir_context->get_def_use_mgr()
+                  ->GetDef(instruction->type_id())
+                  ->opcode()) {
+        case SpvOpTypeImage:
+        case SpvOpTypeSampledImage:
+        case SpvOpTypeSampler:
+          // Again, we ignore instructions that relate to accessing images.
+          return true;
+        default:
+          return false;
+      }
     default:
       return false;
   }
