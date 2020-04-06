@@ -47,6 +47,7 @@ bool TransformationAddGlobalVariable::IsApplicable(
     case SpvStorageClassWorkgroup:
       break;
     default:
+      assert(false && "Unsupported storage class.");
       return false;
   }
   // The type id must correspond to a type.
@@ -66,6 +67,9 @@ bool TransformationAddGlobalVariable::IsApplicable(
   if (message_.initializer_id()) {
     // An initializer is not allowed if the storage class is Workgroup.
     if (storage_class == SpvStorageClassWorkgroup) {
+      assert(false &&
+             "By construction this transformation should not have an "
+             "initializer when Workgroup storage class is used.");
       return false;
     }
     // The initializer id must be the id of a constant.  Check this with the

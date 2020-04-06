@@ -518,7 +518,7 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
       } break;
       case SpvOpUndef: {
         if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not denote the type associated wit this undef, so we cannot
+          // We did not donate the type associated with this undef, so we cannot
           // donate the undef.
           continue;
         }
@@ -618,9 +618,10 @@ void FuzzerPassDonateModules::HandleFunctions(
           assert(fixed_size_array_type_instruction->opcode() ==
                      SpvOpTypeArray &&
                  "The donated array type must be fixed-size.");
+          auto array_size_id =
+              fixed_size_array_type_instruction->GetSingleWordInOperand(1);
           original_id_to_donated_id->insert(
-              {instruction->result_id(),
-               fixed_size_array_type_instruction->GetSingleWordInOperand(1)});
+              {instruction->result_id(), array_size_id});
         } else if (instruction->type_id()) {
           // If the ignored instruction has a basic result type then we
           // associate its result id with a constant of that type, so that
