@@ -63,13 +63,11 @@ bool FusedMultiplyAddPass::ProcessSpvOpFMul(IRContext* ctx,
         Instruction* new_inst = builder.AddNaryExtendedInstruction(
           use->type_id(), inst_set_id, GLSLstd450Fma, {});
         assert(new_inst != nullptr);
+        new_inst->AddOperand(instruction->GetOperand(2));
+        new_inst->AddOperand(instruction->GetOperand(3));
 
         auto const& AddOperandL = use->GetOperand(2);
         auto const& AddOperandR = use->GetOperand(3);
-
-        new_inst->AddOperand(AddOperandL);
-        new_inst->AddOperand(AddOperandR);
-
         if (AddOperandL.words.size() == 1 &&
             AddOperandL.words[0] == instruction->result_id()) {
           new_inst->AddOperand(AddOperandR);
