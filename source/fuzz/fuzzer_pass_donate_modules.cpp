@@ -282,11 +282,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // we go ahead and add a remapped version of the type declared by the
         // donor.
         uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
-        if (!original_id_to_donated_id->count(component_type_id)) {
-          // We did not donate the component type of this array type, so we
-          // cannot donate the array type.
-          continue;
-        }
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationAddTypeArray(
             new_result_id, original_id_to_donated_id->at(component_type_id),
@@ -304,11 +299,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         // is rewritten to yield the fixed length that is used for the array.
 
         uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
-        if (!original_id_to_donated_id->count(component_type_id)) {
-          // We did not donate the component type of this runtime array type, so
-          // we cannot donate it as a fixed-size array.
-          continue;
-        }
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationAddTypeArray(
             new_result_id, original_id_to_donated_id->at(component_type_id),
@@ -320,11 +310,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         std::vector<uint32_t> member_type_ids;
         for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
           auto component_type_id = type_or_value.GetSingleWordInOperand(i);
-          if (!original_id_to_donated_id->count(component_type_id)) {
-            // We did not donate every member type for this struct type, so we
-            // cannot donate the struct type.
-            continue;
-          }
           member_type_ids.push_back(
               original_id_to_donated_id->at(component_type_id));
         }
@@ -335,11 +320,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
       case SpvOpTypePointer: {
         // Similar to SpvOpTypeArray.
         uint32_t pointee_type_id = type_or_value.GetSingleWordInOperand(1);
-        if (!original_id_to_donated_id->count(pointee_type_id)) {
-          // We did not donate the pointee type for this pointer type, so we
-          // cannot donate the pointer type.
-          continue;
-        }
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationAddTypePointer(
             new_result_id,
@@ -371,11 +351,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
         for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
           uint32_t return_or_parameter_type =
               type_or_value.GetSingleWordInOperand(i);
-          if (!original_id_to_donated_id->count(return_or_parameter_type)) {
-            // We did not donate every return/parameter type for this function
-            // type, so we cannot donate the function type.
-            continue;
-          }
           return_and_parameter_types.push_back(
               original_id_to_donated_id->at(return_or_parameter_type));
         }
@@ -446,12 +421,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             constituent_ids));
       } break;
       case SpvOpConstantNull: {
-        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not donate the type associated with this null constant, so
-          // we cannot donate the null constant.
-          continue;
-        }
-
         // It is fine to have multiple OpConstantNull instructions of the same
         // type, so we just add this to the recipient module.
         new_result_id = GetFuzzerContext()->GetFreshId();
@@ -460,12 +429,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             original_id_to_donated_id->at(type_or_value.type_id())));
       } break;
       case SpvOpVariable: {
-        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not donate the pointer type associated with this variable,
-          // so we cannot donate the variable.
-          continue;
-        }
-
         // This is a global variable that could have one of various storage
         // classes.  However, we change all global variable pointer storage
         // classes (such as Uniform, Input and Output) to private when donating
@@ -517,12 +480,6 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
             true));
       } break;
       case SpvOpUndef: {
-        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not donate the type associated with this undef, so we cannot
-          // donate the undef.
-          continue;
-        }
-
         // It is fine to have multiple Undef instructions of the same type, so
         // we just add this to the recipient module.
         new_result_id = GetFuzzerContext()->GetFreshId();
