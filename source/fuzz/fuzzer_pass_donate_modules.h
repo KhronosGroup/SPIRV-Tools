@@ -77,6 +77,12 @@ class FuzzerPassDonateModules : public FuzzerPass {
                        std::map<uint32_t, uint32_t>* original_id_to_donated_id,
                        bool make_livesafe);
 
+  // During donation we will have to ignore some instructions, e.g. because they
+  // use opcodes that we cannot support or because they reference the ids of
+  // instructions that have not been donated.  This function encapsulates the
+  // logic for deciding which instructions should be ignored.
+  bool IgnoreInstruction(const opt::Instruction* instruction);
+
   // Returns the ids of all functions in |context| in a topological order in
   // relation to the call graph of |context|, which is assumed to be recursion-
   // free.
