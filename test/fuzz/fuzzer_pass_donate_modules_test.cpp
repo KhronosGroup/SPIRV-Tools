@@ -496,7 +496,8 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0).get(), 100);
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -544,6 +545,486 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // We just check that the result is valid.  Checking to what it should be
+  // exactly equal to would be very fragile.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
+TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImages) {
+  std::string recipient_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+               OpName %4 "main"
+               OpName %10 "mySampler"
+               OpName %21 "myTexture"
+               OpName %33 "v"
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %10 DescriptorSet 0
+               OpDecorate %10 Binding 0
+               OpDecorate %11 RelaxedPrecision
+               OpDecorate %21 RelaxedPrecision
+               OpDecorate %21 DescriptorSet 0
+               OpDecorate %21 Binding 1
+               OpDecorate %22 RelaxedPrecision
+               OpDecorate %34 RelaxedPrecision
+               OpDecorate %40 RelaxedPrecision
+               OpDecorate %42 RelaxedPrecision
+               OpDecorate %43 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 2D 0 0 0 1 Unknown
+          %8 = OpTypeSampledImage %7
+          %9 = OpTypePointer UniformConstant %8
+         %10 = OpVariable %9 UniformConstant
+         %12 = OpTypeInt 32 1
+         %13 = OpConstant %12 2
+         %15 = OpTypeVector %12 2
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 0
+         %20 = OpTypePointer UniformConstant %7
+         %21 = OpVariable %20 UniformConstant
+         %23 = OpConstant %12 1
+         %25 = OpConstant %17 1
+         %27 = OpTypeBool
+         %31 = OpTypeVector %6 4
+         %32 = OpTypePointer Function %31
+         %35 = OpConstantComposite %15 %23 %23
+         %36 = OpConstant %12 3
+         %37 = OpConstant %12 4
+         %38 = OpConstantComposite %15 %36 %37
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %33 = OpVariable %32 Function
+         %11 = OpLoad %8 %10
+         %14 = OpImage %7 %11
+         %16 = OpImageQuerySizeLod %15 %14 %13
+         %19 = OpCompositeExtract %12 %16 0
+         %22 = OpLoad %7 %21
+         %24 = OpImageQuerySizeLod %15 %22 %23
+         %26 = OpCompositeExtract %12 %24 1
+         %28 = OpSGreaterThan %27 %19 %26
+               OpSelectionMerge %30 None
+               OpBranchConditional %28 %29 %41
+         %29 = OpLabel
+         %34 = OpLoad %8 %10
+         %39 = OpImage %7 %34
+         %40 = OpImageFetch %31 %39 %35 Lod|ConstOffset %13 %38
+               OpStore %33 %40
+               OpBranch %30
+         %41 = OpLabel
+         %42 = OpLoad %7 %21
+         %43 = OpImageFetch %31 %42 %35 Lod|ConstOffset %13 %38
+               OpStore %33 %43
+               OpBranch %30
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // We just check that the result is valid.  Checking to what it should be
+  // exactly equal to would be very fragile.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
+TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesSampler) {
+  std::string recipient_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpDecorate %16 DescriptorSet 0
+               OpDecorate %16 Binding 0
+               OpDecorate %12 DescriptorSet 0
+               OpDecorate %12 Binding 64
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %23 = OpTypeFloat 32
+          %6 = OpTypeImage %23 2D 2 0 0 1 Unknown
+         %47 = OpTypePointer UniformConstant %6
+         %12 = OpVariable %47 UniformConstant
+         %15 = OpTypeSampler
+         %55 = OpTypePointer UniformConstant %15
+         %17 = OpTypeSampledImage %6
+         %16 = OpVariable %55 UniformConstant
+         %37 = OpTypeVector %23 4
+        %109 = OpConstant %23 0
+         %66 = OpConstantComposite %37 %109 %109 %109 %109
+         %56 = OpTypeBool
+         %54 = OpConstantTrue %56
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %50
+         %50 = OpLabel
+         %51 = OpPhi %37 %66 %5 %111 %53
+               OpLoopMerge %52 %53 None
+               OpBranchConditional %54 %53 %52
+         %53 = OpLabel
+        %106 = OpLoad %6 %12
+        %107 = OpLoad %15 %16
+        %110 = OpSampledImage %17 %106 %107
+        %111 = OpImageSampleImplicitLod %37 %110 %66 Bias %109
+               OpBranch %50
+         %52 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // We just check that the result is valid.  Checking to what it should be
+  // exactly equal to would be very fragile.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
+TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageStructField) {
+  std::string recipient_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+               OpName %4 "main"
+               OpName %10 "mySampler"
+               OpName %21 "myTexture"
+               OpName %33 "v"
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %10 DescriptorSet 0
+               OpDecorate %10 Binding 0
+               OpDecorate %11 RelaxedPrecision
+               OpDecorate %21 RelaxedPrecision
+               OpDecorate %21 DescriptorSet 0
+               OpDecorate %21 Binding 1
+               OpDecorate %22 RelaxedPrecision
+               OpDecorate %34 RelaxedPrecision
+               OpDecorate %40 RelaxedPrecision
+               OpDecorate %42 RelaxedPrecision
+               OpDecorate %43 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 2D 0 0 0 1 Unknown
+          %8 = OpTypeSampledImage %7
+          %9 = OpTypePointer UniformConstant %8
+         %10 = OpVariable %9 UniformConstant
+         %12 = OpTypeInt 32 1
+         %13 = OpConstant %12 2
+         %15 = OpTypeVector %12 2
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 0
+         %20 = OpTypePointer UniformConstant %7
+         %21 = OpVariable %20 UniformConstant
+         %23 = OpConstant %12 1
+         %25 = OpConstant %17 1
+         %27 = OpTypeBool
+         %31 = OpTypeVector %6 4
+         %32 = OpTypePointer Function %31
+         %35 = OpConstantComposite %15 %23 %23
+         %36 = OpConstant %12 3
+         %37 = OpConstant %12 4
+         %38 = OpConstantComposite %15 %36 %37
+        %201 = OpTypeStruct %7 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %33 = OpVariable %32 Function
+         %11 = OpLoad %8 %10
+         %14 = OpImage %7 %11
+         %22 = OpLoad %7 %21
+        %200 = OpCompositeConstruct %201 %14 %22
+        %202 = OpCompositeExtract %7 %200 0
+        %203 = OpCompositeExtract %7 %200 1
+         %24 = OpImageQuerySizeLod %15 %203 %23
+         %16 = OpImageQuerySizeLod %15 %202 %13
+         %26 = OpCompositeExtract %12 %24 1
+         %19 = OpCompositeExtract %12 %16 0
+         %28 = OpSGreaterThan %27 %19 %26
+               OpSelectionMerge %30 None
+               OpBranchConditional %28 %29 %41
+         %29 = OpLabel
+         %34 = OpLoad %8 %10
+         %39 = OpImage %7 %34
+         %40 = OpImageFetch %31 %39 %35 Lod|ConstOffset %13 %38
+               OpStore %33 %40
+               OpBranch %30
+         %41 = OpLabel
+         %42 = OpLoad %7 %21
+         %43 = OpImageFetch %31 %42 %35 Lod|ConstOffset %13 %38
+               OpStore %33 %43
+               OpBranch %30
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // We just check that the result is valid.  Checking to what it should be
+  // exactly equal to would be very fragile.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
+TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
+  std::string recipient_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+               OpName %4 "main"
+               OpName %10 "mySampler"
+               OpName %21 "myTexture"
+               OpName %33 "v"
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %10 DescriptorSet 0
+               OpDecorate %10 Binding 0
+               OpDecorate %11 RelaxedPrecision
+               OpDecorate %21 RelaxedPrecision
+               OpDecorate %21 DescriptorSet 0
+               OpDecorate %21 Binding 1
+               OpDecorate %22 RelaxedPrecision
+               OpDecorate %34 RelaxedPrecision
+               OpDecorate %40 RelaxedPrecision
+               OpDecorate %42 RelaxedPrecision
+               OpDecorate %43 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 2D 0 0 0 1 Unknown
+          %8 = OpTypeSampledImage %7
+          %9 = OpTypePointer UniformConstant %8
+         %10 = OpVariable %9 UniformConstant
+         %12 = OpTypeInt 32 1
+         %13 = OpConstant %12 2
+         %15 = OpTypeVector %12 2
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 0
+         %20 = OpTypePointer UniformConstant %7
+         %21 = OpVariable %20 UniformConstant
+         %23 = OpConstant %12 1
+         %25 = OpConstant %17 1
+         %27 = OpTypeBool
+         %31 = OpTypeVector %6 4
+         %32 = OpTypePointer Function %31
+         %35 = OpConstantComposite %15 %23 %23
+         %36 = OpConstant %12 3
+         %37 = OpConstant %12 4
+         %38 = OpConstantComposite %15 %36 %37
+        %201 = OpTypeFunction %15 %7 %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %33 = OpVariable %32 Function
+         %11 = OpLoad %8 %10
+         %14 = OpImage %7 %11
+         %16 = OpFunctionCall %15 %200 %14 %13
+         %19 = OpCompositeExtract %12 %16 0
+         %22 = OpLoad %7 %21
+         %24 = OpImageQuerySizeLod %15 %22 %23
+         %26 = OpCompositeExtract %12 %24 1
+         %28 = OpSGreaterThan %27 %19 %26
+               OpSelectionMerge %30 None
+               OpBranchConditional %28 %29 %41
+         %29 = OpLabel
+         %34 = OpLoad %8 %10
+         %39 = OpImage %7 %34
+         %40 = OpImageFetch %31 %39 %35 Lod|ConstOffset %13 %38
+               OpStore %33 %40
+               OpBranch %30
+         %41 = OpLabel
+         %42 = OpLoad %7 %21
+         %43 = OpImageFetch %31 %42 %35 Lod|ConstOffset %13 %38
+               OpStore %33 %43
+               OpBranch %30
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %200 = OpFunction %15 None %201
+        %202 = OpFunctionParameter %7
+        %203 = OpFunctionParameter %12
+        %204 = OpLabel
+        %205 = OpImageQuerySizeLod %15 %202 %203
+               OpReturnValue %205
                OpFunctionEnd
   )";
 
