@@ -920,13 +920,13 @@ void FuzzerPassDonateModules::PrepareInstructionForDonation(
       // which needs to be remapped so that it is replaced with the
       // donated form of the id.
       auto operand_id = in_operand.words[0];
-      auto operand_inst =
-          donor_ir_context->get_def_use_mgr()->GetDef(operand_id);
       if (!original_id_to_donated_id->count(operand_id)) {
         // This is a forward reference.  We will choose a corresponding
         // donor id for the referenced id and update the mapping to
         // reflect it.
-        assert((operand_inst->opcode() == SpvOpLabel ||
+        assert((donor_ir_context->get_def_use_mgr()
+                        ->GetDef(operand_id)
+                        ->opcode() == SpvOpLabel ||
                 instruction.opcode() == SpvOpPhi) &&
                "Unsupported forward reference.");
         original_id_to_donated_id->insert(
