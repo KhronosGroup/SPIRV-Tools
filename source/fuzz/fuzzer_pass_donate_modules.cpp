@@ -606,7 +606,6 @@ void FuzzerPassDonateModules::HandleFunctions(
         [this, &donated_instructions, donor_ir_context,
          &original_id_to_donated_id,
          &skipped_instructions](const opt::Instruction* instruction) {
-
           if (instruction->opcode() == SpvOpArrayLength) {
             // We treat OpArrayLength specially.
             HandleOpArrayLength(*instruction, original_id_to_donated_id,
@@ -924,6 +923,10 @@ void FuzzerPassDonateModules::PrepareInstructionForDonation(
         // This is a forward reference.  We will choose a corresponding
         // donor id for the referenced id and update the mapping to
         // reflect it.
+
+        // Keep release compilers happy because |donor_ir_context| is only used
+        // in this assertion.
+        (void)(donor_ir_context);
         assert((donor_ir_context->get_def_use_mgr()
                         ->GetDef(operand_id)
                         ->opcode() == SpvOpLabel ||
