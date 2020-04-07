@@ -100,6 +100,25 @@ class FuzzerPassDonateModules : public FuzzerPass {
       std::map<uint32_t, uint32_t>* original_id_to_donated_id,
       std::vector<protobufs::Instruction>* donated_instructions) const;
 
+  // TODO comment
+  void HandleDifficultInstruction(
+      const opt::Instruction& instruction,
+      std::map<uint32_t, uint32_t>* original_id_to_donated_id,
+      std::vector<protobufs::Instruction>* donated_instructions,
+      std::set<uint32_t>* skipped_instructions);
+
+  // TODO comment
+  void DonateInstruction(
+      const opt::Instruction& instruction, opt::IRContext* donor_ir_context,
+      std::map<uint32_t, uint32_t>* original_id_to_donated_id,
+      std::vector<protobufs::Instruction>* donated_instructions);
+
+  // TODO comment
+  void AddLivesafeFunction(
+      const opt::Function& function_to_donate, opt::IRContext* donor_ir_context,
+      const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
+      const std::vector<protobufs::Instruction>& donated_instructions);
+
   // Returns true if and only if |instruction| is a scalar, vector, matrix,
   // array or struct; i.e. it is not an opaque type.
   bool IsBasicType(const opt::Instruction& instruction) const;

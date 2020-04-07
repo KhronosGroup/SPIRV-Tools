@@ -596,280 +596,38 @@ void FuzzerPassDonateModules::HandleFunctions(
     // instructions here, and use them to create an AddFunction transformation.
     std::vector<protobufs::Instruction> donated_instructions;
 
+    // This set tracks the ids of those instructions for which donation was
+    // completely skipped: neither the instruction nor a substitute for it was
+    // donated.
     std::set<uint32_t> skipped_instructions;
 
     // Consider every instruction of the donor function.
-    function_to_donate->ForEachInst([this, &donated_instructions,
-                                     donor_ir_context,
-                                     &original_id_to_donated_id,
-                                     &skipped_instructions](
-                                        const opt::Instruction* instruction) {
+    function_to_donate->ForEachInst(
+        [this, &donated_instructions, donor_ir_context,
+         &original_id_to_donated_id,
+         &skipped_instructions](const opt::Instruction* instruction) {
 
-      if (instruction->opcode() == SpvOpArrayLength) {
-        HandleOpArrayLength(*instruction, original_id_to_donated_id,
-                            &donated_instructions);
-        return;
-      }
-
-      if (!CanDonateInstruction(donor_ir_context, *instruction,
-                                *original_id_to_donated_id,
-                                skipped_instructions)) {
-        // This is an instruction that we cannot directly donate.
-        if (!instruction->result_id()) {
-          // It does not generate a result id, so it can be ignored.
-          return;
-        }
-        if (original_id_to_donated_id->count(instruction->type_id())) {
-          auto remapped_type_id =
-              original_id_to_donated_id->at(instruction->type_id());
-          if (IsBasicType(*GetIRContext()->get_def_use_mgr()->GetDef(
-                  remapped_type_id))) {
-            if (!original_id_to_donated_id->count(instruction->result_id())) {
-              original_id_to_donated_id->insert(
-                  {instruction->result_id(), GetFuzzerContext()->GetFreshId()});
-            }
-            // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-            //  Using this particular constant is arbitrary, so if we have a
-            //  mechanism for noting that an id use is arbitrary and could be
-            //  fuzzed we should use it here.
-            auto zero_constant = FindOrCreateZeroConstant(remapped_type_id);
-            donated_instructions.push_back(MakeInstructionMessage(
-                SpvOpCopyObject, remapped_type_id,
-                original_id_to_donated_id->at(instruction->result_id()),
-                opt::Instruction::OperandList(
-                    {{SPV_OPERAND_TYPE_ID, {zero_constant}}})));
-            return;
+          if (instruction->opcode() == SpvOpArrayLength) {
+            // We treat OpArrayLength specially.
+            HandleOpArrayLength(*instruction, original_id_to_donated_id,
+                                &donated_instructions);
+          } else if (!CanDonateInstruction(donor_ir_context, *instruction,
+                                           *original_id_to_donated_id,
+                                           skipped_instructions)) {
+            // This is an instruction that we cannot directly donate.
+            HandleDifficultInstruction(*instruction, original_id_to_donated_id,
+                                       &donated_instructions,
+                                       &skipped_instructions);
+          } else {
+            DonateInstruction(*instruction, donor_ir_context,
+                              original_id_to_donated_id, &donated_instructions);
           }
-        }
-        skipped_instructions.insert(instruction->result_id());
-        return;
-      }
-
-      // Get the instruction's input operands into donation-ready form,
-      // remapping any id uses in the process.
-      opt::Instruction::OperandList input_operands;
-
-      // Consider each input operand in turn.
-      for (uint32_t in_operand_index = 0;
-           in_operand_index < instruction->NumInOperands();
-           in_operand_index++) {
-        std::vector<uint32_t> operand_data;
-        const opt::Operand& in_operand =
-            instruction->GetInOperand(in_operand_index);
-        if (spvIsIdType(in_operand.type)) {
-          // This is an id operand - it consists of a single word of data,
-          // which needs to be remapped so that it is replaced with the
-          // donated form of the id.
-          auto operand_id = in_operand.words[0];
-          auto operand_inst =
-              donor_ir_context->get_def_use_mgr()->GetDef(operand_id);
-          if (!original_id_to_donated_id->count(operand_id)) {
-            // This is a forward reference.  We will choose a corresponding
-            // donor id for the referenced id and update the mapping to reflect
-            // it.
-            assert((operand_inst->opcode() == SpvOpLabel ||
-                    instruction->opcode() == SpvOpPhi) &&
-                   "Unsupported forward reference.");
-            original_id_to_donated_id->insert(
-                {operand_id, GetFuzzerContext()->GetFreshId()});
-          }
-          operand_data.push_back(original_id_to_donated_id->at(operand_id));
-        } else {
-          // For non-id operands, we just add each of the data words.
-          for (auto word : in_operand.words) {
-            operand_data.push_back(word);
-          }
-        }
-        input_operands.push_back({in_operand.type, operand_data});
-      }
-
-      if (instruction->opcode() == SpvOpVariable &&
-          instruction->NumInOperands() == 1) {
-        // This is an uninitialized local variable.  Initialize it to zero.
-        input_operands.push_back(
-            {SPV_OPERAND_TYPE_ID,
-             {FindOrCreateZeroConstant(
-                 fuzzerutil::GetPointeeTypeIdFromPointerType(
-                     GetIRContext(),
-                     original_id_to_donated_id->at(instruction->type_id())))}});
-      }
-
-      if (instruction->result_id() &&
-          !original_id_to_donated_id->count(instruction->result_id())) {
-        original_id_to_donated_id->insert(
-            {instruction->result_id(), GetFuzzerContext()->GetFreshId()});
-      }
-
-      // Remap the result type and result id (if present) of the
-      // instruction, and turn it into a protobuf message.
-      donated_instructions.push_back(MakeInstructionMessage(
-          instruction->opcode(),
-          instruction->type_id()
-              ? original_id_to_donated_id->at(instruction->type_id())
-              : 0,
-          instruction->result_id()
-              ? original_id_to_donated_id->at(instruction->result_id())
-              : 0,
-          input_operands));
-    });
+        });
 
     if (make_livesafe) {
-      // Various types and constants must be in place for a function to be made
-      // live-safe.  Add them if not already present.
-      FindOrCreateBoolType();  // Needed for comparisons
-      FindOrCreatePointerTo32BitIntegerType(
-          false, SpvStorageClassFunction);  // Needed for adding loop limiters
-      FindOrCreate32BitIntegerConstant(
-          0, false);  // Needed for initializing loop limiters
-      FindOrCreate32BitIntegerConstant(
-          1, false);  // Needed for incrementing loop limiters
-
-      // Get a fresh id for the variable that will be used as a loop limiter.
-      const uint32_t loop_limiter_variable_id =
-          GetFuzzerContext()->GetFreshId();
-      // Choose a random loop limit, and add the required constant to the
-      // module if not already there.
-      const uint32_t loop_limit = FindOrCreate32BitIntegerConstant(
-          GetFuzzerContext()->GetRandomLoopLimit(), false);
-
-      // Consider every loop header in the function to donate, and create a
-      // structure capturing the ids to be used for manipulating the loop
-      // limiter each time the loop is iterated.
-      std::vector<protobufs::LoopLimiterInfo> loop_limiters;
-      for (auto& block : *function_to_donate) {
-        if (block.IsLoopHeader()) {
-          protobufs::LoopLimiterInfo loop_limiter;
-          // Grab the loop header's id, mapped to its donated value.
-          loop_limiter.set_loop_header_id(
-              original_id_to_donated_id->at(block.id()));
-          // Get fresh ids that will be used to load the loop limiter, increment
-          // it, compare it with the loop limit, and an id for a new block that
-          // will contain the loop's original terminator.
-          loop_limiter.set_load_id(GetFuzzerContext()->GetFreshId());
-          loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
-          loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
-          loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
-          loop_limiters.emplace_back(loop_limiter);
-        }
-      }
-
-      // Consider every access chain in the function to donate, and create a
-      // structure containing the ids necessary to clamp the access chain
-      // indices to be in-bounds.
-      std::vector<protobufs::AccessChainClampingInfo>
-          access_chain_clamping_info;
-      for (auto& block : *function_to_donate) {
-        for (auto& inst : block) {
-          switch (inst.opcode()) {
-            case SpvOpAccessChain:
-            case SpvOpInBoundsAccessChain: {
-              protobufs::AccessChainClampingInfo clamping_info;
-              clamping_info.set_access_chain_id(
-                  original_id_to_donated_id->at(inst.result_id()));
-
-              auto base_object = donor_ir_context->get_def_use_mgr()->GetDef(
-                  inst.GetSingleWordInOperand(0));
-              assert(base_object && "The base object must exist.");
-              auto pointer_type = donor_ir_context->get_def_use_mgr()->GetDef(
-                  base_object->type_id());
-              assert(pointer_type &&
-                     pointer_type->opcode() == SpvOpTypePointer &&
-                     "The base object must have pointer type.");
-
-              auto should_be_composite_type =
-                  donor_ir_context->get_def_use_mgr()->GetDef(
-                      pointer_type->GetSingleWordInOperand(1));
-
-              // Walk the access chain, creating fresh ids to facilitate
-              // clamping each index.  For simplicity we do this for every
-              // index, even though constant indices will not end up being
-              // clamped.
-              for (uint32_t index = 1; index < inst.NumInOperands(); index++) {
-                auto compare_and_select_ids =
-                    clamping_info.add_compare_and_select_ids();
-                compare_and_select_ids->set_first(
-                    GetFuzzerContext()->GetFreshId());
-                compare_and_select_ids->set_second(
-                    GetFuzzerContext()->GetFreshId());
-
-                // Get the bound for the component being indexed into.
-                uint32_t bound;
-                if (should_be_composite_type->opcode() ==
-                    SpvOpTypeRuntimeArray) {
-                  // The donor is indexing into a runtime array.  We do not
-                  // donate runtime arrays.  Instead, we donate a corresponding
-                  // fixed-size array for every runtime array.  We should thus
-                  // find that donor composite type's result id maps to a fixed-
-                  // size array.
-                  auto fixed_size_array_type =
-                      GetIRContext()->get_def_use_mgr()->GetDef(
-                          original_id_to_donated_id->at(
-                              should_be_composite_type->result_id()));
-                  assert(fixed_size_array_type->opcode() == SpvOpTypeArray &&
-                         "A runtime array type in the donor should have been "
-                         "replaced by a fixed-sized array in the recipient.");
-                  // The size of this fixed-size array is a suitable bound.
-                  bound = TransformationAddFunction::GetBoundForCompositeIndex(
-                      GetIRContext(), *fixed_size_array_type);
-                } else {
-                  bound = TransformationAddFunction::GetBoundForCompositeIndex(
-                      donor_ir_context, *should_be_composite_type);
-                }
-                const uint32_t index_id = inst.GetSingleWordInOperand(index);
-                auto index_inst =
-                    donor_ir_context->get_def_use_mgr()->GetDef(index_id);
-                auto index_type_inst =
-                    donor_ir_context->get_def_use_mgr()->GetDef(
-                        index_inst->type_id());
-                assert(index_type_inst->opcode() == SpvOpTypeInt);
-                assert(index_type_inst->GetSingleWordInOperand(0) == 32);
-                opt::analysis::Integer* index_int_type =
-                    donor_ir_context->get_type_mgr()
-                        ->GetType(index_type_inst->result_id())
-                        ->AsInteger();
-                if (index_inst->opcode() != SpvOpConstant) {
-                  // We will have to clamp this index, so we need a constant
-                  // whose value is one less than the bound, to compare
-                  // against and to use as the clamped value.
-                  FindOrCreate32BitIntegerConstant(bound - 1,
-                                                   index_int_type->IsSigned());
-                }
-                should_be_composite_type =
-                    TransformationAddFunction::FollowCompositeIndex(
-                        donor_ir_context, *should_be_composite_type, index_id);
-              }
-              access_chain_clamping_info.push_back(clamping_info);
-              break;
-            }
-            default:
-              break;
-          }
-        }
-      }
-
-      // If the function contains OpKill or OpUnreachable instructions, and has
-      // non-void return type, then we need a value %v to use in order to turn
-      // these into instructions of the form OpReturn %v.
-      uint32_t kill_unreachable_return_value_id;
-      auto function_return_type_inst =
-          donor_ir_context->get_def_use_mgr()->GetDef(
-              function_to_donate->type_id());
-      if (function_return_type_inst->opcode() == SpvOpTypeVoid) {
-        // The return type is void, so we don't need a return value.
-        kill_unreachable_return_value_id = 0;
-      } else {
-        // We do need a return value; we use zero.
-        assert(function_return_type_inst->opcode() != SpvOpTypePointer &&
-               "Function return type must not be a pointer.");
-        kill_unreachable_return_value_id =
-            FindOrCreateZeroConstant(original_id_to_donated_id->at(
-                function_return_type_inst->result_id()));
-      }
-      // Add the function in a livesafe manner.
-      ApplyTransformation(TransformationAddFunction(
-          donated_instructions, loop_limiter_variable_id, loop_limit,
-          loop_limiters, kill_unreachable_return_value_id,
-          access_chain_clamping_info));
+      // Make the function livesafe and then add it.
+      AddLivesafeFunction(*function_to_donate, donor_ir_context,
+                          *original_id_to_donated_id, donated_instructions);
     } else {
       // Add the function in a non-livesafe manner.
       ApplyTransformation(TransformationAddFunction(donated_instructions));
@@ -1086,6 +844,272 @@ void FuzzerPassDonateModules::HandleOpArrayLength(
       SpvOpCopyObject, original_id_to_donated_id->at(instruction.type_id()),
       original_id_to_donated_id->at(instruction.result_id()),
       opt::Instruction::OperandList({{SPV_OPERAND_TYPE_ID, {array_size_id}}})));
+}
+
+void FuzzerPassDonateModules::HandleDifficultInstruction(
+    const opt::Instruction& instruction,
+    std::map<uint32_t, uint32_t>* original_id_to_donated_id,
+    std::vector<protobufs::Instruction>* donated_instructions,
+    std::set<uint32_t>* skipped_instructions) {
+  if (!instruction.result_id()) {
+    // It does not generate a result id, so it can be ignored.
+    return;
+  }
+  if (!original_id_to_donated_id->count(instruction.type_id())) {
+    // We cannot handle this instruction's result type, so we need to skip it
+    // all together.
+    skipped_instructions->insert(instruction.result_id());
+    return;
+  }
+
+  // TODO say that we now attempt to replace the instruction with an object
+  //  copy.  This is a bit heavy-weight; if the arguments are all donatable by
+  //  type then we could replace difficult instructions with references to
+  //  constants; open an issue for this.
+  auto remapped_type_id = original_id_to_donated_id->at(instruction.type_id());
+  if (!IsBasicType(
+          *GetIRContext()->get_def_use_mgr()->GetDef(remapped_type_id))) {
+    // The instruction has a non-basic result type, so we cannot replace it with
+    // an object copy of a constant.  We thus skip it completely.
+    // TODO open issue to say that we could look for something else in scope.
+    skipped_instructions->insert(instruction.result_id());
+    return;
+  }
+
+  if (!original_id_to_donated_id->count(instruction.result_id())) {
+    original_id_to_donated_id->insert(
+        {instruction.result_id(), GetFuzzerContext()->GetFreshId()});
+  }
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+  //  Using this particular constant is arbitrary, so if we have a
+  //  mechanism for noting that an id use is arbitrary and could be
+  //  fuzzed we should use it here.
+  auto zero_constant = FindOrCreateZeroConstant(remapped_type_id);
+  donated_instructions->push_back(MakeInstructionMessage(
+      SpvOpCopyObject, remapped_type_id,
+      original_id_to_donated_id->at(instruction.result_id()),
+      opt::Instruction::OperandList({{SPV_OPERAND_TYPE_ID, {zero_constant}}})));
+}
+
+void FuzzerPassDonateModules::DonateInstruction(
+    const opt::Instruction& instruction, opt::IRContext* donor_ir_context,
+    std::map<uint32_t, uint32_t>* original_id_to_donated_id,
+    std::vector<protobufs::Instruction>* donated_instructions) {
+  // Get the instruction's input operands into donation-ready form,
+  // remapping any id uses in the process.
+  opt::Instruction::OperandList input_operands;
+
+  // Consider each input operand in turn.
+  for (uint32_t in_operand_index = 0;
+       in_operand_index < instruction.NumInOperands(); in_operand_index++) {
+    std::vector<uint32_t> operand_data;
+    const opt::Operand& in_operand = instruction.GetInOperand(in_operand_index);
+    if (spvIsIdType(in_operand.type)) {
+      // This is an id operand - it consists of a single word of data,
+      // which needs to be remapped so that it is replaced with the
+      // donated form of the id.
+      auto operand_id = in_operand.words[0];
+      auto operand_inst =
+          donor_ir_context->get_def_use_mgr()->GetDef(operand_id);
+      if (!original_id_to_donated_id->count(operand_id)) {
+        // This is a forward reference.  We will choose a corresponding
+        // donor id for the referenced id and update the mapping to
+        // reflect it.
+        assert((operand_inst->opcode() == SpvOpLabel ||
+                instruction.opcode() == SpvOpPhi) &&
+               "Unsupported forward reference.");
+        original_id_to_donated_id->insert(
+            {operand_id, GetFuzzerContext()->GetFreshId()});
+      }
+      operand_data.push_back(original_id_to_donated_id->at(operand_id));
+    } else {
+      // For non-id operands, we just add each of the data words.
+      for (auto word : in_operand.words) {
+        operand_data.push_back(word);
+      }
+    }
+    input_operands.push_back({in_operand.type, operand_data});
+  }
+
+  if (instruction.opcode() == SpvOpVariable &&
+      instruction.NumInOperands() == 1) {
+    // This is an uninitialized local variable.  Initialize it to zero.
+    input_operands.push_back(
+        {SPV_OPERAND_TYPE_ID,
+         {FindOrCreateZeroConstant(fuzzerutil::GetPointeeTypeIdFromPointerType(
+             GetIRContext(),
+             original_id_to_donated_id->at(instruction.type_id())))}});
+  }
+
+  if (instruction.result_id() &&
+      !original_id_to_donated_id->count(instruction.result_id())) {
+    original_id_to_donated_id->insert(
+        {instruction.result_id(), GetFuzzerContext()->GetFreshId()});
+  }
+
+  // Remap the result type and result id (if present) of the
+  // instruction, and turn it into a protobuf message.
+  donated_instructions->push_back(MakeInstructionMessage(
+      instruction.opcode(),
+      instruction.type_id()
+          ? original_id_to_donated_id->at(instruction.type_id())
+          : 0,
+      instruction.result_id()
+          ? original_id_to_donated_id->at(instruction.result_id())
+          : 0,
+      input_operands));
+}
+
+void FuzzerPassDonateModules::AddLivesafeFunction(
+    const opt::Function& function_to_donate, opt::IRContext* donor_ir_context,
+    const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
+    const std::vector<protobufs::Instruction>& donated_instructions) {
+  // Various types and constants must be in place for a function to be made
+  // live-safe.  Add them if not already present.
+  FindOrCreateBoolType();  // Needed for comparisons
+  FindOrCreatePointerTo32BitIntegerType(
+      false, SpvStorageClassFunction);  // Needed for adding loop limiters
+  FindOrCreate32BitIntegerConstant(
+      0, false);  // Needed for initializing loop limiters
+  FindOrCreate32BitIntegerConstant(
+      1, false);  // Needed for incrementing loop limiters
+
+  // Get a fresh id for the variable that will be used as a loop limiter.
+  const uint32_t loop_limiter_variable_id = GetFuzzerContext()->GetFreshId();
+  // Choose a random loop limit, and add the required constant to the
+  // module if not already there.
+  const uint32_t loop_limit = FindOrCreate32BitIntegerConstant(
+      GetFuzzerContext()->GetRandomLoopLimit(), false);
+
+  // Consider every loop header in the function to donate, and create a
+  // structure capturing the ids to be used for manipulating the loop
+  // limiter each time the loop is iterated.
+  std::vector<protobufs::LoopLimiterInfo> loop_limiters;
+  for (auto& block : function_to_donate) {
+    if (block.IsLoopHeader()) {
+      protobufs::LoopLimiterInfo loop_limiter;
+      // Grab the loop header's id, mapped to its donated value.
+      loop_limiter.set_loop_header_id(original_id_to_donated_id.at(block.id()));
+      // Get fresh ids that will be used to load the loop limiter, increment
+      // it, compare it with the loop limit, and an id for a new block that
+      // will contain the loop's original terminator.
+      loop_limiter.set_load_id(GetFuzzerContext()->GetFreshId());
+      loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
+      loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
+      loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
+      loop_limiters.emplace_back(loop_limiter);
+    }
+  }
+
+  // Consider every access chain in the function to donate, and create a
+  // structure containing the ids necessary to clamp the access chain
+  // indices to be in-bounds.
+  std::vector<protobufs::AccessChainClampingInfo> access_chain_clamping_info;
+  for (auto& block : function_to_donate) {
+    for (auto& inst : block) {
+      switch (inst.opcode()) {
+        case SpvOpAccessChain:
+        case SpvOpInBoundsAccessChain: {
+          protobufs::AccessChainClampingInfo clamping_info;
+          clamping_info.set_access_chain_id(
+              original_id_to_donated_id.at(inst.result_id()));
+
+          auto base_object = donor_ir_context->get_def_use_mgr()->GetDef(
+              inst.GetSingleWordInOperand(0));
+          assert(base_object && "The base object must exist.");
+          auto pointer_type = donor_ir_context->get_def_use_mgr()->GetDef(
+              base_object->type_id());
+          assert(pointer_type && pointer_type->opcode() == SpvOpTypePointer &&
+                 "The base object must have pointer type.");
+
+          auto should_be_composite_type =
+              donor_ir_context->get_def_use_mgr()->GetDef(
+                  pointer_type->GetSingleWordInOperand(1));
+
+          // Walk the access chain, creating fresh ids to facilitate
+          // clamping each index.  For simplicity we do this for every
+          // index, even though constant indices will not end up being
+          // clamped.
+          for (uint32_t index = 1; index < inst.NumInOperands(); index++) {
+            auto compare_and_select_ids =
+                clamping_info.add_compare_and_select_ids();
+            compare_and_select_ids->set_first(GetFuzzerContext()->GetFreshId());
+            compare_and_select_ids->set_second(
+                GetFuzzerContext()->GetFreshId());
+
+            // Get the bound for the component being indexed into.
+            uint32_t bound;
+            if (should_be_composite_type->opcode() == SpvOpTypeRuntimeArray) {
+              // The donor is indexing into a runtime array.  We do not
+              // donate runtime arrays.  Instead, we donate a corresponding
+              // fixed-size array for every runtime array.  We should thus
+              // find that donor composite type's result id maps to a fixed-
+              // size array.
+              auto fixed_size_array_type =
+                  GetIRContext()->get_def_use_mgr()->GetDef(
+                      original_id_to_donated_id.at(
+                          should_be_composite_type->result_id()));
+              assert(fixed_size_array_type->opcode() == SpvOpTypeArray &&
+                     "A runtime array type in the donor should have been "
+                     "replaced by a fixed-sized array in the recipient.");
+              // The size of this fixed-size array is a suitable bound.
+              bound = TransformationAddFunction::GetBoundForCompositeIndex(
+                  GetIRContext(), *fixed_size_array_type);
+            } else {
+              bound = TransformationAddFunction::GetBoundForCompositeIndex(
+                  donor_ir_context, *should_be_composite_type);
+            }
+            const uint32_t index_id = inst.GetSingleWordInOperand(index);
+            auto index_inst =
+                donor_ir_context->get_def_use_mgr()->GetDef(index_id);
+            auto index_type_inst = donor_ir_context->get_def_use_mgr()->GetDef(
+                index_inst->type_id());
+            assert(index_type_inst->opcode() == SpvOpTypeInt);
+            assert(index_type_inst->GetSingleWordInOperand(0) == 32);
+            opt::analysis::Integer* index_int_type =
+                donor_ir_context->get_type_mgr()
+                    ->GetType(index_type_inst->result_id())
+                    ->AsInteger();
+            if (index_inst->opcode() != SpvOpConstant) {
+              // We will have to clamp this index, so we need a constant
+              // whose value is one less than the bound, to compare
+              // against and to use as the clamped value.
+              FindOrCreate32BitIntegerConstant(bound - 1,
+                                               index_int_type->IsSigned());
+            }
+            should_be_composite_type =
+                TransformationAddFunction::FollowCompositeIndex(
+                    donor_ir_context, *should_be_composite_type, index_id);
+          }
+          access_chain_clamping_info.push_back(clamping_info);
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  }
+
+  // If the function contains OpKill or OpUnreachable instructions, and has
+  // non-void return type, then we need a value %v to use in order to turn
+  // these into instructions of the form OpReturn %v.
+  uint32_t kill_unreachable_return_value_id;
+  auto function_return_type_inst =
+      donor_ir_context->get_def_use_mgr()->GetDef(function_to_donate.type_id());
+  if (function_return_type_inst->opcode() == SpvOpTypeVoid) {
+    // The return type is void, so we don't need a return value.
+    kill_unreachable_return_value_id = 0;
+  } else {
+    // We do need a return value; we use zero.
+    assert(function_return_type_inst->opcode() != SpvOpTypePointer &&
+           "Function return type must not be a pointer.");
+    kill_unreachable_return_value_id = FindOrCreateZeroConstant(
+        original_id_to_donated_id.at(function_return_type_inst->result_id()));
+  }
+  // Add the function in a livesafe manner.
+  ApplyTransformation(TransformationAddFunction(
+      donated_instructions, loop_limiter_variable_id, loop_limit, loop_limiters,
+      kill_unreachable_return_value_id, access_chain_clamping_info));
 }
 
 }  // namespace fuzz
