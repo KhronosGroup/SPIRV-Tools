@@ -92,28 +92,44 @@ class FuzzerPassDonateModules : public FuzzerPass {
   // of a struct.  During donation, we will have converted the runtime array
   // type, and the associated struct field, into a fixed-size array.
   //
-  // TODO complete We can
-  // then use the constant size of this fixed-sized array wherever we would have
-  // used the result of an OpArrayLength instruction.
+  // Instead of donating this instruction, we turn it into an OpCopyObject
+  // instruction that copies the size of the fixed-size array.
   void HandleOpArrayLength(
       const opt::Instruction& instruction,
       std::map<uint32_t, uint32_t>* original_id_to_donated_id,
       std::vector<protobufs::Instruction>* donated_instructions) const;
 
-  // TODO comment
+  // The instruction |instruction| is required to be an instruction that cannot
+  // be easily donated, either because it uses an unsupported opcode, has an
+  // unsupported result type, or uses id operands that could not be donated.
+  //
+  // If |instruction| generates a result id, the function attempts to add a
+  // substitute for |instruction| to |donated_instructions| that has the correct
+  // result type.  If this cannot be done, the instruction's result id is added
+  // to |skipped_instructions|.  The mapping from donor ids to recipient ids is
+  // managed by |original_id_to_donated_id|.
   void HandleDifficultInstruction(
       const opt::Instruction& instruction,
       std::map<uint32_t, uint32_t>* original_id_to_donated_id,
       std::vector<protobufs::Instruction>* donated_instructions,
       std::set<uint32_t>* skipped_instructions);
 
-  // TODO comment
-  void DonateInstruction(
+  // Adds an instruction based in |instruction| to |donated_instructions| in a
+  // form ready for donation.  The original instruction comes from
+  // |donor_ir_context|, and |original_id_to_donated_id| maps ids from
+  // |donor_ir_context| to corresponding ids in the recipient module.
+  void PrepareInstructionForDonation(
       const opt::Instruction& instruction, opt::IRContext* donor_ir_context,
       std::map<uint32_t, uint32_t>* original_id_to_donated_id,
       std::vector<protobufs::Instruction>* donated_instructions);
 
-  // TODO comment
+  // Requires that |donated_instructions| represents a prepared version of the
+  // instructions of |function_to_donate| (which comes from |donor_ir_context|)
+  // ready for donation, and |original_id_to_donated_id| maps ids from
+  // |donor_ir_context| to their corresponding ids in the recipient module.
+  //
+  // Adds a livesafe version of the function, based on |donated_instructions|,
+  // to the recipient module.
   void AddLivesafeFunction(
       const opt::Function& function_to_donate, opt::IRContext* donor_ir_context,
       const std::map<uint32_t, uint32_t>& original_id_to_donated_id,

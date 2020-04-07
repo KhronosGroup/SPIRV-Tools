@@ -619,8 +619,9 @@ void FuzzerPassDonateModules::HandleFunctions(
                                        &donated_instructions,
                                        &skipped_instructions);
           } else {
-            DonateInstruction(*instruction, donor_ir_context,
-                              original_id_to_donated_id, &donated_instructions);
+            PrepareInstructionForDonation(*instruction, donor_ir_context,
+                                          original_id_to_donated_id,
+                                          &donated_instructions);
           }
         });
 
@@ -862,24 +863,34 @@ void FuzzerPassDonateModules::HandleDifficultInstruction(
     return;
   }
 
-  // TODO say that we now attempt to replace the instruction with an object
-  //  copy.  This is a bit heavy-weight; if the arguments are all donatable by
-  //  type then we could replace difficult instructions with references to
-  //  constants; open an issue for this.
+  // We now attempt to replace the instruction with an OpCopyObject.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3278): We could do
+  //  something more refined here - we could check which operands to the
+  //  instruction could not be donated and replace those operands with
+  //  references to other ids (such as constants), so that we still get an
+  //  instruction with the opcode and easy-to-handle operands of the donor
+  //  instruction.
   auto remapped_type_id = original_id_to_donated_id->at(instruction.type_id());
   if (!IsBasicType(
           *GetIRContext()->get_def_use_mgr()->GetDef(remapped_type_id))) {
     // The instruction has a non-basic result type, so we cannot replace it with
     // an object copy of a constant.  We thus skip it completely.
-    // TODO open issue to say that we could look for something else in scope.
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3279): We could
+    //  instead look for an available id of the right type and generate an
+    //  OpCopyObject of that id.
     skipped_instructions->insert(instruction.result_id());
     return;
   }
 
+  // We are going to donate an OpCopyObject instruction.  Create a result id for
+  // the donated instruction if it does not already exist (it may exist in the
+  // case that it has been forward-referenced).
   if (!original_id_to_donated_id->count(instruction.result_id())) {
     original_id_to_donated_id->insert(
         {instruction.result_id(), GetFuzzerContext()->GetFreshId()});
   }
+
+  // We donate a copy of the zero constant for the type in question.
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
   //  Using this particular constant is arbitrary, so if we have a
   //  mechanism for noting that an id use is arbitrary and could be
@@ -891,7 +902,7 @@ void FuzzerPassDonateModules::HandleDifficultInstruction(
       opt::Instruction::OperandList({{SPV_OPERAND_TYPE_ID, {zero_constant}}})));
 }
 
-void FuzzerPassDonateModules::DonateInstruction(
+void FuzzerPassDonateModules::PrepareInstructionForDonation(
     const opt::Instruction& instruction, opt::IRContext* donor_ir_context,
     std::map<uint32_t, uint32_t>* original_id_to_donated_id,
     std::vector<protobufs::Instruction>* donated_instructions) {
