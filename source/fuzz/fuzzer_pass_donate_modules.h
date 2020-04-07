@@ -66,6 +66,11 @@ class FuzzerPassDonateModules : public FuzzerPass {
       opt::IRContext* donor_ir_context,
       std::map<uint32_t, uint32_t>* original_id_to_donated_id);
 
+  // TODO comment
+  void HandleTypeOrValue(
+      const opt::Instruction& type_or_value,
+      std::map<uint32_t, uint32_t>* original_id_to_donated_id);
+
   // Assumes that |donor_ir_context| does not exhibit recursion.  Considers the
   // functions in |donor_ir_context|'s call graph in a reverse-topologically-
   // sorted order (leaves-to-root), adding each function to the recipient

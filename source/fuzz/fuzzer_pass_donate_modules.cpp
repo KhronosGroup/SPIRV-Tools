@@ -167,396 +167,385 @@ void FuzzerPassDonateModules::HandleTypesAndValues(
     std::map<uint32_t, uint32_t>* original_id_to_donated_id) {
   // Consider every type/global/constant/undef in the module.
   for (auto& type_or_value : donor_ir_context->module()->types_values()) {
-    // Each such instruction generates a result id, and as part of donation we
-    // need to associate the donor's result id with a new result id.  That new
-    // result id will either be the id of some existing instruction, or a fresh
-    // id.  This variable captures it.
-    uint32_t new_result_id;
+    HandleTypeOrValue(type_or_value, original_id_to_donated_id);
+  }
+}
 
-    // Decide how to handle each kind of instruction on a case-by-case basis.
-    //
-    // Because the donor module is required to be valid, when we encounter a
-    // type comprised of component types (e.g. an aggregate or pointer), we know
-    // that its component types will have been considered previously, and that
-    // |original_id_to_donated_id| will already contain an entry for them.
-    switch (type_or_value.opcode()) {
-      case SpvOpTypeImage:
-      case SpvOpTypeSampledImage:
-      case SpvOpTypeSampler:
-        // We do not donate types and variables that relate to images and
-        // samplers, so we skip these types and subsequently skip anything that
-        // depends on them.
-        continue;
-      case SpvOpTypeVoid: {
-        // Void has to exist already in order for us to have an entry point.
-        // Get the existing id of void.
-        opt::analysis::Void void_type;
-        new_result_id = GetIRContext()->get_type_mgr()->GetId(&void_type);
-        assert(new_result_id &&
-               "The module being transformed will always have 'void' type "
-               "declared.");
-      } break;
-      case SpvOpTypeBool: {
-        // Bool cannot be declared multiple times, so use its existing id if
-        // present, or add a declaration of Bool with a fresh id if not.
-        opt::analysis::Bool bool_type;
-        auto bool_type_id = GetIRContext()->get_type_mgr()->GetId(&bool_type);
-        if (bool_type_id) {
-          new_result_id = bool_type_id;
-        } else {
-          new_result_id = GetFuzzerContext()->GetFreshId();
-          ApplyTransformation(TransformationAddTypeBoolean(new_result_id));
-        }
-      } break;
-      case SpvOpTypeInt: {
-        // Int cannot be declared multiple times with the same width and
-        // signedness, so check whether an existing identical Int type is
-        // present and use its id if so.  Otherwise add a declaration of the
-        // Int type used by the donor, with a fresh id.
-        const uint32_t width = type_or_value.GetSingleWordInOperand(0);
-        const bool is_signed =
-            static_cast<bool>(type_or_value.GetSingleWordInOperand(1));
-        opt::analysis::Integer int_type(width, is_signed);
-        auto int_type_id = GetIRContext()->get_type_mgr()->GetId(&int_type);
-        if (int_type_id) {
-          new_result_id = int_type_id;
-        } else {
-          new_result_id = GetFuzzerContext()->GetFreshId();
-          ApplyTransformation(
-              TransformationAddTypeInt(new_result_id, width, is_signed));
-        }
-      } break;
-      case SpvOpTypeFloat: {
-        // Similar to SpvOpTypeInt.
-        const uint32_t width = type_or_value.GetSingleWordInOperand(0);
-        opt::analysis::Float float_type(width);
-        auto float_type_id = GetIRContext()->get_type_mgr()->GetId(&float_type);
-        if (float_type_id) {
-          new_result_id = float_type_id;
-        } else {
-          new_result_id = GetFuzzerContext()->GetFreshId();
-          ApplyTransformation(TransformationAddTypeFloat(new_result_id, width));
-        }
-      } break;
-      case SpvOpTypeVector: {
-        // It is not legal to have two Vector type declarations with identical
-        // element types and element counts, so check whether an existing
-        // identical Vector type is present and use its id if so.  Otherwise add
-        // a declaration of the Vector type used by the donor, with a fresh id.
+void FuzzerPassDonateModules::HandleTypeOrValue(
+    const opt::Instruction& type_or_value,
+    std::map<uint32_t, uint32_t>* original_id_to_donated_id) {
+  // The type/value instruction generates a result id, and we need to associate
+  // the donor's result id with a new result id.  That new result id will either
+  // be the id of some existing instruction, or a fresh id.  This variable
+  // captures it.
+  uint32_t new_result_id;
 
-        // When considering the vector's component type id, we look up the id
-        // use in the donor to find the id to which this has been remapped.
-        uint32_t component_type_id = original_id_to_donated_id->at(
-            type_or_value.GetSingleWordInOperand(0));
-        auto component_type =
-            GetIRContext()->get_type_mgr()->GetType(component_type_id);
-        assert(component_type && "The base type should be registered.");
-        auto component_count = type_or_value.GetSingleWordInOperand(1);
-        opt::analysis::Vector vector_type(component_type, component_count);
-        auto vector_type_id =
-            GetIRContext()->get_type_mgr()->GetId(&vector_type);
-        if (vector_type_id) {
-          new_result_id = vector_type_id;
-        } else {
-          new_result_id = GetFuzzerContext()->GetFreshId();
-          ApplyTransformation(TransformationAddTypeVector(
-              new_result_id, component_type_id, component_count));
-        }
-      } break;
-      case SpvOpTypeMatrix: {
-        // Similar to SpvOpTypeVector.
-        uint32_t column_type_id = original_id_to_donated_id->at(
-            type_or_value.GetSingleWordInOperand(0));
-        auto column_type =
-            GetIRContext()->get_type_mgr()->GetType(column_type_id);
-        assert(column_type && column_type->AsVector() &&
-               "The column type should be a registered vector type.");
-        auto column_count = type_or_value.GetSingleWordInOperand(1);
-        opt::analysis::Matrix matrix_type(column_type, column_count);
-        auto matrix_type_id =
-            GetIRContext()->get_type_mgr()->GetId(&matrix_type);
-        if (matrix_type_id) {
-          new_result_id = matrix_type_id;
-        } else {
-          new_result_id = GetFuzzerContext()->GetFreshId();
-          ApplyTransformation(TransformationAddTypeMatrix(
-              new_result_id, column_type_id, column_count));
-        }
-
-      } break;
-      case SpvOpTypeArray: {
-        // It is OK to have multiple structurally identical array types, so
-        // we go ahead and add a remapped version of the type declared by the
-        // donor.
-        uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
-        if (!original_id_to_donated_id->count(component_type_id)) {
-          // We did not donate the component type of this array type, so we
-          // cannot donate the array type.
-          continue;
-        }
+  // Decide how to handle each kind of instruction on a case-by-case basis.
+  //
+  // Because the donor module is required to be valid, when we encounter a
+  // type comprised of component types (e.g. an aggregate or pointer), we know
+  // that its component types will have been considered previously, and that
+  // |original_id_to_donated_id| will already contain an entry for them.
+  switch (type_or_value.opcode()) {
+    case SpvOpTypeImage:
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeSampler:
+      // We do not donate types and variables that relate to images and
+      // samplers, so we skip these types and subsequently skip anything that
+      // depends on them.
+      return;
+    case SpvOpTypeVoid: {
+      // Void has to exist already in order for us to have an entry point.
+      // Get the existing id of void.
+      opt::analysis::Void void_type;
+      new_result_id = GetIRContext()->get_type_mgr()->GetId(&void_type);
+      assert(new_result_id &&
+             "The module being transformed will always have 'void' type "
+             "declared.");
+    } break;
+    case SpvOpTypeBool: {
+      // Bool cannot be declared multiple times, so use its existing id if
+      // present, or add a declaration of Bool with a fresh id if not.
+      opt::analysis::Bool bool_type;
+      auto bool_type_id = GetIRContext()->get_type_mgr()->GetId(&bool_type);
+      if (bool_type_id) {
+        new_result_id = bool_type_id;
+      } else {
         new_result_id = GetFuzzerContext()->GetFreshId();
-        ApplyTransformation(TransformationAddTypeArray(
-            new_result_id, original_id_to_donated_id->at(component_type_id),
-            original_id_to_donated_id->at(
-                type_or_value.GetSingleWordInOperand(1))));
-      } break;
-      case SpvOpTypeRuntimeArray: {
-        // A runtime array is allowed as the final member of an SSBO.  During
-        // donation we turn runtime arrays into fixed-size arrays.  For dead
-        // code donations this is OK because the array is never indexed into at
-        // runtime, so it does not matter what its size is.  For live-safe code,
-        // all accesses are made in-bounds, so this is also OK.
-        //
-        // The special OpArrayLength instruction, which works on runtime arrays,
-        // is rewritten to yield the fixed length that is used for the array.
-
-        uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
-        if (!original_id_to_donated_id->count(component_type_id)) {
-          // We did not donate the component type of this runtime array type, so
-          // we cannot donate it as a fixed-size array.
-          continue;
-        }
-        new_result_id = GetFuzzerContext()->GetFreshId();
-        ApplyTransformation(TransformationAddTypeArray(
-            new_result_id, original_id_to_donated_id->at(component_type_id),
-            FindOrCreate32BitIntegerConstant(
-                GetFuzzerContext()->GetRandomSizeForNewArray(), false)));
-      } break;
-      case SpvOpTypeStruct: {
-        // Similar to SpvOpTypeArray.
-        std::vector<uint32_t> member_type_ids;
-        bool can_donate = true;
-        for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
-          auto component_type_id = type_or_value.GetSingleWordInOperand(i);
-          if (!original_id_to_donated_id->count(component_type_id)) {
-            // We did not donate every member type for this struct type, so we
-            // cannot donate the struct type.
-            can_donate = false;
-            break;
-          }
-          member_type_ids.push_back(
-              original_id_to_donated_id->at(component_type_id));
-        }
-        if (!can_donate) {
-          continue;
-        }
+        ApplyTransformation(TransformationAddTypeBoolean(new_result_id));
+      }
+    } break;
+    case SpvOpTypeInt: {
+      // Int cannot be declared multiple times with the same width and
+      // signedness, so check whether an existing identical Int type is
+      // present and use its id if so.  Otherwise add a declaration of the
+      // Int type used by the donor, with a fresh id.
+      const uint32_t width = type_or_value.GetSingleWordInOperand(0);
+      const bool is_signed =
+          static_cast<bool>(type_or_value.GetSingleWordInOperand(1));
+      opt::analysis::Integer int_type(width, is_signed);
+      auto int_type_id = GetIRContext()->get_type_mgr()->GetId(&int_type);
+      if (int_type_id) {
+        new_result_id = int_type_id;
+      } else {
         new_result_id = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(
-            TransformationAddTypeStruct(new_result_id, member_type_ids));
-      } break;
-      case SpvOpTypePointer: {
-        // Similar to SpvOpTypeArray.
-        uint32_t pointee_type_id = type_or_value.GetSingleWordInOperand(1);
-        if (!original_id_to_donated_id->count(pointee_type_id)) {
-          // We did not donate the pointee type for this pointer type, so we
-          // cannot donate the pointer type.
-          continue;
-        }
+            TransformationAddTypeInt(new_result_id, width, is_signed));
+      }
+    } break;
+    case SpvOpTypeFloat: {
+      // Similar to SpvOpTypeInt.
+      const uint32_t width = type_or_value.GetSingleWordInOperand(0);
+      opt::analysis::Float float_type(width);
+      auto float_type_id = GetIRContext()->get_type_mgr()->GetId(&float_type);
+      if (float_type_id) {
+        new_result_id = float_type_id;
+      } else {
         new_result_id = GetFuzzerContext()->GetFreshId();
-        ApplyTransformation(TransformationAddTypePointer(
+        ApplyTransformation(TransformationAddTypeFloat(new_result_id, width));
+      }
+    } break;
+    case SpvOpTypeVector: {
+      // It is not legal to have two Vector type declarations with identical
+      // element types and element counts, so check whether an existing
+      // identical Vector type is present and use its id if so.  Otherwise add
+      // a declaration of the Vector type used by the donor, with a fresh id.
+
+      // When considering the vector's component type id, we look up the id
+      // use in the donor to find the id to which this has been remapped.
+      uint32_t component_type_id = original_id_to_donated_id->at(
+          type_or_value.GetSingleWordInOperand(0));
+      auto component_type =
+          GetIRContext()->get_type_mgr()->GetType(component_type_id);
+      assert(component_type && "The base type should be registered.");
+      auto component_count = type_or_value.GetSingleWordInOperand(1);
+      opt::analysis::Vector vector_type(component_type, component_count);
+      auto vector_type_id = GetIRContext()->get_type_mgr()->GetId(&vector_type);
+      if (vector_type_id) {
+        new_result_id = vector_type_id;
+      } else {
+        new_result_id = GetFuzzerContext()->GetFreshId();
+        ApplyTransformation(TransformationAddTypeVector(
+            new_result_id, component_type_id, component_count));
+      }
+    } break;
+    case SpvOpTypeMatrix: {
+      // Similar to SpvOpTypeVector.
+      uint32_t column_type_id = original_id_to_donated_id->at(
+          type_or_value.GetSingleWordInOperand(0));
+      auto column_type =
+          GetIRContext()->get_type_mgr()->GetType(column_type_id);
+      assert(column_type && column_type->AsVector() &&
+             "The column type should be a registered vector type.");
+      auto column_count = type_or_value.GetSingleWordInOperand(1);
+      opt::analysis::Matrix matrix_type(column_type, column_count);
+      auto matrix_type_id = GetIRContext()->get_type_mgr()->GetId(&matrix_type);
+      if (matrix_type_id) {
+        new_result_id = matrix_type_id;
+      } else {
+        new_result_id = GetFuzzerContext()->GetFreshId();
+        ApplyTransformation(TransformationAddTypeMatrix(
+            new_result_id, column_type_id, column_count));
+      }
+
+    } break;
+    case SpvOpTypeArray: {
+      // It is OK to have multiple structurally identical array types, so
+      // we go ahead and add a remapped version of the type declared by the
+      // donor.
+      uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
+      if (!original_id_to_donated_id->count(component_type_id)) {
+        // We did not donate the component type of this array type, so we
+        // cannot donate the array type.
+        return;
+      }
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(TransformationAddTypeArray(
+          new_result_id, original_id_to_donated_id->at(component_type_id),
+          original_id_to_donated_id->at(
+              type_or_value.GetSingleWordInOperand(1))));
+    } break;
+    case SpvOpTypeRuntimeArray: {
+      // A runtime array is allowed as the final member of an SSBO.  During
+      // donation we turn runtime arrays into fixed-size arrays.  For dead
+      // code donations this is OK because the array is never indexed into at
+      // runtime, so it does not matter what its size is.  For live-safe code,
+      // all accesses are made in-bounds, so this is also OK.
+      //
+      // The special OpArrayLength instruction, which works on runtime arrays,
+      // is rewritten to yield the fixed length that is used for the array.
+
+      uint32_t component_type_id = type_or_value.GetSingleWordInOperand(0);
+      if (!original_id_to_donated_id->count(component_type_id)) {
+        // We did not donate the component type of this runtime array type, so
+        // we cannot donate it as a fixed-size array.
+        return;
+      }
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(TransformationAddTypeArray(
+          new_result_id, original_id_to_donated_id->at(component_type_id),
+          FindOrCreate32BitIntegerConstant(
+              GetFuzzerContext()->GetRandomSizeForNewArray(), false)));
+    } break;
+    case SpvOpTypeStruct: {
+      // Similar to SpvOpTypeArray.
+      std::vector<uint32_t> member_type_ids;
+      for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
+        auto component_type_id = type_or_value.GetSingleWordInOperand(i);
+        if (!original_id_to_donated_id->count(component_type_id)) {
+          // We did not donate every member type for this struct type, so we
+          // cannot donate the struct type.
+          return;
+        }
+        member_type_ids.push_back(
+            original_id_to_donated_id->at(component_type_id));
+      }
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(
+          TransformationAddTypeStruct(new_result_id, member_type_ids));
+    } break;
+    case SpvOpTypePointer: {
+      // Similar to SpvOpTypeArray.
+      uint32_t pointee_type_id = type_or_value.GetSingleWordInOperand(1);
+      if (!original_id_to_donated_id->count(pointee_type_id)) {
+        // We did not donate the pointee type for this pointer type, so we
+        // cannot donate the pointer type.
+        return;
+      }
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(TransformationAddTypePointer(
+          new_result_id,
+          AdaptStorageClass(static_cast<SpvStorageClass>(
+              type_or_value.GetSingleWordInOperand(0))),
+          original_id_to_donated_id->at(pointee_type_id)));
+    } break;
+    case SpvOpTypeFunction: {
+      // It is not OK to have multiple function types that use identical ids
+      // for their return and parameter types.  We thus go through all
+      // existing function types to look for a match.  We do not use the
+      // type manager here because we want to regard two function types that
+      // are structurally identical but that differ with respect to the
+      // actual ids used for pointer types as different.
+      //
+      // Example:
+      //
+      // %1 = OpTypeVoid
+      // %2 = OpTypeInt 32 0
+      // %3 = OpTypePointer Function %2
+      // %4 = OpTypePointer Function %2
+      // %5 = OpTypeFunction %1 %3
+      // %6 = OpTypeFunction %1 %4
+      //
+      // We regard %5 and %6 as distinct function types here, even though
+      // they both have the form "uint32* -> void"
+
+      std::vector<uint32_t> return_and_parameter_types;
+      for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
+        uint32_t return_or_parameter_type =
+            type_or_value.GetSingleWordInOperand(i);
+        if (!original_id_to_donated_id->count(return_or_parameter_type)) {
+          // We did not donate every return/parameter type for this function
+          // type, so we cannot donate the function type.
+          return;
+        }
+        return_and_parameter_types.push_back(
+            original_id_to_donated_id->at(return_or_parameter_type));
+      }
+      uint32_t existing_function_id = fuzzerutil::FindFunctionType(
+          GetIRContext(), return_and_parameter_types);
+      if (existing_function_id) {
+        new_result_id = existing_function_id;
+      } else {
+        // No match was found, so add a remapped version of the function type
+        // to the module, with a fresh id.
+        new_result_id = GetFuzzerContext()->GetFreshId();
+        std::vector<uint32_t> argument_type_ids;
+        for (uint32_t i = 1; i < type_or_value.NumInOperands(); i++) {
+          argument_type_ids.push_back(original_id_to_donated_id->at(
+              type_or_value.GetSingleWordInOperand(i)));
+        }
+        ApplyTransformation(TransformationAddTypeFunction(
             new_result_id,
-            AdaptStorageClass(static_cast<SpvStorageClass>(
-                type_or_value.GetSingleWordInOperand(0))),
-            original_id_to_donated_id->at(pointee_type_id)));
-      } break;
-      case SpvOpTypeFunction: {
-        // It is not OK to have multiple function types that use identical ids
-        // for their return and parameter types.  We thus go through all
-        // existing function types to look for a match.  We do not use the
-        // type manager here because we want to regard two function types that
-        // are structurally identical but that differ with respect to the
-        // actual ids used for pointer types as different.
-        //
-        // Example:
-        //
-        // %1 = OpTypeVoid
-        // %2 = OpTypeInt 32 0
-        // %3 = OpTypePointer Function %2
-        // %4 = OpTypePointer Function %2
-        // %5 = OpTypeFunction %1 %3
-        // %6 = OpTypeFunction %1 %4
-        //
-        // We regard %5 and %6 as distinct function types here, even though
-        // they both have the form "uint32* -> void"
+            original_id_to_donated_id->at(
+                type_or_value.GetSingleWordInOperand(0)),
+            argument_type_ids));
+      }
+    } break;
+    case SpvOpConstantTrue:
+    case SpvOpConstantFalse: {
+      // It is OK to have duplicate definitions of True and False, so add
+      // these to the module, using a remapped Bool type.
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(TransformationAddConstantBoolean(
+          new_result_id, type_or_value.opcode() == SpvOpConstantTrue));
+    } break;
+    case SpvOpConstant: {
+      // It is OK to have duplicate constant definitions, so add this to the
+      // module using a remapped result type.
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      std::vector<uint32_t> data_words;
+      type_or_value.ForEachInOperand([&data_words](const uint32_t* in_operand) {
+        data_words.push_back(*in_operand);
+      });
+      ApplyTransformation(TransformationAddConstantScalar(
+          new_result_id, original_id_to_donated_id->at(type_or_value.type_id()),
+          data_words));
+    } break;
+    case SpvOpConstantComposite: {
+      assert(original_id_to_donated_id->count(type_or_value.type_id()) &&
+             "Composite types for which it is possible to create a constant "
+             "should have been donated.");
 
-        std::vector<uint32_t> return_and_parameter_types;
-        bool can_donate = true;
-        for (uint32_t i = 0; i < type_or_value.NumInOperands(); i++) {
-          uint32_t return_or_parameter_type =
-              type_or_value.GetSingleWordInOperand(i);
-          if (!original_id_to_donated_id->count(return_or_parameter_type)) {
-            // We did not donate every return/parameter type for this function
-            // type, so we cannot donate the function type.
-            can_donate = false;
-            break;
-          }
-          return_and_parameter_types.push_back(
-              original_id_to_donated_id->at(return_or_parameter_type));
-        }
-        if (!can_donate) {
-          continue;
-        }
-        uint32_t existing_function_id = fuzzerutil::FindFunctionType(
-            GetIRContext(), return_and_parameter_types);
-        if (existing_function_id) {
-          new_result_id = existing_function_id;
-        } else {
-          // No match was found, so add a remapped version of the function type
-          // to the module, with a fresh id.
-          new_result_id = GetFuzzerContext()->GetFreshId();
-          std::vector<uint32_t> argument_type_ids;
-          for (uint32_t i = 1; i < type_or_value.NumInOperands(); i++) {
-            argument_type_ids.push_back(original_id_to_donated_id->at(
-                type_or_value.GetSingleWordInOperand(i)));
-          }
-          ApplyTransformation(TransformationAddTypeFunction(
-              new_result_id,
-              original_id_to_donated_id->at(
-                  type_or_value.GetSingleWordInOperand(0)),
-              argument_type_ids));
-        }
-      } break;
-      case SpvOpConstantTrue:
-      case SpvOpConstantFalse: {
-        // It is OK to have duplicate definitions of True and False, so add
-        // these to the module, using a remapped Bool type.
-        new_result_id = GetFuzzerContext()->GetFreshId();
-        ApplyTransformation(TransformationAddConstantBoolean(
-            new_result_id, type_or_value.opcode() == SpvOpConstantTrue));
-      } break;
-      case SpvOpConstant: {
-        // It is OK to have duplicate constant definitions, so add this to the
-        // module using a remapped result type.
-        new_result_id = GetFuzzerContext()->GetFreshId();
-        std::vector<uint32_t> data_words;
-        type_or_value.ForEachInOperand(
-            [&data_words](const uint32_t* in_operand) {
-              data_words.push_back(*in_operand);
-            });
-        ApplyTransformation(TransformationAddConstantScalar(
-            new_result_id,
-            original_id_to_donated_id->at(type_or_value.type_id()),
-            data_words));
-      } break;
-      case SpvOpConstantComposite: {
-        assert(original_id_to_donated_id->count(type_or_value.type_id()) &&
-               "Composite types for which it is possible to create a constant "
-               "should have been donated.");
+      // It is OK to have duplicate constant composite definitions, so add
+      // this to the module using remapped versions of all consituent ids and
+      // the result type.
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      std::vector<uint32_t> constituent_ids;
+      type_or_value.ForEachInId([&constituent_ids, &original_id_to_donated_id](
+                                    const uint32_t* constituent_id) {
+        assert(original_id_to_donated_id->count(*constituent_id) &&
+               "The constants used to construct this composite should "
+               "have been donated.");
+        constituent_ids.push_back(
+            original_id_to_donated_id->at(*constituent_id));
+      });
+      ApplyTransformation(TransformationAddConstantComposite(
+          new_result_id, original_id_to_donated_id->at(type_or_value.type_id()),
+          constituent_ids));
+    } break;
+    case SpvOpConstantNull: {
+      if (!original_id_to_donated_id->count(type_or_value.type_id())) {
+        // We did not donate the type associated with this null constant, so
+        // we cannot donate the null constant.
+        return;
+      }
 
-        // It is OK to have duplicate constant composite definitions, so add
-        // this to the module using remapped versions of all consituent ids and
-        // the result type.
-        new_result_id = GetFuzzerContext()->GetFreshId();
-        std::vector<uint32_t> constituent_ids;
-        type_or_value.ForEachInId(
-            [&constituent_ids,
-             &original_id_to_donated_id](const uint32_t* constituent_id) {
-              assert(original_id_to_donated_id->count(*constituent_id) &&
-                     "The constants used to construct this composite should "
-                     "have been donated.");
-              constituent_ids.push_back(
-                  original_id_to_donated_id->at(*constituent_id));
-            });
-        ApplyTransformation(TransformationAddConstantComposite(
-            new_result_id,
-            original_id_to_donated_id->at(type_or_value.type_id()),
-            constituent_ids));
-      } break;
-      case SpvOpConstantNull: {
-        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not donate the type associated with this null constant, so
-          // we cannot donate the null constant.
-          continue;
-        }
+      // It is fine to have multiple OpConstantNull instructions of the same
+      // type, so we just add this to the recipient module.
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(TransformationAddConstantNull(
+          new_result_id,
+          original_id_to_donated_id->at(type_or_value.type_id())));
+    } break;
+    case SpvOpVariable: {
+      if (!original_id_to_donated_id->count(type_or_value.type_id())) {
+        // We did not donate the pointer type associated with this variable,
+        // so we cannot donate the variable.
+        return;
+      }
 
-        // It is fine to have multiple OpConstantNull instructions of the same
-        // type, so we just add this to the recipient module.
-        new_result_id = GetFuzzerContext()->GetFreshId();
-        ApplyTransformation(TransformationAddConstantNull(
-            new_result_id,
-            original_id_to_donated_id->at(type_or_value.type_id())));
-      } break;
-      case SpvOpVariable: {
-        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not donate the pointer type associated with this variable,
-          // so we cannot donate the variable.
-          continue;
-        }
+      // This is a global variable that could have one of various storage
+      // classes.  However, we change all global variable pointer storage
+      // classes (such as Uniform, Input and Output) to private when donating
+      // pointer types, with the exception of the Workgroup storage class.
+      //
+      // Thus this variable's pointer type is guaranteed to have storage class
+      // Private or Workgroup.
+      //
+      // We add a global variable with either Private or Workgroup storage
+      // class, using remapped versions of the result type and initializer ids
+      // for the global variable in the donor.
+      //
+      // We regard the added variable as having an irrelevant value.  This
+      // means that future passes can add stores to the variable in any
+      // way they wish, and pass them as pointer parameters to functions
+      // without worrying about whether their data might get modified.
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      uint32_t remapped_pointer_type =
+          original_id_to_donated_id->at(type_or_value.type_id());
+      uint32_t initializer_id;
+      SpvStorageClass storage_class =
+          static_cast<SpvStorageClass>(type_or_value.GetSingleWordInOperand(
+              0)) == SpvStorageClassWorkgroup
+              ? SpvStorageClassWorkgroup
+              : SpvStorageClassPrivate;
+      if (type_or_value.NumInOperands() == 1) {
+        // The variable did not have an initializer.  Initialize it to zero
+        // if it has Private storage class (to limit problems associated with
+        // uninitialized data), and leave it uninitialized if it has Workgroup
+        // storage class (as Workgroup variables cannot have initializers).
 
-        // This is a global variable that could have one of various storage
-        // classes.  However, we change all global variable pointer storage
-        // classes (such as Uniform, Input and Output) to private when donating
-        // pointer types, with the exception of the Workgroup storage class.
-        //
-        // Thus this variable's pointer type is guaranteed to have storage class
-        // Private or Workgroup.
-        //
-        // We add a global variable with either Private or Workgroup storage
-        // class, using remapped versions of the result type and initializer ids
-        // for the global variable in the donor.
-        //
-        // We regard the added variable as having an irrelevant value.  This
-        // means that future passes can add stores to the variable in any
-        // way they wish, and pass them as pointer parameters to functions
-        // without worrying about whether their data might get modified.
-        new_result_id = GetFuzzerContext()->GetFreshId();
-        uint32_t remapped_pointer_type =
-            original_id_to_donated_id->at(type_or_value.type_id());
-        uint32_t initializer_id;
-        SpvStorageClass storage_class =
-            static_cast<SpvStorageClass>(type_or_value.GetSingleWordInOperand(
-                0)) == SpvStorageClassWorkgroup
-                ? SpvStorageClassWorkgroup
-                : SpvStorageClassPrivate;
-        if (type_or_value.NumInOperands() == 1) {
-          // The variable did not have an initializer.  Initialize it to zero
-          // if it has Private storage class (to limit problems associated with
-          // uninitialized data), and leave it uninitialized if it has Workgroup
-          // storage class (as Workgroup variables cannot have initializers).
+        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3275): we
+        //  could initialize Workgroup variables at the start of an entry
+        //  point, and should do so if their uninitialized nature proves
+        //  problematic.
+        initializer_id = storage_class == SpvStorageClassWorkgroup
+                             ? 0
+                             : FindOrCreateZeroConstant(
+                                   fuzzerutil::GetPointeeTypeIdFromPointerType(
+                                       GetIRContext(), remapped_pointer_type));
+      } else {
+        // The variable already had an initializer; use its remapped id.
+        initializer_id = original_id_to_donated_id->at(
+            type_or_value.GetSingleWordInOperand(1));
+      }
+      ApplyTransformation(
+          TransformationAddGlobalVariable(new_result_id, remapped_pointer_type,
+                                          storage_class, initializer_id, true));
+    } break;
+    case SpvOpUndef: {
+      if (!original_id_to_donated_id->count(type_or_value.type_id())) {
+        // We did not donate the type associated with this undef, so we cannot
+        // donate the undef.
+        return;
+      }
 
-          // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3275): we
-          //  could initialize Workgroup variables at the start of an entry
-          //  point, and should do so if their uninitialized nature proves
-          //  problematic.
-          initializer_id =
-              storage_class == SpvStorageClassWorkgroup
-                  ? 0
-                  : FindOrCreateZeroConstant(
-                        fuzzerutil::GetPointeeTypeIdFromPointerType(
-                            GetIRContext(), remapped_pointer_type));
-        } else {
-          // The variable already had an initializer; use its remapped id.
-          initializer_id = original_id_to_donated_id->at(
-              type_or_value.GetSingleWordInOperand(1));
-        }
-        ApplyTransformation(TransformationAddGlobalVariable(
-            new_result_id, remapped_pointer_type, storage_class, initializer_id,
-            true));
-      } break;
-      case SpvOpUndef: {
-        if (!original_id_to_donated_id->count(type_or_value.type_id())) {
-          // We did not donate the type associated with this undef, so we cannot
-          // donate the undef.
-          continue;
-        }
-
-        // It is fine to have multiple Undef instructions of the same type, so
-        // we just add this to the recipient module.
-        new_result_id = GetFuzzerContext()->GetFreshId();
-        ApplyTransformation(TransformationAddGlobalUndef(
-            new_result_id,
-            original_id_to_donated_id->at(type_or_value.type_id())));
-      } break;
-      default: {
-        assert(0 && "Unknown type/value.");
-        new_result_id = 0;
-      } break;
-    }
-    // Update the id mapping to associate the instruction's result id with its
-    // corresponding id in the recipient.
-    original_id_to_donated_id->insert(
-        {type_or_value.result_id(), new_result_id});
+      // It is fine to have multiple Undef instructions of the same type, so
+      // we just add this to the recipient module.
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(TransformationAddGlobalUndef(
+          new_result_id,
+          original_id_to_donated_id->at(type_or_value.type_id())));
+    } break;
+    default: {
+      assert(0 && "Unknown type/value.");
+      new_result_id = 0;
+    } break;
   }
+
+  // Update the id mapping to associate the instruction's result id with its
+  // corresponding id in the recipient.
+  original_id_to_donated_id->insert({type_or_value.result_id(), new_result_id});
 }
 
 void FuzzerPassDonateModules::HandleFunctions(
@@ -722,11 +711,18 @@ bool FuzzerPassDonateModules::CanDonateInstruction(
       break;
   }
 
+  // Examine each id input operand to the instruction.  If it turns out that we
+  // have skipped any of these operands then we cannot donate the instruction.
   bool result = true;
   instruction.WhileEachInId(
       [donor_ir_context, &original_id_to_donated_id, &result,
        &skipped_instructions](const uint32_t* in_id) -> bool {
         if (!original_id_to_donated_id.count(*in_id)) {
+          // We do not have a mapped result id for this id operand.  That either
+          // means that it is a forward reference (which is OK), that we skipped
+          // the instruction that generated it (which is not OK), or that it is
+          // the id of a function that we did not donate (which is not OK).  We
+          // check for the latter two cases.
           if (skipped_instructions.count(*in_id) ||
               donor_ir_context->get_def_use_mgr()->GetDef(*in_id)->opcode() ==
                   SpvOpFunction) {
@@ -881,15 +877,16 @@ void FuzzerPassDonateModules::HandleDifficultInstruction(
     return;
   }
 
-  // We are going to donate an OpCopyObject instruction.  Create a result id for
-  // the donated instruction if it does not already exist (it may exist in the
-  // case that it has been forward-referenced).
+  // We are going to add an OpCopyObject instruction.  Add a mapping for the
+  // result id of the original instruction if does not already exist (it may
+  // exist in the case that it has been forward-referenced).
   if (!original_id_to_donated_id->count(instruction.result_id())) {
     original_id_to_donated_id->insert(
         {instruction.result_id(), GetFuzzerContext()->GetFreshId()});
   }
 
-  // We donate a copy of the zero constant for the type in question.
+  // We find or add a zero constant to the receiving module for the type in
+  // question, and add an OpCopyObject instruction that copies this zero.
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
   //  Using this particular constant is arbitrary, so if we have a
   //  mechanism for noting that an id use is arbitrary and could be
@@ -914,6 +911,7 @@ void FuzzerPassDonateModules::PrepareInstructionForDonation(
        in_operand_index < instruction.NumInOperands(); in_operand_index++) {
     std::vector<uint32_t> operand_data;
     const opt::Operand& in_operand = instruction.GetInOperand(in_operand_index);
+    // Check whether this operand is an id.
     if (spvIsIdType(in_operand.type)) {
       // This is an id operand - it consists of a single word of data,
       // which needs to be remapped so that it is replaced with the
