@@ -555,6 +555,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
   assert(synonymous_.Exists(lhs_dd) &&
          "The LHS must be known to the equivalence relation.");
   for (auto rhs_dd : rhs_dds) {
+    // Keep release compilers happy.
+    (void)(rhs_dd);
     assert(synonymous_.Exists(*rhs_dd) &&
            "The RHS operands must be known to the equivalence relation.");
   }
