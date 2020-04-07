@@ -486,6 +486,146 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationEquationInstructionTest, Miscellaneous1) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+        %113 = OpConstant %6 24
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  protobufs::InstructionDescriptor return_instruction =
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  auto transformation1 = TransformationEquationInstruction(
+      522, SpvOpISub, {113, 113}, return_instruction);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  auto transformation2 = TransformationEquationInstruction(
+      570, SpvOpIAdd, {522, 113}, return_instruction);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+        %113 = OpConstant %6 24
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+        %522 = OpISub %6 %113 %113
+        %570 = OpIAdd %6 %522 %113
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(570, {}), MakeDataDescriptor(113, {}), context.get()));
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, Miscellaneous2) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+        %113 = OpConstant %6 24
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  protobufs::InstructionDescriptor return_instruction =
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  auto transformation1 = TransformationEquationInstruction(
+      522, SpvOpISub, {113, 113}, return_instruction);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  auto transformation2 = TransformationEquationInstruction(
+      570, SpvOpIAdd, {522, 113}, return_instruction);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+        %113 = OpConstant %6 24
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+        %522 = OpISub %6 %113 %113
+        %570 = OpIAdd %6 %522 %113
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(570, {}), MakeDataDescriptor(113, {}), context.get()));
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
