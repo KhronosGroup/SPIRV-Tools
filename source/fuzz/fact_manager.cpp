@@ -460,16 +460,15 @@ class FactManager::DataSynonymAndIdEquationFacts {
       opt::IRContext* context, const protobufs::DataDescriptor& dd1,
       const protobufs::DataDescriptor& dd2) const;
 
-  // Requires that |lhs_dd_non_canonical| and every element of
-  // |rhs_dds_non_canonical| is present in the |synonymous_| equivalence,
-  // but is not necessarily its own representative.  Records the fact that the
-  // equation "|lhs_dd_non_canonical| |opcode| |rhs_dds_non_canonical|" holds,
-  // and adds any corollaries, in the form of data synonym or equation facts,
-  // that follow from this and other known facts.
+  // Requires that |lhs_dd| and every element of |rhs_dds| is present in the
+  // |synonymous_| equivalence relation, but is not necessarily its own
+  // representative.  Records the fact that the equation
+  // "|lhs_dd| |opcode| |rhs_dds_non_canonical|" holds, and adds any
+  // corollaries, in the form of data synonym or equation facts, that follow
+  // from this and other known facts.
   void AddEquationFactRecursive(
-      const protobufs::DataDescriptor& lhs_dd_non_canonical, SpvOp opcode,
-      const std::vector<const protobufs::DataDescriptor*>&
-          rhs_dds_non_canonical,
+      const protobufs::DataDescriptor& lhs_dd, SpvOp opcode,
+      const std::vector<const protobufs::DataDescriptor*>& rhs_dds,
       opt::IRContext* context);
 
   // The data descriptors that are known to be synonymous with one another are
@@ -543,41 +542,35 @@ void FactManager::DataSynonymAndIdEquationFacts::AddFact(
     }
     rhs_dd_ptrs.push_back(synonymous_.Find(&rhs_dd));
   }
+
+  // Now add the fact.
   AddEquationFactRecursive(lhs_dd, static_cast<SpvOp>(fact.opcode()),
                            rhs_dd_ptrs, context);
 }
 
 void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
-    const protobufs::DataDescriptor& lhs_dd_non_canonical, SpvOp opcode,
-    const std::vector<const protobufs::DataDescriptor*>& rhs_dds_non_canonical,
+    const protobufs::DataDescriptor& lhs_dd, SpvOp opcode,
+    const std::vector<const protobufs::DataDescriptor*>& rhs_dds,
     opt::IRContext* context) {
-  assert(synonymous_.Exists(lhs_dd_non_canonical) &&
+  assert(synonymous_.Exists(lhs_dd) &&
          "The LHS must be known to the equivalence relation.");
-  // Find the representative for the LHS.
-  auto lhs_dd = synonymous_.Find(&lhs_dd_non_canonical);
-
-  // Find the representative for each RHS operand.
-  std::vector<const protobufs::DataDescriptor*> rhs_dds;
-  for (auto rhs_dd_non_canonical : rhs_dds_non_canonical) {
-    assert(synonymous_.Exists(*rhs_dd_non_canonical) &&
+  for (auto rhs_dd : rhs_dds) {
+    assert(synonymous_.Exists(*rhs_dd) &&
            "The RHS operands must be known to the equivalence relation.");
-    rhs_dds.push_back(synonymous_.Find(rhs_dd_non_canonical));
   }
 
-  // |lhs_dd_non_canonical| and |rhs_dds_non_canonical| should not be used from
-  // here onwards; their canonicalized forms, |lhs_dd| and |rhs_dds|, should be
-  // used instead.
+  auto lhs_dd_representative = synonymous_.Find(&lhs_dd);
 
-  if (id_equations_.count(lhs_dd) == 0) {
+  if (id_equations_.count(lhs_dd_representative) == 0) {
     // We have not seen an equation with this LHS before, so associate the LHS
     // with an initially empty set.
     id_equations_.insert(
-        {lhs_dd,
+        {lhs_dd_representative,
          std::unordered_set<Operation, OperationHash, OperationEquals>()});
   }
 
   {
-    auto existing_equations = id_equations_.find(lhs_dd);
+    auto existing_equations = id_equations_.find(lhs_dd_representative);
     assert(existing_equations != id_equations_.end() &&
            "A set of operations should be present, even if empty.");
 
@@ -605,14 +598,14 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
                                            *rhs_dds[1])) {
                 // Equation form: "a = (d - c) + c"
                 // We can thus infer "a = d"
-                AddDataSynonymFactRecursive(*lhs_dd, *equation.operands[0],
+                AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0],
                                             context);
               }
               if (synonymous_.IsEquivalent(*equation.operands[0],
                                            *rhs_dds[1])) {
                 // Equation form: "a = (c - e) + c"
                 // We can thus infer "a = -e"
-                AddEquationFactRecursive(*lhs_dd, SpvOpSNegate,
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
                                          {equation.operands[1]}, context);
               }
             }
@@ -629,7 +622,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
                                            *rhs_dds[0])) {
                 // Equation form: "a = b + (d - b)"
                 // We can thus infer "a = d"
-                AddDataSynonymFactRecursive(*lhs_dd, *equation.operands[0],
+                AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0],
                                             context);
               }
             }
@@ -650,14 +643,14 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
                                            *rhs_dds[1])) {
                 // Equation form: "a = (c + e) - c"
                 // We can thus infer "a = e"
-                AddDataSynonymFactRecursive(*lhs_dd, *equation.operands[1],
+                AddDataSynonymFactRecursive(lhs_dd, *equation.operands[1],
                                             context);
               }
               if (synonymous_.IsEquivalent(*equation.operands[1],
                                            *rhs_dds[1])) {
                 // Equation form: "a = (d + c) - c"
                 // We can thus infer "a = d"
-                AddDataSynonymFactRecursive(*lhs_dd, *equation.operands[0],
+                AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0],
                                             context);
               }
             }
@@ -668,7 +661,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
                                            *rhs_dds[1])) {
                 // Equation form: "a = (c - e) - c"
                 // We can thus infer "a = -e"
-                AddEquationFactRecursive(*lhs_dd, SpvOpSNegate,
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
                                          {equation.operands[1]}, context);
               }
             }
@@ -686,14 +679,14 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
                                            *rhs_dds[0])) {
                 // Equation form: "a = b - (b + e)"
                 // We can thus infer "a = -e"
-                AddEquationFactRecursive(*lhs_dd, SpvOpSNegate,
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
                                          {equation.operands[1]}, context);
               }
               if (synonymous_.IsEquivalent(*equation.operands[1],
                                            *rhs_dds[0])) {
                 // Equation form: "a = b - (d + b)"
                 // We can thus infer "a = -d"
-                AddEquationFactRecursive(*lhs_dd, SpvOpSNegate,
+                AddEquationFactRecursive(lhs_dd, SpvOpSNegate,
                                          {equation.operands[0]}, context);
               }
             }
@@ -703,7 +696,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
                                            *rhs_dds[0])) {
                 // Equation form: "a = b - (b - e)"
                 // We can thus infer "a = e"
-                AddDataSynonymFactRecursive(*lhs_dd, *equation.operands[1],
+                AddDataSynonymFactRecursive(lhs_dd, *equation.operands[1],
                                             context);
               }
             }
@@ -721,8 +714,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
           if (equation.opcode == opcode) {
             // Equation form: "a = !!b" or "a = -(-b)"
             // We can thus infer "a = b"
-            AddDataSynonymFactRecursive(*lhs_dd, *equation.operands[0],
-                                        context);
+            AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0], context);
           }
         }
       }
