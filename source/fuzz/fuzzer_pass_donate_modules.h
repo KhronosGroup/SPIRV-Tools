@@ -81,9 +81,28 @@ class FuzzerPassDonateModules : public FuzzerPass {
   // use opcodes that we cannot support or because they reference the ids of
   // instructions that have not been donated.  This function encapsulates the
   // logic for deciding which whether instruction |instruction| from
-  // |donor_ir_context| should be ignored.
-  bool IgnoreInstruction(opt::IRContext* donor_ir_context,
-                         const opt::Instruction* instruction);
+  // |donor_ir_context| can be donated.
+  bool CanDonateInstruction(
+      opt::IRContext* donor_ir_context, const opt::Instruction& instruction,
+      const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
+      const std::set<uint32_t>& skipped_instructions) const;
+
+  // We treat the OpArrayLength instruction specially.  In the donor shader this
+  // instruction yields the length of a runtime array that is the final member
+  // of a struct.  During donation, we will have converted the runtime array
+  // type, and the associated struct field, into a fixed-size array.
+  //
+  // TODO complete We can
+  // then use the constant size of this fixed-sized array wherever we would have
+  // used the result of an OpArrayLength instruction.
+  void HandleOpArrayLength(
+      const opt::Instruction& instruction,
+      std::map<uint32_t, uint32_t>* original_id_to_donated_id,
+      std::vector<protobufs::Instruction>* donated_instructions) const;
+
+  // Returns true if and only if |instruction| is a scalar, vector, matrix,
+  // array or struct; i.e. it is not an opaque type.
+  bool IsBasicType(const opt::Instruction& instruction) const;
 
   // Returns the ids of all functions in |context| in a topological order in
   // relation to the call graph of |context|, which is assumed to be recursion-
