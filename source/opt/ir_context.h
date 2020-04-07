@@ -102,7 +102,8 @@ class IRContext {
         id_to_name_(nullptr),
         max_id_bound_(kDefaultMaxIdBound),
         preserve_bindings_(false),
-        preserve_spec_constants_(false) {
+        preserve_spec_constants_(false),
+        debug_info_none_(nullptr) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
@@ -119,7 +120,8 @@ class IRContext {
         id_to_name_(nullptr),
         max_id_bound_(kDefaultMaxIdBound),
         preserve_bindings_(false),
-        preserve_spec_constants_(false) {
+        preserve_spec_constants_(false),
+        debug_info_none_(nullptr) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
@@ -708,6 +710,9 @@ class IRContext {
   // Add |var_id| to all entry points in module.
   void AddVarToEntryPoints(uint32_t var_id);
 
+  // Get the existing DebugInfoNone. If it is null, create one and keep it.
+  Instruction* GetOpenCL100DebugInfoNone();
+
   // The SPIR-V syntax context containing grammar tables for opcodes and
   // operands.
   spv_context syntax_context_;
@@ -801,6 +806,10 @@ class IRContext {
   // Whether all specialization constants within |module_|
   // should be preserved.
   bool preserve_spec_constants_;
+
+  // DebugInfoNone instruction. We need only a single DebugInfoNone.
+  // To reuse the existing one, we keep it using this member variable.
+  Instruction* debug_info_none_;
 };
 
 inline IRContext::Analysis operator|(IRContext::Analysis lhs,

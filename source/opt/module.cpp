@@ -194,27 +194,6 @@ uint32_t Module::GetExtInstImportId(const char* extstr) {
   return 0;
 }
 
-Instruction* Module::GetDebugInfoNone(uint32_t type_id, uint32_t result_id,
-                                      uint32_t ext_set) {
-  if (debug_info_none_) return debug_info_none_;
-  assert(!ext_inst_debuginfo_.empty() &&
-         "Module does not include debug info extension instruction.");
-
-  // Create a new DebugInfoNone.
-  std::unique_ptr<Instruction> dbg_info_none(new Instruction(
-      context(), SpvOpExtInst, type_id, result_id,
-      {
-          {SPV_OPERAND_TYPE_RESULT_ID, {ext_set}},
-          {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
-           {static_cast<uint32_t>(OpenCLDebugInfo100DebugInfoNone)}},
-      }));
-
-  // Add to the front of |ext_inst_debuginfo_|.
-  debug_info_none_ =
-      ext_inst_debuginfo_.begin()->InsertBefore(std::move(dbg_info_none));
-  return debug_info_none_;
-}
-
 std::ostream& operator<<(std::ostream& str, const Module& module) {
   module.ForEachInst([&str](const Instruction* inst) {
     str << *inst;

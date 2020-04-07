@@ -29,7 +29,6 @@ static const int kSpvDecorateDecorationInIdx = 1;
 static const int kSpvDecorateBuiltinInIdx = 2;
 static const int kEntryPointInterfaceInIdx = 3;
 static const int kEntryPointFunctionIdInIdx = 1;
-static const uint32_t kExtInstSetIdIdx = 2;
 
 // Constants for OpenCL.DebugInfo.100 extension instructions.
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
@@ -373,6 +372,27 @@ void IRContext::KillNamesAndDecorates(Instruction* inst) {
   KillNamesAndDecorates(rId);
 }
 
+Instruction* IRContext::GetOpenCL100DebugInfoNone() {
+  if (debug_info_none_) return debug_info_none_;
+  assert(get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo() &&
+         "Module does not include debug info extension instruction.");
+
+  // Create a new DebugInfoNone.
+  std::unique_ptr<Instruction> dbg_info_none(new Instruction(
+      this, SpvOpExtInst, get_type_mgr()->GetVoidTypeId(), TakeNextId(),
+      {
+          {SPV_OPERAND_TYPE_RESULT_ID,
+           {get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo()}},
+          {SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+           {static_cast<uint32_t>(OpenCLDebugInfo100DebugInfoNone)}},
+      }));
+
+  // Add to the front of |ext_inst_debuginfo_|.
+  debug_info_none_ = module()->ext_inst_debuginfo_begin()->InsertBefore(
+      std::move(dbg_info_none));
+  return debug_info_none_;
+}
+
 void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
   const uint32_t opcode = inst->opcode();
   const uint32_t id = inst->result_id();
@@ -384,11 +404,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
         continue;
       auto& operand = it->GetOperand(kDebugFunctionOperandFunctionIndex);
       if (operand.words[0] == id) {
-        operand.words[0] =
-            module()
-                ->GetDebugInfoNone(it->type_id(), TakeNextId(),
-                                   it->GetSingleWordOperand(kExtInstSetIdIdx))
-                ->result_id();
+        operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
       }
     }
   }
@@ -402,11 +418,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
         continue;
       auto& operand = it->GetOperand(kDebugGlobalVariableOperandVariableIndex);
       if (operand.words[0] == id) {
-        operand.words[0] =
-            module()
-                ->GetDebugInfoNone(it->type_id(), TakeNextId(),
-                                   it->GetSingleWordOperand(kExtInstSetIdIdx))
-                ->result_id();
+        operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
       }
     }
   }
