@@ -103,7 +103,7 @@ class IRContext {
         max_id_bound_(kDefaultMaxIdBound),
         preserve_bindings_(false),
         preserve_spec_constants_(false),
-        debug_info_none_(nullptr) {
+        debug_info_none_inst_(nullptr) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
@@ -121,7 +121,7 @@ class IRContext {
         max_id_bound_(kDefaultMaxIdBound),
         preserve_bindings_(false),
         preserve_spec_constants_(false),
-        debug_info_none_(nullptr) {
+        debug_info_none_inst_(nullptr) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
@@ -809,7 +809,7 @@ class IRContext {
 
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
-  Instruction* debug_info_none_;
+  Instruction* debug_info_none_inst_;
 };
 
 inline IRContext::Analysis operator|(IRContext::Analysis lhs,

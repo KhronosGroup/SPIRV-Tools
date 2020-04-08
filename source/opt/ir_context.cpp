@@ -373,7 +373,7 @@ void IRContext::KillNamesAndDecorates(Instruction* inst) {
 }
 
 Instruction* IRContext::GetOpenCL100DebugInfoNone() {
-  if (debug_info_none_) return debug_info_none_;
+  if (debug_info_none_inst_) return debug_info_none_inst_;
   assert(get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo() &&
          "Module does not include debug info extension instruction.");
 
@@ -388,13 +388,13 @@ Instruction* IRContext::GetOpenCL100DebugInfoNone() {
       }));
 
   // Add to the front of |ext_inst_debuginfo_|.
-  debug_info_none_ = module()->ext_inst_debuginfo_begin()->InsertBefore(
+  debug_info_none_inst_ = module()->ext_inst_debuginfo_begin()->InsertBefore(
       std::move(dbg_info_none));
-  return debug_info_none_;
+  return debug_info_none_inst_;
 }
 
 void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
-  const uint32_t opcode = inst->opcode();
+  const auto opcode = inst->opcode();
   const uint32_t id = inst->result_id();
   // Kill id of OpFunction from DebugFunction.
   if (opcode == SpvOpFunction) {
@@ -409,8 +409,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
     }
   }
   // Kill id of OpVariable for global variable from DebugGlobalVariable.
-  if (opcode == SpvOpVariable ||
-      (SpvOpConstantTrue <= opcode && opcode <= SpvOpConstantNull)) {
+  if (opcode == SpvOpVariable || IsConstantInst(opcode)) {
     for (auto it = module()->ext_inst_debuginfo_begin();
          it != module()->ext_inst_debuginfo_end(); ++it) {
       if (it->GetOpenCL100DebugOpcode() !=
