@@ -54,11 +54,14 @@ namespace val {
 spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
+  bool isAtomicFloatOpcodes = false;
 
   switch (opcode) {
     case SpvOpAtomicLoad:
     case SpvOpAtomicStore:
     case SpvOpAtomicExchange:
+    case SpvOpAtomicFAddEXT:
+      isAtomicFloatOpcodes = true;
     case SpvOpAtomicCompareExchange:
     case SpvOpAtomicCompareExchangeWeak:
     case SpvOpAtomicIIncrement:
@@ -93,12 +96,25 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
         assert(result_type == 0);
       } else {
         if (!_.IsIntScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << spvOpcodeString(opcode)
-                 << ": expected Result Type to be int scalar type";
+          if (_.HasCapability(SpvCapabilityAtomicFloatEXT) ||
+              _.HasCapability(SpvCapabilityAtomicDoubleEXT)) {
+            if (!isAtomicFloatOpcodes)
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                     << spvOpcodeString(opcode)
+                     << ": expected Result Type to be int scalar type";
+          } else {
+            if (isAtomicFloatOpcodes)
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                     << spvOpcodeString(opcode)
+                     << ": float/double atomics require the"
+                        " AtomicFloatEXT/AtomicDoubleEXT capability";
+            else
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                     << spvOpcodeString(opcode)
+                     << ": expected Result Type to be int scalar type";
+          }
         }
-        if (spvIsVulkanEnv(_.context()->target_env) &&
-            _.GetBitWidth(result_type) != 32) {
+        if (spvIsVulkanEnv(_.context()->target_env)) {
           switch (opcode) {
             case SpvOpAtomicSMin:
             case SpvOpAtomicUMin:
@@ -108,16 +124,33 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
             case SpvOpAtomicOr:
             case SpvOpAtomicXor:
             case SpvOpAtomicIAdd:
+            case SpvOpAtomicFAddEXT:
             case SpvOpAtomicLoad:
             case SpvOpAtomicStore:
             case SpvOpAtomicExchange:
             case SpvOpAtomicCompareExchange: {
-              if (_.GetBitWidth(result_type) == 64 &&
-                  !_.HasCapability(SpvCapabilityInt64Atomics))
-                return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                       << spvOpcodeString(opcode)
-                       << ": 64-bit atomics require the Int64Atomics "
-                          "capability";
+              if (_.GetBitWidth(result_type) == 32) {
+                if (isAtomicFloatOpcodes && _.IsFloatScalarType(result_type) &&
+                    !_.HasCapability(SpvCapabilityAtomicFloatEXT)) {
+                  return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                         << spvOpcodeString(opcode)
+                         << ": float atomics require the AtomicFloatEXT "
+                            "capability";
+                }
+              } else if (_.GetBitWidth(result_type) == 64) {
+                if (_.IsIntScalarType(result_type) && !_.HasCapability(SpvCapabilityInt64Atomics)) {
+                  return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                         << spvOpcodeString(opcode)
+                         << ": 64-bit atomics require the Int64Atomics "
+                            "capability";
+                } else if (isAtomicFloatOpcodes && _.IsFloatScalarType(result_type) &&
+                           !_.HasCapability(SpvCapabilityAtomicDoubleEXT)) {
+                  return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                         << spvOpcodeString(opcode)
+                         << ": double atomics require the AtomicDoubleEXT "
+                            "capability";
+                }
+              }
             } break;
             default:
               return _.diag(SPV_ERROR_INVALID_DATA, inst)

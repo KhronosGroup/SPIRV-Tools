@@ -247,7 +247,23 @@ TEST_F(ValidateAtomics, AtomicLoadFloatVulkan) {
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected Result Type to be int scalar type"));
+              HasSubstr("AtomicLoad: float/double atomics require the AtomicFloatEXT/AtomicDoubleEXT capability"));
+}
+
+TEST_F(ValidateAtomics, AtomicLoadFloatVulkanSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %f32 %f32_var %device %relaxed
+%val2 = OpAtomicLoad %f32 %f32_var %workgroup %acquire
+)";
+
+  const std::string extra = R"(
+OpCapability AtomicFloatEXT
+OpExtension "SPV_EXT_shader_atomic_float"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadInt64WithCapabilityVulkanSuccess) {
@@ -353,12 +369,26 @@ TEST_F(ValidateAtomics, AtomicLoadShaderFloat) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %f32 %f32_var %device %relaxed
 )";
-
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicLoad: "
-                        "expected Result Type to be int scalar type"));
+              HasSubstr("AtomicLoad: float/double atomics require the AtomicFloatEXT/AtomicDoubleEXT capability"));
+
+}
+
+TEST_F(ValidateAtomics, AtomicLoadShaderFloatSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %f32 %f32_var %device %relaxed
+)";
+
+  const std::string extra = R"(
+OpCapability AtomicFloatEXT
+OpExtension "SPV_EXT_shader_atomic_float"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadVulkanInt64) {
@@ -731,12 +761,24 @@ TEST_F(ValidateAtomics, AtomicExchangeShaderFloat) {
 OpAtomicStore %f32_var %device %relaxed %f32_1
 %val2 = OpAtomicExchange %f32 %f32_var %device %relaxed %f32_0
 )";
-
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicExchange: "
-                        "expected Result Type to be int scalar type"));
+        HasSubstr("AtomicExchange: float/double atomics require the AtomicFloatEXT/AtomicDoubleEXT capability"));
+}
+
+TEST_F(ValidateAtomics, AtomicExchangeShaderFloatSuccess) {
+  const std::string body = R"(
+OpAtomicStore %f32_var %device %relaxed %f32_1
+%val2 = OpAtomicExchange %f32 %f32_var %device %relaxed %f32_0
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloatEXT
+OpExtension "SPV_EXT_shader_atomic_float"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongResultType) {

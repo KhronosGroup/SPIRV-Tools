@@ -413,6 +413,7 @@ bool spvOpcodeIsAtomicWithLoad(const SpvOp opcode) {
     case SpvOpAtomicIIncrement:
     case SpvOpAtomicIDecrement:
     case SpvOpAtomicIAdd:
+    case SpvOpAtomicFAddEXT:
     case SpvOpAtomicISub:
     case SpvOpAtomicSMin:
     case SpvOpAtomicUMin:
@@ -664,6 +665,7 @@ std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
     case SpvOpAtomicIIncrement:
     case SpvOpAtomicIDecrement:
     case SpvOpAtomicIAdd:
+    case SpvOpAtomicFAddEXT:
     case SpvOpAtomicISub:
     case SpvOpAtomicSMin:
     case SpvOpAtomicUMin:

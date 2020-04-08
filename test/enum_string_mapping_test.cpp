@@ -177,6 +177,8 @@ INSTANTIATE_TEST_SUITE_P(
          {SpvCapabilityStoragePushConstant16, "StoragePushConstant16"},
          {SpvCapabilityStorageInputOutput16, "StorageInputOutput16"},
          {SpvCapabilityDeviceGroup, "DeviceGroup"},
+         {SpvCapabilityAtomicFloatEXT, "AtomicFloatEXT"},
+         {SpvCapabilityAtomicDoubleEXT, "AtomicDoubleEXT"},
          {SpvCapabilityMultiView, "MultiView"},
          {SpvCapabilitySampleMaskOverrideCoverageNV,
           "SampleMaskOverrideCoverageNV"},
