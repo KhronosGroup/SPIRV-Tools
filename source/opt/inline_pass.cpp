@@ -95,15 +95,14 @@ void InlinePass::AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
 
 void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
                           std::unique_ptr<BasicBlock>* block_ptr,
-                          const std::vector<Instruction>& line_insts,
+                          const Instruction* line_inst,
                           uint32_t dbg_scope) {
   std::unique_ptr<Instruction> newStore(
       new Instruction(context(), SpvOpStore, 0, 0,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}},
                        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {val_id}}}));
-  if (!line_insts.empty()) {
-    auto& new_lines = newStore->dbg_line_insts();
-    new_lines.insert(new_lines.end(), line_insts.begin(), line_insts.end());
+  if (line_inst != nullptr) {
+    newStore->dbg_line_insts().push_back(*line_inst);
   }
   if (dbg_scope) newStore->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newStore));
@@ -111,14 +110,13 @@ void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
 
 void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
                          std::unique_ptr<BasicBlock>* block_ptr,
-                         const std::vector<Instruction>& line_insts,
+                         const Instruction* line_inst,
                          uint32_t dbg_scope) {
   std::unique_ptr<Instruction> newLoad(
       new Instruction(context(), SpvOpLoad, type_id, resultId,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}}}));
-  if (!line_insts.empty()) {
-    auto& new_lines = newLoad->dbg_line_insts();
-    new_lines.insert(new_lines.end(), line_insts.begin(), line_insts.end());
+  if (line_inst != nullptr) {
+    newLoad->dbg_line_insts().push_back(*line_inst);
   }
   if (dbg_scope) newLoad->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newLoad));
@@ -139,24 +137,26 @@ uint32_t InlinePass::CreateDebugInlinedAt(const std::vector<Instruction>& lines,
 
   uint32_t line_number = 0;
   if (lines.empty()) {
-    auto it = id2lexical_scope_.find(fn_call_scope.GetLexicalScope());
-    if (it == id2lexical_scope_.end()) return 0;
+    auto lexical_scope_it = id2lexical_scope_.find(fn_call_scope.GetLexicalScope());
+    if (lexical_scope_it == id2lexical_scope_.end()) return 0;
     OpenCLDebugInfo100Instructions debug_opcode =
-        it->second->GetOpenCL100DebugOpcode();
+        lexical_scope_it->second->GetOpenCL100DebugOpcode();
     switch (debug_opcode) {
       case OpenCLDebugInfo100DebugFunction:
       case OpenCLDebugInfo100DebugTypeComposite:
         line_number =
-            it->second->GetSingleWordOperand(kLineOperandIndexDebugFunction);
+            lexical_scope_it->second->GetSingleWordOperand(kLineOperandIndexDebugFunction);
         break;
       case OpenCLDebugInfo100DebugLexicalBlock:
-        line_number = it->second->GetSingleWordOperand(
+        line_number = lexical_scope_it->second->GetSingleWordOperand(
             kLineOperandIndexDebugLexicalBlock);
         break;
       case OpenCLDebugInfo100DebugCompilationUnit:
         break;
       default:
-        // Unreachable!
+        assert(!"Unreachable. a debug extension instruction for a lexical "
+               "scope must be DebugFunction, DebugTypeComposite, "
+               "DebugLexicalBlock, or DebugCompilationUnit.");
         break;
     }
   } else {
@@ -172,7 +172,7 @@ uint32_t InlinePass::CreateDebugInlinedAt(const std::vector<Instruction>& lines,
           {spv_operand_type_t::SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
            {static_cast<uint32_t>(OpenCLDebugInfo100DebugInlinedAt)}},
           {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {line_number}},
-          {spv_operand_type_t::SPV_OPERAND_TYPE_RESULT_ID,
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
            {fn_call_scope.GetLexicalScope()}},
       }));
   // The function call instruction itself already has DebugInlinedAt
@@ -210,10 +210,10 @@ uint32_t InlinePass::GetFalseId() {
 
 Instruction* InlinePass::CloneFunctionParamDebugDeclare(uint32_t from,
                                                         uint32_t to) {
-  auto it = param_id2debugdecl_.find(from);
-  if (it == param_id2debugdecl_.end()) return nullptr;
+  auto param_debugdecl_it = param_id2debugdecl_.find(from);
+  if (param_debugdecl_it == param_id2debugdecl_.end()) return nullptr;
 
-  auto* clone = it->second->Clone(context());
+  auto* clone = param_debugdecl_it->second->Clone(context());
   clone->SetResultId(context()->TakeNextId());
   clone->GetOperand(kDebugDeclareOperandVariableIndex).words[0] = to;
 
@@ -261,10 +261,6 @@ bool InlinePass::CloneAndMapLocals(
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
     ++callee_var_itr;
-    // Note that we do not have to clone DebugDeclare/DebugValue for
-    // local variables of callee because InlinePass::GenInlineCode()
-    // will iterate all instructions of callee to copy them and update
-    // all operands properly using callee2caller.
   }
   return true;
 }
@@ -299,10 +295,6 @@ uint32_t InlinePass::CreateReturnVar(
                         {SpvStorageClassFunction}}}));
   new_vars->push_back(std::move(var_inst));
   get_decoration_mgr()->CloneDecorations(calleeFn->result_id(), returnVarId);
-  // Note that we do not have to handle DebugDeclare/DebugValue similar
-  // to DebugDeclare/DebugValue for local variables of callee.
-  // CloneSameBlockOps() will handle DebugDeclare/DebugValue for return
-  // value properly.
   return returnVarId;
 }
 
@@ -469,7 +461,7 @@ bool InlinePass::GenInlineCode(
               // should be used.
               uint32_t val_id = cpi->GetSingleWordInOperand(1);
               AddStore(new_var_id, val_id, &new_blk_ptr,
-                       call_inst_itr->dbg_line_insts(), debug_scope);
+                       call_inst_itr->dbg_line_insts().empty() ? nullptr : &call_inst_itr->dbg_line_insts()[0], debug_scope);
             }
             break;
           case SpvOpUnreachable:
@@ -622,7 +614,7 @@ bool InlinePass::GenInlineCode(
               valId = mapItr->second;
             }
             AddStore(returnVarId, valId, &new_blk_ptr,
-                     call_inst_itr->dbg_line_insts(), debug_scope);
+                     call_inst_itr->dbg_line_insts().empty() ? nullptr : &call_inst_itr->dbg_line_insts()[0], debug_scope);
 
             // Remember we saw a return; if followed by a label, will need to
             // insert branch.
@@ -665,7 +657,7 @@ bool InlinePass::GenInlineCode(
               const uint32_t resId = call_inst_itr->result_id();
               assert(resId != 0);
               AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr,
-                      call_inst_itr->dbg_line_insts(), debug_scope);
+                      call_inst_itr->dbg_line_insts().empty() ? nullptr : &call_inst_itr->dbg_line_insts()[0], debug_scope);
             }
             // Copy remaining instructions from caller block.
             for (Instruction* inst = call_inst_itr->NextNode(); inst;
