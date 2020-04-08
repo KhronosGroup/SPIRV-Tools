@@ -96,7 +96,7 @@ void InlinePass::AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
 void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
                           std::unique_ptr<BasicBlock>* block_ptr,
                           const Instruction* line_inst,
-                          uint32_t dbg_scope) {
+                          const DebugScope& dbg_scope) {
   std::unique_ptr<Instruction> newStore(
       new Instruction(context(), SpvOpStore, 0, 0,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}},
@@ -104,21 +104,21 @@ void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
   if (line_inst != nullptr) {
     newStore->dbg_line_insts().push_back(*line_inst);
   }
-  if (dbg_scope) newStore->SetDebugScope(dbg_scope);
+  newStore->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newStore));
 }
 
 void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
                          std::unique_ptr<BasicBlock>* block_ptr,
                          const Instruction* line_inst,
-                         uint32_t dbg_scope) {
+                         const DebugScope& dbg_scope) {
   std::unique_ptr<Instruction> newLoad(
       new Instruction(context(), SpvOpLoad, type_id, resultId,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}}}));
   if (line_inst != nullptr) {
     newLoad->dbg_line_insts().push_back(*line_inst);
   }
-  if (dbg_scope) newLoad->SetDebugScope(dbg_scope);
+  newLoad->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newLoad));
 }
 
@@ -381,8 +381,9 @@ bool InlinePass::GenInlineCode(
   // of newly added variable/store/load for return statements as the
   // callee's scope.
   auto it_scope = func_id2dbg_func_id_.find(calleeFn->result_id());
-  uint32_t debug_scope = 0;
-  if (it_scope != func_id2dbg_func_id_.end()) debug_scope = it_scope->second;
+  DebugScope debug_scope(kNoDebugScope, kNoInlinedAt);
+  if (it_scope != func_id2dbg_func_id_.end())
+    debug_scope.SetLexicalScope(it_scope->second);
 
   // Create return var if needed.
   const uint32_t calleeTypeId = calleeFn->type_id();
@@ -461,7 +462,10 @@ bool InlinePass::GenInlineCode(
               // should be used.
               uint32_t val_id = cpi->GetSingleWordInOperand(1);
               AddStore(new_var_id, val_id, &new_blk_ptr,
-                       call_inst_itr->dbg_line_insts().empty() ? nullptr : &call_inst_itr->dbg_line_insts()[0], debug_scope);
+                       cpi->dbg_line_insts().empty()
+                           ? nullptr
+                           : &cpi->dbg_line_insts()[0],
+                       debug_scope);
             }
             break;
           case SpvOpUnreachable:
@@ -614,7 +618,9 @@ bool InlinePass::GenInlineCode(
               valId = mapItr->second;
             }
             AddStore(returnVarId, valId, &new_blk_ptr,
-                     call_inst_itr->dbg_line_insts().empty() ? nullptr : &call_inst_itr->dbg_line_insts()[0], debug_scope);
+                     cpi->dbg_line_insts().empty() ? nullptr
+                                                   : &cpi->dbg_line_insts()[0],
+                     debug_scope);
 
             // Remember we saw a return; if followed by a label, will need to
             // insert branch.
@@ -657,7 +663,11 @@ bool InlinePass::GenInlineCode(
               const uint32_t resId = call_inst_itr->result_id();
               assert(resId != 0);
               AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr,
-                      call_inst_itr->dbg_line_insts().empty() ? nullptr : &call_inst_itr->dbg_line_insts()[0], debug_scope);
+                      call_inst_itr->dbg_line_insts().empty()
+                          ? nullptr
+                          : &call_inst_itr->dbg_line_insts()[0],
+                      call_inst_itr->GetDebugScope());
+              not_inlined_insts.push_back(&*new_blk_ptr->tail());
             }
             // Copy remaining instructions from caller block.
             for (Instruction* inst = call_inst_itr->NextNode(); inst;
@@ -798,7 +808,7 @@ bool InlinePass::GenInlineCode(
 
         // Type2. inlined instructions from callee function.
         DebugScope new_scope(cpi->GetDebugScope().GetLexicalScope(), 0);
-        if (!cpi->GetDebugScope().GetInlinedAt()) {
+        if (cpi->GetDebugScope().GetInlinedAt() == kNoInlinedAt) {
           new_scope.SetInlinedAt(inlined_at);
           cpi->SetDebugScope(new_scope);
           return true;
