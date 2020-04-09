@@ -1277,6 +1277,122 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
+  // This checks that OpRuntimeArray is correctly handled.
+  const std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %8 ArrayStride 8
+               OpMemberDecorate %9 0 Offset 0
+               OpDecorate %9 BufferBlock
+               OpDecorate %11 DescriptorSet 0
+               OpDecorate %11 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeRuntimeArray %7
+          %9 = OpTypeStruct %8
+         %10 = OpTypePointer Uniform %9
+         %11 = OpVariable %10 Uniform
+         %12 = OpConstant %6 0
+         %13 = OpTypeInt 32 0
+         %14 = OpConstant %13 0
+         %15 = OpTypePointer Uniform %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %50 = OpCopyObject %6 %12
+         %51 = OpCopyObject %13 %14
+         %16 = OpAccessChain %15 %11 %12 %12 %14
+               OpStore %16 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Add synonym fact relating %50 and %12.
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(50, 12),
+                                                   context.get());
+  // Add synonym fact relating %51 and %14.
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(51, 14),
+                                                   context.get());
+
+  // Not legal because the index being replaced is a struct index.
+  ASSERT_FALSE(
+      TransformationReplaceIdWithSynonym(
+          MakeIdUseDescriptor(
+              12, MakeInstructionDescriptor(16, SpvOpAccessChain, 0), 1),
+          50)
+          .IsApplicable(context.get(), transformation_context));
+
+  // Fine to replace an index into a runtime array.
+  auto replacement1 = TransformationReplaceIdWithSynonym(
+      MakeIdUseDescriptor(
+          12, MakeInstructionDescriptor(16, SpvOpAccessChain, 0), 2),
+      50);
+  ASSERT_TRUE(replacement1.IsApplicable(context.get(), transformation_context));
+  replacement1.Apply(context.get(), &transformation_context);
+
+  // Fine to replace an index into a vector inside the runtime array.
+  auto replacement2 = TransformationReplaceIdWithSynonym(
+      MakeIdUseDescriptor(
+          14, MakeInstructionDescriptor(16, SpvOpAccessChain, 0), 3),
+      51);
+  ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
+  replacement2.Apply(context.get(), &transformation_context);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  const std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %8 ArrayStride 8
+               OpMemberDecorate %9 0 Offset 0
+               OpDecorate %9 BufferBlock
+               OpDecorate %11 DescriptorSet 0
+               OpDecorate %11 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeRuntimeArray %7
+          %9 = OpTypeStruct %8
+         %10 = OpTypePointer Uniform %9
+         %11 = OpVariable %10 Uniform
+         %12 = OpConstant %6 0
+         %13 = OpTypeInt 32 0
+         %14 = OpConstant %13 0
+         %15 = OpTypePointer Uniform %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %50 = OpCopyObject %6 %12
+         %51 = OpCopyObject %13 %14
+         %16 = OpAccessChain %15 %11 %12 %50 %51
+               OpStore %16 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
