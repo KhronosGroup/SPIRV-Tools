@@ -170,20 +170,16 @@ void EliminateDeadMembersPass::MarkMembersAsLiveForCopyMemory(
 void EliminateDeadMembersPass::MarkMembersAsLiveForExtract(
     const Instruction* inst) {
   assert(inst->opcode() == SpvOpCompositeExtract ||
-      (inst->opcode() == SpvOpSpecConstantOp &&
+         (inst->opcode() == SpvOpSpecConstantOp &&
           inst->GetSingleWordInOperand(kSpecConstOpOpcodeIdx) ==
               SpvOpCompositeExtract));
 
-  uint32_t first_operand = 0;
-  if (inst->opcode() == SpvOpSpecConstantOp) {
-    first_operand = 1;
-  }
-
+  uint32_t first_operand = (inst->opcode() == SpvOpSpecConstantOp ? 1 : 0);
   uint32_t composite_id = inst->GetSingleWordInOperand(first_operand);
   Instruction* composite_inst = get_def_use_mgr()->GetDef(composite_id);
   uint32_t type_id = composite_inst->type_id();
 
-  for (uint32_t i = first_operand+1; i < inst->NumInOperands(); ++i) {
+  for (uint32_t i = first_operand + 1; i < inst->NumInOperands(); ++i) {
     Instruction* type_inst = get_def_use_mgr()->GetDef(type_id);
     uint32_t member_idx = inst->GetSingleWordInOperand(i);
     switch (type_inst->opcode()) {
@@ -335,10 +331,6 @@ bool EliminateDeadMembersPass::RemoveDeadMembers() {
           default:
             break;
         }
-        // assert(false && "Not yet implemented.");
-        // with OpCompositeExtract, OpCompositeInsert
-        // For kernels: OpAccessChain, OpInBoundsAccessChain, OpPtrAccessChain,
-        // OpInBoundsPtrAccessChain
         break;
       default:
         break;
@@ -562,10 +554,10 @@ bool EliminateDeadMembersPass::UpdateCompsiteExtract(Instruction* inst) {
 
   Instruction::OperandList new_operands;
   bool modified = false;
-  for(uint32_t i = 0; i < first_operand+1; i++) {
+  for (uint32_t i = 0; i < first_operand + 1; i++) {
     new_operands.emplace_back(inst->GetInOperand(i));
   }
-  for (uint32_t i = first_operand+1; i < inst->NumInOperands(); ++i) {
+  for (uint32_t i = first_operand + 1; i < inst->NumInOperands(); ++i) {
     uint32_t member_idx = inst->GetSingleWordInOperand(i);
     uint32_t new_member_idx = GetNewMemberIndex(type_id, member_idx);
     assert(new_member_idx != kRemovedMember);
@@ -603,7 +595,7 @@ bool EliminateDeadMembersPass::UpdateCompsiteExtract(Instruction* inst) {
 
 bool EliminateDeadMembersPass::UpdateCompositeInsert(Instruction* inst) {
   assert(inst->opcode() == SpvOpCompositeInsert ||
-      (inst->opcode() == SpvOpSpecConstantOp &&
+         (inst->opcode() == SpvOpSpecConstantOp &&
           inst->GetSingleWordInOperand(kSpecConstOpOpcodeIdx) ==
               SpvOpCompositeInsert));
 
@@ -612,17 +604,17 @@ bool EliminateDeadMembersPass::UpdateCompositeInsert(Instruction* inst) {
     first_operand = 1;
   }
 
-  uint32_t composite_id = inst->GetSingleWordInOperand(first_operand+1);
+  uint32_t composite_id = inst->GetSingleWordInOperand(first_operand + 1);
   Instruction* composite_inst = get_def_use_mgr()->GetDef(composite_id);
   uint32_t type_id = composite_inst->type_id();
 
   Instruction::OperandList new_operands;
   bool modified = false;
 
-  for(uint32_t i = 0; i < first_operand+2; ++i) {
+  for (uint32_t i = 0; i < first_operand + 2; ++i) {
     new_operands.emplace_back(inst->GetInOperand(i));
   }
-  for (uint32_t i = first_operand+2; i < inst->NumInOperands(); ++i) {
+  for (uint32_t i = first_operand + 2; i < inst->NumInOperands(); ++i) {
     uint32_t member_idx = inst->GetSingleWordInOperand(i);
     uint32_t new_member_idx = GetNewMemberIndex(type_id, member_idx);
     if (new_member_idx == kRemovedMember) {
