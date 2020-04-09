@@ -116,6 +116,13 @@ class InlinePass : public Pass {
                          std::unordered_map<uint32_t, Instruction*>* preCallSB,
                          std::unique_ptr<BasicBlock>* block_ptr);
 
+  // Create new DebugInlinedAt debug extension instructions and map it to
+  // DebugScope of inlined instructions.
+  bool GenDebugInlinedAt(std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+                         std::vector<std::unique_ptr<Instruction>>* new_vars,
+                         BasicBlock::iterator call_inst_itr,
+                         const std::vector<Instruction*>& not_inlined_insts);
+
   // Return in new_blocks the result of inlining the call at call_inst_itr
   // within its block at call_block_itr. The block at call_block_itr can
   // just be replaced with the blocks in new_blocks. Any additional branches
