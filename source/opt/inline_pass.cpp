@@ -427,18 +427,7 @@ bool InlinePass::GenDebugInlinedAt(
     uint32_t chain_iter_id = cpi->GetDebugScope().GetInlinedAt();
     uint32_t head_inlined_at_id_of_chain = 0;
     std::vector<Instruction*> new_inlined_at_insts;
-    uint32_t tail_id = inlined_at_id_to_caller;
     do {
-      // If a path from |chain_iter_id| to |tail_id| exists, we
-      // can reuse it.
-      auto pair_key = std::pair<uint32_t, uint32_t>(chain_iter_id, tail_id);
-      auto path_it = inlined_at_chain_.find(pair_key);
-      if (path_it != inlined_at_chain_.end()) {
-        // Update tail and head of DebugInlinedAt chain.
-        tail_id = path_it->second;
-        if (!head_inlined_at_id_of_chain) head_inlined_at_id_of_chain = tail_id;
-        break;
-      }
       auto it_inlined_at = id2inlined_at_.find(chain_iter_id);
       if (it_inlined_at == id2inlined_at_.end()) return false;
       Instruction* new_inlined_at_in_chain =
@@ -446,7 +435,6 @@ bool InlinePass::GenDebugInlinedAt(
       new_inlined_at_in_chain->SetResultId(context()->TakeNextId());
       id2inlined_at_[new_inlined_at_in_chain->result_id()] =
           new_inlined_at_in_chain;
-      inlined_at_chain_[pair_key] = new_inlined_at_in_chain->result_id();
       // Previous DebugInlinedAt must have the current new DebugInlinedAt
       // as its Inlined operand, which makes a recursive DebugInlinedAt
       // chain.
@@ -466,16 +454,16 @@ bool InlinePass::GenDebugInlinedAt(
           kDebugInlinedAtOperandInlinedIndex);
     } while (chain_iter_id);
 
-    // Set |tail_id| as the tail of the DebugInlinedAt chain.
+    // |inlined_at_id_to_caller| must be the tail of the DebugInlinedAt chain.
     if (!new_inlined_at_insts.empty()) {
       if (new_inlined_at_insts.back()->NumOperands() <=
           kDebugInlinedAtOperandInlinedIndex) {
         new_inlined_at_insts.back()->AddOperand(
-            {SPV_OPERAND_TYPE_RESULT_ID, {tail_id}});
+            {SPV_OPERAND_TYPE_RESULT_ID, {inlined_at_id_to_caller}});
       } else {
         new_inlined_at_insts.back()
             ->GetOperand(kDebugInlinedAtOperandInlinedIndex)
-            .words[0] = tail_id;
+            .words[0] = inlined_at_id_to_caller;
       }
     }
 
@@ -1116,38 +1104,6 @@ void InlinePass::InitializeInline() {
           break;
         default:
           break;
-      }
-    }
-
-    // Keep all paths from each DebugInlinedAt to its recursive tail
-    inlined_at_chain_.clear();
-    for (auto& i : get_module()->ext_inst_debuginfo()) {
-      if (i.GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugInlinedAt) {
-        // Find the tail DebugInlinedAt of the current DebugInlinedAt path.
-        auto chain_iter = &i;
-        uint32_t tail_id = chain_iter->result_id();
-        while (chain_iter) {
-          if (chain_iter->NumOperands() <= kDebugInlinedAtOperandInlinedIndex)
-            break;
-          uint32_t next_inlined_at_id = chain_iter->GetSingleWordOperand(
-              kDebugInlinedAtOperandInlinedIndex);
-          if (!next_inlined_at_id) break;
-          tail_id = next_inlined_at_id;
-          chain_iter = id2inlined_at_[next_inlined_at_id];
-        }
-        // Add a mapping between the path from a DebugInlinedAt to
-        // its tail DebugInlinedAt and the DebugInlinedAt.
-        chain_iter = &i;
-        while (chain_iter) {
-          inlined_at_chain_[std::pair<uint32_t, uint32_t>(
-              chain_iter->result_id(), tail_id)] = chain_iter->result_id();
-          if (chain_iter->NumOperands() <= kDebugInlinedAtOperandInlinedIndex)
-            break;
-          uint32_t next_inlined_at_id = chain_iter->GetSingleWordOperand(
-              kDebugInlinedAtOperandInlinedIndex);
-          if (!next_inlined_at_id) break;
-          chain_iter = id2inlined_at_[next_inlined_at_id];
-        }
       }
     }
   }
