@@ -137,15 +137,16 @@ uint32_t InlinePass::CreateDebugInlinedAt(const std::vector<Instruction>& lines,
 
   uint32_t line_number = 0;
   if (lines.empty()) {
-    auto lexical_scope_it = id2lexical_scope_.find(fn_call_scope.GetLexicalScope());
+    auto lexical_scope_it =
+        id2lexical_scope_.find(fn_call_scope.GetLexicalScope());
     if (lexical_scope_it == id2lexical_scope_.end()) return 0;
     OpenCLDebugInfo100Instructions debug_opcode =
         lexical_scope_it->second->GetOpenCL100DebugOpcode();
     switch (debug_opcode) {
       case OpenCLDebugInfo100DebugFunction:
       case OpenCLDebugInfo100DebugTypeComposite:
-        line_number =
-            lexical_scope_it->second->GetSingleWordOperand(kLineOperandIndexDebugFunction);
+        line_number = lexical_scope_it->second->GetSingleWordOperand(
+            kLineOperandIndexDebugFunction);
         break;
       case OpenCLDebugInfo100DebugLexicalBlock:
         line_number = lexical_scope_it->second->GetSingleWordOperand(
