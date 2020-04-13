@@ -33,6 +33,8 @@ const uint32_t kVariableStorageClassIndex = 0;
 const uint32_t kTypeImageSampledIndex = 5;
 
 // Constants for OpenCL.DebugInfo.100 extension instructions.
+const uint32_t kExtInstSetIdInIdx = 0;
+const uint32_t kExtInstInstructionInIdx = 1;
 const uint32_t kDebugScopeNumWords = 7;
 const uint32_t kDebugScopeNumWordsWithoutInlinedAt = 6;
 const uint32_t kDebugNoScopeNumWords = 5;
@@ -510,6 +512,21 @@ bool Instruction::IsValidBasePointer() const {
   return false;
 }
 
+OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
+  if (opcode() != SpvOpExtInst) return OpenCLDebugInfo100InstructionsMax;
+
+  if (!context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo())
+    return OpenCLDebugInfo100InstructionsMax;
+
+  if (GetSingleWordInOperand(kExtInstSetIdInIdx) !=
+      context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo()) {
+    return OpenCLDebugInfo100InstructionsMax;
+  }
+
+  return OpenCLDebugInfo100Instructions(
+      GetSingleWordInOperand(kExtInstInstructionInIdx));
+}
+
 bool Instruction::IsValidBaseImage() const {
   uint32_t tid = type_id();
   if (tid == 0) {
@@ -713,9 +730,6 @@ bool Instruction::IsScalarizable() const {
   if (spvOpcodeIsScalarizable(opcode())) {
     return true;
   }
-
-  const uint32_t kExtInstSetIdInIdx = 0;
-  const uint32_t kExtInstInstructionInIdx = 1;
 
   if (opcode() == SpvOpExtInst) {
     uint32_t instSetId =
