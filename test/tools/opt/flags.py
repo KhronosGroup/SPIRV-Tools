@@ -73,7 +73,10 @@ class TestValidPassFlags(expect.ValidObjectFile1_5,
       '--remove-duplicates', '--replace-invalid-opcode', '--ssa-rewrite',
       '--scalar-replacement', '--scalar-replacement=42', '--strength-reduction',
       '--strip-debug', '--strip-reflect', '--vector-dce', '--workaround-1209',
-      '--unify-const'
+      '--unify-const', '--legalize-vector-shuffle',
+      '--split-invalid-unreachable', '--generate-webgpu-initializers',
+      '--decompose-initialized-variables', '--graphics-robust-access',
+      '--wrap-opkill', '--amd-ext-to-khr'
   ]
   expected_passes = [
       'wrap-opkill',
@@ -120,7 +123,14 @@ class TestValidPassFlags(expect.ValidObjectFile1_5,
       'strip-reflect',
       'vector-dce',
       'workaround-1209',
-      'unify-const'
+      'unify-const',
+      'legalize-vector-shuffle',
+      'split-invalid-unreachable',
+      'generate-webgpu-initializers',
+      'decompose-initialized-variables',
+      'graphics-robust-access',
+      'wrap-opkill',
+      'amd-ext-to-khr'
   ]
   shader = placeholder.FileSPIRVShader(empty_main_assembly(), '.spvasm')
   output = placeholder.TempFileName('output.spv')
