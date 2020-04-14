@@ -1058,6 +1058,85 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
   ASSERT_TRUE(IsValid(env, recipient_context.get()));
 }
 
+TEST(FuzzerPassDonateModulesTest, DonateShaderWithImageStorageClass) {
+  std::string recipient_shader = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor_shader = R"(
+               OpCapability Shader
+               OpCapability SampledBuffer
+               OpCapability ImageBuffer
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "MainPSPacked"
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %18 DescriptorSet 0
+               OpDecorate %18 Binding 128
+         %49 = OpTypeInt 32 0
+         %50 = OpTypeFloat 32
+         %58 = OpConstant %50 1
+         %66 = OpConstant %49 0
+         %87 = OpTypeVector %50 2
+         %88 = OpConstantComposite %87 %58 %58
+         %17 = OpTypeImage %49 2D 2 0 0 2 R32ui
+        %118 = OpTypePointer UniformConstant %17
+        %123 = OpTypeVector %49 2
+        %132 = OpTypeVoid
+        %133 = OpTypeFunction %132
+        %142 = OpTypePointer Image %49
+         %18 = OpVariable %118 UniformConstant
+          %2 = OpFunction %132 None %133
+        %153 = OpLabel
+        %495 = OpConvertFToU %123 %88
+        %501 = OpImageTexelPointer %142 %18 %495 %66
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), true);
+
+  // We just check that the result is valid.  Checking to what it should be
+  // exactly equal to would be very fragile.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
 TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArray) {
   std::string recipient_shader = R"(
                OpCapability Shader
