@@ -866,6 +866,62 @@ TEST(TransformationSplitBlockTest, DeadBlockShouldSplitToTwoDeadBlocks) {
   ASSERT_TRUE(IsEqual(env, after_split, context.get()));
 }
 
+TEST(TransformationSplitBlockTest, DoNotSplitUseOfOpSampledImage) {
+  // This checks that we cannot split the definition of an OpSampledImage
+  // from its use.
+  std::string shader = R"(
+               OpCapability Shader
+               OpCapability SampledBuffer
+               OpCapability ImageBuffer
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %40 %41
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %40 DescriptorSet 0
+               OpDecorate %40 Binding 69
+               OpDecorate %41 DescriptorSet 0
+               OpDecorate %41 Binding 1
+         %54 = OpTypeFloat 32
+         %76 = OpTypeVector %54 4
+         %55 = OpConstant %54 0
+         %56 = OpTypeVector %54 3
+         %94 = OpTypeVector %54 2
+        %112 = OpConstantComposite %94 %55 %55
+         %57 = OpConstantComposite %56 %55 %55 %55
+         %15 = OpTypeImage %54 2D 2 0 0 1 Unknown
+        %114 = OpTypePointer UniformConstant %15
+         %38 = OpTypeSampler
+        %125 = OpTypePointer UniformConstant %38
+        %132 = OpTypeVoid
+        %133 = OpTypeFunction %132
+         %45 = OpTypeSampledImage %15
+         %40 = OpVariable %114 UniformConstant
+         %41 = OpVariable %125 UniformConstant
+          %2 = OpFunction %132 None %133
+        %164 = OpLabel
+        %184 = OpLoad %15 %40
+        %213 = OpLoad %38 %41
+        %216 = OpSampledImage %45 %184 %213
+        %217 = OpImageSampleImplicitLod %76 %216 %112 Bias %55
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto split = TransformationSplitBlock(
+      MakeInstructionDescriptor(217, SpvOpImageSampleImplicitLod, 0), 500);
+  ASSERT_FALSE(split.IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
