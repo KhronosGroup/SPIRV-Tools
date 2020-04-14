@@ -182,10 +182,27 @@ void Instruction::ReplaceOperands(const OperandList& new_operands) {
 bool Instruction::IsReadOnlyLoad() const {
   if (IsLoad()) {
     Instruction* address_def = GetBaseAddress();
-    if (!address_def || address_def->opcode() != SpvOpVariable) {
+    if (!address_def) {
       return false;
     }
-    return address_def->IsReadOnlyVariable();
+
+    if (address_def->opcode() == SpvOpVariable) {
+      if (address_def->IsReadOnlyVariable()) {
+        return true;
+      }
+    }
+
+    if (address_def->opcode() == SpvOpLoad) {
+      const analysis::Type* address_type =
+          context()->get_type_mgr()->GetType(address_def->type_id());
+      if (address_type->AsSampledImage() != nullptr) {
+        const auto* image_type =
+            address_type->AsSampledImage()->image_type()->AsImage();
+        if (image_type->sampled() == 1) {
+          return true;
+        }
+      }
+    }
   }
   return false;
 }
