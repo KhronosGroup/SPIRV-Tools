@@ -198,10 +198,23 @@ bool TransformationOutlineFunction::IsApplicable(
   for (auto& block : *entry_block->GetParent()) {
     if (&block == exit_block) {
       // It is OK (and typically expected) for the exit block of the region to
-      // have successors outside the region.  It is also OK for the exit block
-      // to head a structured control flow construct - the block containing the
-      // call to the outlined function will end up heading this construct if
-      // outlining takes place.
+      // have successors outside the region.
+      //
+      // It is also OK for the exit block to head a structured control flow
+      // construct - the block containing the call to the outlined function will
+      // end up heading this construct if outlining takes place.  However, we
+      // must ensure that if the exit block heads a loop, the continue target
+      // for this loop is outside the region.
+      if (auto loop_merge = block.GetLoopMergeInst()) {
+        // The exit block heads a loop
+        auto continue_target =
+            ir_context->cfg()->block(loop_merge->GetSingleWordOperand(1));
+        if (region_set.count(continue_target)) {
+          // The continue target for the loop is in the region.
+          return false;
+        }
+      }
+
       continue;
     }
 
