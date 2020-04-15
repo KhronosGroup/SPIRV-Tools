@@ -272,7 +272,7 @@ bool IRContext::ReplaceAllUsesWithPredicate(
 bool IRContext::IsConsistent() {
 #ifndef SPIRV_CHECK_CONTEXT
   return true;
-#endif
+#else
   if (AreAnalysesValid(kAnalysisDefUse)) {
     analysis::DefUseManager new_def_use(module());
     if (*get_def_use_mgr() != new_def_use) {
@@ -324,6 +324,7 @@ bool IRContext::IsConsistent() {
     }
   }
   return true;
+#endif
 }
 
 void IRContext::ForgetUses(Instruction* inst) {
