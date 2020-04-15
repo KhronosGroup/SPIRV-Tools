@@ -320,6 +320,7 @@ config("spvtools_internal_config") {
     cflags = [
       "-Wno-implicit-fallthrough",
       "-Wno-newline-eof",
+      "-Wno-unreachable-code",
     ]
   }
 }
