@@ -206,8 +206,6 @@ void main(float in_var_color : COLOR) {
                OpFunctionEnd
   )";
 
-  std::vector<Instruction> lines;
-
   DebugScope scope(22U, 0U);
 
   std::unique_ptr<IRContext> context =
@@ -215,7 +213,7 @@ void main(float in_var_color : COLOR) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   DebugInfoManager manager(context.get());
 
-  uint32_t inlined_at_id = manager.CreateDebugInlinedAt(lines, scope);
+  uint32_t inlined_at_id = manager.CreateDebugInlinedAt(nullptr, scope);
   auto* inlined_at = manager.GetDebugInlinedAt(inlined_at_id);
   EXPECT_NE(inlined_at, nullptr);
   EXPECT_EQ(inlined_at->GetSingleWordOperand(kDebugInlinedAtOperandLineIndex),
@@ -225,14 +223,14 @@ void main(float in_var_color : COLOR) {
   EXPECT_EQ(inlined_at->NumOperands(), kDebugInlinedAtOperandScopeIndex + 1);
 
   const uint32_t line_number = 77U;
-  lines.emplace_back(context.get(), SpvOpLine);
-  lines.back().SetInOperands({
+  Instruction line(context.get(), SpvOpLine);
+  line.SetInOperands({
       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {5U}},
       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {line_number}},
       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {0U}},
   });
 
-  inlined_at_id = manager.CreateDebugInlinedAt(lines, scope);
+  inlined_at_id = manager.CreateDebugInlinedAt(&line, scope);
   inlined_at = manager.GetDebugInlinedAt(inlined_at_id);
   EXPECT_NE(inlined_at, nullptr);
   EXPECT_EQ(inlined_at->GetSingleWordOperand(kDebugInlinedAtOperandLineIndex),
@@ -242,7 +240,7 @@ void main(float in_var_color : COLOR) {
   EXPECT_EQ(inlined_at->NumOperands(), kDebugInlinedAtOperandScopeIndex + 1);
 
   scope.SetInlinedAt(100U);
-  inlined_at_id = manager.CreateDebugInlinedAt(lines, scope);
+  inlined_at_id = manager.CreateDebugInlinedAt(&line, scope);
   inlined_at = manager.GetDebugInlinedAt(inlined_at_id);
   EXPECT_NE(inlined_at, nullptr);
   EXPECT_EQ(inlined_at->GetSingleWordOperand(kDebugInlinedAtOperandLineIndex),
@@ -425,10 +423,12 @@ void main(float in_var_color : COLOR) {
   EXPECT_EQ(inst->NumOperands(), kDebugInlinedAtOperandScopeIndex + 1);
 
   bool exist = false;
-  manager.ForEachDebugInsts(OpenCLDebugInfo100DebugInlinedAt,
-                            [&exist, &inst](Instruction* cpi) {
-                              if (cpi == inst) exist = true;
-                            });
+  for (auto it = context->module()->ext_inst_debuginfo_begin();
+       it != context->module()->ext_inst_debuginfo_end(); ++it) {
+    if (it->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100DebugInlinedAt)
+      continue;
+    if (&*it == inst) exist = true;
+  }
   EXPECT_FALSE(exist);
 }
 

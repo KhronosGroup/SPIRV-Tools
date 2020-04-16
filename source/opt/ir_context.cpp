@@ -393,24 +393,28 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
   const uint32_t id = inst->result_id();
   // Kill id of OpFunction from DebugFunction.
   if (opcode == SpvOpFunction) {
-    get_debug_info_mgr()->ForEachDebugInsts(
-        OpenCLDebugInfo100DebugFunction, [id, this](Instruction* cpi) {
-          auto& operand = cpi->GetOperand(kDebugFunctionOperandFunctionIndex);
-          if (operand.words[0] == id) {
-            operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
-          }
-        });
+    for (auto it = module()->ext_inst_debuginfo_begin();
+         it != module()->ext_inst_debuginfo_end(); ++it) {
+      if (it->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100DebugFunction)
+        continue;
+      auto& operand = it->GetOperand(kDebugFunctionOperandFunctionIndex);
+      if (operand.words[0] == id) {
+        operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
+      }
+    }
   }
   // Kill id of OpVariable for global variable from DebugGlobalVariable.
   if (opcode == SpvOpVariable || IsConstantInst(opcode)) {
-    get_debug_info_mgr()->ForEachDebugInsts(
-        OpenCLDebugInfo100DebugGlobalVariable, [id, this](Instruction* cpi) {
-          auto& operand =
-              cpi->GetOperand(kDebugGlobalVariableOperandVariableIndex);
-          if (operand.words[0] == id) {
-            operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
-          }
-        });
+    for (auto it = module()->ext_inst_debuginfo_begin();
+         it != module()->ext_inst_debuginfo_end(); ++it) {
+      if (it->GetOpenCL100DebugOpcode() !=
+          OpenCLDebugInfo100DebugGlobalVariable)
+        continue;
+      auto& operand = it->GetOperand(kDebugGlobalVariableOperandVariableIndex);
+      if (operand.words[0] == id) {
+        operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
+      }
+    }
   }
   // Notice that we do not need anythings to do for local variables.
   // DebugLocalVariable does not have an OpVariable operand. Instead,

@@ -39,17 +39,6 @@ class DebugInfoManager {
   DebugInfoManager& operator=(const DebugInfoManager&) = delete;
   DebugInfoManager& operator=(DebugInfoManager&&) = delete;
 
-  // Runs the given function |f| on instructions whose OpenCL.DebugInfo.100
-  // opcode is |dbg_opcode|.
-  void ForEachDebugInsts(OpenCLDebugInfo100Instructions dbg_opcode,
-                         const std::function<void(Instruction*)>& f);
-
-  // Runs the given function |f| on instructions whose OpenCL.DebugInfo.100
-  // opcode is |dbg_opcode|. If |f| returns false, iteration is terminated
-  // and this function returns false.
-  bool WhileEachDebugInsts(OpenCLDebugInfo100Instructions dbg_opcode,
-                           const std::function<bool(Instruction*)>& f);
-
   friend bool operator==(const DebugInfoManager&, const DebugInfoManager&);
   friend bool operator!=(const DebugInfoManager& lhs,
                          const DebugInfoManager& rhs) {
@@ -57,17 +46,17 @@ class DebugInfoManager {
   }
 
   // Clones DebugDeclare or DebugValue for a local variable whose result id is
-  // |from|. Set Variable operand of the new DebugDeclare as |to|. Return the
-  // new DebugDeclare or DebugValue. If this is the first DebugDeclare or
-  // DebugValue, keep it in |local_var_id_to_dbgdecl_|.
-  Instruction* CloneDebugDeclare(uint32_t from, uint32_t to);
+  // |orig_var_id|. Set Variable operand of the new DebugDeclare as
+  // |new_var_id|. Return the new DebugDeclare or DebugValue. If this is the
+  // first DebugDeclare or DebugValue, keep it in |local_var_id_to_dbgdecl_|.
+  Instruction* CloneDebugDeclare(uint32_t orig_var_id, uint32_t new_var_id);
 
   // Returns id of new DebugInlinedAt. Its Line operand is the line number
-  // of |lines[0]| if |lines| is not empty. Otherwise, its Line operand
+  // of |line| if |line| is not nullptr. Otherwise, its Line operand
   // is the line number of lexical scope of |scope|. Its Scope and Inlined
   // operands are Scope and Inlined of |scope|. Note that this function puts
   // the new DebugInlinedAt into the tail of debug instructions.
-  uint32_t CreateDebugInlinedAt(const std::vector<Instruction>& lines,
+  uint32_t CreateDebugInlinedAt(const Instruction* line,
                                 const DebugScope& scope);
 
   // Creates a new DebugInfoNone instruction and returns it. In addition,
@@ -98,6 +87,28 @@ class DebugInfoManager {
   // Analyzes OpenCL.DebugInfo.100 instructions in the given |module| and
   // populates data structures in this class.
   void AnalyzeDebugInsts(Module& module);
+
+  // Returns the DebugDeclare instruction that corresponds to the variable
+  // with id |var_id|. Returns |nullptr| if one does not exists.
+  Instruction* GetDbgDeclareForVar(uint32_t var_id);
+
+  // Registers the DebugDeclare instruction |inst| into
+  // |local_var_id_to_dbgdecl_| using the variable operand of |inst| as a key.
+  // If |local_var_id_to_dbgdecl_| already has a key that corresponds to the
+  // variable operand of |inst|, it just returns without doing anything.
+  void RegisterDbgDeclareForVar(Instruction* inst);
+
+  // Returns the debug instruction whose id is |id|. Returns |nullptr| if one
+  // does not exists.
+  Instruction* GetDbgInst(uint32_t id);
+
+  // Registers the debug instruction |inst| into |id_to_dbg_inst_| using id of
+  // |inst| as a key.
+  void RegisterDbgInst(Instruction* inst);
+
+  // Registers the DebugFunction |inst| into |fn_id_to_dbg_fn_| using the
+  // function operand of |inst| as a key.
+  void RegisterDbgFunction(Instruction* inst);
 
   IRContext* context_;
 

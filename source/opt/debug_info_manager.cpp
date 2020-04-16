@@ -34,49 +34,71 @@ DebugInfoManager::DebugInfoManager(IRContext* c) : context_(c) {
   AnalyzeDebugInsts(*c->module());
 }
 
-bool DebugInfoManager::WhileEachDebugInsts(
-    OpenCLDebugInfo100Instructions dbg_opcode,
-    const std::function<bool(Instruction*)>& f) {
-  for (auto it = context()->module()->ext_inst_debuginfo_begin();
-       it != context()->module()->ext_inst_debuginfo_end(); ++it) {
-    if (it->GetOpenCL100DebugOpcode() != dbg_opcode) continue;
-    if (!f(&*it)) return false;
+Instruction* DebugInfoManager::GetDbgDeclareForVar(uint32_t var_id) {
+  auto debugdecl_it = local_var_id_to_dbgdecl_.find(var_id);
+  return debugdecl_it == local_var_id_to_dbgdecl_.end() ? nullptr
+                                                        : debugdecl_it->second;
+}
+
+void DebugInfoManager::RegisterDbgDeclareForVar(Instruction* inst) {
+  assert((inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+          inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) &&
+         "inst is not a DebugDeclare or DebugValue");
+  auto var_id = inst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
+  if (local_var_id_to_dbgdecl_.find(var_id) != local_var_id_to_dbgdecl_.end()) {
+    return;
   }
-  return true;
+  local_var_id_to_dbgdecl_[var_id] = inst;
 }
 
-void DebugInfoManager::ForEachDebugInsts(
-    OpenCLDebugInfo100Instructions dbg_opcode,
-    const std::function<void(Instruction*)>& f) {
-  WhileEachDebugInsts(dbg_opcode, [&f](Instruction* dbg_inst) {
-    f(dbg_inst);
-    return true;
-  });
+Instruction* DebugInfoManager::GetDbgInst(uint32_t id) {
+  auto dbg_inst_it = id_to_dbg_inst_.find(id);
+  return dbg_inst_it == id_to_dbg_inst_.end() ? nullptr : dbg_inst_it->second;
 }
 
-uint32_t DebugInfoManager::CreateDebugInlinedAt(
-    const std::vector<Instruction>& lines, const DebugScope& scope) {
+void DebugInfoManager::RegisterDbgInst(Instruction* inst) {
+  assert(
+      inst->NumInOperands() != 0 &&
+      context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo() ==
+          inst->GetInOperand(0).words[0] &&
+      "Given instruction is not a debug instruction");
+  id_to_dbg_inst_[inst->result_id()] = inst;
+}
+
+void DebugInfoManager::RegisterDbgFunction(Instruction* inst) {
+  assert(inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugFunction &&
+         "inst is not a DebugFunction");
+  auto fn_id = inst->GetSingleWordOperand(kDebugFunctionOperandFunctionIndex);
+  fn_id_to_dbg_fn_[fn_id] = inst;
+}
+
+uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
+                                                const DebugScope& scope) {
   if (context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo() ==
       0)
     return kNoInlinedAt;
 
   uint32_t line_number = 0;
-  if (lines.empty()) {
-    auto lexical_scope_it = id_to_dbg_inst_.find(scope.GetLexicalScope());
-    if (lexical_scope_it == id_to_dbg_inst_.end()) return kNoInlinedAt;
+  if (line == nullptr) {
+    auto* lexical_scope_inst = GetDbgInst(scope.GetLexicalScope());
+    if (lexical_scope_inst == nullptr) return kNoInlinedAt;
     OpenCLDebugInfo100Instructions debug_opcode =
-        lexical_scope_it->second->GetOpenCL100DebugOpcode();
+        lexical_scope_inst->GetOpenCL100DebugOpcode();
     switch (debug_opcode) {
       case OpenCLDebugInfo100DebugFunction:
-      case OpenCLDebugInfo100DebugTypeComposite:
-        line_number = lexical_scope_it->second->GetSingleWordOperand(
+        line_number = lexical_scope_inst->GetSingleWordOperand(
             kLineOperandIndexDebugFunction);
         break;
       case OpenCLDebugInfo100DebugLexicalBlock:
-        line_number = lexical_scope_it->second->GetSingleWordOperand(
+        line_number = lexical_scope_inst->GetSingleWordOperand(
             kLineOperandIndexDebugLexicalBlock);
         break;
+      case OpenCLDebugInfo100DebugTypeComposite:
       case OpenCLDebugInfo100DebugCompilationUnit:
+        assert(false &&
+               "DebugTypeComposite and DebugCompilationUnit are lexical "
+               "scopes, but we inline functions into a function or a block "
+               "of a function, not into a struct/class or a global scope.");
         break;
       default:
         assert(false &&
@@ -86,7 +108,7 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(
         break;
     }
   } else {
-    line_number = lines[0].GetSingleWordOperand(kOpLineOperandLineIndex);
+    line_number = line->GetSingleWordOperand(kOpLineOperandLineIndex);
   }
 
   uint32_t result_id = context()->TakeNextId();
@@ -109,7 +131,7 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(
     inlined_at->AddOperand({spv_operand_type_t::SPV_OPERAND_TYPE_RESULT_ID,
                             {scope.GetInlinedAt()}});
   }
-  id_to_dbg_inst_[result_id] = inlined_at.get();
+  RegisterDbgInst(inlined_at.get());
   context()->module()->AddExtInstDebugInfo(std::move(inlined_at));
   return result_id;
 }
@@ -128,34 +150,34 @@ Instruction* DebugInfoManager::CreateDebugInfoNone() {
            {static_cast<uint32_t>(OpenCLDebugInfo100DebugInfoNone)}},
       }));
 
-  id_to_dbg_inst_[result_id] = dbg_info_none_inst.get();
+  RegisterDbgInst(dbg_info_none_inst.get());
 
   // Add to the front of |ext_inst_debuginfo_|.
   return context()->module()->ext_inst_debuginfo_begin()->InsertBefore(
       std::move(dbg_info_none_inst));
 }
 
-Instruction* DebugInfoManager::CloneDebugDeclare(uint32_t from, uint32_t to) {
-  auto debugdecl_it = local_var_id_to_dbgdecl_.find(from);
-  if (debugdecl_it == local_var_id_to_dbgdecl_.end()) return nullptr;
+Instruction* DebugInfoManager::CloneDebugDeclare(uint32_t orig_var_id,
+                                                 uint32_t new_var_id) {
+  Instruction* dbgdecl = GetDbgDeclareForVar(orig_var_id);
+  if (dbgdecl == nullptr) return nullptr;
 
-  auto* clone = debugdecl_it->second->Clone(context());
+  auto* clone = dbgdecl->Clone(context());
   clone->SetResultId(context()->TakeNextId());
-  clone->GetOperand(kDebugDeclareOperandVariableIndex).words[0] = to;
+  clone->GetOperand(kDebugDeclareOperandVariableIndex).words[0] = new_var_id;
 
-  if (local_var_id_to_dbgdecl_.find(to) == local_var_id_to_dbgdecl_.end())
-    local_var_id_to_dbgdecl_[to] = clone;
+  RegisterDbgDeclareForVar(clone);
   return clone;
 }
 
 Instruction* DebugInfoManager::GetDebugInlinedAt(uint32_t dbg_inlined_at_id) {
-  auto it_inlined_at = id_to_dbg_inst_.find(dbg_inlined_at_id);
-  if (it_inlined_at == id_to_dbg_inst_.end()) return nullptr;
-  if (it_inlined_at->second->GetOpenCL100DebugOpcode() !=
+  auto* inlined_at = GetDbgInst(dbg_inlined_at_id);
+  if (inlined_at == nullptr) return nullptr;
+  if (inlined_at->GetOpenCL100DebugOpcode() !=
       OpenCLDebugInfo100DebugInlinedAt) {
     return nullptr;
   }
-  return it_inlined_at->second;
+  return inlined_at;
 }
 
 Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t dbg_inlined_at_id) {
@@ -163,32 +185,25 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t dbg_inlined_at_id) {
   if (inlined_at == nullptr) return nullptr;
   auto* new_inlined_at = inlined_at->Clone(context());
   new_inlined_at->SetResultId(context()->TakeNextId());
-  id_to_dbg_inst_[new_inlined_at->result_id()] = new_inlined_at;
+  RegisterDbgInst(new_inlined_at);
   return new_inlined_at;
 }
 
 void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
   for (auto& inst : module.ext_inst_debuginfo()) {
-    id_to_dbg_inst_[inst.result_id()] = &inst;
+    RegisterDbgInst(&inst);
     if (inst.GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugFunction) {
-      auto fn_id =
-          inst.GetSingleWordOperand(kDebugFunctionOperandFunctionIndex);
-      assert(fn_id_to_dbg_fn_.find(fn_id) == fn_id_to_dbg_fn_.end() &&
+      assert(GetDebugFunction(inst.GetSingleWordOperand(
+                 kDebugFunctionOperandFunctionIndex)) == nullptr &&
              "Two DebugFunction instruction exists for a single OpFunction.");
-      fn_id_to_dbg_fn_[fn_id] = &inst;
+      RegisterDbgFunction(&inst);
     }
   }
 
   module.ForEachInst([this](Instruction* cpi) {
     if (cpi->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
         cpi->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
-      auto var_id =
-          cpi->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
-      if (local_var_id_to_dbgdecl_.find(var_id) !=
-          local_var_id_to_dbgdecl_.end()) {
-        return;
-      }
-      local_var_id_to_dbgdecl_[var_id] = cpi;
+      RegisterDbgDeclareForVar(cpi);
     }
   });
 }
