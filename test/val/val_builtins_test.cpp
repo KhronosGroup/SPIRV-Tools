@@ -3062,6 +3062,8 @@ TEST_F(ValidateBuiltIns, GetUnderlyingTypeNoAssert) {
                       OpEntryPoint Fragment %4 "PSMa" %12 %17
                       OpExecutionMode %4 OriginUpperLeft
                       OpDecorate %gl_PointCoord BuiltIn PointCoord
+                      OpDecorate %12 Location 0
+                      OpDecorate %17 Location 0
               %void = OpTypeVoid
                  %3 = OpTypeFunction %void
              %float = OpTypeFloat 32
