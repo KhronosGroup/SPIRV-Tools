@@ -162,10 +162,34 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
   return SPV_SUCCESS;
 }
 
+uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
+  uint32_t num_components = 0;
+  switch (type->opcode()) {
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+      if (type->GetOperandAs<uint32_t>(1) == 64) {
+        num_components = 2;
+      } else {
+        num_components = 1;
+      }
+      break;
+    case SpvOpTypeVector:
+      num_components =
+          NumConsumedComponents(_, _.FindDef(type->GetOperandAs<uint32_t>(1)));
+      num_components *= type->GetOperandAs<uint32_t>(2);
+      break;
+    default:
+      // This is an error that is validated elsewhere.
+      break;
+  }
+
+  return num_components;
+}
+
 spv_result_t GetLocationsForVariable(ValidationState_t& _,
                                      const Instruction* entry_point,
                                      const Instruction* variable,
-                                     std::unordered_set<uint32_t>* locations) {
+                                     std::vector<bool>* locations) {
   auto ptr_type_id = variable->GetOperandAs<uint32_t>(0);
   auto ptr_type = _.FindDef(ptr_type_id);
   auto type_id = ptr_type->GetOperandAs<uint32_t>(2);
@@ -178,6 +202,8 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
   }
   bool has_location = false;
   uint32_t location = 0;
+  bool has_component = false;
+  uint32_t component = 0;
   bool is_block = _.HasDecoration(type_id, SpvDecorationBlock);
   for (auto& dec : _.id_decorations(variable->id())) {
     if (dec.dec_type() == SpvDecorationLocation) {
@@ -187,6 +213,13 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
       }
       has_location = true;
       location = dec.params()[0];
+    } else if (dec.dec_type() == SpvDecorationComponent) {
+      if (has_component && dec.params()[0] != component) {
+        return _.diag(SPV_ERROR_INVALID_DATA, variable)
+               << "Variable has conflicting component decorations";
+      }
+      has_component = true;
+      component = dec.params()[0];
     } else if (dec.dec_type() == SpvDecorationBuiltIn) {
       // Don't check built-ins.
       return SPV_SUCCESS;
@@ -214,22 +247,44 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
     if (auto error = NumConsumedLocations(_, type, &num_locations))
       return error;
 
-    for (uint32_t i = location; i < location + num_locations; ++i) {
-      if (!locations->insert(i).second) {
+    uint32_t num_components = NumConsumedComponents(_, type);
+    uint32_t start = location * 4;
+    uint32_t end = (location + num_locations) * 4;
+    if (num_components != 0) {
+      start += component;
+      end = location * 4 + component + num_components;
+    }
+    if (end > locations->size()) {
+      locations->resize(end, false);
+    }
+    for (uint32_t i = start; i < end; ++i) {
+      if (locations->at(i)) {
         return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                << "Entry-point has conflicting " << storage_class
-               << " location assignment at location " << i;
+               << " location assignment at location " << i / 4 << ", component " << i % 4;
       }
+      (*locations)[i] = true;
     }
   } else {
     // For Block-decorated structs with no location assigned to the variable,
-    // each member of the block must be assigned a location.
+    // each member of the block must be assigned a location. Also record any
+    // member component assignments.
     std::unordered_map<uint32_t, uint32_t> member_locations;
+    std::unordered_map<uint32_t, uint32_t> member_components;
     for (auto& dec : _.id_decorations(type_id)) {
       if (dec.dec_type() == SpvDecorationLocation) {
         auto where = member_locations.find(dec.struct_member_index());
         if (where == member_locations.end()) {
           member_locations[dec.struct_member_index()] = dec.params()[0];
+        } else if (where->second != dec.params()[0]) {
+          return _.diag(SPV_ERROR_INVALID_DATA, type)
+                 << "Member index " << dec.struct_member_index()
+                 << " has conflicting location assignments";
+        }
+      } else if (dec.dec_type() == SpvDecorationComponent) {
+        auto where = member_components.find(dec.struct_member_index());
+        if (where == member_components.end()) {
+          member_components[dec.struct_member_index()] = dec.params()[0];
         } else if (where->second != dec.params()[0]) {
           return _.diag(SPV_ERROR_INVALID_DATA, type)
                  << "Member index " << dec.struct_member_index()
@@ -251,12 +306,28 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
       if (auto error = NumConsumedLocations(_, member, &num_locations))
         return error;
 
-      for (uint32_t l = location; l < location + num_locations; ++l) {
-        if (!locations->insert(l).second) {
+      uint32_t num_components = NumConsumedComponents(_, member);
+      component = 0;
+      if (member_components.count(i - 1)) {
+        component = member_components[i - 1];
+      }
+
+      uint32_t start = location * 4;
+      uint32_t end = (location + num_locations) * 4;
+      if (num_components != 0) {
+        start += component;
+        end = location * 4 + component + num_components;
+      }
+      if (end > locations->size()) {
+        locations->resize(end, false);
+      }
+      for (uint32_t l = start; l < end; ++l) {
+        if (locations->at(l)) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                  << "Entry-point has conflicting " << storage_class
-                 << " location assignment at location " << l;
+                 << " location assignment at location " << l / 4 << ", component " << l % 4;
         }
+        (*locations)[l] = true;
       }
     }
   }
@@ -265,8 +336,8 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
 }
 
 spv_result_t ValidateLocations(ValidationState_t& _, const Instruction* entry_point) {
-  std::unordered_set<uint32_t> input_locations;
-  std::unordered_set<uint32_t> output_locations;
+  std::vector<bool> input_locations(64, false);
+  std::vector<bool> output_locations(64, false);
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
     auto interface_var = _.FindDef(interface_id);
