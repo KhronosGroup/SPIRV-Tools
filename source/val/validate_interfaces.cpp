@@ -189,7 +189,10 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
 spv_result_t GetLocationsForVariable(ValidationState_t& _,
                                      const Instruction* entry_point,
                                      const Instruction* variable,
-                                     std::vector<bool>* locations) {
+                                     std::vector<bool>* locations,
+                                     std::vector<bool>* output_index1_locations) {
+  const bool is_output =
+      variable->GetOperandAs<SpvStorageClass>(2) == SpvStorageClassOutput;
   auto ptr_type_id = variable->GetOperandAs<uint32_t>(0);
   auto ptr_type = _.FindDef(ptr_type_id);
   auto type_id = ptr_type->GetOperandAs<uint32_t>(2);
@@ -204,6 +207,8 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
   uint32_t location = 0;
   bool has_component = false;
   uint32_t component = 0;
+  bool has_index = false;
+  uint32_t index = 0;
   bool is_block = _.HasDecoration(type_id, SpvDecorationBlock);
   for (auto& dec : _.id_decorations(variable->id())) {
     if (dec.dec_type() == SpvDecorationLocation) {
@@ -220,6 +225,13 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
       }
       has_component = true;
       component = dec.params()[0];
+    } else if (dec.dec_type() == SpvDecorationIndex) {
+      if (has_index && dec.params()[0] != index) {
+        return _.diag(SPV_ERROR_INVALID_DATA, variable)
+               << "Variable has conflicting index decorations";
+      }
+      has_index = true;
+      index = dec.params()[0];
     } else if (dec.dec_type() == SpvDecorationBuiltIn) {
       // Don't check built-ins.
       return SPV_SUCCESS;
@@ -238,10 +250,7 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
            << "Variable must be decorated with a location";
   }
 
-  const std::string storage_class =
-      (variable->GetOperandAs<SpvStorageClass>(2) == SpvStorageClassInput)
-          ? "input"
-          : "output";
+  const std::string storage_class = is_output ? "output" : "input";
   if (has_location) {
     uint32_t num_locations = 0;
     if (auto error = NumConsumedLocations(_, type, &num_locations))
@@ -254,16 +263,21 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
       start += component;
       end = location * 4 + component + num_components;
     }
-    if (end > locations->size()) {
-      locations->resize(end, false);
+
+    auto locs = locations;
+    if (has_index && index == 1)
+      locs = output_index1_locations;
+
+    if (end > locs->size()) {
+      locs->resize(end, false);
     }
     for (uint32_t i = start; i < end; ++i) {
-      if (locations->at(i)) {
+      if (locs->at(i)) {
         return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                << "Entry-point has conflicting " << storage_class
                << " location assignment at location " << i / 4 << ", component " << i % 4;
       }
-      (*locations)[i] = true;
+      (*locs)[i] = true;
     }
   } else {
     // For Block-decorated structs with no location assigned to the variable,
@@ -336,8 +350,9 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
 }
 
 spv_result_t ValidateLocations(ValidationState_t& _, const Instruction* entry_point) {
-  std::vector<bool> input_locations(64, false);
-  std::vector<bool> output_locations(64, false);
+  std::vector<bool> input_locations(16 * 4 * 2, false);
+  std::vector<bool> output_locations0(16 * 4 * 2, false);
+  std::vector<bool> output_locations1(16 * 4 * 2, false);
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
     auto interface_var = _.FindDef(interface_id);
@@ -349,9 +364,9 @@ spv_result_t ValidateLocations(ValidationState_t& _, const Instruction* entry_po
 
     auto locations = (storage_class == SpvStorageClassInput)
                          ? &input_locations
-                         : &output_locations;
-    if (auto error =
-            GetLocationsForVariable(_, entry_point, interface_var, locations))
+                         : &output_locations0;
+    if (auto error = GetLocationsForVariable(_, entry_point, interface_var,
+                                             locations, &output_locations1))
       return error;
   }
 
