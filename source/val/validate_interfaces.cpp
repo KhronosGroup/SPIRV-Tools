@@ -191,6 +191,7 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
                                      const Instruction* variable,
                                      std::vector<bool>* locations,
                                      std::vector<bool>* output_index1_locations) {
+  const bool is_fragment = entry_point->GetOperandAs<SpvExecutionModel>(0);
   const bool is_output =
       variable->GetOperandAs<SpvStorageClass>(2) == SpvStorageClassOutput;
   auto ptr_type_id = variable->GetOperandAs<uint32_t>(0);
@@ -226,6 +227,10 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
       has_component = true;
       component = dec.params()[0];
     } else if (dec.dec_type() == SpvDecorationIndex) {
+      if (!is_output || !is_fragment) {
+        return _.diag(SPV_ERROR_INVALID_DATA, variable)
+          << "Index can only be applied to Fragment output variables";
+      }
       if (has_index && dec.params()[0] != index) {
         return _.diag(SPV_ERROR_INVALID_DATA, variable)
                << "Variable has conflicting index decorations";
