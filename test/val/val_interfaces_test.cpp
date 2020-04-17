@@ -1013,6 +1013,260 @@ OpFunctionEnd
                         "at location 15"));
 }
 
+TEST_F(ValidateInterfacesTest, VulkanLocationsComponentDisambiguates) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var1
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 0 Component 0
+OpMemberDecorate %struct 1 Location 0
+OpMemberDecorate %struct 1 Component 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float %float
+%ptr_input_struct = OpTypePointer Input %struct
+%var1 = OpVariable %ptr_input_struct Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsComponentIn64BitVec3) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float64
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 1 Location 1
+OpMemberDecorate %struct 1 Component 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%double = OpTypeFloat 64
+%double3 = OpTypeVector %double 3
+%struct = OpTypeStruct %double3 %float
+%ptr_input_struct = OpTypePointer Input %struct
+%var = OpVariable %ptr_input_struct Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Entry-point has conflicting input location assignment "
+                        "at location 1, component 1"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsComponentAfter64BitVec3) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float64
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 1 Location 1
+OpMemberDecorate %struct 1 Component 2
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%double = OpTypeFloat 64
+%double3 = OpTypeVector %double 3
+%struct = OpTypeStruct %double3 %float
+%ptr_input_struct = OpTypePointer Input %struct
+%var = OpVariable %ptr_input_struct Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsConflictingComponentVariable) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var Location 0
+OpDecorate %var Component 0
+OpDecorate %var Component 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%ptr_input_float = OpTypePointer Input %float
+%var = OpVariable %ptr_input_float Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable has conflicting component decorations"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsConflictingComponentStructMember) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 0 Component 0
+OpMemberDecorate %struct 0 Component 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float
+%ptr_input_struct = OpTypePointer Input %struct
+%var = OpVariable %ptr_input_struct Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Member index 0 has conflicting component assignments"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsVariableConflictOutputIndex1) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var1 %var2
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var1 Location 1
+OpDecorate %var1 Index 1
+OpDecorate %var2 Location 1
+OpDecorate %var2 Index 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float %float
+%ptr_output_struct = OpTypePointer Output %struct
+%var1 = OpVariable %ptr_output_struct Output
+%var2 = OpVariable %ptr_output_struct Output
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Entry-point has conflicting output location assignment "
+                        "at location 1"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsVariableNoConflictDifferentIndex) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var1 %var2
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var1 Location 1
+OpDecorate %var1 Index 0
+OpDecorate %var2 Location 1
+OpDecorate %var2 Index 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float %float
+%ptr_output_struct = OpTypePointer Output %struct
+%var1 = OpVariable %ptr_output_struct Output
+%var2 = OpVariable %ptr_output_struct Output
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsIndexGLCompute) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var1
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %var1 Location 1
+OpDecorate %var1 Index 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float %float
+%ptr_output_struct = OpTypePointer Output %struct
+%var1 = OpVariable %ptr_output_struct Output
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index can only be applied to Fragment output variables"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsIndexInput) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var1
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var1 Location 1
+OpDecorate %var1 Index 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float %float
+%ptr_input_struct = OpTypePointer Input %struct
+%var1 = OpVariable %ptr_input_struct Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index can only be applied to Fragment output variables"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

@@ -103,7 +103,7 @@ spv_result_t check_interface_variable(ValidationState_t& _,
 }
 
 // This function assumes a base location has been determined already. As such
-// any location decoration is invalid.
+// any further location decorations are invalid.
 // TODO: if this code turns out to be slow, there is an opportunity to cache
 // the for a given type id.
 spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
@@ -112,9 +112,11 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
   switch (type->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
+      // Scalars always consume a single location.
       *num_locations = 1;
       break;
     case SpvOpTypeVector:
+      // 3- and 4-component 64-bit vectors consume two locations.
       if ((_.ContainsSizedIntOrFloatType(type->id(), SpvOpTypeInt, 64) ||
            _.ContainsSizedIntOrFloatType(type->id(), SpvOpTypeFloat, 64)) &&
           (type->GetOperandAs<uint32_t>(2) > 2)) {
@@ -124,26 +126,35 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
       }
       break;
     case SpvOpTypeMatrix:
+      // Matrices consume locations equal to the underlying vector type for
+      // each column.
       NumConsumedLocations(_, _.FindDef(type->GetOperandAs<uint32_t>(1)),
                            num_locations);
       *num_locations *= type->GetOperandAs<uint32_t>(2);
       break;
     case SpvOpTypeArray: {
+      // Arrays consume locations equal to the underlying type times the number
+      // of elements in the vector.
       NumConsumedLocations(_, _.FindDef(type->GetOperandAs<uint32_t>(1)),
                            num_locations);
       bool is_int = false;
       bool is_const = false;
       uint32_t value = 0;
+      // Attempt to evaluate the number of array elements.
       std::tie(is_int, is_const, value) =
           _.EvalInt32IfConst(type->GetOperandAs<uint32_t>(2));
       if (is_int && is_const) *num_locations *= value;
       break;
     }
     case SpvOpTypeStruct: {
+      // Members cannot have location decorations at this point.
       if (_.HasDecoration(type->id(), SpvDecorationLocation)) {
         return _.diag(SPV_ERROR_INVALID_DATA, type)
                << "Members cannot be assigned a location";
       }
+
+      // Structs consume locations equal to the sum of the locations consumed
+      // by the members.
       for (uint32_t i = 1; i < type->operands().size(); ++i) {
         uint32_t member_locations = 0;
         if (auto error = NumConsumedLocations(
@@ -162,11 +173,14 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
   return SPV_SUCCESS;
 }
 
+// Returns the number of components consumed by types that support a component
+// decoration.
 uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
   uint32_t num_components = 0;
   switch (type->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
+      // 64-bit types consume two components.
       if (type->GetOperandAs<uint32_t>(1) == 64) {
         num_components = 2;
       } else {
@@ -174,6 +188,9 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
       }
       break;
     case SpvOpTypeVector:
+      // Vectors consume components equal to the underlying type's consumption
+      // times the number of elements in the vector. Note that 3- and 4-element
+      // vectors cannot have a component decoration (i.e. assumed to be zero).
       num_components =
           NumConsumedComponents(_, _.FindDef(type->GetOperandAs<uint32_t>(1)));
       num_components *= type->GetOperandAs<uint32_t>(2);
@@ -186,12 +203,15 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
   return num_components;
 }
 
-spv_result_t GetLocationsForVariable(ValidationState_t& _,
-                                     const Instruction* entry_point,
-                                     const Instruction* variable,
-                                     std::vector<bool>* locations,
-                                     std::vector<bool>* output_index1_locations) {
-  const bool is_fragment = entry_point->GetOperandAs<SpvExecutionModel>(0);
+// Populates |locations| (and/or |output_index1_locations|) with the use
+// location and component coordinates for |variable|. Indices are calculated as
+// 4 * location + component.
+spv_result_t GetLocationsForVariable(
+    ValidationState_t& _, const Instruction* entry_point,
+    const Instruction* variable, std::vector<bool>* locations,
+    std::vector<bool>* output_index1_locations) {
+  const bool is_fragment = entry_point->GetOperandAs<SpvExecutionModel>(0) ==
+                           SpvExecutionModelFragment;
   const bool is_output =
       variable->GetOperandAs<SpvStorageClass>(2) == SpvStorageClassOutput;
   auto ptr_type_id = variable->GetOperandAs<uint32_t>(0);
@@ -204,6 +224,10 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
     type_id = type->GetOperandAs<uint32_t>(1);
     type = _.FindDef(type_id);
   }
+
+  // Check for Location, Component and Index decorations on the variable. The
+  // validator allows duplicate decorations if the location/component/index are
+  // equal.
   bool has_location = false;
   uint32_t location = 0;
   bool has_component = false;
@@ -229,7 +253,7 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
     } else if (dec.dec_type() == SpvDecorationIndex) {
       if (!is_output || !is_fragment) {
         return _.diag(SPV_ERROR_INVALID_DATA, variable)
-          << "Index can only be applied to Fragment output variables";
+               << "Index can only be applied to Fragment output variables";
       }
       if (has_index && dec.params()[0] != index) {
         return _.diag(SPV_ERROR_INVALID_DATA, variable)
@@ -245,8 +269,7 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
 
   if (type->opcode() == SpvOpTypeStruct) {
     // Don't check built-ins.
-    if (_.HasDecoration(type_id, SpvDecorationBuiltIn))
-      return SPV_SUCCESS;
+    if (_.HasDecoration(type_id, SpvDecorationBuiltIn)) return SPV_SUCCESS;
   }
 
   // Only block-decorated structs don't need a location on the variable.
@@ -270,8 +293,7 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
     }
 
     auto locs = locations;
-    if (has_index && index == 1)
-      locs = output_index1_locations;
+    if (has_index && index == 1) locs = output_index1_locations;
 
     if (end > locs->size()) {
       locs->resize(end, false);
@@ -280,14 +302,16 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
       if (locs->at(i)) {
         return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                << "Entry-point has conflicting " << storage_class
-               << " location assignment at location " << i / 4 << ", component " << i % 4;
+               << " location assignment at location " << i / 4 << ", component "
+               << i % 4;
       }
       (*locs)[i] = true;
     }
   } else {
     // For Block-decorated structs with no location assigned to the variable,
     // each member of the block must be assigned a location. Also record any
-    // member component assignments.
+    // member component assignments. The validator allows duplicate decorations
+    // if they agree on the location/component.
     std::unordered_map<uint32_t, uint32_t> member_locations;
     std::unordered_map<uint32_t, uint32_t> member_components;
     for (auto& dec : _.id_decorations(type_id)) {
@@ -307,7 +331,7 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
         } else if (where->second != dec.params()[0]) {
           return _.diag(SPV_ERROR_INVALID_DATA, type)
                  << "Member index " << dec.struct_member_index()
-                 << " has conflicting location assignments";
+                 << " has conflicting component assignments";
         }
       }
     }
@@ -319,12 +343,14 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
                << "Member index " << i - 1
                << " is missing a location assignment";
       }
+
       location = where->second;
       auto member = _.FindDef(type->GetOperandAs<uint32_t>(i));
       uint32_t num_locations = 0;
       if (auto error = NumConsumedLocations(_, member, &num_locations))
         return error;
 
+      // If the component is not specified, it is assumed to be zero.
       uint32_t num_components = NumConsumedComponents(_, member);
       component = 0;
       if (member_components.count(i - 1)) {
@@ -344,7 +370,8 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
         if (locations->at(l)) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                  << "Entry-point has conflicting " << storage_class
-                 << " location assignment at location " << l / 4 << ", component " << l % 4;
+                 << " location assignment at location " << l / 4
+                 << ", component " << l % 4;
         }
         (*locations)[l] = true;
       }
@@ -354,10 +381,12 @@ spv_result_t GetLocationsForVariable(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateLocations(ValidationState_t& _, const Instruction* entry_point) {
-  std::vector<bool> input_locations(16 * 4 * 2, false);
-  std::vector<bool> output_locations0(16 * 4 * 2, false);
-  std::vector<bool> output_locations1(16 * 4 * 2, false);
+spv_result_t ValidateLocations(ValidationState_t& _,
+                               const Instruction* entry_point) {
+  // Reserve space for 16 locations with 4 components each.
+  std::vector<bool> input_locations(16 * 4, false);
+  std::vector<bool> output_locations_index0(16 * 4, false);
+  std::vector<bool> output_locations_index1(16 * 4, false);
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
     auto interface_var = _.FindDef(interface_id);
@@ -369,9 +398,9 @@ spv_result_t ValidateLocations(ValidationState_t& _, const Instruction* entry_po
 
     auto locations = (storage_class == SpvStorageClassInput)
                          ? &input_locations
-                         : &output_locations0;
-    if (auto error = GetLocationsForVariable(_, entry_point, interface_var,
-                                             locations, &output_locations1))
+                         : &output_locations_index0;
+    if (auto error = GetLocationsForVariable(
+            _, entry_point, interface_var, locations, &output_locations_index1))
       return error;
   }
 
@@ -393,7 +422,9 @@ spv_result_t ValidateInterfaces(ValidationState_t& _) {
   if (spvIsVulkanEnv(_.context()->target_env)) {
     for (auto& inst : _.ordered_instructions()) {
       if (inst.opcode() == SpvOpEntryPoint) {
-        if (auto error = ValidateLocations(_, &inst)) return error;
+        if (auto error = ValidateLocations(_, &inst)) {
+          return error;
+        }
       }
     }
   }
