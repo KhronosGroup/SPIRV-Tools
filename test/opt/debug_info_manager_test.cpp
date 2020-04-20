@@ -27,7 +27,6 @@
 
 // Constants for OpenCL.DebugInfo.100 extension instructions.
 
-static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
 static const uint32_t kDebugInlinedAtOperandLineIndex = 4;
 static const uint32_t kDebugInlinedAtOperandScopeIndex = 5;
