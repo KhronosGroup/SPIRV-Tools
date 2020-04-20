@@ -182,23 +182,17 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2}),
-      context.get()));
+      MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(202, {}), MakeDataDescriptor(104, {0, 2}),
-      context.get()));
+      MakeDataDescriptor(202, {}), MakeDataDescriptor(104, {0, 2})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(203, {}), MakeDataDescriptor(104, {0}),
-      context.get()));
+      MakeDataDescriptor(203, {}), MakeDataDescriptor(104, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(204, {}), MakeDataDescriptor(101, {0}),
-      context.get()));
+      MakeDataDescriptor(204, {}), MakeDataDescriptor(101, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(205, {}), MakeDataDescriptor(102, {2}),
-      context.get()));
+      MakeDataDescriptor(205, {}), MakeDataDescriptor(102, {2})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(206, {}), MakeDataDescriptor(103, {1}),
-      context.get()));
+      MakeDataDescriptor(206, {}), MakeDataDescriptor(103, {1})));
 
   std::string after_transformation = R"(
                OpCapability Shader

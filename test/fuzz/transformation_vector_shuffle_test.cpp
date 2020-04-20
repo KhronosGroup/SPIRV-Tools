@@ -250,10 +250,10 @@ TEST(TransformationVectorShuffle, BasicTest) {
   transformation1.Apply(context.get(), &transformation_context);
   temp_dd = MakeDataDescriptor(200, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(11, {}), temp_dd, context.get()));
+      MakeDataDescriptor(11, {}), temp_dd));
   temp_dd = MakeDataDescriptor(200, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(10, {}), temp_dd, context.get()));
+      MakeDataDescriptor(10, {}), temp_dd));
 
   TransformationVectorShuffle transformation2(
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 201, 20, 12,
@@ -263,10 +263,10 @@ TEST(TransformationVectorShuffle, BasicTest) {
   transformation2.Apply(context.get(), &transformation_context);
   temp_dd = MakeDataDescriptor(201, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(11, {}), temp_dd, context.get()));
+      MakeDataDescriptor(11, {}), temp_dd));
   temp_dd = MakeDataDescriptor(201, {2});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(11, {}), temp_dd, context.get()));
+      MakeDataDescriptor(11, {}), temp_dd));
 
   TransformationVectorShuffle transformation3(
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 202, 27, 35, {5, 4, 1});
@@ -275,13 +275,13 @@ TEST(TransformationVectorShuffle, BasicTest) {
   transformation3.Apply(context.get(), &transformation_context);
   temp_dd = MakeDataDescriptor(202, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(26, {}), temp_dd, context.get()));
+      MakeDataDescriptor(26, {}), temp_dd));
   temp_dd = MakeDataDescriptor(202, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(25, {}), temp_dd, context.get()));
+      MakeDataDescriptor(25, {}), temp_dd));
   temp_dd = MakeDataDescriptor(202, {2});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(26, {}), temp_dd, context.get()));
+      MakeDataDescriptor(26, {}), temp_dd));
 
   TransformationVectorShuffle transformation4(
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 203, 42, 46, {0, 1});
@@ -290,10 +290,10 @@ TEST(TransformationVectorShuffle, BasicTest) {
   transformation4.Apply(context.get(), &transformation_context);
   temp_dd = MakeDataDescriptor(203, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(40, {}), temp_dd, context.get()));
+      MakeDataDescriptor(40, {}), temp_dd));
   temp_dd = MakeDataDescriptor(203, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(41, {}), temp_dd, context.get()));
+      MakeDataDescriptor(41, {}), temp_dd));
 
   TransformationVectorShuffle transformation5(
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 204, 42, 46, {2, 3, 4});
@@ -302,13 +302,13 @@ TEST(TransformationVectorShuffle, BasicTest) {
   transformation5.Apply(context.get(), &transformation_context);
   temp_dd = MakeDataDescriptor(204, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(40, {}), temp_dd, context.get()));
+      MakeDataDescriptor(40, {}), temp_dd));
   temp_dd = MakeDataDescriptor(204, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(41, {}), temp_dd, context.get()));
+      MakeDataDescriptor(41, {}), temp_dd));
   temp_dd = MakeDataDescriptor(204, {2});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(40, {}), temp_dd, context.get()));
+      MakeDataDescriptor(40, {}), temp_dd));
 
   TransformationVectorShuffle transformation6(
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 205, 42, 42,
@@ -318,16 +318,16 @@ TEST(TransformationVectorShuffle, BasicTest) {
   transformation6.Apply(context.get(), &transformation_context);
   temp_dd = MakeDataDescriptor(205, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(40, {}), temp_dd, context.get()));
+      MakeDataDescriptor(40, {}), temp_dd));
   temp_dd = MakeDataDescriptor(205, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(41, {}), temp_dd, context.get()));
+      MakeDataDescriptor(41, {}), temp_dd));
   temp_dd = MakeDataDescriptor(205, {2});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(40, {}), temp_dd, context.get()));
+      MakeDataDescriptor(40, {}), temp_dd));
   temp_dd = MakeDataDescriptor(205, {3});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(41, {}), temp_dd, context.get()));
+      MakeDataDescriptor(41, {}), temp_dd));
 
   // swizzle vec4 from vec4 and vec4 using some undefs
   TransformationVectorShuffle transformation7(
@@ -338,7 +338,7 @@ TEST(TransformationVectorShuffle, BasicTest) {
   transformation7.Apply(context.get(), &transformation_context);
   temp_dd = MakeDataDescriptor(206, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(56, {}), temp_dd, context.get()));
+      MakeDataDescriptor(56, {}), temp_dd));
 
   std::string after_transformation = R"(
                OpCapability Shader

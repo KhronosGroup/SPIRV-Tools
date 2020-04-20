@@ -112,7 +112,7 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {})));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -203,7 +203,7 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {}), context.get()));
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(7, {})));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -300,7 +300,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
   transformation2.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(15, {}), MakeDataDescriptor(19, {}), context.get()));
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(19, {})));
 
   auto transformation3 = TransformationEquationInstruction(
       20, SpvOpISub, {14, 15}, return_instruction);
@@ -309,7 +309,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
   transformation3.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context.get()));
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {})));
 
   auto transformation4 = TransformationEquationInstruction(
       22, SpvOpISub, {16, 14}, return_instruction);
@@ -325,7 +325,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
   transformation5.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(24, {}), MakeDataDescriptor(15, {}), context.get()));
+      MakeDataDescriptor(24, {}), MakeDataDescriptor(15, {})));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -403,7 +403,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   transformation2.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(17, {}), MakeDataDescriptor(15, {}), context.get()));
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(15, {})));
 
   auto transformation3 = TransformationEquationInstruction(
       18, SpvOpIAdd, {16, 14}, return_instruction);
@@ -412,9 +412,9 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   transformation3.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(17, {}), MakeDataDescriptor(18, {}), context.get()));
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(18, {})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(18, {}), MakeDataDescriptor(15, {}), context.get()));
+      MakeDataDescriptor(18, {}), MakeDataDescriptor(15, {})));
 
   auto transformation4 = TransformationEquationInstruction(
       19, SpvOpISub, {14, 15}, return_instruction);
@@ -430,7 +430,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   transformation5.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {}), context.get()));
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(16, {})));
 
   auto transformation6 = TransformationEquationInstruction(
       21, SpvOpISub, {14, 19}, return_instruction);
@@ -439,7 +439,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   transformation6.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(21, {}), MakeDataDescriptor(15, {}), context.get()));
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(15, {})));
 
   auto transformation7 = TransformationEquationInstruction(
       22, SpvOpISub, {14, 18}, return_instruction);
@@ -455,7 +455,7 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   transformation8.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(23, {}), MakeDataDescriptor(16, {}), context.get()));
+      MakeDataDescriptor(23, {}), MakeDataDescriptor(16, {})));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -551,7 +551,7 @@ TEST(TransformationEquationInstructionTest, Miscellaneous1) {
   )";
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(570, {}), MakeDataDescriptor(113, {}), context.get()));
+      MakeDataDescriptor(570, {}), MakeDataDescriptor(113, {})));
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
@@ -621,7 +621,7 @@ TEST(TransformationEquationInstructionTest, Miscellaneous2) {
   )";
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(570, {}), MakeDataDescriptor(113, {}), context.get()));
+      MakeDataDescriptor(570, {}), MakeDataDescriptor(113, {})));
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
