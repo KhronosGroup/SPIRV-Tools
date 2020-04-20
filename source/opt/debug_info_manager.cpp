@@ -51,6 +51,9 @@ void DebugInfoManager::RegisterDbgFunction(Instruction* inst) {
   assert(inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugFunction &&
          "inst is not a DebugFunction");
   auto fn_id = inst->GetSingleWordOperand(kDebugFunctionOperandFunctionIndex);
+  assert(
+      fn_id_to_dbg_fn_.find(fn_id) == fn_id_to_dbg_fn_.end() &&
+      "Register DebugFunction for a function that already has DebugFunction");
   fn_id_to_dbg_fn_[fn_id] = inst;
 }
 

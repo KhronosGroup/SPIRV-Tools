@@ -93,7 +93,9 @@ class DebugInfoManager {
   void RegisterDbgInst(Instruction* inst);
 
   // Registers the DebugFunction |inst| into |fn_id_to_dbg_fn_| using the
-  // function operand of |inst| as a key.
+  // function operand of |inst| as a key. If the function operand of |inst| is
+  // already registered with a different DebugFunction, this function will
+  // result in an assertion failure.
   void RegisterDbgFunction(Instruction* inst);
 
   IRContext* context_;
