@@ -31,8 +31,6 @@ namespace opt {
 namespace analysis {
 
 DebugInfoManager::DebugInfoManager(IRContext* c) : context_(c) {
-  assert(c->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo() &&
-         "Module does not include debug info extension instruction.");
   AnalyzeDebugInsts(*c->module());
 }
 
@@ -163,19 +161,6 @@ Instruction* DebugInfoManager::GetDebugInfoNone() {
   return debug_info_none_inst_;
 }
 
-Instruction* DebugInfoManager::CloneDebugDeclare(uint32_t orig_var_id,
-                                                 uint32_t new_var_id) {
-  Instruction* dbgdecl = GetDbgDeclareForVar(orig_var_id);
-  if (dbgdecl == nullptr) return nullptr;
-
-  auto* clone = dbgdecl->Clone(context());
-  clone->SetResultId(context()->TakeNextId());
-  clone->GetOperand(kDebugDeclareOperandVariableIndex).words[0] = new_var_id;
-
-  RegisterDbgDeclareForVar(clone);
-  return clone;
-}
-
 Instruction* DebugInfoManager::GetDebugInlinedAt(uint32_t dbg_inlined_at_id) {
   auto* inlined_at = GetDbgInst(dbg_inlined_at_id);
   if (inlined_at == nullptr) return nullptr;
@@ -199,28 +184,33 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
       std::move(new_inlined_at));
 }
 
-void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
-  debug_info_none_inst_ = nullptr;
-  for (auto& inst : module.ext_inst_debuginfo()) {
-    RegisterDbgInst(&inst);
-    if (inst.GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugFunction) {
-      assert(GetDebugFunction(inst.GetSingleWordOperand(
-                 kDebugFunctionOperandFunctionIndex)) == nullptr &&
-             "Two DebugFunction instruction exists for a single OpFunction.");
-      RegisterDbgFunction(&inst);
-    }
-    if (debug_info_none_inst_ == nullptr &&
-        inst.GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugInfoNone) {
-      debug_info_none_inst_ = &inst;
-    }
+void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
+  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100InstructionsMax)
+    return;
+
+  RegisterDbgInst(dbg_inst);
+
+  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugFunction) {
+    assert(GetDebugFunction(dbg_inst->GetSingleWordOperand(
+               kDebugFunctionOperandFunctionIndex)) == nullptr &&
+           "Two DebugFunction instruction exists for a single OpFunction.");
+    RegisterDbgFunction(dbg_inst);
   }
 
-  module.ForEachInst([this](Instruction* cpi) {
-    if (cpi->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
-        cpi->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
-      RegisterDbgDeclareForVar(cpi);
-    }
-  });
+  if (debug_info_none_inst_ == nullptr &&
+      dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugInfoNone) {
+    debug_info_none_inst_ = dbg_inst;
+  }
+
+  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+      dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+    RegisterDbgDeclareForVar(dbg_inst);
+  }
+}
+
+void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
+  debug_info_none_inst_ = nullptr;
+  module.ForEachInst([this](Instruction* cpi) { AnalyzeDebugInst(cpi); });
 }
 
 }  // namespace analysis

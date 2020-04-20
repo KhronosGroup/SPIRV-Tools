@@ -28,11 +28,8 @@ namespace analysis {
 // instructions.
 class DebugInfoManager {
  public:
+  // Constructs a debug information manager from the given |context|.
   DebugInfoManager(IRContext* context);
-  // Constructs a def-use manager from the given |module|. All internal messages
-  // will be communicated to the outside via the given message |consumer|. This
-  // instance only keeps a reference to the |consumer|, so the |consumer| should
-  // outlive this instance.
 
   DebugInfoManager(const DebugInfoManager&) = delete;
   DebugInfoManager(DebugInfoManager&&) = delete;
@@ -45,11 +42,8 @@ class DebugInfoManager {
     return !(lhs == rhs);
   }
 
-  // Clones DebugDeclare or DebugValue for a local variable whose result id is
-  // |orig_var_id|. Set Variable operand of the new DebugDeclare as
-  // |new_var_id|. Return the new DebugDeclare or DebugValue. If this is the
-  // first DebugDeclare or DebugValue, keep it in |local_var_id_to_dbgdecl_|.
-  Instruction* CloneDebugDeclare(uint32_t orig_var_id, uint32_t new_var_id);
+  // Analyzes OpenCL.DebugInfo.100 instruction |dbg_inst|.
+  void AnalyzeDebugInst(Instruction* dbg_inst);
 
   // Returns id of new DebugInlinedAt. Its Line operand is the line number
   // of |line| if |line| is not nullptr. Otherwise, its Line operand
