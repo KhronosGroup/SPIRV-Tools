@@ -76,11 +76,13 @@ class DebugInfoManager {
     return dbg_fn_it == fn_id_to_dbg_fn_.end() ? nullptr : dbg_fn_it->second;
   }
 
-  // Clones DebugInlinedAt whose id is |dbg_inlined_at_id|. If
-  // |dbg_inlined_at_id| is not an id of DebugInlinedAt, returns nullptr.
-  // Note that this function does not insert the new DebugInlinedAt into
-  // debug instruction list of the module.
-  Instruction* CloneDebugInlinedAt(uint32_t dbg_inlined_at_id);
+  // Clones DebugInlinedAt whose id is |clone_inlined_at_id|. If
+  // |clone_inlined_at_id| is not an id of DebugInlinedAt, returns nullptr.
+  // If |insert_before| is given, inserts the new DebugInlinedAt before it.
+  // Otherwise, inserts the new DebugInlinedAt at the end of debug
+  // instructions of the module.
+  Instruction* CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
+                                   Instruction* insert_before = nullptr);
 
  private:
   IRContext* context() { return context_; }

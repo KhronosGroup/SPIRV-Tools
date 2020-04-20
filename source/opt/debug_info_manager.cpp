@@ -186,13 +186,17 @@ Instruction* DebugInfoManager::GetDebugInlinedAt(uint32_t dbg_inlined_at_id) {
   return inlined_at;
 }
 
-Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t dbg_inlined_at_id) {
-  auto* inlined_at = GetDebugInlinedAt(dbg_inlined_at_id);
+Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
+                                                   Instruction* insert_before) {
+  auto* inlined_at = GetDebugInlinedAt(clone_inlined_at_id);
   if (inlined_at == nullptr) return nullptr;
-  auto* new_inlined_at = inlined_at->Clone(context());
+  std::unique_ptr<Instruction> new_inlined_at(inlined_at->Clone(context()));
   new_inlined_at->SetResultId(context()->TakeNextId());
-  RegisterDbgInst(new_inlined_at);
-  return new_inlined_at;
+  RegisterDbgInst(new_inlined_at.get());
+  if (insert_before != nullptr)
+    return insert_before->InsertBefore(std::move(new_inlined_at));
+  return context()->module()->ext_inst_debuginfo_end()->InsertBefore(
+      std::move(new_inlined_at));
 }
 
 void DebugInfoManager::AnalyzeDebugInsts(Module& module) {

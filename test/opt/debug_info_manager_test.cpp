@@ -422,14 +422,26 @@ void main(float in_var_color : COLOR) {
   EXPECT_EQ(inst->GetSingleWordOperand(kDebugInlinedAtOperandScopeIndex), 22);
   EXPECT_EQ(inst->NumOperands(), kDebugInlinedAtOperandScopeIndex + 1);
 
-  bool exist = false;
+  Instruction* before_100 = nullptr;
   for (auto it = context->module()->ext_inst_debuginfo_begin();
        it != context->module()->ext_inst_debuginfo_end(); ++it) {
-    if (it->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100DebugInlinedAt)
-      continue;
-    if (&*it == inst) exist = true;
+    if (it->result_id() == 100) break;
+    before_100 = &*it;
   }
-  EXPECT_FALSE(exist);
+  EXPECT_NE(inst, before_100);
+
+  inst = manager.CloneDebugInlinedAt(100, manager.GetDebugInlinedAt(100));
+  EXPECT_EQ(inst->GetSingleWordOperand(kDebugInlinedAtOperandLineIndex), 7);
+  EXPECT_EQ(inst->GetSingleWordOperand(kDebugInlinedAtOperandScopeIndex), 22);
+  EXPECT_EQ(inst->NumOperands(), kDebugInlinedAtOperandScopeIndex + 1);
+
+  before_100 = nullptr;
+  for (auto it = context->module()->ext_inst_debuginfo_begin();
+       it != context->module()->ext_inst_debuginfo_end(); ++it) {
+    if (it->result_id() == 100) break;
+    before_100 = &*it;
+  }
+  EXPECT_EQ(inst, before_100);
 }
 
 }  // namespace
