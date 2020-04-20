@@ -607,9 +607,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Entry-point has conflicting output location assignment "
-                        "at location 1"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Entry-point has conflicting output location assignment "
+                "at location 1"));
 }
 
 TEST_F(ValidateInterfacesTest,
@@ -1127,7 +1128,8 @@ OpFunctionEnd
               HasSubstr("Variable has conflicting component decorations"));
 }
 
-TEST_F(ValidateInterfacesTest, VulkanLocationsConflictingComponentStructMember) {
+TEST_F(ValidateInterfacesTest,
+       VulkanLocationsConflictingComponentStructMember) {
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -1181,12 +1183,14 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Entry-point has conflicting output location assignment "
-                        "at location 1"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Entry-point has conflicting output location assignment "
+                "at location 1"));
 }
 
-TEST_F(ValidateInterfacesTest, VulkanLocationsVariableNoConflictDifferentIndex) {
+TEST_F(ValidateInterfacesTest,
+       VulkanLocationsVariableNoConflictDifferentIndex) {
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
