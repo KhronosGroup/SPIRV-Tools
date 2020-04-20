@@ -31,6 +31,8 @@ namespace opt {
 namespace analysis {
 
 DebugInfoManager::DebugInfoManager(IRContext* c) : context_(c) {
+  assert(c->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo() &&
+         "Module does not include debug info extension instruction.");
   AnalyzeDebugInsts(*c->module());
 }
 
@@ -136,7 +138,9 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
   return result_id;
 }
 
-Instruction* DebugInfoManager::CreateDebugInfoNone() {
+Instruction* DebugInfoManager::GetDebugInfoNone() {
+  if (debug_info_none_inst_ != nullptr) return debug_info_none_inst_;
+
   uint32_t result_id = context()->TakeNextId();
   std::unique_ptr<Instruction> dbg_info_none_inst(new Instruction(
       context(), SpvOpExtInst, context()->get_type_mgr()->GetVoidTypeId(),
@@ -150,11 +154,13 @@ Instruction* DebugInfoManager::CreateDebugInfoNone() {
            {static_cast<uint32_t>(OpenCLDebugInfo100DebugInfoNone)}},
       }));
 
-  RegisterDbgInst(dbg_info_none_inst.get());
-
   // Add to the front of |ext_inst_debuginfo_|.
-  return context()->module()->ext_inst_debuginfo_begin()->InsertBefore(
-      std::move(dbg_info_none_inst));
+  debug_info_none_inst_ =
+      context()->module()->ext_inst_debuginfo_begin()->InsertBefore(
+          std::move(dbg_info_none_inst));
+
+  RegisterDbgInst(debug_info_none_inst_);
+  return debug_info_none_inst_;
 }
 
 Instruction* DebugInfoManager::CloneDebugDeclare(uint32_t orig_var_id,
@@ -190,6 +196,7 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t dbg_inlined_at_id) {
 }
 
 void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
+  debug_info_none_inst_ = nullptr;
   for (auto& inst : module.ext_inst_debuginfo()) {
     RegisterDbgInst(&inst);
     if (inst.GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugFunction) {
@@ -197,6 +204,10 @@ void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
                  kDebugFunctionOperandFunctionIndex)) == nullptr &&
              "Two DebugFunction instruction exists for a single OpFunction.");
       RegisterDbgFunction(&inst);
+    }
+    if (debug_info_none_inst_ == nullptr &&
+        inst.GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugInfoNone) {
+      debug_info_none_inst_ = &inst;
     }
   }
 

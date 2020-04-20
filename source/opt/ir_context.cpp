@@ -380,14 +380,6 @@ void IRContext::KillNamesAndDecorates(Instruction* inst) {
   KillNamesAndDecorates(rId);
 }
 
-Instruction* IRContext::GetOpenCL100DebugInfoNone() {
-  if (debug_info_none_inst_) return debug_info_none_inst_;
-  assert(get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo() &&
-         "Module does not include debug info extension instruction.");
-  debug_info_none_inst_ = get_debug_info_mgr()->CreateDebugInfoNone();
-  return debug_info_none_inst_;
-}
-
 void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
   const auto opcode = inst->opcode();
   const uint32_t id = inst->result_id();
@@ -399,7 +391,8 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
         continue;
       auto& operand = it->GetOperand(kDebugFunctionOperandFunctionIndex);
       if (operand.words[0] == id) {
-        operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
+        operand.words[0] =
+            get_debug_info_mgr()->GetDebugInfoNone()->result_id();
       }
     }
   }
@@ -412,7 +405,8 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
         continue;
       auto& operand = it->GetOperand(kDebugGlobalVariableOperandVariableIndex);
       if (operand.words[0] == id) {
-        operand.words[0] = GetOpenCL100DebugInfoNone()->result_id();
+        operand.words[0] =
+            get_debug_info_mgr()->GetDebugInfoNone()->result_id();
       }
     }
   }

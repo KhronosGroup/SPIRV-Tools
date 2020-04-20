@@ -59,10 +59,11 @@ class DebugInfoManager {
   uint32_t CreateDebugInlinedAt(const Instruction* line,
                                 const DebugScope& scope);
 
-  // Creates a new DebugInfoNone instruction and returns it. In addition,
+  // If |debug_info_none_inst_| is not a nullptr, returns it. Otherwise,
+  // creates a new DebugInfoNone instruction and returns it. In addition,
   // insert the new DebugInfoNone instruction before the head of debug
   // instructions.
-  Instruction* CreateDebugInfoNone();
+  Instruction* GetDebugInfoNone();
 
   // Returns DebugInlinedAt whose id is |dbg_inlined_at_id|. If it does not
   // exist or it is not a DebugInlinedAt instruction, return nullptr.
@@ -123,6 +124,10 @@ class DebugInfoManager {
   // Mapping from function's ids to DebugFunction instructions whose
   // operand is the function.
   std::unordered_map<uint32_t, Instruction*> fn_id_to_dbg_fn_;
+
+  // DebugInfoNone instruction. We need only a single DebugInfoNone.
+  // To reuse the existing one, we keep it using this member variable.
+  Instruction* debug_info_none_inst_;
 };
 
 }  // namespace analysis

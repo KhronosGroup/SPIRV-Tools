@@ -302,7 +302,7 @@ void main(float in_var_color : COLOR) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   DebugInfoManager manager(context.get());
 
-  Instruction* debug_info_none_inst = manager.CreateDebugInfoNone();
+  Instruction* debug_info_none_inst = manager.GetDebugInfoNone();
   EXPECT_NE(debug_info_none_inst, nullptr);
   EXPECT_EQ(debug_info_none_inst->GetOpenCL100DebugOpcode(),
             OpenCLDebugInfo100DebugInfoNone);
