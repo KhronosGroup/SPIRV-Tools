@@ -923,6 +923,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
                                                100, 100, {0, 1, 2});
   ASSERT_TRUE(shuffle_1.IsApplicable(context.get(), transformation_context));
   shuffle_1.Apply(context.get(), &transformation_context);
+  fact_manager.ComputeClosureOfFacts(context.get(), 100);
+
   auto replacement_1 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(20, instruction_descriptor_1, 0), 200);
   ASSERT_TRUE(
@@ -951,6 +953,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
                                                101, 101, {0, 1});
   ASSERT_TRUE(shuffle_3.IsApplicable(context.get(), transformation_context));
   shuffle_3.Apply(context.get(), &transformation_context);
+  fact_manager.ComputeClosureOfFacts(context.get(), 100);
+
   auto replacement_3 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(15, instruction_descriptor_3, 1), 202);
   ASSERT_TRUE(
@@ -965,6 +969,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
                                                101, 101, {2, 3});
   ASSERT_TRUE(shuffle_4.IsApplicable(context.get(), transformation_context));
   shuffle_4.Apply(context.get(), &transformation_context);
+  fact_manager.ComputeClosureOfFacts(context.get(), 100);
+
   auto replacement_4 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(19, instruction_descriptor_4, 0), 203);
   ASSERT_TRUE(
@@ -995,6 +1001,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
                                                102, 102, {1, 2});
   ASSERT_TRUE(shuffle_6.IsApplicable(context.get(), transformation_context));
   shuffle_6.Apply(context.get(), &transformation_context);
+  fact_manager.ComputeClosureOfFacts(context.get(), 100);
+
   auto replacement_6 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(15, instruction_descriptor_6, 0), 205);
   ASSERT_TRUE(
@@ -1023,6 +1031,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
                                                103, 103, {1, 2, 3});
   ASSERT_TRUE(shuffle_8.IsApplicable(context.get(), transformation_context));
   shuffle_8.Apply(context.get(), &transformation_context);
+  fact_manager.ComputeClosureOfFacts(context.get(), 100);
+
   auto replacement_8 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(47, instruction_descriptor_8, 0), 207);
   ASSERT_TRUE(
@@ -1064,6 +1074,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
                                                 105, 105, {0, 1});
   ASSERT_TRUE(shuffle_11.IsApplicable(context.get(), transformation_context));
   shuffle_11.Apply(context.get(), &transformation_context);
+  fact_manager.ComputeClosureOfFacts(context.get(), 100);
+
   auto replacement_11 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(38, instruction_descriptor_11, 1), 210);
   ASSERT_TRUE(
