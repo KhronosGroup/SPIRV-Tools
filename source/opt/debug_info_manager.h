@@ -45,18 +45,17 @@ class DebugInfoManager {
   // Analyzes OpenCL.DebugInfo.100 instruction |dbg_inst|.
   void AnalyzeDebugInst(Instruction* dbg_inst);
 
-  // Returns id of new DebugInlinedAt. Its Line operand is the line number
-  // of |line| if |line| is not nullptr. Otherwise, its Line operand
+  // Creates new DebugInlinedAt and returns its id. Its line operand is the
+  // line number of |line| if |line| is not nullptr. Otherwise, its line operand
   // is the line number of lexical scope of |scope|. Its Scope and Inlined
-  // operands are Scope and Inlined of |scope|. Note that this function puts
-  // the new DebugInlinedAt into the tail of debug instructions.
+  // operands are Scope and Inlined of |scope|.
   uint32_t CreateDebugInlinedAt(const Instruction* line,
                                 const DebugScope& scope);
 
   // If |debug_info_none_inst_| is not a nullptr, returns it. Otherwise,
   // creates a new DebugInfoNone instruction and returns it. In addition,
-  // insert the new DebugInfoNone instruction before the head of debug
-  // instructions.
+  // insert the new DebugInfoNone instruction into the debug instruction
+  // section of the module.
   Instruction* GetDebugInfoNone();
 
   // Returns DebugInlinedAt whose id is |dbg_inlined_at_id|. If it does not
@@ -73,8 +72,8 @@ class DebugInfoManager {
   // Clones DebugInlinedAt whose id is |clone_inlined_at_id|. If
   // |clone_inlined_at_id| is not an id of DebugInlinedAt, returns nullptr.
   // If |insert_before| is given, inserts the new DebugInlinedAt before it.
-  // Otherwise, inserts the new DebugInlinedAt at the end of debug
-  // instructions of the module.
+  // Otherwise, inserts the new DebugInlinedAt into the debug instruction
+  // section of the module.
   Instruction* CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
                                    Instruction* insert_before = nullptr);
 
@@ -84,16 +83,6 @@ class DebugInfoManager {
   // Analyzes OpenCL.DebugInfo.100 instructions in the given |module| and
   // populates data structures in this class.
   void AnalyzeDebugInsts(Module& module);
-
-  // Returns the DebugDeclare instruction that corresponds to the variable
-  // with id |var_id|. Returns |nullptr| if one does not exists.
-  Instruction* GetDbgDeclareForVar(uint32_t var_id);
-
-  // Registers the DebugDeclare instruction |inst| into
-  // |local_var_id_to_dbgdecl_| using the variable operand of |inst| as a key.
-  // If |local_var_id_to_dbgdecl_| already has a key that corresponds to the
-  // variable operand of |inst|, it just returns without doing anything.
-  void RegisterDbgDeclareForVar(Instruction* inst);
 
   // Returns the debug instruction whose id is |id|. Returns |nullptr| if one
   // does not exists.
@@ -112,10 +101,6 @@ class DebugInfoManager {
   // Mapping from ids of OpenCL.DebugInfo.100 extension instructions
   // to their Instruction instances.
   std::unordered_map<uint32_t, Instruction*> id_to_dbg_inst_;
-
-  // Mapping from ids of local variable OpVariable or OpFunctionParameter
-  // to its first DebugDeclare or DebugValue instructions.
-  std::unordered_map<uint32_t, Instruction*> local_var_id_to_dbgdecl_;
 
   // Mapping from function's ids to DebugFunction instructions whose
   // operand is the function.

@@ -24,7 +24,6 @@ static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
-static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 
 namespace spvtools {
 namespace opt {
@@ -32,23 +31,6 @@ namespace analysis {
 
 DebugInfoManager::DebugInfoManager(IRContext* c) : context_(c) {
   AnalyzeDebugInsts(*c->module());
-}
-
-Instruction* DebugInfoManager::GetDbgDeclareForVar(uint32_t var_id) {
-  auto debugdecl_it = local_var_id_to_dbgdecl_.find(var_id);
-  return debugdecl_it == local_var_id_to_dbgdecl_.end() ? nullptr
-                                                        : debugdecl_it->second;
-}
-
-void DebugInfoManager::RegisterDbgDeclareForVar(Instruction* inst) {
-  assert((inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
-          inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) &&
-         "inst is not a DebugDeclare or DebugValue");
-  auto var_id = inst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
-  if (local_var_id_to_dbgdecl_.find(var_id) != local_var_id_to_dbgdecl_.end()) {
-    return;
-  }
-  local_var_id_to_dbgdecl_[var_id] = inst;
 }
 
 Instruction* DebugInfoManager::GetDbgInst(uint32_t id) {
@@ -200,11 +182,6 @@ void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
   if (debug_info_none_inst_ == nullptr &&
       dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugInfoNone) {
     debug_info_none_inst_ = dbg_inst;
-  }
-
-  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
-      dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
-    RegisterDbgDeclareForVar(dbg_inst);
   }
 }
 
