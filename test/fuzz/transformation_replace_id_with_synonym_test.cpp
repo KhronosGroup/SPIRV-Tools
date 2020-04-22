@@ -1393,6 +1393,63 @@ TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationReplaceIdWithSynonymTest,
+     DoNotReplaceSampleParameterOfOpImageTexelPointer) {
+  const std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpConstant %6 2
+          %9 = OpConstant %6 0
+         %10 = OpConstant %6 10
+         %11 = OpTypeBool
+         %12 = OpConstant %6 1
+         %13 = OpTypeFloat 32
+         %14 = OpTypePointer Image %13
+         %15 = OpTypeImage %13 2D 0 0 0 0 Rgba8
+         %16 = OpTypePointer Private %15
+          %3 = OpVariable %16 Private
+         %17 = OpTypeVector %6 2
+         %18 = OpConstantComposite %17 %9 %9
+          %2 = OpFunction %4 None %5
+         %19 = OpLabel
+        %100 = OpCopyObject %6 %9
+         %20 = OpImageTexelPointer %14 %3 %18 %9
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Add synonym fact relating %100 and %9.
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(100, 9),
+                                                   context.get());
+
+  // Not legal the Sample argument of OpImageTexelPointer needs to be a zero
+  // constant.
+  ASSERT_FALSE(
+      TransformationReplaceIdWithSynonym(
+          MakeIdUseDescriptor(
+              9, MakeInstructionDescriptor(20, SpvOpImageTexelPointer, 0), 2),
+          100)
+          .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
