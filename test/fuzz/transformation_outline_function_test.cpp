@@ -2519,10 +2519,9 @@ TEST(TransformationOutlineFunctionTest,
       transformation.IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationOutlineFunctionTest,
-     ExitBlockHeadsLoopButContinueConstructIsInRegion) {
+TEST(TransformationOutlineFunctionTest, ExitBlockHeadsLoop) {
   // This checks that it is not possible outline a region that ends in a loop
-  // head if the continue target for the loop is inside the region.
+  // head.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
