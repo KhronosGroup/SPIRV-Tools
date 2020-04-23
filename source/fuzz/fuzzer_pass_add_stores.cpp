@@ -68,9 +68,10 @@ void FuzzerPassAddStores::Apply() {
                     // Not a pointer.
                     return false;
                   }
-                  if (type_inst->GetSingleWordInOperand(0) ==
-                      SpvStorageClassInput) {
-                    // Read-only: cannot store to it.
+                  if (TransformationStore::StorageClassIsReadOnly(
+                          static_cast<SpvStorageClass>(
+                              type_inst->GetSingleWordInOperand(0)))) {
+                    // Read only: cannot store to it.
                     return false;
                   }
                   switch (instruction->result_id()) {

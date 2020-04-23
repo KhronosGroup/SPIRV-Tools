@@ -55,6 +55,9 @@ class TransformationStore : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // Helper method to determine whether the given storage class is read-only.
+  static bool StorageClassIsReadOnly(SpvStorageClass storage_class);
+
  private:
   protobufs::TransformationStore message_;
 };
