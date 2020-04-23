@@ -1862,7 +1862,7 @@ TEST(TransformationAddFunctionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Make a sequence of instruction messages corresponding to function %8 in
+  // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
       GetInstructionsForFunction(env, consumer, donor, 6);
@@ -2020,7 +2020,7 @@ TEST(TransformationAddFunctionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Make a sequence of instruction messages corresponding to function %8 in
+  // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
       GetInstructionsForFunction(env, consumer, donor, 6);
@@ -2176,7 +2176,7 @@ TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Make a sequence of instruction messages corresponding to function %8 in
+  // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
       GetInstructionsForFunction(env, consumer, donor, 6);
@@ -2324,7 +2324,7 @@ TEST(TransformationAddFunctionTest, InfiniteLoop1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Make a sequence of instruction messages corresponding to function %8 in
+  // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
       GetInstructionsForFunction(env, consumer, donor, 6);
@@ -2482,7 +2482,7 @@ TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Make a sequence of instruction messages corresponding to function %8 in
+  // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
       GetInstructionsForFunction(env, consumer, donor, 6);
@@ -2920,6 +2920,120 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
          %15 = OpLabel
          %38 = OpPhi %6 %37 %17 %29 %25 %23 %16
                OpReturnValue %38
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
+}
+
+TEST(TransformationAddFunctionTest, StaticallyOutOfBoundsArrayAccess) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypeInt 32 0
+         %10 = OpConstant %9 3
+         %11 = OpTypeArray %8 %10
+         %12 = OpTypePointer Private %11
+         %13 = OpVariable %12 Private
+         %14 = OpConstant %8 3
+         %20 = OpConstant %8 2
+         %15 = OpConstant %8 1
+         %21 = OpTypeBool
+         %16 = OpTypePointer Private %8
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string donor = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypeInt 32 0
+         %10 = OpConstant %9 3
+         %11 = OpTypeArray %8 %10
+         %12 = OpTypePointer Private %11
+         %13 = OpVariable %12 Private
+         %14 = OpConstant %8 3
+         %15 = OpConstant %8 1
+         %16 = OpTypePointer Private %8
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %17 = OpAccessChain %16 %13 %14
+               OpStore %17 %15
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Make a sequence of instruction messages corresponding to function %6 in
+  // |donor|.
+  std::vector<protobufs::Instruction> instructions =
+      GetInstructionsForFunction(env, consumer, donor, 6);
+
+  TransformationAddFunction add_livesafe_function(
+      instructions, 0, 0, {}, 0, {MakeAccessClampingInfo(17, {{100, 101}})});
+  ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(),
+                                                 transformation_context));
+  add_livesafe_function.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypeInt 32 0
+         %10 = OpConstant %9 3
+         %11 = OpTypeArray %8 %10
+         %12 = OpTypePointer Private %11
+         %13 = OpVariable %12 Private
+         %14 = OpConstant %8 3
+         %20 = OpConstant %8 2
+         %15 = OpConstant %8 1
+         %21 = OpTypeBool
+         %16 = OpTypePointer Private %8
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+        %100 = OpULessThanEqual %21 %14 %20
+        %101 = OpSelect %8 %100 %14 %20
+         %17 = OpAccessChain %16 %13 %101
+               OpStore %17 %15
+               OpReturn
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, expected, context.get()));
