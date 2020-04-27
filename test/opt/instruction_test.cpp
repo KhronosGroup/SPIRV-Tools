@@ -74,6 +74,18 @@ TEST(InstructionTest, OperandAsString) {
   EXPECT_EQ("abcde", operand.AsString());
 }
 
+TEST(InstructionTest, OperandAsLiteralUint64_32bits) {
+  Operand::OperandData words{0x1234};
+  Operand operand(SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, std::move(words));
+  EXPECT_EQ(uint64_t(0x1234), operand.AsLiteralUint64());
+}
+
+TEST(InstructionTest, OperandAsLiteralUint64_64bits) {
+  Operand::OperandData words{0x1234, 0x89ab};
+  Operand operand(SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, std::move(words));
+  EXPECT_EQ((uint64_t(0x89ab) << 32 | 0x1234), operand.AsLiteralUint64());
+}
+
 // The words for an OpTypeInt for 32-bit signed integer resulting in Id 44.
 uint32_t kSampleInstructionWords[] = {(4 << 16) | uint32_t(SpvOpTypeInt), 44,
                                       32, 1};
