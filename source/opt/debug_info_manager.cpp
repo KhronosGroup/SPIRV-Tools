@@ -191,6 +191,16 @@ void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
 void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
   debug_info_none_inst_ = nullptr;
   module.ForEachInst([this](Instruction* cpi) { AnalyzeDebugInst(cpi); });
+
+  // Move |debug_info_none_inst_| to the beginning of the debug instruction
+  // list.
+  if (debug_info_none_inst_ != nullptr &&
+      debug_info_none_inst_->PreviousNode() != nullptr &&
+      debug_info_none_inst_->PreviousNode()->GetOpenCL100DebugOpcode() !=
+          OpenCLDebugInfo100InstructionsMax) {
+    debug_info_none_inst_->InsertBefore(
+        &*context()->module()->ext_inst_debuginfo_begin());
+  }
 }
 
 }  // namespace analysis

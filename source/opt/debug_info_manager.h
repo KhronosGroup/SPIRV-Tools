@@ -52,10 +52,7 @@ class DebugInfoManager {
   uint32_t CreateDebugInlinedAt(const Instruction* line,
                                 const DebugScope& scope);
 
-  // If |debug_info_none_inst_| is not a nullptr, returns it. Otherwise,
-  // creates a new DebugInfoNone instruction and returns it. In addition,
-  // insert the new DebugInfoNone instruction into the debug instruction
-  // section of the module.
+  // Returns a DebugInfoNone instruction.
   Instruction* GetDebugInfoNone();
 
   // Returns DebugInlinedAt whose id is |dbg_inlined_at_id|. If it does not
@@ -92,10 +89,8 @@ class DebugInfoManager {
   // |inst| as a key.
   void RegisterDbgInst(Instruction* inst);
 
-  // Registers the DebugFunction |inst| into |fn_id_to_dbg_fn_| using the
-  // function operand of |inst| as a key. If the function operand of |inst| is
-  // already registered with a different DebugFunction, this function will
-  // result in an assertion failure.
+  // Register the DebugFunction instruction |inst|. The function referenced
+  // in |inst| must not already be registered.
   void RegisterDbgFunction(Instruction* inst);
 
   IRContext* context_;
