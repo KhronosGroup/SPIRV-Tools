@@ -542,6 +542,8 @@ static_library("spvtools_opt") {
     "source/opt/decompose_initialized_variables_pass.h",
     "source/opt/decoration_manager.cpp",
     "source/opt/decoration_manager.h",
+    "source/opt/debug_info_manager.cpp",
+    "source/opt/debug_info_manager.h",
     "source/opt/def_use_manager.cpp",
     "source/opt/def_use_manager.h",
     "source/opt/desc_sroa.cpp",
