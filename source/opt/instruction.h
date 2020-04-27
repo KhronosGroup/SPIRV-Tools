@@ -92,6 +92,19 @@ struct Operand {
   // Returns a string operand as a std::string.
   std::string AsString() const { return AsCString(); }
 
+  // Returns a literal integer operand as a uint64_t
+  uint64_t AsLiteralUint64() const {
+    assert(type == SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER);
+    assert(1 <= words.size());
+    assert(words.size() <= 2);
+    // Load the low word.
+    uint64_t result = uint64_t(words[0]);
+    if (words.size() > 1) {
+      result = result | (uint64_t(words[1]) << 32);
+    }
+    return result;
+  }
+
   friend bool operator==(const Operand& o1, const Operand& o2) {
     return o1.type == o2.type && o1.words == o2.words;
   }
