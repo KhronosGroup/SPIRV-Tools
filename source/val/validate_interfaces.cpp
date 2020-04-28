@@ -476,8 +476,7 @@ spv_result_t ValidateInterfaces(ValidationState_t& _) {
           return error;
         }
       }
-      if (inst.opcode() == SpvOpTypeVoid)
-        break;
+      if (inst.opcode() == SpvOpTypeVoid) break;
     }
   }
 
