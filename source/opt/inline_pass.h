@@ -171,6 +171,35 @@ class InlinePass : public Pass {
   // Set of functions that are originally called directly or indirectly from a
   // continue construct.
   std::unordered_set<uint32_t> funcs_called_from_continue_;
+
+ private:
+  void CopyInstsBeforeEntryBlock(
+      std::unordered_map<uint32_t, Instruction*>* preCallSB,
+      BasicBlock* new_blk_ptr, BasicBlock::iterator call_inst_itr,
+      UptrVectorIterator<BasicBlock> call_block_itr);
+
+  std::unique_ptr<BasicBlock> AddGuardBlock(
+      std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t entry_blk_label_id);
+
+  std::unique_ptr<BasicBlock> InsertHeaderBlockForSingleTripLoop(
+      std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
+      uint32_t* returnLabelId, std::unique_ptr<BasicBlock> new_blk_ptr,
+      uint32_t entry_blk_label_id);
+
+  std::unique_ptr<BasicBlock> InlineEntryBlock(
+      std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+      std::vector<std::unique_ptr<Instruction>>* new_vars,
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      std::unordered_map<uint32_t, Instruction*>* preCallSB,
+      std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
+      uint32_t* returnLabelId, Function* calleeFn,
+      BasicBlock::iterator call_inst_itr,
+      UptrVectorIterator<BasicBlock> call_block_itr,
+      bool caller_is_loop_header);
 };
 
 }  // namespace opt
