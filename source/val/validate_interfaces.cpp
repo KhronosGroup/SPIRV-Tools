@@ -105,7 +105,7 @@ spv_result_t check_interface_variable(ValidationState_t& _,
 // This function assumes a base location has been determined already. As such
 // any further location decorations are invalid.
 // TODO: if this code turns out to be slow, there is an opportunity to cache
-// the for a given type id.
+// the result for a given type id.
 spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
                                   uint32_t* num_locations) {
   *num_locations = 0;
@@ -218,12 +218,6 @@ spv_result_t GetLocationsForVariable(
   auto ptr_type = _.FindDef(ptr_type_id);
   auto type_id = ptr_type->GetOperandAs<uint32_t>(2);
   auto type = _.FindDef(type_id);
-  // Unpack optional arrayness.
-  if (type->opcode() == SpvOpTypeArray ||
-      type->opcode() == SpvOpTypeRuntimeArray) {
-    type_id = type->GetOperandAs<uint32_t>(1);
-    type = _.FindDef(type_id);
-  }
 
   // Check for Location, Component and Index decorations on the variable. The
   // validator allows duplicate decorations if the location/component/index are
@@ -234,7 +228,8 @@ spv_result_t GetLocationsForVariable(
   uint32_t component = 0;
   bool has_index = false;
   uint32_t index = 0;
-  bool is_block = _.HasDecoration(type_id, SpvDecorationBlock);
+  bool has_patch = false;
+  bool has_per_task_nv = false;
   for (auto& dec : _.id_decorations(variable->id())) {
     if (dec.dec_type() == SpvDecorationLocation) {
       if (has_location && dec.params()[0] != location) {
@@ -264,7 +259,43 @@ spv_result_t GetLocationsForVariable(
     } else if (dec.dec_type() == SpvDecorationBuiltIn) {
       // Don't check built-ins.
       return SPV_SUCCESS;
+    } else if (dec.dec_type() == SpvDecorationPatch) {
+      has_patch = true;
+    } else if (dec.dec_type() == SpvDecorationPerTaskNV) {
+      has_per_task_nv = true;
     }
+  }
+
+  // Vulkan 14.1.3: Tessellation control and mesh per-vertex outputs and
+  // tessellation control, evaluation and geometry per-vertex inputs have a
+  // layer of arraying that is not included in interface matching.
+  bool is_arrayed = false;
+  switch (entry_point->GetOperandAs<SpvExecutionModel>(0)) {
+    case SpvExecutionModelTessellationControl:
+      if (!is_output || !has_patch) {
+        is_arrayed = true;
+      }
+      break;
+    case SpvExecutionModelTessellationEvaluation:
+    case SpvExecutionModelGeometry:
+      if (!is_output) {
+        is_arrayed = true;
+      }
+      break;
+    case SpvExecutionModelMeshNV:
+      if (is_output && has_per_task_nv) {
+        is_arrayed = true;
+      }
+      break;
+    default:
+      break;
+  }
+
+  // Unpack arrayness.
+  if (is_arrayed && (type->opcode() == SpvOpTypeArray ||
+                     type->opcode() == SpvOpTypeRuntimeArray)) {
+    type_id = type->GetOperandAs<uint32_t>(1);
+    type = _.FindDef(type_id);
   }
 
   if (type->opcode() == SpvOpTypeStruct) {
@@ -273,6 +304,7 @@ spv_result_t GetLocationsForVariable(
   }
 
   // Only block-decorated structs don't need a location on the variable.
+  const bool is_block = _.HasDecoration(type_id, SpvDecorationBlock);
   if (!has_location && !is_block) {
     return _.diag(SPV_ERROR_INVALID_DATA, variable)
            << "Variable must be decorated with a location";
@@ -426,6 +458,8 @@ spv_result_t ValidateInterfaces(ValidationState_t& _) {
           return error;
         }
       }
+      if (inst.opcode() == SpvOpTypeVoid)
+        break;
     }
   }
 
