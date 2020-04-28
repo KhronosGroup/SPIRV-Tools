@@ -383,6 +383,24 @@ bool InlinePass::GenInlineCode(
     }
   }
 
+  {
+    auto callee_block_itr = calleeFn->begin();
+    auto callee_var_itr = callee_block_itr->begin();
+    while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
+      if (callee_var_itr->NumInOperands() == 2) {
+        assert(callee2caller.count(callee_var_itr->result_id()) &&
+               "Expected the variable to have already been mapped.");
+        uint32_t new_var_id = callee2caller.at(callee_var_itr->result_id());
+
+        // The initializer must be a constant or global value.  No mapped
+        // should be used.
+        uint32_t val_id = callee_var_itr->GetSingleWordInOperand(1);
+        AddStore(new_var_id, val_id, &new_blk_ptr);
+      }
+      ++callee_var_itr;
+    }
+  }
+
   // Create return var if needed.
   const uint32_t calleeTypeId = calleeFn->type_id();
   uint32_t returnVarId = 0;
@@ -414,19 +432,8 @@ bool InlinePass::GenInlineCode(
         switch (cpi->opcode()) {
           case SpvOpFunction:
           case SpvOpFunctionParameter:
-            // Already processed
-            break;
           case SpvOpVariable:
-            if (cpi->NumInOperands() == 2) {
-              assert(callee2caller.count(cpi->result_id()) &&
-                     "Expected the variable to have already been mapped.");
-              uint32_t new_var_id = callee2caller.at(cpi->result_id());
-
-              // The initializer must be a constant or global value.  No mapped
-              // should be used.
-              uint32_t val_id = cpi->GetSingleWordInOperand(1);
-              AddStore(new_var_id, val_id, &new_blk_ptr);
-            }
+            // Already processed
             break;
           case SpvOpUnreachable:
           case SpvOpKill: {
