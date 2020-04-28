@@ -1442,33 +1442,33 @@ OpFunctionEnd
       R"(%false = OpConstantFalse %bool
 %main = OpFunction %void None %10
 %22 = OpLabel
-%35 = OpVariable %_ptr_Function_float Function
+%40 = OpVariable %_ptr_Function_float Function
 %color = OpVariable %_ptr_Function_v4float Function
 %param = OpVariable %_ptr_Function_v4float Function
 %23 = OpLoad %v4float %BaseColor
 OpStore %param %23
-OpBranch %36
-%36 = OpLabel
-OpLoopMerge %37 %38 None
-OpBranch %39
-%39 = OpLabel
-%40 = OpAccessChain %_ptr_Function_float %param %uint_0
-%41 = OpLoad %float %40
-%42 = OpFOrdLessThan %bool %41 %float_0
-OpSelectionMerge %43 None
-OpBranchConditional %42 %44 %43
-%44 = OpLabel
-OpStore %35 %float_0
-OpBranch %37
-%43 = OpLabel
-%45 = OpAccessChain %_ptr_Function_float %param %uint_0
-%46 = OpLoad %float %45
-OpStore %35 %46
-OpBranch %37
+OpBranch %35
+%35 = OpLabel
+OpLoopMerge %36 %37 None
+OpBranch %38
 %38 = OpLabel
-OpBranchConditional %false %36 %37
+%41 = OpAccessChain %_ptr_Function_float %param %uint_0
+%42 = OpLoad %float %41
+%43 = OpFOrdLessThan %bool %42 %float_0
+OpSelectionMerge %44 None
+OpBranchConditional %43 %45 %44
+%45 = OpLabel
+OpStore %40 %float_0
+OpBranch %36
+%44 = OpLabel
+%46 = OpAccessChain %_ptr_Function_float %param %uint_0
+%47 = OpLoad %float %46
+OpStore %40 %47
+OpBranch %36
 %37 = OpLabel
-%24 = OpLoad %float %35
+OpBranchConditional %false %35 %36
+%36 = OpLabel
+%24 = OpLoad %float %40
 %25 = OpCompositeConstruct %v4float %24 %24 %24 %24
 OpStore %color %25
 %26 = OpLoad %v4float %color
@@ -2397,7 +2397,7 @@ OpFunctionEnd
   const std::string main_after =
       R"(%main = OpFunction %void None %7
 %23 = OpLabel
-%38 = OpVariable %_ptr_Function_float Function
+%42 = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %i %int_0
 OpBranch %24
@@ -2410,23 +2410,23 @@ OpBranch %27
 OpBranchConditional %29 %30 %25
 %30 = OpLabel
 OpStore %_GLF_color %21
-OpBranch %39
-%39 = OpLabel
-OpLoopMerge %40 %41 None
-OpBranch %42
-%42 = OpLabel
+OpBranch %37
+%37 = OpLabel
+OpLoopMerge %38 %39 None
+OpBranch %40
+%40 = OpLabel
 OpSelectionMerge %43 None
 OpBranchConditional %true %44 %43
 %44 = OpLabel
-OpStore %38 %float_1
-OpBranch %40
+OpStore %42 %float_1
+OpBranch %38
 %43 = OpLabel
-OpStore %38 %float_1
-OpBranch %40
-%41 = OpLabel
-OpBranchConditional %false %39 %40
-%40 = OpLabel
-%31 = OpLoad %float %38
+OpStore %42 %float_1
+OpBranch %38
+%39 = OpLabel
+OpBranchConditional %false %37 %38
+%38 = OpLabel
+%31 = OpLoad %float %42
 OpBranch %26
 %26 = OpLabel
 %32 = OpLoad %int %i
