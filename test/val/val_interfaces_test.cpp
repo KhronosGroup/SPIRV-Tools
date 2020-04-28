@@ -1271,6 +1271,91 @@ OpFunctionEnd
       HasSubstr("Index can only be applied to Fragment output variables"));
 }
 
+TEST_F(ValidateInterfacesTest, VulkanLocationsArrayWithComponent) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main" %11 %18 %28 %36 %40
+OpExecutionMode %4 OriginUpperLeft
+OpDecorate %11 Location 0
+OpDecorate %18 Component 0
+OpDecorate %18 Location 0
+OpDecorate %28 Component 1
+OpDecorate %28 Location 0
+OpDecorate %36 Location 1
+OpDecorate %40 Component 0
+OpDecorate %40 Location 1
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%11 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_float = OpTypePointer Output %float
+%18 = OpVariable %_ptr_Output_float Output
+%uint = OpTypeInt 32 0
+%v3float = OpTypeVector %float 3
+%uint_2 = OpConstant %uint 2
+%_arr_v3float_uint_2 = OpTypeArray %v3float %uint_2
+%_ptr_Output__arr_v3float_uint_2 = OpTypePointer Output %_arr_v3float_uint_2
+%28 = OpVariable %_ptr_Output__arr_v3float_uint_2 Output
+%_ptr_Output_v3float = OpTypePointer Output %v3float
+%36 = OpVariable %_ptr_Input_v4float Input
+%40 = OpVariable %_ptr_Output_float Output
+%4 = OpFunction %void None %3
+%5 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationsArrayWithComponentBad) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main" %11 %18 %28 %36 %40
+OpExecutionMode %4 OriginUpperLeft
+OpDecorate %11 Location 0
+OpDecorate %18 Component 0
+OpDecorate %18 Location 0
+OpDecorate %28 Component 1
+OpDecorate %28 Location 0
+OpDecorate %36 Location 1
+OpDecorate %40 Component 1
+OpDecorate %40 Location 1
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%11 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_float = OpTypePointer Output %float
+%18 = OpVariable %_ptr_Output_float Output
+%uint = OpTypeInt 32 0
+%v3float = OpTypeVector %float 3
+%uint_2 = OpConstant %uint 2
+%_arr_v3float_uint_2 = OpTypeArray %v3float %uint_2
+%_ptr_Output__arr_v3float_uint_2 = OpTypePointer Output %_arr_v3float_uint_2
+%28 = OpVariable %_ptr_Output__arr_v3float_uint_2 Output
+%_ptr_Output_v3float = OpTypePointer Output %v3float
+%36 = OpVariable %_ptr_Input_v4float Input
+%40 = OpVariable %_ptr_Output_float Output
+%4 = OpFunction %void None %3
+%5 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Entry-point has conflicting output location "
+                        "assignment at location 1, component 1"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

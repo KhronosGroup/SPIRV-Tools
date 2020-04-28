@@ -221,7 +221,7 @@ spv_result_t GetLocationsForVariable(
 
   // Check for Location, Component and Index decorations on the variable. The
   // validator allows duplicate decorations if the location/component/index are
-  // equal.
+  // equal. Also track Patch and PerTaskNV decorations.
   bool has_location = false;
   uint32_t location = 0;
   bool has_component = false;
@@ -312,32 +312,50 @@ spv_result_t GetLocationsForVariable(
 
   const std::string storage_class = is_output ? "output" : "input";
   if (has_location) {
-    uint32_t num_locations = 0;
-    if (auto error = NumConsumedLocations(_, type, &num_locations))
-      return error;
-
-    uint32_t num_components = NumConsumedComponents(_, type);
-    uint32_t start = location * 4;
-    uint32_t end = (location + num_locations) * 4;
-    if (num_components != 0) {
-      start += component;
-      end = location * 4 + component + num_components;
+    auto sub_type = type;
+    bool is_int = false;
+    bool is_const = false;
+    uint32_t array_size = 1;
+    // If the variable is still arrayed, mark the locations/components per
+    // index.
+    if (type->opcode() == SpvOpTypeArray) {
+      // Determine the array size if possible and get the element type.
+      std::tie(is_int, is_const, array_size) =
+          _.EvalInt32IfConst(type->GetOperandAs<uint32_t>(2));
+      if (!is_int || !is_const) array_size = 1;
+      auto sub_type_id = type->GetOperandAs<uint32_t>(1);
+      sub_type = _.FindDef(sub_type_id);
     }
 
-    auto locs = locations;
-    if (has_index && index == 1) locs = output_index1_locations;
+    for (uint32_t array_idx = 0; array_idx < array_size; ++array_idx) {
+      uint32_t num_locations = 0;
+      if (auto error = NumConsumedLocations(_, sub_type, &num_locations))
+        return error;
 
-    if (end > locs->size()) {
-      locs->resize(end, false);
-    }
-    for (uint32_t i = start; i < end; ++i) {
-      if (locs->at(i)) {
-        return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
-               << "Entry-point has conflicting " << storage_class
-               << " location assignment at location " << i / 4 << ", component "
-               << i % 4;
+      uint32_t num_components = NumConsumedComponents(_, sub_type);
+      uint32_t array_location = location + (num_locations * array_idx);
+      uint32_t start = array_location * 4;
+      uint32_t end = (array_location + num_locations) * 4;
+      if (num_components != 0) {
+        start += component;
+        end = array_location * 4 + component + num_components;
       }
-      (*locs)[i] = true;
+
+      auto locs = locations;
+      if (has_index && index == 1) locs = output_index1_locations;
+
+      if (end > locs->size()) {
+        locs->resize(end, false);
+      }
+      for (uint32_t i = start; i < end; ++i) {
+        if (locs->at(i)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
+                 << "Entry-point has conflicting " << storage_class
+                 << " location assignment at location " << i / 4
+                 << ", component " << i % 4;
+        }
+        (*locs)[i] = true;
+      }
     }
   } else {
     // For Block-decorated structs with no location assigned to the variable,
