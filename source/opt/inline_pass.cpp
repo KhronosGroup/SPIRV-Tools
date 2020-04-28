@@ -317,9 +317,11 @@ std::unique_ptr<BasicBlock> InlinePass::InlineEntryBlock(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
     std::unordered_map<uint32_t, Instruction*>* preCallSB,
     std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
-    uint32_t* returnLabelId, Function* calleeFn,
-    BasicBlock::iterator call_inst_itr,
+    uint32_t* returnLabelId, BasicBlock::iterator call_inst_itr,
     UptrVectorIterator<BasicBlock> call_block_itr, bool caller_is_loop_header) {
+  Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
+      kSpvFunctionCallFunctionId)];
+
   // Map parameters to actual arguments.
   MapParams(calleeFn, call_inst_itr, callee2caller);
 
@@ -410,30 +412,30 @@ bool InlinePass::GenInlineCode(
   // valid.  These operations can fail.
   context()->InvalidateAnalyses(IRContext::kAnalysisDefUse);
 
+  // If the caller is a loop header and the callee has multiple blocks, then the
+  // normal inlining logic will place the OpLoopMerge in the last of several
+  // blocks in the loop.  Instead, it should be placed at the end of the first
+  // block.  We'll wait to move the OpLoopMerge until the end of the regular
+  // inlining logic, and only if necessary.
+  bool caller_is_loop_header = call_block_itr->GetLoopMergeInst() != nullptr;
+
+  // Single-trip loop contrinue block
+  std::unique_ptr<BasicBlock> single_trip_loop_cont_blk;
+
+  // Create blocks for instructions of the caller function up to the call
+  // instruction and the entry block of the callee function.
+  uint32_t returnLabelId = 0;
+  std::unique_ptr<BasicBlock> new_blk_ptr =
+      InlineEntryBlock(new_blocks, new_vars, &callee2caller, &preCallSB,
+                       &single_trip_loop_cont_blk, &returnLabelId,
+                       call_inst_itr, call_block_itr, caller_is_loop_header);
+
   Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
       kSpvFunctionCallFunctionId)];
 
   // Check for multiple returns in the callee.
   auto fi = early_return_funcs_.find(calleeFn->result_id());
   const bool earlyReturn = fi != early_return_funcs_.end();
-
-  // If the caller is a loop header and the callee has multiple blocks, then the
-  // normal inlining logic will place the OpLoopMerge in the last of several
-  // blocks in the loop.  Instead, it should be placed at the end of the first
-  // block.  We'll wait to move the OpLoopMerge until the end of the regular
-  // inlining logic, and only if necessary.
-  bool caller_is_loop_header = false;
-  if (call_block_itr->GetLoopMergeInst()) {
-    caller_is_loop_header = true;
-  }
-
-  std::unique_ptr<BasicBlock> single_trip_loop_cont_blk;
-
-  uint32_t returnLabelId = 0;
-  std::unique_ptr<BasicBlock> new_blk_ptr =
-      InlineEntryBlock(new_blocks, new_vars, &callee2caller, &preCallSB,
-                       &single_trip_loop_cont_blk, &returnLabelId, calleeFn,
-                       call_inst_itr, call_block_itr, caller_is_loop_header);
 
   // Create return var if needed.
   const uint32_t calleeTypeId = calleeFn->type_id();

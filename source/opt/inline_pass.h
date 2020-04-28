@@ -173,16 +173,22 @@ class InlinePass : public Pass {
   std::unordered_set<uint32_t> funcs_called_from_continue_;
 
  private:
+  // Copies instructions of the caller function up to the call instruction
+  // to |new_blk_ptr|.
   void CopyInstsBeforeEntryBlock(
       std::unordered_map<uint32_t, Instruction*>* preCallSB,
       BasicBlock* new_blk_ptr, BasicBlock::iterator call_inst_itr,
       UptrVectorIterator<BasicBlock> call_block_itr);
 
+  // Returns a new guard block after adding a branch to the end of
+  // |new_blocks|.
   std::unique_ptr<BasicBlock> AddGuardBlock(
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
       std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t entry_blk_label_id);
 
+  // Inserts a header block and a post-header block into |new_blocks|
+  // for single-trip loop.
   std::unique_ptr<BasicBlock> InsertHeaderBlockForSingleTripLoop(
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
@@ -190,14 +196,15 @@ class InlinePass : public Pass {
       uint32_t* returnLabelId, std::unique_ptr<BasicBlock> new_blk_ptr,
       uint32_t entry_blk_label_id);
 
+  // Inlines the entry block of the callee function and instructions of the
+  // caller function up to the call instruction.
   std::unique_ptr<BasicBlock> InlineEntryBlock(
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
       std::vector<std::unique_ptr<Instruction>>* new_vars,
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
       std::unordered_map<uint32_t, Instruction*>* preCallSB,
       std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
-      uint32_t* returnLabelId, Function* calleeFn,
-      BasicBlock::iterator call_inst_itr,
+      uint32_t* returnLabelId, BasicBlock::iterator call_inst_itr,
       UptrVectorIterator<BasicBlock> call_block_itr,
       bool caller_is_loop_header);
 };
