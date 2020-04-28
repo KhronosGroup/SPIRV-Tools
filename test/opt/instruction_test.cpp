@@ -353,7 +353,7 @@ TEST_F(DescriptorTypeTest, StorageImage) {
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
-  EXPECT_FALSE(variable->IsReadOnlyVariable());
+  EXPECT_FALSE(variable->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, SampledImage) {
@@ -389,7 +389,7 @@ TEST_F(DescriptorTypeTest, SampledImage) {
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
-  EXPECT_TRUE(variable->IsReadOnlyVariable());
+  EXPECT_TRUE(variable->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
@@ -425,7 +425,7 @@ TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
-  EXPECT_FALSE(variable->IsReadOnlyVariable());
+  EXPECT_FALSE(variable->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, StorageBuffer) {
@@ -464,7 +464,7 @@ TEST_F(DescriptorTypeTest, StorageBuffer) {
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
-  EXPECT_FALSE(variable->IsReadOnlyVariable());
+  EXPECT_FALSE(variable->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, UniformBuffer) {
@@ -503,7 +503,7 @@ TEST_F(DescriptorTypeTest, UniformBuffer) {
   EXPECT_TRUE(type->IsVulkanUniformBuffer());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
-  EXPECT_TRUE(variable->IsReadOnlyVariable());
+  EXPECT_TRUE(variable->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
@@ -536,7 +536,7 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
-  EXPECT_TRUE(variable->IsReadOnlyVariable());
+  EXPECT_TRUE(variable->IsReadOnlyPointer());
 }
 
 TEST_F(OpaqueTypeTest, BaseOpaqueTypesShader) {

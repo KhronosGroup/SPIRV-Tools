@@ -396,8 +396,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Memory-to-memory instructions are not considered loads.
   inline bool IsLoad() const;
 
-  // Returns true if the instruction declares a variable that is read-only.
-  bool IsReadOnlyVariable() const;
+  // Returns true if the instruction generates a read-only pointer.
+  bool IsReadOnlyPointer() const;
 
   // The following functions check for the various descriptor types defined in
   // the Vulkan specification section 13.1.
@@ -526,11 +526,11 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return 0;
   }
 
-  // Returns true if the instruction declares a variable that is read-only.  The
-  // first version assumes the module is a shader module.  The second assumes a
+  // Returns true if the instruction generates a read-only pointer.  The first
+  // version assumes the module is a shader module.  The second assumes a
   // kernel.
-  bool IsReadOnlyVariableShaders() const;
-  bool IsReadOnlyVariableKernel() const;
+  bool IsReadOnlyPointerShaders() const;
+  bool IsReadOnlyPointerKernel() const;
 
   // Returns true if the result of |inst| can be used as the base image for an
   // instruction that samples a image, reads an image, or writes to an image.
