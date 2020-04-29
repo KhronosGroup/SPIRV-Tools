@@ -196,6 +196,12 @@ class InlinePass : public Pass {
       uint32_t* returnLabelId, std::unique_ptr<BasicBlock> new_blk_ptr,
       uint32_t entry_blk_label_id);
 
+  // Add store instructions for initializers of variables
+  void AddStoresForVariableInitializers(
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      std::unique_ptr<BasicBlock>* new_blk_ptr,
+      UptrVectorIterator<BasicBlock> callee_block_itr);
+
   // Inlines the entry block of the callee function and instructions of the
   // caller function up to the call instruction.
   std::unique_ptr<BasicBlock> InlineEntryBlock(

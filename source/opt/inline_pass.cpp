@@ -311,6 +311,26 @@ std::unique_ptr<BasicBlock> InlinePass::InsertHeaderBlockForSingleTripLoop(
   return new_blk_ptr;
 }
 
+void InlinePass::AddStoresForVariableInitializers(
+    std::unordered_map<uint32_t, uint32_t>* callee2caller,
+    std::unique_ptr<BasicBlock>* new_blk_ptr,
+    UptrVectorIterator<BasicBlock> callee_block_itr) {
+  auto callee_var_itr = callee_block_itr->begin();
+  while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
+    if (callee_var_itr->NumInOperands() == 2) {
+      assert(callee2caller->count(callee_var_itr->result_id()) &&
+             "Expected the variable to have already been mapped.");
+      uint32_t new_var_id = callee2caller->at(callee_var_itr->result_id());
+
+      // The initializer must be a constant or global value.  No mapped
+      // should be used.
+      uint32_t val_id = callee_var_itr->GetSingleWordInOperand(1);
+      AddStore(new_var_id, val_id, new_blk_ptr);
+    }
+    ++callee_var_itr;
+  }
+}
+
 std::unique_ptr<BasicBlock> InlinePass::InlineEntryBlock(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<Instruction>>* new_vars,
@@ -377,20 +397,8 @@ std::unique_ptr<BasicBlock> InlinePass::InlineEntryBlock(
     if (new_blk_ptr == nullptr) return nullptr;
   }
 
-  auto callee_var_itr = callee_block_itr->begin();
-  while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
-    if (callee_var_itr->NumInOperands() == 2) {
-      assert(callee2caller->count(callee_var_itr->result_id()) &&
-             "Expected the variable to have already been mapped.");
-      uint32_t new_var_id = callee2caller->at(callee_var_itr->result_id());
-
-      // The initializer must be a constant or global value.  No mapped
-      // should be used.
-      uint32_t val_id = callee_var_itr->GetSingleWordInOperand(1);
-      AddStore(new_var_id, val_id, &new_blk_ptr);
-    }
-    ++callee_var_itr;
-  }
+  AddStoresForVariableInitializers(callee2caller, &new_blk_ptr,
+                                   callee_block_itr);
   return new_blk_ptr;
 }
 
