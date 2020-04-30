@@ -196,16 +196,6 @@ class InlinePass : public Pass {
       uint32_t* returnLabelId, std::unique_ptr<BasicBlock> new_blk_ptr,
       uint32_t entry_blk_label_id);
 
-  // Moves instructions of the caller function up to the call instruction.
-  std::unique_ptr<BasicBlock> InlineInstsBeforeEntryBlock(
-      std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
-      std::unordered_map<uint32_t, uint32_t>* callee2caller,
-      std::unordered_map<uint32_t, Instruction*>* preCallSB,
-      std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
-      uint32_t* returnLabelId, BasicBlock::iterator call_inst_itr,
-      UptrVectorIterator<BasicBlock> call_block_itr, bool caller_is_loop_header,
-      Function* calleeFn);
-
   // Add store instructions for initializers of variables.
   InstructionList::iterator AddStoresForVariableInitializers(
       std::unordered_map<uint32_t, uint32_t>* callee2caller,

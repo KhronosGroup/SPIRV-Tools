@@ -312,61 +312,6 @@ std::unique_ptr<BasicBlock> InlinePass::InsertHeaderBlockForSingleTripLoop(
   return new_blk_ptr;
 }
 
-std::unique_ptr<BasicBlock> InlinePass::InlineInstsBeforeEntryBlock(
-    std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
-    std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    std::unordered_map<uint32_t, Instruction*>* preCallSB,
-    std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
-    uint32_t* returnLabelId, BasicBlock::iterator call_inst_itr,
-    UptrVectorIterator<BasicBlock> call_block_itr, bool caller_is_loop_header,
-    Function* calleeFn) {
-  // First block needs to use label of original block
-  // but map callee label in case of phi reference.
-  uint32_t labelId = call_block_itr->id();
-  uint32_t entry_blk_label_id = calleeFn->begin()->GetLabelInst()->result_id();
-  (*callee2caller)[entry_blk_label_id] = labelId;
-  std::unique_ptr<BasicBlock> new_blk_ptr =
-      MakeUnique<BasicBlock>(NewLabel(labelId));
-
-  // Copy instructions of original caller block up to call instruction.
-  CopyInstsBeforeEntryBlock(preCallSB, new_blk_ptr.get(), call_inst_itr,
-                            call_block_itr);
-
-  if (caller_is_loop_header &&
-      (*(calleeFn->begin())).GetMergeInst() != nullptr) {
-    // We can't place both the caller's merge instruction and
-    // another merge instruction in the same block.  So split the
-    // calling block. Insert an unconditional branch to a new guard
-    // block.  Later, once we know the ID of the last block,  we
-    // will move the caller's OpLoopMerge from the last generated
-    // block into the first block. We also wait to avoid
-    // invalidating various iterators.
-    new_blk_ptr = AddGuardBlock(new_blocks, callee2caller,
-                                std::move(new_blk_ptr), entry_blk_label_id);
-    if (new_blk_ptr == nullptr) return nullptr;
-  }
-
-  if (early_return_funcs_.find(calleeFn->result_id()) !=
-      early_return_funcs_.end()) {
-    // If callee has early return, insert a header block for
-    // single-trip loop that will encompass callee code.  Start
-    // postheader block.
-    //
-    // Note: Consider the following combination:
-    //  - the caller is a single block loop
-    //  - the callee does not begin with a structure header
-    //  - the callee has multiple returns.
-    // We still need to split the caller block and insert a guard
-    // block. But we only need to do it once. We haven't done it yet,
-    // but the single-trip loop header will serve the same purpose.
-    new_blk_ptr = InsertHeaderBlockForSingleTripLoop(
-        new_blocks, callee2caller, single_trip_loop_cont_blk, returnLabelId,
-        std::move(new_blk_ptr), entry_blk_label_id);
-    if (new_blk_ptr == nullptr) return nullptr;
-  }
-  return new_blk_ptr;
-}
-
 InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
     std::unique_ptr<BasicBlock>* new_blk_ptr,
@@ -660,13 +605,50 @@ bool InlinePass::GenInlineCode(
     return false;
   }
 
-  // Move instructions of the caller function up to the call instruction.
+  // First block needs to use label of original block
+  // but map callee label in case of phi reference.
+  uint32_t entry_blk_label_id = calleeFn->begin()->GetLabelInst()->result_id();
+  callee2caller[entry_blk_label_id] = call_block_itr->id();
+  std::unique_ptr<BasicBlock> new_blk_ptr =
+      MakeUnique<BasicBlock>(NewLabel(call_block_itr->id()));
+
+  // Copy instructions of original caller block up to call instruction.
+  CopyInstsBeforeEntryBlock(&preCallSB, new_blk_ptr.get(), call_inst_itr,
+                            call_block_itr);
+
+  if (caller_is_loop_header &&
+      (*(calleeFn->begin())).GetMergeInst() != nullptr) {
+    // We can't place both the caller's merge instruction and
+    // another merge instruction in the same block.  So split the
+    // calling block. Insert an unconditional branch to a new guard
+    // block.  Later, once we know the ID of the last block,  we
+    // will move the caller's OpLoopMerge from the last generated
+    // block into the first block. We also wait to avoid
+    // invalidating various iterators.
+    new_blk_ptr = AddGuardBlock(new_blocks, &callee2caller,
+                                std::move(new_blk_ptr), entry_blk_label_id);
+    if (new_blk_ptr == nullptr) return false;
+  }
+
   uint32_t returnLabelId = 0;
-  std::unique_ptr<BasicBlock> new_blk_ptr = InlineInstsBeforeEntryBlock(
-      new_blocks, &callee2caller, &preCallSB, &single_trip_loop_cont_blk,
-      &returnLabelId, call_inst_itr, call_block_itr, caller_is_loop_header,
-      calleeFn);
-  if (new_blk_ptr == nullptr) return false;
+  if (early_return_funcs_.find(calleeFn->result_id()) !=
+      early_return_funcs_.end()) {
+    // If callee has early return, insert a header block for
+    // single-trip loop that will encompass callee code.  Start
+    // postheader block.
+    //
+    // Note: Consider the following combination:
+    //  - the caller is a single block loop
+    //  - the callee does not begin with a structure header
+    //  - the callee has multiple returns.
+    // We still need to split the caller block and insert a guard
+    // block. But we only need to do it once. We haven't done it yet,
+    // but the single-trip loop header will serve the same purpose.
+    new_blk_ptr = InsertHeaderBlockForSingleTripLoop(
+        new_blocks, &callee2caller, &single_trip_loop_cont_blk, &returnLabelId,
+        std::move(new_blk_ptr), entry_blk_label_id);
+    if (new_blk_ptr == nullptr) return false;
+  }
 
   // Create return var if needed.
   const uint32_t calleeTypeId = calleeFn->type_id();
