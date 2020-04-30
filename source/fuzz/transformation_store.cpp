@@ -50,8 +50,7 @@ bool TransformationStore::IsApplicable(
   }
 
   // The pointer must not be read only.
-  if (TransformationStore::StorageClassIsReadOnly(static_cast<SpvStorageClass>(
-          pointer_type->GetSingleWordInOperand(0)))) {
+  if (pointer->IsReadOnlyPointer()) {
     return false;
   }
 
@@ -124,19 +123,6 @@ protobufs::Transformation TransformationStore::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_store() = message_;
   return result;
-}
-
-bool TransformationStore::StorageClassIsReadOnly(
-    SpvStorageClass storage_class) {
-  switch (storage_class) {
-    case SpvStorageClassInput:
-    case SpvStorageClassPushConstant:
-    case SpvStorageClassUniformConstant:
-      // Read-only: cannot store to it.
-      return true;
-    default:
-      return false;
-  }
 }
 
 }  // namespace fuzz
