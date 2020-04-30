@@ -196,23 +196,43 @@ class InlinePass : public Pass {
       uint32_t* returnLabelId, std::unique_ptr<BasicBlock> new_blk_ptr,
       uint32_t entry_blk_label_id);
 
-  // Add store instructions for initializers of variables
-  void AddStoresForVariableInitializers(
-      std::unordered_map<uint32_t, uint32_t>* callee2caller,
-      std::unique_ptr<BasicBlock>* new_blk_ptr,
-      UptrVectorIterator<BasicBlock> callee_block_itr);
-
-  // Inlines the entry block of the callee function and instructions of the
-  // caller function up to the call instruction.
-  std::unique_ptr<BasicBlock> InlineEntryBlock(
+  // Inlines instructions of the caller function up to the call instruction.
+  std::unique_ptr<BasicBlock> InlineInstsBeforeEntryBlock(
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
-      std::vector<std::unique_ptr<Instruction>>* new_vars,
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
       std::unordered_map<uint32_t, Instruction*>* preCallSB,
       std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
       uint32_t* returnLabelId, BasicBlock::iterator call_inst_itr,
-      UptrVectorIterator<BasicBlock> call_block_itr,
-      bool caller_is_loop_header);
+      UptrVectorIterator<BasicBlock> call_block_itr, bool caller_is_loop_header,
+      Function* calleeFn);
+
+  // Add store instructions for initializers of variables.
+  InstructionList::iterator AddStoresForVariableInitializers(
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      std::unique_ptr<BasicBlock>* new_blk_ptr,
+      UptrVectorIterator<BasicBlock> callee_block_itr);
+
+  // Inlines a single instruction of the callee function.
+  bool InlineInstructionInBB(
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      BasicBlock* new_blk_ptr, const Instruction* inst,
+      const std::unordered_set<uint32_t>& callee_result_ids);
+
+  // Inlines a single termination instruction of the callee function.
+  bool InlineTerminationInstructionInBB(
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
+      bool* prevInstWasReturn, const Instruction* inst,
+      const std::unordered_set<uint32_t>& callee_result_ids,
+      uint32_t returnVarId);
+
+  // Inlines the entry block of the callee function.
+  bool InlineEntryBlock(std::unordered_map<uint32_t, uint32_t>* callee2caller,
+                        std::unique_ptr<BasicBlock>* new_blk_ptr,
+                        uint32_t* returnLabelId, bool* prevInstWasReturn,
+                        Function* calleeFn,
+                        const std::unordered_set<uint32_t>& callee_result_ids,
+                        uint32_t returnVarId);
 };
 
 }  // namespace opt

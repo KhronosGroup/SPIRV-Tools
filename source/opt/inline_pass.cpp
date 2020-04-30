@@ -20,6 +20,7 @@
 #include <utility>
 
 #include "source/cfa.h"
+#include "source/opt/reflect.h"
 #include "source/util/make_unique.h"
 
 // Indices of operands in SPIR-V instructions
@@ -311,51 +312,18 @@ std::unique_ptr<BasicBlock> InlinePass::InsertHeaderBlockForSingleTripLoop(
   return new_blk_ptr;
 }
 
-void InlinePass::AddStoresForVariableInitializers(
-    std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    std::unique_ptr<BasicBlock>* new_blk_ptr,
-    UptrVectorIterator<BasicBlock> callee_block_itr) {
-  auto callee_var_itr = callee_block_itr->begin();
-  while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
-    if (callee_var_itr->NumInOperands() == 2) {
-      assert(callee2caller->count(callee_var_itr->result_id()) &&
-             "Expected the variable to have already been mapped.");
-      uint32_t new_var_id = callee2caller->at(callee_var_itr->result_id());
-
-      // The initializer must be a constant or global value.  No mapped
-      // should be used.
-      uint32_t val_id = callee_var_itr->GetSingleWordInOperand(1);
-      AddStore(new_var_id, val_id, new_blk_ptr);
-    }
-    ++callee_var_itr;
-  }
-}
-
-std::unique_ptr<BasicBlock> InlinePass::InlineEntryBlock(
+std::unique_ptr<BasicBlock> InlinePass::InlineInstsBeforeEntryBlock(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
-    std::vector<std::unique_ptr<Instruction>>* new_vars,
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
     std::unordered_map<uint32_t, Instruction*>* preCallSB,
     std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
     uint32_t* returnLabelId, BasicBlock::iterator call_inst_itr,
-    UptrVectorIterator<BasicBlock> call_block_itr, bool caller_is_loop_header) {
-  Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
-      kSpvFunctionCallFunctionId)];
-
-  // Map parameters to actual arguments.
-  MapParams(calleeFn, call_inst_itr, callee2caller);
-
-  // Define caller local variables for all callee variables and create map to
-  // them.
-  if (!CloneAndMapLocals(calleeFn, new_vars, callee2caller)) {
-    return nullptr;
-  }
-
+    UptrVectorIterator<BasicBlock> call_block_itr, bool caller_is_loop_header,
+    Function* calleeFn) {
   // First block needs to use label of original block
   // but map callee label in case of phi reference.
   uint32_t labelId = call_block_itr->id();
-  auto callee_block_itr = calleeFn->begin();
-  uint32_t entry_blk_label_id = callee_block_itr->GetLabelInst()->result_id();
+  uint32_t entry_blk_label_id = calleeFn->begin()->GetLabelInst()->result_id();
   (*callee2caller)[entry_blk_label_id] = labelId;
   std::unique_ptr<BasicBlock> new_blk_ptr =
       MakeUnique<BasicBlock>(NewLabel(labelId));
@@ -396,10 +364,148 @@ std::unique_ptr<BasicBlock> InlinePass::InlineEntryBlock(
         std::move(new_blk_ptr), entry_blk_label_id);
     if (new_blk_ptr == nullptr) return nullptr;
   }
-
-  AddStoresForVariableInitializers(callee2caller, &new_blk_ptr,
-                                   callee_block_itr);
   return new_blk_ptr;
+}
+
+InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
+    std::unordered_map<uint32_t, uint32_t>* callee2caller,
+    std::unique_ptr<BasicBlock>* new_blk_ptr,
+    UptrVectorIterator<BasicBlock> callee_first_block_itr) {
+  auto callee_var_itr = callee_first_block_itr->begin();
+  while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
+    if (callee_var_itr->NumInOperands() == 2) {
+      assert(callee2caller->count(callee_var_itr->result_id()) &&
+             "Expected the variable to have already been mapped.");
+      uint32_t new_var_id = callee2caller->at(callee_var_itr->result_id());
+
+      // The initializer must be a constant or global value.  No mapped
+      // should be used.
+      uint32_t val_id = callee_var_itr->GetSingleWordInOperand(1);
+      AddStore(new_var_id, val_id, new_blk_ptr);
+    }
+    ++callee_var_itr;
+  }
+  return callee_var_itr;
+}
+
+bool InlinePass::InlineInstructionInBB(
+    std::unordered_map<uint32_t, uint32_t>* callee2caller,
+    BasicBlock* new_blk_ptr, const Instruction* inst,
+    const std::unordered_set<uint32_t>& callee_result_ids) {
+  // Copy callee instruction and remap all input Ids.
+  std::unique_ptr<Instruction> cp_inst(inst->Clone(context()));
+  bool succeeded = cp_inst->WhileEachInId(
+      [&callee2caller, &callee_result_ids, this](uint32_t* iid) {
+        const auto mapItr = callee2caller->find(*iid);
+        if (mapItr != callee2caller->end()) {
+          *iid = mapItr->second;
+        } else if (callee_result_ids.find(*iid) != callee_result_ids.end()) {
+          // Forward reference. Allocate a new id, map it,
+          // use it and check for it when remapping result ids
+          const uint32_t nid = context()->TakeNextId();
+          if (nid == 0) {
+            return false;
+          }
+          (*callee2caller)[*iid] = nid;
+          *iid = nid;
+        }
+        return true;
+      });
+  if (!succeeded) {
+    return false;
+  }
+  // If result id is non-zero, remap it. If already mapped, use mapped
+  // value, else use next id.
+  const uint32_t rid = cp_inst->result_id();
+  if (rid != 0) {
+    const auto mapItr = callee2caller->find(rid);
+    uint32_t nid;
+    if (mapItr != callee2caller->end()) {
+      nid = mapItr->second;
+    } else {
+      nid = context()->TakeNextId();
+      if (nid == 0) {
+        return false;
+      }
+      (*callee2caller)[rid] = nid;
+    }
+    cp_inst->SetResultId(nid);
+    get_decoration_mgr()->CloneDecorations(rid, nid);
+  }
+  new_blk_ptr->AddInstruction(std::move(cp_inst));
+  return true;
+}
+
+bool InlinePass::InlineTerminationInstructionInBB(
+    std::unordered_map<uint32_t, uint32_t>* callee2caller,
+    std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
+    bool* prevInstWasReturn, const Instruction* inst,
+    const std::unordered_set<uint32_t>& callee_result_ids,
+    uint32_t returnVarId) {
+  assert(IsTerminatorInst(inst->opcode()));
+  switch (inst->opcode()) {
+    case SpvOpUnreachable:
+    case SpvOpKill: {
+      // Generate a return label so that we split the block with the
+      // function call. Copy the terminator into the new block.
+      if (returnLabelId == 0) {
+        *returnLabelId = context()->TakeNextId();
+        if (returnLabelId == 0) {
+          return false;
+        }
+      }
+      std::unique_ptr<Instruction> terminator(
+          new Instruction(context(), inst->opcode(), 0, 0, {}));
+      new_blk_ptr->get()->AddInstruction(std::move(terminator));
+      break;
+    }
+    case SpvOpReturnValue: {
+      // Store return value to return variable.
+      assert(returnVarId != 0);
+      uint32_t valId = inst->GetInOperand(kSpvReturnValueId).words[0];
+      const auto mapItr = callee2caller->find(valId);
+      if (mapItr != callee2caller->end()) {
+        valId = mapItr->second;
+      }
+      AddStore(returnVarId, valId, new_blk_ptr);
+
+      // Remember we saw a return; if followed by a label, will need to
+      // insert branch.
+      *prevInstWasReturn = true;
+    } break;
+    case SpvOpReturn: {
+      // Remember we saw a return; if followed by a label, will need to
+      // insert branch.
+      *prevInstWasReturn = true;
+    } break;
+    default:
+      return InlineInstructionInBB(callee2caller, new_blk_ptr->get(), inst,
+                                   callee_result_ids);
+      break;
+  }
+  return true;
+}
+
+bool InlinePass::InlineEntryBlock(
+    std::unordered_map<uint32_t, uint32_t>* callee2caller,
+    std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
+    bool* prevInstWasReturn, Function* calleeFn,
+    const std::unordered_set<uint32_t>& callee_result_ids,
+    uint32_t returnVarId) {
+  auto callee_inst_itr = AddStoresForVariableInitializers(
+      callee2caller, new_blk_ptr, calleeFn->begin());
+
+  auto callee_first_block_tail = calleeFn->begin()->tail();
+  while (callee_inst_itr != callee_first_block_tail) {
+    if (!InlineInstructionInBB(callee2caller, new_blk_ptr->get(),
+                               &*callee_inst_itr, callee_result_ids))
+      return false;
+    ++callee_inst_itr;
+  }
+  InlineTerminationInstructionInBB(callee2caller, new_blk_ptr, returnLabelId,
+                                   prevInstWasReturn, &*callee_inst_itr,
+                                   callee_result_ids, returnVarId);
+  return true;
 }
 
 bool InlinePass::GenInlineCode(
@@ -430,20 +536,25 @@ bool InlinePass::GenInlineCode(
   // Single-trip loop contrinue block
   std::unique_ptr<BasicBlock> single_trip_loop_cont_blk;
 
-  // Create blocks for instructions of the caller function up to the call
-  // instruction and the entry block of the callee function.
-  uint32_t returnLabelId = 0;
-  std::unique_ptr<BasicBlock> new_blk_ptr =
-      InlineEntryBlock(new_blocks, new_vars, &callee2caller, &preCallSB,
-                       &single_trip_loop_cont_blk, &returnLabelId,
-                       call_inst_itr, call_block_itr, caller_is_loop_header);
-
   Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
       kSpvFunctionCallFunctionId)];
 
-  // Check for multiple returns in the callee.
-  auto fi = early_return_funcs_.find(calleeFn->result_id());
-  const bool earlyReturn = fi != early_return_funcs_.end();
+  // Map parameters to actual arguments.
+  MapParams(calleeFn, call_inst_itr, &callee2caller);
+
+  // Define caller local variables for all callee variables and create map to
+  // them.
+  if (!CloneAndMapLocals(calleeFn, new_vars, &callee2caller)) {
+    return false;
+  }
+
+  // Inline instructions of the caller function up to the call instruction.
+  uint32_t returnLabelId = 0;
+  std::unique_ptr<BasicBlock> new_blk_ptr = InlineInstsBeforeEntryBlock(
+      new_blocks, &callee2caller, &preCallSB, &single_trip_loop_cont_blk,
+      &returnLabelId, call_inst_itr, call_block_itr, caller_is_loop_header,
+      calleeFn);
+  if (new_blk_ptr == nullptr) return false;
 
   // Create return var if needed.
   const uint32_t calleeTypeId = calleeFn->type_id();
@@ -463,16 +574,32 @@ bool InlinePass::GenInlineCode(
     if (rid != 0) callee_result_ids.insert(rid);
   });
 
+  // Inline the entry block of the callee function.
+  bool prevInstWasReturn = false;
+  if (!InlineEntryBlock(&callee2caller, &new_blk_ptr, &returnLabelId,
+                        &prevInstWasReturn, calleeFn, callee_result_ids,
+                        returnVarId)) {
+    return false;
+  }
+
+  // Check for multiple returns in the callee.
+  auto fi = early_return_funcs_.find(calleeFn->result_id());
+  const bool earlyReturn = fi != early_return_funcs_.end();
+
   // Clone and map callee code. Copy caller block code to beginning of
   // first block and end of last block.
   bool multiBlocks = earlyReturn;
-  bool prevInstWasReturn = false;
+  bool skip = false;
   bool successful = calleeFn->WhileEachInst(
       [&new_blocks, &callee2caller, &call_block_itr, &call_inst_itr,
        &new_blk_ptr, &prevInstWasReturn, &returnLabelId, &returnVarId,
        &calleeTypeId, &multiBlocks, &postCallSB, &preCallSB, earlyReturn,
-       &callee_result_ids, &single_trip_loop_cont_blk, &calleeFn,
+       &callee_result_ids, &single_trip_loop_cont_blk, &calleeFn, &skip,
        this](const Instruction* cpi) {
+        if (skip) {
+          if (IsTerminatorInst(cpi->opcode())) skip = false;
+          return true;
+        }
         switch (cpi->opcode()) {
           case SpvOpFunction:
           case SpvOpFunctionParameter:
@@ -497,8 +624,10 @@ bool InlinePass::GenInlineCode(
           case SpvOpLabel: {
             // Skip the first block.
             if (cpi->result_id() ==
-                calleeFn->begin()->GetLabelInst()->result_id())
+                calleeFn->begin()->GetLabelInst()->result_id()) {
+              skip = true;
               return true;
+            }
 
             // If previous instruction was early return, insert branch
             // instruction to return block.
