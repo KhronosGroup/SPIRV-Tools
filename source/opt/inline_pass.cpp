@@ -600,6 +600,26 @@ bool InlinePass::CopyCallerInstsAfterFunctionCall(
   return true;
 }
 
+void InlinePass::MoveLoopMergeInstToFirstBlock(
+    std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
+  // Move the OpLoopMerge from the last block back to the first, where
+  // it belongs.
+  auto& first = new_blocks->front();
+  auto& last = new_blocks->back();
+  assert(first != last);
+
+  // Insert a modified copy of the loop merge into the first block.
+  auto loop_merge_itr = last->tail();
+  --loop_merge_itr;
+  assert(loop_merge_itr->opcode() == SpvOpLoopMerge);
+  std::unique_ptr<Instruction> cp_inst(loop_merge_itr->Clone(context()));
+  first->tail().InsertBefore(std::move(cp_inst));
+
+  // Remove the loop merge from the last block.
+  loop_merge_itr->RemoveFromList();
+  delete &*loop_merge_itr;
+}
+
 bool InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<Instruction>>* new_vars,
@@ -718,24 +738,8 @@ bool InlinePass::GenInlineCode(
   // Finalize inline code.
   new_blocks->push_back(std::move(new_blk_ptr));
 
-  if (caller_is_loop_header && (new_blocks->size() > 1)) {
-    // Move the OpLoopMerge from the last block back to the first, where
-    // it belongs.
-    auto& first = new_blocks->front();
-    auto& last = new_blocks->back();
-    assert(first != last);
-
-    // Insert a modified copy of the loop merge into the first block.
-    auto loop_merge_itr = last->tail();
-    --loop_merge_itr;
-    assert(loop_merge_itr->opcode() == SpvOpLoopMerge);
-    std::unique_ptr<Instruction> cp_inst(loop_merge_itr->Clone(context()));
-    first->tail().InsertBefore(std::move(cp_inst));
-
-    // Remove the loop merge from the last block.
-    loop_merge_itr->RemoveFromList();
-    delete &*loop_merge_itr;
-  }
+  if (caller_is_loop_header && (new_blocks->size() > 1))
+    MoveLoopMergeInstToFirstBlock(new_blocks);
 
   // Update block map given replacement blocks.
   for (auto& blk : *new_blocks) {

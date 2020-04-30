@@ -257,6 +257,10 @@ class InlinePass : public Pass {
       std::unordered_map<uint32_t, uint32_t>* postCallSB,
       std::unique_ptr<BasicBlock>* new_blk_ptr,
       BasicBlock::iterator call_inst_itr, bool multiBlocks);
+
+  // Move the OpLoopMerge from the last block back to the first.
+  void MoveLoopMergeInstToFirstBlock(
+      std::vector<std::unique_ptr<BasicBlock>>* new_blocks);
 };
 
 }  // namespace opt
