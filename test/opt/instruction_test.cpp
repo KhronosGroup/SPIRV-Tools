@@ -559,14 +559,17 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
 
+  // This demonstrates that the check for whether a pointer is read-only is not
+  // precise: copying a NonWritable-decorated variable can lead to a pointer
+  // that the check does not regard as read-only.
   Instruction* object_copy = context->get_def_use_mgr()->GetDef(12);
-  EXPECT_TRUE(object_copy->IsReadOnlyPointer());
+  EXPECT_FALSE(object_copy->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, AccessChainIntoReadOnlyStructIsReadOnly) {
   const std::string text = R"(
                OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
+          %1 = OpExt  InstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %2 "main"
                OpExecutionMode %2 OriginUpperLeft
