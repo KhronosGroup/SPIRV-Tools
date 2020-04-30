@@ -233,7 +233,7 @@ bool InlinePass::CloneSameBlockOps(
   });
 }
 
-void InlinePass::CopyInstsBeforeEntryBlock(
+void InlinePass::MoveInstsBeforeEntryBlock(
     std::unordered_map<uint32_t, Instruction*>* preCallSB,
     BasicBlock* new_blk_ptr, BasicBlock::iterator call_inst_itr,
     UptrVectorIterator<BasicBlock> call_block_itr) {
@@ -516,7 +516,7 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
   return new_blk_ptr;
 }
 
-bool InlinePass::CopyCallerInstsAfterFunctionCall(
+bool InlinePass::MoveCallerInstsAfterFunctionCall(
     std::unordered_map<uint32_t, Instruction*>* preCallSB,
     std::unordered_map<uint32_t, uint32_t>* postCallSB,
     std::unique_ptr<BasicBlock>* new_blk_ptr,
@@ -612,8 +612,8 @@ bool InlinePass::GenInlineCode(
   std::unique_ptr<BasicBlock> new_blk_ptr =
       MakeUnique<BasicBlock>(NewLabel(call_block_itr->id()));
 
-  // Copy instructions of original caller block up to call instruction.
-  CopyInstsBeforeEntryBlock(&preCallSB, new_blk_ptr.get(), call_inst_itr,
+  // Move instructions of original caller block up to call instruction.
+  MoveInstsBeforeEntryBlock(&preCallSB, new_blk_ptr.get(), call_inst_itr,
                             call_block_itr);
 
   if (caller_is_loop_header &&
@@ -631,6 +631,7 @@ bool InlinePass::GenInlineCode(
   }
 
   uint32_t returnLabelId = 0;
+  bool earlyReturn = false;
   if (early_return_funcs_.find(calleeFn->result_id()) !=
       early_return_funcs_.end()) {
     // If callee has early return, insert a header block for
@@ -648,6 +649,7 @@ bool InlinePass::GenInlineCode(
         new_blocks, &callee2caller, &single_trip_loop_cont_blk, &returnLabelId,
         std::move(new_blk_ptr), entry_blk_label_id);
     if (new_blk_ptr == nullptr) return false;
+    earlyReturn = true;
   }
 
   // Create return var if needed.
@@ -676,6 +678,7 @@ bool InlinePass::GenInlineCode(
     return false;
   }
 
+  // Inline blocks of the callee function other than the entry block.
   bool multiBlocks = false;
   new_blk_ptr =
       InlineBasicBlocks(new_blocks, &callee2caller, std::move(new_blk_ptr),
@@ -696,10 +699,8 @@ bool InlinePass::GenInlineCode(
     // to accommodate early returns, insert the continue
     // target block now, with a false branch back to the loop
     // header.
-    if (early_return_funcs_.find(calleeFn->result_id()) !=
-        early_return_funcs_.end()) {
+    if (earlyReturn)
       new_blocks->push_back(std::move(single_trip_loop_cont_blk));
-    }
 
     // Generate the return block.
     new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(returnLabelId));
@@ -713,7 +714,8 @@ bool InlinePass::GenInlineCode(
     AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
   }
 
-  if (!CopyCallerInstsAfterFunctionCall(&preCallSB, &postCallSB, &new_blk_ptr,
+  // Move instructions of original caller block after call instruction.
+  if (!MoveCallerInstsAfterFunctionCall(&preCallSB, &postCallSB, &new_blk_ptr,
                                         call_inst_itr, multiBlocks))
     return false;
 

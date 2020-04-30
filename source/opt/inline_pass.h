@@ -173,9 +173,9 @@ class InlinePass : public Pass {
   std::unordered_set<uint32_t> funcs_called_from_continue_;
 
  private:
-  // Copies instructions of the caller function up to the call instruction
+  // Moves instructions of the caller function up to the call instruction
   // to |new_blk_ptr|.
-  void CopyInstsBeforeEntryBlock(
+  void MoveInstsBeforeEntryBlock(
       std::unordered_map<uint32_t, Instruction*>* preCallSB,
       BasicBlock* new_blk_ptr, BasicBlock::iterator call_inst_itr,
       UptrVectorIterator<BasicBlock> call_block_itr);
@@ -240,9 +240,9 @@ class InlinePass : public Pass {
       const std::unordered_set<uint32_t>& callee_result_ids,
       uint32_t returnVarId);
 
-  // Copies instructions of the caller function after the call instruction
+  // Moves instructions of the caller function after the call instruction
   // to |new_blk_ptr|.
-  bool CopyCallerInstsAfterFunctionCall(
+  bool MoveCallerInstsAfterFunctionCall(
       std::unordered_map<uint32_t, Instruction*>* preCallSB,
       std::unordered_map<uint32_t, uint32_t>* postCallSB,
       std::unique_ptr<BasicBlock>* new_blk_ptr,
