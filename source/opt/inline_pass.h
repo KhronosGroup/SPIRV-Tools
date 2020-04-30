@@ -233,6 +233,22 @@ class InlinePass : public Pass {
                         Function* calleeFn,
                         const std::unordered_set<uint32_t>& callee_result_ids,
                         uint32_t returnVarId);
+
+  // Inlines a OpLabel instruction of the callee function.
+  uint32_t InlineLabel(
+      const Instruction* inst, std::unique_ptr<BasicBlock>* new_blk_ptr,
+      uint32_t* returnLabelId, bool* prevInstWasReturn,
+      const std::unordered_map<uint32_t, uint32_t>& callee2caller);
+
+  // Inlines basic blocks of the callee function other than the entry basic
+  // block.
+  std::unique_ptr<BasicBlock> InlineBasicBlocks(
+      std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t* returnLabelId,
+      bool* prevInstWasReturn, bool* multiBlocks, Function* calleeFn,
+      const std::unordered_set<uint32_t>& callee_result_ids,
+      uint32_t returnVarId);
 };
 
 }  // namespace opt

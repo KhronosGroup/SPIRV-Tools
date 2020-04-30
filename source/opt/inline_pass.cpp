@@ -448,9 +448,9 @@ bool InlinePass::InlineTerminationInstructionInBB(
     case SpvOpKill: {
       // Generate a return label so that we split the block with the
       // function call. Copy the terminator into the new block.
-      if (returnLabelId == 0) {
+      if (*returnLabelId == 0) {
         *returnLabelId = context()->TakeNextId();
-        if (returnLabelId == 0) {
+        if (*returnLabelId == 0) {
           return false;
         }
       }
@@ -498,14 +498,77 @@ bool InlinePass::InlineEntryBlock(
   auto callee_first_block_tail = calleeFn->begin()->tail();
   while (callee_inst_itr != callee_first_block_tail) {
     if (!InlineInstructionInBB(callee2caller, new_blk_ptr->get(),
-                               &*callee_inst_itr, callee_result_ids))
+                               &*callee_inst_itr, callee_result_ids)) {
       return false;
+    }
     ++callee_inst_itr;
   }
   InlineTerminationInstructionInBB(callee2caller, new_blk_ptr, returnLabelId,
                                    prevInstWasReturn, &*callee_inst_itr,
                                    callee_result_ids, returnVarId);
   return true;
+}
+
+uint32_t InlinePass::InlineLabel(
+    const Instruction* inst, std::unique_ptr<BasicBlock>* new_blk_ptr,
+    uint32_t* returnLabelId, bool* prevInstWasReturn,
+    const std::unordered_map<uint32_t, uint32_t>& callee2caller) {
+  // If previous instruction was early return, insert branch
+  // instruction to return block.
+  if (*prevInstWasReturn) {
+    if (*returnLabelId == 0) {
+      *returnLabelId = context()->TakeNextId();
+      if (*returnLabelId == 0) {
+        return 0;
+      }
+    }
+    AddBranch(*returnLabelId, new_blk_ptr);
+    *prevInstWasReturn = false;
+  }
+  // If result id is already mapped, use it, otherwise get a new
+  // one.
+  const uint32_t rid = inst->result_id();
+  const auto mapItr = callee2caller.find(rid);
+  return (mapItr != callee2caller.end()) ? mapItr->second
+                                         : context()->TakeNextId();
+}
+
+std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
+    std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+    std::unordered_map<uint32_t, uint32_t>* callee2caller,
+    std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t* returnLabelId,
+    bool* prevInstWasReturn, bool* multiBlocks, Function* calleeFn,
+    const std::unordered_set<uint32_t>& callee_result_ids,
+    uint32_t returnVarId) {
+  auto callee_block_itr = calleeFn->begin();
+  ++callee_block_itr;
+  if (callee_block_itr != calleeFn->end()) *multiBlocks = true;
+
+  while (callee_block_itr != calleeFn->end()) {
+    // Inline OpLabel instruction and create next block.
+    uint32_t labelId =
+        InlineLabel(callee_block_itr->GetLabelInst(), &new_blk_ptr,
+                    returnLabelId, prevInstWasReturn, *callee2caller);
+    if (labelId == 0) {
+      return nullptr;
+    }
+    new_blocks->push_back(std::move(new_blk_ptr));
+    new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(labelId));
+
+    auto tail_inst_itr = callee_block_itr->tail();
+    for (auto inst_itr = callee_block_itr->begin(); inst_itr != tail_inst_itr;
+         ++inst_itr) {
+      if (!InlineInstructionInBB(callee2caller, new_blk_ptr.get(), &*inst_itr,
+                                 callee_result_ids)) {
+        return nullptr;
+      }
+    }
+    InlineTerminationInstructionInBB(callee2caller, &new_blk_ptr, returnLabelId,
+                                     prevInstWasReturn, &*tail_inst_itr,
+                                     callee_result_ids, returnVarId);
+    ++callee_block_itr;
+  }
+  return new_blk_ptr;
 }
 
 bool InlinePass::GenInlineCode(
@@ -586,199 +649,62 @@ bool InlinePass::GenInlineCode(
   auto fi = early_return_funcs_.find(calleeFn->result_id());
   const bool earlyReturn = fi != early_return_funcs_.end();
 
-  // Clone and map callee code. Copy caller block code to beginning of
-  // first block and end of last block.
   bool multiBlocks = earlyReturn;
-  bool skip = false;
-  bool successful = calleeFn->WhileEachInst(
-      [&new_blocks, &callee2caller, &call_block_itr, &call_inst_itr,
-       &new_blk_ptr, &prevInstWasReturn, &returnLabelId, &returnVarId,
-       &calleeTypeId, &multiBlocks, &postCallSB, &preCallSB, earlyReturn,
-       &callee_result_ids, &single_trip_loop_cont_blk, &calleeFn, &skip,
-       this](const Instruction* cpi) {
-        if (skip) {
-          if (IsTerminatorInst(cpi->opcode())) skip = false;
-          return true;
+  new_blk_ptr =
+      InlineBasicBlocks(new_blocks, &callee2caller, std::move(new_blk_ptr),
+                        &returnLabelId, &prevInstWasReturn, &multiBlocks,
+                        calleeFn, callee_result_ids, returnVarId);
+  if (new_blk_ptr == nullptr) return false;
+
+  {
+    // If there was an early return, we generated a return label id
+    // for it.  Now we have to generate the return block with that Id.
+    if (returnLabelId != 0) {
+      // If previous instruction was return, insert branch instruction
+      // to return block.
+      if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
+      if (earlyReturn) {
+        // If we generated a loop header for the single-trip loop
+        // to accommodate early returns, insert the continue
+        // target block now, with a false branch back to the loop
+        // header.
+        new_blocks->push_back(std::move(new_blk_ptr));
+        new_blk_ptr = std::move(single_trip_loop_cont_blk);
+      }
+      // Generate the return block.
+      new_blocks->push_back(std::move(new_blk_ptr));
+      new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(returnLabelId));
+      multiBlocks = true;
+    }
+    // Load return value into result id of call, if it exists.
+    if (returnVarId != 0) {
+      const uint32_t resId = call_inst_itr->result_id();
+      assert(resId != 0);
+      AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
+    }
+    // Copy remaining instructions from caller block.
+    for (Instruction* inst = call_inst_itr->NextNode(); inst;
+         inst = call_inst_itr->NextNode()) {
+      inst->RemoveFromList();
+      std::unique_ptr<Instruction> cp_inst(inst);
+      // If multiple blocks generated, regenerate any same-block
+      // instruction that has not been seen in this last block.
+      if (multiBlocks) {
+        if (!CloneSameBlockOps(&cp_inst, &postCallSB, &preCallSB,
+                               &new_blk_ptr)) {
+          return false;
         }
-        switch (cpi->opcode()) {
-          case SpvOpFunction:
-          case SpvOpFunctionParameter:
-          case SpvOpVariable:
-            // Already processed
-            break;
-          case SpvOpUnreachable:
-          case SpvOpKill: {
-            // Generate a return label so that we split the block with the
-            // function call. Copy the terminator into the new block.
-            if (returnLabelId == 0) {
-              returnLabelId = context()->TakeNextId();
-              if (returnLabelId == 0) {
-                return false;
-              }
-            }
-            std::unique_ptr<Instruction> terminator(
-                new Instruction(context(), cpi->opcode(), 0, 0, {}));
-            new_blk_ptr->AddInstruction(std::move(terminator));
-            break;
-          }
-          case SpvOpLabel: {
-            // Skip the first block.
-            if (cpi->result_id() ==
-                calleeFn->begin()->GetLabelInst()->result_id()) {
-              skip = true;
-              return true;
-            }
 
-            // If previous instruction was early return, insert branch
-            // instruction to return block.
-            if (prevInstWasReturn) {
-              if (returnLabelId == 0) {
-                returnLabelId = context()->TakeNextId();
-                if (returnLabelId == 0) {
-                  return false;
-                }
-              }
-              AddBranch(returnLabelId, &new_blk_ptr);
-              prevInstWasReturn = false;
-            }
-            // Finish current block (if it exists) and get label for next block.
-            uint32_t labelId;
-            if (new_blk_ptr != nullptr) {
-              new_blocks->push_back(std::move(new_blk_ptr));
-              // If result id is already mapped, use it, otherwise get a new
-              // one.
-              const uint32_t rid = cpi->result_id();
-              const auto mapItr = callee2caller.find(rid);
-              labelId = (mapItr != callee2caller.end())
-                            ? mapItr->second
-                            : context()->TakeNextId();
-              if (labelId == 0) {
-                return false;
-              }
-            }
-            // Create first/next block.
-            new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(labelId));
-            multiBlocks = true;
-          } break;
-          case SpvOpReturnValue: {
-            // Store return value to return variable.
-            assert(returnVarId != 0);
-            uint32_t valId = cpi->GetInOperand(kSpvReturnValueId).words[0];
-            const auto mapItr = callee2caller.find(valId);
-            if (mapItr != callee2caller.end()) {
-              valId = mapItr->second;
-            }
-            AddStore(returnVarId, valId, &new_blk_ptr);
-
-            // Remember we saw a return; if followed by a label, will need to
-            // insert branch.
-            prevInstWasReturn = true;
-          } break;
-          case SpvOpReturn: {
-            // Remember we saw a return; if followed by a label, will need to
-            // insert branch.
-            prevInstWasReturn = true;
-          } break;
-          case SpvOpFunctionEnd: {
-            // If there was an early return, we generated a return label id
-            // for it.  Now we have to generate the return block with that Id.
-            if (returnLabelId != 0) {
-              // If previous instruction was return, insert branch instruction
-              // to return block.
-              if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
-              if (earlyReturn) {
-                // If we generated a loop header for the single-trip loop
-                // to accommodate early returns, insert the continue
-                // target block now, with a false branch back to the loop
-                // header.
-                new_blocks->push_back(std::move(new_blk_ptr));
-                new_blk_ptr = std::move(single_trip_loop_cont_blk);
-              }
-              // Generate the return block.
-              new_blocks->push_back(std::move(new_blk_ptr));
-              new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(returnLabelId));
-              multiBlocks = true;
-            }
-            // Load return value into result id of call, if it exists.
-            if (returnVarId != 0) {
-              const uint32_t resId = call_inst_itr->result_id();
-              assert(resId != 0);
-              AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
-            }
-            // Copy remaining instructions from caller block.
-            for (Instruction* inst = call_inst_itr->NextNode(); inst;
-                 inst = call_inst_itr->NextNode()) {
-              inst->RemoveFromList();
-              std::unique_ptr<Instruction> cp_inst(inst);
-              // If multiple blocks generated, regenerate any same-block
-              // instruction that has not been seen in this last block.
-              if (multiBlocks) {
-                if (!CloneSameBlockOps(&cp_inst, &postCallSB, &preCallSB,
-                                       &new_blk_ptr)) {
-                  return false;
-                }
-
-                // Remember same-block ops in this block.
-                if (IsSameBlockOp(&*cp_inst)) {
-                  const uint32_t rid = cp_inst->result_id();
-                  postCallSB[rid] = rid;
-                }
-              }
-              new_blk_ptr->AddInstruction(std::move(cp_inst));
-            }
-            // Finalize inline code.
-            new_blocks->push_back(std::move(new_blk_ptr));
-          } break;
-          default: {
-            // Copy callee instruction and remap all input Ids.
-            std::unique_ptr<Instruction> cp_inst(cpi->Clone(context()));
-            bool succeeded = cp_inst->WhileEachInId(
-                [&callee2caller, &callee_result_ids, this](uint32_t* iid) {
-                  const auto mapItr = callee2caller.find(*iid);
-                  if (mapItr != callee2caller.end()) {
-                    *iid = mapItr->second;
-                  } else if (callee_result_ids.find(*iid) !=
-                             callee_result_ids.end()) {
-                    // Forward reference. Allocate a new id, map it,
-                    // use it and check for it when remapping result ids
-                    const uint32_t nid = context()->TakeNextId();
-                    if (nid == 0) {
-                      return false;
-                    }
-                    callee2caller[*iid] = nid;
-                    *iid = nid;
-                  }
-                  return true;
-                });
-            if (!succeeded) {
-              return false;
-            }
-            // If result id is non-zero, remap it. If already mapped, use mapped
-            // value, else use next id.
-            const uint32_t rid = cp_inst->result_id();
-            if (rid != 0) {
-              const auto mapItr = callee2caller.find(rid);
-              uint32_t nid;
-              if (mapItr != callee2caller.end()) {
-                nid = mapItr->second;
-              } else {
-                nid = context()->TakeNextId();
-                if (nid == 0) {
-                  return false;
-                }
-                callee2caller[rid] = nid;
-              }
-              cp_inst->SetResultId(nid);
-              get_decoration_mgr()->CloneDecorations(rid, nid);
-            }
-            new_blk_ptr->AddInstruction(std::move(cp_inst));
-          } break;
+        // Remember same-block ops in this block.
+        if (IsSameBlockOp(&*cp_inst)) {
+          const uint32_t rid = cp_inst->result_id();
+          postCallSB[rid] = rid;
         }
-        return true;
-      });
-
-  if (!successful) {
-    return false;
+      }
+      new_blk_ptr->AddInstruction(std::move(cp_inst));
+    }
+    // Finalize inline code.
+    new_blocks->push_back(std::move(new_blk_ptr));
   }
 
   if (caller_is_loop_header && (new_blocks->size() > 1)) {
