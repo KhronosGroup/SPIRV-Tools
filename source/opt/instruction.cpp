@@ -415,7 +415,7 @@ bool Instruction::IsVulkanUniformBuffer() const {
 }
 
 bool Instruction::IsReadOnlyPointerShaders() const {
-  if (!type_id()) {
+  if (type_id() == 0) {
     return false;
   }
 
@@ -454,7 +454,7 @@ bool Instruction::IsReadOnlyPointerShaders() const {
 }
 
 bool Instruction::IsReadOnlyPointerKernel() const {
-  if (!type_id()) {
+  if (type_id() == 0) {
     return false;
   }
 

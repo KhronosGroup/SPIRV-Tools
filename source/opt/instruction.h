@@ -396,7 +396,13 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Memory-to-memory instructions are not considered loads.
   inline bool IsLoad() const;
 
-  // Returns true if the instruction generates a read-only pointer.
+  // Returns true if the instruction generates a pointer that is definitely
+  // read-only.  This is determined by analysing the pointer type's storage
+  // class and decorations that target the pointer's id.  It does not analyse
+  // other instructions that the pointer may be derived from.  Thus if 'true' is
+  // returned, the pointer is definitely read-only, while if 'false' is returned
+  // it is possible that the pointer may actually be read-only if it is derived
+  // from another pointer that is decorated as read-only.
   bool IsReadOnlyPointer() const;
 
   // The following functions check for the various descriptor types defined in
@@ -526,7 +532,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return 0;
   }
 
-  // Returns true if the instruction generates a read-only pointer.  The first
+  // Returns true if the instruction generates a read-only pointer, with the
+  // same caveats documented in the comment for IsReadOnlyPointer.  The first
   // version assumes the module is a shader module.  The second assumes a
   // kernel.
   bool IsReadOnlyPointerShaders() const;

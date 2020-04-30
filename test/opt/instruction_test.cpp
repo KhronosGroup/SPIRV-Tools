@@ -29,8 +29,8 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using spvtest::MakeInstruction;
 using ::testing::Eq;
+using spvtest::MakeInstruction;
 using DescriptorTypeTest = PassTest<::testing::Test>;
 using OpaqueTypeTest = PassTest<::testing::Test>;
 using GetBaseTest = PassTest<::testing::Test>;
@@ -339,6 +339,7 @@ TEST_F(DescriptorTypeTest, StorageImage) {
           %3 = OpVariable %8 UniformConstant
           %2 = OpFunction %4 None %5
           %9 = OpLabel
+         %10 = OpCopyObject %8 %3
                OpReturn
                OpFunctionEnd
 )";
@@ -354,6 +355,9 @@ TEST_F(DescriptorTypeTest, StorageImage) {
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
+
+  Instruction* object_copy = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_FALSE(object_copy->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, SampledImage) {
@@ -375,6 +379,7 @@ TEST_F(DescriptorTypeTest, SampledImage) {
           %3 = OpVariable %8 UniformConstant
           %2 = OpFunction %4 None %5
           %9 = OpLabel
+         %10 = OpCopyObject %8 %3
                OpReturn
                OpFunctionEnd
 )";
@@ -390,6 +395,9 @@ TEST_F(DescriptorTypeTest, SampledImage) {
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
+
+  Instruction* object_copy = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_TRUE(object_copy->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
@@ -411,6 +419,7 @@ TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
           %3 = OpVariable %8 UniformConstant
           %2 = OpFunction %4 None %5
           %9 = OpLabel
+         %10 = OpCopyObject %8 %3
                OpReturn
                OpFunctionEnd
 )";
@@ -426,6 +435,9 @@ TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
+
+  Instruction* object_copy = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_FALSE(object_copy->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, StorageBuffer) {
@@ -450,6 +462,7 @@ TEST_F(DescriptorTypeTest, StorageBuffer) {
           %3 = OpVariable %10 Uniform
           %2 = OpFunction %4 None %5
          %11 = OpLabel
+         %12 = OpCopyObject %8 %3
                OpReturn
                OpFunctionEnd
 )";
@@ -465,6 +478,9 @@ TEST_F(DescriptorTypeTest, StorageBuffer) {
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
+
+  Instruction* object_copy = context->get_def_use_mgr()->GetDef(12);
+  EXPECT_FALSE(object_copy->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, UniformBuffer) {
@@ -489,6 +505,7 @@ TEST_F(DescriptorTypeTest, UniformBuffer) {
           %3 = OpVariable %10 Uniform
           %2 = OpFunction %4 None %5
          %11 = OpLabel
+         %12 = OpCopyObject %10 %3
                OpReturn
                OpFunctionEnd
 )";
@@ -504,6 +521,9 @@ TEST_F(DescriptorTypeTest, UniformBuffer) {
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
+
+  Instruction* object_copy = context->get_def_use_mgr()->GetDef(12);
+  EXPECT_TRUE(object_copy->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
@@ -529,6 +549,7 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
           %3 = OpVariable %10 Uniform
           %2 = OpFunction %4 None %5
          %11 = OpLabel
+         %12 = OpCopyObject %8 %3
                OpReturn
                OpFunctionEnd
 )";
@@ -537,6 +558,103 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
+
+  Instruction* object_copy = context->get_def_use_mgr()->GetDef(12);
+  EXPECT_TRUE(object_copy->IsReadOnlyPointer());
+}
+
+TEST_F(DescriptorTypeTest, AccessChainIntoReadOnlyStructIsReadOnly) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 320
+               OpMemberDecorate %3 0 Offset 0
+               OpMemberDecorate %3 1 Offset 4
+               OpDecorate %3 Block
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFloat 32
+          %3 = OpTypeStruct %6 %8
+          %9 = OpTypePointer PushConstant %3
+         %10 = OpVariable %9 PushConstant
+         %11 = OpConstant %6 0
+         %12 = OpTypePointer PushConstant %6
+         %13 = OpConstant %6 1
+         %14 = OpTypePointer PushConstant %8
+          %2 = OpFunction %4 None %5
+         %15 = OpLabel
+         %16 = OpVariable %7 Function
+         %17 = OpAccessChain %12 %10 %11
+         %18 = OpAccessChain %14 %10 %13
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+
+  Instruction* push_constant_struct_variable =
+      context->get_def_use_mgr()->GetDef(10);
+  EXPECT_TRUE(push_constant_struct_variable->IsReadOnlyPointer());
+
+  Instruction* push_constant_struct_field_0 =
+      context->get_def_use_mgr()->GetDef(17);
+  EXPECT_TRUE(push_constant_struct_field_0->IsReadOnlyPointer());
+
+  Instruction* push_constant_struct_field_1 =
+      context->get_def_use_mgr()->GetDef(18);
+  EXPECT_TRUE(push_constant_struct_field_1->IsReadOnlyPointer());
+}
+
+TEST_F(DescriptorTypeTest, ReadOnlyPointerParameter) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 320
+               OpMemberDecorate %3 0 Offset 0
+               OpMemberDecorate %3 1 Offset 4
+               OpDecorate %3 Block
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFloat 32
+          %3 = OpTypeStruct %6 %8
+          %9 = OpTypePointer PushConstant %3
+         %10 = OpVariable %9 PushConstant
+         %11 = OpConstant %6 0
+         %12 = OpTypePointer PushConstant %6
+         %13 = OpConstant %6 1
+         %14 = OpTypePointer PushConstant %8
+         %15 = OpTypeFunction %4 %9
+          %2 = OpFunction %4 None %5
+         %16 = OpLabel
+         %17 = OpVariable %7 Function
+         %18 = OpAccessChain %12 %10 %11
+         %19 = OpAccessChain %14 %10 %13
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %4 None %15
+         %21 = OpFunctionParameter %9
+         %22 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+
+  Instruction* push_constant_struct_parameter =
+      context->get_def_use_mgr()->GetDef(21);
+  EXPECT_TRUE(push_constant_struct_parameter->IsReadOnlyPointer());
 }
 
 TEST_F(OpaqueTypeTest, BaseOpaqueTypesShader) {
