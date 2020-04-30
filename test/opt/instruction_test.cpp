@@ -569,7 +569,7 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
 TEST_F(DescriptorTypeTest, AccessChainIntoReadOnlyStructIsReadOnly) {
   const std::string text = R"(
                OpCapability Shader
-          %1 = OpExt  InstImport "GLSL.std.450"
+          %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %2 "main"
                OpExecutionMode %2 OriginUpperLeft
