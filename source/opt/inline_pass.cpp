@@ -571,6 +571,35 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
   return new_blk_ptr;
 }
 
+bool InlinePass::CopyCallerInstsAfterFunctionCall(
+    std::unordered_map<uint32_t, Instruction*>* preCallSB,
+    std::unordered_map<uint32_t, uint32_t>* postCallSB,
+    std::unique_ptr<BasicBlock>* new_blk_ptr,
+    BasicBlock::iterator call_inst_itr, bool multiBlocks) {
+  // Copy remaining instructions from caller block.
+  for (Instruction* inst = call_inst_itr->NextNode(); inst;
+       inst = call_inst_itr->NextNode()) {
+    inst->RemoveFromList();
+    std::unique_ptr<Instruction> cp_inst(inst);
+    // If multiple blocks generated, regenerate any same-block
+    // instruction that has not been seen in this last block.
+    if (multiBlocks) {
+      if (!CloneSameBlockOps(&cp_inst, postCallSB, preCallSB, new_blk_ptr)) {
+        return false;
+      }
+
+      // Remember same-block ops in this block.
+      if (IsSameBlockOp(&*cp_inst)) {
+        const uint32_t rid = cp_inst->result_id();
+        (*postCallSB)[rid] = rid;
+      }
+    }
+    new_blk_ptr->get()->AddInstruction(std::move(cp_inst));
+  }
+
+  return true;
+}
+
 bool InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<Instruction>>* new_vars,
@@ -611,7 +640,7 @@ bool InlinePass::GenInlineCode(
     return false;
   }
 
-  // Inline instructions of the caller function up to the call instruction.
+  // Move instructions of the caller function up to the call instruction.
   uint32_t returnLabelId = 0;
   std::unique_ptr<BasicBlock> new_blk_ptr = InlineInstsBeforeEntryBlock(
       new_blocks, &callee2caller, &preCallSB, &single_trip_loop_cont_blk,
@@ -645,67 +674,49 @@ bool InlinePass::GenInlineCode(
     return false;
   }
 
-  // Check for multiple returns in the callee.
-  auto fi = early_return_funcs_.find(calleeFn->result_id());
-  const bool earlyReturn = fi != early_return_funcs_.end();
-
-  bool multiBlocks = earlyReturn;
+  bool multiBlocks = false;
   new_blk_ptr =
       InlineBasicBlocks(new_blocks, &callee2caller, std::move(new_blk_ptr),
                         &returnLabelId, &prevInstWasReturn, &multiBlocks,
                         calleeFn, callee_result_ids, returnVarId);
   if (new_blk_ptr == nullptr) return false;
 
-  {
-    // If there was an early return, we generated a return label id
-    // for it.  Now we have to generate the return block with that Id.
-    if (returnLabelId != 0) {
-      // If previous instruction was return, insert branch instruction
-      // to return block.
-      if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
-      if (earlyReturn) {
-        // If we generated a loop header for the single-trip loop
-        // to accommodate early returns, insert the continue
-        // target block now, with a false branch back to the loop
-        // header.
-        new_blocks->push_back(std::move(new_blk_ptr));
-        new_blk_ptr = std::move(single_trip_loop_cont_blk);
-      }
-      // Generate the return block.
-      new_blocks->push_back(std::move(new_blk_ptr));
-      new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(returnLabelId));
-      multiBlocks = true;
-    }
-    // Load return value into result id of call, if it exists.
-    if (returnVarId != 0) {
-      const uint32_t resId = call_inst_itr->result_id();
-      assert(resId != 0);
-      AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
-    }
-    // Copy remaining instructions from caller block.
-    for (Instruction* inst = call_inst_itr->NextNode(); inst;
-         inst = call_inst_itr->NextNode()) {
-      inst->RemoveFromList();
-      std::unique_ptr<Instruction> cp_inst(inst);
-      // If multiple blocks generated, regenerate any same-block
-      // instruction that has not been seen in this last block.
-      if (multiBlocks) {
-        if (!CloneSameBlockOps(&cp_inst, &postCallSB, &preCallSB,
-                               &new_blk_ptr)) {
-          return false;
-        }
+  // If there was an early return, we generated a return label id
+  // for it.  Now we have to generate the return block with that Id.
+  if (returnLabelId != 0) {
+    // If previous instruction was return, insert branch instruction
+    // to return block.
+    if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
 
-        // Remember same-block ops in this block.
-        if (IsSameBlockOp(&*cp_inst)) {
-          const uint32_t rid = cp_inst->result_id();
-          postCallSB[rid] = rid;
-        }
-      }
-      new_blk_ptr->AddInstruction(std::move(cp_inst));
-    }
-    // Finalize inline code.
     new_blocks->push_back(std::move(new_blk_ptr));
+
+    // If we generated a loop header for the single-trip loop
+    // to accommodate early returns, insert the continue
+    // target block now, with a false branch back to the loop
+    // header.
+    if (early_return_funcs_.find(calleeFn->result_id()) !=
+        early_return_funcs_.end()) {
+      new_blocks->push_back(std::move(single_trip_loop_cont_blk));
+    }
+
+    // Generate the return block.
+    new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(returnLabelId));
+    multiBlocks = false;
   }
+
+  // Load return value into result id of call, if it exists.
+  if (returnVarId != 0) {
+    const uint32_t resId = call_inst_itr->result_id();
+    assert(resId != 0);
+    AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
+  }
+
+  if (!CopyCallerInstsAfterFunctionCall(&preCallSB, &postCallSB, &new_blk_ptr,
+                                        call_inst_itr, multiBlocks))
+    return false;
+
+  // Finalize inline code.
+  new_blocks->push_back(std::move(new_blk_ptr));
 
   if (caller_is_loop_header && (new_blocks->size() > 1)) {
     // Move the OpLoopMerge from the last block back to the first, where

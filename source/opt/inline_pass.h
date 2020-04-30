@@ -196,7 +196,7 @@ class InlinePass : public Pass {
       uint32_t* returnLabelId, std::unique_ptr<BasicBlock> new_blk_ptr,
       uint32_t entry_blk_label_id);
 
-  // Inlines instructions of the caller function up to the call instruction.
+  // Moves instructions of the caller function up to the call instruction.
   std::unique_ptr<BasicBlock> InlineInstsBeforeEntryBlock(
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
@@ -249,6 +249,14 @@ class InlinePass : public Pass {
       bool* prevInstWasReturn, bool* multiBlocks, Function* calleeFn,
       const std::unordered_set<uint32_t>& callee_result_ids,
       uint32_t returnVarId);
+
+  // Copies instructions of the caller function after the call instruction
+  // to |new_blk_ptr|.
+  bool CopyCallerInstsAfterFunctionCall(
+      std::unordered_map<uint32_t, Instruction*>* preCallSB,
+      std::unordered_map<uint32_t, uint32_t>* postCallSB,
+      std::unique_ptr<BasicBlock>* new_blk_ptr,
+      BasicBlock::iterator call_inst_itr, bool multiBlocks);
 };
 
 }  // namespace opt
