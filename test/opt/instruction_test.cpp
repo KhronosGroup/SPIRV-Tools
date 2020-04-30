@@ -560,8 +560,8 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
   EXPECT_TRUE(variable->IsReadOnlyPointer());
 
   // This demonstrates that the check for whether a pointer is read-only is not
-  // precise: copying a NonWritable-decorated variable can lead to a pointer
-  // that the check does not regard as read-only.
+  // precise: copying a NonWritable-decorated variable can yield a pointer that
+  // the check does not regard as read-only.
   Instruction* object_copy = context->get_def_use_mgr()->GetDef(12);
   EXPECT_FALSE(object_copy->IsReadOnlyPointer());
 }
