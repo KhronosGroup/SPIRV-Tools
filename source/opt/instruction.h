@@ -641,7 +641,8 @@ inline void Instruction::SetDebugScope(const DebugScope& scope) {
 inline void Instruction::UpdateDebugInfo(const Instruction* from) {
   if (from == nullptr) return;
   clear_dbg_line_insts();
-  dbg_line_insts().push_back(from->dbg_line_insts()[0]);
+  if (!from->dbg_line_insts().empty())
+    dbg_line_insts().push_back(from->dbg_line_insts()[0]);
   SetDebugScope(from->GetDebugScope());
 }
 
