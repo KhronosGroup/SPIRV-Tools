@@ -291,6 +291,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Sets DebugScope.
   inline void SetDebugScope(const DebugScope& scope);
   inline const DebugScope& GetDebugScope() const { return dbg_scope_; }
+  // Updates OpLine and DebugScope based on the information of |from|.
+  inline void UpdateDebugInfo(const Instruction* from);
   // Remove the |index|-th operand
   void RemoveOperand(uint32_t index) {
     operands_.erase(operands_.begin() + index);
@@ -634,6 +636,13 @@ inline void Instruction::SetDebugScope(const DebugScope& scope) {
   for (auto& i : dbg_line_insts_) {
     i.dbg_scope_ = scope;
   }
+}
+
+inline void Instruction::UpdateDebugInfo(const Instruction* from) {
+  if (from == nullptr) return;
+  clear_dbg_line_insts();
+  dbg_line_insts().push_back(from->dbg_line_insts()[0]);
+  SetDebugScope(from->GetDebugScope());
 }
 
 inline void Instruction::SetResultType(uint32_t ty_id) {

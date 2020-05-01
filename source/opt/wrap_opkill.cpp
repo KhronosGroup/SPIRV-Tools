@@ -55,13 +55,16 @@ bool WrapOpKill::ReplaceWithFunctionCall(Instruction* inst) {
   InstructionBuilder ir_builder(
       context(), inst,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
-  uint32_t func_id = GetOpKillFuncId();
+  uint32_t func_id = GetOpKillFuncId(inst);
   if (func_id == 0) {
     return false;
   }
-  if (ir_builder.AddFunctionCall(GetVoidTypeId(), func_id, {}) == nullptr) {
+  Instruction* call_inst =
+      ir_builder.AddFunctionCall(GetVoidTypeId(), func_id, {});
+  if (call_inst == nullptr) {
     return false;
   }
+  call_inst->UpdateDebugInfo(inst);
 
   Instruction* return_inst = nullptr;
   uint32_t return_type_id = GetOwningFunctionsReturnType(inst);
@@ -70,6 +73,7 @@ bool WrapOpKill::ReplaceWithFunctionCall(Instruction* inst) {
     if (undef == nullptr) {
       return false;
     }
+    undef->UpdateDebugInfo(inst);
     return_inst =
         ir_builder.AddUnaryOp(0, SpvOpReturnValue, undef->result_id());
   } else {
@@ -79,6 +83,7 @@ bool WrapOpKill::ReplaceWithFunctionCall(Instruction* inst) {
   if (return_inst == nullptr) {
     return false;
   }
+  return_inst->UpdateDebugInfo(inst);
 
   context()->KillInst(inst);
   return true;
@@ -105,7 +110,7 @@ uint32_t WrapOpKill::GetVoidFunctionTypeId() {
   return type_mgr->GetTypeInstruction(&func_type);
 }
 
-uint32_t WrapOpKill::GetOpKillFuncId() {
+uint32_t WrapOpKill::GetOpKillFuncId(Instruction* dbg_info) {
   if (opkill_function_ != nullptr) {
     return opkill_function_->result_id();
   }
@@ -144,6 +149,7 @@ uint32_t WrapOpKill::GetOpKillFuncId() {
   // Add the OpKill to the basic block
   std::unique_ptr<Instruction> kill_inst(
       new Instruction(context(), SpvOpKill, 0, 0, {}));
+  kill_inst->UpdateDebugInfo(dbg_info);
   bb->AddInstruction(std::move(kill_inst));
 
   // Add the bb to the function
