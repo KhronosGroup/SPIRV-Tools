@@ -599,15 +599,11 @@ TEST_F(WrapOpKillTest, DebugInfoSimple) {
 ; CHECK-NEXT: {{%\d+}} = OpExtInst %void [[ext:%\d+]] DebugScope
 ; CHECK-NEXT: OpLine [[file:%\d+]] 100 200
 ; CHECK-NEXT: OpFunctionCall %void [[new_kill:%\w+]]
-; CHECK-NEXT: OpLine [[file]] 100 200
-; CHECK-NEXT: OpReturn
 ; CHECK-NEXT: {{%\d+}} = OpExtInst %void [[ext]] DebugNoScope
+; CHECK-NEXT: OpReturn
 ; CHECK: [[new_kill]] = OpFunction
 ; CHECK-NEXT: OpLabel
-; CHECK-NEXT: {{%\d+}} = OpExtInst %void [[ext]] DebugScope
-; CHECK-NEXT: OpLine [[file]] 100 200
 ; CHECK-NEXT: OpKill
-; CHECK-NEXT: {{%\d+}} = OpExtInst %void [[ext]] DebugNoScope
 ; CHECK-NEXT: OpFunctionEnd
                OpCapability Shader
           %1 = OpExtInstImport "OpenCL.DebugInfo.100"
