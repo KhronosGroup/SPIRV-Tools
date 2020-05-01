@@ -53,7 +53,7 @@ class WrapOpKill : public Pass {
   // Return the id of a function that has return type void, has no parameters,
   // and contains a single instruction, which is an OpKill.  Returns 0 if the
   // function could not be generated.
-  uint32_t GetOpKillFuncId(Instruction* dbg_info);
+  uint32_t GetOpKillFuncId();
 
   // Returns the id of the return type for the function that contains |inst|.
   // Returns 0 if |inst| is not in a function.
