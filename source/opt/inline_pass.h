@@ -205,23 +205,19 @@ class InlinePass : public Pass {
   // Inlines a single instruction of the callee function.
   bool InlineInstructionInBB(
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
-      BasicBlock* new_blk_ptr, const Instruction* inst,
-      const std::unordered_set<uint32_t>& callee_result_ids);
+      BasicBlock* new_blk_ptr, const Instruction* inst);
 
   // Inlines a single termination instruction of the callee function.
   bool InlineTerminationInstructionInBB(
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
       std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
-      bool* prevInstWasReturn, const Instruction* inst,
-      const std::unordered_set<uint32_t>& callee_result_ids,
-      uint32_t returnVarId);
+      bool* prevInstWasReturn, const Instruction* inst, uint32_t returnVarId);
 
   // Inlines the entry block of the callee function.
   bool InlineEntryBlock(std::unordered_map<uint32_t, uint32_t>* callee2caller,
                         std::unique_ptr<BasicBlock>* new_blk_ptr,
                         uint32_t* returnLabelId, bool* prevInstWasReturn,
-                        Function* calleeFn,
-                        const std::unordered_set<uint32_t>& callee_result_ids,
+                        UptrVectorIterator<BasicBlock> callee_first_block,
                         uint32_t returnVarId);
 
   // Inlines a OpLabel instruction of the callee function.
@@ -236,9 +232,7 @@ class InlinePass : public Pass {
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
       std::unordered_map<uint32_t, uint32_t>* callee2caller,
       std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t* returnLabelId,
-      bool* prevInstWasReturn, bool* multiBlocks, Function* calleeFn,
-      const std::unordered_set<uint32_t>& callee_result_ids,
-      uint32_t returnVarId);
+      bool* prevInstWasReturn, Function* calleeFn, uint32_t returnVarId);
 
   // Moves instructions of the caller function after the call instruction
   // to |new_blk_ptr|.

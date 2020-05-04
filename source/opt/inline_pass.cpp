@@ -335,24 +335,14 @@ InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
 
 bool InlinePass::InlineInstructionInBB(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    BasicBlock* new_blk_ptr, const Instruction* inst,
-    const std::unordered_set<uint32_t>& callee_result_ids) {
+    BasicBlock* new_blk_ptr, const Instruction* inst) {
   // Copy callee instruction and remap all input Ids.
   std::unique_ptr<Instruction> cp_inst(inst->Clone(context()));
-  bool succeeded = cp_inst->WhileEachInId(
-      [&callee2caller, &callee_result_ids, this](uint32_t* iid) {
+  bool succeeded =
+      cp_inst->WhileEachInId([&callee2caller, this](uint32_t* iid) {
         const auto mapItr = callee2caller->find(*iid);
         if (mapItr != callee2caller->end()) {
           *iid = mapItr->second;
-        } else if (callee_result_ids.find(*iid) != callee_result_ids.end()) {
-          // Forward reference. Allocate a new id, map it,
-          // use it and check for it when remapping result ids
-          const uint32_t nid = context()->TakeNextId();
-          if (nid == 0) {
-            return false;
-          }
-          (*callee2caller)[*iid] = nid;
-          *iid = nid;
         }
         return true;
       });
@@ -384,9 +374,7 @@ bool InlinePass::InlineInstructionInBB(
 bool InlinePass::InlineTerminationInstructionInBB(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
     std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
-    bool* prevInstWasReturn, const Instruction* inst,
-    const std::unordered_set<uint32_t>& callee_result_ids,
-    uint32_t returnVarId) {
+    bool* prevInstWasReturn, const Instruction* inst, uint32_t returnVarId) {
   assert(IsTerminatorInst(inst->opcode()));
   switch (inst->opcode()) {
     case SpvOpUnreachable:
@@ -424,8 +412,7 @@ bool InlinePass::InlineTerminationInstructionInBB(
       *prevInstWasReturn = true;
     } break;
     default:
-      return InlineInstructionInBB(callee2caller, new_blk_ptr->get(), inst,
-                                   callee_result_ids);
+      return InlineInstructionInBB(callee2caller, new_blk_ptr->get(), inst);
       break;
   }
   return true;
@@ -434,23 +421,22 @@ bool InlinePass::InlineTerminationInstructionInBB(
 bool InlinePass::InlineEntryBlock(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
     std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
-    bool* prevInstWasReturn, Function* calleeFn,
-    const std::unordered_set<uint32_t>& callee_result_ids,
+    bool* prevInstWasReturn, UptrVectorIterator<BasicBlock> callee_first_block,
     uint32_t returnVarId) {
   auto callee_inst_itr = AddStoresForVariableInitializers(
-      callee2caller, new_blk_ptr, calleeFn->begin());
+      callee2caller, new_blk_ptr, callee_first_block);
 
-  auto callee_first_block_tail = calleeFn->begin()->tail();
+  auto callee_first_block_tail = callee_first_block->tail();
   while (callee_inst_itr != callee_first_block_tail) {
     if (!InlineInstructionInBB(callee2caller, new_blk_ptr->get(),
-                               &*callee_inst_itr, callee_result_ids)) {
+                               &*callee_inst_itr)) {
       return false;
     }
     ++callee_inst_itr;
   }
   InlineTerminationInstructionInBB(callee2caller, new_blk_ptr, returnLabelId,
                                    prevInstWasReturn, &*callee_inst_itr,
-                                   callee_result_ids, returnVarId);
+                                   returnVarId);
   return true;
 }
 
@@ -482,12 +468,9 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
     std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t* returnLabelId,
-    bool* prevInstWasReturn, bool* multiBlocks, Function* calleeFn,
-    const std::unordered_set<uint32_t>& callee_result_ids,
-    uint32_t returnVarId) {
+    bool* prevInstWasReturn, Function* calleeFn, uint32_t returnVarId) {
   auto callee_block_itr = calleeFn->begin();
   ++callee_block_itr;
-  if (callee_block_itr != calleeFn->end()) *multiBlocks = true;
 
   while (callee_block_itr != calleeFn->end()) {
     // Inline OpLabel instruction and create next block.
@@ -503,14 +486,14 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
     auto tail_inst_itr = callee_block_itr->tail();
     for (auto inst_itr = callee_block_itr->begin(); inst_itr != tail_inst_itr;
          ++inst_itr) {
-      if (!InlineInstructionInBB(callee2caller, new_blk_ptr.get(), &*inst_itr,
-                                 callee_result_ids)) {
+      if (!InlineInstructionInBB(callee2caller, new_blk_ptr.get(),
+                                 &*inst_itr)) {
         return nullptr;
       }
     }
     InlineTerminationInstructionInBB(callee2caller, &new_blk_ptr, returnLabelId,
                                      prevInstWasReturn, &*tail_inst_itr,
-                                     callee_result_ids, returnVarId);
+                                     returnVarId);
     ++callee_block_itr;
   }
   return new_blk_ptr;
@@ -590,7 +573,7 @@ bool InlinePass::GenInlineCode(
   // inlining logic, and only if necessary.
   bool caller_is_loop_header = call_block_itr->GetLoopMergeInst() != nullptr;
 
-  // Single-trip loop contrinue block
+  // Single-trip loop continue block
   std::unique_ptr<BasicBlock> single_trip_loop_cont_blk;
 
   Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
@@ -664,26 +647,28 @@ bool InlinePass::GenInlineCode(
   }
 
   // Create set of callee result ids. Used to detect forward references
-  std::unordered_set<uint32_t> callee_result_ids;
-  calleeFn->ForEachInst([&callee_result_ids](const Instruction* cpi) {
+  calleeFn->WhileEachInst([&callee2caller, this](const Instruction* cpi) {
     const uint32_t rid = cpi->result_id();
-    if (rid != 0) callee_result_ids.insert(rid);
+    if (rid != 0 && callee2caller.find(rid) == callee2caller.end()) {
+      const uint32_t nid = context()->TakeNextId();
+      if (nid == 0) return false;
+      callee2caller[rid] = nid;
+      return true;
+    }
+    return true;
   });
 
   // Inline the entry block of the callee function.
   bool prevInstWasReturn = false;
   if (!InlineEntryBlock(&callee2caller, &new_blk_ptr, &returnLabelId,
-                        &prevInstWasReturn, calleeFn, callee_result_ids,
-                        returnVarId)) {
+                        &prevInstWasReturn, calleeFn->begin(), returnVarId)) {
     return false;
   }
 
   // Inline blocks of the callee function other than the entry block.
-  bool multiBlocks = false;
-  new_blk_ptr =
-      InlineBasicBlocks(new_blocks, &callee2caller, std::move(new_blk_ptr),
-                        &returnLabelId, &prevInstWasReturn, &multiBlocks,
-                        calleeFn, callee_result_ids, returnVarId);
+  new_blk_ptr = InlineBasicBlocks(new_blocks, &callee2caller,
+                                  std::move(new_blk_ptr), &returnLabelId,
+                                  &prevInstWasReturn, calleeFn, returnVarId);
   if (new_blk_ptr == nullptr) return false;
 
   // If there was an early return, we generated a return label id
@@ -704,7 +689,6 @@ bool InlinePass::GenInlineCode(
 
     // Generate the return block.
     new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(returnLabelId));
-    multiBlocks = false;
   }
 
   // Load return value into result id of call, if it exists.
@@ -716,7 +700,8 @@ bool InlinePass::GenInlineCode(
 
   // Move instructions of original caller block after call instruction.
   if (!MoveCallerInstsAfterFunctionCall(&preCallSB, &postCallSB, &new_blk_ptr,
-                                        call_inst_itr, multiBlocks))
+                                        call_inst_itr,
+                                        calleeFn->begin() != calleeFn->end()))
     return false;
 
   // Finalize inline code.

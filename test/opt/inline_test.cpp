@@ -115,12 +115,12 @@ TEST_F(InlineTest, Simple) {
       "%param = OpVariable %_ptr_Function_v4float Function",
          "%22 = OpLoad %v4float %BaseColor",
                "OpStore %param %22",
-         "%33 = OpAccessChain %_ptr_Function_float %param %uint_0",
-         "%34 = OpLoad %float %33",
-         "%35 = OpAccessChain %_ptr_Function_float %param %uint_1",
-         "%36 = OpLoad %float %35",
-         "%37 = OpFAdd %float %34 %36",
-               "OpStore %32 %37",
+         "%34 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%35 = OpLoad %float %34",
+         "%36 = OpAccessChain %_ptr_Function_float %param %uint_1",
+         "%37 = OpLoad %float %36",
+         "%38 = OpFAdd %float %35 %37",
+               "OpStore %32 %38",
          "%23 = OpLoad %float %32",
          "%24 = OpCompositeConstruct %v4float %23 %23 %23 %23",
                "OpStore %color %24",
@@ -248,7 +248,7 @@ TEST_F(InlineTest, Nested) {
       // clang-format off
        "%main = OpFunction %void None %15",
          "%28 = OpLabel",
-         "%57 = OpVariable %_ptr_Function_float Function",
+         "%58 = OpVariable %_ptr_Function_float Function",
          "%46 = OpVariable %_ptr_Function_float Function",
          "%47 = OpVariable %_ptr_Function_float Function",
          "%48 = OpVariable %_ptr_Function_float Function",
@@ -256,21 +256,21 @@ TEST_F(InlineTest, Nested) {
     "%param_1 = OpVariable %_ptr_Function_v4float Function",
          "%29 = OpLoad %v4float %BaseColor",
                "OpStore %param_1 %29",
-         "%49 = OpAccessChain %_ptr_Function_float %param_1 %uint_0",
-         "%50 = OpLoad %float %49",
-         "%51 = OpAccessChain %_ptr_Function_float %param_1 %uint_1",
-         "%52 = OpLoad %float %51",
-         "%53 = OpFAdd %float %50 %52",
-               "OpStore %46 %53",
-         "%54 = OpAccessChain %_ptr_Function_float %param_1 %uint_2",
-         "%55 = OpLoad %float %54",
-               "OpStore %47 %55",
-         "%58 = OpLoad %float %46",
-         "%59 = OpLoad %float %47",
-         "%60 = OpFMul %float %58 %59",
-               "OpStore %57 %60",
-         "%56 = OpLoad %float %57",
-               "OpStore %48 %56",
+         "%50 = OpAccessChain %_ptr_Function_float %param_1 %uint_0",
+         "%51 = OpLoad %float %50",
+         "%52 = OpAccessChain %_ptr_Function_float %param_1 %uint_1",
+         "%53 = OpLoad %float %52",
+         "%54 = OpFAdd %float %51 %53",
+               "OpStore %46 %54",
+         "%55 = OpAccessChain %_ptr_Function_float %param_1 %uint_2",
+         "%56 = OpLoad %float %55",
+               "OpStore %47 %56",
+         "%60 = OpLoad %float %46",
+         "%61 = OpLoad %float %47",
+         "%62 = OpFMul %float %60 %61",
+               "OpStore %58 %62",
+         "%57 = OpLoad %float %58",
+               "OpStore %48 %57",
          "%30 = OpLoad %float %48",
          "%31 = OpCompositeConstruct %v4float %30 %30 %30 %30",
                "OpStore %color %31",
@@ -390,13 +390,13 @@ TEST_F(InlineTest, InOutParameter) {
                "OpStore %b %24",
          "%25 = OpLoad %v4float %b",
                "OpStore %param %25",
-         "%39 = OpAccessChain %_ptr_Function_float %param %uint_0",
-         "%40 = OpLoad %float %39",
-         "%41 = OpAccessChain %_ptr_Function_float %param %uint_1",
-         "%42 = OpLoad %float %41",
-         "%43 = OpFAdd %float %40 %42",
-         "%44 = OpAccessChain %_ptr_Function_float %param %uint_2",
-               "OpStore %44 %43",
+         "%40 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%41 = OpLoad %float %40",
+         "%42 = OpAccessChain %_ptr_Function_float %param %uint_1",
+         "%43 = OpLoad %float %42",
+         "%44 = OpFAdd %float %41 %43",
+         "%45 = OpAccessChain %_ptr_Function_float %param %uint_2",
+               "OpStore %45 %44",
          "%27 = OpLoad %v4float %param",
                "OpStore %b %27",
          "%28 = OpAccessChain %_ptr_Function_float %b %uint_2",
@@ -521,21 +521,21 @@ TEST_F(InlineTest, BranchInCallee) {
       "%param = OpVariable %_ptr_Function_v4float Function",
          "%24 = OpLoad %v4float %BaseColor",
                "OpStore %param %24",
-         "%40 = OpAccessChain %_ptr_Function_float %param %uint_0",
-         "%41 = OpLoad %float %40",
-               "OpStore %38 %41",
-         "%42 = OpLoad %float %38",
-         "%43 = OpFOrdLessThan %bool %42 %float_0",
-               "OpSelectionMerge %44 None",
-               "OpBranchConditional %43 %45 %44",
+         "%41 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%42 = OpLoad %float %41",
+               "OpStore %38 %42",
+         "%43 = OpLoad %float %38",
+         "%44 = OpFOrdLessThan %bool %43 %float_0",
+               "OpSelectionMerge %48 None",
+               "OpBranchConditional %44 %45 %48",
          "%45 = OpLabel",
          "%46 = OpLoad %float %38",
          "%47 = OpFNegate %float %46",
                "OpStore %38 %47",
-               "OpBranch %44",
-         "%44 = OpLabel",
-         "%48 = OpLoad %float %38",
-               "OpStore %39 %48",
+               "OpBranch %48",
+         "%48 = OpLabel",
+         "%49 = OpLoad %float %38",
+               "OpStore %39 %49",
          "%25 = OpLoad %float %39",
          "%26 = OpCompositeConstruct %v4float %25 %25 %25 %25",
                "OpStore %color %26",
@@ -675,8 +675,8 @@ TEST_F(InlineTest, PhiAfterCall) {
       // clang-format off
        "%main = OpFunction %void None %12",
          "%27 = OpLabel",
-         "%62 = OpVariable %_ptr_Function_float Function",
          "%63 = OpVariable %_ptr_Function_float Function",
+         "%64 = OpVariable %_ptr_Function_float Function",
          "%52 = OpVariable %_ptr_Function_float Function",
          "%53 = OpVariable %_ptr_Function_float Function",
       "%color = OpVariable %_ptr_Function_v4float Function",
@@ -687,20 +687,20 @@ TEST_F(InlineTest, PhiAfterCall) {
          "%29 = OpAccessChain %_ptr_Function_float %color %uint_0",
          "%30 = OpLoad %float %29",
                "OpStore %param %30",
-         "%54 = OpLoad %float %param",
-               "OpStore %52 %54",
-         "%55 = OpLoad %float %52",
-         "%56 = OpFOrdLessThan %bool %55 %float_0",
-               "OpSelectionMerge %57 None",
-               "OpBranchConditional %56 %58 %57",
+         "%55 = OpLoad %float %param",
+               "OpStore %52 %55",
+         "%56 = OpLoad %float %52",
+         "%57 = OpFOrdLessThan %bool %56 %float_0",
+               "OpSelectionMerge %61 None",
+               "OpBranchConditional %57 %58 %61",
          "%58 = OpLabel",
          "%59 = OpLoad %float %52",
          "%60 = OpFNegate %float %59",
                "OpStore %52 %60",
-               "OpBranch %57",
-         "%57 = OpLabel",
-         "%61 = OpLoad %float %52",
-               "OpStore %53 %61",
+               "OpBranch %61",
+         "%61 = OpLabel",
+         "%62 = OpLoad %float %52",
+               "OpStore %53 %62",
          "%31 = OpLoad %float %53",
          "%32 = OpFOrdGreaterThan %bool %31 %float_2",
                "OpSelectionMerge %33 None",
@@ -709,25 +709,25 @@ TEST_F(InlineTest, PhiAfterCall) {
          "%35 = OpAccessChain %_ptr_Function_float %color %uint_1",
          "%36 = OpLoad %float %35",
                "OpStore %param_0 %36",
-         "%64 = OpLoad %float %param_0",
-               "OpStore %62 %64",
-         "%65 = OpLoad %float %62",
-         "%66 = OpFOrdLessThan %bool %65 %float_0",
-               "OpSelectionMerge %67 None",
-               "OpBranchConditional %66 %68 %67",
-         "%68 = OpLabel",
-         "%69 = OpLoad %float %62",
-         "%70 = OpFNegate %float %69",
-               "OpStore %62 %70",
-               "OpBranch %67",
-         "%67 = OpLabel",
-         "%71 = OpLoad %float %62",
+         "%66 = OpLoad %float %param_0",
+               "OpStore %63 %66",
+         "%67 = OpLoad %float %63",
+         "%68 = OpFOrdLessThan %bool %67 %float_0",
+               "OpSelectionMerge %72 None",
+               "OpBranchConditional %68 %69 %72",
+         "%69 = OpLabel",
+         "%70 = OpLoad %float %63",
+         "%71 = OpFNegate %float %70",
                "OpStore %63 %71",
-         "%37 = OpLoad %float %63",
+               "OpBranch %72",
+         "%72 = OpLabel",
+         "%73 = OpLoad %float %63",
+               "OpStore %64 %73",
+         "%37 = OpLoad %float %64",
          "%38 = OpFOrdGreaterThan %bool %37 %float_2",
                "OpBranch %33",
          "%33 = OpLabel",
-         "%39 = OpPhi %bool %32 %57 %38 %67",
+         "%39 = OpPhi %bool %32 %61 %38 %72",
                "OpSelectionMerge %40 None",
                "OpBranchConditional %39 %41 %40",
          "%41 = OpLabel",
@@ -902,28 +902,28 @@ TEST_F(InlineTest, OpSampledImageOutOfBlock) {
                "OpStore %color1 %42",
          "%43 = OpLoad %v4float %BaseColor",
                "OpStore %param %43",
-         "%68 = OpAccessChain %_ptr_Function_float %param %uint_0",
-         "%69 = OpLoad %float %68",
-               "OpStore %66 %69",
-         "%70 = OpLoad %float %66",
-         "%71 = OpFOrdLessThan %bool %70 %float_0",
-               "OpSelectionMerge %72 None",
-               "OpBranchConditional %71 %73 %72",
+         "%69 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%70 = OpLoad %float %69",
+               "OpStore %66 %70",
+         "%71 = OpLoad %float %66",
+         "%72 = OpFOrdLessThan %bool %71 %float_0",
+               "OpSelectionMerge %76 None",
+               "OpBranchConditional %72 %73 %76",
          "%73 = OpLabel",
          "%74 = OpLoad %float %66",
          "%75 = OpFNegate %float %74",
                "OpStore %66 %75",
-               "OpBranch %72",
-         "%72 = OpLabel",
-         "%76 = OpLoad %float %66",
-               "OpStore %67 %76",
+               "OpBranch %76",
+         "%76 = OpLabel",
+         "%77 = OpLoad %float %66",
+               "OpStore %67 %77",
          "%44 = OpLoad %float %67",
          "%45 = OpCompositeConstruct %v4float %44 %44 %44 %44",
                "OpStore %color2 %45",
          "%46 = OpLoad %25 %t2D",
          "%47 = OpLoad %27 %samp",
-         "%77 = OpSampledImage %29 %39 %40",
-         "%48 = OpImageSampleImplicitLod %v4float %77 %35",
+         "%78 = OpSampledImage %29 %39 %40",
+         "%48 = OpImageSampleImplicitLod %v4float %78 %35",
                "OpStore %color3 %48",
          "%49 = OpLoad %v4float %color1",
          "%50 = OpLoad %v4float %color2",
@@ -1108,27 +1108,27 @@ TEST_F(InlineTest, OpImageOutOfBlock) {
                "OpStore %color1 %43",
          "%46 = OpLoad %v4float %BaseColor",
                "OpStore %param %46",
-         "%70 = OpAccessChain %_ptr_Function_float %param %uint_0",
-         "%71 = OpLoad %float %70",
-               "OpStore %68 %71",
-         "%72 = OpLoad %float %68",
-         "%73 = OpFOrdLessThan %bool %72 %float_0",
-               "OpSelectionMerge %74 None",
-               "OpBranchConditional %73 %75 %74",
+         "%71 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%72 = OpLoad %float %71",
+               "OpStore %68 %72",
+         "%73 = OpLoad %float %68",
+         "%74 = OpFOrdLessThan %bool %73 %float_0",
+               "OpSelectionMerge %78 None",
+               "OpBranchConditional %74 %75 %78",
          "%75 = OpLabel",
          "%76 = OpLoad %float %68",
          "%77 = OpFNegate %float %76",
                "OpStore %68 %77",
-               "OpBranch %74",
-         "%74 = OpLabel",
-         "%78 = OpLoad %float %68",
-               "OpStore %69 %78",
+               "OpBranch %78",
+         "%78 = OpLabel",
+         "%79 = OpLoad %float %68",
+               "OpStore %69 %79",
          "%47 = OpLoad %float %69",
          "%48 = OpCompositeConstruct %v4float %47 %47 %47 %47",
                "OpStore %color2 %48",
-         "%79 = OpSampledImage %30 %40 %41",
-         "%80 = OpImage %26 %79",
-         "%49 = OpSampledImage %30 %80 %45",
+         "%80 = OpSampledImage %30 %40 %41",
+         "%81 = OpImage %26 %80",
+         "%49 = OpSampledImage %30 %81 %45",
          "%50 = OpImageSampleImplicitLod %v4float %49 %36",
                "OpStore %color3 %50",
          "%51 = OpLoad %v4float %color1",
@@ -1314,28 +1314,28 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
                "OpStore %color1 %43",
          "%47 = OpLoad %v4float %BaseColor",
                "OpStore %param %47",
-         "%70 = OpAccessChain %_ptr_Function_float %param %uint_0",
-         "%71 = OpLoad %float %70",
-               "OpStore %68 %71",
-         "%72 = OpLoad %float %68",
-         "%73 = OpFOrdLessThan %bool %72 %float_0",
-               "OpSelectionMerge %74 None",
-               "OpBranchConditional %73 %75 %74",
+         "%71 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%72 = OpLoad %float %71",
+               "OpStore %68 %72",
+         "%73 = OpLoad %float %68",
+         "%74 = OpFOrdLessThan %bool %73 %float_0",
+               "OpSelectionMerge %78 None",
+               "OpBranchConditional %74 %75 %78",
          "%75 = OpLabel",
          "%76 = OpLoad %float %68",
          "%77 = OpFNegate %float %76",
                "OpStore %68 %77",
-               "OpBranch %74",
-         "%74 = OpLabel",
-         "%78 = OpLoad %float %68",
-               "OpStore %69 %78",
+               "OpBranch %78",
+         "%78 = OpLabel",
+         "%79 = OpLoad %float %68",
+               "OpStore %69 %79",
          "%48 = OpLoad %float %69",
          "%49 = OpCompositeConstruct %v4float %48 %48 %48 %48",
                "OpStore %color2 %49",
-         "%79 = OpSampledImage %30 %40 %41",
-         "%80 = OpImage %26 %79",
-         "%81 = OpSampledImage %30 %80 %45",
-         "%50 = OpImageSampleImplicitLod %v4float %81 %36",
+         "%80 = OpSampledImage %30 %40 %41",
+         "%81 = OpImage %26 %80",
+         "%82 = OpSampledImage %30 %81 %45",
+         "%50 = OpImageSampleImplicitLod %v4float %82 %36",
                "OpStore %color3 %50",
          "%51 = OpLoad %v4float %color1",
          "%52 = OpLoad %v4float %color2",
@@ -1452,18 +1452,18 @@ OpBranch %35
 OpLoopMerge %36 %37 None
 OpBranch %38
 %38 = OpLabel
-%41 = OpAccessChain %_ptr_Function_float %param %uint_0
-%42 = OpLoad %float %41
-%43 = OpFOrdLessThan %bool %42 %float_0
-OpSelectionMerge %44 None
-OpBranchConditional %43 %45 %44
+%42 = OpAccessChain %_ptr_Function_float %param %uint_0
+%43 = OpLoad %float %42
+%44 = OpFOrdLessThan %bool %43 %float_0
+OpSelectionMerge %46 None
+OpBranchConditional %44 %45 %46
 %45 = OpLabel
 OpStore %40 %float_0
 OpBranch %36
-%44 = OpLabel
-%46 = OpAccessChain %_ptr_Function_float %param %uint_0
-%47 = OpLoad %float %46
-OpStore %40 %47
+%46 = OpLabel
+%47 = OpAccessChain %_ptr_Function_float %param %uint_0
+%48 = OpLoad %float %47
+OpStore %40 %48
 OpBranch %36
 %37 = OpLabel
 OpBranchConditional %false %35 %36
@@ -1536,13 +1536,13 @@ OpFunctionEnd
   const std::string after =
       R"(%main = OpFunction %void None %4
 %10 = OpLabel
-OpSelectionMerge %12 None
-OpBranchConditional %true %13 %12
-%12 = OpLabel
-OpBranch %14
+OpSelectionMerge %13 None
+OpBranchConditional %true %14 %13
 %13 = OpLabel
-OpBranch %12
+OpBranch %15
 %14 = OpLabel
+OpBranch %13
+%15 = OpLabel
 OpReturn
 OpFunctionEnd
 )";
@@ -1619,17 +1619,17 @@ OpFunctionEnd
 %19 = OpLabel
 %21 = OpVariable %_ptr_Function_int Function
 %x = OpVariable %_ptr_Function_int Function
-%22 = OpCopyObject %int %int_0
-OpSelectionMerge %23 None
-OpBranchConditional %true %24 %23
-%23 = OpLabel
-%26 = OpPhi %int %22 %19 %25 %24
-OpStore %21 %26
-OpBranch %27
+%23 = OpCopyObject %int %int_0
+OpSelectionMerge %24 None
+OpBranchConditional %true %26 %24
 %24 = OpLabel
-%25 = OpCopyObject %int %int_0
-OpBranch %23
-%27 = OpLabel
+%25 = OpPhi %int %23 %19 %27 %26
+OpStore %21 %25
+OpBranch %28
+%26 = OpLabel
+%27 = OpCopyObject %int %int_0
+OpBranch %24
+%28 = OpLabel
 %20 = OpLoad %int %21
 OpStore %x %20
 OpReturn
@@ -1820,8 +1820,8 @@ OpFunctionEnd
 OpBranch %10
 %10 = OpLabel
 OpLoopMerge %12 %10 None
-OpBranch %13
-%13 = OpLabel
+OpBranch %14
+%14 = OpLabel
 OpBranchConditional %true %10 %12
 %12 = OpLabel
 OpReturn
@@ -1890,11 +1890,11 @@ OpFunctionEnd
 OpBranch %18
 %18 = OpLabel
 %19 = OpCopyObject %int %int_3
-%25 = OpCopyObject %int %int_1
+%26 = OpCopyObject %int %int_1
 OpLoopMerge %22 %23 None
-OpBranch %26
-%26 = OpLabel
-%27 = OpCopyObject %int %int_2
+OpBranch %27
+%27 = OpLabel
+%28 = OpCopyObject %int %int_2
 %21 = OpCopyObject %int %int_4
 OpBranchConditional %true %23 %22
 %23 = OpLabel
@@ -1983,11 +1983,11 @@ OpBranch %13
 OpLoopMerge %16 %13 None
 OpBranch %17
 %17 = OpLabel
-%18 = OpCopyObject %bool %true
-OpSelectionMerge %19 None
-OpBranchConditional %true %19 %19
-%19 = OpLabel
-%20 = OpPhi %bool %18 %17
+%19 = OpCopyObject %bool %true
+OpSelectionMerge %20 None
+OpBranchConditional %true %20 %20
+%20 = OpLabel
+%21 = OpPhi %bool %19 %17
 OpBranchConditional %true %13 %16
 %16 = OpLabel
 OpReturn
@@ -2060,11 +2060,11 @@ OpBranch %18
 OpLoopMerge %22 %23 None
 OpBranch %25
 %25 = OpLabel
-%26 = OpCopyObject %int %int_1
-OpSelectionMerge %27 None
-OpBranchConditional %true %27 %27
-%27 = OpLabel
-%28 = OpCopyObject %int %int_2
+%27 = OpCopyObject %int %int_1
+OpSelectionMerge %28 None
+OpBranchConditional %true %28 %28
+%28 = OpLabel
+%29 = OpCopyObject %int %int_2
 %21 = OpCopyObject %int %int_4
 OpBranchConditional %true %23 %22
 %23 = OpLabel
@@ -2144,13 +2144,13 @@ OpFunctionEnd
 OpBranch %19
 %19 = OpLabel
 %20 = OpCopyObject %int %int_2
-%25 = OpCopyObject %int %int_0
+%26 = OpCopyObject %int %int_0
 OpLoopMerge %23 %19 None
-OpBranch %26
+OpBranch %29
 %27 = OpLabel
 %28 = OpCopyObject %int %int_1
-OpBranch %26
-%26 = OpLabel
+OpBranch %29
+%29 = OpLabel
 %22 = OpCopyObject %int %int_3
 OpBranchConditional %true %19 %23
 %23 = OpLabel
@@ -2219,16 +2219,16 @@ OpFunctionEnd
       R"(%1 = OpFunction %void None %9
 %20 = OpLabel
 %21 = OpCopyObject %int %int_3
-%24 = OpCopyObject %int %int_0
-OpBranch %25
-%25 = OpLabel
-%26 = OpPhi %int %24 %20
-%27 = OpCopyObject %int %int_1
-OpBranch %28
+%25 = OpCopyObject %int %int_0
+OpBranch %26
+%26 = OpLabel
+%27 = OpPhi %int %25 %20
+%28 = OpCopyObject %int %int_1
+OpBranch %31
 %29 = OpLabel
 %30 = OpCopyObject %int %int_2
-OpBranch %28
-%28 = OpLabel
+OpBranch %31
+%31 = OpLabel
 %23 = OpCopyObject %int %int_4
 OpReturn
 OpFunctionEnd
@@ -2415,12 +2415,12 @@ OpBranch %37
 OpLoopMerge %38 %39 None
 OpBranch %40
 %40 = OpLabel
-OpSelectionMerge %43 None
-OpBranchConditional %true %44 %43
+OpSelectionMerge %45 None
+OpBranchConditional %true %44 %45
 %44 = OpLabel
 OpStore %42 %float_1
 OpBranch %38
-%43 = OpLabel
+%45 = OpLabel
 OpStore %42 %float_1
 OpBranch %38
 %39 = OpLabel
@@ -2526,7 +2526,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(OpDecorate %37 RelaxedPrecision
+      R"(OpDecorate %38 RelaxedPrecision
 %void = OpTypeVoid
 %11 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -2548,12 +2548,12 @@ OpFunctionEnd
 %param = OpVariable %_ptr_Function_v4float Function
 %23 = OpLoad %v4float %BaseColor
 OpStore %param %23
-%33 = OpAccessChain %_ptr_Function_float %param %uint_0
-%34 = OpLoad %float %33
-%35 = OpAccessChain %_ptr_Function_float %param %uint_1
-%36 = OpLoad %float %35
-%37 = OpFAdd %float %34 %36
-OpStore %32 %37
+%34 = OpAccessChain %_ptr_Function_float %param %uint_0
+%35 = OpLoad %float %34
+%36 = OpAccessChain %_ptr_Function_float %param %uint_1
+%37 = OpLoad %float %36
+%38 = OpFAdd %float %35 %37
+OpStore %32 %38
 %24 = OpLoad %float %32
 %25 = OpCompositeConstruct %v4float %24 %24 %24 %24
 OpStore %color %25
@@ -2672,12 +2672,12 @@ OpFunctionEnd
 %param = OpVariable %_ptr_Function_v4float Function
 %22 = OpLoad %v4float %BaseColor
 OpStore %param %22
-%33 = OpAccessChain %_ptr_Function_float %param %uint_0
-%34 = OpLoad %float %33
-%35 = OpAccessChain %_ptr_Function_float %param %uint_1
-%36 = OpLoad %float %35
-%37 = OpFAdd %float %34 %36
-OpStore %32 %37
+%34 = OpAccessChain %_ptr_Function_float %param %uint_0
+%35 = OpLoad %float %34
+%36 = OpAccessChain %_ptr_Function_float %param %uint_1
+%37 = OpLoad %float %36
+%38 = OpFAdd %float %35 %37
+OpStore %32 %38
 %23 = OpLoad %float %32
 %24 = OpCompositeConstruct %v4float %23 %23 %23 %23
 OpStore %color %24
@@ -3017,7 +3017,7 @@ OpName %kill_ "kill("
 %main = OpFunction %void None %3
 %5 = OpLabel
 OpKill
-%17 = OpLabel
+%18 = OpLabel
 OpReturn
 OpFunctionEnd
 %kill_ = OpFunction %void None %3
