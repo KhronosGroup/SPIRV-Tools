@@ -339,7 +339,7 @@ bool InlinePass::InlineInstructionInBB(
   // Copy callee instruction and remap all input Ids.
   std::unique_ptr<Instruction> cp_inst(inst->Clone(context()));
   bool succeeded =
-      cp_inst->WhileEachInId([&callee2caller, this](uint32_t* iid) {
+      cp_inst->WhileEachInId([&callee2caller](uint32_t* iid) {
         const auto mapItr = callee2caller->find(*iid);
         if (mapItr != callee2caller->end()) {
           *iid = mapItr->second;
