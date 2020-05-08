@@ -136,6 +136,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingVectorType() {
     return chance_of_adding_vector_type_;
   }
+  uint32_t GetChanceOfAdjustingBranchWeights() {
+    return chance_of_adjusting_branch_weights_;
+  }
   uint32_t GetChanceOfAdjustingFunctionControl() {
     return chance_of_adjusting_function_control_;
   }
@@ -189,8 +192,8 @@ class FuzzerContext {
   uint32_t GetMaximumEquivalenceClassSizeForDataSynonymFactClosure() {
     return max_equivalence_class_size_for_data_synonym_fact_closure_;
   }
-  uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
-    return random_generator_->RandomUint32(composite_size_bound);
+  uint32_t GetRandomUint32(uint32_t bound) {
+    return random_generator_->RandomUint32(bound);
   }
   uint32_t GetRandomLoopControlPartialCount() {
     return random_generator_->RandomUint32(max_loop_control_partial_count_);
@@ -231,6 +234,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_store_;
   uint32_t chance_of_adding_vector_type_;
+  uint32_t chance_of_adjusting_branch_weights_;
   uint32_t chance_of_adjusting_function_control_;
   uint32_t chance_of_adjusting_loop_control_;
   uint32_t chance_of_adjusting_memory_operands_mask_;
