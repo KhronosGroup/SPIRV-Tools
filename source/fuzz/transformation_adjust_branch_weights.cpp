@@ -26,12 +26,10 @@ TransformationAdjustBranchWeights::TransformationAdjustBranchWeights(
 
 TransformationAdjustBranchWeights::TransformationAdjustBranchWeights(
     const protobufs::InstructionDescriptor& instruction_descriptor,
-    const std::vector<uint32_t>& branch_weights) {
+    const std::pair<uint32_t, uint32_t>& branch_weights) {
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
-
-  for (auto branch_weight : branch_weights) {
-    message_.add_branch_weights(branch_weight);
-  }
+  message_.add_branch_weights(branch_weights.first);
+  message_.add_branch_weights(branch_weights.second);
 }
 
 bool TransformationAdjustBranchWeights::IsApplicable(

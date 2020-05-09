@@ -41,12 +41,12 @@ void FuzzerPassAdjustBranchWeights::Apply() {
         instruction->NumOperands() == 5 &&
         fuzzer_context->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfAdjustingBranchWeights())) {
-      uint32_t weight_for_true_label =
-          fuzzer_context->GetRandomUint32(INT32_MAX);
-      uint32_t weight_for_false_label =
-          fuzzer_context->GetRandomUint32(INT32_MAX - weight_for_true_label);
-      std::vector<uint32_t> branch_weights = {weight_for_true_label,
-                                              weight_for_false_label};
+      std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
+      while (branch_weights.first == 0 && branch_weights.second == 0) {
+        branch_weights.first = fuzzer_context->GetRandomUint32(INT32_MAX);
+        branch_weights.second =
+            fuzzer_context->GetRandomUint32(INT32_MAX - branch_weights.first);
+      }
 
       auto instruction_descriptor =
           MakeInstructionDescriptor(ir_context, instruction);

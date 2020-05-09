@@ -30,7 +30,7 @@ class TransformationAdjustBranchWeights : public Transformation {
 
   TransformationAdjustBranchWeights(
       const protobufs::InstructionDescriptor& instruction_descriptor,
-      const std::vector<uint32_t>& branch_weights);
+      const std::pair<uint32_t, uint32_t>& branch_weights);
 
   // - |message_.instruction_descriptor| must identify an existing
   //   branch conditional instruction
