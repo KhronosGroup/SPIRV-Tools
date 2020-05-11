@@ -296,14 +296,13 @@ bool InlinePass::InlineInstructionInBB(
     BasicBlock* new_blk_ptr, const Instruction* inst) {
   // Copy callee instruction and remap all input Ids.
   std::unique_ptr<Instruction> cp_inst(inst->Clone(context()));
-  bool succeeded =
-      cp_inst->WhileEachInId([&callee2caller](uint32_t* iid) {
-        const auto mapItr = callee2caller->find(*iid);
-        if (mapItr != callee2caller->end()) {
-          *iid = mapItr->second;
-        }
-        return true;
-      });
+  bool succeeded = cp_inst->WhileEachInId([&callee2caller](uint32_t* iid) {
+    const auto mapItr = callee2caller->find(*iid);
+    if (mapItr != callee2caller->end()) {
+      *iid = mapItr->second;
+    }
+    return true;
+  });
   if (!succeeded) {
     return false;
   }
@@ -553,28 +552,29 @@ bool InlinePass::GenInlineCode(
   }
 
   uint32_t returnLabelId = 0;
-  calleeFn->WhileEachInst([&callee2caller, &returnLabelId, this](const Instruction* cpi) {
-    // Create set of callee result ids. Used to detect forward references
-    const uint32_t rid = cpi->result_id();
-    if (rid != 0 && callee2caller.find(rid) == callee2caller.end()) {
-      const uint32_t nid = context()->TakeNextId();
-      if (nid == 0) return false;
-      callee2caller[rid] = nid;
-    }
-    // Create returnLabelId if we have OpUnreachable, OpKill, or return before
-    // the tail block.
-    static bool prevWasReturn = false;
-    if (returnLabelId == 0 &&
-        (cpi->opcode() == SpvOpUnreachable || cpi->opcode() == SpvOpKill ||
-         (cpi->opcode() == SpvOpLabel && prevWasReturn))) {
-      returnLabelId = context()->TakeNextId();
-      if (returnLabelId == 0) return false;
-    }
-    prevWasReturn = false;
-    if (cpi->opcode() == SpvOpReturn || cpi->opcode() == SpvOpReturnValue)
-      prevWasReturn = true;
-    return true;
-  });
+  calleeFn->WhileEachInst(
+      [&callee2caller, &returnLabelId, this](const Instruction* cpi) {
+        // Create set of callee result ids. Used to detect forward references
+        const uint32_t rid = cpi->result_id();
+        if (rid != 0 && callee2caller.find(rid) == callee2caller.end()) {
+          const uint32_t nid = context()->TakeNextId();
+          if (nid == 0) return false;
+          callee2caller[rid] = nid;
+        }
+        // Create returnLabelId if we have OpUnreachable, OpKill, or return
+        // before the tail block.
+        static bool prevWasReturn = false;
+        if (returnLabelId == 0 &&
+            (cpi->opcode() == SpvOpUnreachable || cpi->opcode() == SpvOpKill ||
+             (cpi->opcode() == SpvOpLabel && prevWasReturn))) {
+          returnLabelId = context()->TakeNextId();
+          if (returnLabelId == 0) return false;
+        }
+        prevWasReturn = false;
+        if (cpi->opcode() == SpvOpReturn || cpi->opcode() == SpvOpReturnValue)
+          prevWasReturn = true;
+        return true;
+      });
 
   // Inline the entry block of the callee function.
   if (!InlineEntryBlock(&callee2caller, &new_blk_ptr, returnLabelId,
