@@ -270,48 +270,6 @@ std::unique_ptr<BasicBlock> InlinePass::AddGuardBlock(
   return new_blk_ptr;
 }
 
-std::unique_ptr<BasicBlock> InlinePass::InsertHeaderBlockForSingleTripLoop(
-    std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
-    std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    std::unique_ptr<BasicBlock>* single_trip_loop_cont_blk,
-    uint32_t* returnLabelId, std::unique_ptr<BasicBlock> new_blk_ptr,
-    uint32_t entry_blk_label_id) {
-  uint32_t singleTripLoopHeaderId = context()->TakeNextId();
-  if (singleTripLoopHeaderId == 0) {
-    return nullptr;
-  }
-  AddBranch(singleTripLoopHeaderId, &new_blk_ptr);
-  new_blocks->push_back(std::move(new_blk_ptr));
-  new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(singleTripLoopHeaderId));
-  *returnLabelId = context()->TakeNextId();
-  uint32_t singleTripLoopContinueId = context()->TakeNextId();
-  if (*returnLabelId == 0 || singleTripLoopContinueId == 0) {
-    return nullptr;
-  }
-  AddLoopMerge(*returnLabelId, singleTripLoopContinueId, &new_blk_ptr);
-  uint32_t postHeaderId = context()->TakeNextId();
-  if (postHeaderId == 0) {
-    return nullptr;
-  }
-  AddBranch(postHeaderId, &new_blk_ptr);
-  new_blocks->push_back(std::move(new_blk_ptr));
-  new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(postHeaderId));
-  // Reset the mapping of the callee's entry block to point to
-  // the post-header block.  Do this so we can fix up phis later
-  // on to satisfy dominance.
-  (*callee2caller)[entry_blk_label_id] = postHeaderId;
-
-  *single_trip_loop_cont_blk =
-      MakeUnique<BasicBlock>(NewLabel(singleTripLoopContinueId));
-  uint32_t false_id = GetFalseId();
-  if (false_id == 0) {
-    return nullptr;
-  }
-  AddBranchCond(false_id, singleTripLoopHeaderId, *returnLabelId,
-                single_trip_loop_cont_blk);
-  return new_blk_ptr;
-}
-
 InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
     std::unique_ptr<BasicBlock>* new_blk_ptr,
@@ -373,20 +331,12 @@ bool InlinePass::InlineInstructionInBB(
 
 bool InlinePass::InlineTerminationInstructionInBB(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
-    bool* prevInstWasReturn, const Instruction* inst, uint32_t returnVarId) {
+    std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t returnLabelId,
+    const Instruction* inst, uint32_t returnVarId) {
   assert(IsTerminatorInst(inst->opcode()));
   switch (inst->opcode()) {
     case SpvOpUnreachable:
     case SpvOpKill: {
-      // Generate a return label so that we split the block with the
-      // function call. Copy the terminator into the new block.
-      if (*returnLabelId == 0) {
-        *returnLabelId = context()->TakeNextId();
-        if (*returnLabelId == 0) {
-          return false;
-        }
-      }
       std::unique_ptr<Instruction> terminator(
           new Instruction(context(), inst->opcode(), 0, 0, {}));
       new_blk_ptr->get()->AddInstruction(std::move(terminator));
@@ -401,15 +351,10 @@ bool InlinePass::InlineTerminationInstructionInBB(
         valId = mapItr->second;
       }
       AddStore(returnVarId, valId, new_blk_ptr);
-
-      // Remember we saw a return; if followed by a label, will need to
-      // insert branch.
-      *prevInstWasReturn = true;
+      if (returnLabelId) AddBranch(returnLabelId, new_blk_ptr);
     } break;
     case SpvOpReturn: {
-      // Remember we saw a return; if followed by a label, will need to
-      // insert branch.
-      *prevInstWasReturn = true;
+      if (returnLabelId) AddBranch(returnLabelId, new_blk_ptr);
     } break;
     default:
       return InlineInstructionInBB(callee2caller, new_blk_ptr->get(), inst);
@@ -420,9 +365,8 @@ bool InlinePass::InlineTerminationInstructionInBB(
 
 bool InlinePass::InlineEntryBlock(
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t* returnLabelId,
-    bool* prevInstWasReturn, UptrVectorIterator<BasicBlock> callee_first_block,
-    uint32_t returnVarId) {
+    std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t returnLabelId,
+    UptrVectorIterator<BasicBlock> callee_first_block, uint32_t returnVarId) {
   auto callee_inst_itr = AddStoresForVariableInitializers(
       callee2caller, new_blk_ptr, callee_first_block);
 
@@ -435,48 +379,24 @@ bool InlinePass::InlineEntryBlock(
     ++callee_inst_itr;
   }
   InlineTerminationInstructionInBB(callee2caller, new_blk_ptr, returnLabelId,
-                                   prevInstWasReturn, &*callee_inst_itr,
-                                   returnVarId);
+                                   &*callee_inst_itr, returnVarId);
   return true;
-}
-
-uint32_t InlinePass::InlineLabel(
-    const Instruction* inst, std::unique_ptr<BasicBlock>* new_blk_ptr,
-    uint32_t* returnLabelId, bool* prevInstWasReturn,
-    const std::unordered_map<uint32_t, uint32_t>& callee2caller) {
-  // If previous instruction was early return, insert branch
-  // instruction to return block.
-  if (*prevInstWasReturn) {
-    if (*returnLabelId == 0) {
-      *returnLabelId = context()->TakeNextId();
-      if (*returnLabelId == 0) {
-        return 0;
-      }
-    }
-    AddBranch(*returnLabelId, new_blk_ptr);
-    *prevInstWasReturn = false;
-  }
-  // If result id is already mapped, use it, otherwise get a new
-  // one.
-  const uint32_t rid = inst->result_id();
-  const auto mapItr = callee2caller.find(rid);
-  return (mapItr != callee2caller.end()) ? mapItr->second
-                                         : context()->TakeNextId();
 }
 
 std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t* returnLabelId,
-    bool* prevInstWasReturn, Function* calleeFn, uint32_t returnVarId) {
+    std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t returnLabelId,
+    Function* calleeFn, uint32_t returnVarId) {
   auto callee_block_itr = calleeFn->begin();
   ++callee_block_itr;
 
   while (callee_block_itr != calleeFn->end()) {
-    // Inline OpLabel instruction and create next block.
-    uint32_t labelId =
-        InlineLabel(callee_block_itr->GetLabelInst(), &new_blk_ptr,
-                    returnLabelId, prevInstWasReturn, *callee2caller);
+    const auto mapItr =
+        callee2caller->find(callee_block_itr->GetLabelInst()->result_id());
+    uint32_t labelId = (mapItr != callee2caller->end())
+                           ? mapItr->second
+                           : context()->TakeNextId();
     if (labelId == 0) {
       return nullptr;
     }
@@ -492,8 +412,7 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
       }
     }
     InlineTerminationInstructionInBB(callee2caller, &new_blk_ptr, returnLabelId,
-                                     prevInstWasReturn, &*tail_inst_itr,
-                                     returnVarId);
+                                     &*tail_inst_itr, returnVarId);
     ++callee_block_itr;
   }
   return new_blk_ptr;
@@ -613,26 +532,13 @@ bool InlinePass::GenInlineCode(
     if (new_blk_ptr == nullptr) return false;
   }
 
-  uint32_t returnLabelId = 0;
-  bool earlyReturn = false;
   if (early_return_funcs_.find(calleeFn->result_id()) !=
       early_return_funcs_.end()) {
-    // If callee has early return, insert a header block for
-    // single-trip loop that will encompass callee code.  Start
-    // postheader block.
-    //
-    // Note: Consider the following combination:
-    //  - the caller is a single block loop
-    //  - the callee does not begin with a structure header
-    //  - the callee has multiple returns.
-    // We still need to split the caller block and insert a guard
-    // block. But we only need to do it once. We haven't done it yet,
-    // but the single-trip loop header will serve the same purpose.
-    new_blk_ptr = InsertHeaderBlockForSingleTripLoop(
-        new_blocks, &callee2caller, &single_trip_loop_cont_blk, &returnLabelId,
-        std::move(new_blk_ptr), entry_blk_label_id);
-    if (new_blk_ptr == nullptr) return false;
-    earlyReturn = true;
+    // We rely on the merge-return pass to handle the early return case
+    // in advance.
+    std::string message =
+        "Early return. Handle it using merge-return pass in advance.";
+    consumer()(SPV_MSG_WARNING, "", {0, 0, 0}, message.c_str());
   }
 
   // Create return var if needed.
@@ -646,48 +552,46 @@ bool InlinePass::GenInlineCode(
     }
   }
 
-  // Create set of callee result ids. Used to detect forward references
-  calleeFn->WhileEachInst([&callee2caller, this](const Instruction* cpi) {
+  uint32_t returnLabelId = 0;
+  calleeFn->WhileEachInst([&callee2caller, &returnLabelId, this](const Instruction* cpi) {
+    // Create set of callee result ids. Used to detect forward references
     const uint32_t rid = cpi->result_id();
     if (rid != 0 && callee2caller.find(rid) == callee2caller.end()) {
       const uint32_t nid = context()->TakeNextId();
       if (nid == 0) return false;
       callee2caller[rid] = nid;
-      return true;
     }
+    // Create returnLabelId if we have OpUnreachable, OpKill, or return before
+    // the tail block.
+    static bool prevWasReturn = false;
+    if (returnLabelId == 0 &&
+        (cpi->opcode() == SpvOpUnreachable || cpi->opcode() == SpvOpKill ||
+         (cpi->opcode() == SpvOpLabel && prevWasReturn))) {
+      returnLabelId = context()->TakeNextId();
+      if (returnLabelId == 0) return false;
+    }
+    prevWasReturn = false;
+    if (cpi->opcode() == SpvOpReturn || cpi->opcode() == SpvOpReturnValue)
+      prevWasReturn = true;
     return true;
   });
 
   // Inline the entry block of the callee function.
-  bool prevInstWasReturn = false;
-  if (!InlineEntryBlock(&callee2caller, &new_blk_ptr, &returnLabelId,
-                        &prevInstWasReturn, calleeFn->begin(), returnVarId)) {
+  if (!InlineEntryBlock(&callee2caller, &new_blk_ptr, returnLabelId,
+                        calleeFn->begin(), returnVarId)) {
     return false;
   }
 
   // Inline blocks of the callee function other than the entry block.
-  new_blk_ptr = InlineBasicBlocks(new_blocks, &callee2caller,
-                                  std::move(new_blk_ptr), &returnLabelId,
-                                  &prevInstWasReturn, calleeFn, returnVarId);
+  new_blk_ptr =
+      InlineBasicBlocks(new_blocks, &callee2caller, std::move(new_blk_ptr),
+                        returnLabelId, calleeFn, returnVarId);
   if (new_blk_ptr == nullptr) return false;
 
   // If there was an early return, we generated a return label id
   // for it.  Now we have to generate the return block with that Id.
   if (returnLabelId != 0) {
-    // If previous instruction was return, insert branch instruction
-    // to return block.
-    if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
-
     new_blocks->push_back(std::move(new_blk_ptr));
-
-    // If we generated a loop header for the single-trip loop
-    // to accommodate early returns, insert the continue
-    // target block now, with a false branch back to the loop
-    // header.
-    if (earlyReturn)
-      new_blocks->push_back(std::move(single_trip_loop_cont_blk));
-
-    // Generate the return block.
     new_blk_ptr = MakeUnique<BasicBlock>(NewLabel(returnLabelId));
   }
 
