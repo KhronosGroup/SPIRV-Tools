@@ -563,16 +563,11 @@ bool InlinePass::GenInlineCode(
         }
         // Create returnLabelId if we have OpUnreachable, OpKill, or return
         // before the tail block.
-        static bool prevWasReturn = false;
         if (returnLabelId == 0 &&
-            (cpi->opcode() == SpvOpUnreachable || cpi->opcode() == SpvOpKill ||
-             (cpi->opcode() == SpvOpLabel && prevWasReturn))) {
+            (cpi->opcode() == SpvOpUnreachable || cpi->opcode() == SpvOpKill)) {
           returnLabelId = context()->TakeNextId();
           if (returnLabelId == 0) return false;
         }
-        prevWasReturn = false;
-        if (cpi->opcode() == SpvOpReturn || cpi->opcode() == SpvOpReturnValue)
-          prevWasReturn = true;
         return true;
       });
 
@@ -647,26 +642,6 @@ void InlinePass::UpdateSucceedingPhis(
       });
 }
 
-bool InlinePass::HasNoReturnInStructuredConstruct(Function* func) {
-  // If control not structured, do not do loop/return analysis
-  // TODO: Analyze returns in non-structured control flow
-  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
-    return false;
-  const auto structured_analysis = context()->GetStructuredCFGAnalysis();
-  // Search for returns in structured construct.
-  bool return_in_construct = false;
-  for (auto& blk : *func) {
-    auto terminal_ii = blk.cend();
-    --terminal_ii;
-    if (spvOpcodeIsReturn(terminal_ii->opcode()) &&
-        structured_analysis->ContainingConstruct(blk.id()) != 0) {
-      return_in_construct = true;
-      break;
-    }
-  }
-  return !return_in_construct;
-}
-
 bool InlinePass::HasNoReturnInLoop(Function* func) {
   // If control not structured, do not do loop/return analysis
   // TODO: Analyze returns in non-structured control flow
@@ -688,10 +663,18 @@ bool InlinePass::HasNoReturnInLoop(Function* func) {
 }
 
 void InlinePass::AnalyzeReturns(Function* func) {
+  // Analyze functions without a return in loop.
   if (HasNoReturnInLoop(func)) {
     no_return_in_loop_.insert(func->result_id());
-    if (!HasNoReturnInStructuredConstruct(func))
+  }
+  // Analyze functions with a return before its tail basic block.
+  for (auto& blk : *func) {
+    auto terminal_ii = blk.cend();
+    --terminal_ii;
+    if (spvOpcodeIsReturn(terminal_ii->opcode()) && &blk != func->tail()) {
       early_return_funcs_.insert(func->result_id());
+      break;
+    }
   }
 }
 

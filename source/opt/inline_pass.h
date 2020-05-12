@@ -124,9 +124,9 @@ class InlinePass : public Pass {
   // Return true if |inst| is a function call that can be inlined.
   bool IsInlinableFunctionCall(const Instruction* inst);
 
-  // Return true if |func| does not have a return that is
-  // nested in a structured if, switch or loop.
-  bool HasNoReturnInStructuredConstruct(Function* func);
+  // Return true if |func| has a return in a basic block that is not a
+  // tail basic block.
+  bool HasReturnBeforeTailBlock(Function* func);
 
   // Return true if |func| has no return in a loop. The current analysis
   // requires structured control flow, so return false if control flow not

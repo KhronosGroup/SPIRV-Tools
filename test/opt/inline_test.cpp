@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -1355,165 +1356,6 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
-TEST_F(InlineTest, EarlyReturnNotAppearingLastInFunctionInlined) {
-  // Example from https://github.com/KhronosGroup/SPIRV-Tools/issues/755
-  //
-  // Original example is derived from:
-  //
-  // #version 450
-  //
-  // float foo() {
-  //     if (true) {
-  //     }
-  // }
-  //
-  // void main() { foo(); }
-  //
-  // But the order of basic blocks in foo is changed so that the return
-  // block is listed second-last.  There is only one return in the callee
-  // but it does not appear last.
-
-  const std::string predefs =
-      R"(OpCapability Shader
-OpMemoryModel Logical GLSL450
-OpEntryPoint Vertex %main "main"
-OpSource GLSL 450
-OpName %main "main"
-OpName %foo_ "foo("
-%void = OpTypeVoid
-%4 = OpTypeFunction %void
-%bool = OpTypeBool
-%true = OpConstantTrue %bool
-)";
-
-  const std::string nonEntryFuncs =
-      R"(%foo_ = OpFunction %void None %4
-%7 = OpLabel
-OpSelectionMerge %8 None
-OpBranchConditional %true %9 %8
-%8 = OpLabel
-OpReturn
-%9 = OpLabel
-OpBranch %8
-OpFunctionEnd
-)";
-
-  const std::string before =
-      R"(%main = OpFunction %void None %4
-%10 = OpLabel
-%11 = OpFunctionCall %void %foo_
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string after =
-      R"(%main = OpFunction %void None %4
-%10 = OpLabel
-OpSelectionMerge %13 None
-OpBranchConditional %true %14 %13
-%13 = OpLabel
-OpBranch %15
-%14 = OpLabel
-OpBranch %13
-%15 = OpLabel
-OpReturn
-OpFunctionEnd
-)";
-
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
-                                              false, true);
-}
-
-TEST_F(InlineTest, ForwardReferencesInPhiInlined) {
-  // The basic structure of the test case is like this:
-  //
-  // int foo() {
-  //   int result = 1;
-  //   if (true) {
-  //      result = 1;
-  //   }
-  //   return result;
-  // }
-  //
-  // void main() {
-  //  int x = foo();
-  // }
-  //
-  // but with modifications: Using Phi instead of load/store, and the
-  // return block in foo appears before the "then" block.
-
-  const std::string predefs =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Vertex %main "main"
-OpSource GLSL 450
-OpName %main "main"
-OpName %foo_ "foo("
-OpName %x "x"
-%void = OpTypeVoid
-%6 = OpTypeFunction %void
-%int = OpTypeInt 32 1
-%8 = OpTypeFunction %int
-%bool = OpTypeBool
-%true = OpConstantTrue %bool
-%int_0 = OpConstant %int 0
-%_ptr_Function_int = OpTypePointer Function %int
-)";
-
-  const std::string nonEntryFuncs =
-      R"(%foo_ = OpFunction %int None %8
-%13 = OpLabel
-%14 = OpCopyObject %int %int_0
-OpSelectionMerge %15 None
-OpBranchConditional %true %16 %15
-%15 = OpLabel
-%17 = OpPhi %int %14 %13 %18 %16
-OpReturnValue %17
-%16 = OpLabel
-%18 = OpCopyObject %int %int_0
-OpBranch %15
-OpFunctionEnd
-)";
-
-  const std::string before =
-      R"(%main = OpFunction %void None %6
-%19 = OpLabel
-%x = OpVariable %_ptr_Function_int Function
-%20 = OpFunctionCall %int %foo_
-OpStore %x %20
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string after =
-      R"(%main = OpFunction %void None %6
-%19 = OpLabel
-%21 = OpVariable %_ptr_Function_int Function
-%x = OpVariable %_ptr_Function_int Function
-%23 = OpCopyObject %int %int_0
-OpSelectionMerge %24 None
-OpBranchConditional %true %26 %24
-%24 = OpLabel
-%25 = OpPhi %int %23 %19 %28 %26
-OpStore %21 %25
-OpBranch %27
-%26 = OpLabel
-%28 = OpCopyObject %int %int_0
-OpBranch %24
-%27 = OpLabel
-%20 = OpLoad %int %21
-OpStore %x %20
-OpReturn
-OpFunctionEnd
-)";
-
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
-                                              false, true);
-}
-
 TEST_F(InlineTest, EarlyReturnInLoopIsNotInlined) {
   // #version 140
   //
@@ -1944,165 +1786,6 @@ OpBranchConditional %true %23 %22
 %24 = OpCopyObject %int %int_5
 OpBranchConditional %true %18 %22
 %22 = OpLabel
-OpReturn
-OpFunctionEnd
-)";
-
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
-                                              false, true);
-}
-
-TEST_F(
-    InlineTest,
-    SingleBlockLoopCallsMultiBlockCalleeHavingSelectionMergeAndMultiReturns) {
-  // This is similar to SingleBlockLoopCallsMultiBlockCalleeHavingSelectionMerge
-  // except that in addition to starting with a selection header, the
-  // callee also has multi returns.
-  //
-  // So now we have to accommodate:
-  // - The caller's OpLoopMerge (which must move to the first block)
-  // - The single-trip loop to wrap the multi returns, and
-  // - The callee's selection merge in its first block.
-  // Each of these must go into their own blocks.
-
-  const std::string predefs =
-      R"(OpCapability Shader
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %1 "main"
-OpSource OpenCL_C 120
-%bool = OpTypeBool
-%int = OpTypeInt 32 1
-%true = OpConstantTrue %bool
-%false = OpConstantFalse %bool
-%int_0 = OpConstant %int 0
-%int_1 = OpConstant %int 1
-%int_2 = OpConstant %int 2
-%int_3 = OpConstant %int 3
-%int_4 = OpConstant %int 4
-%void = OpTypeVoid
-%12 = OpTypeFunction %void
-)";
-
-  const std::string nonEntryFuncs =
-      R"(%13 = OpFunction %void None %12
-%14 = OpLabel
-%15 = OpCopyObject %int %int_0
-OpReturn
-%16 = OpLabel
-%17 = OpCopyObject %int %int_1
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string before =
-      R"(%1 = OpFunction %void None %12
-%18 = OpLabel
-OpBranch %19
-%19 = OpLabel
-%20 = OpCopyObject %int %int_2
-%21 = OpFunctionCall %void %13
-%22 = OpCopyObject %int %int_3
-OpLoopMerge %23 %19 None
-OpBranchConditional %true %19 %23
-%23 = OpLabel
-%24 = OpCopyObject %int %int_4
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string after =
-      R"(%1 = OpFunction %void None %12
-%18 = OpLabel
-OpBranch %19
-%19 = OpLabel
-%20 = OpCopyObject %int %int_2
-%26 = OpCopyObject %int %int_0
-OpLoopMerge %23 %19 None
-OpBranch %28
-%27 = OpLabel
-%29 = OpCopyObject %int %int_1
-OpBranch %28
-%28 = OpLabel
-%22 = OpCopyObject %int %int_3
-OpBranchConditional %true %19 %23
-%23 = OpLabel
-%24 = OpCopyObject %int %int_4
-OpReturn
-OpFunctionEnd
-)";
-
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
-                                              false, true);
-}
-
-TEST_F(InlineTest, CalleeWithMultiReturnAndPhiRequiresEntryBlockRemapping) {
-  // The case from https://github.com/KhronosGroup/SPIRV-Tools/issues/790
-  //
-  // The callee has multiple returns, and so must be wrapped with a single-trip
-  // loop.  That code must remap the callee entry block ID to the introduced
-  // loop body's ID.  Otherwise you can get a dominance error in a cloned OpPhi.
-
-  const std::string predefs =
-      R"(OpCapability Shader
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %1 "main"
-OpSource OpenCL_C 120
-%int = OpTypeInt 32 1
-%int_0 = OpConstant %int 0
-%int_1 = OpConstant %int 1
-%int_2 = OpConstant %int 2
-%int_3 = OpConstant %int 3
-%int_4 = OpConstant %int 4
-%void = OpTypeVoid
-%9 = OpTypeFunction %void
-%bool = OpTypeBool
-%false = OpConstantFalse %bool
-)";
-
-  // This callee has multiple returns, and a Phi in the second block referencing
-  // a value generated in the entry block.
-  const std::string nonEntryFuncs =
-      R"(%12 = OpFunction %void None %9
-%13 = OpLabel
-%14 = OpCopyObject %int %int_0
-OpBranch %15
-%15 = OpLabel
-%16 = OpPhi %int %14 %13
-%17 = OpCopyObject %int %int_1
-OpReturn
-%18 = OpLabel
-%19 = OpCopyObject %int %int_2
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string before =
-      R"(%1 = OpFunction %void None %9
-%20 = OpLabel
-%21 = OpCopyObject %int %int_3
-%22 = OpFunctionCall %void %12
-%23 = OpCopyObject %int %int_4
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string after =
-      R"(%1 = OpFunction %void None %9
-%20 = OpLabel
-%21 = OpCopyObject %int %int_3
-%25 = OpCopyObject %int %int_0
-OpBranch %26
-%26 = OpLabel
-%27 = OpPhi %int %25 %20
-%28 = OpCopyObject %int %int_1
-OpBranch %30
-%29 = OpLabel
-%31 = OpCopyObject %int %int_2
-OpBranch %30
-%30 = OpLabel
-%23 = OpCopyObject %int %int_4
 OpReturn
 OpFunctionEnd
 )";
@@ -2769,6 +2452,560 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
+}
+
+TEST_F(InlineTest, EarlyReturnFunctionInlined) {
+  // #version 140
+  //
+  // in vec4 BaseColor;
+  //
+  // float foo(vec4 bar)
+  // {
+  //     if (bar.x < 0.0)
+  //         return 0.0;
+  //     return bar.x;
+  // }
+  //
+  // void main()
+  // {
+  //     vec4 color = vec4(foo(BaseColor));
+  //     gl_FragColor = color;
+  // }
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %foo_vf4_ "foo(vf4;"
+OpName %bar "bar"
+OpName %color "color"
+OpName %BaseColor "BaseColor"
+OpName %param "param"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%14 = OpTypeFunction %float %_ptr_Function_v4float
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string foo =
+      R"(%foo_vf4_ = OpFunction %float None %14
+%bar = OpFunctionParameter %_ptr_Function_v4float
+%27 = OpLabel
+%28 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%29 = OpLoad %float %28
+%30 = OpFOrdLessThan %bool %29 %float_0
+OpSelectionMerge %31 None
+OpBranchConditional %30 %32 %31
+%32 = OpLabel
+OpReturnValue %float_0
+%31 = OpLabel
+%33 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%34 = OpLoad %float %33
+OpReturnValue %34
+OpFunctionEnd
+)";
+
+  const std::string fooMergeReturn =
+      R"(%foo_vf4_ = OpFunction %float None %14
+%bar = OpFunctionParameter %_ptr_Function_v4float
+%27 = OpLabel
+%41 = OpVariable %_ptr_Function_bool Function %false
+%36 = OpVariable %_ptr_Function_float Function
+OpSelectionMerge %35 None
+OpSwitch %uint_0 %38
+%38 = OpLabel
+%28 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%29 = OpLoad %float %28
+%30 = OpFOrdLessThan %bool %29 %float_0
+OpSelectionMerge %31 None
+OpBranchConditional %30 %32 %31
+%32 = OpLabel
+OpStore %41 %true
+OpStore %36 %float_0
+OpBranch %35
+%31 = OpLabel
+%33 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%34 = OpLoad %float %33
+OpStore %41 %true
+OpStore %36 %34
+OpBranch %35
+%35 = OpLabel
+%37 = OpLoad %float %36
+OpReturnValue %37
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %10
+%22 = OpLabel
+%color = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%23 = OpLoad %v4float %BaseColor
+OpStore %param %23
+%24 = OpFunctionCall %float %foo_vf4_ %param
+%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
+OpStore %color %25
+%26 = OpLoad %v4float %color
+OpStore %gl_FragColor %26
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%false = OpConstantFalse %bool
+%_ptr_Function_bool = OpTypePointer Function %bool
+%true = OpConstantTrue %bool
+%main = OpFunction %void None %10
+%22 = OpLabel
+%43 = OpVariable %_ptr_Function_bool Function %false
+%44 = OpVariable %_ptr_Function_float Function
+%45 = OpVariable %_ptr_Function_float Function
+%color = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%23 = OpLoad %v4float %BaseColor
+OpStore %param %23
+OpStore %43 %false
+OpSelectionMerge %55 None
+OpSwitch %uint_0 %47
+%47 = OpLabel
+%48 = OpAccessChain %_ptr_Function_float %param %uint_0
+%49 = OpLoad %float %48
+%50 = OpFOrdLessThan %bool %49 %float_0
+OpSelectionMerge %52 None
+OpBranchConditional %50 %51 %52
+%51 = OpLabel
+OpStore %43 %true
+OpStore %44 %float_0
+OpBranch %55
+%52 = OpLabel
+%53 = OpAccessChain %_ptr_Function_float %param %uint_0
+%54 = OpLoad %float %53
+OpStore %43 %true
+OpStore %44 %54
+OpBranch %55
+%55 = OpLabel
+%56 = OpLoad %float %44
+OpStore %45 %56
+%24 = OpLoad %float %45
+%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
+OpStore %color %25
+%26 = OpLoad %v4float %color
+OpStore %gl_FragColor %26
+OpReturn
+OpFunctionEnd
+)";
+
+  // The early return case must be handled by merge-return first.
+  AddPass<MergeReturnPass>();
+  AddPass<InlineExhaustivePass>();
+  RunAndCheck(predefs + before + foo, predefs + after + fooMergeReturn);
+}
+
+TEST_F(InlineTest, EarlyReturnNotAppearingLastInFunctionInlined) {
+  // Example from https://github.com/KhronosGroup/SPIRV-Tools/issues/755
+  //
+  // Original example is derived from:
+  //
+  // #version 450
+  //
+  // float foo() {
+  //     if (true) {
+  //     }
+  // }
+  //
+  // void main() { foo(); }
+  //
+  // But the order of basic blocks in foo is changed so that the return
+  // block is listed second-last.  There is only one return in the callee
+  // but it does not appear last.
+
+  const std::string predefs =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+OpName %foo_ "foo("
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+)";
+
+  const std::string foo =
+      R"(%foo_ = OpFunction %void None %4
+%7 = OpLabel
+OpSelectionMerge %8 None
+OpBranchConditional %true %9 %8
+%8 = OpLabel
+OpReturn
+%9 = OpLabel
+OpBranch %8
+OpFunctionEnd
+)";
+
+  const std::string fooMergeReturn =
+      R"(%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%false = OpConstantFalse %bool
+%_ptr_Function_bool = OpTypePointer Function %bool
+%foo_ = OpFunction %void None %4
+%7 = OpLabel
+%18 = OpVariable %_ptr_Function_bool Function %false
+OpSelectionMerge %12 None
+OpSwitch %uint_0 %13
+%13 = OpLabel
+OpSelectionMerge %8 None
+OpBranchConditional %true %9 %8
+%8 = OpLabel
+OpStore %18 %true
+OpBranch %12
+%9 = OpLabel
+OpBranch %8
+%12 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %4
+%10 = OpLabel
+%11 = OpFunctionCall %void %foo_
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %4
+%10 = OpLabel
+%19 = OpVariable %_ptr_Function_bool Function %false
+OpStore %19 %false
+OpSelectionMerge %24 None
+OpSwitch %uint_0 %21
+%21 = OpLabel
+OpSelectionMerge %22 None
+OpBranchConditional %true %23 %22
+%22 = OpLabel
+OpStore %19 %true
+OpBranch %24
+%23 = OpLabel
+OpBranch %22
+%24 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  // The early return case must be handled by merge-return first.
+  AddPass<MergeReturnPass>();
+  AddPass<InlineExhaustivePass>();
+  RunAndCheck(predefs + foo + before, predefs + fooMergeReturn + after);
+}
+
+TEST_F(InlineTest, CalleeWithSingleReturnNeedsSingleTripLoopWrapper) {
+  // The case from https://github.com/KhronosGroup/SPIRV-Tools/issues/2018
+  //
+  // The callee has a single return, but needs single-trip loop wrapper
+  // to be inlined because the return is in a selection structure.
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %_GLF_color
+OpExecutionMode %main OriginUpperLeft
+OpSource ESSL 310
+OpName %main "main"
+OpName %f_ "f("
+OpName %i "i"
+OpName %_GLF_color "_GLF_color"
+OpDecorate %_GLF_color Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%9 = OpTypeFunction %float
+%float_1 = OpConstant %float 1
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%true = OpConstantTrue %bool
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_GLF_color = OpVariable %_ptr_Output_v4float Output
+%float_0 = OpConstant %float 0
+%21 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%22 = OpConstantComposite %v4float %float_0 %float_1 %float_0 %float_1
+)";
+
+  const std::string new_predefs =
+      R"(%_ptr_Function_float = OpTypePointer Function %float
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Function_bool = OpTypePointer Function %bool
+)";
+
+  const std::string main_before =
+      R"(%main = OpFunction %void None %7
+%23 = OpLabel
+%i = OpVariable %_ptr_Function_int Function
+OpStore %i %int_0
+OpBranch %24
+%24 = OpLabel
+OpLoopMerge %25 %26 None
+OpBranch %27
+%27 = OpLabel
+%28 = OpLoad %int %i
+%29 = OpSLessThan %bool %28 %int_1
+OpBranchConditional %29 %30 %25
+%30 = OpLabel
+OpStore %_GLF_color %21
+%31 = OpFunctionCall %float %f_
+OpBranch %26
+%26 = OpLabel
+%32 = OpLoad %int %i
+%33 = OpIAdd %int %32 %int_1
+OpStore %i %33
+OpBranch %24
+%25 = OpLabel
+OpStore %_GLF_color %22
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string main_after =
+      R"(%main = OpFunction %void None %7
+%23 = OpLabel
+%46 = OpVariable %_ptr_Function_bool Function %false
+%47 = OpVariable %_ptr_Function_float Function
+%48 = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+OpStore %i %int_0
+OpBranch %24
+%24 = OpLabel
+OpLoopMerge %25 %26 None
+OpBranch %27
+%27 = OpLabel
+%28 = OpLoad %int %i
+%29 = OpSLessThan %bool %28 %int_1
+OpBranchConditional %29 %30 %25
+%30 = OpLabel
+OpStore %_GLF_color %21
+OpStore %46 %false
+OpSelectionMerge %53 None
+OpSwitch %uint_0 %50
+%50 = OpLabel
+OpSelectionMerge %52 None
+OpBranchConditional %true %51 %52
+%51 = OpLabel
+OpStore %46 %true
+OpStore %47 %float_1
+OpBranch %53
+%52 = OpLabel
+OpStore %46 %true
+OpStore %47 %float_1
+OpBranch %53
+%53 = OpLabel
+%54 = OpLoad %float %47
+OpStore %48 %54
+%31 = OpLoad %float %48
+OpBranch %26
+%26 = OpLabel
+%32 = OpLoad %int %i
+%33 = OpIAdd %int %32 %int_1
+OpStore %i %33
+OpBranch %24
+%25 = OpLabel
+OpStore %_GLF_color %22
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string callee =
+      R"(%f_ = OpFunction %float None %9
+%34 = OpLabel
+OpSelectionMerge %35 None
+OpBranchConditional %true %36 %35
+%36 = OpLabel
+OpReturnValue %float_1
+%35 = OpLabel
+OpReturnValue %float_1
+OpFunctionEnd
+)";
+
+  const std::string calleeMergeReturn =
+      R"(%f_ = OpFunction %float None %9
+%34 = OpLabel
+%45 = OpVariable %_ptr_Function_bool Function %false
+%39 = OpVariable %_ptr_Function_float Function
+OpSelectionMerge %37 None
+OpSwitch %uint_0 %41
+%41 = OpLabel
+OpSelectionMerge %35 None
+OpBranchConditional %true %36 %35
+%36 = OpLabel
+OpStore %45 %true
+OpStore %39 %float_1
+OpBranch %37
+%35 = OpLabel
+OpStore %45 %true
+OpStore %39 %float_1
+OpBranch %37
+%37 = OpLabel
+%40 = OpLoad %float %39
+OpReturnValue %40
+OpFunctionEnd
+)";
+
+  // The early return case must be handled by merge-return first.
+  AddPass<MergeReturnPass>();
+  AddPass<InlineExhaustivePass>();
+  RunAndCheck(predefs + main_before + callee,
+              predefs + new_predefs + main_after + calleeMergeReturn);
+}
+
+TEST_F(InlineTest, ForwardReferencesInPhiInlined) {
+  // The basic structure of the test case is like this:
+  //
+  // int foo() {
+  //   int result = 1;
+  //   if (true) {
+  //      result = 1;
+  //   }
+  //   return result;
+  // }
+  //
+  // void main() {
+  //  int x = foo();
+  // }
+  //
+  // but with modifications: Using Phi instead of load/store, and the
+  // return block in foo appears before the "then" block.
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+OpName %foo_ "foo("
+OpName %x "x"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%8 = OpTypeFunction %int
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int_0 = OpConstant %int 0
+%_ptr_Function_int = OpTypePointer Function %int
+)";
+
+  const std::string callee =
+      R"(%foo_ = OpFunction %int None %8
+%13 = OpLabel
+%14 = OpCopyObject %int %int_0
+OpSelectionMerge %15 None
+OpBranchConditional %true %16 %15
+%15 = OpLabel
+%17 = OpPhi %int %14 %13 %18 %16
+OpReturnValue %17
+%16 = OpLabel
+%18 = OpCopyObject %int %int_0
+OpBranch %15
+OpFunctionEnd
+)";
+
+  const std::string calleeMergeReturn =
+      R"(%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%false = OpConstantFalse %bool
+%_ptr_Function_bool = OpTypePointer Function %bool
+%foo_ = OpFunction %int None %8
+%13 = OpLabel
+%29 = OpVariable %_ptr_Function_bool Function %false
+%22 = OpVariable %_ptr_Function_int Function
+OpSelectionMerge %21 None
+OpSwitch %uint_0 %24
+%24 = OpLabel
+%14 = OpCopyObject %int %int_0
+OpSelectionMerge %15 None
+OpBranchConditional %true %16 %15
+%15 = OpLabel
+%17 = OpPhi %int %14 %24 %18 %16
+OpStore %29 %true
+OpStore %22 %17
+OpBranch %21
+%16 = OpLabel
+%18 = OpCopyObject %int %int_0
+OpBranch %15
+%21 = OpLabel
+%23 = OpLoad %int %22
+OpReturnValue %23
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %6
+%19 = OpLabel
+%x = OpVariable %_ptr_Function_int Function
+%20 = OpFunctionCall %int %foo_
+OpStore %x %20
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %6
+%19 = OpLabel
+%30 = OpVariable %_ptr_Function_bool Function %false
+%31 = OpVariable %_ptr_Function_int Function
+%32 = OpVariable %_ptr_Function_int Function
+%x = OpVariable %_ptr_Function_int Function
+OpStore %30 %false
+OpSelectionMerge %40 None
+OpSwitch %uint_0 %34
+%34 = OpLabel
+%35 = OpCopyObject %int %int_0
+OpSelectionMerge %36 None
+OpBranchConditional %true %38 %36
+%36 = OpLabel
+%37 = OpPhi %int %35 %34 %39 %38
+OpStore %30 %true
+OpStore %31 %37
+OpBranch %40
+%38 = OpLabel
+%39 = OpCopyObject %int %int_0
+OpBranch %36
+%40 = OpLabel
+%41 = OpLoad %int %31
+OpStore %32 %41
+%20 = OpLoad %int %32
+OpStore %x %20
+OpReturn
+OpFunctionEnd
+)";
+
+  AddPass<MergeReturnPass>();
+  AddPass<InlineExhaustivePass>();
+  RunAndCheck(predefs + callee + before, predefs + calleeMergeReturn + after);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
