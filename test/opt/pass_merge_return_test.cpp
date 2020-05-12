@@ -1970,6 +1970,41 @@ TEST_F(MergeReturnPassTest, UnreachableMergeAndContinue) {
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
 }
 
+TEST_F(MergeReturnPassTest, SingleReturnInMiddle) {
+  const std::string before =
+      R"(
+; CHECK: OpFunction
+; CHECK: OpReturn
+; CHECK-NEXT: OpFunctionEnd
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %foo_ "foo("
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+       %foo_ = OpFunction %void None %4
+          %7 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %true %9 %8
+          %8 = OpLabel
+               OpReturn
+          %9 = OpLabel
+               OpBranch %8
+               OpFunctionEnd
+       %main = OpFunction %void None %4
+         %10 = OpLabel
+         %11 = OpFunctionCall %void %foo_
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
