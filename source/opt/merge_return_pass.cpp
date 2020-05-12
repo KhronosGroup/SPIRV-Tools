@@ -42,7 +42,7 @@ Pass::Status MergeReturnPass::Process() {
       bool isInConstruct =
           context()->GetStructuredCFGAnalysis()->ContainingConstruct(
               return_blocks[0]->id()) != 0;
-      bool endsWithReturn = return_blocks[0] == function->back();
+      bool endsWithReturn = return_blocks[0] == function->tail();
       if (!isInConstruct && endsWithReturn) {
         return false;
       }
