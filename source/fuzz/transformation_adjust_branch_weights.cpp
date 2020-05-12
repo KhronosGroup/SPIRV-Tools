@@ -20,6 +20,13 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+
+const uint32_t kBranchWeightForTrueLabelIndex = 3;
+const uint32_t kBranchWeightForFalseLabelIndex = 4;
+
+}  // namespace
+
 TransformationAdjustBranchWeights::TransformationAdjustBranchWeights(
     const spvtools::fuzz::protobufs::TransformationAdjustBranchWeights& message)
     : message_(message) {}
@@ -47,27 +54,18 @@ bool TransformationAdjustBranchWeights::IsApplicable(
          "The located instruction must have the same opcode as in the "
          "descriptor.");
 
-  // Must be an OpBranchConditional instruction
-  // with all operands.
-  if (opcode != SpvOpBranchConditional || instruction->NumOperands() != 5) {
+  // Must be an OpBranchConditional instruction.
+  if (opcode != SpvOpBranchConditional) {
     return false;
   }
 
-  // There must be two branch weights.
-  if (message_.branch_weights_size() != 2) {
-    return false;
-  }
+  assert((message_.branch_weights(0) != 0 || message_.branch_weights(1) != 0) &&
+         "At least one weight must be non-zero.");
 
-  // At least one weight must be non-zero.
-  if (message_.branch_weights(0) == 0 && message_.branch_weights(1) == 0) {
-    return false;
-  }
-
-  // The two weights must not overflow a 32-bit unsigned integer when added
-  // together.
-  if (message_.branch_weights(0) > UINT32_MAX - message_.branch_weights(1)) {
-    return false;
-  }
+  assert(message_.branch_weights(0) <=
+             UINT32_MAX - message_.branch_weights(1) &&
+         "The two weights must not overflow a 32-bit unsigned integer when "
+         "added together.");
 
   return true;
 }
@@ -76,8 +74,17 @@ void TransformationAdjustBranchWeights::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   auto instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
-  instruction->SetOperand(3, {message_.branch_weights(0)});
-  instruction->SetOperand(4, {message_.branch_weights(1)});
+  if (instruction->HasBranchWeights()) {
+    instruction->SetOperand(kBranchWeightForTrueLabelIndex,
+                            {message_.branch_weights(0)});
+    instruction->SetOperand(kBranchWeightForFalseLabelIndex,
+                            {message_.branch_weights(1)});
+  } else {
+    instruction->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
+                             {message_.branch_weights(0)}});
+    instruction->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
+                             {message_.branch_weights(1)}});
+  }
 }
 
 protobufs::Transformation TransformationAdjustBranchWeights::ToMessage() const {

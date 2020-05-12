@@ -34,7 +34,9 @@ class TransformationAdjustBranchWeights : public Transformation {
 
   // - |message_.instruction_descriptor| must identify an existing
   //   branch conditional instruction
-  // - |branch_weights| will replace the current instruction branch weights
+  // - |branch_weights| at least one weight must be non-zero and
+  //   the two weights must not overflow a 32-bit unsigned integer when added
+  //   together
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

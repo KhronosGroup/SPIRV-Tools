@@ -135,7 +135,8 @@ void FuzzerPassAddAccessChains::Apply() {
           // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3179) We
           //  could allow non-constant indices when looking up non-structs,
           //  using clamping to ensure they are in-bounds.
-          uint32_t index_value = GetFuzzerContext()->GetRandomUint32(bound);
+          uint32_t index_value =
+              GetFuzzerContext()->GetRandomIndexForAccessChain(bound);
           index_ids.push_back(FindOrCreate32BitIntegerConstant(
               index_value, GetFuzzerContext()->ChooseEven()));
           switch (subobject_type->opcode()) {

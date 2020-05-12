@@ -192,8 +192,8 @@ class FuzzerContext {
   uint32_t GetMaximumEquivalenceClassSizeForDataSynonymFactClosure() {
     return max_equivalence_class_size_for_data_synonym_fact_closure_;
   }
-  uint32_t GetRandomUint32(uint32_t bound) {
-    return random_generator_->RandomUint32(bound);
+  uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
+    return random_generator_->RandomUint32(composite_size_bound);
   }
   uint32_t GetRandomLoopControlPartialCount() {
     return random_generator_->RandomUint32(max_loop_control_partial_count_);
@@ -203,6 +203,18 @@ class FuzzerContext {
   }
   uint32_t GetRandomLoopLimit() {
     return random_generator_->RandomUint32(max_loop_limit_);
+  }
+  std::pair<uint32_t, uint32_t> GetRandomBranchWeights() {
+    std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
+
+    while (branch_weights.first == 0 && branch_weights.second == 0) {
+      // Using INT32_MAX to do not overflow UINT32_MAX when the branch weights
+      // are added together.
+      branch_weights.first = random_generator_->RandomUint32(INT32_MAX);
+      branch_weights.second = random_generator_->RandomUint32(INT32_MAX);
+    }
+
+    return branch_weights;
   }
   uint32_t GetRandomSizeForNewArray() {
     // Ensure that the array size is non-zero.

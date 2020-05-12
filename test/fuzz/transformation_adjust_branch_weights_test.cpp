@@ -113,12 +113,16 @@ TEST(TransformationAdjustBranchWeightsTest, IsApplicableTest) {
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
+  // Tests the two branch weights equal to 0.
   instruction_descriptor =
       MakeInstructionDescriptor(33, SpvOpBranchConditional, 0);
   transformation =
       TransformationAdjustBranchWeights(instruction_descriptor, {0, 0});
-  ASSERT_FALSE(
-      transformation.IsApplicable(context.get(), transformation_context));
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      transformation.IsApplicable(context.get(), transformation_context),
+      "At least one weight must be non-zero.");
+#endif
 
   // Tests 32-bit unsigned integer overflow.
   instruction_descriptor =
@@ -132,15 +136,19 @@ TEST(TransformationAdjustBranchWeightsTest, IsApplicableTest) {
       MakeInstructionDescriptor(33, SpvOpBranchConditional, 0);
   transformation = TransformationAdjustBranchWeights(instruction_descriptor,
                                                      {1, UINT32_MAX});
-  ASSERT_FALSE(
-      transformation.IsApplicable(context.get(), transformation_context));
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      transformation.IsApplicable(context.get(), transformation_context),
+      "The two weights must not overflow a 32-bit unsigned integer when added "
+      "together.");
+#endif
 
   // Tests OpBranchConditional instruction with no weights.
   instruction_descriptor =
       MakeInstructionDescriptor(21, SpvOpBranchConditional, 0);
   transformation =
       TransformationAdjustBranchWeights(instruction_descriptor, {0, 1});
-  ASSERT_FALSE(
+  ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests non-OpBranchConditional instructions.
@@ -230,7 +238,7 @@ TEST(TransformationAdjustBranchWeightsTest, ApplyTest) {
          %21 = OpLabel
                OpStore %51 %60
                OpSelectionMerge %105 None
-               OpBranchConditional %103 %104 %105 3 4
+               OpBranchConditional %103 %104 %105
         %104 = OpLabel
                OpBranch %105
         %105 = OpLabel

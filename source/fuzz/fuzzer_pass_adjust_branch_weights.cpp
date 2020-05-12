@@ -31,25 +31,15 @@ FuzzerPassAdjustBranchWeights::FuzzerPassAdjustBranchWeights(
 FuzzerPassAdjustBranchWeights::~FuzzerPassAdjustBranchWeights() = default;
 
 void FuzzerPassAdjustBranchWeights::Apply() {
-  auto ir_context = GetIRContext();
-  auto fuzzer_context = GetFuzzerContext();
-  // For all OpBranchConditional instructions with branch weights,
+  // For all OpBranchConditional instructions,
   // randomly applies the transformation.
-  ir_context->module()->ForEachInst([this, ir_context, fuzzer_context](
-                                        opt::Instruction* instruction) {
+  GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
     if (instruction->opcode() == SpvOpBranchConditional &&
-        instruction->NumOperands() == 5 &&
-        fuzzer_context->ChoosePercentage(
+        GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfAdjustingBranchWeights())) {
-      std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
-      while (branch_weights.first == 0 && branch_weights.second == 0) {
-        branch_weights.first = fuzzer_context->GetRandomUint32(INT32_MAX);
-        branch_weights.second =
-            fuzzer_context->GetRandomUint32(INT32_MAX - branch_weights.first);
-      }
-
       auto instruction_descriptor =
-          MakeInstructionDescriptor(ir_context, instruction);
+          MakeInstructionDescriptor(GetIRContext(), instruction);
+      auto branch_weights = GetFuzzerContext()->GetRandomBranchWeights();
       auto transformation = TransformationAdjustBranchWeights(
           instruction_descriptor, branch_weights);
       ApplyTransformation(transformation);
