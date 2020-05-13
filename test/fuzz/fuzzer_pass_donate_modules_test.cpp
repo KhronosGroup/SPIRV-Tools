@@ -1889,7 +1889,9 @@ TEST(FuzzerPassDonateModulesTest, DISABLED_DonationSupportsOpTypeRuntimeArray) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   // This assert fails for OpenCL with
   //
-  // error: line 45: Interface variable id <23> is used by entry point 'kernel_1' id <29>, but is not listed as an interface %23 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
+  // error: line 45: Interface variable id <23> is used by entry point
+  // 'kernel_1' id <29>, but is not listed as an interface
+  // %23 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
   FactManager fact_manager;
