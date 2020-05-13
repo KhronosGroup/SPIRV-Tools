@@ -140,7 +140,8 @@ bool RemoveUnusedInstructionReductionOpportunityFinder::
       decoration = inst.GetSingleWordInOperand(2u);
       break;
     default:
-      // The instruction is not a decoration.
+      // The instruction is not a decoration.  It is legitimate for this to be
+      // reached: it allows the method to be invoked on arbitrary instructions.
       return false;
   }
 
