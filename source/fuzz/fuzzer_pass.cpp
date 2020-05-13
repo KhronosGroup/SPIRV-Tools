@@ -336,7 +336,7 @@ uint32_t FuzzerPass::FindOrCreateConstant(const std::vector<uint32_t>& words,
            "Floating point number must have 32-bit width");
     return FindOrCreate32BitFloatConstant(words[0]);
   } else {
-    assert(!"Constant type is not supported");
+    assert(false && "Constant type is not supported");
   }
 }
 
