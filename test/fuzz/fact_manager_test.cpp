@@ -1054,6 +1054,62 @@ TEST(FactManagerTest, EquationAndEquivalenceFacts) {
                                         MakeDataDescriptor(16, {})));
 }
 
+TEST(FactManagerTest, CheckingFactsDoesNotAddConstants) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpMemberDecorate %9 0 Offset 0
+               OpDecorate %9 Block
+               OpDecorate %11 DescriptorSet 0
+               OpDecorate %11 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpTypeStruct %6
+         %10 = OpTypePointer Uniform %9
+         %11 = OpVariable %10 Uniform
+         %12 = OpConstant %6 0
+         %13 = OpTypePointer Uniform %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %14 = OpAccessChain %13 %11 %12
+         %15 = OpLoad %6 %14
+               OpStore %8 %15
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  // 8[0] == int(1)
+  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
+                            MakeUniformBufferElementDescriptor(0, 0, {0})));
+
+  // Although 8[0] has the value 1, we do not have the constant 1 in the module.
+  // We thus should not find any constants available from uniforms for int type.
+  // Furthermore, the act of looking for appropriate constants should not change
+  // which constants are known to the constant manager.
+  auto int_type = context->get_type_mgr()->GetType(6)->AsInteger();
+  opt::analysis::IntConstant constant_one(int_type, {1});
+  ASSERT_FALSE(context->get_constant_mgr()->FindConstant(&constant_one));
+  auto available_constants =
+      fact_manager.GetConstantsAvailableFromUniformsForType(context.get(), 6);
+  ASSERT_EQ(0, available_constants.size());
+  ASSERT_TRUE(IsEqual(env, shader, context.get()));
+  ASSERT_FALSE(context->get_constant_mgr()->FindConstant(&constant_one));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
