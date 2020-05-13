@@ -34,7 +34,7 @@ class TransformationAdjustBranchWeights : public Transformation {
 
   // - |message_.instruction_descriptor| must identify an existing
   //   branch conditional instruction
-  // - |branch_weights| at least one weight must be non-zero and
+  // - At least one of |branch_weights| must be non-zero and
   //   the two weights must not overflow a 32-bit unsigned integer when added
   //   together
   bool IsApplicable(

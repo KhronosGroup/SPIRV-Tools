@@ -366,9 +366,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline bool WhileEachInOperand(
       const std::function<bool(const uint32_t*)>& f) const;
 
-  // Returns true if it's an OpBranchCondition instruction
+  // Returns true if it's an OpBranchConditional instruction
   // with branch weights.
-  inline bool HasBranchWeights() const;
+  bool HasBranchWeights() const;
 
   // Returns true if any operands can be labels
   inline bool HasLabels() const;
@@ -808,14 +808,6 @@ inline void Instruction::ForEachInOperand(
     f(op);
     return true;
   });
-}
-
-inline bool Instruction::HasBranchWeights() const {
-  if (opcode_ == SpvOpBranchConditional && NumOperands() == 5) {
-    return true;
-  }
-
-  return false;
 }
 
 inline bool Instruction::HasLabels() const {

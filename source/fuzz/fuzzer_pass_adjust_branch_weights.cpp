@@ -37,12 +37,9 @@ void FuzzerPassAdjustBranchWeights::Apply() {
     if (instruction->opcode() == SpvOpBranchConditional &&
         GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfAdjustingBranchWeights())) {
-      auto instruction_descriptor =
-          MakeInstructionDescriptor(GetIRContext(), instruction);
-      auto branch_weights = GetFuzzerContext()->GetRandomBranchWeights();
-      auto transformation = TransformationAdjustBranchWeights(
-          instruction_descriptor, branch_weights);
-      ApplyTransformation(transformation);
+      ApplyTransformation(TransformationAdjustBranchWeights(
+          MakeInstructionDescriptor(GetIRContext(), instruction),
+          GetFuzzerContext()->GetRandomBranchWeights()));
     }
   });
 }
