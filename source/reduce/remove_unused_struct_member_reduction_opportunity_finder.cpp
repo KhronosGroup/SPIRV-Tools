@@ -72,7 +72,9 @@ RemoveUnusedStructMemberReductionOpportunityFinder::GetAvailableOpportunities(
 
   // We now go through every instruction that might index into a struct, and
   // refine our tracking of which struct members are used based on the struct
-  // indexing we observe.
+  // indexing we observe.  We cannot just go through all uses of a struct type
+  // because the type is not necessarily even referenced, e.g. when walking
+  // arrays of structs.
   for (auto& function : *context->module()) {
     for (auto& block : function) {
       for (auto& inst : block) {
