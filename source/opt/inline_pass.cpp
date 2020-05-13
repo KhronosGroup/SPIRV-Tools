@@ -478,19 +478,6 @@ bool InlinePass::GenInlineCode(
   Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
       kSpvFunctionCallFunctionId)];
 
-  if (early_return_funcs_.find(calleeFn->result_id()) !=
-      early_return_funcs_.end()) {
-    // We rely on the merge-return pass to handle the early return case
-    // in advance.
-    std::string message =
-        "The function '%" + std::to_string(calleeFn->result_id()) +
-        "' could not be inlined because the return instruction "
-        "is not at the end of the function. This could be fixed by "
-        "running merge-return before inlining.";
-    consumer()(SPV_MSG_WARNING, "", {0, 0, 0}, message.c_str());
-    return false;
-  }
-
   // Map parameters to actual arguments.
   MapParams(calleeFn, call_inst_itr, &callee2caller);
 
@@ -592,7 +579,21 @@ bool InlinePass::IsInlinableFunctionCall(const Instruction* inst) {
   const uint32_t calleeFnId =
       inst->GetSingleWordOperand(kSpvFunctionCallFunctionId);
   const auto ci = inlinable_.find(calleeFnId);
-  return ci != inlinable_.cend();
+  if (ci == inlinable_.cend()) return false;
+
+  if (early_return_funcs_.find(calleeFnId) != early_return_funcs_.end()) {
+    // We rely on the merge-return pass to handle the early return case
+    // in advance.
+    std::string message =
+        "The function '%" + std::to_string(calleeFnId) +
+        "' could not be inlined because the return instruction "
+        "is not at the end of the function. This could be fixed by "
+        "running merge-return before inlining.";
+    consumer()(SPV_MSG_WARNING, "", {0, 0, 0}, message.c_str());
+    return false;
+  }
+
+  return true;
 }
 
 void InlinePass::UpdateSucceedingPhis(
