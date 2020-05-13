@@ -260,8 +260,9 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstant(
   auto chosen_type_id =
       available_types_with_uniforms[GetFuzzerContext()->RandomIndex(
           available_types_with_uniforms)];
-  auto available_constant_words = fuzzerutil::GetConstantWordsFromUniformsForType(
-      GetTransformationContext(), chosen_type_id);
+  auto available_constant_words =
+      fuzzerutil::GetConstantWordsFromUniformsForType(
+          GetTransformationContext(), chosen_type_id);
   if (available_constant_words.size() == 1) {
     // TODO(afd): for now we only obfuscate a boolean if there are at least
     //  two constants available from uniforms, so that we can do a
@@ -272,22 +273,24 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstant(
   }
 
   assert(!available_constant_words.empty() &&
-      "There exists a fact but no constants - impossible");
+         "There exists a fact but no constants - impossible");
 
   // We know we have at least two known-to-be-constant uniforms of the chosen
   // type.  Pick one of them at random.
-  auto constant_index_1 = GetFuzzerContext()->RandomIndex(available_constant_words);
+  auto constant_index_1 =
+      GetFuzzerContext()->RandomIndex(available_constant_words);
   uint32_t constant_index_2;
 
   // Now choose another one distinct from the first one.
   do {
-    constant_index_2 = GetFuzzerContext()->RandomIndex(available_constant_words);
+    constant_index_2 =
+        GetFuzzerContext()->RandomIndex(available_constant_words);
   } while (constant_index_1 == constant_index_2);
 
-  auto constant_id_1 =
-      FindOrCreateConstant(available_constant_words[constant_index_1], chosen_type_id);
-  auto constant_id_2 =
-      FindOrCreateConstant(available_constant_words[constant_index_2], chosen_type_id);
+  auto constant_id_1 = FindOrCreateConstant(
+      available_constant_words[constant_index_1], chosen_type_id);
+  auto constant_id_2 = FindOrCreateConstant(
+      available_constant_words[constant_index_2], chosen_type_id);
 
   assert(constant_id_1 != 0 && constant_id_2 != 0 &&
          "We should not find an available constant with an id of 0.");
@@ -332,22 +335,22 @@ void FuzzerPassObfuscateConstants::ObfuscateScalarConstant(
   const auto& uniform_descriptor =
       uniform_descriptors[GetFuzzerContext()->RandomIndex(uniform_descriptors)];
 
-  // Make sure the module has OpCosntant instructions for each index used to access
-  // a uniform.
+  // Make sure the module has OpCosntant instructions for each index used to
+  // access a uniform.
   for (auto index : uniform_descriptor.index()) {
     FindOrCreate32BitIntegerConstant(index, true);
   }
 
   // Make sure the module has OpTypePointer that points to the element type of
   // the uniform.
-  const auto* uniform_variable_instr = FindUniformVariable(
-      uniform_descriptor, GetIRContext(), true);
+  const auto* uniform_variable_instr =
+      FindUniformVariable(uniform_descriptor, GetIRContext(), true);
   assert(uniform_variable_instr &&
-      "Uniform variable does not exist or not unique.");
+         "Uniform variable does not exist or not unique.");
 
-  const auto* uniform_variable_type_intr = GetIRContext()
-      ->get_def_use_mgr()
-      ->GetDef(uniform_variable_instr->type_id());
+  const auto* uniform_variable_type_intr =
+      GetIRContext()->get_def_use_mgr()->GetDef(
+          uniform_variable_instr->type_id());
   assert(uniform_variable_type_intr && "Uniform variable has invalid type");
 
   auto element_type_id = fuzzerutil::WalkCompositeTypeIndices(

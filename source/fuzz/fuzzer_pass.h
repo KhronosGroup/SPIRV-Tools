@@ -169,7 +169,7 @@ class FuzzerPass {
   // transformations are applied to add it. |type_id| must be a valid
   // result id of some OpType* instruction that exists in the module.
   uint32_t FindOrCreateConstant(const std::vector<uint32_t>& words,
-      uint32_t type_id);
+                                uint32_t type_id);
 
   // Returns the result id of an instruction of the form:
   //   %id = OpUndef %|type_id|

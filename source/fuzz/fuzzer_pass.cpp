@@ -319,8 +319,8 @@ uint32_t FuzzerPass::FindOrCreateBoolConstant(bool value) {
   return result;
 }
 
-uint32_t FuzzerPass::FindOrCreateConstant(
-    const std::vector<uint32_t>& words, uint32_t type_id) {
+uint32_t FuzzerPass::FindOrCreateConstant(const std::vector<uint32_t>& words,
+                                          uint32_t type_id) {
   assert(type_id && "Constant's type id can't be 0.");
 
   const auto* type = GetIRContext()->get_type_mgr()->GetType(type_id);
@@ -333,7 +333,7 @@ uint32_t FuzzerPass::FindOrCreateConstant(
     return FindOrCreate32BitIntegerConstant(words[0], integer->IsSigned());
   } else if (const auto* floating = type->AsFloat()) {
     assert(floating->width() == 32 &&
-        "Floating point number must have 32-bit width");
+           "Floating point number must have 32-bit width");
     return FindOrCreate32BitFloatConstant(words[0]);
   } else {
     assert(!"Constant type is not supported");

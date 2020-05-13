@@ -523,20 +523,18 @@ SpvStorageClass GetStorageClassFromPointerType(
 }
 
 std::vector<std::vector<uint32_t>> GetConstantWordsFromUniformsForType(
-    const TransformationContext* context,
-    uint32_t type_id) {
+    const TransformationContext* context, uint32_t type_id) {
   assert(type_id && "Type id can't be 0");
   std::vector<std::vector<uint32_t>> result;
 
-  for (const auto& facts_and_types : context->GetFactManager()
-      ->GetConstantUniformFactsAndTypes()) {
+  for (const auto& facts_and_types :
+       context->GetFactManager()->GetConstantUniformFactsAndTypes()) {
     if (facts_and_types.second != type_id) {
       continue;
     }
 
-    std::vector<uint32_t> words(
-        facts_and_types.first.constant_word().begin(),
-        facts_and_types.first.constant_word().end());
+    std::vector<uint32_t> words(facts_and_types.first.constant_word().begin(),
+                                facts_and_types.first.constant_word().end());
     if (std::find(result.begin(), result.end(), words) == result.end()) {
       result.push_back(std::move(words));
     }

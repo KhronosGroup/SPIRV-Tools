@@ -51,8 +51,7 @@ void FuzzerPassAddDeadBlocks::Apply() {
       FindOrCreateBoolConstant(condition_value);
 
       candidate_transformations.emplace_back(TransformationAddDeadBlock(
-          GetFuzzerContext()->GetFreshId(), block.id(),
-          condition_value));
+          GetFuzzerContext()->GetFreshId(), block.id(), condition_value));
     }
   }
   // Apply all those transformations that are in fact applicable.
