@@ -185,35 +185,34 @@ class InlinePass : public Pass {
 
   // Add store instructions for initializers of variables.
   InstructionList::iterator AddStoresForVariableInitializers(
-      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      const std::unordered_map<uint32_t, uint32_t>& callee2caller,
       std::unique_ptr<BasicBlock>* new_blk_ptr,
       UptrVectorIterator<BasicBlock> callee_block_itr);
 
   // Inlines a single instruction of the callee function.
   bool InlineInstructionInBB(
-      std::unordered_map<uint32_t, uint32_t>* callee2caller,
+      const std::unordered_map<uint32_t, uint32_t>& callee2caller,
       BasicBlock* new_blk_ptr, const Instruction* inst);
 
-  // Inlines a single termination instruction of the callee function.
-  bool InlineTerminationInstructionInBB(
-      std::unordered_map<uint32_t, uint32_t>* callee2caller,
-      std::unique_ptr<BasicBlock>* new_blk_ptr, uint32_t returnLabelId,
+  // Inlines the return instruction of the callee function.
+  std::unique_ptr<BasicBlock> InlineReturn(
+      const std::unordered_map<uint32_t, uint32_t>& callee2caller,
+      std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+      std::unique_ptr<BasicBlock> new_blk_ptr, Function* calleeFn,
       const Instruction* inst, uint32_t returnVarId);
 
   // Inlines the entry block of the callee function.
-  bool InlineEntryBlock(std::unordered_map<uint32_t, uint32_t>* callee2caller,
-                        std::unique_ptr<BasicBlock>* new_blk_ptr,
-                        uint32_t returnLabelId,
-                        UptrVectorIterator<BasicBlock> callee_first_block,
-                        uint32_t returnVarId);
+  bool InlineEntryBlock(
+      const std::unordered_map<uint32_t, uint32_t>& callee2caller,
+      std::unique_ptr<BasicBlock>* new_blk_ptr,
+      UptrVectorIterator<BasicBlock> callee_first_block);
 
   // Inlines basic blocks of the callee function other than the entry basic
   // block.
   std::unique_ptr<BasicBlock> InlineBasicBlocks(
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
-      std::unordered_map<uint32_t, uint32_t>* callee2caller,
-      std::unique_ptr<BasicBlock> new_blk_ptr, uint32_t returnLabelId,
-      Function* calleeFn, uint32_t returnVarId);
+      const std::unordered_map<uint32_t, uint32_t>& callee2caller,
+      std::unique_ptr<BasicBlock> new_blk_ptr, Function* calleeFn);
 
   // Moves instructions of the caller function after the call instruction
   // to |new_blk_ptr|.
