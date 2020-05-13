@@ -585,7 +585,7 @@ bool InlinePass::IsInlinableFunctionCall(const Instruction* inst) {
     // We rely on the merge-return pass to handle the early return case
     // in advance.
     std::string message =
-        "The function '%" + std::to_string(calleeFnId) +
+        "The function '" + id2function_[calleeFnId]->DefInst().PrettyPrint() +
         "' could not be inlined because the return instruction "
         "is not at the end of the function. This could be fixed by "
         "running merge-return before inlining.";
