@@ -752,7 +752,7 @@ message TransformationAdjustBranchWeights {
   InstructionDescriptor instruction_descriptor = 1;
 
   // Branch weights of a branch conditional instruction.
-  repeated uint32 branch_weights = 2;
+  UInt32Pair branch_weights = 2;
 
 }
 

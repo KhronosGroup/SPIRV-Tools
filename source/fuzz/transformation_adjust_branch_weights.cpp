@@ -35,8 +35,8 @@ TransformationAdjustBranchWeights::TransformationAdjustBranchWeights(
     const protobufs::InstructionDescriptor& instruction_descriptor,
     const std::pair<uint32_t, uint32_t>& branch_weights) {
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
-  message_.add_branch_weights(branch_weights.first);
-  message_.add_branch_weights(branch_weights.second);
+  message_.mutable_branch_weights()->set_first(branch_weights.first);
+  message_.mutable_branch_weights()->set_second(branch_weights.second);
 }
 
 bool TransformationAdjustBranchWeights::IsApplicable(
@@ -59,13 +59,13 @@ bool TransformationAdjustBranchWeights::IsApplicable(
     return false;
   }
 
-  assert((message_.branch_weights(0) != 0 || message_.branch_weights(1) != 0) &&
+  assert((message_.branch_weights().first() != 0 ||
+          message_.branch_weights().second() != 0) &&
          "At least one weight must be non-zero.");
 
-  assert(message_.branch_weights(0) <=
-             UINT32_MAX - message_.branch_weights(1) &&
-         "The two weights must not overflow a 32-bit unsigned integer when "
-         "added together.");
+  assert(message_.branch_weights().first() <=
+             UINT32_MAX - message_.branch_weights().second() &&
+         "The sum of the two weights must not be greater than UINT32_MAX.");
 
   return true;
 }
@@ -76,14 +76,14 @@ void TransformationAdjustBranchWeights::Apply(
       FindInstruction(message_.instruction_descriptor(), ir_context);
   if (instruction->HasBranchWeights()) {
     instruction->SetOperand(kBranchWeightForTrueLabelIndex,
-                            {message_.branch_weights(0)});
+                            {message_.branch_weights().first()});
     instruction->SetOperand(kBranchWeightForFalseLabelIndex,
-                            {message_.branch_weights(1)});
+                            {message_.branch_weights().second()});
   } else {
     instruction->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
-                             {message_.branch_weights(0)}});
+                             {message_.branch_weights().first()}});
     instruction->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
-                             {message_.branch_weights(1)}});
+                             {message_.branch_weights().second()}});
   }
 }
 

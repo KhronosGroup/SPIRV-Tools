@@ -139,8 +139,7 @@ TEST(TransformationAdjustBranchWeightsTest, IsApplicableTest) {
 #ifndef NDEBUG
   ASSERT_DEATH(
       transformation.IsApplicable(context.get(), transformation_context),
-      "The two weights must not overflow a 32-bit unsigned integer when added "
-      "together.");
+      "The sum of the two weights must not be greater than UINT32_MAX.");
 #endif
 
   // Tests OpBranchConditional instruction with no weights.
