@@ -121,7 +121,7 @@ TEST(TransformationAdjustBranchWeightsTest, IsApplicableTest) {
 #ifndef NDEBUG
   ASSERT_DEATH(
       transformation.IsApplicable(context.get(), transformation_context),
-      "At least one weight must be non-zero.");
+      "At least one weight must be non-zero");
 #endif
 
   // Tests 32-bit unsigned integer overflow.
@@ -139,7 +139,7 @@ TEST(TransformationAdjustBranchWeightsTest, IsApplicableTest) {
 #ifndef NDEBUG
   ASSERT_DEATH(
       transformation.IsApplicable(context.get(), transformation_context),
-      "The sum of the two weights must not be greater than UINT32_MAX.");
+      "The sum of the two weights must not be greater than UINT32_MAX");
 #endif
 
   // Tests OpBranchConditional instruction with no weights.
