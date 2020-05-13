@@ -319,6 +319,27 @@ uint32_t FuzzerPass::FindOrCreateBoolConstant(bool value) {
   return result;
 }
 
+uint32_t FuzzerPass::FindOrCreateConstant(
+    const std::vector<uint32_t>& words, uint32_t type_id) {
+  assert(type_id && "Constant's type id can't be 0.");
+
+  const auto* type = GetIRContext()->get_type_mgr()->GetType(type_id);
+  assert(type && "Type does not exist.");
+
+  if (type->AsBool()) {
+    return FindOrCreateBoolConstant(words[0]);
+  } else if (const auto* integer = type->AsInteger()) {
+    assert(integer->width() == 32 && "Integer must have 32-bit width");
+    return FindOrCreate32BitIntegerConstant(words[0], integer->IsSigned());
+  } else if (const auto* floating = type->AsFloat()) {
+    assert(floating->width() == 32 &&
+        "Floating point number must have 32-bit width");
+    return FindOrCreate32BitFloatConstant(words[0]);
+  } else {
+    assert(!"Constant type is not supported");
+  }
+}
+
 uint32_t FuzzerPass::FindOrCreateGlobalUndef(uint32_t type_id) {
   for (auto& inst : GetIRContext()->types_values()) {
     if (inst.opcode() == SpvOpUndef && inst.type_id() == type_id) {

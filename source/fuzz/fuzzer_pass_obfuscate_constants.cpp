@@ -16,9 +16,11 @@
 
 #include <cmath>
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
+#include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -258,11 +260,9 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstant(
   auto chosen_type_id =
       available_types_with_uniforms[GetFuzzerContext()->RandomIndex(
           available_types_with_uniforms)];
-  auto available_constants = GetTransformationContext()
-                                 ->GetFactManager()
-                                 ->GetConstantsAvailableFromUniformsForType(
-                                     GetIRContext(), chosen_type_id);
-  if (available_constants.size() == 1) {
+  auto available_constant_words = fuzzerutil::GetConstantWordsFromUniformsForType(
+      GetTransformationContext(), chosen_type_id);
+  if (available_constant_words.size() == 1) {
     // TODO(afd): for now we only obfuscate a boolean if there are at least
     //  two constants available from uniforms, so that we can do a
     //  comparison between them. It would be good to be able to do the
@@ -271,18 +271,23 @@ void FuzzerPassObfuscateConstants::ObfuscateBoolConstant(
     return;
   }
 
+  assert(!available_constant_words.empty() &&
+      "There exists a fact but no constants - impossible");
+
   // We know we have at least two known-to-be-constant uniforms of the chosen
   // type.  Pick one of them at random.
-  auto constant_index_1 = GetFuzzerContext()->RandomIndex(available_constants);
+  auto constant_index_1 = GetFuzzerContext()->RandomIndex(available_constant_words);
   uint32_t constant_index_2;
 
   // Now choose another one distinct from the first one.
   do {
-    constant_index_2 = GetFuzzerContext()->RandomIndex(available_constants);
+    constant_index_2 = GetFuzzerContext()->RandomIndex(available_constant_words);
   } while (constant_index_1 == constant_index_2);
 
-  auto constant_id_1 = available_constants[constant_index_1];
-  auto constant_id_2 = available_constants[constant_index_2];
+  auto constant_id_1 =
+      FindOrCreateConstant(available_constant_words[constant_index_1], chosen_type_id);
+  auto constant_id_2 =
+      FindOrCreateConstant(available_constant_words[constant_index_2], chosen_type_id);
 
   assert(constant_id_1 != 0 && constant_id_2 != 0 &&
          "We should not find an available constant with an id of 0.");
@@ -324,18 +329,39 @@ void FuzzerPassObfuscateConstants::ObfuscateScalarConstant(
   }
 
   // Choose a random available uniform known to be equal to the constant.
-  protobufs::UniformBufferElementDescriptor uniform_descriptor =
+  const auto& uniform_descriptor =
       uniform_descriptors[GetFuzzerContext()->RandomIndex(uniform_descriptors)];
+
+  // Make sure the module has OpCosntant instructions for each index used to access
+  // a uniform.
+  for (auto index : uniform_descriptor.index()) {
+    FindOrCreate32BitIntegerConstant(index, true);
+  }
+
+  // Make sure the module has OpTypePointer that points to the element type of
+  // the uniform.
+  const auto* uniform_variable_instr = FindUniformVariable(
+      uniform_descriptor, GetIRContext(), true);
+  assert(uniform_variable_instr &&
+      "Uniform variable does not exist or not unique.");
+
+  const auto* uniform_variable_type_intr = GetIRContext()
+      ->get_def_use_mgr()
+      ->GetDef(uniform_variable_instr->type_id());
+  assert(uniform_variable_type_intr && "Uniform variable has invalid type");
+
+  auto element_type_id = fuzzerutil::WalkCompositeTypeIndices(
+      GetIRContext(), uniform_variable_type_intr->GetSingleWordInOperand(1),
+      uniform_descriptor.index());
+  assert(element_type_id && "Type of uniform variable is invalid");
+
+  FindOrCreatePointerType(element_type_id, SpvStorageClassUniform);
+
   // Create, apply and record a transformation to replace the constant use with
   // the result of a load from the chosen uniform.
-  auto transformation = TransformationReplaceConstantWithUniform(
+  ApplyTransformation(TransformationReplaceConstantWithUniform(
       constant_use, uniform_descriptor, GetFuzzerContext()->GetFreshId(),
-      GetFuzzerContext()->GetFreshId());
-  // Transformation should be applicable by construction.
-  assert(
-      transformation.IsApplicable(GetIRContext(), *GetTransformationContext()));
-  transformation.Apply(GetIRContext(), GetTransformationContext());
-  *GetTransformations()->add_transformation() = transformation.ToMessage();
+      GetFuzzerContext()->GetFreshId()));
 }
 
 void FuzzerPassObfuscateConstants::ObfuscateConstant(
