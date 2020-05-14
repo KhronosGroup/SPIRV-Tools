@@ -327,16 +327,24 @@ uint32_t FuzzerPass::FindOrCreateConstant(const std::vector<uint32_t>& words,
   assert(type && "Type does not exist.");
 
   if (type->AsBool()) {
+    assert(words.size() == 1);
     return FindOrCreateBoolConstant(words[0]);
   } else if (const auto* integer = type->AsInteger()) {
-    assert(integer->width() == 32 && "Integer must have 32-bit width");
+    assert(integer->width() == 32 && words.size() == 1 &&
+           "Integer must have 32-bit width");
     return FindOrCreate32BitIntegerConstant(words[0], integer->IsSigned());
   } else if (const auto* floating = type->AsFloat()) {
-    assert(floating->width() == 32 &&
+    // Assertion are not evaluated in release builds so |floating|
+    // variable will be unused.
+    (void)floating;
+    assert(floating->width() == 32 && words.size() == 1 &&
            "Floating point number must have 32-bit width");
     return FindOrCreate32BitFloatConstant(words[0]);
   } else {
+    // This assertion will fail in debug build but not in release build
+    // so we return 0 to make compiler happy.
     assert(false && "Constant type is not supported");
+    return 0;
   }
 }
 
