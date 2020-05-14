@@ -366,6 +366,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline bool WhileEachInOperand(
       const std::function<bool(const uint32_t*)>& f) const;
 
+  // Returns true if it's an OpBranchConditional instruction
+  // with branch weights.
+  bool HasBranchWeights() const;
+
   // Returns true if any operands can be labels
   inline bool HasLabels() const;
 
