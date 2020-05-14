@@ -1779,7 +1779,7 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
   ASSERT_TRUE(IsEqual(env, expected_shader, recipient_context.get()));
 }
 
-TEST(FuzzerPassDonateModulesTest, DISABLED_DonationSupportsOpTypeRuntimeArray) {
+TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
   std::string donor_shader = R"(
       ; SPIR-V
       ; Version: 1.0
@@ -1879,7 +1879,7 @@ TEST(FuzzerPassDonateModulesTest, DISABLED_DonationSupportsOpTypeRuntimeArray) {
                OpFunctionEnd
   )";
 
-  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto env = SPV_ENV_UNIVERSAL_1_0;
   const auto consumer = nullptr;
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
@@ -1887,11 +1887,6 @@ TEST(FuzzerPassDonateModulesTest, DISABLED_DonationSupportsOpTypeRuntimeArray) {
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  // This assert fails for OpenCL with
-  //
-  // error: line 45: Interface variable id <23> is used by entry point
-  // 'kernel_1' id <29>, but is not listed as an interface
-  // %23 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
   FactManager fact_manager;
