@@ -334,7 +334,7 @@ uint32_t FuzzerPass::FindOrCreateConstant(const std::vector<uint32_t>& words,
            "Integer must have 32-bit width");
     return FindOrCreate32BitIntegerConstant(words[0], integer->IsSigned());
   } else if (const auto* floating = type->AsFloat()) {
-    // Assertion are not evaluated in release builds so |floating|
+    // Assertions are not evaluated in release builds so |floating|
     // variable will be unused.
     (void)floating;
     assert(floating->width() == 32 && words.size() == 1 &&
