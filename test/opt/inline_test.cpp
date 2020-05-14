@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -3006,6 +3005,436 @@ OpFunctionEnd
   AddPass<MergeReturnPass>();
   AddPass<InlineExhaustivePass>();
   RunAndCheck(predefs + callee + before, predefs + calleeMergeReturn + after);
+}
+
+TEST_F(InlineTest, DebugSimple) {
+  // Check that it correctly generates DebugInlinedAt and maps it to DebugScope
+  // for the inlined function foo().
+  const std::string text = R"(
+; CHECK: [[main_name:%\d+]] = OpString "main"
+; CHECK: [[foo_name:%\d+]] = OpString "foo"
+; CHECK: [[dbg_main:%\d+]] = OpExtInst %void {{%\d+}} DebugFunction [[main_name]] {{%\d+}} {{%\d+}} 4 1 {{%\d+}} [[main_name]] FlagIsProtected|FlagIsPrivate 4 [[main:%\d+]]
+; CHECK: [[dbg_foo:%\d+]] = OpExtInst %void {{%\d+}} DebugFunction [[foo_name]] {{%\d+}} {{%\d+}} 1 1 {{%\d+}} [[foo_name]] FlagIsProtected|FlagIsPrivate 1 [[foo:%\d+]]
+; CHECK: [[inlined_at:%\d+]] = OpExtInst %void {{%\d+}} DebugInlinedAt 4 [[dbg_main]]
+; CHECK: [[main]] = OpFunction %void None
+; CHECK: {{%\d+}} = OpExtInst %void {{%\d+}} DebugScope [[dbg_foo]] [[inlined_at]]
+; CHECK: [[foo]] = OpFunction %v4float None
+               OpCapability Shader
+          %1 = OpExtInstImport "OpenCL.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %3 %4
+               OpExecutionMode %main OriginUpperLeft
+          %5 = OpString "ps.hlsl"
+               OpSource HLSL 600 %5
+          %6 = OpString "float"
+  %main_name = OpString "main"
+   %foo_name = OpString "foo"
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+      %float = OpTypeFloat 32
+    %float_1 = OpConstant %float 1
+    %v4float = OpTypeVector %float 4
+         %14 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+         %18 = OpTypeFunction %void
+         %19 = OpTypeFunction %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %20 = OpExtInst %void %1 DebugSource %5
+         %21 = OpExtInst %void %1 DebugCompilationUnit 1 4 %20 HLSL
+         %22 = OpExtInst %void %1 DebugTypeBasic %6 %uint_32 Float
+         %23 = OpExtInst %void %1 DebugTypeVector %22 4
+         %24 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %23 %23
+         %25 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %23
+   %dbg_main = OpExtInst %void %1 DebugFunction %main_name %24 %20 4 1 %21 %main_name FlagIsProtected|FlagIsPrivate 4 %main
+    %dbg_foo = OpExtInst %void %1 DebugFunction %foo_name %25 %20 1 1 %21 %foo_name FlagIsProtected|FlagIsPrivate 1 %foo
+         %29 = OpExtInst %void %1 DebugLexicalBlock %20 1 14 %dbg_foo
+       %main = OpFunction %void None %18
+         %30 = OpLabel
+         %31 = OpExtInst %void %1 DebugScope %dbg_main
+         %32 = OpFunctionCall %v4float %foo
+         %33 = OpLoad %v4float %3
+         %34 = OpFAdd %v4float %32 %33
+               OpStore %4 %34
+               OpReturn
+               OpFunctionEnd
+        %foo = OpFunction %v4float None %19
+         %35 = OpExtInst %void %1 DebugScope %dbg_foo
+         %36 = OpLabel
+         %37 = OpExtInst %void %1 DebugScope %29
+               OpReturnValue %14
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
+}
+
+TEST_F(InlineTest, DebugDeclareForCalleeFunctionParam) {
+  // Check that InlinePass correctly generates DebugDeclare instructions
+  // for callee function's parameters and maps them to corresponding
+  // local variables of caller function.
+  const std::string text = R"(
+; CHECK: [[add:%\d+]] = OpString "add"
+; CHECK: [[a:%\d+]] = OpString "a"
+; CHECK: [[b:%\d+]] = OpString "b"
+; CHECK: [[dbg_add:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction [[add]]
+; CHECK: [[dbg_a:%\d+]] = OpExtInst %void [[ext]] DebugLocalVariable [[a]]
+; CHECK: [[dbg_b:%\d+]] = OpExtInst %void [[ext]] DebugLocalVariable [[b]]
+; CHECK: [[inlinedat:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 5
+; CHECK: OpStore [[param_a:%\d+]]
+; CHECK: OpStore [[param_b:%\d+]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_add]] [[inlinedat]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugDeclare [[dbg_a]] [[param_a]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugDeclare [[dbg_b]] [[param_b]]
+
+OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name
+%float_name = OpString "float"
+%main_name = OpString "main"
+%add_name = OpString "add"
+%a_name = OpString "a"
+%b_name = OpString "b"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%v4f2 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%add_fn_type = OpTypeFunction %v4float %_ptr_Function_v4float %_ptr_Function_v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%null_expr = OpExtInst %void %ext DebugExpression
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%add_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 5 1 %cu %main_name FlagIsProtected|FlagIsPrivate 10 %main
+%dbg_add = OpExtInst %void %ext DebugFunction %add_name %add_ty %src 1 1 %cu %add_name FlagIsProtected|FlagIsPrivate 1 %add
+%dbg_a = OpExtInst %void %ext DebugLocalVariable %a_name %dbg_v4f %src 1 13 %dbg_add FlagIsLocal 0
+%dbg_b = OpExtInst %void %ext DebugLocalVariable %b_name %dbg_v4f %src 1 20 %dbg_add FlagIsLocal 1
+%add_lb = OpExtInst %void %ext DebugLexicalBlock %src 1 23 %dbg_add
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%param_a = OpVariable %_ptr_Function_v4float Function
+%param_b = OpVariable %_ptr_Function_v4float Function
+%scope0 = OpExtInst %void %ext DebugScope %dbg_main
+OpStore %param_a %v4f1
+OpStore %param_b %v4f2
+%result = OpFunctionCall %v4float %add %param_a %param_b
+OpStore %out_var_SV_TARGET %result
+OpReturn
+OpFunctionEnd
+%add = OpFunction %v4float None %add_fn_type
+%scope1 = OpExtInst %void %ext DebugScope %dbg_add
+%a = OpFunctionParameter %_ptr_Function_v4float
+%b = OpFunctionParameter %_ptr_Function_v4float
+%decl0 = OpExtInst %void %ext DebugDeclare %dbg_a %a %null_expr
+%decl1 = OpExtInst %void %ext DebugDeclare %dbg_b %b %null_expr
+%add_bb = OpLabel
+%scope2 = OpExtInst %void %ext DebugScope %add_lb
+%a_val = OpLoad %v4float %a
+%b_val = OpLoad %v4float %b
+%res = OpFAdd %v4float %a_val %b_val
+OpReturnValue %res
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
+}
+
+TEST_F(InlineTest, DebugDeclareForCalleeLocalVar) {
+  // Check that InlinePass correctly generates DebugDeclare instructions
+  // for callee function's local variables and maps them to corresponding
+  // local variables of caller function.
+  const std::string text = R"(
+; CHECK: [[add:%\d+]] = OpString "add"
+; CHECK: [[foo:%\d+]] = OpString "foo"
+; CHECK: [[dbg_add:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction [[add]]
+; CHECK: [[dbg_foo:%\d+]] = OpExtInst %void [[ext]] DebugLocalVariable [[foo]] {{%\d+}} {{%\d+}} 2 2 [[dbg_add]]
+; CHECK: [[inlinedat:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 5
+
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_add]] [[inlinedat]]
+; CHECK: [[new_foo:%\d+]] = OpVariable %_ptr_Function_v4float Function
+
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_add]] [[inlinedat]]
+; CHECK: [[a_val:%\d+]] = OpLoad %v4float
+; CHECK: [[b_val:%\d+]] = OpLoad %v4float
+; CHECK: [[res:%\d+]] = OpFAdd %v4float [[a_val]] [[b_val]]
+; CHECK: OpStore [[new_foo]] [[res]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugDeclare [[dbg_foo]] [[new_foo]]
+
+OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name
+%float_name = OpString "float"
+%main_name = OpString "main"
+%add_name = OpString "add"
+%foo_name = OpString "foo"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%v4f2 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%add_fn_type = OpTypeFunction %v4float %_ptr_Function_v4float %_ptr_Function_v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%null_expr = OpExtInst %void %ext DebugExpression
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%add_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 5 1 %cu %main_name FlagIsProtected|FlagIsPrivate 10 %main
+%dbg_add = OpExtInst %void %ext DebugFunction %add_name %add_ty %src 1 1 %cu %add_name FlagIsProtected|FlagIsPrivate 1 %add
+%dbg_foo = OpExtInst %void %ext DebugLocalVariable %foo_name %dbg_v4f %src 2 2 %dbg_add FlagIsLocal
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%param_a = OpVariable %_ptr_Function_v4float Function
+%param_b = OpVariable %_ptr_Function_v4float Function
+%scope0 = OpExtInst %void %ext DebugScope %dbg_main
+OpStore %param_a %v4f1
+OpStore %param_b %v4f2
+%result = OpFunctionCall %v4float %add %param_a %param_b
+OpStore %out_var_SV_TARGET %result
+OpReturn
+OpFunctionEnd
+%add = OpFunction %v4float None %add_fn_type
+%scope1 = OpExtInst %void %ext DebugScope %dbg_add
+%a = OpFunctionParameter %_ptr_Function_v4float
+%b = OpFunctionParameter %_ptr_Function_v4float
+%add_bb = OpLabel
+%foo = OpVariable %_ptr_Function_v4float Function
+%a_val = OpLoad %v4float %a
+%b_val = OpLoad %v4float %b
+%res = OpFAdd %v4float %a_val %b_val
+OpStore %foo %res
+%decl = OpExtInst %void %ext DebugDeclare %dbg_foo %foo %null_expr
+%foo_val = OpLoad %v4float %foo
+OpReturnValue %foo_val
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
+}
+
+TEST_F(InlineTest, DebugDeclareMultiple) {
+  // Check that InlinePass correctly generates DebugDeclare instructions
+  // for callee function's parameters and maps them to corresponding
+  // local variables of caller function.
+  const std::string text = R"(
+; CHECK: [[add:%\d+]] = OpString "add"
+; CHECK: [[a:%\d+]] = OpString "a"
+; CHECK: [[b:%\d+]] = OpString "b"
+; CHECK: [[dbg_add:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction [[add]]
+; CHECK: [[dbg_a:%\d+]] = OpExtInst %void [[ext]] DebugLocalVariable [[a]]
+; CHECK: [[dbg_b:%\d+]] = OpExtInst %void [[ext]] DebugLocalVariable [[b]]
+; CHECK: OpFunction
+; CHECK-NOT: OpFunctionEnd
+; CHECK: OpStore [[param_a:%\d+]]
+; CHECK: OpStore [[param_b:%\d+]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_add]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugDeclare [[dbg_a]] [[param_a]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugDeclare [[dbg_b]] [[param_b]]
+; CHECK: [[a_val:%\d+]] = OpLoad %v4float [[param_a]]
+; CHECK: OpStore [[foo:%\d+]] [[a_val]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugValue [[dbg_a]] [[foo]]
+
+OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name
+%float_name = OpString "float"
+%main_name = OpString "main"
+%add_name = OpString "add"
+%a_name = OpString "a"
+%b_name = OpString "b"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%v4f2 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%add_fn_type = OpTypeFunction %v4float %_ptr_Function_v4float %_ptr_Function_v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%null_expr = OpExtInst %void %ext DebugExpression
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%add_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 5 1 %cu %main_name FlagIsProtected|FlagIsPrivate 10 %main
+%dbg_add = OpExtInst %void %ext DebugFunction %add_name %add_ty %src 1 1 %cu %add_name FlagIsProtected|FlagIsPrivate 1 %add
+%dbg_a = OpExtInst %void %ext DebugLocalVariable %a_name %dbg_v4f %src 1 13 %dbg_add FlagIsLocal 0
+%dbg_b = OpExtInst %void %ext DebugLocalVariable %b_name %dbg_v4f %src 1 20 %dbg_add FlagIsLocal 1
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%param_a = OpVariable %_ptr_Function_v4float Function
+%param_b = OpVariable %_ptr_Function_v4float Function
+%scope0 = OpExtInst %void %ext DebugScope %dbg_main
+OpStore %param_a %v4f1
+OpStore %param_b %v4f2
+%result = OpFunctionCall %v4float %add %param_a %param_b
+OpStore %out_var_SV_TARGET %result
+OpReturn
+OpFunctionEnd
+%add = OpFunction %v4float None %add_fn_type
+%scope1 = OpExtInst %void %ext DebugScope %dbg_add
+%a = OpFunctionParameter %_ptr_Function_v4float
+%b = OpFunctionParameter %_ptr_Function_v4float
+%decl0 = OpExtInst %void %ext DebugDeclare %dbg_a %a %null_expr
+%add_bb = OpLabel
+%decl1 = OpExtInst %void %ext DebugDeclare %dbg_b %b %null_expr
+%foo = OpVariable %_ptr_Function_v4float Function
+%a_val = OpLoad %v4float %a
+OpStore %foo %a_val
+%dbg_val = OpExtInst %void %ext DebugValue %dbg_a %foo %null_expr
+%b_val = OpLoad %v4float %b
+%res = OpFAdd %v4float %a_val %b_val
+OpReturnValue %res
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
+}
+
+TEST_F(InlineTest, DebugValueForFunctionCallReturn) {
+  // Check that InlinePass correctly generates DebugValue instruction
+  // for function call's return value and maps it to a corresponding
+  // value in the caller function.
+  const std::string text = R"(
+; CHECK: [[main:%\d+]] = OpString "main"
+; CHECK: [[add:%\d+]] = OpString "add"
+; CHECK: [[result:%\d+]] = OpString "result"
+; CHECK: [[dbg_main:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction [[main]]
+; CHECK: [[dbg_add:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction [[add]]
+; CHECK: [[dbg_result:%\d+]] = OpExtInst %void [[ext]] DebugLocalVariable [[result]] {{%\d+}} {{%\d+}} 6 2 [[dbg_main]]
+; CHECK: [[inlinedat:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 5
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_add]] [[inlinedat]]
+; CHECK: [[a_val:%\d+]] = OpLoad %v4float
+; CHECK: [[b_val:%\d+]] = OpLoad %v4float
+; CHECK: [[res:%\d+]] = OpFAdd %v4float [[a_val]] [[b_val]]
+; CHECK: OpStore [[new_result:%\d+]] [[res]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_main]]
+; CHECK: [[result_val:%\d+]] = OpLoad %v4float [[new_result]]
+; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugValue [[dbg_result]] [[result_val]]
+
+OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%file_name = OpString "ps.hlsl"
+OpSource HLSL 600 %file_name
+%float_name = OpString "float"
+%main_name = OpString "main"
+%add_name = OpString "add"
+%result_name = OpString "result"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%v4float = OpTypeVector %float 4
+%v4f1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%v4f2 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%add_fn_type = OpTypeFunction %v4float %_ptr_Function_v4float %_ptr_Function_v4float
+%void = OpTypeVoid
+%void_fn_type = OpTypeFunction %void
+%v4f_fn_type = OpTypeFunction %v4float
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+%null_expr = OpExtInst %void %ext DebugExpression
+%src = OpExtInst %void %ext DebugSource %file_name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_f = OpExtInst %void %ext DebugTypeBasic %float_name %uint_32 Float
+%dbg_v4f = OpExtInst %void %ext DebugTypeVector %dbg_f 4
+%main_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f
+%add_ty = OpExtInst %void %ext DebugTypeFunction FlagIsProtected|FlagIsPrivate %dbg_v4f %dbg_v4f %dbg_v4f
+%dbg_main = OpExtInst %void %ext DebugFunction %main_name %main_ty %src 5 1 %cu %main_name FlagIsProtected|FlagIsPrivate 10 %main
+%dbg_add = OpExtInst %void %ext DebugFunction %add_name %add_ty %src 1 1 %cu %add_name FlagIsProtected|FlagIsPrivate 1 %add
+%dbg_result = OpExtInst %void %ext DebugLocalVariable %result_name %dbg_v4f %src 6 2 %dbg_main FlagIsLocal
+%main = OpFunction %void None %void_fn_type
+%main_bb = OpLabel
+%param_a = OpVariable %_ptr_Function_v4float Function
+%param_b = OpVariable %_ptr_Function_v4float Function
+%scope0 = OpExtInst %void %ext DebugScope %dbg_main
+OpStore %param_a %v4f1
+OpStore %param_b %v4f2
+%result = OpFunctionCall %v4float %add %param_a %param_b
+%value = OpExtInst %void %ext DebugValue %dbg_result %result %null_expr
+OpStore %out_var_SV_TARGET %result
+OpReturn
+OpFunctionEnd
+%add = OpFunction %v4float None %add_fn_type
+%scope1 = OpExtInst %void %ext DebugScope %dbg_add
+%a = OpFunctionParameter %_ptr_Function_v4float
+%b = OpFunctionParameter %_ptr_Function_v4float
+%add_bb = OpLabel
+%a_val = OpLoad %v4float %a
+%b_val = OpLoad %v4float %b
+%res = OpFAdd %v4float %a_val %b_val
+OpReturnValue %res
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

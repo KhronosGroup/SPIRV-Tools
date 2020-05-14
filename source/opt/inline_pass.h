@@ -190,9 +190,9 @@ class InlinePass : public Pass {
       UptrVectorIterator<BasicBlock> callee_block_itr);
 
   // Inlines a single instruction of the callee function.
-  bool InlineInstructionInBB(
+  bool InlineSingleInstruction(
       const std::unordered_map<uint32_t, uint32_t>& callee2caller,
-      BasicBlock* new_blk_ptr, const Instruction* inst);
+      BasicBlock* new_blk_ptr, const Instruction* inst, bool use_new_id);
 
   // Inlines the return instruction of the callee function.
   std::unique_ptr<BasicBlock> InlineReturn(
