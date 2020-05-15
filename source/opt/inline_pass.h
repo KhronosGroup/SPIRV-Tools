@@ -166,36 +166,35 @@ class InlinePass : public Pass {
   std::unordered_set<uint32_t> funcs_called_from_continue_;
 
  private:
+  // DebugInlinedAtContext keeps data used for generating DebugInlinedAt
+  // instructions.
   class DebugInlinedAtContext {
    public:
     DebugInlinedAtContext(const Instruction* line, const DebugScope& scope)
-        : call_instr_line(line),
-          call_instr_scope(scope),
-          last_callee_instr_inlined_at_id(kNoInlinedAt),
-          last_inlined_at_chain_head(kNoInlinedAt){};
+        : call_instr_line(line), call_instr_scope(scope){};
 
-    void UpdateLastInlinedAtContext(uint32_t callee_instr_inlined_at,
-                                    uint32_t chain_head_id) {
-      last_callee_instr_inlined_at_id = callee_instr_inlined_at;
-      last_inlined_at_chain_head = chain_head_id;
+    void UpdateInlinedAtContext(uint32_t callee_instr_inlined_at,
+                                uint32_t chain_head_id) {
+      callee_inlined_at2chain[callee_instr_inlined_at] = chain_head_id;
     }
 
     const Instruction* FunctionCallLine() { return call_instr_line; }
     const DebugScope& FunctionCallScope() { return call_instr_scope; }
-    uint32_t LastInlinedAtOfCalleeInstr() {
-      return last_callee_instr_inlined_at_id;
+    uint32_t InlinedAtChainHead(uint32_t callee_instr_inlined_at) {
+      auto chain_itr = callee_inlined_at2chain.find(callee_instr_inlined_at);
+      if (chain_itr != callee_inlined_at2chain.end()) return chain_itr->second;
+      return kNoInlinedAt;
     }
-    uint32_t LastInlinedAtChainHead() { return last_inlined_at_chain_head; }
 
    private:
     const Instruction*
         call_instr_line;  // Line instruction of function call instruction
     const DebugScope&
         call_instr_scope;  // Debug scope of function call instruction
-    uint32_t last_callee_instr_inlined_at_id;  // DebugInlinedAt id of the last
-                                               // instruction in callee
-    uint32_t
-        last_inlined_at_chain_head;  // Head id of the last DebugInlinedAt chain
+
+    // Map from DebugInlinedAt ids of callee to head ids of new generated
+    // DebugInlinedAt chain.
+    std::unordered_map<uint32_t, uint32_t> callee_inlined_at2chain;
   };
 
   // Clone and map callee locals.  Return true if successful.
@@ -207,6 +206,11 @@ class InlinePass : public Pass {
   // Builds DebugScope for the callee instruction.
   DebugScope BuildDebugScope(const DebugScope& callee_instr_scope,
                              DebugInlinedAtContext& inlined_at_ctx);
+
+  // Builds DebugInlinedAt chain for the callee instruction. Returns the
+  // id of the DebugInlinedAt chain head.
+  uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
+                                    DebugInlinedAtContext& inlined_at_ctx);
 
   // Moves instructions of the caller function up to the call instruction
   // to |new_blk_ptr|.
@@ -232,7 +236,7 @@ class InlinePass : public Pass {
   // Inlines a single instruction of the callee function.
   bool InlineSingleInstruction(
       const std::unordered_map<uint32_t, uint32_t>& callee2caller,
-      BasicBlock* new_blk_ptr, const Instruction* inst, const DebugScope& scope,
+      BasicBlock* new_blk_ptr, const Instruction* inst, uint32_t dbg_inlined_at,
       bool use_new_id);
 
   // Inlines the return instruction of the callee function.

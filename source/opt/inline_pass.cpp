@@ -199,8 +199,8 @@ bool InlinePass::CloneAndMapLocals(
     }
     get_decoration_mgr()->CloneDecorations(callee_var_itr->result_id(), newId);
     var_inst->SetResultId(newId);
-    var_inst->SetDebugScope(
-        BuildDebugScope(var_inst->GetDebugScope(), inlined_at_ctx));
+    var_inst->UpdateDebugInlinedAt(BuildDebugInlinedAtChain(
+        callee_var_itr->GetDebugInlinedAt(), inlined_at_ctx));
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
     ++callee_var_itr;
@@ -321,36 +321,40 @@ std::unique_ptr<BasicBlock> InlinePass::AddGuardBlock(
 
 DebugScope InlinePass::BuildDebugScope(const DebugScope& callee_instr_scope,
                                        DebugInlinedAtContext& inlined_at_ctx) {
-  DebugScope new_scope(callee_instr_scope.GetLexicalScope(), kNoInlinedAt);
-  if (inlined_at_ctx.FunctionCallScope().GetLexicalScope() == kNoDebugScope)
-    return new_scope;
+  return DebugScope(callee_instr_scope.GetLexicalScope(),
+                    BuildDebugInlinedAtChain(callee_instr_scope.GetInlinedAt(),
+                                             inlined_at_ctx));
+}
 
-  // Reuse the last DebugInlinedAt chain if DebugInlinedAt of the
-  // current callee instruction is the same with the previous one.
-  if (callee_instr_scope.GetInlinedAt() ==
-          inlined_at_ctx.LastInlinedAtOfCalleeInstr() &&
-      inlined_at_ctx.LastInlinedAtChainHead() != kNoInlinedAt) {
-    new_scope.SetInlinedAt(inlined_at_ctx.LastInlinedAtChainHead());
-    return new_scope;
+uint32_t InlinePass::BuildDebugInlinedAtChain(
+    uint32_t callee_inlined_at, DebugInlinedAtContext& inlined_at_ctx) {
+  if (inlined_at_ctx.FunctionCallScope().GetLexicalScope() == kNoDebugScope)
+    return kNoInlinedAt;
+
+  // Reuse the already generated DebugInlinedAt chain if exists.
+  uint32_t already_generated_chain_head_id =
+      inlined_at_ctx.InlinedAtChainHead(callee_inlined_at);
+  if (already_generated_chain_head_id != kNoInlinedAt) {
+    return already_generated_chain_head_id;
   }
 
   const uint32_t inlined_to_caller =
       context()->get_debug_info_mgr()->CreateDebugInlinedAt(
           inlined_at_ctx.FunctionCallLine(),
           inlined_at_ctx.FunctionCallScope());
-  if (inlined_to_caller == kNoInlinedAt) return new_scope;
+  if (inlined_to_caller == kNoInlinedAt) return kNoInlinedAt;
 
   // Simply specify that this instruction was inlined to the caller
   // if it has no DebugInlinedAt in advance.
-  if (callee_instr_scope.GetInlinedAt() == kNoInlinedAt) {
-    new_scope.SetInlinedAt(inlined_to_caller);
-    // Keep the new chain information to reuse it in this function.
-    inlined_at_ctx.UpdateLastInlinedAtContext(kNoInlinedAt, inlined_to_caller);
-    return new_scope;
+  if (callee_inlined_at == kNoInlinedAt) {
+    // Keep the new chain information that will be reused it.
+    inlined_at_ctx.UpdateInlinedAtContext(kNoInlinedAt, inlined_to_caller);
+    return inlined_to_caller;
   }
 
   // Create a new recursive DebugInlinedAt chain.
-  uint32_t chain_iter_id = callee_instr_scope.GetInlinedAt();
+  uint32_t chain_head_id = kNoInlinedAt;
+  uint32_t chain_iter_id = callee_inlined_at;
   Instruction* last_inlined_at_in_chain = nullptr;
   do {
     Instruction* new_inlined_at_in_chain =
@@ -358,8 +362,8 @@ DebugScope InlinePass::BuildDebugScope(const DebugScope& callee_instr_scope,
             chain_iter_id, /* insert_before */ last_inlined_at_in_chain);
 
     // Set DebugInlinedAt of the new scope as the head of the chain.
-    if (new_scope.GetInlinedAt() == kNoInlinedAt)
-      new_scope.SetInlinedAt(new_inlined_at_in_chain->result_id());
+    if (chain_head_id == kNoInlinedAt)
+      chain_head_id = new_inlined_at_in_chain->result_id();
 
     // Previous DebugInlinedAt of the chain must point to the new
     // DebugInlinedAt as its Inlined operand to build a recursive
@@ -386,10 +390,9 @@ DebugScope InlinePass::BuildDebugScope(const DebugScope& callee_instr_scope,
     }
   }
 
-  // Keep the new chain information to reuse it in this function.
-  inlined_at_ctx.UpdateLastInlinedAtContext(callee_instr_scope.GetInlinedAt(),
-                                            new_scope.GetInlinedAt());
-  return new_scope;
+  // Keep the new chain information that will be reused it.
+  inlined_at_ctx.UpdateInlinedAtContext(callee_inlined_at, chain_head_id);
+  return chain_head_id;
 }
 
 InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
@@ -417,7 +420,9 @@ InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
         OpenCLDebugInfo100DebugDeclare) {
       InlineSingleInstruction(
           callee2caller, new_blk_ptr->get(), &*callee_itr,
-          BuildDebugScope(callee_itr->GetDebugScope(), inlined_at_ctx), true);
+          BuildDebugInlinedAtChain(callee_itr->GetDebugScope().GetInlinedAt(),
+                                   inlined_at_ctx),
+          true);
     }
     ++callee_itr;
   }
@@ -426,7 +431,7 @@ InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
 
 bool InlinePass::InlineSingleInstruction(
     const std::unordered_map<uint32_t, uint32_t>& callee2caller,
-    BasicBlock* new_blk_ptr, const Instruction* inst, const DebugScope& scope,
+    BasicBlock* new_blk_ptr, const Instruction* inst, uint32_t dbg_inlined_at,
     bool use_new_id) {
   // If we have return, it must be at the end of the callee. We will handle
   // it at the end.
@@ -455,7 +460,7 @@ bool InlinePass::InlineSingleInstruction(
       get_decoration_mgr()->CloneDecorations(rid, nid);
     }
   }
-  cp_inst->SetDebugScope(scope);
+  cp_inst->UpdateDebugInlinedAt(dbg_inlined_at);
   new_blk_ptr->AddInstruction(std::move(cp_inst));
   return true;
 }
@@ -506,7 +511,9 @@ bool InlinePass::InlineEntryBlock(
   while (callee_inst_itr != callee_first_block->end()) {
     if (!InlineSingleInstruction(
             callee2caller, new_blk_ptr->get(), &*callee_inst_itr,
-            BuildDebugScope(callee_inst_itr->GetDebugScope(), inlined_at_ctx),
+            BuildDebugInlinedAtChain(
+                callee_inst_itr->GetDebugScope().GetInlinedAt(),
+                inlined_at_ctx),
             false)) {
       return false;
     }
@@ -535,7 +542,8 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
          ++inst_itr) {
       if (!InlineSingleInstruction(
               callee2caller, new_blk_ptr.get(), &*inst_itr,
-              BuildDebugScope(inst_itr->GetDebugScope(), inlined_at_ctx),
+              BuildDebugInlinedAtChain(inst_itr->GetDebugScope().GetInlinedAt(),
+                                       inlined_at_ctx),
               false)) {
         return nullptr;
       }
@@ -691,7 +699,9 @@ bool InlinePass::GenInlineCode(
       [&new_blk_ptr, &callee2caller, &inlined_at_ctx, this](Instruction* inst) {
         InlineSingleInstruction(
             callee2caller, new_blk_ptr.get(), inst,
-            BuildDebugScope(inst->GetDebugScope(), inlined_at_ctx), true);
+            BuildDebugInlinedAtChain(inst->GetDebugScope().GetInlinedAt(),
+                                     inlined_at_ctx),
+            true);
       });
 
   // Inline the entry block of the callee function.
