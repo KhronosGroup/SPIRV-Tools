@@ -340,12 +340,12 @@ uint32_t FuzzerPass::FindOrCreateConstant(const std::vector<uint32_t>& words,
     assert(floating->width() == 32 && words.size() == 1 &&
            "Floating point number must have 32-bit width");
     return FindOrCreate32BitFloatConstant(words[0]);
-  } else {
-    // This assertion will fail in debug build but not in release build
-    // so we return 0 to make compiler happy.
-    assert(false && "Constant type is not supported");
-    return 0;
   }
+
+  // This assertion will fail in debug build but not in release build
+  // so we return 0 to make compiler happy.
+  assert(false && "Constant type is not supported");
+  return 0;
 }
 
 uint32_t FuzzerPass::FindOrCreateGlobalUndef(uint32_t type_id) {

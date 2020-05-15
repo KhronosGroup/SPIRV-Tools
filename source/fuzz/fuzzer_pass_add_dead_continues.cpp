@@ -68,6 +68,8 @@ void FuzzerPassAddDeadContinues::Apply() {
         });
       }
 
+      // Make sure the module contains a boolean constant equal to
+      // |condition_value|.
       bool condition_value = GetFuzzerContext()->ChooseEven();
       FindOrCreateBoolConstant(condition_value);
 

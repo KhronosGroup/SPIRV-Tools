@@ -335,7 +335,7 @@ void FuzzerPassObfuscateConstants::ObfuscateScalarConstant(
   const auto& uniform_descriptor =
       uniform_descriptors[GetFuzzerContext()->RandomIndex(uniform_descriptors)];
 
-  // Make sure the module has OpCosntant instructions for each index used to
+  // Make sure the module has OpConstant instructions for each index used to
   // access a uniform.
   for (auto index : uniform_descriptor.index()) {
     FindOrCreate32BitIntegerConstant(index, true);

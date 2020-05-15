@@ -41,15 +41,18 @@ void FuzzerPassAddDeadBlocks::Apply() {
               GetFuzzerContext()->GetChanceOfAddingDeadBlock())) {
         continue;
       }
+
+      // Make sure the module contains a boolean constant equal to
+      // |condition_value|.
+      bool condition_value = GetFuzzerContext()->ChooseEven();
+      FindOrCreateBoolConstant(condition_value);
+
       // We speculatively create a transformation, and then apply it (below) if
       // it turns out to be applicable.  This avoids duplicating the logic for
       // applicability checking.
       //
       // It means that fresh ids for transformations that turn out not to be
       // applicable end up being unused.
-      bool condition_value = GetFuzzerContext()->ChooseEven();
-      FindOrCreateBoolConstant(condition_value);
-
       candidate_transformations.emplace_back(TransformationAddDeadBlock(
           GetFuzzerContext()->GetFreshId(), block.id(), condition_value));
     }
