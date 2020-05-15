@@ -1781,11 +1781,6 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
 
 TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
   std::string donor_shader = R"(
-      ; SPIR-V
-      ; Version: 1.0
-      ; Generator: Google Clspv; 0
-      ; Bound: 50
-      ; Schema: 0
                OpCapability Shader
                OpExtension "SPV_KHR_storage_buffer_storage_class"
                OpMemoryModel Logical GLSL450
