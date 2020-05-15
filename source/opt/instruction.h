@@ -239,6 +239,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return dbg_line_insts_;
   }
 
+  const Instruction* dbg_line_inst() const {
+    return dbg_line_insts_.empty() ? nullptr : &dbg_line_insts_[0];
+  }
+
   // Clear line-related debug instructions attached to this instruction.
   void clear_dbg_line_insts() { dbg_line_insts_.clear(); }
 

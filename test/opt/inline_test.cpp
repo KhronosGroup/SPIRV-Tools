@@ -3015,9 +3015,10 @@ TEST_F(InlineTest, DebugSimple) {
 ; CHECK: [[foo_name:%\d+]] = OpString "foo"
 ; CHECK: [[dbg_main:%\d+]] = OpExtInst %void {{%\d+}} DebugFunction [[main_name]] {{%\d+}} {{%\d+}} 4 1 {{%\d+}} [[main_name]] FlagIsProtected|FlagIsPrivate 4 [[main:%\d+]]
 ; CHECK: [[dbg_foo:%\d+]] = OpExtInst %void {{%\d+}} DebugFunction [[foo_name]] {{%\d+}} {{%\d+}} 1 1 {{%\d+}} [[foo_name]] FlagIsProtected|FlagIsPrivate 1 [[foo:%\d+]]
+; CHECK: [[foo_bb:%\d+]] = OpExtInst %void {{%\d+}} DebugLexicalBlock {{%\d+}} 1 14 [[dbg_foo]]
 ; CHECK: [[inlined_at:%\d+]] = OpExtInst %void {{%\d+}} DebugInlinedAt 4 [[dbg_main]]
 ; CHECK: [[main]] = OpFunction %void None
-; CHECK: {{%\d+}} = OpExtInst %void {{%\d+}} DebugScope [[dbg_foo]] [[inlined_at]]
+; CHECK: {{%\d+}} = OpExtInst %void {{%\d+}} DebugScope [[foo_bb]] [[inlined_at]]
 ; CHECK: [[foo]] = OpFunction %v4float None
                OpCapability Shader
           %1 = OpExtInstImport "OpenCL.DebugInfo.100"
