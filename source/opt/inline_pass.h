@@ -171,7 +171,7 @@ class InlinePass : public Pass {
   class DebugInlinedAtContext {
    public:
     DebugInlinedAtContext(const Instruction* line, const DebugScope& scope)
-        : call_instr_line(line), call_instr_scope(scope){};
+        : call_instr_line(line), call_instr_scope(scope) {}
 
     void UpdateInlinedAtContext(uint32_t callee_instr_inlined_at,
                                 uint32_t chain_head_id) {
