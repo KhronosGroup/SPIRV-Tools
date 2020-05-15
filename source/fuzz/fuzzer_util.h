@@ -206,11 +206,6 @@ SpvStorageClass GetStorageClassFromPointerType(
 SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
                                                uint32_t pointer_type_id);
 
-// Returns a vector of unique words that denote constants. Every such constant
-// is used in |FactConstantUniform| and has type with id equal to |type_id|.
-std::vector<std::vector<uint32_t>> GetConstantWordsFromUniformsForType(
-    const TransformationContext* context, uint32_t type_id);
-
 // Returns the id of a pointer with pointee type |pointee_type_id| and storage
 // class |storage_class|, if it exists, and 0 otherwise.
 uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
