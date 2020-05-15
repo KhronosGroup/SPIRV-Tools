@@ -74,7 +74,52 @@ class DebugInfoManager {
   Instruction* CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
                                    Instruction* insert_before = nullptr);
 
+  // Builds DebugScope for the callee instruction.
+  DebugScope BuildDebugScope(const DebugScope& callee_instr_scope,
+                             BasicBlock::iterator call_inst_itr);
+
+  // Builds DebugInlinedAt chain for the callee instruction. Returns the
+  // id of the DebugInlinedAt chain head.
+  uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
+                                    BasicBlock::iterator call_inst_itr);
+
  private:
+  // DebugInlinedAtContext keeps data used for generating DebugInlinedAt
+  // instructions.
+  class DebugInlinedAtContext {
+   public:
+    DebugInlinedAtContext() : call_inst_(nullptr) {}
+
+    void Reset(Instruction* new_call_inst) {
+      call_inst_ = new_call_inst;
+      callee_inlined_at2chain_.clear();
+    }
+    void UpdateInlinedAtContext(uint32_t callee_instr_inlined_at,
+                                uint32_t chain_head_id) {
+      callee_inlined_at2chain_[callee_instr_inlined_at] = chain_head_id;
+    }
+
+    Instruction* CallInstrunction() { return call_inst_; }
+    const Instruction* FunctionCallLine() {
+      return call_inst_->dbg_line_inst();
+    }
+    const DebugScope& FunctionCallScope() {
+      return call_inst_->GetDebugScope();
+    }
+    uint32_t InlinedAtChainHead(uint32_t callee_instr_inlined_at) {
+      auto chain_itr = callee_inlined_at2chain_.find(callee_instr_inlined_at);
+      if (chain_itr != callee_inlined_at2chain_.end()) return chain_itr->second;
+      return kNoInlinedAt;
+    }
+
+   private:
+    Instruction* call_inst_;
+
+    // Map from DebugInlinedAt ids of callee to head ids of new generated
+    // DebugInlinedAt chain.
+    std::unordered_map<uint32_t, uint32_t> callee_inlined_at2chain_;
+  };
+
   IRContext* context() { return context_; }
 
   // Analyzes OpenCL.DebugInfo.100 instructions in the given |module| and
@@ -106,6 +151,9 @@ class DebugInfoManager {
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
   Instruction* debug_info_none_inst_;
+
+  // Data used for generating DebugInlinedAt instructions.
+  DebugInlinedAtContext debug_inlined_at_context_;
 };
 
 }  // namespace analysis

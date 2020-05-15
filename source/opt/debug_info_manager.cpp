@@ -24,10 +24,34 @@ static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
+static const uint32_t kDebugInlinedAtOperandInlinedIndex = 6;
 
 namespace spvtools {
 namespace opt {
 namespace analysis {
+namespace {
+
+bool HasInlinedOperand(const Instruction* dbg_inlined_at) {
+  assert(dbg_inlined_at);
+  assert(dbg_inlined_at->GetOpenCL100DebugOpcode() ==
+         OpenCLDebugInfo100DebugInlinedAt);
+  return dbg_inlined_at->NumOperands() > kDebugInlinedAtOperandInlinedIndex;
+}
+
+void UpdateInlinedOperand(Instruction* dbg_inlined_at,
+                          uint32_t recursive_inlined_at_id) {
+  assert(HasInlinedOperand(dbg_inlined_at));
+  dbg_inlined_at->GetOperand(kDebugInlinedAtOperandInlinedIndex).words[0] =
+      recursive_inlined_at_id;
+}
+
+uint32_t GetInlinedOperand(Instruction* dbg_inlined_at) {
+  assert(HasInlinedOperand(dbg_inlined_at));
+  return dbg_inlined_at->GetSingleWordOperand(
+      kDebugInlinedAtOperandInlinedIndex);
+}
+
+}  // namespace
 
 DebugInfoManager::DebugInfoManager(IRContext* c) : context_(c) {
   AnalyzeDebugInsts(*c->module());
@@ -119,6 +143,86 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
   RegisterDbgInst(inlined_at.get());
   context()->module()->AddExtInstDebugInfo(std::move(inlined_at));
   return result_id;
+}
+
+DebugScope DebugInfoManager::BuildDebugScope(
+    const DebugScope& callee_instr_scope, BasicBlock::iterator call_inst_itr) {
+  return DebugScope(callee_instr_scope.GetLexicalScope(),
+                    BuildDebugInlinedAtChain(callee_instr_scope.GetInlinedAt(),
+                                             call_inst_itr));
+}
+
+uint32_t DebugInfoManager::BuildDebugInlinedAtChain(
+    uint32_t callee_inlined_at, BasicBlock::iterator call_inst_itr) {
+  if (debug_inlined_at_context_.CallInstrunction() != &*call_inst_itr)
+    debug_inlined_at_context_.Reset(&*call_inst_itr);
+
+  if (debug_inlined_at_context_.FunctionCallScope().GetLexicalScope() ==
+      kNoDebugScope)
+    return kNoInlinedAt;
+
+  // Reuse the already generated DebugInlinedAt chain if exists.
+  uint32_t already_generated_chain_head_id =
+      debug_inlined_at_context_.InlinedAtChainHead(callee_inlined_at);
+  if (already_generated_chain_head_id != kNoInlinedAt) {
+    return already_generated_chain_head_id;
+  }
+
+  const uint32_t inlined_to_caller =
+      CreateDebugInlinedAt(debug_inlined_at_context_.FunctionCallLine(),
+                           debug_inlined_at_context_.FunctionCallScope());
+  if (inlined_to_caller == kNoInlinedAt) return kNoInlinedAt;
+
+  // Simply specify that this instruction was inlined to the caller
+  // if it has no DebugInlinedAt in advance.
+  if (callee_inlined_at == kNoInlinedAt) {
+    // Keep the new chain information that will be reused it.
+    debug_inlined_at_context_.UpdateInlinedAtContext(kNoInlinedAt,
+                                                     inlined_to_caller);
+    return inlined_to_caller;
+  }
+
+  // Create a new recursive DebugInlinedAt chain.
+  uint32_t chain_head_id = kNoInlinedAt;
+  uint32_t chain_iter_id = callee_inlined_at;
+  Instruction* last_inlined_at_in_chain = nullptr;
+  do {
+    Instruction* new_inlined_at_in_chain = CloneDebugInlinedAt(
+        chain_iter_id, /* insert_before */ last_inlined_at_in_chain);
+
+    // Set DebugInlinedAt of the new scope as the head of the chain.
+    if (chain_head_id == kNoInlinedAt)
+      chain_head_id = new_inlined_at_in_chain->result_id();
+
+    // Previous DebugInlinedAt of the chain must point to the new
+    // DebugInlinedAt as its Inlined operand to build a recursive
+    // chain.
+    if (last_inlined_at_in_chain != nullptr) {
+      UpdateInlinedOperand(last_inlined_at_in_chain,
+                           new_inlined_at_in_chain->result_id());
+    }
+    last_inlined_at_in_chain = new_inlined_at_in_chain;
+
+    if (!HasInlinedOperand(new_inlined_at_in_chain)) {
+      break;
+    }
+    chain_iter_id = GetInlinedOperand(new_inlined_at_in_chain);
+  } while (chain_iter_id);
+
+  // Put |inlined_to_caller| into the end of the chain.
+  if (last_inlined_at_in_chain != nullptr) {
+    if (HasInlinedOperand(last_inlined_at_in_chain)) {
+      UpdateInlinedOperand(last_inlined_at_in_chain, inlined_to_caller);
+    } else {
+      last_inlined_at_in_chain->AddOperand(
+          {SPV_OPERAND_TYPE_RESULT_ID, {inlined_to_caller}});
+    }
+  }
+
+  // Keep the new chain information that will be reused it.
+  debug_inlined_at_context_.UpdateInlinedAtContext(callee_inlined_at,
+                                                   chain_head_id);
+  return chain_head_id;
 }
 
 Instruction* DebugInfoManager::GetDebugInfoNone() {

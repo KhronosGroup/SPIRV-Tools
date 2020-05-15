@@ -78,6 +78,12 @@ class InlinePass : public Pass {
   void MapParams(Function* calleeFn, BasicBlock::iterator call_inst_itr,
                  std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
+  // Clone and map callee locals.  Return true if successful.
+  bool CloneAndMapLocals(Function* calleeFn,
+                         std::vector<std::unique_ptr<Instruction>>* new_vars,
+                         std::unordered_map<uint32_t, uint32_t>* callee2caller,
+                         BasicBlock::iterator call_inst_itr);
+
   // Create return variable for callee clone code.  The return type of
   // |calleeFn| must not be void.  Returns  the id of the return variable if
   // created.  Returns 0 if the return variable could not be created.
@@ -166,52 +172,6 @@ class InlinePass : public Pass {
   std::unordered_set<uint32_t> funcs_called_from_continue_;
 
  private:
-  // DebugInlinedAtContext keeps data used for generating DebugInlinedAt
-  // instructions.
-  class DebugInlinedAtContext {
-   public:
-    DebugInlinedAtContext(const Instruction* line, const DebugScope& scope)
-        : call_instr_line(line), call_instr_scope(scope) {}
-
-    void UpdateInlinedAtContext(uint32_t callee_instr_inlined_at,
-                                uint32_t chain_head_id) {
-      callee_inlined_at2chain[callee_instr_inlined_at] = chain_head_id;
-    }
-
-    const Instruction* FunctionCallLine() { return call_instr_line; }
-    const DebugScope& FunctionCallScope() { return call_instr_scope; }
-    uint32_t InlinedAtChainHead(uint32_t callee_instr_inlined_at) {
-      auto chain_itr = callee_inlined_at2chain.find(callee_instr_inlined_at);
-      if (chain_itr != callee_inlined_at2chain.end()) return chain_itr->second;
-      return kNoInlinedAt;
-    }
-
-   private:
-    const Instruction*
-        call_instr_line;  // Line instruction of function call instruction
-    const DebugScope&
-        call_instr_scope;  // Debug scope of function call instruction
-
-    // Map from DebugInlinedAt ids of callee to head ids of new generated
-    // DebugInlinedAt chain.
-    std::unordered_map<uint32_t, uint32_t> callee_inlined_at2chain;
-  };
-
-  // Clone and map callee locals.  Return true if successful.
-  bool CloneAndMapLocals(Function* calleeFn,
-                         std::vector<std::unique_ptr<Instruction>>* new_vars,
-                         std::unordered_map<uint32_t, uint32_t>* callee2caller,
-                         DebugInlinedAtContext& inlined_at_ctx);
-
-  // Builds DebugScope for the callee instruction.
-  DebugScope BuildDebugScope(const DebugScope& callee_instr_scope,
-                             DebugInlinedAtContext& inlined_at_ctx);
-
-  // Builds DebugInlinedAt chain for the callee instruction. Returns the
-  // id of the DebugInlinedAt chain head.
-  uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
-                                    DebugInlinedAtContext& inlined_at_ctx);
-
   // Moves instructions of the caller function up to the call instruction
   // to |new_blk_ptr|.
   void MoveInstsBeforeEntryBlock(
@@ -229,7 +189,7 @@ class InlinePass : public Pass {
   // Add store instructions for initializers of variables.
   InstructionList::iterator AddStoresForVariableInitializers(
       const std::unordered_map<uint32_t, uint32_t>& callee2caller,
-      DebugInlinedAtContext& inlined_at_ctx,
+      BasicBlock::iterator call_inst_itr,
       std::unique_ptr<BasicBlock>* new_blk_ptr,
       UptrVectorIterator<BasicBlock> callee_block_itr);
 
@@ -244,7 +204,7 @@ class InlinePass : public Pass {
       const std::unordered_map<uint32_t, uint32_t>& callee2caller,
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
       std::unique_ptr<BasicBlock> new_blk_ptr,
-      DebugInlinedAtContext& inlined_at_ctx, Function* calleeFn,
+      BasicBlock::iterator call_inst_itr, Function* calleeFn,
       const Instruction* inst, uint32_t returnVarId);
 
   // Inlines the entry block of the callee function.
@@ -252,7 +212,7 @@ class InlinePass : public Pass {
       const std::unordered_map<uint32_t, uint32_t>& callee2caller,
       std::unique_ptr<BasicBlock>* new_blk_ptr,
       UptrVectorIterator<BasicBlock> callee_first_block,
-      DebugInlinedAtContext& inlined_at_ctx);
+      BasicBlock::iterator call_inst_itr);
 
   // Inlines basic blocks of the callee function other than the entry basic
   // block.
@@ -260,7 +220,7 @@ class InlinePass : public Pass {
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
       const std::unordered_map<uint32_t, uint32_t>& callee2caller,
       std::unique_ptr<BasicBlock> new_blk_ptr,
-      DebugInlinedAtContext& inlined_at_ctx, Function* calleeFn);
+      BasicBlock::iterator call_inst_itr, Function* calleeFn);
 
   // Moves instructions of the caller function after the call instruction
   // to |new_blk_ptr|.
