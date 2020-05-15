@@ -7050,6 +7050,53 @@ OpFunctionEnd
           "contains an array with stride 4, but with an element size of 16"));
 }
 
+TEST_F(ValidateDecorations, FunctionsWithOpGroupDecorate) {
+  std::string spirv = R"(
+                OpCapability Addresses
+                OpCapability Linkage
+                OpCapability Kernel
+                OpCapability Int8
+           %1 = OpExtInstImport "OpenCL.std"
+                OpMemoryModel Physical32 OpenCL
+                OpName %foo "foo"
+                OpName %entry "entry"
+                OpName %bar "bar"
+                OpName %entry_0 "entry"
+                OpName %k "k"
+                OpName %entry_1 "entry"
+                OpName %b "b"
+                OpDecorate %28 FuncParamAttr Zext
+          %28 = OpDecorationGroup
+                OpDecorate %k LinkageAttributes "k" Export
+                OpDecorate %foo LinkageAttributes "foo" Export
+                OpDecorate %bar LinkageAttributes "bar" Export
+                OpDecorate %b Alignment 1
+                OpGroupDecorate %28 %foo %bar
+       %uchar = OpTypeInt 8 0
+        %bool = OpTypeBool
+           %3 = OpTypeFunction %bool
+        %void = OpTypeVoid
+          %10 = OpTypeFunction %void
+ %_ptr_Function_uchar = OpTypePointer Function %uchar
+        %true = OpConstantTrue %bool
+         %foo = OpFunction %bool DontInline %3
+       %entry = OpLabel
+                OpReturnValue %true
+                OpFunctionEnd
+         %bar = OpFunction %bool DontInline %3
+     %entry_0 = OpLabel
+                OpReturnValue %true
+                OpFunctionEnd
+           %k = OpFunction %void DontInline %10
+     %entry_1 = OpLabel
+           %b = OpVariable %_ptr_Function_uchar Function
+                OpReturn
+                OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
