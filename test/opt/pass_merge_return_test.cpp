@@ -2006,8 +2006,8 @@ TEST_F(MergeReturnPassTest, SingleReturnInMiddle) {
 }
 
 TEST_F(MergeReturnPassTest, PhiWithTooManyEntries) {
-  // Check that the OpPhi node has the correct number of entries.  This is check
-  // by doing validation with the match.
+  // Check that the OpPhi node has the correct number of entries.  This is
+  // checked by doing validation with the match.
   const std::string before =
       R"(
 ; CHECK: OpLoopMerge [[merge:%\w+]]
