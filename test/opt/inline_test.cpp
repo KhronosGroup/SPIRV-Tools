@@ -3088,19 +3088,24 @@ TEST_F(InlineTest, DebugNested) {
 ; CHECK: [[dbg_foo:%\d+]] = OpExtInst %void [[ext]] DebugFunction {{%\d+}} {{%\d+}} {{%\d+}} 1 1 {{%\d+}} {{%\d+}} FlagIsProtected|FlagIsPrivate 1 [[foo:%\d+]]
 ; CHECK: [[dbg_bar:%\d+]] = OpExtInst %void [[ext]] DebugFunction {{%\d+}} {{%\d+}} {{%\d+}} 4 1 {{%\d+}} {{%\d+}} FlagIsProtected|FlagIsPrivate 4 [[bar:%\d+]]
 ; CHECK: [[dbg_zoo:%\d+]] = OpExtInst %void [[ext]] DebugFunction {{%\d+}} {{%\d+}} {{%\d+}} 7 1 {{%\d+}} {{%\d+}} FlagIsProtected|FlagIsPrivate 7 [[zoo:%\d+]]
-; CHECK: [[inlined_to_main:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 10 [[dbg_main]]
-; CHECK: [[inlined_to_zoo:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 7 [[dbg_zoo]] [[inlined_to_main]]
-; CHECK: [[inlined_to_bar:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 4 [[dbg_bar]] [[inlined_to_zoo]]
+; CHECK: [[inlined_to_main:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 600 [[dbg_main]]
+; CHECK: [[inlined_to_zoo:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 700 [[dbg_zoo]] [[inlined_to_main]]
+; CHECK: [[inlined_to_bar:%\d+]] = OpExtInst %void [[ext]] DebugInlinedAt 300 [[dbg_bar]] [[inlined_to_zoo]]
 ; CHECK: [[main]] = OpFunction %void None
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_foo]] [[inlined_to_bar]]
+; CHECK-NEXT: OpLine {{%\d+}} 100 0
 ; CHECK-NEXT: OpStore {{%\d+}} [[v4f1]]
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_bar]] [[inlined_to_zoo]]
+; CHECK-NEXT: OpLine {{%\d+}} 300 0
 ; CHECK-NEXT: [[foo_ret:%\d+]] = OpLoad %v4float
+; CHECK-NEXT: OpLine {{%\d+}} 400 0
 ; CHECK-NEXT: {{%\d+}} = OpFAdd %v4float [[foo_ret]] [[v4f2]]
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_zoo]] [[inlined_to_main]]
+; CHECK-NEXT: OpLine {{%\d+}} 700 0
 ; CHECK-NEXT: [[bar_ret:%\d+]] = OpLoad %v4float
 ; CHECK-NEXT: {{%\d+}} = OpFAdd %v4float [[bar_ret]] [[v4f3]]
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_main]]
+; CHECK-NEXT: OpLine {{%\d+}} 600 0
 ; CHECK-NEXT: [[zoo_ret:%\d+]] = OpLoad %v4float
 ; CHECK-NEXT: [[color_val:%\d+]] = OpLoad %v4float [[color]]
 ; CHECK-NEXT: {{%\d+}} = OpFAdd %v4float [[zoo_ret]] [[color_val]]
@@ -3151,6 +3156,7 @@ TEST_F(InlineTest, DebugNested) {
        %main = OpFunction %void None %24
          %39 = OpLabel
          %40 = OpExtInst %void %1 DebugScope %32
+               OpLine %5 600 0
          %41 = OpFunctionCall %v4float %zoo
          %42 = OpLoad %v4float %3
          %43 = OpFAdd %v4float %41 %42
@@ -3160,18 +3166,24 @@ TEST_F(InlineTest, DebugNested) {
         %foo = OpFunction %v4float None %25
          %44 = OpExtInst %void %1 DebugScope %33
          %45 = OpLabel
+               OpLine %5 100 0
                OpReturnValue %18
                OpFunctionEnd
+               OpLine %5 200 0
         %bar = OpFunction %v4float None %25
          %46 = OpExtInst %void %1 DebugScope %35
          %47 = OpLabel
+               OpLine %5 300 0
          %48 = OpFunctionCall %v4float %foo
+               OpLine %5 400 0
          %49 = OpFAdd %v4float %48 %19
+               OpLine %5 500 0
                OpReturnValue %49
                OpFunctionEnd
         %zoo = OpFunction %v4float None %25
          %50 = OpExtInst %void %1 DebugScope %37
          %51 = OpLabel
+               OpLine %5 700 0
          %52 = OpFunctionCall %v4float %bar
          %53 = OpFAdd %v4float %52 %20
                OpReturnValue %53
