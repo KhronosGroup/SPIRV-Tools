@@ -354,6 +354,13 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline void ForEachId(const std::function<void(uint32_t*)>& f);
   inline void ForEachId(const std::function<void(const uint32_t*)>& f) const;
 
+  // Runs the given function |f| on all operand ids. If |f| returns false,
+  // iteration is terminated and this function returns false.
+  //
+  // |f| should not transform an ID into 0, as 0 is an invalid ID.
+  inline bool WhileEachId(const std::function<bool(uint32_t*)>& f);
+  inline bool WhileEachId(const std::function<bool(const uint32_t*)>& f) const;
+
   // Runs the given function |f| on all "in" operand ids.
   inline void ForEachInId(const std::function<void(uint32_t*)>& f);
   inline void ForEachInId(const std::function<void(const uint32_t*)>& f) const;
@@ -734,15 +741,38 @@ inline void Instruction::ForEachInst(
       run_on_debug_line_insts);
 }
 
+inline bool Instruction::WhileEachId(const std::function<bool(uint32_t*)>& f) {
+  for (auto& opnd : operands_) {
+    if (spvIsIdType(opnd.type)) {
+      if (!f(&opnd.words[0])) return false;
+    }
+  }
+  return true;
+}
+
+inline bool Instruction::WhileEachId(
+    const std::function<bool(const uint32_t*)>& f) const {
+  for (const auto& opnd : operands_) {
+    if (spvIsIdType(opnd.type)) {
+      if (!f(&opnd.words[0])) return false;
+    }
+  }
+  return true;
+}
+
 inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
-  for (auto& opnd : operands_)
-    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  WhileEachId([&f](uint32_t* id) {
+    f(id);
+    return true;
+  });
 }
 
 inline void Instruction::ForEachId(
     const std::function<void(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_)
-    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  WhileEachId([&f](const uint32_t* id) {
+    f(id);
+    return true;
+  });
 }
 
 inline bool Instruction::WhileEachInId(

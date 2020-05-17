@@ -128,6 +128,15 @@ class DebugInfoManager {
   uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
                                     DebugInlinedAtContext* inlined_at_ctx);
 
+  // Returns the DebugDeclare or DebugValue instruction corresponding to the
+  // load or store instruction |load_or_store|.
+  Instruction* GetDebugDeclareOrValueForLoadOrStore(Instruction* load_or_store);
+
+  // Creates a DebugValue whose 'Local Variable' and 'Value' operands are
+  // |variable_id| and |value_id| and inserts it after |load_or_store|.
+  void AddDebugValue(Instruction* load_or_store, uint32_t variable_id,
+                     uint32_t value_id);
+
  private:
   IRContext* context() { return context_; }
 
@@ -147,6 +156,9 @@ class DebugInfoManager {
   // in |inst| must not already be registered.
   void RegisterDbgFunction(Instruction* inst);
 
+  // Returns a DebugExpression instruction without Operation operands.
+  Instruction* GetEmptyDebugExpression();
+
   IRContext* context_;
 
   // Mapping from ids of OpenCL.DebugInfo.100 extension instructions
@@ -157,9 +169,22 @@ class DebugInfoManager {
   // operand is the function.
   std::unordered_map<uint32_t, Instruction*> fn_id_to_dbg_fn_;
 
+  // Mapping from local variable ids to DebugDeclare instructions whose
+  // operand is the local variable.
+  std::unordered_map<uint32_t, Instruction*> var_id_to_dbg_decl_;
+
+  // Mapping from OpStore or OpLoad instructions for local variables to
+  // their corresponding DebugDeclare or DebugValue instructions.
+  std::unordered_map<Instruction*, Instruction*> var_load_store_to_dbg_decl_;
+
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
   Instruction* debug_info_none_inst_;
+
+  // DebugExpression instruction without Operation operands. We need only
+  // a single DebugExpression without Operation operands. To reuse the
+  // existing one, we keep it using this member variable.
+  Instruction* empty_debug_expr_inst_;
 };
 
 }  // namespace analysis

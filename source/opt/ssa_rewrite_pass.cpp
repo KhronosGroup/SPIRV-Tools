@@ -307,6 +307,10 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   }
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
+    if (pass_->get_debug_info_mgr()->GetDebugDeclareOrValueForLoadOrStore(
+            inst) == nullptr) {
+      pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
+    }
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -332,6 +336,10 @@ bool SSARewriter::ProcessLoad(Instruction* inst, BasicBlock* bb) {
     const uint32_t load_id = inst->result_id();
     assert(load_replacement_.count(load_id) == 0);
     load_replacement_[load_id] = val_id;
+    if (pass_->get_debug_info_mgr()->GetDebugDeclareOrValueForLoadOrStore(
+            inst) == nullptr) {
+      pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
+    }
     PhiCandidate* defining_phi = GetPhiCandidate(val_id);
     if (defining_phi) {
       defining_phi->AddUser(load_id);
