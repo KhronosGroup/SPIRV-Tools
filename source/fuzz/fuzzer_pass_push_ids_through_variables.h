@@ -22,8 +22,8 @@ namespace fuzz {
 
 // For each instruction with a descriptor, checks if OpStore and
 // OpLoad instructions can be inserted before it. So, randomly,
-// looks for irrelevant pointers, values with the same pointee type and
-// applies the push id through variable transformation.
+// looks for values, adds whether a global or local variable
+// and applies the push id through variable transformation.
 class FuzzerPassPushIdsThroughVariables : public FuzzerPass {
  public:
   FuzzerPassPushIdsThroughVariables(

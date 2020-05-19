@@ -30,83 +30,92 @@ TransformationPushIdThroughVariable::
 
 TransformationPushIdThroughVariable::
     TransformationPushIdThroughVariable(
-        uint32_t fresh_id,
-        uint32_t pointer_id, uint32_t value_id,
+        uint32_t value_synonym_id,
+        uint32_t value_id, uint32_t variable_id,
         const protobufs::InstructionDescriptor& instruction_descriptor) {
-  message_.set_fresh_id(fresh_id);
-  message_.set_pointer_id(pointer_id);
+  message_.set_value_synonym_id(value_synonym_id);
   message_.set_value_id(value_id);
+  message_.set_variable_id(variable_id);
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
 }
 
-bool TransformationPushIdThroughVariable::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/
-    ) const {
-  // The pointer must exist and have a type.
-  auto pointer = ir_context->get_def_use_mgr()->GetDef(message_.pointer_id());
-  if (!pointer || !pointer->type_id()) {
+bool TransformationPushIdThroughVariable::IsApplicable(opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+  // |message_.value_synonym_id| must be fresh.
+  if (!fuzzerutil::IsFreshId(ir_context, message_.value_synonym_id())) {
     return false;
   }
 
-  // The pointer type must indeed be a pointer.
-  auto pointer_type = ir_context->get_def_use_mgr()->GetDef(pointer->type_id());
-  assert(pointer_type && "Type id must be defined.");
-  if (pointer_type->opcode() != SpvOpTypePointer) {
+  // The variable instruction must exist and have a type.
+  auto variable_instruction = ir_context->get_def_use_mgr()->GetDef(message_.variable_id());
+  if (!variable_instruction ||
+      !variable_instruction->type_id()) {
     return false;
   }
 
-  // The pointer must not be read only.
-  if (pointer->IsReadOnlyPointer()) {
+  // The variable type instruction must be defined and be a OpTypePointer instruction.
+  auto variable_type_instruction = ir_context->get_def_use_mgr()->GetDef(variable_instruction->type_id());
+  if (!variable_type_instruction ||
+      variable_type_instruction->opcode() != SpvOpTypePointer) {
     return false;
   }
 
-  // Determine which instruction we should be inserting before.
-  auto insert_before = FindInstruction(message_.instruction_descriptor(), ir_context);
-  // It must exist, ...
-  if (!insert_before) {
-    return false;
-  }
-  // ... and it must be legitimate to insert a store before it.
-  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, insert_before) ||
-      !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, insert_before)) {
+  // The variable must not be read-only.
+  if (variable_instruction->IsReadOnlyPointer()) {
     return false;
   }
 
-  // The value being stored needs to exist and have a type.
-  auto value = ir_context->get_def_use_mgr()->GetDef(message_.value_id());
-  if (!value || !value->type_id()) {
+  // The instruction to insert before must be defined.
+  auto instruction_to_insert_before = FindInstruction(message_.instruction_descriptor(), ir_context);
+  if (!instruction_to_insert_before) {
     return false;
   }
 
-  // The type of the value must match the pointee type.
-  if (pointer_type->GetSingleWordInOperand(1) != value->type_id()) {
+  // The instruction to insert before must belongs to a reachable block.
+  if (!fuzzerutil::BlockIsReachableInItsFunction(ir_context, ir_context->get_instr_block(instruction_to_insert_before))) {
     return false;
   }
 
-  // The pointer needs to be available at the insertion point.
-  if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
-                                                  message_.pointer_id())) {
+  // It must be valid to insert the OpStore and OpLoad instruction before it.
+  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, instruction_to_insert_before) ||
+      !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, instruction_to_insert_before)) {
     return false;
   }
 
-  // The value needs to be available at the insertion point.
-  return fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
+  // The value instruction must be defined and have a type.
+  auto value_instruction = ir_context->get_def_use_mgr()->GetDef(message_.value_id());
+  if (!value_instruction || !value_instruction->type_id()) {
+    return false;
+  }
+
+  // The variable pointee type must be equal to the value type.
+  if (variable_type_instruction->GetSingleWordInOperand(1) != value_instruction->type_id()) {
+    return false;
+  }
+
+  // |message_.variable_id| must be available at the insertion point.
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, instruction_to_insert_before,
+                                                  message_.variable_id())) {
+    return false;
+  }
+
+  // |message_.value_id| must be available at the insertion point.
+  return fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, instruction_to_insert_before,
                                                     message_.value_id());
 }
 
 void TransformationPushIdThroughVariable::Apply(opt::IRContext* ir_context,
                                                 TransformationContext* transformation_context) const {
-  TransformationStore(message_.pointer_id(),
+  TransformationStore(message_.variable_id(),
                       message_.value_id(),
                       message_.instruction_descriptor()).Apply(ir_context, transformation_context);
 
-  TransformationLoad(message_.fresh_id(),
-                     message_.pointer_id(),
+  TransformationLoad(message_.value_synonym_id(),
+                     message_.variable_id(),
                      message_.instruction_descriptor()).Apply(ir_context, transformation_context);
 
   transformation_context
     ->GetFactManager()
-    ->AddFactDataSynonym(MakeDataDescriptor(message_.fresh_id(), {}),
+    ->AddFactDataSynonym(MakeDataDescriptor(message_.value_synonym_id(), {}),
                          MakeDataDescriptor(message_.value_id(), {}),
                          ir_context);
 }

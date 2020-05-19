@@ -29,26 +29,27 @@ class TransformationPushIdThroughVariable : public Transformation {
       const protobufs::TransformationPushIdThroughVariable& message);
 
   TransformationPushIdThroughVariable(
-      uint32_t variable_id,
-      uint32_t value_synonym_id, uint32_t value_id,
+      uint32_t value_synonym_id,
+      uint32_t value_id, uint32_t variable_id,
       const protobufs::InstructionDescriptor& instruction_descriptor);
 
-  // - |message_.fresh_id| must be fresh
-  // - |message_.pointer_id| must be the id of a pointer
-  // - The pointer type must not have read-only storage class
-  // - The pointer must not be OpConstantNull or OpUndef
+  // - |message_.value_synonym_id| must be fresh
+  // - |message_.variable_id| must be the id of a variable
+  // - The variable type must not have read-only storage class
+  // - The variable must not be OpConstantNull or OpUndef
   // - |message_.value_id| must be an instruction result id that has the same
   //   type as the pointee type of |message_.pointer_id|
   // - |message_.instruction_descriptor| must identify an instruction
-  //   before which it is valid to insert the OpStore and OpLoad instructions.
+  //   which it is valid to insert the OpStore and OpLoad instructions before it
+  //   and must be belongs to a reachable block.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Stores a value to a irrelevant variable,
-  // loads the variable value to a new id and
-  // adds the fact that the initial value
-  // and the new id are synonymous.
+  // Stores |value_id| to |variable_id|,
+  // loads |variable_id| to |value_synonym_id| and
+  // adds the fact that |value_synonym_id|
+  // and |value_id| are synonymous.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

@@ -38,25 +38,30 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
   ForEachInstructionWithInstructionDescriptor(
       [this](opt::Function* function,
              opt::BasicBlock* block,
-             opt::BasicBlock::iterator inst_it,
+             opt::BasicBlock::iterator instruction_iterator,
              const protobufs::InstructionDescriptor& instruction_descriptor) -> void {
-        assert(inst_it->opcode() == instruction_descriptor.target_instruction_opcode() &&
+        assert(instruction_iterator->opcode() == instruction_descriptor.target_instruction_opcode() &&
                "The opcode of the instruction we might insert before must be "
                "the same as the opcode in the descriptor for the instruction");
-
-        // Check whether the store and load instructions can be
-        // inserted before this instruction.
-        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, inst_it) ||
-            !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, inst_it)) {
-          return;
-        }
 
         // Randomly decide whether to try pushing an id through a variable.
         if (!GetFuzzerContext()->ChoosePercentage(GetFuzzerContext()->GetChanceOfPushingIdThroughVariable())) {
           return;
         }
 
-        // Storage class for a global or local variable.
+        // The instruction to insert before containing block must be reachable.
+        if (!fuzzerutil::BlockIsReachableInItsFunction(GetIRContext(), block)) {
+          return;
+        }
+
+        // It must be valid to insert OpStore and OpLoad instructions
+        // before the instruction to insert before.
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, instruction_iterator) ||
+            !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, instruction_iterator)) {
+          return;
+        }
+
+        // Randomly decides whether a global or local variable will be added.
         SpvStorageClass variable_storage_class;
         if (GetFuzzerContext()->ChooseEven()) {
           variable_storage_class = SpvStorageClassPrivate;
@@ -64,15 +69,14 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
           variable_storage_class = SpvStorageClassFunction;
         }
 
-        // Gets the basic type and pointers to basic types.
+        // Gets the available basic and pointer types.
         auto basic_type_ids_and_pointers = GetAvailableBasicTypesAndPointers(variable_storage_class);
         auto& basic_types = basic_type_ids_and_pointers.first;
         uint32_t basic_type_id = basic_types[GetFuzzerContext()->RandomIndex(basic_types)];
 
-        // Look for values we might consider to store.
+        // Looks for values we might consider to store.
         std::vector<opt::Instruction*> value_instructions =
-            FindAvailableInstructions(
-                function, block, inst_it,
+            FindAvailableInstructions(function, block, instruction_iterator,
                 [basic_type_id](opt::IRContext* /*unused*/,
                           opt::Instruction* instruction) -> bool {
                   if (!instruction->result_id() || !instruction->type_id()) {
@@ -85,20 +89,21 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
           return;
         }
 
+        // Gets type pointer ids to the basic type.
         auto& basic_type_to_pointers = basic_type_ids_and_pointers.second;
         std::vector<uint32_t>& type_pointer_ids = basic_type_to_pointers.at(basic_type_id);
         uint32_t type_pointer_id;
 
+        // Gets the type pointer id.
         if (type_pointer_ids.empty()) {
           type_pointer_id = GetFuzzerContext()->GetFreshId();
-          type_pointer_ids.push_back(type_pointer_id);
           ApplyTransformation(TransformationAddTypePointer(type_pointer_id, variable_storage_class, basic_type_id));
+          type_pointer_ids.push_back(type_pointer_id);
         } else {
           type_pointer_id = type_pointer_ids[GetFuzzerContext()->RandomIndex(type_pointer_ids)];
         }
 
-        // Create whether a global variable
-        // or a local variable.
+        // Adds whether a global or local variable.
         uint32_t variable_id = GetFuzzerContext()->GetFreshId();
         if (variable_storage_class == SpvStorageClassPrivate) {
           ApplyTransformation(TransformationAddGlobalVariable(
@@ -110,10 +115,11 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
               FindOrCreateZeroConstant(basic_type_id), false));
         }
 
+        // Applies the push id through variable transformation.
         ApplyTransformation(TransformationPushIdThroughVariable(
             GetFuzzerContext()->GetFreshId(),
-            variable_id,
             value_instructions[GetFuzzerContext()->RandomIndex(value_instructions)]->result_id(),
+            variable_id,
             instruction_descriptor));
       });
 }
