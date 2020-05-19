@@ -164,8 +164,7 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kPermuteFunctionParameters:
       return MakeUnique<TransformationPermuteFunctionParameters>(
           message.permute_function_parameters());
-    case protobufs::Transformation::TransformationCase::
-        kPushIdThroughVariable:
+    case protobufs::Transformation::TransformationCase::kPushIdThroughVariable:
       return MakeUnique<TransformationPushIdThroughVariable>(
           message.push_id_through_variable());
     case protobufs::Transformation::TransformationCase::

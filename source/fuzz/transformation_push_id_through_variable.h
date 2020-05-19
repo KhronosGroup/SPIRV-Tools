@@ -29,8 +29,7 @@ class TransformationPushIdThroughVariable : public Transformation {
       const protobufs::TransformationPushIdThroughVariable& message);
 
   TransformationPushIdThroughVariable(
-      uint32_t value_synonym_id,
-      uint32_t value_id, uint32_t variable_id,
+      uint32_t value_synonym_id, uint32_t value_id, uint32_t variable_id,
       const protobufs::InstructionDescriptor& instruction_descriptor);
 
   // - |message_.value_synonym_id| must be fresh

@@ -89,12 +89,12 @@ std::string reference_shader = R"(
 
 const auto env = SPV_ENV_UNIVERSAL_1_4;
 const auto consumer = nullptr;
-const auto context = BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+const auto context =
+    BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
 FactManager fact_manager;
 spvtools::ValidatorOptions validator_options;
-TransformationContext transformation_context(&fact_manager,
-                                             validator_options);
+TransformationContext transformation_context(&fact_manager, validator_options);
 
 // Tests the reference shader validity.
 TEST(TransformationPushIdThroughVariableTest, ReferenceShaderValidity) {
@@ -106,9 +106,12 @@ TEST(TransformationPushIdThroughVariableTest, FreshId) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 21;
   uint32_t variable_id = 16;
-  auto instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_TRUE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Tests |value_synonym_id| is a non-fresh id.
@@ -116,9 +119,12 @@ TEST(TransformationPushIdThroughVariableTest, NonFreshId) {
   uint32_t value_synonym_id = 61;
   uint32_t value_id = 80;
   uint32_t variable_id = 27;
-  auto instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Tests variable instruction not available.
@@ -126,9 +132,12 @@ TEST(TransformationPushIdThroughVariableTest, VariableIdNotAvailable) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 80;
   uint32_t variable_id = 63;
-  auto instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Tests variable type instruction is an OpTypePointer instruction.
@@ -136,9 +145,12 @@ TEST(TransformationPushIdThroughVariableTest, IsTypePointerInstruction) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 80;
   uint32_t variable_id = 95;
-  auto instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Attempting to store to a read-only pointer.
@@ -146,9 +158,12 @@ TEST(TransformationPushIdThroughVariableTest, TryToStoreToReadOnlyPointer) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 93;
   uint32_t variable_id = 92;
-  auto instruction_descriptor = MakeInstructionDescriptor(40, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(40, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Attempting to store to a null or undefined pointer.
@@ -156,13 +171,18 @@ TEST(TransformationPushIdThroughVariableTest, TryToStoreToNullOrUndefPointer) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 80;
   uint32_t variable_id = 60;
-  auto instruction_descriptor = MakeInstructionDescriptor(40, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(40, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
   variable_id = 61;
-  transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Attempting to insert the store and load instructions
@@ -172,8 +192,10 @@ TEST(TransformationPushIdThroughVariableTest, NotInsertingBeforeInstruction) {
   uint32_t value_id = 24;
   uint32_t variable_id = 52;
   auto instruction_descriptor = MakeInstructionDescriptor(27, SpvOpVariable, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Tests value instruction not available.
@@ -181,75 +203,95 @@ TEST(TransformationPushIdThroughVariableTest, ValueIdNotAvailable) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 63;
   uint32_t variable_id = 16;
-  auto instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Tests pointer and value with different types.
-TEST(TransformationPushIdThroughVariableTest, PointerAndValueWithDifferentTypes) {
+TEST(TransformationPushIdThroughVariableTest,
+     PointerAndValueWithDifferentTypes) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 14;
   uint32_t variable_id = 27;
-  auto instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Tests pointer instruction not available before instruction.
-TEST(TransformationPushIdThroughVariableTest, PointerNotAvailableBeforeInstruction) {
+TEST(TransformationPushIdThroughVariableTest,
+     PointerNotAvailableBeforeInstruction) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 80;
   uint32_t variable_id = 82;
   auto instruction_descriptor = MakeInstructionDescriptor(37, SpvOpReturn, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 // Tests value instruction not available before instruction.
-TEST(TransformationPushIdThroughVariableTest, ValueNotAvailableBeforeInstruction) {
+TEST(TransformationPushIdThroughVariableTest,
+     ValueNotAvailableBeforeInstruction) {
   uint32_t value_synonym_id = 62;
   uint32_t value_id = 95;
   uint32_t variable_id = 27;
-  auto instruction_descriptor = MakeInstructionDescriptor(40, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
-  ASSERT_FALSE(transformation.IsApplicable(context.get(), transformation_context));
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(40, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationPushIdThroughVariableTest, Apply) {
   uint32_t value_synonym_id = 100;
   uint32_t value_id = 80;
   uint32_t variable_id = 27;
-  auto instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
-  auto transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_synonym_id = 101;
   value_id = 21;
   variable_id = 53;
   instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
-  transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
+  transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_synonym_id = 102;
   value_id = 95;
   variable_id = 11;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
-  transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
+  transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_synonym_id = 103;
   value_id = 80;
   variable_id = 46;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
-  transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
+  transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_synonym_id = 104;
   value_id = 21;
   variable_id = 16;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
-  transformation = TransformationPushIdThroughVariable(value_synonym_id, value_id, variable_id, instruction_descriptor);
+  transformation = TransformationPushIdThroughVariable(
+      value_synonym_id, value_id, variable_id, instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   std::string variant_shader = R"(
