@@ -154,7 +154,7 @@ void InlinePass::MapParams(
 bool InlinePass::CloneAndMapLocals(
     Function* calleeFn, std::vector<std::unique_ptr<Instruction>>* new_vars,
     std::unordered_map<uint32_t, uint32_t>* callee2caller,
-    BasicBlock::iterator call_inst_itr) {
+    analysis::DebugInlinedAtContext* inlined_at_ctx) {
   auto callee_block_itr = calleeFn->begin();
   auto callee_var_itr = callee_block_itr->begin();
   while (callee_var_itr->opcode() == SpvOp::SpvOpVariable ||
@@ -174,7 +174,7 @@ bool InlinePass::CloneAndMapLocals(
     var_inst->SetResultId(newId);
     var_inst->UpdateDebugInlinedAt(
         context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
-            callee_var_itr->GetDebugInlinedAt(), call_inst_itr));
+            callee_var_itr->GetDebugInlinedAt(), inlined_at_ctx));
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
     ++callee_var_itr;
@@ -295,7 +295,7 @@ std::unique_ptr<BasicBlock> InlinePass::AddGuardBlock(
 
 InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
     const std::unordered_map<uint32_t, uint32_t>& callee2caller,
-    BasicBlock::iterator call_inst_itr,
+    analysis::DebugInlinedAtContext* inlined_at_ctx,
     std::unique_ptr<BasicBlock>* new_blk_ptr,
     UptrVectorIterator<BasicBlock> callee_first_block_itr) {
   auto callee_itr = callee_first_block_itr->begin();
@@ -313,15 +313,14 @@ InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
       uint32_t val_id = callee_itr->GetSingleWordInOperand(1);
       AddStore(new_var_id, val_id, new_blk_ptr, callee_itr->dbg_line_inst(),
                context()->get_debug_info_mgr()->BuildDebugScope(
-                   callee_itr->GetDebugScope(), call_inst_itr));
+                   callee_itr->GetDebugScope(), inlined_at_ctx));
     }
     if (callee_itr->GetOpenCL100DebugOpcode() ==
         OpenCLDebugInfo100DebugDeclare) {
       InlineSingleInstruction(
           callee2caller, new_blk_ptr->get(), &*callee_itr,
           context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
-              callee_itr->GetDebugScope().GetInlinedAt(), call_inst_itr),
-          true);
+              callee_itr->GetDebugScope().GetInlinedAt(), inlined_at_ctx));
     }
     ++callee_itr;
   }
@@ -330,8 +329,7 @@ InstructionList::iterator InlinePass::AddStoresForVariableInitializers(
 
 bool InlinePass::InlineSingleInstruction(
     const std::unordered_map<uint32_t, uint32_t>& callee2caller,
-    BasicBlock* new_blk_ptr, const Instruction* inst, uint32_t dbg_inlined_at,
-    bool use_new_id) {
+    BasicBlock* new_blk_ptr, const Instruction* inst, uint32_t dbg_inlined_at) {
   // If we have return, it must be at the end of the callee. We will handle
   // it at the end.
   if (inst->opcode() == SpvOpReturnValue || inst->opcode() == SpvOpReturn)
@@ -346,19 +344,18 @@ bool InlinePass::InlineSingleInstruction(
     }
   });
 
-  if (use_new_id) {
-    cp_inst->SetResultId(context()->TakeNextId());
-  } else {
-    // If result id is non-zero, remap it.
-    const uint32_t rid = cp_inst->result_id();
-    if (rid != 0) {
-      const auto mapItr = callee2caller.find(rid);
-      if (mapItr == callee2caller.end()) return false;
-      uint32_t nid = mapItr->second;
-      cp_inst->SetResultId(nid);
-      get_decoration_mgr()->CloneDecorations(rid, nid);
+  // If result id is non-zero, remap it.
+  const uint32_t rid = cp_inst->result_id();
+  if (rid != 0) {
+    const auto mapItr = callee2caller.find(rid);
+    if (mapItr == callee2caller.end()) {
+      return false;
     }
+    uint32_t nid = mapItr->second;
+    cp_inst->SetResultId(nid);
+    get_decoration_mgr()->CloneDecorations(rid, nid);
   }
+
   cp_inst->UpdateDebugInlinedAt(dbg_inlined_at);
   new_blk_ptr->AddInstruction(std::move(cp_inst));
   return true;
@@ -367,8 +364,9 @@ bool InlinePass::InlineSingleInstruction(
 std::unique_ptr<BasicBlock> InlinePass::InlineReturn(
     const std::unordered_map<uint32_t, uint32_t>& callee2caller,
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
-    std::unique_ptr<BasicBlock> new_blk_ptr, BasicBlock::iterator call_inst_itr,
-    Function* calleeFn, const Instruction* inst, uint32_t returnVarId) {
+    std::unique_ptr<BasicBlock> new_blk_ptr,
+    analysis::DebugInlinedAtContext* inlined_at_ctx, Function* calleeFn,
+    const Instruction* inst, uint32_t returnVarId) {
   // Store return value to return variable.
   if (inst->opcode() == SpvOpReturnValue) {
     assert(returnVarId != 0);
@@ -379,7 +377,7 @@ std::unique_ptr<BasicBlock> InlinePass::InlineReturn(
     }
     AddStore(returnVarId, valId, &new_blk_ptr, inst->dbg_line_inst(),
              context()->get_debug_info_mgr()->BuildDebugScope(
-                 inst->GetDebugScope(), call_inst_itr));
+                 inst->GetDebugScope(), inlined_at_ctx));
   }
 
   uint32_t returnLabelId = 0;
@@ -403,16 +401,16 @@ bool InlinePass::InlineEntryBlock(
     const std::unordered_map<uint32_t, uint32_t>& callee2caller,
     std::unique_ptr<BasicBlock>* new_blk_ptr,
     UptrVectorIterator<BasicBlock> callee_first_block,
-    BasicBlock::iterator call_inst_itr) {
+    analysis::DebugInlinedAtContext* inlined_at_ctx) {
   auto callee_inst_itr = AddStoresForVariableInitializers(
-      callee2caller, call_inst_itr, new_blk_ptr, callee_first_block);
+      callee2caller, inlined_at_ctx, new_blk_ptr, callee_first_block);
 
   while (callee_inst_itr != callee_first_block->end()) {
     if (!InlineSingleInstruction(
             callee2caller, new_blk_ptr->get(), &*callee_inst_itr,
             context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
-                callee_inst_itr->GetDebugScope().GetInlinedAt(), call_inst_itr),
-            false)) {
+                callee_inst_itr->GetDebugScope().GetInlinedAt(),
+                inlined_at_ctx))) {
       return false;
     }
     ++callee_inst_itr;
@@ -423,8 +421,8 @@ bool InlinePass::InlineEntryBlock(
 std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
     const std::unordered_map<uint32_t, uint32_t>& callee2caller,
-    std::unique_ptr<BasicBlock> new_blk_ptr, BasicBlock::iterator call_inst_itr,
-    Function* calleeFn) {
+    std::unique_ptr<BasicBlock> new_blk_ptr,
+    analysis::DebugInlinedAtContext* inlined_at_ctx, Function* calleeFn) {
   auto callee_block_itr = calleeFn->begin();
   ++callee_block_itr;
 
@@ -441,8 +439,7 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
       if (!InlineSingleInstruction(
               callee2caller, new_blk_ptr.get(), &*inst_itr,
               context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
-                  inst_itr->GetDebugScope().GetInlinedAt(), call_inst_itr),
-              false)) {
+                  inst_itr->GetDebugScope().GetInlinedAt(), inlined_at_ctx))) {
         return nullptr;
       }
     }
@@ -514,6 +511,8 @@ bool InlinePass::GenInlineCode(
   // Post-call same-block op ids
   std::unordered_map<uint32_t, uint32_t> postCallSB;
 
+  analysis::DebugInlinedAtContext inlined_at_ctx(&*call_inst_itr);
+
   // Invalidate the def-use chains.  They are not kept up to date while
   // inlining.  However, certain calls try to keep them up-to-date if they are
   // valid.  These operations can fail.
@@ -537,7 +536,7 @@ bool InlinePass::GenInlineCode(
 
   // Define caller local variables for all callee variables and create map to
   // them.
-  if (!CloneAndMapLocals(calleeFn, new_vars, &callee2caller, call_inst_itr)) {
+  if (!CloneAndMapLocals(calleeFn, new_vars, &callee2caller, &inlined_at_ctx)) {
     return false;
   }
 
@@ -589,29 +588,28 @@ bool InlinePass::GenInlineCode(
   });
 
   // Inline DebugClare instructions in the callee's header.
-  calleeFn->ForDebugInstructionsInHeader(
-      [&new_blk_ptr, &callee2caller, &call_inst_itr, this](Instruction* inst) {
+  calleeFn->ForEachDebugInstructionsInHeader(
+      [&new_blk_ptr, &callee2caller, &inlined_at_ctx, this](Instruction* inst) {
         InlineSingleInstruction(
             callee2caller, new_blk_ptr.get(), inst,
             context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
-                inst->GetDebugScope().GetInlinedAt(), call_inst_itr),
-            true);
+                inst->GetDebugScope().GetInlinedAt(), &inlined_at_ctx));
       });
 
   // Inline the entry block of the callee function.
   if (!InlineEntryBlock(callee2caller, &new_blk_ptr, calleeFn->begin(),
-                        call_inst_itr)) {
+                        &inlined_at_ctx)) {
     return false;
   }
 
   // Inline blocks of the callee function other than the entry block.
   new_blk_ptr =
       InlineBasicBlocks(new_blocks, callee2caller, std::move(new_blk_ptr),
-                        call_inst_itr, calleeFn);
+                        &inlined_at_ctx, calleeFn);
   if (new_blk_ptr == nullptr) return false;
 
   new_blk_ptr = InlineReturn(callee2caller, new_blocks, std::move(new_blk_ptr),
-                             call_inst_itr, calleeFn,
+                             &inlined_at_ctx, calleeFn,
                              &*(calleeFn->tail()->tail()), returnVarId);
 
   // Load return value into result id of call, if it exists.

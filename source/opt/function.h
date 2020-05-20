@@ -135,7 +135,8 @@ class Function {
 
   // Runs the given function |f| on each debug instruction in this function's
   // header in order.
-  void ForDebugInstructionsInHeader(const std::function<void(Instruction*)>& f);
+  void ForEachDebugInstructionsInHeader(
+      const std::function<void(Instruction*)>& f);
 
   BasicBlock* InsertBasicBlockAfter(std::unique_ptr<BasicBlock>&& new_block,
                                     BasicBlock* position);

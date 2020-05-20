@@ -154,7 +154,7 @@ void Function::ForEachParam(const std::function<void(const Instruction*)>& f,
         ->ForEachInst(f, run_on_debug_line_insts);
 }
 
-void Function::ForDebugInstructionsInHeader(
+void Function::ForEachDebugInstructionsInHeader(
     const std::function<void(Instruction*)>& f) {
   if (debug_insts_in_header_.empty()) return;
 
