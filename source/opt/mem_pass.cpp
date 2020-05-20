@@ -97,6 +97,8 @@ Instruction* MemPass::GetPtr(uint32_t ptrId, uint32_t* varId) {
   Instruction* ptrInst = get_def_use_mgr()->GetDef(*varId);
   Instruction* varInst;
 
+  if (ptrInst->opcode() == SpvOpConstantNull) return ptrInst;
+
   if (ptrInst->opcode() != SpvOpVariable &&
       ptrInst->opcode() != SpvOpFunctionParameter) {
     varInst = ptrInst->GetBaseAddress();
