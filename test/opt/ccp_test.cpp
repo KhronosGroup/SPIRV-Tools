@@ -925,6 +925,43 @@ TEST_F(CCPTest, FoldWithDecoration) {
   SinglePassRunAndMatch<CCPPass>(text, true);
 }
 
+// Reduced from https://github.com/KhronosGroup/SPIRV-Tools/issues/3343.
+// Comparisons using 64-bit types should not be foldable even if their operands
+// are constant.
+TEST_F(CCPTest, Reject64BitComparisons) {
+  const std::string text = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %main "main"
+       %bool = OpTypeBool
+       %void = OpTypeVoid
+      %ulong = OpTypeInt 64 0
+    %ulong_0 = OpConstant %ulong 0
+    %ulong_1 = OpConstant %ulong 1
+  %main_type = OpTypeFunction %void
+       %main = OpFunction %void None %main_type
+      %entry = OpLabel
+        %cmp = OpULessThan %bool %ulong_1 %ulong_0
+
+; Constant propagation should be refusing to fold 1L < 0L to false
+; (the constant folder does not handle 64-bit types yet).
+;
+; CHECK-NOT: OpBranchConditional %false {{%\d+}} {{%\d+}}
+               OpBranchConditional %cmp %then %endif
+
+       %then = OpLabel
+               OpBranch %endif
+      %endif = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CCPPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

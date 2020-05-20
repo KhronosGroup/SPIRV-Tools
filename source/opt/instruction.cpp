@@ -623,7 +623,23 @@ bool Instruction::IsFoldableByFoldScalar() const {
     return false;
   }
   Instruction* type = context()->get_def_use_mgr()->GetDef(type_id());
-  return folder.IsFoldableType(type);
+  if (!folder.IsFoldableType(type)) {
+    return false;
+  }
+
+  // Even if the type of the instruction is foldable, its operands may not be
+  // foldable (e.g., comparisons of 64bit types).  Check that all operand types
+  // are foldable before accepting the instruction.
+  bool all_operands_are_foldable = true;
+  ForEachInOperand(
+      [&all_operands_are_foldable, &folder, this](const uint32_t* op_id) {
+        Instruction* def_inst = context()->get_def_use_mgr()->GetDef(*op_id);
+        Instruction* def_inst_type =
+            context()->get_def_use_mgr()->GetDef(def_inst->type_id());
+        all_operands_are_foldable &= folder.IsFoldableType(def_inst_type);
+      });
+
+  return all_operands_are_foldable;
 }
 
 bool Instruction::IsFloatingPointFoldingAllowed() const {
