@@ -413,14 +413,24 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
             argument_type_ids));
       }
     } break;
+    case SpvOpSpecConstantOp: {
+      // Make sure the module contains an OpConstant instruction
+      // that has suitable type.
+      FindOrCreateZeroConstant(type_or_value.type_id());
+    } break;
+    case SpvOpSpecConstantTrue:
+    case SpvOpSpecConstantFalse:
     case SpvOpConstantTrue:
     case SpvOpConstantFalse: {
       // It is OK to have duplicate definitions of True and False, so add
       // these to the module, using a remapped Bool type.
       new_result_id = GetFuzzerContext()->GetFreshId();
-      ApplyTransformation(TransformationAddConstantBoolean(
-          new_result_id, type_or_value.opcode() == SpvOpConstantTrue));
+      auto value = type_or_value.opcode() == SpvOpConstantTrue ||
+                   type_or_value.opcode() == SpvOpSpecConstantTrue;
+      ApplyTransformation(
+          TransformationAddConstantBoolean(new_result_id, value));
     } break;
+    case SpvOpSpecConstant:
     case SpvOpConstant: {
       // It is OK to have duplicate constant definitions, so add this to the
       // module using a remapped result type.
@@ -433,6 +443,7 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
           new_result_id, original_id_to_donated_id->at(type_or_value.type_id()),
           data_words));
     } break;
+    case SpvOpSpecConstantComposite:
     case SpvOpConstantComposite: {
       assert(original_id_to_donated_id->count(type_or_value.type_id()) &&
              "Composite types for which it is possible to create a constant "
