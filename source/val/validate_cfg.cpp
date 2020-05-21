@@ -1102,6 +1102,11 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
             SpvExecutionModelFragment,
             "OpKill requires Fragment execution model");
       }
+      if (opcode == SpvOpTerminateInvocation) {
+        _.current_function().RegisterExecutionModelLimitation(
+            SpvExecutionModelFragment,
+            "OpTerminateInvocation requires Fragment execution model");
+      }
       break;
     default:
       break;
