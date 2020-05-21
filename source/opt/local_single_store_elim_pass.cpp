@@ -123,6 +123,7 @@ void LocalSingleStoreElimPass::InitExtensionAllowList() {
       "SPV_EXT_fragment_invocation_density",
       "SPV_EXT_physical_storage_buffer",
       "SPV_KHR_terminate_invocation",
+      "SPV_KHR_subgroup_uniform_control_flow",
   });
 }
 bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
