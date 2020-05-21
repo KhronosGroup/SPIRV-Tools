@@ -3298,7 +3298,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerArithmeticTestCases, GeneralInstructionFoldingTe
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3),
-    // Test case 20: Don't fold comparisons of 64-bit types
+    // Test case 42: Don't fold comparisons of 64-bit types
     // (https://github.com/KhronosGroup/SPIRV-Tools/issues/3343).
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
