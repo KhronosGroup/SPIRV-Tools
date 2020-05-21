@@ -256,6 +256,11 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
                                                  inst.words[2]) +
                               "_" + NameForId(inst.words[3]));
       break;
+    case spv::Op::OpTypeUntypedPointerKHR:
+      SaveName(result_id, std::string("_ptr_") +
+                              NameForEnumOperand(SPV_OPERAND_TYPE_STORAGE_CLASS,
+                                                 inst.words[2]));
+      break;
     case spv::Op::OpTypePipe:
       SaveName(result_id,
                std::string("Pipe") +
