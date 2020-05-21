@@ -230,6 +230,7 @@ spv_result_t GetLocationsForVariable(
   uint32_t index = 0;
   bool has_patch = false;
   bool has_per_task_nv = false;
+  bool has_per_vertex_nv = false;
   for (auto& dec : _.id_decorations(variable->id())) {
     if (dec.dec_type() == SpvDecorationLocation) {
       if (has_location && dec.params()[0] != location) {
@@ -263,6 +264,8 @@ spv_result_t GetLocationsForVariable(
       has_patch = true;
     } else if (dec.dec_type() == SpvDecorationPerTaskNV) {
       has_per_task_nv = true;
+    } else if (dec.dec_type() == SpvDecorationPerVertexNV) {
+      has_per_vertex_nv = true;
     }
   }
 
@@ -272,18 +275,27 @@ spv_result_t GetLocationsForVariable(
   bool is_arrayed = false;
   switch (entry_point->GetOperandAs<SpvExecutionModel>(0)) {
     case SpvExecutionModelTessellationControl:
-      if (!is_output || !has_patch) {
+      if (!has_patch) {
         is_arrayed = true;
       }
       break;
     case SpvExecutionModelTessellationEvaluation:
+      if (!is_output && !has_patch) {
+        is_arrayed = true;
+      }
+      break;
     case SpvExecutionModelGeometry:
       if (!is_output) {
         is_arrayed = true;
       }
       break;
+    case SpvExecutionModelFragment:
+      if (!is_output && has_per_vertex_nv) {
+        is_arrayed = true;
+      }
+      break;
     case SpvExecutionModelMeshNV:
-      if (is_output && has_per_task_nv) {
+      if (is_output && !has_per_task_nv) {
         is_arrayed = true;
       }
       break;
