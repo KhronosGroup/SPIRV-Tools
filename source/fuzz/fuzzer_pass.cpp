@@ -429,13 +429,18 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
   switch (type_instruction->opcode()) {
     case SpvOpTypeBool:
       return FindOrCreateBoolConstant(false);
-    case SpvOpTypeFloat:
-      return FindOrCreateFloatConstant(
-          {0}, type_instruction->GetSingleWordInOperand(0));
-    case SpvOpTypeInt:
+    case SpvOpTypeFloat: {
+      auto width = type_instruction->GetSingleWordInOperand(0);
+      auto num_words = (width + 32 - 1) / 32;
+      return FindOrCreateFloatConstant(std::vector<uint32_t>(num_words, 0), width);
+    }
+    case SpvOpTypeInt: {
+      auto width = type_instruction->GetSingleWordInOperand(0);
+      auto num_words = (width + 32 - 1) / 32;
       return FindOrCreateIntegerConstant(
-          {0}, type_instruction->GetSingleWordInOperand(0),
+          std::vector<uint32_t>(num_words, 0), width,
           type_instruction->GetSingleWordInOperand(1));
+    }
     case SpvOpTypeArray: {
       return GetZeroConstantForHomogeneousComposite(
           *type_instruction, type_instruction->GetSingleWordInOperand(0),

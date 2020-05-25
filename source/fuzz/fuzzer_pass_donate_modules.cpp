@@ -1088,7 +1088,7 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
               // We will have to clamp this index, so we need a constant
               // whose value is one less than the bound, to compare
               // against and to use as the clamped value.
-              FindOrCreateIntegerConstant({bound - 1}, index_int_type->width(),
+              FindOrCreateIntegerConstant({bound - 1}, 32,
                                           index_int_type->IsSigned());
             }
             should_be_composite_type =
