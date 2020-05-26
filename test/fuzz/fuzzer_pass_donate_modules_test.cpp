@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+
 #include "source/fuzz/fuzzer_pass_donate_modules.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -1676,6 +1678,119 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
   ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
+TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
+  std::string donor_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeStruct %6 %6 %7
+          %9 = OpSpecConstantTrue %6
+         %10 = OpSpecConstantFalse %6
+         %11 = OpSpecConstant %7 2
+         %12 = OpSpecConstantComposite %8 %9 %10 %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string recipient_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // We just check that the result is valid.  Checking to what it should be
+  // exactly equal to would be very fragile.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  // Check that OpSpecConstant* instructions were correctly donated to the
+  // module.
+  bool checks[4] = {};
+  for (const auto* instr : recipient_context->GetConstants()) {
+    switch (instr->opcode()) {
+      case SpvOpConstantFalse: {
+        // The module has OpConstantFalse and we have already checked that the
+        // module is valid, so this check is accepted.
+        checks[0] = true;
+      } break;
+      case SpvOpConstantTrue: {
+        // OpConstantTrue is present and the module is valid - check.
+        checks[1] = true;
+      } break;
+      case SpvOpConstant: {
+        const auto* type =
+            recipient_context->get_type_mgr()->GetType(instr->type_id());
+
+        spvtools::opt::analysis::Integer int_type(32, true);
+        ASSERT_TRUE(type && type->IsSame(&int_type));
+        ASSERT_TRUE(instr->GetSingleWordInOperand(0) == 2);
+        checks[2] = true;
+      } break;
+      case SpvOpConstantComposite: {
+        const auto* type =
+            recipient_context->get_type_mgr()->GetType(instr->type_id());
+
+        // Check that struct type corresponds to the one from the donor shader.
+        spvtools::opt::analysis::Integer int_type(32, true);
+        spvtools::opt::analysis::Bool bool_type;
+        spvtools::opt::analysis::Struct struct_type(
+            {&bool_type, &bool_type, &int_type});
+        ASSERT_TRUE(type && type->IsSame(&struct_type));
+
+        checks[3] = true;
+      } break;
+      default:
+        // We are not interested in other instructions
+        break;
+    }
+  }
+
+  ASSERT_TRUE(std::all_of(std::begin(checks), std::end(checks),
+                          [](bool a) { return a; }));
 }
 
 }  // namespace
