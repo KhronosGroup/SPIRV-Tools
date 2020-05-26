@@ -416,7 +416,7 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
     case SpvOpSpecConstantOp: {
       // Make sure the module contains an OpConstant instruction
       // that has suitable type.
-      FindOrCreateZeroConstant(type_or_value.type_id());
+      new_result_id = FindOrCreateZeroConstant(type_or_value.type_id());
     } break;
     case SpvOpSpecConstantTrue:
     case SpvOpSpecConstantFalse:
