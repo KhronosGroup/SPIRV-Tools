@@ -432,7 +432,8 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
     case SpvOpTypeFloat: {
       auto width = type_instruction->GetSingleWordInOperand(0);
       auto num_words = (width + 32 - 1) / 32;
-      return FindOrCreateFloatConstant(std::vector<uint32_t>(num_words, 0), width);
+      return FindOrCreateFloatConstant(std::vector<uint32_t>(num_words, 0),
+                                       width);
     }
     case SpvOpTypeInt: {
       auto width = type_instruction->GetSingleWordInOperand(0);
