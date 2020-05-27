@@ -382,7 +382,8 @@ bool spvOperandIsOptional(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER:
     case SPV_OPERAND_TYPE_OPTIONAL_CIV:
       return true;
-    default: break;
+    default:
+      break;
   }
   // Any variable operand is also optional.
   return spvOperandIsVariable(type);
@@ -395,7 +396,8 @@ bool spvOperandIsVariable(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID:
     case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER:
       return true;
-    default: break;
+    default:
+      break;
   }
   return false;
 }
