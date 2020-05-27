@@ -68,15 +68,6 @@ Instruction* DebugInfoManager::GetDbgInst(uint32_t id) {
   return dbg_inst_it == id_to_dbg_inst_.end() ? nullptr : dbg_inst_it->second;
 }
 
-Instruction* DebugInfoManager::GetDebugDeclareOrValueForLoadOrStore(
-    Instruction* load_or_store) {
-  auto dbg_decl_itr = var_load_store_to_dbg_decl_.find(load_or_store);
-  if (dbg_decl_itr != var_load_store_to_dbg_decl_.end()) {
-    return dbg_decl_itr->second;
-  }
-  return nullptr;
-}
-
 void DebugInfoManager::RegisterDbgInst(Instruction* inst) {
   assert(
       inst->NumInOperands() != 0 &&
@@ -296,10 +287,11 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
       std::move(new_inlined_at));
 }
 
-void DebugInfoManager::AddDebugValue(Instruction* load_or_store,
-                                     uint32_t variable_id, uint32_t value_id) {
+Instruction* DebugInfoManager::AddDebugValue(Instruction* instr,
+                                             uint32_t variable_id,
+                                             uint32_t value_id) {
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
-  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
+  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return nullptr;
 
   uint32_t result_id = context()->TakeNextId();
   std::unique_ptr<Instruction> new_dbg_value(new Instruction(
@@ -320,8 +312,9 @@ void DebugInfoManager::AddDebugValue(Instruction* load_or_store,
            {GetEmptyDebugExpression()->result_id()}},
       }));
   Instruction* added_dbg_value =
-      load_or_store->NextNode()->InsertBefore(std::move(new_dbg_value));
+      instr->NextNode()->InsertBefore(std::move(new_dbg_value));
   AnalyzeDebugInst(added_dbg_value);
+  return added_dbg_value;
 }
 
 void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
@@ -352,24 +345,6 @@ void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
   if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
     var_id_to_dbg_decl_[dbg_inst->GetSingleWordOperand(
         kDebugDeclareOperandVariableIndex)] = dbg_inst;
-  }
-
-  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
-      dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
-    uint32_t var_id =
-        dbg_inst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
-    for (Instruction* i = &*(dbg_inst->PreviousNode()); i != nullptr;
-         i = &*(i->PreviousNode())) {
-      bool operand_var_id_not_exist = i->WhileEachId(
-          [&var_id](const uint32_t* op_id) { return *op_id != var_id; });
-      if (!operand_var_id_not_exist) {
-        if (i->opcode() == SpvOpStore || i->opcode() == SpvOpLoad) {
-          assert(i->type_id() != var_id);
-          var_load_store_to_dbg_decl_[i] = dbg_inst;
-        }
-        break;
-      }
-    }
   }
 }
 

@@ -128,14 +128,10 @@ class DebugInfoManager {
   uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
                                     DebugInlinedAtContext* inlined_at_ctx);
 
-  // Returns the DebugDeclare or DebugValue instruction corresponding to the
-  // load or store instruction |load_or_store|.
-  Instruction* GetDebugDeclareOrValueForLoadOrStore(Instruction* load_or_store);
-
   // Creates a DebugValue whose 'Local Variable' and 'Value' operands are
-  // |variable_id| and |value_id| and inserts it after |load_or_store|.
-  void AddDebugValue(Instruction* load_or_store, uint32_t variable_id,
-                     uint32_t value_id);
+  // |variable_id| and |value_id| and inserts it after |instr|.
+  Instruction* AddDebugValue(Instruction* instr, uint32_t variable_id,
+                             uint32_t value_id);
 
  private:
   IRContext* context() { return context_; }
@@ -172,10 +168,6 @@ class DebugInfoManager {
   // Mapping from local variable ids to DebugDeclare instructions whose
   // operand is the local variable.
   std::unordered_map<uint32_t, Instruction*> var_id_to_dbg_decl_;
-
-  // Mapping from OpStore or OpLoad instructions for local variables to
-  // their corresponding DebugDeclare or DebugValue instructions.
-  std::unordered_map<Instruction*, Instruction*> var_load_store_to_dbg_decl_;
 
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.

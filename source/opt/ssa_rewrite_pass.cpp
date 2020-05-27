@@ -307,10 +307,10 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   }
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
-    if (pass_->get_debug_info_mgr()->GetDebugDeclareOrValueForLoadOrStore(
-            inst) == nullptr) {
-      pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
-    }
+    Instruction* dbg_val =
+        pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
+    if (dbg_val != nullptr)
+      pass_->get_def_use_mgr()->AnalyzeInstDefUse(dbg_val);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -336,10 +336,6 @@ bool SSARewriter::ProcessLoad(Instruction* inst, BasicBlock* bb) {
     const uint32_t load_id = inst->result_id();
     assert(load_replacement_.count(load_id) == 0);
     load_replacement_[load_id] = val_id;
-    if (pass_->get_debug_info_mgr()->GetDebugDeclareOrValueForLoadOrStore(
-            inst) == nullptr) {
-      pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
-    }
     PhiCandidate* defining_phi = GetPhiCandidate(val_id);
     if (defining_phi) {
       defining_phi->AddUser(load_id);
@@ -445,6 +441,8 @@ bool SSARewriter::ApplyReplacements() {
 
   // Add Phi instructions from completed Phi candidates.
   std::vector<Instruction*> generated_phis;
+  // Add DebugValue instructions for Phi instructions.
+  std::vector<Instruction*> dbg_values_for_phis;
   for (const PhiCandidate* phi_candidate : phis_to_generate_) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 2
     std::cerr << "Phi candidate: " << phi_candidate->PrettyPrint(pass_->cfg())
@@ -487,10 +485,15 @@ bool SSARewriter::ApplyReplacements() {
     pass_->get_def_use_mgr()->AnalyzeInstDef(&*phi_inst);
     pass_->context()->set_instr_block(&*phi_inst, phi_candidate->bb());
     auto insert_it = phi_candidate->bb()->begin();
-    insert_it.InsertBefore(std::move(phi_inst));
+    insert_it = insert_it.InsertBefore(std::move(phi_inst));
     pass_->context()->get_decoration_mgr()->CloneDecorations(
         phi_candidate->var_id(), phi_candidate->result_id(),
         {SpvDecorationRelaxedPrecision});
+
+    // Add DebugValue for the new OpPhi instruction.
+    Instruction* dbg_val = pass_->get_debug_info_mgr()->AddDebugValue(
+        &*insert_it, phi_candidate->var_id(), phi_candidate->result_id());
+    if (dbg_val != nullptr) dbg_values_for_phis.push_back(dbg_val);
 
     modified = true;
   }
@@ -500,6 +503,9 @@ bool SSARewriter::ApplyReplacements() {
   // of Phi instructions that have not been registered yet.
   for (Instruction* phi_inst : generated_phis) {
     pass_->get_def_use_mgr()->AnalyzeInstUse(&*phi_inst);
+  }
+  for (Instruction* dbg_val : dbg_values_for_phis) {
+    pass_->get_def_use_mgr()->AnalyzeInstDefUse(dbg_val);
   }
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
