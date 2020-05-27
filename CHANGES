@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2020.4-dev 2020-05-27
+ - Start v2020.4-dev
+
 v2020.3 2020-05-27
  - General
    - Prevent Effcee install his things when build spirv-tools with testing enabled (#3256)
