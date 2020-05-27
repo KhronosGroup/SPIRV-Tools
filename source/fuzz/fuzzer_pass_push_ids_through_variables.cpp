@@ -16,9 +16,6 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_add_global_variable.h"
-#include "source/fuzz/transformation_add_local_variable.h"
-#include "source/fuzz/transformation_add_type_pointer.h"
 #include "source/fuzz/transformation_push_id_through_variable.h"
 
 namespace spvtools {
@@ -96,42 +93,15 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
           return;
         }
 
-        // Gets type pointer ids to the basic type.
-        auto& basic_type_to_pointers = basic_type_ids_and_pointers.second;
-        std::vector<uint32_t>& type_pointer_ids =
-            basic_type_to_pointers.at(basic_type_id);
-        uint32_t type_pointer_id;
-
-        // Gets the type pointer id.
-        if (type_pointer_ids.empty()) {
-          type_pointer_id = GetFuzzerContext()->GetFreshId();
-          ApplyTransformation(TransformationAddTypePointer(
-              type_pointer_id, variable_storage_class, basic_type_id));
-          type_pointer_ids.push_back(type_pointer_id);
-        } else {
-          type_pointer_id = type_pointer_ids[GetFuzzerContext()->RandomIndex(
-              type_pointer_ids)];
-        }
-
-        // Adds whether a global or local variable.
-        uint32_t variable_id = GetFuzzerContext()->GetFreshId();
-        if (variable_storage_class == SpvStorageClassPrivate) {
-          ApplyTransformation(TransformationAddGlobalVariable(
-              variable_id, type_pointer_id, variable_storage_class,
-              FindOrCreateZeroConstant(basic_type_id), false));
-        } else {
-          ApplyTransformation(TransformationAddLocalVariable(
-              variable_id, type_pointer_id, function->result_id(),
-              FindOrCreateZeroConstant(basic_type_id), false));
-        }
-
         // Applies the push id through variable transformation.
         ApplyTransformation(TransformationPushIdThroughVariable(
-            GetFuzzerContext()->GetFreshId(),
             value_instructions[GetFuzzerContext()->RandomIndex(
                                    value_instructions)]
                 ->result_id(),
-            variable_id, instruction_descriptor));
+            GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+            FindOrCreatePointerType(basic_type_id, variable_storage_class),
+            variable_storage_class, function->result_id(),
+            instruction_descriptor));
       });
 }
 

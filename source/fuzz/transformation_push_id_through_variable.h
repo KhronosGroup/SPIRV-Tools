@@ -29,15 +29,21 @@ class TransformationPushIdThroughVariable : public Transformation {
       const protobufs::TransformationPushIdThroughVariable& message);
 
   TransformationPushIdThroughVariable(
-      uint32_t value_synonym_id, uint32_t value_id, uint32_t variable_id,
+      uint32_t value_id, uint32_t value_synonym_fresh_id,
+      uint32_t variable_fresh_id, uint32_t pointer_type_id,
+      uint32_t variable_storage_class, uint32_t function_id,
       const protobufs::InstructionDescriptor& instruction_descriptor);
 
-  // - |message_.value_synonym_id| must be fresh
-  // - |message_.variable_id| must be the id of a variable
-  // - The variable type must not have read-only storage class
-  // - The variable must not be OpConstantNull or OpUndef
   // - |message_.value_id| must be an instruction result id that has the same
   //   type as the pointee type of |message_.pointer_id|
+  // - |message_.value_synonym_id| must be fresh
+  // - |message_.variable_id| must be fresh
+  // - |message_.pointer_id| must point to an object with the same type as the
+  // |message_.value_id|
+  // - |message_.variable_storage_class| must be either StorageClassPrivate or
+  // StorageClassFunction
+  // - |message_.function_id| must identify the function containing
+  // |message_.instruction_descriptor|
   // - |message_.instruction_descriptor| must identify an instruction
   //   which it is valid to insert the OpStore and OpLoad instructions before it
   //   and must be belongs to a reachable block.
