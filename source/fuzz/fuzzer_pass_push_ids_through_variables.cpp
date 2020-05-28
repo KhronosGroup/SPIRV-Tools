@@ -100,8 +100,7 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
                 ->result_id(),
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
             FindOrCreatePointerType(basic_type_id, variable_storage_class),
-            variable_storage_class, function->result_id(),
-            instruction_descriptor));
+            variable_storage_class, instruction_descriptor));
       });
 }
 

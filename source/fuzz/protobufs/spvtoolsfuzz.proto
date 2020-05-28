@@ -1005,12 +1005,9 @@ message TransformationPushIdThroughVariable {
   // The variable storage class (global or local).
   uint32 variable_storage_class = 5;
 
-  // The function containing the instruction to insert before.
-  uint32 function_id = 6;
-
   // A descriptor for an instruction which the new OpStore
   // and OpLoad instructions might be inserted before.
-  InstructionDescriptor instruction_descriptor = 7;
+  InstructionDescriptor instruction_descriptor = 6;
 
 }
 

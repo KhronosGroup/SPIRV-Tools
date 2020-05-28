@@ -33,14 +33,12 @@ TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
 TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
     uint32_t value_id, uint32_t value_synonym_id, uint32_t variable_id,
     uint32_t pointer_type_id, uint32_t variable_storage_class,
-    uint32_t function_id,
     const protobufs::InstructionDescriptor& instruction_descriptor) {
   message_.set_value_id(value_id);
   message_.set_value_synonym_id(value_synonym_id);
   message_.set_variable_id(variable_id);
   message_.set_pointer_type_id(pointer_type_id);
   message_.set_variable_storage_class(variable_storage_class);
-  message_.set_function_id(function_id);
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
 }
 
@@ -107,15 +105,6 @@ bool TransformationPushIdThroughVariable::IsApplicable(
     return false;
   }
 
-  // The function containing |message_.function_id| must be defined,
-  // must be an OpFunction instruction and must be the function where
-  // the |message_.instruction_descriptor| is defined.
-  auto function = fuzzerutil::FindFunction(ir_context, message_.function_id());
-  if (!function || function->DefInst().opcode() != SpvOpFunction ||
-      function != basic_block->GetParent()) {
-    return false;
-  }
-
   // |message_.value_id| must be available at the insertion point.
   return fuzzerutil::IdIsAvailableBeforeInstruction(
       ir_context, instruction_to_insert_before, message_.value_id());
@@ -133,7 +122,10 @@ void TransformationPushIdThroughVariable::Apply(
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}})));
   } else {
-    fuzzerutil::FindFunction(ir_context, message_.function_id())
+    ir_context
+        ->get_instr_block(
+            FindInstruction(message_.instruction_descriptor(), ir_context))
+        ->GetParent()
         ->begin()
         ->begin()
         ->InsertBefore(MakeUnique<opt::Instruction>(
