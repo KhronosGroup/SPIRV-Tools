@@ -48,7 +48,8 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
           return;
         }
 
-        // The instruction to insert before containing block must be reachable.
+        // The block containing the instruction we are going to insert before
+        // must be reachable.
         if (!fuzzerutil::BlockIsReachableInItsFunction(GetIRContext(), block)) {
           return;
         }
@@ -63,12 +64,9 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
         }
 
         // Randomly decides whether a global or local variable will be added.
-        SpvStorageClass variable_storage_class;
-        if (GetFuzzerContext()->ChooseEven()) {
-          variable_storage_class = SpvStorageClassPrivate;
-        } else {
-          variable_storage_class = SpvStorageClassFunction;
-        }
+        auto variable_storage_class = GetFuzzerContext()->ChooseEven()
+                                          ? SpvStorageClassPrivate
+                                          : SpvStorageClassFunction;
 
         // Gets the available basic and pointer types.
         auto basic_type_ids_and_pointers =
@@ -77,7 +75,8 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
         uint32_t basic_type_id =
             basic_types[GetFuzzerContext()->RandomIndex(basic_types)];
 
-        // Looks for values we might consider to store.
+        // Looks for ids that we might wish to consider pushing through a
+        // variable.
         std::vector<opt::Instruction*> value_instructions =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
@@ -99,7 +98,6 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
                                    value_instructions)]
                 ->result_id(),
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
-            FindOrCreatePointerType(basic_type_id, variable_storage_class),
             variable_storage_class, instruction_descriptor));
       });
 }

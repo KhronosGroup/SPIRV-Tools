@@ -105,13 +105,12 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   uint32_t value_id = 21;
   uint32_t value_synonym_id = 62;
   uint32_t variable_id = 63;
-  uint32_t pointer_type_id = 51;
   uint32_t variable_storage_class = SpvStorageClassPrivate;
   auto instruction_descriptor =
       MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
   auto transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
@@ -119,25 +118,11 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   value_id = 80;
   value_synonym_id = 60;
   variable_id = 61;
-  pointer_type_id = 9;
   variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
-  ASSERT_FALSE(
-      transformation.IsApplicable(context.get(), transformation_context));
-
-  // Tests pointer type instruction is not an OpTypePointer instruction.
-  value_id = 80;
-  value_synonym_id = 62;
-  variable_id = 63;
-  pointer_type_id = 7;
-  variable_storage_class = SpvStorageClassFunction;
-  instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
-  transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
@@ -146,12 +131,11 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   value_id = 24;
   value_synonym_id = 62;
   variable_id = 63;
-  pointer_type_id = 25;
   variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(27, SpvOpVariable, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
@@ -159,38 +143,53 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   value_id = 64;
   value_synonym_id = 62;
   variable_id = 63;
-  pointer_type_id = 25;
   variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  // Tests pointer and value with different types.
-  value_id = 14;
+  // Tests pointer type not available.
+  value_id = 21;
   value_synonym_id = 62;
   variable_id = 63;
-  pointer_type_id = 25;
-  variable_storage_class = SpvStorageClassFunction;
-  instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
+  variable_storage_class = SpvStorageClassInput;
+  instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
-  ASSERT_FALSE(
-      transformation.IsApplicable(context.get(), transformation_context));
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      transformation.IsApplicable(context.get(), transformation_context),
+      "The required pointer type must be available");
+#endif
+
+  // Tests not a private nor function storage class.
+  value_id = 93;
+  value_synonym_id = 62;
+  variable_id = 63;
+  variable_storage_class = SpvStorageClassInput;
+  instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
+  transformation = TransformationPushIdThroughVariable(
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      transformation.IsApplicable(context.get(), transformation_context),
+      "The variable storage class must be private or function");
+#endif
 
   // Tests value instruction not available before instruction.
   value_id = 95;
   value_synonym_id = 62;
   variable_id = 63;
-  pointer_type_id = 9;
   variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(40, SpvOpAccessChain, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 }
@@ -276,57 +275,52 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
   uint32_t value_id = 80;
   uint32_t value_synonym_id = 100;
   uint32_t variable_id = 101;
-  uint32_t pointer_type_id = 9;
   uint32_t variable_storage_class = SpvStorageClassFunction;
   auto instruction_descriptor =
       MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
   auto transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_id = 21;
   value_synonym_id = 102;
   variable_id = 103;
-  pointer_type_id = 15;
   variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_id = 95;
   value_synonym_id = 104;
   variable_id = 105;
-  pointer_type_id = 9;
   variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_id = 80;
   value_synonym_id = 106;
   variable_id = 107;
-  pointer_type_id = 9;
-  variable_storage_class = SpvStorageClassPrivate;
+  variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   value_id = 21;
   value_synonym_id = 108;
   variable_id = 109;
-  pointer_type_id = 15;
   variable_storage_class = SpvStorageClassPrivate;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
   transformation = TransformationPushIdThroughVariable(
-      value_id, value_synonym_id, variable_id, pointer_type_id,
-      variable_storage_class, instruction_descriptor);
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
   std::string variant_shader = R"(
@@ -363,8 +357,7 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
          %91 = OpTypePointer Input %90
          %92 = OpVariable %91 Input
          %93 = OpConstantComposite %90 %24 %24 %24 %24
-        %107 = OpVariable %9 Private
-        %109 = OpVariable %15 Private
+        %109 = OpVariable %51 Private
           %4 = OpFunction %2 None %3
           %5 = OpLabel
         %103 = OpVariable %15 Function
@@ -397,6 +390,7 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
          %12 = OpFunction %6 None %10
          %11 = OpFunctionParameter %9
          %13 = OpLabel
+        %107 = OpVariable %9 Function
         %105 = OpVariable %9 Function
          %46 = OpCopyObject %9 %11
          %16 = OpAccessChain %15 %11 %14

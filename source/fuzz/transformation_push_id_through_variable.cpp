@@ -16,11 +16,6 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_add_global_variable.h"
-#include "source/fuzz/transformation_add_local_variable.h"
-#include "source/fuzz/transformation_add_type_pointer.h"
-#include "source/fuzz/transformation_load.h"
-#include "source/fuzz/transformation_store.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -32,12 +27,11 @@ TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
 
 TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
     uint32_t value_id, uint32_t value_synonym_id, uint32_t variable_id,
-    uint32_t pointer_type_id, uint32_t variable_storage_class,
+    uint32_t variable_storage_class,
     const protobufs::InstructionDescriptor& instruction_descriptor) {
   message_.set_value_id(value_id);
   message_.set_value_synonym_id(value_synonym_id);
   message_.set_variable_id(variable_id);
-  message_.set_pointer_type_id(pointer_type_id);
   message_.set_variable_storage_class(variable_storage_class);
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
 }
@@ -78,32 +72,16 @@ bool TransformationPushIdThroughVariable::IsApplicable(
     return false;
   }
 
-  // The pointer type instruction must be defined and be an OpTypePointer
-  // instruction.
-  auto pointer_type_instruction =
-      ir_context->get_def_use_mgr()->GetDef(message_.pointer_type_id());
-  if (!pointer_type_instruction ||
-      pointer_type_instruction->opcode() != SpvOpTypePointer) {
-    return false;
-  }
-
-  // The pointer type storage class must be equal to the variable storage class.
-  if (pointer_type_instruction->GetSingleWordInOperand(0) !=
-      message_.variable_storage_class()) {
-    return false;
-  }
-
-  // The pointee type must be equal to the value type.
-  if (pointer_type_instruction->GetSingleWordInOperand(1) !=
-      value_instruction->type_id()) {
-    return false;
-  }
+  // A pointer type instruction pointing to the value type must be defined.
+  auto pointer_type_id = fuzzerutil::MaybeGetPointerType(
+      ir_context, value_instruction->type_id(),
+      static_cast<SpvStorageClass>(message_.variable_storage_class()));
+  assert(pointer_type_id && "The required pointer type must be available.");
 
   // |message_.variable_storage_class| must be private or function.
-  if (message_.variable_storage_class() != SpvStorageClassPrivate &&
-      message_.variable_storage_class() != SpvStorageClassFunction) {
-    return false;
-  }
+  assert((message_.variable_storage_class() == SpvStorageClassPrivate ||
+          message_.variable_storage_class() == SpvStorageClassFunction) &&
+         "The variable storage class must be private or function.");
 
   // |message_.value_id| must be available at the insertion point.
   return fuzzerutil::IdIsAvailableBeforeInstruction(
@@ -113,12 +91,17 @@ bool TransformationPushIdThroughVariable::IsApplicable(
 void TransformationPushIdThroughVariable::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
+  auto value_instruction =
+      ir_context->get_def_use_mgr()->GetDef(message_.value_id());
+  auto pointer_type_id = fuzzerutil::MaybeGetPointerType(
+      ir_context, value_instruction->type_id(),
+      static_cast<SpvStorageClass>(message_.variable_storage_class()));
+
   // Adds whether a global or local variable.
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.variable_id());
   if (message_.variable_storage_class() == SpvStorageClassPrivate) {
     ir_context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpVariable, message_.pointer_type_id(),
-        message_.variable_id(),
+        ir_context, SpvOpVariable, pointer_type_id, message_.variable_id(),
         opt::Instruction::OperandList(
             {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}})));
   } else {
@@ -129,8 +112,7 @@ void TransformationPushIdThroughVariable::Apply(
         ->begin()
         ->begin()
         ->InsertBefore(MakeUnique<opt::Instruction>(
-            ir_context, SpvOpVariable, message_.pointer_type_id(),
-            message_.variable_id(),
+            ir_context, SpvOpVariable, pointer_type_id, message_.variable_id(),
             opt::Instruction::OperandList({{SPV_OPERAND_TYPE_STORAGE_CLASS,
                                             {SpvStorageClassFunction}}})));
   }
@@ -147,9 +129,7 @@ void TransformationPushIdThroughVariable::Apply(
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.value_synonym_id());
   FindInstruction(message_.instruction_descriptor(), ir_context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpLoad,
-          fuzzerutil::GetPointeeTypeIdFromPointerType(
-              ir_context, message_.pointer_type_id()),
+          ir_context, SpvOpLoad, value_instruction->type_id(),
           message_.value_synonym_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.variable_id()}}})));

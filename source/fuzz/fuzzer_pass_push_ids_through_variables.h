@@ -20,10 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
-// For each instruction with a descriptor, checks if OpStore and
-// OpLoad instructions can be inserted before it. So, randomly,
-// looks for values, adds whether a global or local variable
-// and applies the push id through variable transformation.
+// Adds instructions to the module that store existing ids into fresh variables
+// and immediately load from said variables into new ids, thus creating synonyms
+// between the existing and fresh ids.
 class FuzzerPassPushIdsThroughVariables : public FuzzerPass {
  public:
   FuzzerPassPushIdsThroughVariables(
