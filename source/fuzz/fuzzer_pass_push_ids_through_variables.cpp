@@ -92,6 +92,9 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
           return;
         }
 
+        // If the pointer type does not exist, then create it.
+        FindOrCreatePointerType(basic_type_id, variable_storage_class);
+
         // Applies the push id through variable transformation.
         ApplyTransformation(TransformationPushIdThroughVariable(
             value_instructions[GetFuzzerContext()->RandomIndex(
