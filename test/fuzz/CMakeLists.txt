@@ -58,6 +58,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_move_block_down_test.cpp
           transformation_outline_function_test.cpp
           transformation_permute_function_parameters_test.cpp
+          transformation_push_id_through_variable_test.cpp
           transformation_replace_boolean_constant_with_constant_binary_test.cpp
           transformation_replace_constant_with_uniform_test.cpp
           transformation_replace_id_with_synonym_test.cpp
