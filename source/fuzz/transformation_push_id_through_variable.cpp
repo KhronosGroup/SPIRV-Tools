@@ -51,17 +51,17 @@ bool TransformationPushIdThroughVariable::IsApplicable(
     return false;
   }
 
-  // The instruction to insert before must belong to a reachable block.
-  auto basic_block = ir_context->get_instr_block(instruction_to_insert_before);
-  if (!fuzzerutil::BlockIsReachableInItsFunction(ir_context, basic_block)) {
-    return false;
-  }
-
   // It must be valid to insert the OpStore and OpLoad instruction before it.
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
           SpvOpStore, instruction_to_insert_before) ||
       !fuzzerutil::CanInsertOpcodeBeforeInstruction(
           SpvOpLoad, instruction_to_insert_before)) {
+    return false;
+  }
+
+  // The instruction to insert before must belong to a reachable block.
+  auto basic_block = ir_context->get_instr_block(instruction_to_insert_before);
+  if (!fuzzerutil::BlockIsReachableInItsFunction(ir_context, basic_block)) {
     return false;
   }
 
@@ -76,7 +76,9 @@ bool TransformationPushIdThroughVariable::IsApplicable(
   auto pointer_type_id = fuzzerutil::MaybeGetPointerType(
       ir_context, value_instruction->type_id(),
       static_cast<SpvStorageClass>(message_.variable_storage_class()));
-  assert(pointer_type_id && "The required pointer type must be available.");
+  if (!pointer_type_id) {
+    return false;
+  }
 
   // |message_.variable_storage_class| must be private or function.
   assert((message_.variable_storage_class() == SpvStorageClassPrivate ||
@@ -93,9 +95,12 @@ void TransformationPushIdThroughVariable::Apply(
     TransformationContext* transformation_context) const {
   auto value_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.value_id());
+
+  // A pointer type instruction pointing to the value type must be defined.
   auto pointer_type_id = fuzzerutil::MaybeGetPointerType(
       ir_context, value_instruction->type_id(),
       static_cast<SpvStorageClass>(message_.variable_storage_class()));
+  assert(pointer_type_id && "The required pointer type must be available.");
 
   // Adds whether a global or local variable.
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.variable_id());

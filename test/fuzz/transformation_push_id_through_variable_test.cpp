@@ -85,6 +85,8 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
          %16 = OpAccessChain %15 %11 %14
          %95 = OpCopyObject %8 %80
                OpReturnValue %21
+        %100 = OpLabel
+               OpUnreachable
                OpFunctionEnd
   )";
 
@@ -126,6 +128,18 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
+  // The instruction to insert before is not defined.
+  value_id = 80;
+  value_synonym_id = 62;
+  variable_id = 63;
+  variable_storage_class = SpvStorageClassFunction;
+  instruction_descriptor = MakeInstructionDescriptor(64, SpvOpAccessChain, 0);
+  transformation = TransformationPushIdThroughVariable(
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
   // Attempting to insert the store and load instructions
   // before an OpVariable instruction.
   value_id = 24;
@@ -133,6 +147,18 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   variable_id = 63;
   variable_storage_class = SpvStorageClassFunction;
   instruction_descriptor = MakeInstructionDescriptor(27, SpvOpVariable, 0);
+  transformation = TransformationPushIdThroughVariable(
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      instruction_descriptor);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // The block containing instruction descriptor must be reachable.
+  value_id = 80;
+  value_synonym_id = 62;
+  variable_id = 63;
+  variable_storage_class = SpvStorageClassFunction;
+  instruction_descriptor = MakeInstructionDescriptor(100, SpvOpUnreachable, 0);
   transformation = TransformationPushIdThroughVariable(
       value_id, value_synonym_id, variable_id, variable_storage_class,
       instruction_descriptor);
@@ -152,19 +178,16 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests pointer type not available.
-  value_id = 21;
+  value_id = 80;
   value_synonym_id = 62;
   variable_id = 63;
-  variable_storage_class = SpvStorageClassInput;
+  variable_storage_class = SpvStorageClassPrivate;
   instruction_descriptor = MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
   transformation = TransformationPushIdThroughVariable(
       value_id, value_synonym_id, variable_id, variable_storage_class,
       instruction_descriptor);
-#ifndef NDEBUG
-  ASSERT_DEATH(
-      transformation.IsApplicable(context.get(), transformation_context),
-      "The required pointer type must be available");
-#endif
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests not a private nor function storage class.
   value_id = 93;
