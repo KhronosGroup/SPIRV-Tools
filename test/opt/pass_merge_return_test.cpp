@@ -680,7 +680,7 @@ TEST_F(MergeReturnPassTest, DebugSplitBlockUsedInPhi) {
 
 ; CHECK:      OpStore [[return_in_loop:%\w+]] %true
 ; CHECK-NEXT: DebugScope
-; CHECK-NEXT: OpLine {{%\d+}} 300 0
+; CHECK-NEXT: OpLine {{%\d+}} 200 0
 ; CHECK-NEXT: OpBranch [[check_early_return:%\w+]]
 
 ; CHECK:      [[check_early_return]] = OpLabel
@@ -690,12 +690,12 @@ TEST_F(MergeReturnPassTest, DebugSplitBlockUsedInPhi) {
 
 ; CHECK:      [[not_early_return]] = OpLabel
 ; CHECK-NEXT: DebugScope
-; CHECK-NEXT: OpLine {{%\d+}} 500 0
+; CHECK-NEXT: OpLine {{%\d+}} 400 0
 ; CHECK:      OpSelectionMerge [[merge2:%\w+]] None
 
 ; CHECK:      [[merge2]] = OpLabel
 ; CHECK-NEXT: DebugScope
-; CHECK-NEXT: OpLine {{%\d+}} 800 0
+; CHECK-NEXT: OpLine {{%\d+}} 600 0
 ; CHECK-NEXT: [[phi:%\w+]] = OpPhi %bool %false {{%\d+}} %true [[not_early_return]]
 ; CHECK-NEXT: DebugValue {{%\d+}} [[phi]]
 
@@ -723,29 +723,27 @@ TEST_F(MergeReturnPassTest, DebugSplitBlockUsedInPhi) {
          %s0 = OpExtInst %void %ext DebugScope %cu
                OpLine %tn 100 0
                OpLoopMerge %merge %cont None
-               OpLine %tn 200 0
                OpBranchConditional %false %9 %merge
           %9 = OpLabel
          %s1 = OpExtInst %void %ext DebugScope %cu
-               OpLine %tn 300 0
+               OpLine %tn 200 0
                OpReturn
        %cont = OpLabel
          %s2 = OpExtInst %void %ext DebugScope %cu
-               OpLine %tn 400 0
+               OpLine %tn 300 0
                OpBranch %7
       %merge = OpLabel
          %s3 = OpExtInst %void %ext DebugScope %cu
-               OpLine %tn 500 0
+               OpLine %tn 400 0
                OpSelectionMerge %merge2 None
-               OpLine %tn 600 0
                OpBranchConditional %false %if %merge2
          %if = OpLabel
          %s4 = OpExtInst %void %ext DebugScope %cu
-               OpLine %tn 700 0
+               OpLine %tn 500 0
                OpBranch %merge2
      %merge2 = OpLabel
          %s5 = OpExtInst %void %ext DebugScope %cu
-               OpLine %tn 800 0
+               OpLine %tn 600 0
          %12 = OpPhi %bool %false %if %true %merge
          %dv = OpExtInst %void %ext DebugValue %v %12 %expr
                OpLine %tn 900 0
