@@ -39,6 +39,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass.h
         fuzzer_pass_add_access_chains.h
         fuzzer_pass_add_composite_types.h
+        fuzzer_pass_add_copy_memory_instructions.h
         fuzzer_pass_add_dead_blocks.h
         fuzzer_pass_add_dead_breaks.h
         fuzzer_pass_add_dead_continues.h
@@ -87,6 +88,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_constant_composite.h
         transformation_add_constant_null.h
         transformation_add_constant_scalar.h
+        transformation_add_copy_memory.h
         transformation_add_dead_block.h
         transformation_add_dead_break.h
         transformation_add_dead_continue.h
@@ -147,6 +149,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass.cpp
         fuzzer_pass_add_access_chains.cpp
         fuzzer_pass_add_composite_types.cpp
+        fuzzer_pass_add_copy_memory_instructions.cpp
         fuzzer_pass_add_dead_blocks.cpp
         fuzzer_pass_add_dead_breaks.cpp
         fuzzer_pass_add_dead_continues.cpp
@@ -194,6 +197,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_constant_composite.cpp
         transformation_add_constant_null.cpp
         transformation_add_constant_scalar.cpp
+        transformation_add_copy_memory.cpp
         transformation_add_dead_block.cpp
         transformation_add_dead_break.cpp
         transformation_add_dead_continue.cpp

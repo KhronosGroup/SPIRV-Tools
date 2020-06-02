@@ -381,6 +381,7 @@ message Transformation {
     TransformationSwapConditionalBranchOperands swap_conditional_branch_operands = 50;
     TransformationPermutePhiOperands permute_phi_operands = 51;
     TransformationAddParameter add_parameter = 52;
+    TransformationAddCopyMemory add_copy_memory = 53;
     // Add additional option using the next available number.
   }
 }
@@ -455,6 +456,21 @@ message TransformationAddConstantScalar {
 
   // Value of the constant
   repeated uint32 word = 3;
+
+}
+
+message TransformationAddCopyMemory {
+
+  // Adds an OpCopyMemory instruction into the module.
+
+  // OpCopyMemory will be inserted before this instruction.
+  InstructionDescriptor instruction_descriptor = 1;
+
+  // Target to copy memory into.
+  uint32 target_id = 2;
+
+  // Source to copy memory from.
+  uint32 source_id = 3;
 
 }
 
