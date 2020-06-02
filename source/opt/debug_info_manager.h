@@ -133,6 +133,9 @@ class DebugInfoManager {
   Instruction* AddDebugValue(Instruction* instr, uint32_t variable_id,
                              uint32_t value_id);
 
+  // Erases |instr| from data structures of this class.
+  void ClearDebugInfo(Instruction* instr);
+
  private:
   IRContext* context() { return context_; }
 

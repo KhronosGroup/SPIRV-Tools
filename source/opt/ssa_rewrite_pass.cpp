@@ -618,6 +618,8 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
             << fp->PrettyPrint(0) << "\n";
 #endif
 
+  if (modified) pass_->context()->KillDebugDeclareInsts(fp);
+
   return modified ? Pass::Status::SuccessWithChange
                   : Pass::Status::SuccessWithoutChange;
 }

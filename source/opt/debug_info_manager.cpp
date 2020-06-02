@@ -57,6 +57,12 @@ uint32_t GetInlinedOperand(Instruction* dbg_inlined_at) {
       kDebugInlinedAtOperandInlinedIndex);
 }
 
+bool IsEmptyDebugExpression(Instruction* instr) {
+  return instr->GetOpenCL100DebugOpcode() ==
+             OpenCLDebugInfo100DebugExpression &&
+         instr->NumOperands() == kDebugExpressOperandOperationIndex;
+}
+
 }  // namespace
 
 DebugInfoManager::DebugInfoManager(IRContext* c) : context_(c) {
@@ -335,10 +341,7 @@ void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
     debug_info_none_inst_ = dbg_inst;
   }
 
-  if (empty_debug_expr_inst_ == nullptr &&
-      dbg_inst->GetOpenCL100DebugOpcode() ==
-          OpenCLDebugInfo100DebugExpression &&
-      dbg_inst->NumOperands() == kDebugExpressOperandOperationIndex) {
+  if (empty_debug_expr_inst_ == nullptr && IsEmptyDebugExpression(dbg_inst)) {
     empty_debug_expr_inst_ = dbg_inst;
   }
 
@@ -371,6 +374,50 @@ void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
           OpenCLDebugInfo100InstructionsMax) {
     debug_info_none_inst_->InsertBefore(
         &*context()->module()->ext_inst_debuginfo_begin());
+  }
+}
+
+void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
+  if (instr == nullptr ||
+      instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100InstructionsMax) {
+    return;
+  }
+
+  id_to_dbg_inst_.erase(instr->result_id());
+
+  if (instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugFunction) {
+    auto fn_id =
+        instr->GetSingleWordOperand(kDebugFunctionOperandFunctionIndex);
+    fn_id_to_dbg_fn_.erase(fn_id);
+  }
+
+  if (instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
+    auto var_id =
+        instr->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
+    var_id_to_dbg_decl_.erase(var_id);
+  }
+
+  if (debug_info_none_inst_ == instr) {
+    debug_info_none_inst_ = nullptr;
+    for (auto dbg_instr_itr = context()->module()->ext_inst_debuginfo_begin();
+         dbg_instr_itr != context()->module()->ext_inst_debuginfo_end();
+         ++dbg_instr_itr) {
+      if (dbg_instr_itr->GetOpenCL100DebugOpcode() ==
+          OpenCLDebugInfo100DebugInfoNone) {
+        debug_info_none_inst_ = &*dbg_instr_itr;
+      }
+    }
+  }
+
+  if (empty_debug_expr_inst_ == instr) {
+    empty_debug_expr_inst_ = nullptr;
+    for (auto dbg_instr_itr = context()->module()->ext_inst_debuginfo_begin();
+         dbg_instr_itr != context()->module()->ext_inst_debuginfo_end();
+         ++dbg_instr_itr) {
+      if (IsEmptyDebugExpression(&*dbg_instr_itr)) {
+        empty_debug_expr_inst_ = &*dbg_instr_itr;
+      }
+    }
   }
 }
 

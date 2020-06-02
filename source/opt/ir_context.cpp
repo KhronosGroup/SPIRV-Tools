@@ -179,6 +179,9 @@ Instruction* IRContext::KillInst(Instruction* inst) {
       decoration_mgr_->RemoveDecoration(inst);
     }
   }
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->ClearDebugInfo(inst);
+  }
   if (type_mgr_ && IsTypeInst(inst->opcode())) {
     type_mgr_->RemoveId(inst->result_id());
   }
@@ -216,6 +219,13 @@ bool IRContext::KillDef(uint32_t id) {
     return true;
   }
   return false;
+}
+
+void IRContext::KillDebugDeclareInsts(Function* fn) {
+  fn->ForEachInst([this](Instruction* inst) {
+    if (inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare)
+      KillInst(inst);
+  });
 }
 
 bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
