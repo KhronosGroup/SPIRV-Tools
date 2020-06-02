@@ -99,6 +99,78 @@ OpFunctionEnd
   SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
+TEST_F(MergeReturnPassTest, DebugTwoReturnsNoValue) {
+  const std::string before =
+      R"(OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+%10 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %6 "simple_kernel"
+%11 = OpString "test"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%12 = OpExtInst %2 %10 DebugSource %11
+%13 = OpExtInst %2 %10 DebugCompilationUnit 1 4 %12 HLSL
+%14 = OpExtInst %2 %10 DebugTypeFunction FlagIsProtected|FlagIsPrivate %2
+%15 = OpExtInst %2 %10 DebugFunction %11 %14 %12 0 0 %13 %11 FlagIsProtected|FlagIsPrivate 0 %6
+%6 = OpFunction %2 None %1
+%7 = OpLabel
+OpBranchConditional %4 %8 %9
+%8 = OpLabel
+%16 = OpExtInst %2 %10 DebugScope %15
+OpLine %11 100 0
+OpReturn
+%9 = OpLabel
+%17 = OpExtInst %2 %10 DebugScope %13
+OpLine %11 200 0
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+%10 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %6 "simple_kernel"
+%11 = OpString "test"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%12 = OpExtInst %2 %10 DebugSource %11
+%13 = OpExtInst %2 %10 DebugCompilationUnit 1 4 %12 HLSL
+%14 = OpExtInst %2 %10 DebugTypeFunction FlagIsProtected|FlagIsPrivate %2
+%15 = OpExtInst %2 %10 DebugFunction %11 %14 %12 0 0 %13 %11 FlagIsProtected|FlagIsPrivate 0 %6
+%6 = OpFunction %2 None %1
+%7 = OpLabel
+OpBranchConditional %4 %8 %9
+%8 = OpLabel
+%19 = OpExtInst %2 %10 DebugScope %15
+OpLine %11 100 0
+OpBranch %18
+%20 = OpExtInst %2 %10 DebugNoScope
+%9 = OpLabel
+%21 = OpExtInst %2 %10 DebugScope %13
+OpLine %11 200 0
+OpBranch %18
+%22 = OpExtInst %2 %10 DebugNoScope
+%18 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
+}
+
 TEST_F(MergeReturnPassTest, TwoReturnsWithValues) {
   const std::string before =
       R"(OpCapability Linkage
@@ -261,6 +333,92 @@ OpFunctionEnd
   SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
+TEST_F(MergeReturnPassTest, DebugUnreachableReturnsWithValues) {
+  const std::string before =
+      R"(OpCapability Linkage
+OpCapability Kernel
+%13 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical OpenCL
+%14 = OpString "test"
+OpDecorate %7 LinkageAttributes "simple_kernel" Export
+%1 = OpTypeInt 32 0
+%20 = OpTypeVoid
+%2 = OpTypeBool
+%3 = OpConstantFalse %2
+%4 = OpConstant %1 0
+%5 = OpConstant %1 1
+%6 = OpTypeFunction %1
+%15 = OpExtInst %20 %13 DebugSource %14
+%16 = OpExtInst %20 %13 DebugCompilationUnit 1 4 %15 HLSL
+%17 = OpExtInst %20 %13 DebugTypeFunction FlagIsProtected|FlagIsPrivate %20
+%18 = OpExtInst %20 %13 DebugFunction %14 %17 %15 0 0 %16 %14 FlagIsProtected|FlagIsPrivate 0 %7
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+%9 = OpIAdd %1 %4 %5
+%19 = OpExtInst %20 %13 DebugScope %18
+OpLine %14 100 0
+OpReturnValue %9
+%10 = OpLabel
+OpBranchConditional %3 %11 %12
+%11 = OpLabel
+%21 = OpExtInst %20 %13 DebugScope %16
+OpLine %14 200 0
+OpReturnValue %4
+%12 = OpLabel
+%22 = OpExtInst %20 %13 DebugScope %18
+OpLine %14 300 0
+OpReturnValue %5
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Linkage
+OpCapability Kernel
+%13 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical OpenCL
+%14 = OpString "test"
+OpDecorate %7 LinkageAttributes "simple_kernel" Export
+%1 = OpTypeInt 32 0
+%20 = OpTypeVoid
+%2 = OpTypeBool
+%3 = OpConstantFalse %2
+%4 = OpConstant %1 0
+%5 = OpConstant %1 1
+%6 = OpTypeFunction %1
+%15 = OpExtInst %20 %13 DebugSource %14
+%16 = OpExtInst %20 %13 DebugCompilationUnit 1 4 %15 HLSL
+%17 = OpExtInst %20 %13 DebugTypeFunction FlagIsProtected|FlagIsPrivate %20
+%18 = OpExtInst %20 %13 DebugFunction %14 %17 %15 0 0 %16 %14 FlagIsProtected|FlagIsPrivate 0 %7
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+%9 = OpIAdd %1 %4 %5
+%25 = OpExtInst %20 %13 DebugScope %18
+OpLine %14 100 0
+OpBranch %23
+%26 = OpExtInst %20 %13 DebugNoScope
+%10 = OpLabel
+OpBranchConditional %3 %11 %12
+%11 = OpLabel
+%27 = OpExtInst %20 %13 DebugScope %16
+OpLine %14 200 0
+OpBranch %23
+%28 = OpExtInst %20 %13 DebugNoScope
+%12 = OpLabel
+%29 = OpExtInst %20 %13 DebugScope %18
+OpLine %14 300 0
+OpBranch %23
+%30 = OpExtInst %20 %13 DebugNoScope
+%23 = OpLabel
+%24 = OpPhi %1 %9 %8 %4 %11 %5 %12
+OpReturnValue %24
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
+}
+
 TEST_F(MergeReturnPassTest, StructuredControlFlowWithUnreachableMerge) {
   const std::string before =
       R"(
@@ -299,6 +457,68 @@ OpReturn
 %9 = OpLabel
 OpReturn
 %10 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
+
+TEST_F(MergeReturnPassTest, DebugStructuredControlFlowWithUnreachableMerge) {
+  const std::string before =
+      R"(
+; CHECK: [[false:%\w+]] = OpConstantFalse
+; CHECK: [[true:%\w+]] = OpConstantTrue
+; CHECK: OpFunction
+; CHECK: [[var:%\w+]] = OpVariable [[:%\w+]] Function [[false]]
+; CHECK: OpSelectionMerge [[return_block:%\w+]]
+; CHECK: OpSelectionMerge [[merge_lab:%\w+]]
+; CHECK: OpBranchConditional [[cond:%\w+]] [[if_lab:%\w+]] [[then_lab:%\w+]]
+; CHECK: [[if_lab]] = OpLabel
+; CHECK-NEXT: OpStore [[var]] [[true]]
+; CHECK-NEXT: DebugScope
+; CHECK-NEXT: OpLine {{%\d+}} 100 0
+; CHECK-NEXT: OpBranch [[return_block]]
+; CHECK: [[then_lab]] = OpLabel
+; CHECK-NEXT: OpStore [[var]] [[true]]
+; CHECK-NEXT: DebugScope
+; CHECK-NEXT: OpLine {{%\d+}} 200 0
+; CHECK-NEXT: OpBranch [[return_block]]
+; CHECK: [[merge_lab]] = OpLabel
+; CHECK-NEXT: DebugScope
+; CHECK-NEXT: OpLine {{%\d+}} 300 0
+; CHECK-NEXT: OpBranch [[return_block]]
+; CHECK: [[return_block]] = OpLabel
+; CHECK-NEXT: OpReturn
+OpCapability Addresses
+OpCapability Shader
+OpCapability Linkage
+%12 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %6 "simple_shader"
+%11 = OpString "test"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%13 = OpExtInst %2 %12 DebugSource %11
+%14 = OpExtInst %2 %12 DebugCompilationUnit 1 4 %13 HLSL
+%6 = OpFunction %2 None %1
+%7 = OpLabel
+OpSelectionMerge %10 None
+OpBranchConditional %4 %8 %9
+%8 = OpLabel
+%15 = OpExtInst %2 %12 DebugScope %14
+OpLine %11 100 0
+OpReturn
+%9 = OpLabel
+%16 = OpExtInst %2 %12 DebugScope %14
+OpLine %11 200 0
+OpReturn
+%10 = OpLabel
+%17 = OpExtInst %2 %12 DebugScope %14
+OpLine %11 300 0
 OpUnreachable
 OpFunctionEnd
 )";
@@ -444,6 +664,89 @@ TEST_F(MergeReturnPassTest, SplitBlockUsedInPhi) {
                OpBranch %merge2
      %merge2 = OpLabel
          %12 = OpPhi %bool %false %if %true %merge
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
+
+TEST_F(MergeReturnPassTest, DebugSplitBlockUsedInPhi) {
+  const std::string before =
+      R"(
+; CHECK:      DebugScope
+; CHECK-NEXT: OpLine {{%\d+}} 100 0
+; CHECK:      OpLoopMerge
+
+; CHECK:      OpStore [[return_in_loop:%\w+]] %true
+; CHECK-NEXT: DebugScope
+; CHECK-NEXT: OpLine {{%\d+}} 200 0
+; CHECK-NEXT: OpBranch [[check_early_return:%\w+]]
+
+; CHECK:      [[check_early_return]] = OpLabel
+; CHECK-NEXT: [[early_return:%\w+]] = OpLoad %bool [[return_in_loop]]
+; CHECK-NEXT: OpSelectionMerge [[not_early_return:%\w+]] None
+; CHECK-NEXT: OpBranchConditional [[early_return]] {{%\d+}} [[not_early_return]]
+
+; CHECK:      [[not_early_return]] = OpLabel
+; CHECK-NEXT: DebugScope
+; CHECK-NEXT: OpLine {{%\d+}} 400 0
+; CHECK:      OpSelectionMerge [[merge2:%\w+]] None
+
+; CHECK:      [[merge2]] = OpLabel
+; CHECK-NEXT: DebugScope
+; CHECK-NEXT: OpLine {{%\d+}} 600 0
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi %bool %false {{%\d+}} %true [[not_early_return]]
+; CHECK-NEXT: DebugValue {{%\d+}} [[phi]]
+
+               OpCapability Addresses
+               OpCapability Shader
+               OpCapability Linkage
+        %ext = OpExtInstImport "OpenCL.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "simple_shader"
+         %tn = OpString "test"
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+     %uint_8 = OpConstant %uint 8
+      %false = OpConstantFalse %bool
+       %true = OpConstantTrue %bool
+          %6 = OpTypeFunction %void
+        %src = OpExtInst %void %ext DebugSource %tn
+         %cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+         %ty = OpExtInst %void %ext DebugTypeBasic %tn %uint_8 Boolean
+          %v = OpExtInst %void %ext DebugLocalVariable %tn %ty %src 0 0 %cu FlagIsLocal
+       %expr = OpExtInst %void %ext DebugExpression
+          %1 = OpFunction %void None %6
+          %7 = OpLabel
+         %s0 = OpExtInst %void %ext DebugScope %cu
+               OpLine %tn 100 0
+               OpLoopMerge %merge %cont None
+               OpBranchConditional %false %9 %merge
+          %9 = OpLabel
+         %s1 = OpExtInst %void %ext DebugScope %cu
+               OpLine %tn 200 0
+               OpReturn
+       %cont = OpLabel
+         %s2 = OpExtInst %void %ext DebugScope %cu
+               OpLine %tn 300 0
+               OpBranch %7
+      %merge = OpLabel
+         %s3 = OpExtInst %void %ext DebugScope %cu
+               OpLine %tn 400 0
+               OpSelectionMerge %merge2 None
+               OpBranchConditional %false %if %merge2
+         %if = OpLabel
+         %s4 = OpExtInst %void %ext DebugScope %cu
+               OpLine %tn 500 0
+               OpBranch %merge2
+     %merge2 = OpLabel
+         %s5 = OpExtInst %void %ext DebugScope %cu
+               OpLine %tn 600 0
+         %12 = OpPhi %bool %false %if %true %merge
+         %dv = OpExtInst %void %ext DebugValue %v %12 %expr
+               OpLine %tn 900 0
                OpReturn
                OpFunctionEnd
 )";
