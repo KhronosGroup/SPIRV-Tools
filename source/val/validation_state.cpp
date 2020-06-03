@@ -359,6 +359,7 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
     case SpvCapabilityStorageBuffer8BitAccess:
     case SpvCapabilityUniformAndStorageBuffer8BitAccess:
     case SpvCapabilityStoragePushConstant8:
+    case SpvCapabilityWorkgroupMemoryExplicitLayout8BitAccessKHR:
       features_.declare_int8_type = true;
       break;
     case SpvCapabilityInt16:
@@ -372,6 +373,7 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
     case SpvCapabilityStorageUniform16:
     case SpvCapabilityStoragePushConstant16:
     case SpvCapabilityStorageInputOutput16:
+    case SpvCapabilityWorkgroupMemoryExplicitLayout16BitAccessKHR:
       features_.declare_int16_type = true;
       features_.declare_float16_type = true;
       features_.free_fp_rounding_mode = true;

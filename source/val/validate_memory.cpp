@@ -749,6 +749,11 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
             storage_class_ok = false;
           }
           break;
+        case SpvStorageClassWorkgroup:
+          if (!_.HasCapability(SpvCapabilityWorkgroupMemoryExplicitLayout16BitAccessKHR)) {
+            storage_class_ok = false;
+          }
+          break;
         default:
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << "Cannot allocate a variable containing a 16-bit type in "
@@ -797,6 +802,11 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
           break;
         case SpvStorageClassPushConstant:
           if (!_.HasCapability(SpvCapabilityStoragePushConstant8)) {
+            storage_class_ok = false;
+          }
+          break;
+        case SpvStorageClassWorkgroup:
+          if (!_.HasCapability(SpvCapabilityWorkgroupMemoryExplicitLayout8BitAccessKHR)) {
             storage_class_ok = false;
           }
           break;
