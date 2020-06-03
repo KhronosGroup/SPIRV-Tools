@@ -21,6 +21,8 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+// TODO: maybe it would be better to put this function into fuzzerutil
+//  so that we can use it in the fuzzer pass.
 bool CanCopyType(const opt::analysis::Type* type) {
   switch (type->kind()) {
     case opt::analysis::Type::kBool:
@@ -67,6 +69,11 @@ TransformationAddCopyMemory::TransformationAddCopyMemory(
 
 bool TransformationAddCopyMemory::IsApplicable(opt::IRContext* ir_context,
     const TransformationContext& /*unused*/) const {
+  // Check that target id is fresh.
+  if (!fuzzerutil::IsFreshId(ir_context, message_.target_id())) {
+    return false;
+  }
+
   // Check that instruction descriptor is valid.
   const auto* inst =
       FindInstruction(message_.instruction_descriptor(), ir_context);
@@ -103,23 +110,10 @@ bool TransformationAddCopyMemory::IsApplicable(opt::IRContext* ir_context,
     return false;
   }
 
-  // Check that result type of target instruction exists, OpTypePointer and is not opaque.
-  const auto* target_type_inst =
-      ir_context->get_def_use_mgr()->GetDef(target_inst->type_id());
-  if (!target_type_inst ||
-      target_type_inst->opcode() != SpvOpTypePointer ||
-      target_type_inst->IsOpaqueType()) {
-    return false;
-  }
-
-  // Check that result types of both source and target instructions point to the same type.
-  if (target_type_inst->GetSingleWordInOperand(1) !=
-      source_type_inst->GetSingleWordInOperand(1)) {
-    return false;
-  }
-
+  // Check that source type doesn't contain OpTypeRuntimeArray on any level
+  // in the type hierarchy.
   if (!CanCopyType(ir_context->get_type_mgr()->GetType(
-          target_type_inst->GetSingleWordInOperand(1)))) {
+          source_type_inst->GetSingleWordInOperand(1)))) {
     return false;
   }
 
@@ -128,19 +122,32 @@ bool TransformationAddCopyMemory::IsApplicable(opt::IRContext* ir_context,
 
 void TransformationAddCopyMemory::Apply(opt::IRContext* ir_context,
     TransformationContext* /*unused*/) const {
+  const auto* source_inst = ir_context->get_def_use_mgr()->GetDef(message_.source_id());
+  assert(source_inst && source_inst->type_id());
+
+  opt::Instruction::OperandList variable_operands = {
+      {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}};
+  ir_context->AddGlobalValue(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpVariable, source_inst->type_id(),
+      message_.target_id(), std::move(variable_operands)));
+
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3392):
+  //  uncomment when the issue is closed
+  // fuzzerutil::AddVariableIdToEntryPointInterfaces(ir_context, message_.target_id());
+
   const auto* insert_before_inst =
       FindInstruction(message_.instruction_descriptor(), ir_context);
   auto insert_before_iter = fuzzerutil::GetIteratorForInstruction(
       ir_context->get_instr_block(insert_before_inst->result_id()),
       insert_before_inst);
 
-  opt::Instruction::OperandList operands = {
+  opt::Instruction::OperandList copy_operands = {
     {SPV_OPERAND_TYPE_ID, {message_.target_id()}},
     {SPV_OPERAND_TYPE_ID, {message_.source_id()}}
   };
 
   insert_before_iter.InsertBefore(MakeUnique<opt::Instruction>(
-    ir_context, SpvOpCopyMemory, 0, 0, std::move(operands)));
+    ir_context, SpvOpCopyMemory, 0, 0, std::move(copy_operands)));
 
   // Make sure our changes are analyzed
   // TODO: not sure if we need to do this here.

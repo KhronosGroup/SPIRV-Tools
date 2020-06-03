@@ -34,15 +34,16 @@ class TransformationAddCopyMemory : public Transformation {
 
   // - |instruction_descriptor| must point to a valid instruction in the module.
   // - it should be possible to insert OpCopyMemory before |instruction_descriptor|
-  // (i.e. the module remains valid after the insertion).
-  // - |target_id| and |source_id| must be result ids for some valid instructions
-  // in the module.
-  // - types of |target_id| and |source_id| must be OpTypePointer and have the same
-  // pointee type.
+  //   (i.e. the module remains valid after the insertion).
+  // - |source_id| must be a result id for some valid instruction in the module.
+  // - |target_id| must be a fresh id.
+  // - type of |source_id| must be OpTypePointer where pointee doesn't contain
+  //   OpTypeRuntimeArray.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // A global variable with id |target_id| and private storage class is created.
   // An 'OpCopyMemory %target_id %source_id' instruction is inserted before the
   // |instruction_descriptor|.
   void Apply(opt::IRContext* ir_context,

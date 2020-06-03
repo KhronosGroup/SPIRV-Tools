@@ -33,7 +33,7 @@ FuzzerPassAddCopyMemoryInstructions::~FuzzerPassAddCopyMemoryInstructions() =
 
 void FuzzerPassAddCopyMemoryInstructions::Apply() {
   ForEachInstructionWithInstructionDescriptor(
-      [this](opt::Function* function, opt::BasicBlock* /*unused*/,
+      [this](opt::Function* /*unused*/, opt::BasicBlock* /*unused*/,
              opt::BasicBlock::iterator instr_it,
              const protobufs::InstructionDescriptor& /*unused*/) {
         const auto& instr = *instr_it;
@@ -56,19 +56,12 @@ void FuzzerPassAddCopyMemoryInstructions::Apply() {
           return;
         }
 
-        // Make sure there exists a pointer type with Function storage class.
-        auto pointee_type_id = type_instr->GetSingleWordInOperand(1);
-        auto pointer_type_id = FindOrCreatePointerType(pointee_type_id, SpvStorageClassFunction);
-        auto variable_id = GetFuzzerContext()->GetFreshId();
-        ApplyTransformation(TransformationAddLocalVariable(variable_id, pointer_type_id,
-            function->result_id(), FindOrCreateZeroConstant(pointee_type_id), true));
-
         // We are creating a new instruction descriptor since we need to insert OpCopyMemory
         // after the original instruction.
         auto next_inst_iter = ++instr_it;
         ApplyTransformation(TransformationAddCopyMemory(
             MakeInstructionDescriptor(GetIRContext(), &*next_inst_iter),
-            variable_id, instr.result_id()));
+            GetFuzzerContext()->GetFreshId(), instr.result_id()));
       });
 }
 
