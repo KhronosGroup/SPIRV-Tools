@@ -38,16 +38,16 @@ void FuzzerPassAddCopyMemoryInstructions::Apply() {
              const protobufs::InstructionDescriptor& /*unused*/) {
         const auto& instr = *instr_it;
 
-        // Omit the instruction if it doesn't have either the result id or
+        // Skip the instruction if it doesn't have either the result id or
         // the type id.
         if (!instr.result_id() || !instr.type_id()) {
           return;
         }
 
         const auto* type_instr = GetIRContext()->get_def_use_mgr()->GetDef(instr.type_id());
-        if (!type_instr || type_instr->IsOpaqueType() || type_instr->opcode() != SpvOpTypePointer) {
+        assert(type_instr && "Type instruction is nullptr for non-zero type id");
+        if (type_instr->IsOpaqueType() || type_instr->opcode() != SpvOpTypePointer) {
           // Abort if result type is invalid, opaque or not a pointer.
-          // TODO: we could probably introduce a new pointer type in the last case.
           return;
         }
 

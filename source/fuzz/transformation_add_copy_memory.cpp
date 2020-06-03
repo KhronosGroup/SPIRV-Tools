@@ -97,8 +97,8 @@ void TransformationAddCopyMemory::Apply(opt::IRContext* ir_context,
       insert_before_inst);
 
   opt::Instruction::OperandList operands = {
-    {SPV_OPERAND_TYPE_RESULT_ID, {message_.target_id()}},
-    {SPV_OPERAND_TYPE_RESULT_ID, {message_.source_id()}}
+    {SPV_OPERAND_TYPE_ID, {message_.target_id()}},
+    {SPV_OPERAND_TYPE_ID, {message_.source_id()}}
   };
 
   insert_before_iter.InsertBefore(MakeUnique<opt::Instruction>(
