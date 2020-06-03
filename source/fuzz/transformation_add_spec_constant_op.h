@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddSpecConstantOp : public Transformation {
  public:
   explicit TransformationAddSpecConstantOp(
-      protobufs::TransformationAddSpecConstantOp  message);
+      protobufs::TransformationAddSpecConstantOp message);
 
   TransformationAddSpecConstantOp(
       uint32_t fresh_id, uint32_t type_id, SpvOp opcode,

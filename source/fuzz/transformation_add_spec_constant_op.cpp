@@ -55,10 +55,10 @@ void TransformationAddSpecConstantOp::Apply(
       opt::IRContext::Analysis::kAnalysisNone);
 }
 
-void TransformationAddSpecConstantOp::ApplyImpl(opt::IRContext* ir_context) const {
+void TransformationAddSpecConstantOp::ApplyImpl(
+    opt::IRContext* ir_context) const {
   opt::Instruction::OperandList operands = {
-    {SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER, {message_.opcode()}}
-  };
+      {SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER, {message_.opcode()}}};
 
   for (const auto& operand : message_.operand()) {
     std::vector<uint32_t> words(operand.operand_data().begin(),
@@ -74,8 +74,7 @@ void TransformationAddSpecConstantOp::ApplyImpl(opt::IRContext* ir_context) cons
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 }
 
-protobufs::Transformation TransformationAddSpecConstantOp::ToMessage()
-    const {
+protobufs::Transformation TransformationAddSpecConstantOp::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_spec_constant_op() = message_;
   return result;
