@@ -27,6 +27,7 @@
 #include "source/fuzz/transformation_add_function.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_global_variable.h"
+#include "source/fuzz/transformation_add_spec_constant_op.h"
 #include "source/fuzz/transformation_add_type_array.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
 #include "source/fuzz/transformation_add_type_float.h"
@@ -414,9 +415,28 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
       }
     } break;
     case SpvOpSpecConstantOp: {
-      // Make sure the module contains an OpConstant instruction
-      // that has suitable type.
-      new_result_id = FindOrCreateZeroConstant(type_or_value.type_id());
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      auto type_id = original_id_to_donated_id->at(type_or_value.type_id());
+      auto opcode = static_cast<SpvOp>(type_or_value.GetSingleWordInOperand(0));
+
+      // Make sure we take into account |original_id_to_donated_id| when
+      // computing operands for OpSpecConstantOp.
+      opt::Instruction::OperandList operands;
+      for (uint32_t i = 1; i < type_or_value.NumInOperands(); ++i) {
+        const auto& operand = type_or_value.GetInOperand(i);
+        opt::Operand::OperandData data;
+
+        if (operand.type == SPV_OPERAND_TYPE_ID) {
+          data = {original_id_to_donated_id->at(operand.words[0])};
+        } else {
+          data = operand.words;
+        }
+
+        operands.push_back({operand.type, std::move(data)});
+      }
+
+      ApplyTransformation(TransformationAddSpecConstantOp(
+          new_result_id, type_id, opcode, std::move(operands)));
     } break;
     case SpvOpSpecConstantTrue:
     case SpvOpSpecConstantFalse:

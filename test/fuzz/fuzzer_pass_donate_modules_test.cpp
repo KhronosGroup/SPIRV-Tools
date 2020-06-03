@@ -1697,6 +1697,7 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
          %10 = OpSpecConstantFalse %6
          %11 = OpSpecConstant %7 2
          %12 = OpSpecConstantComposite %8 %9 %10 %11
+         %13 = OpSpecConstantOp %6 LogicalEqual %9 %10
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn
@@ -1762,12 +1763,13 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
         %104 = OpConstantFalse %100
         %105 = OpConstant %101 2
         %106 = OpConstantComposite %102 %103 %104 %105
+        %107 = OpSpecConstantOp %100 LogicalEqual %103 %104
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn
                OpFunctionEnd
-        %107 = OpFunction %2 None %3
-        %108 = OpLabel
+        %108 = OpFunction %2 None %3
+        %109 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
