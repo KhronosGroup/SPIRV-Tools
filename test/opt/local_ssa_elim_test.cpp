@@ -2054,8 +2054,8 @@ TEST_F(LocalSSAElimTest, DebugForLoop) {
 
 ; CHECK:      [[loop_head:%\w+]] = OpLabel
 ; CHECK-NEXT: [[phi0:%\w+]] = OpPhi %float %float_0
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
 ; CHECK:      [[phi1:%\w+]] = OpPhi %int %int_0
+; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi1]]
 ; CHECK:      OpLoopMerge [[loop_merge:%\w+]] [[loop_cont:%\w+]] None
 ; CHECK-NEXT: OpBranch [[loop_body:%\w+]]
@@ -2168,12 +2168,12 @@ TEST_F(LocalSSAElimTest, DebugNestedForLoop) {
 
 ; CHECK: [[outer_header:%\w+]] = OpLabel
 ; CHECK-NEXT: [[outer_f:%\w+]] = OpPhi %float %float_0 [[entry]] [[inner_f:%\w+]] [[outer_be:%\w+]]
-; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[outer_f]]
+; CHECK: = OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[outer_f]]
 
 ; CHECK: [[inner_pre_header:%\w+]] = OpLabel
 ; CHECK: [[inner_header:%\w+]] = OpLabel
 ; CHECK-NEXT: [[inner_f]] = OpPhi %float [[outer_f]] [[inner_pre_header]] [[f_next:%\w+]] [[inner_be:%\w+]]
-; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[inner_f]]
+; CHECK: = OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[inner_f]]
 
 ; CHECK: [[inner_be]] = OpLabel
 ; CHECK: [[f_next]] = OpFAdd %float [[inner_f]]
@@ -2292,7 +2292,7 @@ TEST_F(LocalSSAElimTest, DebugForLoopWithContinue) {
 
 ; CHECK: [[outer_header:%\w+]] = OpLabel
 ; CHECK-NEXT: [[outer_f:%\w+]] = OpPhi %float %float_0 [[entry]] [[inner_f:%\w+]] [[cont:%\w+]]
-; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[outer_f]]
+; CHECK: = OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[outer_f]]
 
 ; CHECK: [[f_next:%\w+]] = OpFAdd %float [[outer_f]]
 ; CHECK-NEXT: OpStore %f [[f_next]]
@@ -2701,10 +2701,10 @@ OpStore %i %int_0
 ; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_i:%\w+]] %int_0
 
 ; CHECK: [[phi_f2:%\w+]] = OpPhi %float %float_1 [[entry]] [[phi_f1:%\w+]]
-; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_f2]] [[phi_f2]]
 ; CHECK: [[phi_f1]] = OpPhi %float %float_0 [[entry]] [[phi_f2]]
-; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_f1]] [[phi_f1]]
 ; CHECK: [[phi_i:%\w+]] = OpPhi %int %int_0 [[entry]]
+; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_f2]] [[phi_f2]]
+; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_f1]] [[phi_f1]]
 ; CHECK-NEXT: = OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi_i]]
 
 OpBranch %26

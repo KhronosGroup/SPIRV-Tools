@@ -317,8 +317,15 @@ Instruction* DebugInfoManager::AddDebugValue(Instruction* instr,
           {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
            {GetEmptyDebugExpression()->result_id()}},
       }));
+
+  Instruction* insert_before = instr->NextNode();
+  while (insert_before->opcode() == SpvOpPhi ||
+         insert_before->opcode() == SpvOpVariable) {
+    insert_before = insert_before->NextNode();
+  }
+
   Instruction* added_dbg_value =
-      instr->NextNode()->InsertBefore(std::move(new_dbg_value));
+      insert_before->InsertBefore(std::move(new_dbg_value));
   AnalyzeDebugInst(added_dbg_value);
   return added_dbg_value;
 }
