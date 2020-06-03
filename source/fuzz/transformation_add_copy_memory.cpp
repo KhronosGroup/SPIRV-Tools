@@ -19,6 +19,39 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace {
+
+bool CanCopyType(const opt::analysis::Type* type) {
+  switch (type->kind()) {
+    case opt::analysis::Type::kBool:
+    case opt::analysis::Type::kInteger:
+    case opt::analysis::Type::kFloat:
+    case opt::analysis::Type::kArray:
+      return true;
+    case opt::analysis::Type::kVector:
+      return CanCopyType(type->AsVector()->element_type());
+    case opt::analysis::Type::kMatrix:
+      return CanCopyType(type->AsMatrix()->element_type());
+    case opt::analysis::Type::kStruct: {
+      for (const auto* element : type->AsStruct()->element_types()) {
+        if (!CanCopyType(element)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+    case opt::analysis::Type::kPointer:
+      return CanCopyType(type->AsPointer()->pointee_type());
+    case opt::analysis::Type::kRuntimeArray:
+      return false;
+    default:
+      assert(false && "Type is not supported");
+      return false;
+  }
+}
+
+}  // namespace
 
 TransformationAddCopyMemory::TransformationAddCopyMemory(
     const protobufs::TransformationAddCopyMemory& message)
@@ -82,6 +115,11 @@ bool TransformationAddCopyMemory::IsApplicable(opt::IRContext* ir_context,
   // Check that result types of both source and target instructions point to the same type.
   if (target_type_inst->GetSingleWordInOperand(1) !=
       source_type_inst->GetSingleWordInOperand(1)) {
+    return false;
+  }
+
+  if (!CanCopyType(ir_context->get_type_mgr()->GetType(
+          target_type_inst->GetSingleWordInOperand(1)))) {
     return false;
   }
 
