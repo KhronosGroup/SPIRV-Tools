@@ -135,6 +135,7 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingNoContractionDecoration() {
     return chance_of_adding_no_contraction_decoration_;
   }
+  uint32_t GetChanceOfAddingParameters() { return chance_of_adding_parameters; }
   uint32_t GetChanceOfAddingStore() { return chance_of_adding_store_; }
   uint32_t GetChanceOfAddingVectorShuffle() {
     return chance_of_adding_vector_shuffle_;
@@ -253,6 +254,10 @@ class FuzzerContext {
     return go_deeper_in_constant_obfuscation_(depth, random_generator_);
   }
 
+  // Requires |min_max.first| <= |min_max.second|, and returns a value in the
+  // range [ |min_max.first|, |min_max.second| ]
+  uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t>& min_max);
+
  private:
   // The source of randomness.
   RandomGenerator* random_generator_;
@@ -273,6 +278,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_local_variable_;
   uint32_t chance_of_adding_matrix_type_;
   uint32_t chance_of_adding_no_contraction_decoration_;
+  uint32_t chance_of_adding_parameters;
   uint32_t chance_of_adding_store_;
   uint32_t chance_of_adding_vector_shuffle_;
   uint32_t chance_of_adding_vector_type_;
@@ -314,10 +320,6 @@ class FuzzerContext {
   // or mutating constructs recursively.
   const std::function<bool(uint32_t, RandomGenerator*)>&
       go_deeper_in_constant_obfuscation_;
-
-  // Requires |min_max.first| <= |min_max.second|, and returns a value in the
-  // range [ |min_max.first|, |min_max.second| ]
-  uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t>& min_max);
 };
 
 }  // namespace fuzz
