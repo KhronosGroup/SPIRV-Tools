@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_add_copy_memory_instructions.h"
+#include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_add_copy_memory.h"
-#include "source/fuzz/transformation_add_local_variable.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -44,23 +43,27 @@ void FuzzerPassAddCopyMemoryInstructions::Apply() {
           return;
         }
 
-        const auto* type_instr = GetIRContext()->get_def_use_mgr()->GetDef(instr.type_id());
-        assert(type_instr && "Type instruction is nullptr for non-zero type id");
-        if (type_instr->IsOpaqueType() || type_instr->opcode() != SpvOpTypePointer) {
+        const auto* type_instr =
+            GetIRContext()->get_def_use_mgr()->GetDef(instr.type_id());
+        assert(type_instr &&
+               "Type instruction is nullptr for non-zero type id");
+        if (type_instr->IsOpaqueType() ||
+            type_instr->opcode() != SpvOpTypePointer) {
           // Abort if result type is invalid, opaque or not a pointer.
           return;
         }
 
         if (!GetFuzzerContext()->ChoosePercentage(
-            GetFuzzerContext()->GetChanceOfAddingCopyMemoryInstructions())) {
+                GetFuzzerContext()
+                    ->GetChanceOfAddingCopyMemoryInstructions())) {
           return;
         }
 
-        // We are creating a new instruction descriptor since we need to insert OpCopyMemory
-        // after the original instruction.
-        auto next_inst_iter = ++instr_it;
+        // We are creating a new instruction descriptor since we need to insert
+        // OpCopyMemory after the original instruction.
+        ++instr_it;
         ApplyTransformation(TransformationAddCopyMemory(
-            MakeInstructionDescriptor(GetIRContext(), &*next_inst_iter),
+            MakeInstructionDescriptor(GetIRContext(), &*instr_it),
             GetFuzzerContext()->GetFreshId(), instr.result_id()));
       });
 }

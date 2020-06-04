@@ -33,7 +33,8 @@ class TransformationAddCopyMemory : public Transformation {
       uint32_t target_id, uint32_t source_id);
 
   // - |instruction_descriptor| must point to a valid instruction in the module.
-  // - it should be possible to insert OpCopyMemory before |instruction_descriptor|
+  // - it should be possible to insert OpCopyMemory before
+  //   |instruction_descriptor|
   //   (i.e. the module remains valid after the insertion).
   // - |source_id| must be a result id for some valid instruction in the module.
   // - |target_id| must be a fresh id.

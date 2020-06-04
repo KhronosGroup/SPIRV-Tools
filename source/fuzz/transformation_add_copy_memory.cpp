@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_add_copy_memory.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_add_copy_memory.h"
 #include "source/opt/instruction.h"
 
 namespace spvtools {
@@ -67,8 +67,8 @@ TransformationAddCopyMemory::TransformationAddCopyMemory(
   message_.set_source_id(source_id);
 }
 
-bool TransformationAddCopyMemory::IsApplicable(opt::IRContext* ir_context,
-    const TransformationContext& /*unused*/) const {
+bool TransformationAddCopyMemory::IsApplicable(
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Check that target id is fresh.
   if (!fuzzerutil::IsFreshId(ir_context, message_.target_id())) {
     return false;
@@ -94,11 +94,11 @@ bool TransformationAddCopyMemory::IsApplicable(opt::IRContext* ir_context,
     return false;
   }
 
-  // Check that result type of source instruction exists, OpTypePointer and is not opaque.
+  // Check that result type of source instruction exists, OpTypePointer and is
+  // not opaque.
   const auto* source_type_inst =
       ir_context->get_def_use_mgr()->GetDef(source_inst->type_id());
-  if (!source_type_inst ||
-      source_type_inst->opcode() != SpvOpTypePointer ||
+  if (!source_type_inst || source_type_inst->opcode() != SpvOpTypePointer ||
       source_type_inst->IsOpaqueType()) {
     return false;
   }
@@ -120,20 +120,26 @@ bool TransformationAddCopyMemory::IsApplicable(opt::IRContext* ir_context,
   return true;
 }
 
-void TransformationAddCopyMemory::Apply(opt::IRContext* ir_context,
-    TransformationContext* /*unused*/) const {
-  const auto* source_inst = ir_context->get_def_use_mgr()->GetDef(message_.source_id());
+void TransformationAddCopyMemory::Apply(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  const auto* source_inst =
+      ir_context->get_def_use_mgr()->GetDef(message_.source_id());
   assert(source_inst && source_inst->type_id());
 
   opt::Instruction::OperandList variable_operands = {
       {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}};
   ir_context->AddGlobalValue(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpVariable, source_inst->type_id(),
-      message_.target_id(), std::move(variable_operands)));
+      ir_context, SpvOpVariable, source_inst->type_id(), message_.target_id(),
+      std::move(variable_operands)));
 
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3392):
   //  uncomment when the issue is closed
-  // fuzzerutil::AddVariableIdToEntryPointInterfaces(ir_context, message_.target_id());
+  // fuzzerutil::AddVariableIdToEntryPointInterfaces(ir_context,
+  // message_.target_id());
+
+  transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+      message_.target_id());
 
   const auto* insert_before_inst =
       FindInstruction(message_.instruction_descriptor(), ir_context);
@@ -142,12 +148,11 @@ void TransformationAddCopyMemory::Apply(opt::IRContext* ir_context,
       insert_before_inst);
 
   opt::Instruction::OperandList copy_operands = {
-    {SPV_OPERAND_TYPE_ID, {message_.target_id()}},
-    {SPV_OPERAND_TYPE_ID, {message_.source_id()}}
-  };
+      {SPV_OPERAND_TYPE_ID, {message_.target_id()}},
+      {SPV_OPERAND_TYPE_ID, {message_.source_id()}}};
 
   insert_before_iter.InsertBefore(MakeUnique<opt::Instruction>(
-    ir_context, SpvOpCopyMemory, 0, 0, std::move(copy_operands)));
+      ir_context, SpvOpCopyMemory, 0, 0, std::move(copy_operands)));
 
   // Make sure our changes are analyzed
   // TODO: not sure if we need to do this here.
@@ -155,8 +160,7 @@ void TransformationAddCopyMemory::Apply(opt::IRContext* ir_context,
       opt::IRContext::Analysis::kAnalysisNone);
 }
 
-protobufs::Transformation TransformationAddCopyMemory::ToMessage()
-    const {
+protobufs::Transformation TransformationAddCopyMemory::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_copy_memory() = message_;
   return result;
