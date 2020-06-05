@@ -650,6 +650,19 @@ bool spvOpcodeIsCommutativeBinaryOperator(SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsLinearAlgebra(SpvOp opcode) {
+  // TODO: implement the cases OpMatrixTimesScalar, OpVectorTimesMatrix,
+  // OpMatrixTimesVector, OpMatrixTimesMatrix and OpOuterProduct in the
+  // TransformationReplaceLinearAlgebraInstruction class.
+  switch (opcode) {
+    case SpvOpVectorTimesScalar:
+    case SpvOpDot:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
   switch (opcode) {
     case SpvOpMemoryBarrier:

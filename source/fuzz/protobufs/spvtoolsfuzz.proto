@@ -377,6 +377,7 @@ message Transformation {
     TransformationAdjustBranchWeights adjust_branch_weights = 46;
     TransformationPushIdThroughVariable push_id_through_variable = 47;
     TransformationAddSpecConstantOp add_spec_constant_op = 48;
+    TransformationReplaceLinearAlgebraInstruction replace_linear_algebra_instruction = 49;
     // Add additional option using the next available number.
   }
 }
@@ -1078,6 +1079,19 @@ message TransformationReplaceIdWithSynonym {
 
   // The synonymous id
   uint32 synonymous_id = 2;
+
+}
+
+message TransformationReplaceLinearAlgebraInstruction {
+
+  // Replaces a linear algebra instruction with its
+  // mathematical definition.
+
+  // The fresh ids needed to apply the transformation.
+  repeated uint32 fresh_ids = 1;
+
+  // A descriptor for a linear algebra instruction.
+  InstructionDescriptor instruction_descriptor = 2;
 
 }
 
