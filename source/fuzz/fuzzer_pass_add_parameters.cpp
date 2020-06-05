@@ -14,8 +14,6 @@
 
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
 
-#include <algorithm>
-#include <numeric>
 #include <unordered_map>
 
 #include "source/fuzz/fuzzer_context.h"
@@ -59,34 +57,32 @@ void FuzzerPassAddParameters::Apply() {
     auto num_new_parameters =
         GetFuzzerContext()->ChooseBetweenMinAndMax({1, kMaxNumOfParameters});
 
-    std::vector<uint32_t> all_types(num_old_parameters), new_types,
-        parameter_ids, constant_ids;
+    std::vector<uint32_t> all_types(num_old_parameters),
+        new_types(num_new_parameters), parameter_ids(num_new_parameters),
+        constant_ids(num_new_parameters);
 
     // Get type ids for old parameters.
-    std::iota(all_types.begin(), all_types.end(), 1);
-    std::transform(all_types.begin(), all_types.end(), all_types.begin(),
-                   [type_inst](uint32_t index) {
-                     return type_inst->GetSingleWordInOperand(index);
-                   });
+    for (uint32_t i = 0; i < num_old_parameters; ++i) {
+      // +1 since we don't take return type into account.
+      all_types[i] = type_inst->GetSingleWordInOperand(i + 1);
+    }
 
-    // Get type ids for new parameters...
-    std::generate_n(std::back_inserter(new_types), num_new_parameters,
-                    [this, &type_candidates] {
-                      return type_candidates[GetFuzzerContext()->RandomIndex(
-                          type_candidates)]();
-                    });
+    for (uint32_t i = 0; i < num_new_parameters; ++i) {
+      // Get type ids for new parameters.
+      new_types[i] =
+          type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)]();
 
-    // ...append them to the old ones.
+      // Create constants to initialize new parameters from.
+      constant_ids[i] = FindOrCreateZeroConstant(new_types[i]);
+    }
+
+    // Append new parameters to the old ones.
     all_types.insert(all_types.end(), new_types.begin(), new_types.end());
 
-    // Create constants to initialize new parameters from.
-    std::transform(
-        new_types.begin(), new_types.end(), std::back_inserter(constant_ids),
-        [this](uint32_t type_id) { return FindOrCreateZeroConstant(type_id); });
-
     // Generate result ids for new parameters.
-    std::generate_n(std::back_inserter(parameter_ids), num_new_parameters,
-                    [this] { return GetFuzzerContext()->GetFreshId(); });
+    for (auto& id : parameter_ids) {
+      id = GetFuzzerContext()->GetFreshId();
+    }
 
     auto result_type_id = type_inst->GetSingleWordInOperand(0);
     ApplyTransformation(TransformationAddParameters(
@@ -99,18 +95,16 @@ void FuzzerPassAddParameters::Apply() {
 
 std::vector<std::function<uint32_t()>>
 FuzzerPassAddParameters::ComputeTypeCandidates() {
-  using opt::analysis::Bool;
-  using opt::analysis::Float;
-  using opt::analysis::Integer;
-
   // These providers will be used if there are no types in the module.
   std::unordered_map<size_t, std::function<uint32_t()>> candidates = {
-      {Bool().HashValue(), [this] { return FindOrCreateBoolType(); }},
-      {Integer(32, true).HashValue(),
+      {opt::analysis::Bool().HashValue(),
+       [this] { return FindOrCreateBoolType(); }},
+      {opt::analysis::Integer(32, true).HashValue(),
        [this] { return FindOrCreateIntegerType(32, true); }},
-      {Integer(32, false).HashValue(),
+      {opt::analysis::Integer(32, false).HashValue(),
        [this] { return FindOrCreateIntegerType(32, false); }},
-      {Float(32).HashValue(), [this] { return FindOrCreateFloatType(32); }}};
+      {opt::analysis::Float(32).HashValue(),
+       [this] { return FindOrCreateFloatType(32); }}};
 
   for (const auto* type_inst : GetIRContext()->module()->GetTypes()) {
     switch (type_inst->opcode()) {
