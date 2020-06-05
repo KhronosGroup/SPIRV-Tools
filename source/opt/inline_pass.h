@@ -120,6 +120,9 @@ class InlinePass : public Pass {
   // call_block_itr is replaced with new_blocks.
   //
   // Returns true if successful.
+  //
+  // Note that we must no use the def-use chains in this function because they
+  // are not kept up to date while inlining.
   bool GenInlineCode(std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
                      std::vector<std::unique_ptr<Instruction>>* new_vars,
                      BasicBlock::iterator call_inst_itr,

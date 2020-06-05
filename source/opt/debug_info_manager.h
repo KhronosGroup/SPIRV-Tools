@@ -158,6 +158,11 @@ class DebugInfoManager {
   // Returns a DebugExpression instruction without Operation operands.
   Instruction* GetEmptyDebugExpression();
 
+  // Returns the id of Value operand if |inst| is DebugValue who has Deref
+  // operation and its Value operand is a result id of OpVariable with
+  // Function storage class. Otherwise, returns 0.
+  uint32_t GetVariableIdOfDebugValueUsedForDeclare(Instruction* inst);
+
   IRContext* context_;
 
   // Mapping from ids of OpenCL.DebugInfo.100 extension instructions

@@ -97,8 +97,9 @@ void IRContext::InvalidateAnalysesExceptFor(
 }
 
 void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
-  // The ConstantManager contains Type pointers. If the TypeManager goes
-  // away, the ConstantManager has to go away.
+  // The ConstantManager and DebugInfoManager contain Type pointers. If the
+  // TypeManager goes away, the ConstantManager and DebugInfoManager have to
+  // go away.
   if (analyses_to_invalidate & kAnalysisTypes) {
     analyses_to_invalidate |= kAnalysisConstants;
     analyses_to_invalidate |= kAnalysisDebugInfo;
@@ -109,6 +110,12 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   // dominator analysis should be invalidated as well.
   if (analyses_to_invalidate & kAnalysisCFG) {
     analyses_to_invalidate |= kAnalysisDominatorAnalysis;
+  }
+
+  // The DebugInfoManager uses DefUseManager. If the DefUseManager goes
+  // away, the DebugInfoManager has to go away.
+  if (analyses_to_invalidate & kAnalysisDefUse) {
+    analyses_to_invalidate |= kAnalysisDebugInfo;
   }
 
   if (analyses_to_invalidate & kAnalysisDefUse) {
