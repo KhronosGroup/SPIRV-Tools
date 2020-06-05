@@ -601,9 +601,26 @@ spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
 // Validates that all CFG divergences (i.e. conditional branch or switch) are
 // structured correctly. Either divergence is preceded by a merge instruction
 // or the divergence introduces at most one unseen label.
+//
+// Proposal: A branch to the merge block of an if-selection is counts toward
+// divergence.  Khronos SPIR-V issue #115.
 spv_result_t ValidateStructuredSelections(
     ValidationState_t& _, const std::vector<const BasicBlock*>& postorder) {
+  // The blocks that are merges for a structured selection whose header
+  // ends in OpBranchConditional.
+  std::unordered_set<uint32_t> merge_for_if;
+
   std::unordered_set<uint32_t> seen;
+
+  auto first_visit = [&seen, &merge_for_if](uint32_t block_id) {
+    if (merge_for_if.find(block_id) != merge_for_if.end()) {
+      // It's the merge for an if-selection.
+      // Don't record it, and count it as a first visit.
+      return true;
+    }
+    return seen.insert(block_id).second;
+  };
+
   for (auto iter = postorder.rbegin(); iter != postorder.rend(); ++iter) {
     const auto* block = *iter;
     const auto* terminator = block->terminator();
@@ -612,7 +629,14 @@ spv_result_t ValidateStructuredSelections(
     auto* merge = &_.ordered_instructions()[index - 1];
     // Marks merges and continues as seen.
     if (merge->opcode() == SpvOpSelectionMerge) {
-      seen.insert(merge->GetOperandAs<uint32_t>(0));
+      const auto merge_id = merge->GetOperandAs<uint32_t>(0);
+      // Branches to the merge of an if-selection count toward divergence.
+      if (terminator->opcode() == SpvOpBranchConditional) {
+        merge_for_if.insert(merge_id);
+      } else {
+        // Other merges don't.
+        seen.insert(merge_id);
+      }
     } else if (merge->opcode() == SpvOpLoopMerge) {
       seen.insert(merge->GetOperandAs<uint32_t>(0));
       seen.insert(merge->GetOperandAs<uint32_t>(1));
@@ -631,7 +655,8 @@ spv_result_t ValidateStructuredSelections(
       // was missing a merge instruction and both labels hadn't been seen
       // previously.
       const bool both_unseen =
-          seen.insert(true_label).second & seen.insert(false_label).second;
+          (true_label != false_label) &&
+          first_visit(true_label) & first_visit(false_label);
       if (!merge && both_unseen) {
         return _.diag(SPV_ERROR_INVALID_CFG, terminator)
                << "Selection must be structured";
@@ -642,7 +667,7 @@ spv_result_t ValidateStructuredSelections(
       // missing a merge instruction and there were multiple unseen labels.
       for (uint32_t i = 1; i < terminator->operands().size(); i += 2) {
         const auto target = terminator->GetOperandAs<uint32_t>(i);
-        if (seen.insert(target).second) {
+        if (first_visit(target)) {
           count++;
         }
       }

@@ -34,6 +34,7 @@ namespace spvtools {
 namespace val {
 namespace {
 
+using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
@@ -3903,7 +3904,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateCFG, MissingMergeOneUnseenTargetSwitchGood) {
+TEST_F(ValidateCFG, MissingMergeOneUnseenTargetSwitchToIfMergeIsBad) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -3916,12 +3917,48 @@ OpMemoryModel Logical GLSL450
 %undef_bool = OpUndef %bool
 %func = OpFunction %void None %void_fn
 %entry = OpLabel
-OpSelectionMerge %merge None
+OpSelectionMerge %merge None ; %merge counts as unseen
 OpBranchConditional %undef_bool %merge %b1
 %b1 = OpLabel
 OpSwitch %undef_int %b2 0 %b2 1 %merge 2 %b2
-%b2 = OpLabel
+%b2 = OpLabel ; the one unseen target
 OpBranch %merge
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Selection must be structured\n  OpSwitch %4 %11 0 %11 1 %9 2 %11"));
+}
+
+TEST_F(ValidateCFG, MissingMergeOneUnseenTargetSwitchToContinueIsGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%undef_int = OpUndef %int
+%bool = OpTypeBool
+%undef_bool = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %merge %cont None
+OpBranchConditional %undef_bool %merge %b1
+%b1 = OpLabel
+OpSwitch %undef_int %b2 0 %b2 1 %cont 2 %b2
+%b2 = OpLabel ; the one unseen target
+OpBranch %cont
+%cont = OpLabel
+OpBranchConditional %undef_bool %merge %loop
 %merge = OpLabel
 OpReturn
 OpFunctionEnd
@@ -4514,7 +4551,7 @@ TEST_F(ValidateCFG, StructuredSelections_RegisterBothTrueAndFalse) {
     OpMemoryModel Logical Simple
     OpEntryPoint Fragment %main "main"
     OpExecutionMode %main OriginUpperLeft
-    
+
     %void    = OpTypeVoid
     %void_fn = OpTypeFunction %void
 
@@ -4562,6 +4599,120 @@ TEST_F(ValidateCFG, StructuredSelections_RegisterBothTrueAndFalse) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("The selection construct with the selection header "
                         "8[%8] does not dominate the merge block 10[%10]\n"));
+}
+
+TEST_F(
+    ValidateCFG,
+    StructuredSelections_BranchToIfSelectionCountsAsDivergence_FromTrueClause) {
+  const std::string text = R"(
+
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %5 = OpUndef %bool
+          %6 = OpUndef %bool
+
+          %1 = OpFunction %void None %3
+
+          %7 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %5 %9 %8
+
+              ; the branch to %8 is to the merge, and counts toward divergence
+          %9 = OpLabel
+               OpBranchConditional %6 %8 %10
+
+         %10 = OpLabel
+               OpBranch %8
+
+          %8 = OpLabel ; if-selection merge
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Selection must be structured\n  OpBranchConditional %6 %8 %10"));
+}
+
+TEST_F(
+    ValidateCFG,
+    StructuredSelections_BranchToIfSelectionCountsAsDivergence_FromFalseClause) {
+  const std::string text = R"(
+
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %5 = OpUndef %bool
+          %6 = OpUndef %bool
+
+          %1 = OpFunction %void None %3
+
+          %7 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %5 %9 %8
+
+              ; the branch to %8 is to the merge, and counts toward divergence
+          %9 = OpLabel
+               OpBranchConditional %6 %10 %8
+
+         %10 = OpLabel
+               OpBranch %8
+
+          %8 = OpLabel ; if-selection merge
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Selection must be structured\n  OpBranchConditional %6 %10 %8"));
+}
+
+TEST_F(
+    ValidateCFG,
+    StructuredSelections_BranchToIfSelectionCountsAsDivergence_AvoidDoubleCounting) {
+  const std::string text = R"(
+
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %5 = OpUndef %bool
+          %6 = OpUndef %bool
+
+          %1 = OpFunction %void None %3
+
+          %7 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %5 %9 %8
+
+              ; the branch to %8 is to the merge, but not double-counted
+          %9 = OpLabel
+               OpBranchConditional %6 %8 %8
+
+          %8 = OpLabel ; if-selection merge
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 }  // namespace

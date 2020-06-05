@@ -358,6 +358,8 @@ OpFunctionEnd
 }
 
 TEST_F(IfConversionTest, TooManyPredecessors) {
+  // We'll put the phi node as the continue target of a loop
+  // with three continue's in it.
   const std::string text = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Vertex %1 "func" %2
@@ -370,17 +372,26 @@ OpEntryPoint Vertex %1 "func" %2
 %8 = OpTypeFunction %void
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
+%11 = OpUndef %bool
+%12 = OpUndef %bool
+%13 = OpUndef %bool
 %1 = OpFunction %void None %8
-%11 = OpLabel
-OpSelectionMerge %12 None
-OpBranchConditional %true %13 %12
-%13 = OpLabel
-OpBranchConditional %true %14 %12
 %14 = OpLabel
-OpBranch %12
-%12 = OpLabel
-%15 = OpPhi %uint %uint_0 %11 %uint_0 %13 %uint_1 %14
-OpStore %2 %15
+OpBranch %15
+%15 = OpLabel
+OpLoopMerge %16 %17 None
+OpBranch %18
+%18 = OpLabel
+OpBranchConditional %11 %19 %17
+%19 = OpLabel
+OpBranchConditional %12 %20 %17
+%20 = OpLabel
+OpBranch %17
+%17 = OpLabel
+%21 = OpPhi %uint %uint_0 %18 %uint_0 %19 %uint_1 %20
+OpStore %2 %21
+OpBranchConditional %13 %15 %16
+%16 = OpLabel
 OpReturn
 OpFunctionEnd
 )";
