@@ -14,8 +14,6 @@
 
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
 
-#include <unordered_map>
-
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
