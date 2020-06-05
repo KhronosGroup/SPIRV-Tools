@@ -112,12 +112,6 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
     analyses_to_invalidate |= kAnalysisDominatorAnalysis;
   }
 
-  // The DebugInfoManager uses DefUseManager. If the DefUseManager goes
-  // away, the DebugInfoManager has to go away.
-  if (analyses_to_invalidate & kAnalysisDefUse) {
-    analyses_to_invalidate |= kAnalysisDebugInfo;
-  }
-
   if (analyses_to_invalidate & kAnalysisDefUse) {
     def_use_mgr_.reset(nullptr);
   }
@@ -411,6 +405,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
       if (operand.words[0] == id) {
         operand.words[0] =
             get_debug_info_mgr()->GetDebugInfoNone()->result_id();
+        get_def_use_mgr()->AnalyzeInstUse(&*it);
       }
     }
   }
@@ -425,6 +420,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
       if (operand.words[0] == id) {
         operand.words[0] =
             get_debug_info_mgr()->GetDebugInfoNone()->result_id();
+        get_def_use_mgr()->AnalyzeInstUse(&*it);
       }
     }
   }

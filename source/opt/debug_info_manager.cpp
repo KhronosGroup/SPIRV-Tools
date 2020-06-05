@@ -156,7 +156,8 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {scope.GetInlinedAt()}});
   }
   RegisterDbgInst(inlined_at.get());
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(inlined_at.get());
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(inlined_at.get());
   context()->module()->AddExtInstDebugInfo(std::move(inlined_at));
   return result_id;
 }
@@ -246,7 +247,8 @@ Instruction* DebugInfoManager::GetDebugInfoNone() {
           std::move(dbg_info_none_inst));
 
   RegisterDbgInst(debug_info_none_inst_);
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(debug_info_none_inst_);
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(debug_info_none_inst_);
   return debug_info_none_inst_;
 }
 
@@ -272,7 +274,8 @@ Instruction* DebugInfoManager::GetEmptyDebugExpression() {
           std::move(empty_debug_expr));
 
   RegisterDbgInst(empty_debug_expr_inst_);
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(empty_debug_expr_inst_);
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(empty_debug_expr_inst_);
   return empty_debug_expr_inst_;
 }
 
@@ -293,7 +296,8 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
   std::unique_ptr<Instruction> new_inlined_at(inlined_at->Clone(context()));
   new_inlined_at->SetResultId(context()->TakeNextId());
   RegisterDbgInst(new_inlined_at.get());
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(new_inlined_at.get());
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(new_inlined_at.get());
   if (insert_before != nullptr)
     return insert_before->InsertBefore(std::move(new_inlined_at));
   return context()->module()->ext_inst_debuginfo_end()->InsertBefore(
@@ -347,7 +351,8 @@ Instruction* DebugInfoManager::AddDebugValue(Instruction* instr,
   Instruction* added_dbg_value =
       insert_before->InsertBefore(std::move(new_dbg_value));
   AnalyzeDebugInst(added_dbg_value);
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);
   return added_dbg_value;
 }
 
@@ -370,6 +375,12 @@ uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
 
   uint32_t var_id =
       inst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
+  if (!context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse)) {
+    assert(false &&
+           "Checking a DebugValue can be used for declare needs DefUseManager");
+    return 0;
+  }
+
   auto* var = context()->get_def_use_mgr()->GetDef(var_id);
   if (var->opcode() == SpvOpVariable &&
       SpvStorageClass(var->GetSingleWordOperand(

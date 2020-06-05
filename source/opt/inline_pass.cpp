@@ -513,6 +513,11 @@ bool InlinePass::GenInlineCode(
 
   analysis::DebugInlinedAtContext inlined_at_ctx(&*call_inst_itr);
 
+  // Invalidate the def-use chains.  They are not kept up to date while
+  // inlining.  However, certain calls try to keep them up-to-date if they are
+  // valid.  These operations can fail.
+  context()->InvalidateAnalyses(IRContext::kAnalysisDefUse);
+
   // If the caller is a loop header and the callee has multiple blocks, then the
   // normal inlining logic will place the OpLoopMerge in the last of several
   // blocks in the loop.  Instead, it should be placed at the end of the first
