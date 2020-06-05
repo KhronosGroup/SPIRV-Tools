@@ -631,7 +631,7 @@ spv_result_t ValidateStructuredSelections(
       // was missing a merge instruction and both labels hadn't been seen
       // previously.
       const bool both_unseen =
-          seen.insert(true_label).second && seen.insert(false_label).second;
+          seen.insert(true_label).second & seen.insert(false_label).second;
       if (!merge && both_unseen) {
         return _.diag(SPV_ERROR_INVALID_CFG, terminator)
                << "Selection must be structured";
