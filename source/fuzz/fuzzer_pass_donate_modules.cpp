@@ -424,13 +424,11 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
       opt::Instruction::OperandList operands;
       for (uint32_t i = 1; i < type_or_value.NumInOperands(); ++i) {
         const auto& operand = type_or_value.GetInOperand(i);
-        opt::Operand::OperandData data;
-
-        if (operand.type == SPV_OPERAND_TYPE_ID) {
-          data = {original_id_to_donated_id->at(operand.words[0])};
-        } else {
-          data = operand.words;
-        }
+        auto data =
+            operand.type == SPV_OPERAND_TYPE_ID
+                ? opt::Operand::OperandData{original_id_to_donated_id->at(
+                      operand.words[0])}
+                : operand.words;
 
         operands.push_back({operand.type, std::move(data)});
       }
