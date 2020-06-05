@@ -350,7 +350,7 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %92 %52 %53
+               OpEntryPoint Fragment %4 "main" %92 %52 %53 %109
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpDecorate %92 BuiltIn FragCoord
