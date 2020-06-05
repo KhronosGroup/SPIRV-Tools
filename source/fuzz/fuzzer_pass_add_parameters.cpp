@@ -35,9 +35,15 @@ FuzzerPassAddParameters::~FuzzerPassAddParameters() = default;
 
 void FuzzerPassAddParameters::Apply() {
   const auto& type_candidates = ComputeTypeCandidates();
-  const uint32_t kMaxNumOfParameters = 5;
 
+  if (type_candidates.empty()) {
+    // The module contains no suitable types to use in new parameters.
+    return;
+  }
+
+  // Iterate over all functions in the module.
   for (const auto& function : *GetIRContext()->module()) {
+    // Skip all entry-point functions - we don't want to change those.
     if (fuzzerutil::FunctionIsEntryPoint(GetIRContext(),
                                          function.result_id())) {
       continue;
@@ -55,11 +61,12 @@ void FuzzerPassAddParameters::Apply() {
     // -1 because we don't take return type into account.
     auto num_old_parameters = type_inst->NumInOperands() - 1;
     auto num_new_parameters =
-        GetFuzzerContext()->ChooseBetweenMinAndMax({1, kMaxNumOfParameters});
+        GetFuzzerContext()->GetRandomNumberOfNewParameters();
 
-    std::vector<uint32_t> all_types(num_old_parameters),
-        new_types(num_new_parameters), parameter_ids(num_new_parameters),
-        constant_ids(num_new_parameters);
+    std::vector<uint32_t> all_types(num_old_parameters);
+    std::vector<uint32_t> new_types(num_new_parameters);
+    std::vector<uint32_t> parameter_ids(num_new_parameters);
+    std::vector<uint32_t> constant_ids(num_new_parameters);
 
     // Get type ids for old parameters.
     for (uint32_t i = 0; i < num_old_parameters; ++i) {
@@ -70,7 +77,7 @@ void FuzzerPassAddParameters::Apply() {
     for (uint32_t i = 0; i < num_new_parameters; ++i) {
       // Get type ids for new parameters.
       new_types[i] =
-          type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)]();
+          type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)];
 
       // Create constants to initialize new parameters from.
       constant_ids[i] = FindOrCreateZeroConstant(new_types[i]);
@@ -93,20 +100,13 @@ void FuzzerPassAddParameters::Apply() {
   }
 }
 
-std::vector<std::function<uint32_t()>>
-FuzzerPassAddParameters::ComputeTypeCandidates() {
-  // These providers will be used if there are no types in the module.
-  std::unordered_map<size_t, std::function<uint32_t()>> candidates = {
-      {opt::analysis::Bool().HashValue(),
-       [this] { return FindOrCreateBoolType(); }},
-      {opt::analysis::Integer(32, true).HashValue(),
-       [this] { return FindOrCreateIntegerType(32, true); }},
-      {opt::analysis::Integer(32, false).HashValue(),
-       [this] { return FindOrCreateIntegerType(32, false); }},
-      {opt::analysis::Float(32).HashValue(),
-       [this] { return FindOrCreateFloatType(32); }}};
+std::vector<uint32_t> FuzzerPassAddParameters::ComputeTypeCandidates() const {
+  std::vector<uint32_t> result;
 
   for (const auto* type_inst : GetIRContext()->module()->GetTypes()) {
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
+    //  the number of types we support here is limited by the number of types
+    //  supported by |FindOrCreateZeroConstant|.
     switch (type_inst->opcode()) {
       case SpvOpTypeBool:
       case SpvOpTypeInt:
@@ -115,11 +115,7 @@ FuzzerPassAddParameters::ComputeTypeCandidates() {
       case SpvOpTypeMatrix:
       case SpvOpTypeVector:
       case SpvOpTypeStruct: {
-        auto result_id = type_inst->result_id();
-        const auto* type = GetIRContext()->get_type_mgr()->GetType(result_id);
-        assert(type);
-
-        candidates[type->HashValue()] = [result_id] { return result_id; };
+        result.push_back(type_inst->result_id());
       } break;
       default:
           // Ignore other types.
@@ -127,14 +123,6 @@ FuzzerPassAddParameters::ComputeTypeCandidates() {
     }
   }
 
-  std::vector<std::function<uint32_t()>> result;
-  result.reserve(candidates.size());
-
-  for (auto& item : candidates) {
-    result.emplace_back(std::move(item.second));
-  }
-
-  assert(!result.empty());
   return result;
 }
 

@@ -39,7 +39,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingParameters = {
-    5, 70};  // Adjust this
+    5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingStore = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorShuffle = {20, 70};
@@ -83,6 +83,8 @@ const uint32_t kDefaultMaxLoopControlPartialCount = 100;
 const uint32_t kDefaultMaxLoopControlPeelCount = 100;
 const uint32_t kDefaultMaxLoopLimit = 20;
 const uint32_t kDefaultMaxNewArraySizeLimit = 100;
+const std::pair<uint32_t, uint32_t> kDefaultNumberBoundsForNewParameters =
+    {1, 5};
 
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
@@ -106,6 +108,7 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       max_loop_control_peel_count_(kDefaultMaxLoopControlPeelCount),
       max_loop_limit_(kDefaultMaxLoopLimit),
       max_new_array_size_limit_(kDefaultMaxNewArraySizeLimit),
+      number_bounds_for_new_parameters(kDefaultNumberBoundsForNewParameters),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
   chance_of_adding_access_chain_ =

@@ -129,7 +129,8 @@ bool TransformationAddParameters::IsApplicable(
 }
 
 void TransformationAddParameters::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
   // Retrieve all data from the message
   auto function_id = message_.function_id();
   const auto& new_parameter_type = message_.new_parameter_type();
@@ -148,6 +149,8 @@ void TransformationAddParameters::Apply(
     function->AddParameter(MakeUnique<opt::Instruction>(
         ir_context, SpvOpFunctionParameter, new_parameter_type[i],
         new_parameter_id[i], opt::Instruction::OperandList()));
+    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+        new_parameter_id[i]);
   }
 
   // Fix all OpFunctionCall instructions.
@@ -160,6 +163,9 @@ void TransformationAddParameters::Apply(
         }
 
         for (auto id : constant_id) {
+          // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+          //  it would be good to mark this usage of |id| as irrelevant, so that
+          //  we can perform some interesting transformations on it later.
           call->AddOperand({SPV_OPERAND_TYPE_ID, {id}});
         }
       });

@@ -246,6 +246,9 @@ class FuzzerContext {
   uint32_t GetRandomLoopLimit() {
     return random_generator_->RandomUint32(max_loop_limit_);
   }
+  uint32_t GetRandomNumberOfNewParameters() {
+    return ChooseBetweenMinAndMax(number_bounds_for_new_parameters);
+  }
   uint32_t GetRandomSizeForNewArray() {
     // Ensure that the array size is non-zero.
     return random_generator_->RandomUint32(max_new_array_size_limit_ - 1) + 1;
@@ -253,10 +256,6 @@ class FuzzerContext {
   bool GoDeeperInConstantObfuscation(uint32_t depth) {
     return go_deeper_in_constant_obfuscation_(depth, random_generator_);
   }
-
-  // Requires |min_max.first| <= |min_max.second|, and returns a value in the
-  // range [ |min_max.first|, |min_max.second| ]
-  uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t>& min_max);
 
  private:
   // The source of randomness.
@@ -315,11 +314,16 @@ class FuzzerContext {
   uint32_t max_loop_control_peel_count_;
   uint32_t max_loop_limit_;
   uint32_t max_new_array_size_limit_;
+  std::pair<uint32_t, uint32_t> number_bounds_for_new_parameters;
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.
   const std::function<bool(uint32_t, RandomGenerator*)>&
       go_deeper_in_constant_obfuscation_;
+
+  // Requires |min_max.first| <= |min_max.second|, and returns a value in the
+  // range [ |min_max.first|, |min_max.second| ]
+  uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t>& min_max);
 };
 
 }  // namespace fuzz

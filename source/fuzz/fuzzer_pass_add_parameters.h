@@ -15,7 +15,6 @@
 #ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_PARAMETERS_H_
 #define SOURCE_FUZZ_FUZZER_PASS_ADD_PARAMETERS_H_
 
-#include <functional>
 #include <vector>
 
 #include "source/fuzz/fuzzer_pass.h"
@@ -38,9 +37,9 @@ class FuzzerPassAddParameters : public FuzzerPass {
   void Apply() override;
 
  private:
-  // Computes the vector of providers of type ids. Takes into account existing
-  // types in the module.
-  std::vector<std::function<uint32_t()>> ComputeTypeCandidates();
+  // Uses types, defined in the module, to compute a vector of their ids, which
+  // will be used as type ids of new parameters.
+  std::vector<uint32_t> ComputeTypeCandidates() const;
 };
 
 }  // namespace fuzz
