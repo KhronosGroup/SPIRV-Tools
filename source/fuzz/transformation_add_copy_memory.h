@@ -34,12 +34,12 @@ class TransformationAddCopyMemory : public Transformation {
 
   // - |instruction_descriptor| must point to a valid instruction in the module.
   // - it should be possible to insert OpCopyMemory before
-  //   |instruction_descriptor|
-  //   (i.e. the module remains valid after the insertion).
+  //   |instruction_descriptor| (i.e. the module remains valid after the
+  //   insertion).
   // - |source_id| must be a result id for some valid instruction in the module.
   // - |target_id| must be a fresh id.
-  // - type of |source_id| must be OpTypePointer where pointee doesn't contain
-  //   OpTypeRuntimeArray.
+  // - type of |source_id| must be OpTypePointer where pointee can be used with
+  //   OpCopyMemory.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -51,6 +51,10 @@ class TransformationAddCopyMemory : public Transformation {
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  // Returns whether the type, pointed to by some OpTypePointer, can be used
+  // with OpCopyMemory instruction.
+  static bool CanUsePointeeWithCopyMemory(const opt::analysis::Type& type);
 
  private:
   protobufs::TransformationAddCopyMemory message_;

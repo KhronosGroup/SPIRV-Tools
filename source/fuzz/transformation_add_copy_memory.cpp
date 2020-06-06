@@ -19,41 +19,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace {
-
-// TODO: maybe it would be better to put this function into fuzzerutil
-//  so that we can use it in the fuzzer pass.
-bool CanCopyType(const opt::analysis::Type* type) {
-  switch (type->kind()) {
-    case opt::analysis::Type::kBool:
-    case opt::analysis::Type::kInteger:
-    case opt::analysis::Type::kFloat:
-    case opt::analysis::Type::kArray:
-      return true;
-    case opt::analysis::Type::kVector:
-      return CanCopyType(type->AsVector()->element_type());
-    case opt::analysis::Type::kMatrix:
-      return CanCopyType(type->AsMatrix()->element_type());
-    case opt::analysis::Type::kStruct: {
-      for (const auto* element : type->AsStruct()->element_types()) {
-        if (!CanCopyType(element)) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-    case opt::analysis::Type::kPointer:
-      return CanCopyType(type->AsPointer()->pointee_type());
-    case opt::analysis::Type::kRuntimeArray:
-      return false;
-    default:
-      assert(false && "Type is not supported");
-      return false;
-  }
-}
-
-}  // namespace
 
 TransformationAddCopyMemory::TransformationAddCopyMemory(
     const protobufs::TransformationAddCopyMemory& message)
@@ -94,55 +59,45 @@ bool TransformationAddCopyMemory::IsApplicable(
     return false;
   }
 
-  // Check that result type of source instruction exists, OpTypePointer and is
-  // not opaque.
-  const auto* source_type_inst =
-      ir_context->get_def_use_mgr()->GetDef(source_inst->type_id());
-  if (!source_type_inst || source_type_inst->opcode() != SpvOpTypePointer ||
-      source_type_inst->IsOpaqueType()) {
+  // Check that result type of source instruction exists and can be used with
+  // OpCopyMemory.
+  const auto* source_type =
+      ir_context->get_type_mgr()->GetType(source_inst->type_id());
+  if (!source_type || !source_type->AsPointer()) {
     return false;
   }
 
-  // Check that target instruction exists.
-  const auto* target_inst =
-      ir_context->get_def_use_mgr()->GetDef(message_.target_id());
-  if (!target_inst) {
-    return false;
-  }
-
-  // Check that source type doesn't contain OpTypeRuntimeArray on any level
-  // in the type hierarchy.
-  if (!CanCopyType(ir_context->get_type_mgr()->GetType(
-          source_type_inst->GetSingleWordInOperand(1)))) {
-    return false;
-  }
-
-  return true;
+  return CanUsePointeeWithCopyMemory(*source_type->AsPointer()->pointee_type());
 }
 
 void TransformationAddCopyMemory::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
+  // Get source instructions to copy memory from.
   const auto* source_inst =
       ir_context->get_def_use_mgr()->GetDef(message_.source_id());
   assert(source_inst && source_inst->type_id());
 
+  // Create global target variable.
   opt::Instruction::OperandList variable_operands = {
       {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}};
   ir_context->AddGlobalValue(MakeUnique<opt::Instruction>(
       ir_context, SpvOpVariable, source_inst->type_id(), message_.target_id(),
       std::move(variable_operands)));
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3392):
-  //  uncomment when the issue is closed
-  // fuzzerutil::AddVariableIdToEntryPointInterfaces(ir_context,
-  // message_.target_id());
+  fuzzerutil::AddVariableIdToEntryPointInterfaces(ir_context,
+                                                  message_.target_id());
+
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.target_id());
 
   transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
       message_.target_id());
 
+  // Insert OpCopyMemory before |instruction_descriptor|.
   const auto* insert_before_inst =
       FindInstruction(message_.instruction_descriptor(), ir_context);
+  assert(insert_before_inst);
+
   auto insert_before_iter = fuzzerutil::GetIteratorForInstruction(
       ir_context->get_instr_block(insert_before_inst->result_id()),
       insert_before_inst);
@@ -155,7 +110,6 @@ void TransformationAddCopyMemory::Apply(
       ir_context, SpvOpCopyMemory, 0, 0, std::move(copy_operands)));
 
   // Make sure our changes are analyzed
-  // TODO: not sure if we need to do this here.
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
 }
@@ -164,6 +118,31 @@ protobufs::Transformation TransformationAddCopyMemory::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_copy_memory() = message_;
   return result;
+}
+
+bool TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
+    const opt::analysis::Type& type) {
+  switch (type.kind()) {
+    case opt::analysis::Type::kBool:
+    case opt::analysis::Type::kInteger:
+    case opt::analysis::Type::kFloat:
+    case opt::analysis::Type::kArray:
+      return true;
+    case opt::analysis::Type::kVector:
+      return CanUsePointeeWithCopyMemory(*type.AsVector()->element_type());
+    case opt::analysis::Type::kMatrix:
+      return CanUsePointeeWithCopyMemory(*type.AsMatrix()->element_type());
+    case opt::analysis::Type::kStruct:
+      return std::all_of(type.AsStruct()->element_types().begin(),
+                         type.AsStruct()->element_types().end(),
+                         [](const opt::analysis::Type* element) {
+                           return CanUsePointeeWithCopyMemory(*element);
+                         });
+    case opt::analysis::Type::kPointer:
+      return CanUsePointeeWithCopyMemory(*type.AsPointer()->pointee_type());
+    default:
+      return false;
+  }
 }
 
 }  // namespace fuzz

@@ -23,7 +23,7 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 #include "source/fuzz/fuzzer_pass_add_composite_types.h"
-#include "source/fuzz/fuzzer_pass_add_copy_memory_instructions.h"
+#include "source/fuzz/fuzzer_pass_add_copy_memory.h"
 #include "source/fuzz/fuzzer_pass_add_dead_blocks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_breaks.h"
 #include "source/fuzz/fuzzer_pass_add_dead_continues.h"
@@ -202,7 +202,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassAddCompositeTypes>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
-    MaybeAddPass<FuzzerPassAddCopyMemoryInstructions>(
+    MaybeAddPass<FuzzerPassAddCopyMemory>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddDeadBlocks>(

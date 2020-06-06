@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_pass_add_copy_memory_instructions.h"
+#include "source/fuzz/fuzzer_pass_add_copy_memory.h"
+
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_add_copy_memory.h"
@@ -20,51 +21,51 @@
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPassAddCopyMemoryInstructions::FuzzerPassAddCopyMemoryInstructions(
+FuzzerPassAddCopyMemory::FuzzerPassAddCopyMemory(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassAddCopyMemoryInstructions::~FuzzerPassAddCopyMemoryInstructions() =
-    default;
+FuzzerPassAddCopyMemory::~FuzzerPassAddCopyMemory() = default;
 
-void FuzzerPassAddCopyMemoryInstructions::Apply() {
+void FuzzerPassAddCopyMemory::Apply() {
   ForEachInstructionWithInstructionDescriptor(
       [this](opt::Function* /*unused*/, opt::BasicBlock* /*unused*/,
-             opt::BasicBlock::iterator instr_it,
+             opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& /*unused*/) {
-        const auto& instr = *instr_it;
+        auto& inst = *inst_it;
 
         // Skip the instruction if it doesn't have either the result id or
         // the type id.
-        if (!instr.result_id() || !instr.type_id()) {
+        if (!inst.result_id() || !inst.type_id()) {
           return;
         }
 
-        const auto* type_instr =
-            GetIRContext()->get_def_use_mgr()->GetDef(instr.type_id());
-        assert(type_instr &&
-               "Type instruction is nullptr for non-zero type id");
-        if (type_instr->IsOpaqueType() ||
-            type_instr->opcode() != SpvOpTypePointer) {
+        const auto* type =
+            GetIRContext()->get_type_mgr()->GetType(inst.type_id());
+        assert(type && "Type is nullptr for non-zero type id");
+
+        if (!type->AsPointer() ||
+            !TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
+                *type->AsPointer()->pointee_type())) {
           // Abort if result type is invalid, opaque or not a pointer.
           return;
         }
 
         if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()
-                    ->GetChanceOfAddingCopyMemoryInstructions())) {
+                GetFuzzerContext()->GetChanceOfAddingCopyMemory())) {
           return;
         }
 
-        // We are creating a new instruction descriptor since we need to insert
-        // OpCopyMemory after the original instruction.
-        ++instr_it;
+        // We need to create a new instruction descriptor for the next
+        // instruction in the block. It will be used to insert OpCopyMemory
+        // above the instruction it points to (i.e. below |inst|).
+        ++inst_it;
         ApplyTransformation(TransformationAddCopyMemory(
-            MakeInstructionDescriptor(GetIRContext(), &*instr_it),
-            GetFuzzerContext()->GetFreshId(), instr.result_id()));
+            MakeInstructionDescriptor(GetIRContext(), &*inst_it),
+            GetFuzzerContext()->GetFreshId(), inst.result_id()));
       });
 }
 

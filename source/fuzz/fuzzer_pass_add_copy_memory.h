@@ -20,16 +20,16 @@
 namespace spvtools {
 namespace fuzz {
 
-// We decide whether to add OpCopyMemory instruction after some instruction
-// for each instruction in the module.
-class FuzzerPassAddCopyMemoryInstructions : public FuzzerPass {
+// Randomly decides whether to add OpCopyMemory after some instruction in the
+// module.
+class FuzzerPassAddCopyMemory : public FuzzerPass {
  public:
-  FuzzerPassAddCopyMemoryInstructions(
-      opt::IRContext* ir_context, TransformationContext* transformation_context,
-      FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
+  FuzzerPassAddCopyMemory(opt::IRContext* ir_context,
+                          TransformationContext* transformation_context,
+                          FuzzerContext* fuzzer_context,
+                          protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassAddCopyMemoryInstructions();
+  ~FuzzerPassAddCopyMemory() override;
 
   void Apply() override;
 };
