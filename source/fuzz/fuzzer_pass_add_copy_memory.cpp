@@ -15,6 +15,7 @@
 #include "source/fuzz/fuzzer_pass_add_copy_memory.h"
 
 #include "source/fuzz/fuzzer_context.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_add_copy_memory.h"
 
@@ -59,10 +60,23 @@ void FuzzerPassAddCopyMemory::Apply() {
           return;
         }
 
+        ++inst_it;
+        // Abort if can't insert OpCopyMemory before next instruction (i.e.
+        // after the current one).
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyMemory,
+                                                          inst_it)) {
+          return;
+        }
+
+        // Create a pointer type with Private storage class if needed.
+        FindOrCreatePointerType(GetIRContext()->get_type_mgr()->GetId(
+                                    type->AsPointer()->pointee_type()),
+                                SpvStorageClassPrivate);
+
         // We need to create a new instruction descriptor for the next
         // instruction in the block. It will be used to insert OpCopyMemory
         // above the instruction it points to (i.e. below |inst|).
-        ++inst_it;
+
         ApplyTransformation(TransformationAddCopyMemory(
             MakeInstructionDescriptor(GetIRContext(), &*inst_it),
             GetFuzzerContext()->GetFreshId(), inst.result_id()));

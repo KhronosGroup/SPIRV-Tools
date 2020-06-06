@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_copy_memory.h"
+#include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -20,7 +21,305 @@ namespace fuzz {
 namespace {
 
 TEST(TransformationAddCopyMemoryTest, BasicTest) {
-  // TODO: add tests
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %19 RelaxedPrecision
+               OpMemberDecorate %66 0 RelaxedPrecision
+               OpDecorate %69 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpTypePointer Function %6
+         %78 = OpTypePointer Private %6
+          %8 = OpTypeFunction %6 %7
+         %17 = OpTypeInt 32 1
+         %18 = OpTypePointer Function %17
+         %79 = OpTypePointer Private %17
+         %20 = OpConstant %17 0
+         %21 = OpTypeFloat 32
+         %22 = OpTypePointer Function %21
+         %80 = OpTypePointer Private %21
+         %24 = OpConstant %21 0
+         %25 = OpConstantFalse %6
+         %32 = OpConstantTrue %6
+         %33 = OpTypeVector %21 4
+         %34 = OpTypePointer Function %33
+         %81 = OpTypePointer Private %33
+         %36 = OpConstantComposite %33 %24 %24 %24 %24
+         %37 = OpTypeMatrix %33 4
+         %38 = OpTypePointer Function %37
+         %82 = OpTypePointer Private %37
+         %44 = OpConstant %21 1
+         %66 = OpTypeStruct %17 %21 %6 %33 %37
+         %67 = OpTypePointer Function %66
+         %83 = OpTypePointer Private %66
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %19 = OpVariable %18 Function
+         %23 = OpVariable %22 Function
+         %26 = OpVariable %7 Function
+         %30 = OpVariable %7 Function
+         %35 = OpVariable %34 Function
+         %39 = OpVariable %38 Function
+         %68 = OpVariable %67 Function
+               OpStore %19 %20
+               OpStore %23 %24
+               OpStore %26 %25
+         %27 = OpFunctionCall %6 %10 %26
+               OpSelectionMerge %29 None
+               OpBranchConditional %27 %28 %31
+         %28 = OpLabel
+               OpBranch %29
+         %31 = OpLabel
+               OpBranch %29
+         %76 = OpLabel
+         %77 = OpLogicalEqual %6 %25 %32
+               OpBranch %29
+         %29 = OpLabel
+         %75 = OpPhi %6 %25 %31 %32 %28 %77 %76
+               OpStore %30 %75
+         %40 = OpLoad %33 %35
+         %41 = OpLoad %33 %35
+         %42 = OpLoad %33 %35
+         %43 = OpLoad %33 %35
+         %45 = OpCompositeExtract %21 %40 0
+         %46 = OpCompositeExtract %21 %40 1
+         %47 = OpCompositeExtract %21 %40 2
+         %48 = OpCompositeExtract %21 %40 3
+         %49 = OpCompositeExtract %21 %41 0
+         %50 = OpCompositeExtract %21 %41 1
+         %51 = OpCompositeExtract %21 %41 2
+         %52 = OpCompositeExtract %21 %41 3
+         %53 = OpCompositeExtract %21 %42 0
+         %54 = OpCompositeExtract %21 %42 1
+         %55 = OpCompositeExtract %21 %42 2
+         %56 = OpCompositeExtract %21 %42 3
+         %57 = OpCompositeExtract %21 %43 0
+         %58 = OpCompositeExtract %21 %43 1
+         %59 = OpCompositeExtract %21 %43 2
+         %60 = OpCompositeExtract %21 %43 3
+         %61 = OpCompositeConstruct %33 %45 %46 %47 %48
+         %62 = OpCompositeConstruct %33 %49 %50 %51 %52
+         %63 = OpCompositeConstruct %33 %53 %54 %55 %56
+         %64 = OpCompositeConstruct %33 %57 %58 %59 %60
+         %65 = OpCompositeConstruct %37 %61 %62 %63 %64
+               OpStore %39 %65
+         %69 = OpLoad %17 %19
+         %70 = OpLoad %21 %23
+         %71 = OpLoad %6 %30
+         %72 = OpLoad %33 %35
+         %73 = OpLoad %37 %39
+         %74 = OpCompositeConstruct %66 %69 %70 %71 %72 %73
+               OpStore %68 %74
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %13 = OpLoad %6 %9
+               OpStore %12 %13
+         %14 = OpLoad %6 %12
+               OpReturnValue %14
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Target id is not fresh (59).
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 59, 19)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Instruction descriptor is invalid (id 84 is undefined).
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(84, SpvOpVariable, 0), 84, 19)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Cannot insert OpCopyMemory before OpPhi.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(75, SpvOpPhi, 0), 84, 19)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Source instruction doesn't exist.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 84, 76)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Source instruction's type doesn't exist.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 84, 5)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Source instruction's type is invalid.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(41, SpvOpLoad, 0), 84, 40)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Source and target instructions are in different functions.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(13, SpvOpLoad, 0), 84, 19)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Source instruction doesn't dominate the target instruction.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(77, SpvOpLogicalEqual, 0), 84, 19)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Source and target instructions are the same.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(19, SpvOpVariable, 0), 84, 19)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Correct transformations.
+  uint32_t fresh_id = 84;
+  auto descriptor = MakeInstructionDescriptor(27, SpvOpFunctionCall, 0);
+  for (uint32_t source_id : {19, 23, 26, 30, 35, 39, 68}) {
+    TransformationAddCopyMemory transformation(descriptor, fresh_id, source_id);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(fresh_id));
+    fresh_id++;
+  }
+
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %19 RelaxedPrecision
+               OpMemberDecorate %66 0 RelaxedPrecision
+               OpDecorate %69 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpTypePointer Function %6
+         %78 = OpTypePointer Private %6
+          %8 = OpTypeFunction %6 %7
+         %17 = OpTypeInt 32 1
+         %18 = OpTypePointer Function %17
+         %79 = OpTypePointer Private %17
+         %20 = OpConstant %17 0
+         %21 = OpTypeFloat 32
+         %22 = OpTypePointer Function %21
+         %80 = OpTypePointer Private %21
+         %24 = OpConstant %21 0
+         %25 = OpConstantFalse %6
+         %32 = OpConstantTrue %6
+         %33 = OpTypeVector %21 4
+         %34 = OpTypePointer Function %33
+         %81 = OpTypePointer Private %33
+         %36 = OpConstantComposite %33 %24 %24 %24 %24
+         %37 = OpTypeMatrix %33 4
+         %38 = OpTypePointer Function %37
+         %82 = OpTypePointer Private %37
+         %44 = OpConstant %21 1
+         %66 = OpTypeStruct %17 %21 %6 %33 %37
+         %67 = OpTypePointer Function %66
+         %83 = OpTypePointer Private %66
+         %84 = OpVariable %79 Private
+         %85 = OpVariable %80 Private
+         %86 = OpVariable %78 Private
+         %87 = OpVariable %78 Private
+         %88 = OpVariable %81 Private
+         %89 = OpVariable %82 Private
+         %90 = OpVariable %83 Private
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %19 = OpVariable %18 Function
+         %23 = OpVariable %22 Function
+         %26 = OpVariable %7 Function
+         %30 = OpVariable %7 Function
+         %35 = OpVariable %34 Function
+         %39 = OpVariable %38 Function
+         %68 = OpVariable %67 Function
+               OpStore %19 %20
+               OpStore %23 %24
+               OpStore %26 %25
+               OpCopyMemory %84 %19
+               OpCopyMemory %85 %23
+               OpCopyMemory %86 %26
+               OpCopyMemory %87 %30
+               OpCopyMemory %88 %35
+               OpCopyMemory %89 %39
+               OpCopyMemory %90 %68
+         %27 = OpFunctionCall %6 %10 %26
+               OpSelectionMerge %29 None
+               OpBranchConditional %27 %28 %31
+         %28 = OpLabel
+               OpBranch %29
+         %31 = OpLabel
+               OpBranch %29
+         %76 = OpLabel
+         %77 = OpLogicalEqual %6 %25 %32
+               OpBranch %29
+         %29 = OpLabel
+         %75 = OpPhi %6 %25 %31 %32 %28 %77 %76
+               OpStore %30 %75
+         %40 = OpLoad %33 %35
+         %41 = OpLoad %33 %35
+         %42 = OpLoad %33 %35
+         %43 = OpLoad %33 %35
+         %45 = OpCompositeExtract %21 %40 0
+         %46 = OpCompositeExtract %21 %40 1
+         %47 = OpCompositeExtract %21 %40 2
+         %48 = OpCompositeExtract %21 %40 3
+         %49 = OpCompositeExtract %21 %41 0
+         %50 = OpCompositeExtract %21 %41 1
+         %51 = OpCompositeExtract %21 %41 2
+         %52 = OpCompositeExtract %21 %41 3
+         %53 = OpCompositeExtract %21 %42 0
+         %54 = OpCompositeExtract %21 %42 1
+         %55 = OpCompositeExtract %21 %42 2
+         %56 = OpCompositeExtract %21 %42 3
+         %57 = OpCompositeExtract %21 %43 0
+         %58 = OpCompositeExtract %21 %43 1
+         %59 = OpCompositeExtract %21 %43 2
+         %60 = OpCompositeExtract %21 %43 3
+         %61 = OpCompositeConstruct %33 %45 %46 %47 %48
+         %62 = OpCompositeConstruct %33 %49 %50 %51 %52
+         %63 = OpCompositeConstruct %33 %53 %54 %55 %56
+         %64 = OpCompositeConstruct %33 %57 %58 %59 %60
+         %65 = OpCompositeConstruct %37 %61 %62 %63 %64
+               OpStore %39 %65
+         %69 = OpLoad %17 %19
+         %70 = OpLoad %21 %23
+         %71 = OpLoad %6 %30
+         %72 = OpLoad %33 %35
+         %73 = OpLoad %37 %39
+         %74 = OpCompositeConstruct %66 %69 %70 %71 %72 %73
+               OpStore %68 %74
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %13 = OpLoad %6 %9
+               OpStore %12 %13
+         %14 = OpLoad %6 %12
+               OpReturnValue %14
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected, context.get()));
 }
 
 }  // namespace

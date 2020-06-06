@@ -27,8 +27,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingAccessChain = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfAddingCopyMemory = {
-    20, 50};  // Adjust this.
+const std::pair<uint32_t, uint32_t> kChanceOfAddingCopyMemory = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBreak = {5, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadContinue = {5, 80};
