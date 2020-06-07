@@ -289,6 +289,7 @@ bool spvOpcodeReturnsLogicalVariablePointer(const SpvOp opcode) {
     case SpvOpPtrAccessChain:
     case SpvOpLoad:
     case SpvOpConstantNull:
+    case SpvOpCompositeExtract:
       return true;
     default:
       return false;
