@@ -49,6 +49,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_no_contraction_decorations.h
         fuzzer_pass_add_stores.h
+        fuzzer_pass_add_vector_shuffle_instructions.h
         fuzzer_pass_adjust_branch_weights.h
         fuzzer_pass_adjust_function_controls.h
         fuzzer_pass_adjust_loop_controls.h
@@ -148,6 +149,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
         fuzzer_pass_add_stores.cpp
+        fuzzer_pass_add_vector_shuffle_instructions.cpp
         fuzzer_pass_adjust_branch_weights.cpp
         fuzzer_pass_adjust_function_controls.cpp
         fuzzer_pass_adjust_loop_controls.cpp
