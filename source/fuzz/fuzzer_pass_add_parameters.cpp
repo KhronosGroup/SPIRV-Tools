@@ -117,7 +117,7 @@ std::vector<uint32_t> FuzzerPassAddParameters::ComputeTypeCandidates() const {
       } break;
       default:
           // Ignore other types.
-          ;
+          break;
     }
   }
 
