@@ -93,8 +93,7 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
                                  ->AsVector();
 
         auto vector_2_instruction =
-            vector_instructions[GetFuzzerContext()->RandomIndex(
-                vector_instructions)];
+            GetFuzzerContext()->RemoveAtRandomIndex(&vector_instructions);
         auto vector_2_type = GetIRContext()
                                  ->get_type_mgr()
                                  ->GetType(vector_2_instruction->type_id())
