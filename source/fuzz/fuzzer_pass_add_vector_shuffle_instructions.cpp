@@ -100,12 +100,11 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
                                  ->GetType(vector_2_instruction->type_id())
                                  ->AsVector();
 
-        // |vector_1| and |vector_2| must have the same element type with each
+        // |vector_1| and |vector_2| must have the same element type as each
         // other.
         while (vector_1_type->element_type() != vector_2_type->element_type()) {
           vector_2_instruction =
-              vector_instructions[GetFuzzerContext()->RandomIndex(
-                  vector_instructions)];
+              GetFuzzerContext()->RemoveAtRandomIndex(&vector_instructions);
           vector_2_type = GetIRContext()
                               ->get_type_mgr()
                               ->GetType(vector_2_instruction->type_id())
