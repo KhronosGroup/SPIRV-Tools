@@ -651,11 +651,14 @@ bool spvOpcodeIsCommutativeBinaryOperator(SpvOp opcode) {
 }
 
 bool spvOpcodeIsLinearAlgebra(SpvOp opcode) {
-  // TODO: implement the cases OpMatrixTimesScalar, OpVectorTimesMatrix,
-  // OpMatrixTimesVector, OpMatrixTimesMatrix and OpOuterProduct in the
-  // TransformationReplaceLinearAlgebraInstruction class.
   switch (opcode) {
+    case SpvOpTranspose:
     case SpvOpVectorTimesScalar:
+    case SpvOpMatrixTimesScalar:
+    case SpvOpVectorTimesMatrix:
+    case SpvOpMatrixTimesVector:
+    case SpvOpMatrixTimesMatrix:
+    case SpvOpOuterProduct:
     case SpvOpDot:
       return true;
     default:

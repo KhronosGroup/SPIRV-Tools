@@ -34,10 +34,12 @@ FuzzerPassReplaceLinearAlgebraInstructions::
     ~FuzzerPassReplaceLinearAlgebraInstructions() = default;
 
 void FuzzerPassReplaceLinearAlgebraInstructions::Apply() {
-  // For each instruction, checks whether it is an linear algebra instruction.
-  // In this case, the transformation is randomly applied.
+  // For each instruction, checks whether it is a supported linear algebra
+  // instruction. In this case, the transformation is randomly applied.
   GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
-    if (!spvOpcodeIsLinearAlgebra(instruction->opcode())) {
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354)
+    if (instruction->opcode() != SpvOpVectorTimesScalar &&
+        instruction->opcode() != SpvOpDot) {
       return;
     }
 
@@ -49,8 +51,8 @@ void FuzzerPassReplaceLinearAlgebraInstructions::Apply() {
 
     ApplyTransformation(TransformationReplaceLinearAlgebraInstruction(
         GetFuzzerContext()->GetFreshIds(
-            TransformationReplaceLinearAlgebraInstruction::GetFreshIdCount(
-                GetIRContext(), instruction)),
+            TransformationReplaceLinearAlgebraInstruction::
+                GetRequiredFreshIdCount(GetIRContext(), instruction)),
         MakeInstructionDescriptor(GetIRContext(), instruction)));
   });
 }

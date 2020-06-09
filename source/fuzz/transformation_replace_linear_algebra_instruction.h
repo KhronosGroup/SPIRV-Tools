@@ -46,8 +46,11 @@ class TransformationReplaceLinearAlgebraInstruction : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
   // Returns the number of ids needed to apply the transformation.
-  static uint32_t GetFreshIdCount(opt::IRContext* ir_context,
-                                  opt::Instruction* instruction);
+  static uint32_t GetRequiredFreshIdCount(opt::IRContext* ir_context,
+                                          opt::Instruction* instruction);
+
+ private:
+  protobufs::TransformationReplaceLinearAlgebraInstruction message_;
 
   // Replaces an OpVectorTimesScalar instruction.
   void ReplaceOpVectorTimesScalar(opt::IRContext* ir_context,
@@ -56,9 +59,6 @@ class TransformationReplaceLinearAlgebraInstruction : public Transformation {
   // Replaces an OpDot instruction.
   void ReplaceOpDot(opt::IRContext* ir_context,
                     opt::Instruction* instruction) const;
-
- private:
-  protobufs::TransformationReplaceLinearAlgebraInstruction message_;
 };
 
 }  // namespace fuzz

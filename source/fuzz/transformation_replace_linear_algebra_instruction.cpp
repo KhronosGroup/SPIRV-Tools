@@ -41,20 +41,23 @@ bool TransformationReplaceLinearAlgebraInstruction::IsApplicable(
   auto instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
 
-  // It must be a linear algebra instruction.
-  if (!spvOpcodeIsLinearAlgebra(instruction->opcode())) {
+  // It must be a supported linear algebra instruction.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354)
+  if (instruction->opcode() != SpvOpVectorTimesScalar &&
+      instruction->opcode() != SpvOpDot) {
     return false;
   }
 
   // |message_.fresh_ids.size| must be the exact number of fresh ids needed to
   // apply the transformation.
-  if ((uint32_t)message_.fresh_ids().size() !=
-      GetFreshIdCount(ir_context, instruction)) {
+  if (static_cast<uint32_t>(message_.fresh_ids().size()) !=
+      GetRequiredFreshIdCount(ir_context, instruction)) {
     return false;
   }
 
   // All ids in |message_.fresh_ids| must be fresh.
-  for (uint32_t i = 0; i < (uint32_t)message_.fresh_ids().size(); i++) {
+  for (uint32_t i = 0; i < static_cast<uint32_t>(message_.fresh_ids().size());
+       i++) {
     if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_ids(i))) {
       return false;
     }
@@ -89,10 +92,9 @@ TransformationReplaceLinearAlgebraInstruction::ToMessage() const {
   return result;
 }
 
-uint32_t TransformationReplaceLinearAlgebraInstruction::GetFreshIdCount(
+uint32_t TransformationReplaceLinearAlgebraInstruction::GetRequiredFreshIdCount(
     opt::IRContext* ir_context, opt::Instruction* instruction) {
-  // TODO for OpMatrixTimesScalar, OpVectorTimesMatrix, OpMatrixTimesVector,
-  // OpMatrixTimesMatrix and OpOuterProduct.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354)
   switch (instruction->opcode()) {
     case SpvOpVectorTimesScalar:
       // For each vector component, 1 OpCompositeExtract and 1 OpFMul will be
@@ -120,6 +122,7 @@ uint32_t TransformationReplaceLinearAlgebraInstruction::GetFreshIdCount(
              2;
     }
     default:
+      assert(false && "Unsupported linear algebra instruction.");
       return 0;
   }
 }
