@@ -41,8 +41,10 @@ bool TransformationReplaceLinearAlgebraInstruction::IsApplicable(
   auto instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
 
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354):
+  // Right now we only support certain operations. When this issue is addressed
+  // the following conditional can use the function |spvOpcodeIsLinearAlgebra|.
   // It must be a supported linear algebra instruction.
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354)
   if (instruction->opcode() != SpvOpVectorTimesScalar &&
       instruction->opcode() != SpvOpDot) {
     return false;
@@ -79,6 +81,7 @@ void TransformationReplaceLinearAlgebraInstruction::Apply(
       ReplaceOpDot(ir_context, linear_algebra_instruction);
       break;
     default:
+      assert(false && "Should be unreachable.");
       break;
   }
 
@@ -94,7 +97,8 @@ TransformationReplaceLinearAlgebraInstruction::ToMessage() const {
 
 uint32_t TransformationReplaceLinearAlgebraInstruction::GetRequiredFreshIdCount(
     opt::IRContext* ir_context, opt::Instruction* instruction) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354)
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354):
+  // Right now we only support certain operations.
   switch (instruction->opcode()) {
     case SpvOpVectorTimesScalar:
       // For each vector component, 1 OpCompositeExtract and 1 OpFMul will be
