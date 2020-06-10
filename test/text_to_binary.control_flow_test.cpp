@@ -293,8 +293,15 @@ INSTANTIATE_TEST_SUITE_P(
         MakeSwitchTestCase(64, 1, "0x700000123", {0x123, 7}, "12", {12, 0}),
     })));
 
+using ControlFlowRoundTripTest = RoundTripTest;
+
+TEST_P(ControlFlowRoundTripTest, DisassemblyEqualsAssemblyInput) {
+  const std::string assembly = GetParam();
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(assembly), Eq(assembly)) << assembly;
+}
+
 INSTANTIATE_TEST_SUITE_P(
-    OpSwitchRoundTripUnsignedIntegers, RoundTripTest,
+    OpSwitchRoundTripUnsignedIntegers, ControlFlowRoundTripTest,
     ValuesIn(std::vector<std::string>({
         // Unsigned 16-bit.
         "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 65535\nOpSwitch %2 %3\n",
@@ -310,7 +317,7 @@ INSTANTIATE_TEST_SUITE_P(
     })));
 
 INSTANTIATE_TEST_SUITE_P(
-    OpSwitchRoundTripSignedIntegers, RoundTripTest,
+    OpSwitchRoundTripSignedIntegers, ControlFlowRoundTripTest,
     ValuesIn(std::vector<std::string>{
         // Signed 16-bit, with two non-default cases
         "%1 = OpTypeInt 16 1\n%2 = OpConstant %1 32767\n"
