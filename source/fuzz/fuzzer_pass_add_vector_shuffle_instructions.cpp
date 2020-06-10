@@ -100,7 +100,9 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
                                  ->AsVector();
 
         // |vector_1| and |vector_2| must have the same element type as each
-        // other.
+        // other. The loop is guaranteed to terminate because each iteration
+        // removes on possible choice for |vector_2|, and there is at least one
+        // choice that will cause the loop to exit - namely |vector_1|.
         while (vector_1_type->element_type() != vector_2_type->element_type()) {
           vector_2_instruction =
               GetFuzzerContext()->RemoveAtRandomIndex(&vector_instructions);
