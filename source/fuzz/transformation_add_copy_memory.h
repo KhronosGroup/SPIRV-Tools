@@ -30,14 +30,14 @@ class TransformationAddCopyMemory : public Transformation {
 
   TransformationAddCopyMemory(
       const protobufs::InstructionDescriptor& instruction_descriptor,
-      uint32_t target_id, uint32_t source_id);
+      uint32_t fresh_id, uint32_t source_id);
 
   // - |instruction_descriptor| must point to a valid instruction in the module.
   // - it should be possible to insert OpCopyMemory before
   //   |instruction_descriptor| (i.e. the module remains valid after the
   //   insertion).
   // - |source_id| must be a result id for some valid instruction in the module.
-  // - |target_id| must be a fresh id.
+  // - |fresh_id| must be a fresh id to copy memory into.
   // - type of |source_id| must be OpTypePointer where pointee can be used with
   //   OpCopyMemory.
   bool IsApplicable(

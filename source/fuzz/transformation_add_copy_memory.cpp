@@ -26,16 +26,16 @@ TransformationAddCopyMemory::TransformationAddCopyMemory(
 
 TransformationAddCopyMemory::TransformationAddCopyMemory(
     const protobufs::InstructionDescriptor& instruction_descriptor,
-    uint32_t target_id, uint32_t source_id) {
+    uint32_t fresh_id, uint32_t source_id) {
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
-  message_.set_target_id(target_id);
+  message_.set_fresh_id(fresh_id);
   message_.set_source_id(source_id);
 }
 
 bool TransformationAddCopyMemory::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Check that target id is fresh.
-  if (!fuzzerutil::IsFreshId(ir_context, message_.target_id())) {
+  if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     return false;
   }
 
@@ -100,7 +100,8 @@ void TransformationAddCopyMemory::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
   // Result id for target variable type.
-  // TODO: it would be good to refactor variable creation part into a separate
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3413):
+  //  it would be good to refactor variable creation part into a separate
   //  function (in, say, fuzzerutil). This will reduce boilerplate here, in
   //  TransformationPushIdsThroughVariables and two transformations that create
   //  variables.
@@ -114,16 +115,16 @@ void TransformationAddCopyMemory::Apply(
   opt::Instruction::OperandList variable_operands = {
       {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}};
   ir_context->AddGlobalValue(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpVariable, type_id, message_.target_id(),
+      ir_context, SpvOpVariable, type_id, message_.fresh_id(),
       std::move(variable_operands)));
 
   fuzzerutil::AddVariableIdToEntryPointInterfaces(ir_context,
-                                                  message_.target_id());
+                                                  message_.fresh_id());
 
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.target_id());
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 
   transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      message_.target_id());
+      message_.fresh_id());
 
   // Insert OpCopyMemory before |instruction_descriptor|.
   auto* insert_before_inst =
@@ -134,7 +135,7 @@ void TransformationAddCopyMemory::Apply(
       ir_context->get_instr_block(insert_before_inst), insert_before_inst);
 
   opt::Instruction::OperandList copy_operands = {
-      {SPV_OPERAND_TYPE_ID, {message_.target_id()}},
+      {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}},
       {SPV_OPERAND_TYPE_ID, {message_.source_id()}}};
 
   insert_before_iter.InsertBefore(MakeUnique<opt::Instruction>(

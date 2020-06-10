@@ -466,8 +466,8 @@ message TransformationAddCopyMemory {
   // OpCopyMemory will be inserted before this instruction.
   InstructionDescriptor instruction_descriptor = 1;
 
-  // Target to copy memory into.
-  uint32 target_id = 2;
+  // Fresh id to copy memory into.
+  uint32 fresh_id = 2;
 
   // Source to copy memory from.
   uint32 source_id = 3;
