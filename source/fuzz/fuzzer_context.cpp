@@ -38,8 +38,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingLocalVariable = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
-const std::pair<uint32_t, uint32_t> kChanceOfAddingParameters = {
-    5, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingParameters = {5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingStore = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorShuffle = {20, 70};
@@ -83,8 +82,8 @@ const uint32_t kDefaultMaxLoopControlPartialCount = 100;
 const uint32_t kDefaultMaxLoopControlPeelCount = 100;
 const uint32_t kDefaultMaxLoopLimit = 20;
 const uint32_t kDefaultMaxNewArraySizeLimit = 100;
-const std::pair<uint32_t, uint32_t> kDefaultNumberBoundsForNewParameters =
-    {1, 5};
+const std::pair<uint32_t, uint32_t> kDefaultNumberBoundsForNewParameters = {1,
+                                                                            5};
 
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
