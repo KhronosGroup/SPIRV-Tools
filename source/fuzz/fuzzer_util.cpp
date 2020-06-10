@@ -500,7 +500,8 @@ uint32_t GetTypeId(opt::IRContext* context, uint32_t result_id) {
   return context->get_def_use_mgr()->GetDef(result_id)->type_id();
 }
 
-uint32_t GetPointeeTypeIdFromPointerType(opt::Instruction* pointer_type_inst) {
+uint32_t GetPointeeTypeIdFromPointerType(
+    const opt::Instruction* pointer_type_inst) {
   assert(pointer_type_inst && pointer_type_inst->opcode() == SpvOpTypePointer &&
          "Precondition: |pointer_type_inst| must be OpTypePointer.");
   return pointer_type_inst->GetSingleWordInOperand(1);
@@ -513,7 +514,7 @@ uint32_t GetPointeeTypeIdFromPointerType(opt::IRContext* context,
 }
 
 SpvStorageClass GetStorageClassFromPointerType(
-    opt::Instruction* pointer_type_inst) {
+    const opt::Instruction* pointer_type_inst) {
   assert(pointer_type_inst && pointer_type_inst->opcode() == SpvOpTypePointer &&
          "Precondition: |pointer_type_inst| must be OpTypePointer.");
   return static_cast<SpvStorageClass>(
@@ -581,6 +582,83 @@ void AddVariableIdToEntryPointInterfaces(opt::IRContext* context, uint32_t id) {
       entry_point.AddOperand({SPV_OPERAND_TYPE_ID, {id}});
     }
   }
+}
+
+void AddGlobalVariable(opt::IRContext* context, uint32_t fresh_id,
+                       uint32_t type_id, SpvStorageClass storage_class,
+                       uint32_t initializer_id) {
+  // Check various preconditions.
+  assert(IsFreshId(context, fresh_id) && "Variable result id must be fresh");
+
+  assert((storage_class == SpvStorageClassPrivate ||
+          storage_class == SpvStorageClassWorkgroup) &&
+         "Variable's storage class must be either Private or Workgroup");
+
+  const auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
+  (void)type_inst;
+  assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
+         GetStorageClassFromPointerType(type_inst) == storage_class &&
+         "Variable's type is invalid");
+
+  if (storage_class == SpvStorageClassWorkgroup) {
+    assert(initializer_id == 0);
+  }
+
+  if (initializer_id != 0) {
+    const auto* constant_inst =
+        context->get_def_use_mgr()->GetDef(initializer_id);
+    (void)constant_inst;
+    assert(constant_inst && spvOpcodeIsConstant(constant_inst->opcode()) &&
+           GetPointeeTypeIdFromPointerType(type_inst) ==
+               constant_inst->type_id() &&
+           "Initializer is invalid");
+  }
+
+  opt::Instruction::OperandList operands = {
+      {SPV_OPERAND_TYPE_STORAGE_CLASS, {storage_class}}};
+
+  if (initializer_id) {
+    operands.push_back({SPV_OPERAND_TYPE_ID, {initializer_id}});
+  }
+
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context, SpvOpVariable, type_id, fresh_id, std::move(operands)));
+
+  UpdateModuleIdBound(context, fresh_id);
+  AddVariableIdToEntryPointInterfaces(context, fresh_id);
+}
+
+void AddLocalVariable(opt::IRContext* context, uint32_t fresh_id,
+                      uint32_t type_id, uint32_t function_id,
+                      uint32_t initializer_id) {
+  // Check various preconditions.
+  assert(IsFreshId(context, fresh_id) && "Variable result id must be fresh");
+
+  const auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
+  (void)type_inst;
+  assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
+         GetStorageClassFromPointerType(type_inst) == SpvStorageClassFunction &&
+         "Variable's type is invalid");
+
+  const auto* constant_inst =
+      context->get_def_use_mgr()->GetDef(initializer_id);
+  (void)constant_inst;
+  assert(constant_inst && spvOpcodeIsConstant(constant_inst->opcode()) &&
+         GetPointeeTypeIdFromPointerType(type_inst) ==
+             constant_inst->type_id() &&
+         "Initializer is invalid");
+
+  auto* function = FindFunction(context, function_id);
+  assert(function && "Function id is invalid");
+
+  opt::Instruction::OperandList operands = {
+      {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
+      {SPV_OPERAND_TYPE_ID, {initializer_id}}};
+
+  function->begin()->begin()->InsertBefore(MakeUnique<opt::Instruction>(
+      context, SpvOpVariable, type_id, fresh_id, std::move(operands)));
+
+  UpdateModuleIdBound(context, fresh_id);
 }
 
 }  // namespace fuzzerutil
