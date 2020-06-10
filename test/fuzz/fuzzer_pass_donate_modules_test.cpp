@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+
 #include "source/fuzz/fuzzer_pass_donate_modules.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -1676,6 +1678,104 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
   ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
+TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
+  std::string donor_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeStruct %6 %6 %7
+          %9 = OpSpecConstantTrue %6
+         %10 = OpSpecConstantFalse %6
+         %11 = OpSpecConstant %7 2
+         %12 = OpSpecConstantComposite %8 %9 %10 %11
+         %13 = OpSpecConstantOp %6 LogicalEqual %9 %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::string recipient_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator prng(0);
+  FuzzerContext fuzzer_context(&prng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // Check that the module is valid first.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+        %100 = OpTypeBool
+        %101 = OpTypeInt 32 1
+        %102 = OpTypeStruct %100 %100 %101
+        %103 = OpConstantTrue %100
+        %104 = OpConstantFalse %100
+        %105 = OpConstant %101 2
+        %106 = OpConstantComposite %102 %103 %104 %105
+        %107 = OpSpecConstantOp %100 LogicalEqual %103 %104
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %108 = OpFunction %2 None %3
+        %109 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  // Now check that the transformation has produced the expected result.
+  ASSERT_TRUE(IsEqual(env, expected_shader, recipient_context.get()));
 }
 
 }  // namespace
