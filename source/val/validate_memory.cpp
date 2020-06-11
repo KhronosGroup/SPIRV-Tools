@@ -584,16 +584,26 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       storage_class != SpvStorageClassPrivate &&
       storage_class != SpvStorageClassFunction) {
     if (spvIsVulkanEnv(_.context()->target_env)) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << _.VkErrorID(4651) << "OpVariable, <id> '"
-             << _.getIdName(inst->id())
-             << "', has a disallowed initializer & storage class "
-             << "combination.\n"
-             << "From " << spvLogStringForEnv(_.context()->target_env)
-             << " spec:\n"
-             << "Variable declarations that include initializers must have "
-             << "one of the following storage classes: Output, Private, or "
-             << "Function";
+      if (storage_class == SpvStorageClassWorkgroup) {
+        auto init_id = inst->GetOperandAs<uint32_t>(3);
+        auto init = _.FindDef(init_id);
+        if (init->opcode() != SpvOpConstantNull) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "Variable initializers in Workgroup storage class are "
+                    "limited to OpConstantNull";
+        }
+      } else {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(4651) << "OpVariable, <id> '"
+               << _.getIdName(inst->id())
+               << "', has a disallowed initializer & storage class "
+               << "combination.\n"
+               << "From " << spvLogStringForEnv(_.context()->target_env)
+               << " spec:\n"
+               << "Variable declarations that include initializers must have "
+               << "one of the following storage classes: Output, Private, "
+               << "Function or Workgroup";
+      }
     }
   }
 
