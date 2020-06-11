@@ -83,6 +83,10 @@ TEST(TransformationAddParametersTest, BasicTest) {
   ASSERT_FALSE(TransformationAddParameters(9, 16, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
+  // New function type is not OpTypeFunction instruction.
+  ASSERT_FALSE(TransformationAddParameters(9, 11, {11}, {21}, {8})
+                   .IsApplicable(context.get(), transformation_context));
+
   // Return type is invalid.
   ASSERT_FALSE(TransformationAddParameters(9, 14, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));

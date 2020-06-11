@@ -211,6 +211,9 @@ class FuzzerContext {
   uint32_t GetMaximumEquivalenceClassSizeForDataSynonymFactClosure() {
     return max_equivalence_class_size_for_data_synonym_fact_closure_;
   }
+  uint32_t GetMaximumNumberOfFunctionParameters() {
+    return max_number_of_function_parameters_;
+  }
   std::pair<uint32_t, uint32_t> GetRandomBranchWeights() {
     std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
 
@@ -246,8 +249,11 @@ class FuzzerContext {
   uint32_t GetRandomLoopLimit() {
     return random_generator_->RandomUint32(max_loop_limit_);
   }
-  uint32_t GetRandomNumberOfNewParameters() {
-    return ChooseBetweenMinAndMax(number_bounds_for_new_parameters);
+  uint32_t GetRandomNumberOfNewParameters(uint32_t num_of_params) {
+    assert(num_of_params < GetMaximumNumberOfFunctionParameters());
+    return ChooseBetweenMinAndMax(
+        {1, std::min(max_number_of_new_parameters_,
+                     GetMaximumNumberOfFunctionParameters() - num_of_params)});
   }
   uint32_t GetRandomSizeForNewArray() {
     // Ensure that the array size is non-zero.
@@ -314,7 +320,8 @@ class FuzzerContext {
   uint32_t max_loop_control_peel_count_;
   uint32_t max_loop_limit_;
   uint32_t max_new_array_size_limit_;
-  std::pair<uint32_t, uint32_t> number_bounds_for_new_parameters;
+  uint32_t max_number_of_function_parameters_;
+  uint32_t max_number_of_new_parameters_;
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.

@@ -47,6 +47,11 @@ void FuzzerPassAddParameters::Apply() {
       continue;
     }
 
+    if (GetNumberOfParameters(function) >=
+        GetFuzzerContext()->GetMaximumNumberOfFunctionParameters()) {
+      continue;
+    }
+
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfAddingParameters())) {
       continue;
@@ -59,7 +64,8 @@ void FuzzerPassAddParameters::Apply() {
     // -1 because we don't take return type into account.
     auto num_old_parameters = type_inst->NumInOperands() - 1;
     auto num_new_parameters =
-        GetFuzzerContext()->GetRandomNumberOfNewParameters();
+        GetFuzzerContext()->GetRandomNumberOfNewParameters(
+            GetNumberOfParameters(function));
 
     std::vector<uint32_t> all_types(num_old_parameters);
     std::vector<uint32_t> new_types(num_new_parameters);
@@ -122,6 +128,15 @@ std::vector<uint32_t> FuzzerPassAddParameters::ComputeTypeCandidates() const {
   }
 
   return result;
+}
+
+uint32_t FuzzerPassAddParameters::GetNumberOfParameters(
+    const opt::Function& function) const {
+  const auto* type = GetIRContext()->get_type_mgr()->GetType(
+      function.DefInst().GetSingleWordInOperand(1));
+  assert(type && type->AsFunction());
+
+  return static_cast<uint32_t>(type->AsFunction()->param_types().size());
 }
 
 }  // namespace fuzz

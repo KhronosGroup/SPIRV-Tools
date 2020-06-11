@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_parameters.h"
+
+#include <source/spirv_constant.h>
+
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {
@@ -93,33 +96,40 @@ bool TransformationAddParameters::IsApplicable(
   }
 
   // Validate new function type.
-  const auto* old_type = fuzzerutil::GetFunctionType(ir_context, function);
-  const auto* new_type =
+  const auto* old_type_inst = fuzzerutil::GetFunctionType(ir_context, function);
+  const auto* new_type_inst =
       ir_context->get_def_use_mgr()->GetDef(message_.new_type_id());
 
   // Both types must exist.
-  if (!old_type || !new_type) {
+  assert(old_type_inst && old_type_inst->opcode() == SpvOpTypeFunction);
+  if (!new_type_inst || new_type_inst->opcode() != SpvOpTypeFunction) {
     return false;
   }
 
-  // New type = old type + new parameters.
-  auto num_old_parameters = old_type->NumInOperands();
+  auto num_old_parameters = old_type_inst->NumInOperands();
   auto num_new_parameters = new_type_ids.size();
-  if (new_type->NumInOperands() != num_old_parameters + num_new_parameters) {
+
+  // New function type has been added to the module which means that it's valid.
+  // Thus, we don't need to check whether the limit on the number of arguments
+  // is satisfied.
+
+  // New type = old type + new parameters.
+  if (new_type_inst->NumInOperands() !=
+      num_old_parameters + num_new_parameters) {
     return false;
   }
 
   // Check that old parameters and the return type are preserved.
   for (uint32_t i = 0; i < num_old_parameters; ++i) {
-    if (new_type->GetSingleWordInOperand(i) !=
-        old_type->GetSingleWordInOperand(i)) {
+    if (new_type_inst->GetSingleWordInOperand(i) !=
+        old_type_inst->GetSingleWordInOperand(i)) {
       return false;
     }
   }
 
   // Check that new parameters have been appended.
   for (int i = 0; i < num_new_parameters; ++i) {
-    if (new_type->GetSingleWordInOperand(i + num_old_parameters) !=
+    if (new_type_inst->GetSingleWordInOperand(i + num_old_parameters) !=
         new_type_ids[i]) {
       return false;
     }
