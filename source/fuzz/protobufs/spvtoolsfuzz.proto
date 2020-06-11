@@ -379,6 +379,7 @@ message Transformation {
     TransformationAddSpecConstantOp add_spec_constant_op = 48;
     TransformationReplaceLinearAlgebraInstruction replace_linear_algebra_instruction = 49;
     TransformationSwapConditionalBranchOperands swap_conditional_branch_operands = 50;
+    TransformationPermutePhiOperands permute_phi_operands = 51;
     // Add additional option using the next available number.
   }
 }
@@ -1002,6 +1003,19 @@ message TransformationPermuteFunctionParameters {
   // function's argument (i.e. i-th argument will be permutation[i]-th
   // after running this transformation)
   repeated uint32 permutation = 3;
+
+}
+
+message TransformationPermutePhiOperands {
+
+  // Permutes operands of some OpPhi instruction.
+
+  // Result id of the instruction to apply transformation to.
+  uint32 result_id = 1;
+
+  // A sequence of numbers in the range [0, n/2 - 1] where |n| is the number
+  // of operands of the OpPhi instruction with |result_id|.
+  repeated uint32 permutation = 2;
 
 }
 

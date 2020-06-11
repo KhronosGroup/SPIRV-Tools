@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <unordered_set>
+#include <set>
 #include <vector>
 
 #include "source/fuzz/fuzzer_util.h"
@@ -63,20 +63,21 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
     return false;
   }
 
-  // Check that all indices are valid
-  // and unique integers from the [0, n-1] set
-  std::unordered_set<uint32_t> unique_indices;
-  for (auto index : permutation) {
-    // We don't compare |index| with 0 since it's an unsigned integer
-    if (index >= arg_size) {
-      return false;
-    }
-
-    unique_indices.insert(index);
-  }
+  // Check that |permutation| has valid elements.
+  std::set<uint32_t> set(permutation.begin(), permutation.end());
 
   // Check that permutation doesn't have duplicated values
-  assert(unique_indices.size() == arg_size && "Permutation has duplicates");
+  assert(set.size() == arg_size && "Permutation has duplicates");
+
+  // Check that elements in permutation are in range [0, arg_size - 1].
+  //
+  // We already know that we have |arg_size| unique elements. If the largest one
+  // is |arg_size - 1| then the smallest one must be 0 because we are using an
+  // unsigned integer type. Moreover, all elements in the range
+  // [0, arg_size - 1] are present.
+  if (!set.empty() && *set.rbegin() != arg_size - 1) {
+    return false;
+  }
 
   // Check that new function's type is valid:
   //   - Has the same number of operands
