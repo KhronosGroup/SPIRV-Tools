@@ -68,6 +68,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingIdWithSynonym = {10, 90};
 const std::pair<uint32_t, uint32_t>
     kChanceOfReplacingLinearAlgebraInstructions = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
+const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
+    {10, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
     20, 90};
 
@@ -170,6 +172,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_replacing_linear_algebra_instructions_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingLinearAlgebraInstructions);
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);
+  chance_of_swapping_conditional_branch_operands_ =
+      ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_toggling_access_chain_instruction_ =
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
 }

@@ -378,6 +378,7 @@ message Transformation {
     TransformationPushIdThroughVariable push_id_through_variable = 47;
     TransformationAddSpecConstantOp add_spec_constant_op = 48;
     TransformationReplaceLinearAlgebraInstruction replace_linear_algebra_instruction = 49;
+    TransformationSwapConditionalBranchOperands swap_conditional_branch_operands = 50;
     // Add additional option using the next available number.
   }
 }
@@ -1223,6 +1224,18 @@ message TransformationSwapCommutableOperands {
 
   // A descriptor for a commutative instruction
   InstructionDescriptor instruction_descriptor = 1;
+
+}
+
+message TransformationSwapConditionalBranchOperands {
+
+  // Swaps label ids in OpBranchConditional instruction.
+
+  // Descriptor of the instruction to swap operands of.
+  InstructionDescriptor instruction_descriptor = 1;
+
+  // Fresh result id for the OpLogicalNot instruction.
+  uint32 fresh_id = 2;
 
 }
 
