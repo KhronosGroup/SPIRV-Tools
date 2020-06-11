@@ -927,13 +927,6 @@ TEST_F(CCPTest, FoldWithDecoration) {
 
 TEST_F(CCPTest, DebugSimpleFoldConstant) {
   const std::string text = R"(
-; CHECK: [[float1:%\w+]] = OpConstant {{%\w+}} 1
-; CHECK: OpExtInst %void [[ext:%\w+]] DebugScope
-; CHECK: OpLine [[file:%\w+]] 1 0
-; CHECK: OpExtInst %void [[ext]] DebugValue {{%\w+}} %float_1
-; CHECK: OpLine [[file]] 2 0
-; CHECK: OpReturnValue [[float1]]
-
                OpCapability Shader
                OpCapability Linkage
         %ext = OpExtInstImport "OpenCL.DebugInfo.100"
@@ -947,6 +940,8 @@ TEST_F(CCPTest, DebugSimpleFoldConstant) {
        %bool = OpTypeBool
       %float = OpTypeFloat 32
     %float_0 = OpConstant %float 0
+
+; CHECK: [[float1:%\w+]] = OpConstant {{%\w+}} 1
     %float_1 = OpConstant %float 1
        %uint = OpTypeInt 32 0
     %uint_32 = OpConstant %uint 32
@@ -960,10 +955,17 @@ TEST_F(CCPTest, DebugSimpleFoldConstant) {
       %dbg_f = OpExtInst %void %ext DebugLocalVariable %f_name %dbg_tf %src 0 0 %dbg_main FlagIsLocal
           %1 = OpFunction %float None %8
          %10 = OpLabel
+
+; CHECK: OpExtInst %void [[ext:%\w+]] DebugScope
+; CHECK: OpLine [[file:%\w+]] 1 0
+; CHECK: OpExtInst %void [[ext]] DebugValue {{%\w+}} %float_1
          %s0 = OpExtInst %void %ext DebugScope %dbg_main
                OpLine %file_name 1 0
          %17 = OpFAdd %float %float_0 %float_1
         %val = OpExtInst %void %ext DebugValue %dbg_f %17 %null_expr
+
+; CHECK: OpLine [[file]] 2 0
+; CHECK: OpReturnValue [[float1]]
                OpLine %file_name 2 0
                OpReturnValue %17
                OpFunctionEnd
@@ -974,14 +976,6 @@ TEST_F(CCPTest, DebugSimpleFoldConstant) {
 
 TEST_F(CCPTest, DebugFoldMultipleForSingleConstant) {
   const std::string text = R"(
-; CHECK: OpExtInst %void [[ext:%\w+]] DebugScope
-; CHECK: OpLine [[file:%\w+]] 1 0
-; CHECK: OpIAdd %int %int_4 %int_3
-; CHECK: OpExtInst %void [[ext]] DebugValue {{%\w+}} %int_7
-; CHECK: OpLine [[file]] 2 0
-; CHECK: OpSGreaterThan %bool %int_7 %int_3
-; CHECK: OpExtInst %void [[ext]] DebugValue {{%\w+}} %true
-
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
         %ext = OpExtInstImport "OpenCL.DebugInfo.100"
@@ -1023,13 +1017,23 @@ TEST_F(CCPTest, DebugFoldMultipleForSingleConstant) {
       %dbg_f2 = OpExtInst %void %ext DebugLocalVariable %f_name %dbg_tf %src 2 0 %dbg_main FlagIsLocal
        %main = OpFunction %void None %3
           %4 = OpLabel
+
+; CHECK: OpExtInst %void [[ext:%\w+]] DebugScope
+; CHECK: OpLine [[file:%\w+]] 1 0
+; CHECK: OpIAdd %int %int_4 %int_3
+; CHECK: OpExtInst %void [[ext]] DebugValue {{%\w+}} %int_7
          %s0 = OpExtInst %void %ext DebugScope %bb0
                OpLine %file_name 1 0
           %9 = OpIAdd %int %int_4 %int_3
        %val0 = OpExtInst %void %ext DebugValue %dbg_f0 %9 %null_expr
+
+; CHECK: OpLine [[file]] 2 0
+; CHECK: OpSGreaterThan %bool %int_7 %int_3
+; CHECK: OpExtInst %void [[ext]] DebugValue {{%\w+}} %true
                OpLine %file_name 2 0
           %6 = OpSGreaterThan %bool %9 %int_3
        %val1 = OpExtInst %void %ext DebugValue %dbg_f1 %6 %null_expr
+
                OpSelectionMerge %25 None
                OpBranchConditional %6 %22 %23
          %22 = OpLabel
