@@ -500,8 +500,7 @@ uint32_t GetTypeId(opt::IRContext* context, uint32_t result_id) {
   return context->get_def_use_mgr()->GetDef(result_id)->type_id();
 }
 
-uint32_t GetPointeeTypeIdFromPointerType(
-    const opt::Instruction* pointer_type_inst) {
+uint32_t GetPointeeTypeIdFromPointerType(opt::Instruction* pointer_type_inst) {
   assert(pointer_type_inst && pointer_type_inst->opcode() == SpvOpTypePointer &&
          "Precondition: |pointer_type_inst| must be OpTypePointer.");
   return pointer_type_inst->GetSingleWordInOperand(1);
@@ -514,7 +513,7 @@ uint32_t GetPointeeTypeIdFromPointerType(opt::IRContext* context,
 }
 
 SpvStorageClass GetStorageClassFromPointerType(
-    const opt::Instruction* pointer_type_inst) {
+    opt::Instruction* pointer_type_inst) {
   assert(pointer_type_inst && pointer_type_inst->opcode() == SpvOpTypePointer &&
          "Precondition: |pointer_type_inst| must be OpTypePointer.");
   return static_cast<SpvStorageClass>(
@@ -594,8 +593,8 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t fresh_id,
           storage_class == SpvStorageClassWorkgroup) &&
          "Variable's storage class must be either Private or Workgroup");
 
-  const auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
-  (void)type_inst;
+  auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
+  (void)type_inst;  // Variable becomes unused in release mode.
   assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
          GetStorageClassFromPointerType(type_inst) == storage_class &&
          "Variable's type is invalid");
@@ -607,7 +606,7 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t fresh_id,
   if (initializer_id != 0) {
     const auto* constant_inst =
         context->get_def_use_mgr()->GetDef(initializer_id);
-    (void)constant_inst;
+    (void)constant_inst;  // Variable becomes unused in release mode.
     assert(constant_inst && spvOpcodeIsConstant(constant_inst->opcode()) &&
            GetPointeeTypeIdFromPointerType(type_inst) ==
                constant_inst->type_id() &&
@@ -634,15 +633,15 @@ void AddLocalVariable(opt::IRContext* context, uint32_t fresh_id,
   // Check various preconditions.
   assert(IsFreshId(context, fresh_id) && "Variable result id must be fresh");
 
-  const auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
-  (void)type_inst;
+  auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
+  (void)type_inst;  // Variable becomes unused in release mode.
   assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
          GetStorageClassFromPointerType(type_inst) == SpvStorageClassFunction &&
          "Variable's type is invalid");
 
   const auto* constant_inst =
       context->get_def_use_mgr()->GetDef(initializer_id);
-  (void)constant_inst;
+  (void)constant_inst;  // Variable becomes unused in release mode.
   assert(constant_inst && spvOpcodeIsConstant(constant_inst->opcode()) &&
          GetPointeeTypeIdFromPointerType(type_inst) ==
              constant_inst->type_id() &&

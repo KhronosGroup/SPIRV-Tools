@@ -189,8 +189,7 @@ uint32_t GetTypeId(opt::IRContext* context, uint32_t result_id);
 
 // Given |pointer_type_inst|, which must be an OpTypePointer instruction,
 // returns the id of the associated pointee type.
-uint32_t GetPointeeTypeIdFromPointerType(
-    const opt::Instruction* pointer_type_inst);
+uint32_t GetPointeeTypeIdFromPointerType(opt::Instruction* pointer_type_inst);
 
 // Given |pointer_type_id|, which must be the id of a pointer type, returns the
 // id of the associated pointee type.
@@ -200,7 +199,7 @@ uint32_t GetPointeeTypeIdFromPointerType(opt::IRContext* context,
 // Given |pointer_type_inst|, which must be an OpTypePointer instruction,
 // returns the associated storage class.
 SpvStorageClass GetStorageClassFromPointerType(
-    const opt::Instruction* pointer_type_inst);
+    opt::Instruction* pointer_type_inst);
 
 // Given |pointer_type_id|, which must be the id of a pointer type, returns the
 // associated storage class.
