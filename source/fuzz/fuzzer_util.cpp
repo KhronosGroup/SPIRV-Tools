@@ -614,7 +614,7 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t fresh_id,
   }
 
   opt::Instruction::OperandList operands = {
-      {SPV_OPERAND_TYPE_STORAGE_CLASS, {storage_class}}};
+      {SPV_OPERAND_TYPE_STORAGE_CLASS, {static_cast<uint32_t>(storage_class)}}};
 
   if (initializer_id) {
     operands.push_back({SPV_OPERAND_TYPE_ID, {initializer_id}});
