@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <set>
 #include <vector>
 
 #include "source/fuzz/fuzzer_util.h"
@@ -52,17 +51,17 @@ bool TransformationPermutePhiOperands::IsApplicable(
 
   // Check that |message_.permutation| has elements in range
   // [0, expected_permutation_size - 1].
-  std::set<uint32_t> set(message_.permutation().begin(),
-                         message_.permutation().end());
-  assert(set.size() == expected_permutation_size &&
+  std::vector<uint32_t> permutation(message_.permutation().begin(),
+                                    message_.permutation().end());
+  assert(!fuzzerutil::HasDuplicates(permutation) &&
          "Permutation has duplicates");
 
-  // We already know that permutation has |expected_permutation_size| unique
-  // elements. If the largest one is |expected_permutation_size - 1| then the
-  // smallest one must be 0 because we are using an unsigned integer type.
-  // Moreover, all elements in the range [0, expected_permutation_size - 1] are
-  // present.
-  return set.empty() || *set.rbegin() == expected_permutation_size - 1;
+  // We must check whether the permutation is empty first because in that case
+  // |expected_permutation_size - 1| will produce
+  // |std::numeric_limits<uint32_t>::max()| since it's an unsigned integer.
+  return permutation.empty() ||
+         fuzzerutil::IsPermutationOfRange(permutation, 0,
+                                          expected_permutation_size - 1);
 }
 
 void TransformationPermutePhiOperands::Apply(

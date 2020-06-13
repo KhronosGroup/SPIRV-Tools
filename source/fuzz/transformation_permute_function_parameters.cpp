@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <set>
 #include <vector>
 
 #include "source/fuzz/fuzzer_util.h"
@@ -53,7 +52,8 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
   const auto* function_type = fuzzerutil::GetFunctionType(ir_context, function);
   assert(function_type && "Function type is null");
 
-  const auto& permutation = message_.permutation();
+  std::vector<uint32_t> permutation(message_.permutation().begin(),
+                                    message_.permutation().end());
 
   // Don't take return type into account
   auto arg_size = function_type->NumInOperands() - 1;
@@ -63,19 +63,17 @@ bool TransformationPermuteFunctionParameters::IsApplicable(
     return false;
   }
 
-  // Check that |permutation| has valid elements.
-  std::set<uint32_t> set(permutation.begin(), permutation.end());
-
-  // Check that permutation doesn't have duplicated values
-  assert(set.size() == arg_size && "Permutation has duplicates");
+  // Check that permutation doesn't have duplicated values.
+  assert(!fuzzerutil::HasDuplicates(permutation) &&
+         "Permutation has duplicates");
 
   // Check that elements in permutation are in range [0, arg_size - 1].
   //
-  // We already know that we have |arg_size| unique elements. If the largest one
-  // is |arg_size - 1| then the smallest one must be 0 because we are using an
-  // unsigned integer type. Moreover, all elements in the range
-  // [0, arg_size - 1] are present.
-  if (!set.empty() && *set.rbegin() != arg_size - 1) {
+  // We must check whether the permutation is empty first because in that case
+  // |arg_size - 1| will produce |std::numeric_limits<uint32_t>::max()| since
+  // it's an unsigned integer.
+  if (!permutation.empty() &&
+      !fuzzerutil::IsPermutationOfRange(permutation, 0, arg_size - 1)) {
     return false;
   }
 
