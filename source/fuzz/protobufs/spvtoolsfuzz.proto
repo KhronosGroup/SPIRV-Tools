@@ -1010,7 +1010,7 @@ message TransformationPermutePhiOperands {
 
   // Permutes operands of some OpPhi instruction.
 
-  // Result id of the instruction to apply transformation to.
+  // Result id of the instruction to apply the transformation to.
   uint32 result_id = 1;
 
   // A sequence of numbers in the range [0, n/2 - 1] where |n| is the number

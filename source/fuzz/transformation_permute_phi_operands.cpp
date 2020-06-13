@@ -79,6 +79,10 @@ void TransformationPermutePhiOperands::Apply(
   }
 
   inst->SetInOperands(std::move(permuted_operands));
+
+  // Make sure our changes are analyzed
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationPermutePhiOperands::ToMessage() const {
