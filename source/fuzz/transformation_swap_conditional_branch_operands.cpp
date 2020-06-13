@@ -58,15 +58,17 @@ void TransformationSwapConditionalBranchOperands::Apply(
     --iter;
   }
 
-  assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLogicalNot, iter));
+  assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLogicalNot, iter) &&
+         "We should now be able to insert SpvOpLogicalNot before |iter|");
 
-  // Get the instruction which result is used as a condition for
+  // Get the instruction whose result is used as a condition for
   // OpBranchConditional.
   const auto* condition_inst = ir_context->get_def_use_mgr()->GetDef(
       branch_inst->GetSingleWordInOperand(0));
   assert(condition_inst);
 
-  // Insert OpLogicalNot.
+  // We are swapping the labels in OpBranchConditional. This means that we must
+  // invert the guard as well. We are using OpLogicalNot for that purpose here.
   iter.InsertBefore(MakeUnique<opt::Instruction>(
       ir_context, SpvOpLogicalNot, condition_inst->type_id(),
       message_.fresh_id(),

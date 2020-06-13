@@ -1230,11 +1230,14 @@ message TransformationSwapCommutableOperands {
 message TransformationSwapConditionalBranchOperands {
 
   // Swaps label ids in OpBranchConditional instruction.
+  // Additionally, inverts the guard and swaps branch weights
+  // if present.
 
   // Descriptor of the instruction to swap operands of.
   InstructionDescriptor instruction_descriptor = 1;
 
-  // Fresh result id for the OpLogicalNot instruction.
+  // Fresh result id for the OpLogicalNot instruction, used
+  // to invert the guard.
   uint32 fresh_id = 2;
 
 }
