@@ -6353,7 +6353,7 @@ INSTANTIATE_TEST_SUITE_P(
                               "requires one of these capabilities"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    DecorationWhitelistFailure, ValidateWebGPUCombineDecorationResult,
+    DecorationAllowListFailure, ValidateWebGPUCombineDecorationResult,
     Combine(Values("RelaxedPrecision", "BufferBlock", "GLSLShared",
                    "GLSLPacked", "Invariant", "Volatile", "Coherent"),
             Values(TestResult(
