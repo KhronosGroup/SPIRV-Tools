@@ -1952,7 +1952,7 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int", "is not an int"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    WhitelistRejection,
+    AllowListRejection,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointSize", "ClipDistance", "CullDistance", "VertexId",
                    "InstanceId", "PointCoord", "SampleMask", "HelperInvocation",
@@ -2979,7 +2979,7 @@ OpMemberDecorate %input_type 0 BuiltIn InstanceId
 TEST_F(ValidateBuiltIns, ValidBuiltinsForMeshShader) {
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
-OpCapability MeshShadingNV 
+OpCapability MeshShadingNV
 )";
 
   generator.extensions_ = R"(
@@ -3017,7 +3017,7 @@ OpDecorate %gl_ViewportIndex PerPrimitiveNV
 TEST_F(ValidateBuiltIns, InvalidBuiltinsForMeshShader) {
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
-OpCapability MeshShadingNV 
+OpCapability MeshShadingNV
 )";
 
   generator.extensions_ = R"(

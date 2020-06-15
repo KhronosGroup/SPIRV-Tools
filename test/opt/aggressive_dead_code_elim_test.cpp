@@ -413,7 +413,7 @@ OpFunctionEnd
       predefs1 + names_after + predefs2 + func_after, true, true);
 }
 
-TEST_F(AggressiveDCETest, OptWhitelistExtension) {
+TEST_F(AggressiveDCETest, OptAllowListExtension) {
   //  #version 140
   //
   //  in vec4 BaseColor;
@@ -498,7 +498,7 @@ OpFunctionEnd
       predefs1 + names_after + predefs2 + func_after, true, true);
 }
 
-TEST_F(AggressiveDCETest, NoOptBlacklistExtension) {
+TEST_F(AggressiveDCETest, NoOptDenyListExtension) {
   //  #version 140
   //
   //  in vec4 BaseColor;
