@@ -25,6 +25,115 @@ namespace {
 
 using DescriptorScalarReplacementTest = PassTest<::testing::Test>;
 
+std::string GetStructureArrayTestSpirv() {
+  // The SPIR-V for the following high-level shader:
+  // Flattening structures and arrays should result in the following binding
+  // numbers. Only the ones that are actually used in the shader should be in
+  // the final SPIR-V.
+  //
+  // globalS[0][0].t[0]  0 (used)
+  // globalS[0][0].t[1]  1
+  // globalS[0][0].s[0]  2 (used)
+  // globalS[0][0].s[1]  3
+  // globalS[0][1].t[0]  4
+  // globalS[0][1].t[1]  5
+  // globalS[0][1].s[0]  6
+  // globalS[0][1].s[1]  7
+  // globalS[1][0].t[0]  8
+  // globalS[1][0].t[1]  9
+  // globalS[1][0].s[0]  10
+  // globalS[1][0].s[1]  11
+  // globalS[1][1].t[0]  12
+  // globalS[1][1].t[1]  13 (used)
+  // globalS[1][1].s[0]  14
+  // globalS[1][1].s[1]  15 (used)
+
+  /*
+    struct S {
+      Texture2D t[2];
+      SamplerState s[2];
+    };
+
+    S globalS[2][2];
+
+    float4 main() : SV_Target {
+      return globalS[0][0].t[0].Sample(globalS[0][0].s[0], float2(0,0)) +
+             globalS[1][1].t[1].Sample(globalS[1][1].s[1], float2(0,0));
+    }
+  */
+
+  return R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out_var_SV_Target
+               OpExecutionMode %main OriginUpperLeft
+               OpName %S "S"
+               OpMemberName %S 0 "t"
+               OpMemberName %S 1 "s"
+               OpName %type_2d_image "type.2d.image"
+               OpName %type_sampler "type.sampler"
+               OpName %globalS "globalS"
+               OpName %out_var_SV_Target "out.var.SV_Target"
+               OpName %main "main"
+               OpName %src_main "src.main"
+               OpName %bb_entry "bb.entry"
+               OpName %type_sampled_image "type.sampled.image"
+               OpDecorate %out_var_SV_Target Location 0
+               OpDecorate %globalS DescriptorSet 0
+               OpDecorate %globalS Binding 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %float = OpTypeFloat 32
+    %float_0 = OpConstant %float 0
+    %v2float = OpTypeVector %float 2
+         %10 = OpConstantComposite %v2float %float_0 %float_0
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%type_2d_image = OpTypeImage %float 2D 2 0 0 1 Unknown
+%_arr_type_2d_image_uint_2 = OpTypeArray %type_2d_image %uint_2
+%type_sampler = OpTypeSampler
+%_arr_type_sampler_uint_2 = OpTypeArray %type_sampler %uint_2
+          %S = OpTypeStruct %_arr_type_2d_image_uint_2 %_arr_type_sampler_uint_2
+%_arr_S_uint_2 = OpTypeArray %S %uint_2
+%_arr__arr_S_uint_2_uint_2 = OpTypeArray %_arr_S_uint_2 %uint_2
+%_ptr_UniformConstant__arr__arr_S_uint_2_uint_2 = OpTypePointer UniformConstant %_arr__arr_S_uint_2_uint_2
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+         %24 = OpTypeFunction %void
+         %28 = OpTypeFunction %v4float
+%_ptr_UniformConstant_type_2d_image = OpTypePointer UniformConstant %type_2d_image
+%_ptr_UniformConstant_type_sampler = OpTypePointer UniformConstant %type_sampler
+%type_sampled_image = OpTypeSampledImage %type_2d_image
+    %globalS = OpVariable %_ptr_UniformConstant__arr__arr_S_uint_2_uint_2 UniformConstant
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %24
+         %25 = OpLabel
+         %26 = OpFunctionCall %v4float %src_main
+               OpStore %out_var_SV_Target %26
+               OpReturn
+               OpFunctionEnd
+   %src_main = OpFunction %v4float None %28
+   %bb_entry = OpLabel
+         %31 = OpAccessChain %_ptr_UniformConstant_type_2d_image %globalS %int_0 %int_0 %int_0 %int_0
+         %32 = OpLoad %type_2d_image %31
+         %34 = OpAccessChain %_ptr_UniformConstant_type_sampler %globalS %int_0 %int_0 %int_1 %int_0
+         %35 = OpLoad %type_sampler %34
+         %37 = OpSampledImage %type_sampled_image %32 %35
+         %38 = OpImageSampleImplicitLod %v4float %37 %10 None
+         %39 = OpAccessChain %_ptr_UniformConstant_type_2d_image %globalS %int_1 %int_1 %int_0 %int_1
+         %40 = OpLoad %type_2d_image %39
+         %41 = OpAccessChain %_ptr_UniformConstant_type_sampler %globalS %int_1 %int_1 %int_1 %int_1
+         %42 = OpLoad %type_sampler %41
+         %43 = OpSampledImage %type_sampled_image %40 %42
+         %44 = OpImageSampleImplicitLod %v4float %43 %10 None
+         %45 = OpFAdd %v4float %38 %44
+               OpReturnValue %45
+               OpFunctionEnd
+  )";
+}
+
 TEST_F(DescriptorScalarReplacementTest, ExpandTexture) {
   const std::string text = R"(
 ; CHECK: OpDecorate [[var1:%\w+]] DescriptorSet 0
@@ -265,6 +374,50 @@ TEST_F(DescriptorScalarReplacementTest, NameNewVariables) {
 
   SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
 }
+
+TEST_F(DescriptorScalarReplacementTest, StructureArrayNames) {
+  // Checks that names are properly generated for multi-dimension arrays and
+  // structure members.
+  const std::string checks = R"(
+; CHECK: OpName %globalS_0__0__t_0_ "globalS[0][0].t[0]"
+; CHECK: OpName %globalS_0__0__s_0_ "globalS[0][0].s[0]"
+; CHECK: OpName %globalS_1__1__t_1_ "globalS[1][1].t[1]"
+; CHECK: OpName %globalS_1__1__s_1_ "globalS[1][1].s[1]"
+  )";
+
+  const std::string text = checks + GetStructureArrayTestSpirv();
+  SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
+}
+
+TEST_F(DescriptorScalarReplacementTest, StructureArrayBindings) {
+  // Checks that flattening structures and arrays results in correct binding
+  // numbers.
+  const std::string checks = R"(
+; CHECK: OpDecorate %globalS_0__0__t_0_ Binding 0
+; CHECK: OpDecorate %globalS_0__0__s_0_ Binding 2
+; CHECK: OpDecorate %globalS_1__1__t_1_ Binding 13
+; CHECK: OpDecorate %globalS_1__1__s_1_ Binding 15
+  )";
+
+  const std::string text = checks + GetStructureArrayTestSpirv();
+  SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
+}
+
+TEST_F(DescriptorScalarReplacementTest, StructureArrayReplacements) {
+  // Checks that all access chains indexing into structures and/or arrays are
+  // replaced with direct access to replacement variables.
+  const std::string checks = R"(
+; CHECK-NOT: OpAccessChain
+; CHECK: OpLoad %type_2d_image %globalS_0__0__t_0_
+; CHECK: OpLoad %type_sampler %globalS_0__0__s_0_
+; CHECK: OpLoad %type_2d_image %globalS_1__1__t_1_
+; CHECK: OpLoad %type_sampler %globalS_1__1__s_1_
+  )";
+
+  const std::string text = checks + GetStructureArrayTestSpirv();
+  SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

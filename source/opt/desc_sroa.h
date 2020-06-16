@@ -70,6 +70,15 @@ class DescriptorScalarReplacement : public Pass {
   // element of |var|.
   uint32_t CreateReplacementVariable(Instruction* var, uint32_t idx);
 
+  // Returns the number of bindings used by the given |type_id|.
+  // All types are considered to use 1 binding slot, except:
+  // 1- A pointer type consumes as many binding numbers as its pointee.
+  // 2- An array of size N consumes N*M binding numbers, where M is the number
+  // of bindings used by each array element.
+  // 3- A structure consumes M binding numbers where M is the sum of binding
+  // numbers used by its members.
+  uint32_t GetNumBindingsUsedByType(uint32_t type_id);
+
   // A map from an OpVariable instruction to the set of variables that will be
   // used to replace it. The entry |replacement_variables_[var][i]| is the id of
   // a variable that will be used in the place of the the ith element of the
