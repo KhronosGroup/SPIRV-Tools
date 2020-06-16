@@ -136,6 +136,9 @@ class FuzzerContext {
     return chance_of_adding_no_contraction_decoration_;
   }
   uint32_t GetChanceOfAddingStore() { return chance_of_adding_store_; }
+  uint32_t GetChanceOfAddingVectorShuffle() {
+    return chance_of_adding_vector_shuffle_;
+  }
   uint32_t GetChanceOfAddingVectorType() {
     return chance_of_adding_vector_type_;
   }
@@ -201,18 +204,6 @@ class FuzzerContext {
   uint32_t GetMaximumEquivalenceClassSizeForDataSynonymFactClosure() {
     return max_equivalence_class_size_for_data_synonym_fact_closure_;
   }
-  uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
-    return random_generator_->RandomUint32(composite_size_bound);
-  }
-  uint32_t GetRandomLoopControlPartialCount() {
-    return random_generator_->RandomUint32(max_loop_control_partial_count_);
-  }
-  uint32_t GetRandomLoopControlPeelCount() {
-    return random_generator_->RandomUint32(max_loop_control_peel_count_);
-  }
-  uint32_t GetRandomLoopLimit() {
-    return random_generator_->RandomUint32(max_loop_limit_);
-  }
   std::pair<uint32_t, uint32_t> GetRandomBranchWeights() {
     std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
 
@@ -224,6 +215,29 @@ class FuzzerContext {
     }
 
     return branch_weights;
+  }
+  std::vector<uint32_t> GetRandomComponentsForVectorShuffle(
+      uint32_t max_component_index) {
+    // Component count must be in range [2, 4].
+    std::vector<uint32_t> components(random_generator_->RandomUint32(2) + 2);
+
+    for (uint32_t& component : components) {
+      component = random_generator_->RandomUint32(max_component_index);
+    }
+
+    return components;
+  }
+  uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
+    return random_generator_->RandomUint32(composite_size_bound);
+  }
+  uint32_t GetRandomLoopControlPartialCount() {
+    return random_generator_->RandomUint32(max_loop_control_partial_count_);
+  }
+  uint32_t GetRandomLoopControlPeelCount() {
+    return random_generator_->RandomUint32(max_loop_control_peel_count_);
+  }
+  uint32_t GetRandomLoopLimit() {
+    return random_generator_->RandomUint32(max_loop_limit_);
   }
   uint32_t GetRandomSizeForNewArray() {
     // Ensure that the array size is non-zero.
@@ -254,6 +268,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_matrix_type_;
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_store_;
+  uint32_t chance_of_adding_vector_shuffle_;
   uint32_t chance_of_adding_vector_type_;
   uint32_t chance_of_adjusting_branch_weights_;
   uint32_t chance_of_adjusting_function_control_;
