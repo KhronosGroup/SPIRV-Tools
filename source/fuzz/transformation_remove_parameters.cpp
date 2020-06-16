@@ -247,6 +247,8 @@ void TransformationRemoveParameters::Apply(
 
         auto it = fuzzerutil::GetIteratorForInstruction(
             ir_context->get_instr_block(inst), inst);
+        assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, it) &&
+               "Can't insert OpStore right before the function call");
 
         for (int i = 0, n = parameter_index.size(); i < n; ++i) {
           // +1 since the first operand of OpFunctionCall is the id of the
