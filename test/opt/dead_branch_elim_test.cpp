@@ -186,6 +186,81 @@ OpFunctionEnd
                                             true, true);
 }
 
+TEST_F(DeadBranchElimTest, IfThenElseNull) {
+  // For booleans OpConstantNull should be treated similar to OpConstantFalse.
+  //
+  // From the SPIR-V spec:
+  // OpConstantNull: Declares a new null constant value.
+  // The null value is type dependent, defined as follows:
+  // - Scalar Boolean: false
+  // ...
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %v "v"
+OpName %gl_FragColor "gl_FragColor"
+OpName %BaseColor "BaseColor"
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%bool = OpTypeBool
+%9 = OpConstantNull %bool
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%float_0 = OpConstant %float 0
+%14 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%float_1 = OpConstant %float 1
+%16 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %7
+%19 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+OpSelectionMerge %20 None
+OpBranchConditional %9 %21 %22
+%21 = OpLabel
+OpStore %v %14
+OpBranch %20
+%22 = OpLabel
+OpStore %v %16
+OpBranch %20
+%20 = OpLabel
+%23 = OpLoad %v4float %v
+OpStore %gl_FragColor %23
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %7
+%19 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+OpBranch %22
+%22 = OpLabel
+OpStore %v %16
+OpBranch %20
+%20 = OpLabel
+%23 = OpLoad %v4float %v
+OpStore %gl_FragColor %23
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<DeadBranchElimPass>(predefs + before, predefs + after,
+                                            true, true);
+}
+
 TEST_F(DeadBranchElimTest, IfThenTrue) {
   // #version 140
   //
