@@ -100,6 +100,9 @@ class FuzzerContext {
   // or to have been issued before.
   uint32_t GetFreshId();
 
+  // Returns a vector of |count| fresh ids.
+  std::vector<uint32_t> GetFreshIds(const uint32_t count);
+
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
   uint32_t GetChanceOfAddingAccessChain() {
@@ -185,6 +188,9 @@ class FuzzerContext {
   uint32_t GetChanceOfReplacingIdWithSynonym() {
     return chance_of_replacing_id_with_synonym_;
   }
+  uint32_t GetChanceOfReplacingLinearAlgebraInstructions() {
+    return chance_of_replacing_linear_algebra_instructions_;
+  }
   uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
   uint32_t GetChanceOfTogglingAccessChainInstruction() {
     return chance_of_toggling_access_chain_instruction_;
@@ -268,6 +274,7 @@ class FuzzerContext {
   uint32_t chance_of_permuting_parameters_;
   uint32_t chance_of_pushing_id_through_variable_;
   uint32_t chance_of_replacing_id_with_synonym_;
+  uint32_t chance_of_replacing_linear_algebra_instructions_;
   uint32_t chance_of_splitting_block_;
   uint32_t chance_of_toggling_access_chain_instruction_;
 
