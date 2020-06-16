@@ -307,10 +307,7 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   }
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
-    Instruction* dbg_val =
-        pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
-    if (dbg_val != nullptr)
-      pass_->get_def_use_mgr()->AnalyzeInstDefUse(dbg_val);
+    pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -453,9 +450,10 @@ bool SSARewriter::ApplyReplacements() {
            "Tried to instantiate a Phi instruction from an incomplete Phi "
            "candidate");
 
+    auto* local_var = pass_->get_def_use_mgr()->GetDef(phi_candidate->var_id());
+
     // Build the vector of operands for the new OpPhi instruction.
-    uint32_t type_id = pass_->GetPointeeTypeId(
-        pass_->get_def_use_mgr()->GetDef(phi_candidate->var_id()));
+    uint32_t type_id = pass_->GetPointeeTypeId(local_var);
     std::vector<Operand> phi_operands;
     uint32_t arg_ix = 0;
     std::unordered_map<uint32_t, uint32_t> already_seen;
@@ -491,9 +489,9 @@ bool SSARewriter::ApplyReplacements() {
         {SpvDecorationRelaxedPrecision});
 
     // Add DebugValue for the new OpPhi instruction.
-    Instruction* dbg_val = pass_->get_debug_info_mgr()->AddDebugValue(
+    insert_it->SetDebugScope(local_var->GetDebugScope());
+    pass_->get_debug_info_mgr()->AddDebugValue(
         &*insert_it, phi_candidate->var_id(), phi_candidate->result_id());
-    if (dbg_val != nullptr) dbg_values_for_phis.push_back(dbg_val);
 
     modified = true;
   }
@@ -503,9 +501,6 @@ bool SSARewriter::ApplyReplacements() {
   // of Phi instructions that have not been registered yet.
   for (Instruction* phi_inst : generated_phis) {
     pass_->get_def_use_mgr()->AnalyzeInstUse(&*phi_inst);
-  }
-  for (Instruction* dbg_val : dbg_values_for_phis) {
-    pass_->get_def_use_mgr()->AnalyzeInstDefUse(dbg_val);
   }
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1

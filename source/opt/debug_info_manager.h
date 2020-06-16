@@ -16,6 +16,7 @@
 #define SOURCE_OPT_DEBUG_INFO_MANAGER_H_
 
 #include <unordered_map>
+#include <vector>
 
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
@@ -130,8 +131,8 @@ class DebugInfoManager {
 
   // Creates a DebugValue whose 'Local Variable' and 'Value' operands are
   // |variable_id| and |value_id| and inserts it after |instr|.
-  Instruction* AddDebugValue(Instruction* instr, uint32_t variable_id,
-                             uint32_t value_id);
+  void AddDebugValue(Instruction* instr, uint32_t variable_id,
+                     uint32_t value_id);
 
   // Erases |instr| from data structures of this class.
   void ClearDebugInfo(Instruction* instr);
@@ -155,6 +156,10 @@ class DebugInfoManager {
   // in |inst| must not already be registered.
   void RegisterDbgFunction(Instruction* inst);
 
+  // Register the DebugDeclare instruction |dbg_declare| into
+  // |var_id_to_dbg_decl_| using OpVariable id |var_id| as a key.
+  void RegisterDbgDeclare(uint32_t var_id, Instruction* dbg_declare);
+
   // Returns a DebugExpression instruction without Operation operands.
   Instruction* GetEmptyDebugExpression();
 
@@ -162,6 +167,14 @@ class DebugInfoManager {
   // operation and its Value operand is a result id of OpVariable with
   // Function storage class. Otherwise, returns 0.
   uint32_t GetVariableIdOfDebugValueUsedForDeclare(Instruction* inst);
+
+  // Returns true if the declaration of a local variable |dbg_declare|
+  // is visible in the scope of an instruction |instr_scope_id|.
+  bool IsDeclareVisibleToInstr(Instruction* dbg_declare,
+                               uint32_t instr_scope_id);
+
+  // Returns the parent scope of the scope |child_scope|.
+  uint32_t GetParentScope(uint32_t child_scope);
 
   IRContext* context_;
 
@@ -175,7 +188,7 @@ class DebugInfoManager {
 
   // Mapping from local variable ids to DebugDeclare instructions whose
   // operand is the local variable.
-  std::unordered_map<uint32_t, Instruction*> var_id_to_dbg_decl_;
+  std::unordered_map<uint32_t, std::vector<Instruction*>> var_id_to_dbg_decl_;
 
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.

@@ -24,6 +24,9 @@ static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
+static const uint32_t kDebugFunctionOperandParentIndex = 9;
+static const uint32_t kDebugTypeCompositeOperandParentIndex = 9;
+static const uint32_t kDebugLexicalBlockOperandParentIndex = 7;
 static const uint32_t kDebugInlinedAtOperandInlinedIndex = 6;
 static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 static const uint32_t kDebugExpressOperandOperationIndex = 4;
@@ -31,6 +34,7 @@ static const uint32_t kDebugValueOperandLocalVariableIndex = 4;
 static const uint32_t kDebugValueOperandExpressionIndex = 6;
 static const uint32_t kDebugOperationOperandOperationIndex = 4;
 static const uint32_t kOpVariableOperandStorageClassIndex = 2;
+static const uint32_t kDebugLocalVariableOperandParentIndex = 9;
 
 namespace spvtools {
 namespace opt {
@@ -94,6 +98,20 @@ void DebugInfoManager::RegisterDbgFunction(Instruction* inst) {
       fn_id_to_dbg_fn_.find(fn_id) == fn_id_to_dbg_fn_.end() &&
       "Register DebugFunction for a function that already has DebugFunction");
   fn_id_to_dbg_fn_[fn_id] = inst;
+}
+
+void DebugInfoManager::RegisterDbgDeclare(uint32_t var_id,
+                                          Instruction* dbg_declare) {
+  assert(dbg_declare->GetOpenCL100DebugOpcode() ==
+             OpenCLDebugInfo100DebugDeclare ||
+         dbg_declare->GetOpenCL100DebugOpcode() ==
+             OpenCLDebugInfo100DebugValue);
+  auto dbg_decl_itr = var_id_to_dbg_decl_.find(var_id);
+  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) {
+    var_id_to_dbg_decl_[var_id] = {dbg_declare};
+  } else {
+    dbg_decl_itr->second.push_back(dbg_declare);
+  }
 }
 
 uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
@@ -304,56 +322,113 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
       std::move(new_inlined_at));
 }
 
-Instruction* DebugInfoManager::AddDebugValue(Instruction* instr,
-                                             uint32_t variable_id,
-                                             uint32_t value_id) {
+uint32_t DebugInfoManager::GetParentScope(uint32_t child_scope) {
+  auto dbg_scope_itr = id_to_dbg_inst_.find(child_scope);
+  assert(dbg_scope_itr != id_to_dbg_inst_.end());
+  OpenCLDebugInfo100Instructions debug_opcode =
+      dbg_scope_itr->second->GetOpenCL100DebugOpcode();
+  uint32_t parent_scope = kNoDebugScope;
+  switch (debug_opcode) {
+    case OpenCLDebugInfo100DebugFunction:
+      parent_scope = dbg_scope_itr->second->GetSingleWordOperand(
+          kDebugFunctionOperandParentIndex);
+      break;
+    case OpenCLDebugInfo100DebugLexicalBlock:
+      parent_scope = dbg_scope_itr->second->GetSingleWordOperand(
+          kDebugLexicalBlockOperandParentIndex);
+      break;
+    case OpenCLDebugInfo100DebugTypeComposite:
+      parent_scope = dbg_scope_itr->second->GetSingleWordOperand(
+          kDebugTypeCompositeOperandParentIndex);
+      break;
+    case OpenCLDebugInfo100DebugCompilationUnit:
+      // DebugCompilationUnit does not have a parent scope.
+      break;
+    default:
+      assert(false &&
+             "Unreachable. A debug scope instruction must be "
+             "DebugFunction, DebugTypeComposite, DebugLexicalBlock, "
+             "or DebugCompilationUnit.");
+      break;
+  }
+  return parent_scope;
+}
+
+bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
+                                               uint32_t instr_scope_id) {
+  if (instr_scope_id == kNoDebugScope) return false;
+
+  uint32_t dbg_local_var_id =
+      dbg_declare->GetSingleWordOperand(kDebugValueOperandLocalVariableIndex);
+  auto dbg_local_var_itr = id_to_dbg_inst_.find(dbg_local_var_id);
+  assert(dbg_local_var_itr != id_to_dbg_inst_.end());
+  uint32_t decl_scope_id = dbg_local_var_itr->second->GetSingleWordOperand(
+      kDebugLocalVariableOperandParentIndex);
+
+  // If the scope of DebugDeclare is an ancestor scope of the instruction's
+  // scope, the local variable is visible to the instruction.
+  uint32_t ancestor_scope_itr = instr_scope_id;
+  while (ancestor_scope_itr != kNoDebugScope) {
+    if (ancestor_scope_itr == decl_scope_id) return true;
+    ancestor_scope_itr = GetParentScope(ancestor_scope_itr);
+  }
+  return false;
+}
+
+void DebugInfoManager::AddDebugValue(Instruction* instr, uint32_t variable_id,
+                                     uint32_t value_id) {
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
-  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return nullptr;
+  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
 
-  auto* dbg_decl_or_val = dbg_decl_itr->second;
-  uint32_t result_id = context()->TakeNextId();
-  std::unique_ptr<Instruction> new_dbg_value(new Instruction(
-      context(), SpvOpExtInst, context()->get_type_mgr()->GetVoidTypeId(),
-      result_id,
-      {
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-           {context()
-                ->get_feature_mgr()
-                ->GetExtInstImportId_OpenCL100DebugInfo()}},
-          {spv_operand_type_t::SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
-           {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)}},
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-           {dbg_decl_or_val->GetSingleWordOperand(
-               kDebugValueOperandLocalVariableIndex)}},
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {value_id}},
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-           {GetEmptyDebugExpression()->result_id()}},
-      }));
+  uint32_t instr_scope_id = instr->GetDebugScope().GetLexicalScope();
+  for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
+    if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
 
-  if (dbg_decl_or_val->NumOperands() > kDebugValueOperandExpressionIndex + 1) {
-    assert(dbg_decl_or_val->GetOpenCL100DebugOpcode() ==
-           OpenCLDebugInfo100DebugValue);
-    for (uint32_t i = kDebugValueOperandExpressionIndex + 1;
-         i < dbg_decl_or_val->NumOperands(); ++i) {
-      new_dbg_value->AddOperand({spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                                 {dbg_decl_or_val->GetSingleWordOperand(i)}});
+    uint32_t result_id = context()->TakeNextId();
+    std::unique_ptr<Instruction> new_dbg_value(new Instruction(
+        context(), SpvOpExtInst, context()->get_type_mgr()->GetVoidTypeId(),
+        result_id,
+        {
+            {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+             {context()
+                  ->get_feature_mgr()
+                  ->GetExtInstImportId_OpenCL100DebugInfo()}},
+            {spv_operand_type_t::SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+             {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)}},
+            {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+             {dbg_decl_or_val->GetSingleWordOperand(
+                 kDebugValueOperandLocalVariableIndex)}},
+            {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {value_id}},
+            {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+             {GetEmptyDebugExpression()->result_id()}},
+        }));
+
+    if (dbg_decl_or_val->NumOperands() >
+        kDebugValueOperandExpressionIndex + 1) {
+      assert(dbg_decl_or_val->GetOpenCL100DebugOpcode() ==
+             OpenCLDebugInfo100DebugValue);
+      for (uint32_t i = kDebugValueOperandExpressionIndex + 1;
+           i < dbg_decl_or_val->NumOperands(); ++i) {
+        new_dbg_value->AddOperand({spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+                                   {dbg_decl_or_val->GetSingleWordOperand(i)}});
+      }
     }
-  }
 
-  // Avoid inserting the new DebugValue between OpPhi or OpVariable
-  // instructions.
-  Instruction* insert_before = instr->NextNode();
-  while (insert_before->opcode() == SpvOpPhi ||
-         insert_before->opcode() == SpvOpVariable) {
-    insert_before = insert_before->NextNode();
-  }
+    // Avoid inserting the new DebugValue between OpPhi or OpVariable
+    // instructions.
+    Instruction* insert_before = instr->NextNode();
+    while (insert_before->opcode() == SpvOpPhi ||
+           insert_before->opcode() == SpvOpVariable) {
+      insert_before = insert_before->NextNode();
+    }
 
-  Instruction* added_dbg_value =
-      insert_before->InsertBefore(std::move(new_dbg_value));
-  AnalyzeDebugInst(added_dbg_value);
-  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
-    context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);
-  return added_dbg_value;
+    Instruction* added_dbg_value =
+        insert_before->InsertBefore(std::move(new_dbg_value));
+    added_dbg_value->UpdateDebugInfo(instr);
+    AnalyzeDebugInst(added_dbg_value);
+    if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+      context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);
+  }
 }
 
 uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
@@ -413,14 +488,13 @@ void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
   }
 
   if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
-    var_id_to_dbg_decl_[dbg_inst->GetSingleWordOperand(
-        kDebugDeclareOperandVariableIndex)] = dbg_inst;
+    uint32_t var_id =
+        dbg_inst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
+    RegisterDbgDeclare(var_id, dbg_inst);
   }
 
-  uint32_t var_id = GetVariableIdOfDebugValueUsedForDeclare(dbg_inst);
-  if (var_id != 0 &&
-      var_id_to_dbg_decl_.find(var_id) == var_id_to_dbg_decl_.end()) {
-    var_id_to_dbg_decl_[var_id] = dbg_inst;
+  if (uint32_t var_id = GetVariableIdOfDebugValueUsedForDeclare(dbg_inst)) {
+    RegisterDbgDeclare(var_id, dbg_inst);
   }
 }
 
