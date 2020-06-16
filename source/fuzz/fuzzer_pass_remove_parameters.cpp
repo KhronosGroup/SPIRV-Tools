@@ -53,8 +53,46 @@ void FuzzerPassRemoveParameters::Apply() {
     // |function|.
     std::vector<uint32_t> parameter_index(params.size());
     std::iota(parameter_index.begin(), parameter_index.end(), 0);
+
+    // Remove parameters that can't be used with FindOrCreateZeroConstant.
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
+    //  Think how we can improve this.
+    parameter_index.erase(
+        std::remove_if(parameter_index.begin(), parameter_index.end(),
+                       [&params, this](uint32_t index) {
+                         const auto* type =
+                             GetIRContext()->get_def_use_mgr()->GetDef(
+                                 params[index]->type_id());
+                         assert(type);
+
+                         // GLSL always produces SPIR-V functions that have
+                         // OpTypePointer parameters. Thus, we must use
+                         // OpTypePointer below to be able to run this
+                         // transformation on GLSL-produced SPIR-V.
+                         switch (type->opcode()) {
+                           case SpvOpTypeBool:
+                           case SpvOpTypeInt:
+                           case SpvOpTypeFloat:
+                           case SpvOpTypeArray:
+                           case SpvOpTypeMatrix:
+                           case SpvOpTypeVector:
+                           case SpvOpTypeStruct:
+                           case SpvOpTypePointer:
+                             return false;
+                           default:
+                             return true;
+                         }
+                       }),
+        parameter_index.end());
+
+    if (parameter_index.empty()) {
+      continue;
+    }
+
+    // Select parameters to remove at random.
     GetFuzzerContext()->Shuffle(&parameter_index);
-    parameter_index.resize(num_to_remove);
+    parameter_index.resize(
+        std::min<size_t>(num_to_remove, parameter_index.size()));
 
     // Compute initializers for global variables that will be used to pass
     // arguments to the function. initializer_ids[i] == 0 if
@@ -66,7 +104,7 @@ void FuzzerPassRemoveParameters::Apply() {
           GetIRContext()->get_def_use_mgr()->GetDef(params[index]->type_id());
       assert(type_inst && "Type of function parameter is invalid");
 
-      // Make sure type ids for global and local variables exist in the module.
+      // Make sure type ids for global variables exist in the module.
       FindOrCreatePointerType(type_inst->result_id(), SpvStorageClassPrivate);
 
       // TODO: We can recursively create global variables to be used in the
