@@ -225,9 +225,9 @@ void TransformationRemoveParameters::Apply(
     // Remove the parameter from the function. This must be the last step since
     // this will invalidate |param_inst|.
     //
-    // TODO():
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3437):
     //  uncomment when the PR is merged.
-    // function->RemoveParam(parameter_index[i]);
+    // function->RemoveParameter(param_inst->result_id());
   }
 
   // Update module id bound. |fresh_id| is guaranteed to be non-empty.
