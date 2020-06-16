@@ -229,28 +229,26 @@ void AddVariableIdToEntryPointInterfaces(opt::IRContext* context, uint32_t id);
 // Adds a global variable with storage class |storage_class| to the module, with
 // type |type_id| and either no initializer or |initializer_id| as an
 // initializer, depending on whether |initializer_id| is 0. The global variable
-// has result id |fresh_id|.
+// has result id |result_id|.
 //
-// - |fresh_id| must be fresh.
 // - |type_id| must be the id of a pointer type with the same storage class as
 //   |storage_class|.
 // - |storage_class| must be Private or Workgroup.
 // - |initializer_id| must be 0 if |storage_class| is Workgroup, and otherwise
 //   may either be 0 or the id of a constant whose type is the pointee type of
 //   |type_id|.
-void AddGlobalVariable(opt::IRContext* context, uint32_t fresh_id,
+void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
                        uint32_t type_id, SpvStorageClass storage_class,
                        uint32_t initializer_id);
 
 // Adds an instruction to the start of |function_id|, of the form:
-//   |fresh_id| = OpVariable |type_id| Function |initializer_id|.
+//   |result_id| = OpVariable |type_id| Function |initializer_id|.
 //
-// - |fresh_id| must not be used by the module.
 // - |type_id| must be the id of a pointer type with Function storage class.
 // - |initializer_id| must be the id of a constant with the same type as the
 //   pointer's pointee type.
 // - |function_id| must be the id of a function.
-void AddLocalVariable(opt::IRContext* context, uint32_t fresh_id,
+void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
                       uint32_t type_id, uint32_t function_id,
                       uint32_t initializer_id);
 

@@ -583,12 +583,10 @@ void AddVariableIdToEntryPointInterfaces(opt::IRContext* context, uint32_t id) {
   }
 }
 
-void AddGlobalVariable(opt::IRContext* context, uint32_t fresh_id,
+void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
                        uint32_t type_id, SpvStorageClass storage_class,
                        uint32_t initializer_id) {
   // Check various preconditions.
-  assert(IsFreshId(context, fresh_id) && "Variable result id must be fresh");
-
   assert((storage_class == SpvStorageClassPrivate ||
           storage_class == SpvStorageClassWorkgroup) &&
          "Variable's storage class must be either Private or Workgroup");
@@ -621,18 +619,15 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t fresh_id,
   }
 
   context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
-      context, SpvOpVariable, type_id, fresh_id, std::move(operands)));
+      context, SpvOpVariable, type_id, result_id, std::move(operands)));
 
-  UpdateModuleIdBound(context, fresh_id);
-  AddVariableIdToEntryPointInterfaces(context, fresh_id);
+  AddVariableIdToEntryPointInterfaces(context, result_id);
 }
 
-void AddLocalVariable(opt::IRContext* context, uint32_t fresh_id,
+void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
                       uint32_t type_id, uint32_t function_id,
                       uint32_t initializer_id) {
   // Check various preconditions.
-  assert(IsFreshId(context, fresh_id) && "Variable result id must be fresh");
-
   auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
   (void)type_inst;  // Variable becomes unused in release mode.
   assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
@@ -650,14 +645,11 @@ void AddLocalVariable(opt::IRContext* context, uint32_t fresh_id,
   auto* function = FindFunction(context, function_id);
   assert(function && "Function id is invalid");
 
-  opt::Instruction::OperandList operands = {
-      {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
-      {SPV_OPERAND_TYPE_ID, {initializer_id}}};
-
   function->begin()->begin()->InsertBefore(MakeUnique<opt::Instruction>(
-      context, SpvOpVariable, type_id, fresh_id, std::move(operands)));
-
-  UpdateModuleIdBound(context, fresh_id);
+      context, SpvOpVariable, type_id, result_id,
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
+          {SPV_OPERAND_TYPE_ID, {initializer_id}}}));
 }
 
 }  // namespace fuzzerutil
