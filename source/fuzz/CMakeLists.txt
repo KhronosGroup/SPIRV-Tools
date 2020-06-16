@@ -70,6 +70,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_function_parameters.h
         fuzzer_pass_permute_phi_operands.h
         fuzzer_pass_push_ids_through_variables.h
+        fuzzer_pass_remove_parameters.h
         fuzzer_pass_replace_linear_algebra_instructions.h
         fuzzer_pass_split_blocks.h
         fuzzer_pass_swap_commutable_operands.h
@@ -127,6 +128,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_permute_function_parameters.h
         transformation_permute_phi_operands.h
         transformation_push_id_through_variable.h
+        transformation_remove_parameters.h
         transformation_replace_boolean_constant_with_constant_binary.h
         transformation_replace_constant_with_uniform.h
         transformation_replace_id_with_synonym.h
@@ -184,6 +186,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_function_parameters.cpp
         fuzzer_pass_permute_phi_operands.cpp
         fuzzer_pass_push_ids_through_variables.cpp
+        fuzzer_pass_remove_parameters.cpp
         fuzzer_pass_replace_linear_algebra_instructions.cpp
         fuzzer_pass_split_blocks.cpp
         fuzzer_pass_swap_commutable_operands.cpp
@@ -240,6 +243,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_permute_function_parameters.cpp
         transformation_permute_phi_operands.cpp
         transformation_push_id_through_variable.cpp
+        transformation_remove_parameters.cpp
         transformation_replace_boolean_constant_with_constant_binary.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_replace_id_with_synonym.cpp

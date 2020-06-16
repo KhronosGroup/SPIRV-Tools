@@ -384,6 +384,7 @@ message Transformation {
     TransformationAddCopyMemory add_copy_memory = 53;
     TransformationInvertComparisonOperator invert_comparison_operator = 54;
     TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
+    TransformationRemoveParameters remove_parameters = 56;
     // Add additional option using the next available number.
   }
 }
@@ -1119,6 +1120,31 @@ message TransformationPushIdThroughVariable {
   // A descriptor for an instruction which the new OpStore
   // and OpLoad instructions might be inserted before.
   InstructionDescriptor instruction_descriptor = 6;
+
+}
+
+message TransformationRemoveParameters {
+
+  // Removes parameters from the function with |function_id|. Namely,
+  // parameter_index[i]'th parameter will be removed from the function.
+  // A global variable with result id fresh_id[i] will be used to pass the
+  // value of the parameter into the function.
+
+  // Function to remove parameters from.
+  uint32 function_id = 1;
+
+  // Result id of the new OpTypeFunction instruction with removed parameters.
+  uint32 new_type_id = 2;
+
+  // Indices of parameters to remove.
+  repeated uint32 parameter_index = 3;
+
+  // Fresh ids of global variables to use instead of removed parameters.
+  repeated uint32 fresh_id = 4;
+
+  // initializer_id[i] is a result id for the constant, used to initialize
+  // a global variable with result id fresh_id[i].
+  repeated uint32 initializer_id = 5;
 
 }
 
