@@ -95,6 +95,10 @@ class DebugInfoManager {
   uint32_t CreateDebugInlinedAt(const Instruction* line,
                                 const DebugScope& scope);
 
+  // Clones DebugExpress instruction |dbg_expr| and add Deref Operation
+  // in the front of the Operation list of |dbg_expr|.
+  Instruction* CloneDebugExpressionAndPushDerefOperation(Instruction* dbg_expr);
+
   // Returns a DebugInfoNone instruction.
   Instruction* GetDebugInfoNone();
 
@@ -149,6 +153,9 @@ class DebugInfoManager {
   // does not exists.
   Instruction* GetDbgInst(uint32_t id);
 
+  // Returns a DebugOperation instruction with OpCode Deref.
+  Instruction* GetDebugOperationWithDeref();
+
   // Registers the debug instruction |inst| into |id_to_dbg_inst_| using id of
   // |inst| as a key.
   void RegisterDbgInst(Instruction* inst);
@@ -196,6 +203,9 @@ class DebugInfoManager {
   // instructions whose operand is the variable or value.
   std::unordered_map<uint32_t, std::unordered_set<Instruction*>>
       var_id_to_dbg_decl_;
+
+  // DebugOperation whose OpCode is OpenCLDebugInfo100Deref.
+  Instruction* deref_operation_;
 
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
