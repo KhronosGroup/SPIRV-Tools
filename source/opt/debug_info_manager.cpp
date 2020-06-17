@@ -28,8 +28,9 @@ static const uint32_t kDebugFunctionOperandParentIndex = 9;
 static const uint32_t kDebugTypeCompositeOperandParentIndex = 9;
 static const uint32_t kDebugLexicalBlockOperandParentIndex = 7;
 static const uint32_t kDebugInlinedAtOperandInlinedIndex = 6;
-static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 static const uint32_t kDebugExpressOperandOperationIndex = 4;
+static const uint32_t kDebugDeclareOperandLocalVariableIndex = 4;
+static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 static const uint32_t kDebugValueOperandLocalVariableIndex = 4;
 static const uint32_t kDebugValueOperandExpressionIndex = 6;
 static const uint32_t kDebugOperationOperandOperationIndex = 4;
@@ -354,12 +355,29 @@ uint32_t DebugInfoManager::GetParentScope(uint32_t child_scope) {
   return parent_scope;
 }
 
+bool DebugInfoManager::IsAncestorOfScope(uint32_t scope, uint32_t ancestor) {
+  uint32_t ancestor_scope_itr = scope;
+  while (ancestor_scope_itr != kNoDebugScope) {
+    if (ancestor == ancestor_scope_itr) return true;
+    ancestor_scope_itr = GetParentScope(ancestor_scope_itr);
+  }
+  return false;
+}
+
+bool DebugInfoManager::IsVariableVisibleToInstr(uint32_t variable_id,
+                                                uint32_t instr_scope_id) {
+  assert(context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse));
+  Instruction* var = context()->get_def_use_mgr()->GetDef(variable_id);
+  return IsAncestorOfScope(instr_scope_id,
+                           var->GetDebugScope().GetLexicalScope());
+}
+
 bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
                                                uint32_t instr_scope_id) {
   if (instr_scope_id == kNoDebugScope) return false;
 
   uint32_t dbg_local_var_id =
-      dbg_declare->GetSingleWordOperand(kDebugValueOperandLocalVariableIndex);
+      dbg_declare->GetSingleWordOperand(kDebugDeclareOperandLocalVariableIndex);
   auto dbg_local_var_itr = id_to_dbg_inst_.find(dbg_local_var_id);
   assert(dbg_local_var_itr != id_to_dbg_inst_.end());
   uint32_t decl_scope_id = dbg_local_var_itr->second->GetSingleWordOperand(
@@ -367,12 +385,7 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
 
   // If the scope of DebugDeclare is an ancestor scope of the instruction's
   // scope, the local variable is visible to the instruction.
-  uint32_t ancestor_scope_itr = instr_scope_id;
-  while (ancestor_scope_itr != kNoDebugScope) {
-    if (ancestor_scope_itr == decl_scope_id) return true;
-    ancestor_scope_itr = GetParentScope(ancestor_scope_itr);
-  }
-  return false;
+  return IsAncestorOfScope(instr_scope_id, decl_scope_id);
 }
 
 void DebugInfoManager::AddDebugValue(Instruction* instr, uint32_t variable_id,
@@ -383,6 +396,7 @@ void DebugInfoManager::AddDebugValue(Instruction* instr, uint32_t variable_id,
   uint32_t instr_scope_id = instr->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
     if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
+    if (!IsVariableVisibleToInstr(variable_id, instr_scope_id)) continue;
 
     uint32_t result_id = context()->TakeNextId();
     std::unique_ptr<Instruction> new_dbg_value(new Instruction(
