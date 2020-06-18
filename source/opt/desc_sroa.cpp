@@ -274,8 +274,9 @@ uint32_t DescriptorScalarReplacement::CreateReplacementVariable(
 
     uint32_t decoration = new_decoration->GetSingleWordInOperand(1u);
     if (decoration == SpvDecorationBinding) {
-      uint32_t new_binding = new_decoration->GetSingleWordInOperand(2) +
-                             idx * GetNumBindingsUsedByType(ptr_element_type_id);
+      uint32_t new_binding =
+          new_decoration->GetSingleWordInOperand(2) +
+          idx * GetNumBindingsUsedByType(ptr_element_type_id);
       new_decoration->SetInOperand(2, {new_binding});
     }
     context()->AddAnnotationInst(std::move(new_decoration));
@@ -319,18 +320,19 @@ uint32_t DescriptorScalarReplacement::CreateReplacementVariable(
   return id;
 }
 
-uint32_t DescriptorScalarReplacement::GetNumBindingsUsedByType(uint32_t type_id) {
+uint32_t DescriptorScalarReplacement::GetNumBindingsUsedByType(
+    uint32_t type_id) {
   Instruction* type_inst = get_def_use_mgr()->GetDef(type_id);
 
   // If it's a pointer, look at the underlying type.
-  if(type_inst->opcode() == SpvOpTypePointer) {
+  if (type_inst->opcode() == SpvOpTypePointer) {
     type_id = type_inst->GetSingleWordInOperand(1);
     type_inst = get_def_use_mgr()->GetDef(type_id);
   }
 
   // Arrays consume N*M binding numbers where N is the array length, and M is
   // the number of bindings used by each array element.
-  if(type_inst->opcode() == SpvOpTypeArray) {
+  if (type_inst->opcode() == SpvOpTypeArray) {
     uint32_t element_type_id = type_inst->GetSingleWordInOperand(0);
     uint32_t length_id = type_inst->GetSingleWordInOperand(1);
     const analysis::Constant* length_const =
@@ -343,7 +345,7 @@ uint32_t DescriptorScalarReplacement::GetNumBindingsUsedByType(uint32_t type_id)
 
   // Structures consume M binding numbers where M is the sum of binding numbers
   // used by their members.
-  if(type_inst->opcode() == SpvOpTypeStruct) {
+  if (type_inst->opcode() == SpvOpTypeStruct) {
     uint32_t sum = 0;
     for (uint32_t i = 0; i < type_inst->NumInOperands(); i++)
       sum += GetNumBindingsUsedByType(type_inst->GetSingleWordInOperand(i));
