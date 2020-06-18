@@ -364,14 +364,6 @@ bool DebugInfoManager::IsAncestorOfScope(uint32_t scope, uint32_t ancestor) {
   return false;
 }
 
-bool DebugInfoManager::IsVariableVisibleToInstr(uint32_t variable_id,
-                                                uint32_t instr_scope_id) {
-  assert(context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse));
-  Instruction* var = context()->get_def_use_mgr()->GetDef(variable_id);
-  return IsAncestorOfScope(instr_scope_id,
-                           var->GetDebugScope().GetLexicalScope());
-}
-
 bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
                                                uint32_t instr_scope_id) {
   if (instr_scope_id == kNoDebugScope) return false;
@@ -388,15 +380,15 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
   return IsAncestorOfScope(instr_scope_id, decl_scope_id);
 }
 
-void DebugInfoManager::AddDebugValue(Instruction* instr, uint32_t variable_id,
-                                     uint32_t value_id) {
+void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
+                                     uint32_t variable_id, uint32_t value_id,
+                                     Instruction* insert_pos) {
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
 
-  uint32_t instr_scope_id = instr->GetDebugScope().GetLexicalScope();
+  uint32_t instr_scope_id = scope_and_line->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
     if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
-    if (!IsVariableVisibleToInstr(variable_id, instr_scope_id)) continue;
 
     uint32_t result_id = context()->TakeNextId();
     std::unique_ptr<Instruction> new_dbg_value(new Instruction(
@@ -430,7 +422,7 @@ void DebugInfoManager::AddDebugValue(Instruction* instr, uint32_t variable_id,
 
     // Avoid inserting the new DebugValue between OpPhi or OpVariable
     // instructions.
-    Instruction* insert_before = instr->NextNode();
+    Instruction* insert_before = insert_pos->NextNode();
     while (insert_before->opcode() == SpvOpPhi ||
            insert_before->opcode() == SpvOpVariable) {
       insert_before = insert_before->NextNode();
@@ -438,7 +430,7 @@ void DebugInfoManager::AddDebugValue(Instruction* instr, uint32_t variable_id,
 
     Instruction* added_dbg_value =
         insert_before->InsertBefore(std::move(new_dbg_value));
-    added_dbg_value->UpdateDebugInfo(instr);
+    added_dbg_value->UpdateDebugInfo(scope_and_line);
     AnalyzeDebugInst(added_dbg_value);
     if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
       context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);

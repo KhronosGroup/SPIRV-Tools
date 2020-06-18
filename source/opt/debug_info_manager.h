@@ -130,9 +130,10 @@ class DebugInfoManager {
                                     DebugInlinedAtContext* inlined_at_ctx);
 
   // Generates a DebugValue instruction with value |value_id| for every local
-  // variable that is in the scope of |instr| and whose memory is |variable_id|.
-  void AddDebugValue(Instruction* instr, uint32_t variable_id,
-                     uint32_t value_id);
+  // variable that is in the scope of |scope_and_line| and whose memory is
+  // |variable_id| and inserts it after the instruction |insert_pos|.
+  void AddDebugValue(Instruction* scope_and_line, uint32_t variable_id,
+                     uint32_t value_id, Instruction* insert_pos);
 
   // Erases |instr| from data structures of this class.
   void ClearDebugInfo(Instruction* instr);
@@ -171,10 +172,6 @@ class DebugInfoManager {
   // Returns true if a scope |ancestor| is |scope| or an ancestor scope
   // of |scope|.
   bool IsAncestorOfScope(uint32_t scope, uint32_t ancestor);
-
-  // Returns true if a local variable, whose result id is |variable_id|,
-  // is visible in the scope of an instruction |instr_scope_id|.
-  bool IsVariableVisibleToInstr(uint32_t variable_id, uint32_t instr_scope_id);
 
   // Returns true if the declaration of a local variable |dbg_declare|
   // is visible in the scope of an instruction |instr_scope_id|.

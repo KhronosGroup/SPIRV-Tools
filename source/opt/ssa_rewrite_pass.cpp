@@ -307,7 +307,7 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   }
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
-    pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id);
+    pass_->get_debug_info_mgr()->AddDebugValue(inst, var_id, val_id, inst);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -491,7 +491,8 @@ bool SSARewriter::ApplyReplacements() {
     // Add DebugValue for the new OpPhi instruction.
     insert_it->SetDebugScope(local_var->GetDebugScope());
     pass_->get_debug_info_mgr()->AddDebugValue(
-        &*insert_it, phi_candidate->var_id(), phi_candidate->result_id());
+        &*insert_it, phi_candidate->var_id(), phi_candidate->result_id(),
+        &*insert_it);
 
     modified = true;
   }
