@@ -494,9 +494,12 @@ void Loop::ComputeLoopStructuredOrder(
           if (IsInsideLoop(bb)) ordered_loop_blocks->push_back(bb);
         });
   } else {
+    // If this is a shader, it is possible that there are unreachable merge and
+    // continue blocks that must be copied to retain the structured order.
+    // The structured order will include these.
     std::list<BasicBlock*> order;
     cfg.ComputeStructuredOrder(loop_header_->GetParent(), loop_header_, &order);
-    for(BasicBlock* bb : order) {
+    for (BasicBlock* bb : order) {
       if (bb == GetMergeBlock()) {
         break;
       }

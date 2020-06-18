@@ -3002,10 +3002,18 @@ TEST_F(PassClassTest, OpPhiSelfReference) {
 // correctly.
 TEST_F(PassClassTest, UnreachableMerge) {
   const std::string text = R"(
+; Identify the first iteration of the unrolled loop, and make sure it contains
+; the unreachable merge block.
+; The first SelectionMerge corresponds to the original loop merge.
+; The second is the branch in the loop.
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpSelectionMerge [[unrch1:%\w+]] None
 ; CHECK: [[unrch1]] = OpLabel
 ; CHECK-NEXT: OpUnreachable
+; Identify the second iteration of the unrolled loop, and make sure it contains
+; the unreachable merge block.
+; The first SelectionMerge corresponds to the original loop merge
+; The second is the branch in the loop.
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpSelectionMerge [[unrch2:%\w+]] None
 ; CHECK: [[unrch2]] = OpLabel
