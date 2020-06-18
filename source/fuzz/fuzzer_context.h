@@ -143,6 +143,7 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfAddingParameters() { return chance_of_adding_parameters; }
   uint32_t GetChanceOfAddingStore() { return chance_of_adding_store_; }
+  uint32_t GetChanceOfAddingSynonyms() { return chance_of_adding_synonyms_; }
   uint32_t GetChanceOfAddingVectorShuffle() {
     return chance_of_adding_vector_shuffle_;
   }
@@ -307,6 +308,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_parameters;
   uint32_t chance_of_adding_store_;
+  uint32_t chance_of_adding_synonyms_;
   uint32_t chance_of_adding_vector_shuffle_;
   uint32_t chance_of_adding_vector_type_;
   uint32_t chance_of_adjusting_branch_weights_;

@@ -344,6 +344,24 @@ uint32_t FuzzerPass::FindOrCreateConstant(const std::vector<uint32_t>& words,
   return 0;
 }
 
+uint32_t FuzzerPass::FindOrCreateCompositeConstant(
+    const std::vector<uint32_t>& component_ids, uint32_t type_id) {
+  assert(type_id && "|type_id| can't be 0");
+  const auto* type_inst = GetIRContext()->get_def_use_mgr()->GetDef(type_id);
+  assert(type_inst && "|type_id| is invalid");
+
+  std::vector<const opt::analysis::Constant*> constants;
+  for (auto id : component_ids) {
+    assert(id && "Component's id can't be 0");
+    const auto* constant =
+        GetIRContext()->get_constant_mgr()->FindDeclaredConstant(id);
+    assert(constant && "Component's id is invalid");
+    constants.push_back(constant);
+  }
+
+  return FindOrCreateCompositeConstant(*type_inst, constants, component_ids);
+}
+
 uint32_t FuzzerPass::FindOrCreateGlobalUndef(uint32_t type_id) {
   for (auto& inst : GetIRContext()->types_values()) {
     if (inst.opcode() == SpvOpUndef && inst.type_id() == type_id) {

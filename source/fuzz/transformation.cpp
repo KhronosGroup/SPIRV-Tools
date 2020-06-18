@@ -26,6 +26,7 @@
 #include "source/fuzz/transformation_add_dead_block.h"
 #include "source/fuzz/transformation_add_dead_break.h"
 #include "source/fuzz/transformation_add_dead_continue.h"
+#include "source/fuzz/transformation_add_float_cast_synonym.h"
 #include "source/fuzz/transformation_add_function.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_global_variable.h"
@@ -34,6 +35,7 @@
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
 #include "source/fuzz/transformation_add_parameter.h"
 #include "source/fuzz/transformation_add_spec_constant_op.h"
+#include "source/fuzz/transformation_add_synonym.h"
 #include "source/fuzz/transformation_add_type_array.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
 #include "source/fuzz/transformation_add_type_float.h"
@@ -50,7 +52,11 @@
 #include "source/fuzz/transformation_copy_object.h"
 #include "source/fuzz/transformation_equation_instruction.h"
 #include "source/fuzz/transformation_function_call.h"
+<<<<<<< HEAD
 #include "source/fuzz/transformation_invert_comparison_operator.h"
+=======
+#include "source/fuzz/transformation_invert_comparison_operators.h"
+>>>>>>> 38dadc2f... Implement transformations
 #include "source/fuzz/transformation_load.h"
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"
@@ -107,6 +113,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddDeadContinue:
       return MakeUnique<TransformationAddDeadContinue>(
           message.add_dead_continue());
+    case protobufs::Transformation::TransformationCase::kAddFloatCastSynonym:
+      return MakeUnique<TransformationAddFloatCastSynonym>(
+          message.add_float_cast_synonym());
     case protobufs::Transformation::TransformationCase::kAddFunction:
       return MakeUnique<TransformationAddFunction>(message.add_function());
     case protobufs::Transformation::TransformationCase::kAddGlobalUndef:
@@ -131,6 +140,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddSpecConstantOp:
       return MakeUnique<TransformationAddSpecConstantOp>(
           message.add_spec_constant_op());
+    case protobufs::Transformation::TransformationCase::kAddSynonym:
+      return MakeUnique<TransformationAddSynonym>(message.add_synonym());
     case protobufs::Transformation::TransformationCase::kAddTypeArray:
       return MakeUnique<TransformationAddTypeArray>(message.add_type_array());
     case protobufs::Transformation::TransformationCase::kAddTypeBoolean:

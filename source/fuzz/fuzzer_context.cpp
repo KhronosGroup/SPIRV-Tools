@@ -43,6 +43,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingParameters = {5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingStore = {5, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingSynonyms = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorShuffle = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingBranchWeights = {20, 90};
@@ -160,6 +161,7 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAdjustingBranchWeights);
   chance_of_adjusting_function_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingFunctionControl);
+  chance_of_adding_synonyms_ = ChooseBetweenMinAndMax(kChanceOfAddingSynonyms);
   chance_of_adjusting_loop_control_ =
       ChooseBetweenMinAndMax(kChanceOfAdjustingLoopControl);
   chance_of_adjusting_memory_operands_mask_ =

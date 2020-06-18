@@ -386,6 +386,8 @@ message Transformation {
     TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
     TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
     TransformationRecordSynonymousConstants record_synonymous_constants = 57;
+    TransformationAddSynonym add_synonym = 58;
+    TransformationAddFloatCastSynonym add_float_cast_synonym = 59;
     // Add additional option using the next available number.
   }
 }
@@ -547,6 +549,28 @@ message TransformationAddDeadContinue {
 
 }
 
+message TransformationAddFloatCastSynonym {
+
+  // Inserts instructions to the module that convert
+  // |synonym_id| to float and back, and adds a fact that
+  // the converted id and |synonym_id| are synonymous.
+
+  // Id to apply conversion to. This must be a result id of vector or integer type.
+  // If the type is vector, its components must have an integer type.
+  uint32 synonym_id = 1;
+
+  // Fresh id used to store the result of the conversion to float.
+  uint32 to_float_fresh_id = 2;
+
+  // Fresh id used to store the result of the conversion back to int.
+  uint32 to_int_fresh_id = 3;
+
+  // Required id of the float type to convert to. This can be a result id
+  // of either scalar or vector type, whose components are of type float.
+  uint32 float_type_id = 4;
+
+}
+
 message TransformationAddFunction {
 
   // Adds a SPIR-V function to the module.
@@ -702,6 +726,19 @@ message TransformationAddSpecConstantOp {
 
   // Operands of the |opcode| instruction.
   repeated InstructionOperand operand = 4;
+
+}
+
+message TransformationAddSynonym {
+
+  // Adds a |synonymous_instruction| after the instruction with
+  // result id |synonym_id| and creates a fact that both result ids are synonymous.
+
+  // Result id of the first synonym.
+  uint32 synonym_id = 1;
+
+  // Instruction, whose result id is synonymous to |synonym_id|.
+  Instruction synonymous_instruction = 3;
 
 }
 
