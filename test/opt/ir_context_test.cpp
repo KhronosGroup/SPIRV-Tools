@@ -26,6 +26,9 @@
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
 
+static const uint32_t kDebugDeclareOperandVariableIndex = 5;
+static const uint32_t kDebugValueOperandValueIndex = 5;
+
 namespace spvtools {
 namespace opt {
 namespace {
@@ -865,6 +868,67 @@ TEST_F(IRContextTest, AsanErrorTest) {
   auto bb = dom->ImmediateDominator(5);
   std::cout
       << bb->id();  // Make sure asan does not complain about use after free.
+}
+
+TEST_F(IRContextTest, DebugInstructionReplaceAllUses) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+%2 = OpString "test"
+%3 = OpTypeVoid
+%4 = OpTypeFunction %3
+%5 = OpTypeFloat 32
+%6 = OpTypePointer Function %5
+%7 = OpConstant %5 0
+%8 = OpTypeInt 32 0
+%9 = OpConstant %8 32
+%10 = OpExtInst %3 %1 DebugExpression
+%11 = OpExtInst %3 %1 DebugSource %2
+%12 = OpExtInst %3 %1 DebugCompilationUnit 1 4 %11 HLSL
+%13 = OpExtInst %3 %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %3
+%14 = OpExtInst %3 %1 DebugFunction %2 %13 %11 0 0 %12 %2 FlagIsProtected|FlagIsPrivate 0 %17
+%15 = OpExtInst %3 %1 DebugTypeBasic %2 %9 Float
+%16 = OpExtInst %3 %1 DebugLocalVariable %2 %15 %11 0 0 %14 FlagIsLocal
+%17 = OpFunction %3 None %4
+%18 = OpLabel
+%19 = OpExtInst %3 %1 DebugScope %14
+%20 = OpVariable %6 Function
+%26 = OpVariable %6 Function
+OpBranch %21
+%21 = OpLabel
+%22 = OpPhi %5 %7 %18
+OpBranch %23
+%23 = OpLabel
+OpLine %2 0 0
+OpStore %20 %7
+%24 = OpExtInst %3 %1 DebugValue %16 %22 %10
+%25 = OpExtInst %3 %1 DebugDeclare %16 %26 %10
+OpReturn
+OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  DummyPassPreservesAll pass(Pass::Status::SuccessWithChange);
+  pass.Run(ctx.get());
+
+  auto* dbg_value = ctx->get_def_use_mgr()->GetDef(24);
+  EXPECT_TRUE(dbg_value->GetSingleWordOperand(kDebugValueOperandValueIndex) ==
+              22);
+  EXPECT_TRUE(ctx->ReplaceAllUsesWith(22, 7));
+  dbg_value = ctx->get_def_use_mgr()->GetDef(24);
+  EXPECT_TRUE(dbg_value->GetSingleWordOperand(kDebugValueOperandValueIndex) ==
+              7);
+
+  auto* dbg_decl = ctx->get_def_use_mgr()->GetDef(25);
+  EXPECT_TRUE(
+      dbg_decl->GetSingleWordOperand(kDebugDeclareOperandVariableIndex) == 26);
+  EXPECT_TRUE(ctx->ReplaceAllUsesWith(26, 20));
+  dbg_decl = ctx->get_def_use_mgr()->GetDef(25);
+  EXPECT_TRUE(
+      dbg_decl->GetSingleWordOperand(kDebugDeclareOperandVariableIndex) == 20);
 }
 
 }  // namespace
