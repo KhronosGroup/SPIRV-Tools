@@ -129,6 +129,9 @@ class DebugInfoManager {
   uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
                                     DebugInlinedAtContext* inlined_at_ctx);
 
+  // Return true if |variable_id| has DebugDeclare or DebugVal.
+  bool IsDebugDeclared(uint32_t variable_id);
+
   // Generates a DebugValue instruction with value |value_id| for every local
   // variable that is in the scope of |scope_and_line| and whose memory is
   // |variable_id| and inserts it after the instruction |insert_pos|.
