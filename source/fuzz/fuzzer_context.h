@@ -195,6 +195,9 @@ class FuzzerContext {
     return chance_of_replacing_linear_algebra_instructions_;
   }
   uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
+  uint32_t GetChanceOfSwappingConditionalBranchOperands() {
+    return chance_of_swapping_conditional_branch_operands_;
+  }
   uint32_t GetChanceOfTogglingAccessChainInstruction() {
     return chance_of_toggling_access_chain_instruction_;
   }
@@ -291,6 +294,7 @@ class FuzzerContext {
   uint32_t chance_of_replacing_id_with_synonym_;
   uint32_t chance_of_replacing_linear_algebra_instructions_;
   uint32_t chance_of_splitting_block_;
+  uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_toggling_access_chain_instruction_;
 
   // Limits associated with various quantities for which random values are
