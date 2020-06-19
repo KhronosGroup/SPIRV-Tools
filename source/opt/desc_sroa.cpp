@@ -100,9 +100,12 @@ bool DescriptorScalarReplacement::IsCandidate(Instruction* var) {
 }
 
 bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
-  std::vector<Instruction*> work_list;
+  std::vector<Instruction*> access_chain_work_list;
+  std::vector<Instruction*> load_work_list;
+  std::vector<Instruction*> extract_work_list;
   bool failed = !get_def_use_mgr()->WhileEachUser(
-      var->result_id(), [this, &work_list](Instruction* use) {
+      var->result_id(), [this, &access_chain_work_list, &load_work_list,
+                         &extract_work_list](Instruction* use) {
         if (use->opcode() == SpvOpName) {
           return true;
         }
@@ -114,7 +117,13 @@ bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
         switch (use->opcode()) {
           case SpvOpAccessChain:
           case SpvOpInBoundsAccessChain:
-            work_list.push_back(use);
+            access_chain_work_list.push_back(use);
+            return true;
+          case SpvOpLoad:
+            load_work_list.push_back(use);
+            return true;
+          case SpvOpCompositeExtract:
+            extract_work_list.push_back(use);
             return true;
           default:
             context()->EmitErrorMessage(
@@ -128,8 +137,18 @@ bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
     return false;
   }
 
-  for (Instruction* use : work_list) {
+  for (Instruction* use : access_chain_work_list) {
     if (!ReplaceAccessChain(var, use)) {
+      return false;
+    }
+  }
+  for (Instruction* use : load_work_list) {
+    if (!ReplaceLoadedValue(var, use)) {
+      return false;
+    }
+  }
+  for (Instruction* use : extract_work_list) {
+    if (!ReplaceCompositeExtract(var, use)) {
       return false;
     }
   }
@@ -278,9 +297,18 @@ uint32_t DescriptorScalarReplacement::CreateReplacementVariable(
 
     uint32_t decoration = new_decoration->GetSingleWordInOperand(1u);
     if (decoration == SpvDecorationBinding) {
-      uint32_t new_binding =
-          new_decoration->GetSingleWordInOperand(2) +
-          idx * GetNumBindingsUsedByType(ptr_element_type_id);
+      uint32_t new_binding = new_decoration->GetSingleWordInOperand(2);
+      if (is_array) {
+        new_binding += idx * GetNumBindingsUsedByType(ptr_element_type_id);
+      }
+      if (is_struct) {
+        // The binding offset that should be added is the sum of previous
+        // members of the current struct.
+        for (uint32_t i = 0; i < idx; ++i) {
+          new_binding += GetNumBindingsUsedByType(
+              pointee_type_inst->GetSingleWordInOperand(i));
+        }
+      }
       new_decoration->SetInOperand(2, {new_binding});
     }
     context()->AddAnnotationInst(std::move(new_decoration));
@@ -358,6 +386,57 @@ uint32_t DescriptorScalarReplacement::GetNumBindingsUsedByType(
 
   // All other types are considered to take up 1 binding number.
   return 1;
+}
+
+bool DescriptorScalarReplacement::ReplaceLoadedValue(Instruction* var,
+                                                     Instruction* value) {
+  // |var| is the global variable that has to be eliminated (OpVariable).
+  // |value| is the OpLoad instruction that has loaded |var|.
+  // The function expects all of |value| to be OpCompositeExtract instructions.
+  // Otherwise the function returns false with an error message.
+  assert(value->opcode() == SpvOpLoad);
+  assert(value->GetSingleWordInOperand(0) == var->result_id());
+  std::vector<Instruction*> work_list;
+  bool failed = !get_def_use_mgr()->WhileEachUser(
+      value->result_id(), [this, &work_list](Instruction* use) {
+        if (use->opcode() != SpvOpCompositeExtract) {
+          context()->EmitErrorMessage(
+              "Variable cannot be replaced: invalid instruction", use);
+          return false;
+        }
+        work_list.push_back(use);
+        return true;
+      });
+
+  if (failed) {
+    return false;
+  }
+
+  for (Instruction* use : work_list) {
+    if (!ReplaceCompositeExtract(var, use)) {
+      return false;
+    }
+  }
+
+  // All usages of the loaded value have been killed. We can kill the OpLoad.
+  context()->KillInst(value);
+  return true;
+}
+
+bool DescriptorScalarReplacement::ReplaceCompositeExtract(
+    Instruction* var, Instruction* extract) {
+  assert(extract->opcode() == SpvOpCompositeExtract);
+  if (extract->NumInOperands() != 2) {
+    context()->EmitErrorMessage(
+        "Variable cannot be replaced: invalid instruction", extract);
+    return false;
+  }
+
+  uint32_t replacement_var =
+      GetReplacementVariable(var, extract->GetSingleWordInOperand(1));
+  context()->ReplaceAllUsesWith(extract->result_id(), replacement_var);
+  context()->KillInst(extract);
+  return true;
 }
 
 }  // namespace opt
