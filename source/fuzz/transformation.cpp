@@ -64,6 +64,7 @@
 #include "source/fuzz/transformation_split_block.h"
 #include "source/fuzz/transformation_store.h"
 #include "source/fuzz/transformation_swap_commutable_operands.h"
+#include "source/fuzz/transformation_swap_conditional_branch_operands.h"
 #include "source/fuzz/transformation_toggle_access_chain_instruction.h"
 #include "source/fuzz/transformation_vector_shuffle.h"
 #include "source/util/make_unique.h"
@@ -206,6 +207,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kSwapCommutableOperands:
       return MakeUnique<TransformationSwapCommutableOperands>(
           message.swap_commutable_operands());
+    case protobufs::Transformation::TransformationCase::
+        kSwapConditionalBranchOperands:
+      return MakeUnique<TransformationSwapConditionalBranchOperands>(
+          message.swap_conditional_branch_operands());
     case protobufs::Transformation::TransformationCase::
         kToggleAccessChainInstruction:
       return MakeUnique<TransformationToggleAccessChainInstruction>(
