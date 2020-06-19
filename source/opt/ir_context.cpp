@@ -97,8 +97,9 @@ void IRContext::InvalidateAnalysesExceptFor(
 }
 
 void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
-  // The ConstantManager contains Type pointers. If the TypeManager goes
-  // away, the ConstantManager has to go away.
+  // The ConstantManager and DebugInfoManager contain Type pointers. If the
+  // TypeManager goes away, the ConstantManager and DebugInfoManager have to
+  // go away.
   if (analyses_to_invalidate & kAnalysisTypes) {
     analyses_to_invalidate |= kAnalysisConstants;
     analyses_to_invalidate |= kAnalysisDebugInfo;
@@ -179,6 +180,9 @@ Instruction* IRContext::KillInst(Instruction* inst) {
       decoration_mgr_->RemoveDecoration(inst);
     }
   }
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->ClearDebugInfo(inst);
+  }
   if (type_mgr_ && IsTypeInst(inst->opcode())) {
     type_mgr_->RemoveId(inst->result_id());
   }
@@ -216,6 +220,13 @@ bool IRContext::KillDef(uint32_t id) {
     return true;
   }
   return false;
+}
+
+void IRContext::KillDebugDeclareInsts(Function* fn) {
+  fn->ForEachInst([this](Instruction* inst) {
+    if (inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare)
+      KillInst(inst);
+  });
 }
 
 bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
@@ -394,6 +405,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
       if (operand.words[0] == id) {
         operand.words[0] =
             get_debug_info_mgr()->GetDebugInfoNone()->result_id();
+        get_def_use_mgr()->AnalyzeInstUse(&*it);
       }
     }
   }
@@ -408,6 +420,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
       if (operand.words[0] == id) {
         operand.words[0] =
             get_debug_info_mgr()->GetDebugInfoNone()->result_id();
+        get_def_use_mgr()->AnalyzeInstUse(&*it);
       }
     }
   }
