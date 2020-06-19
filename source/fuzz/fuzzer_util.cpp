@@ -583,6 +583,75 @@ void AddVariableIdToEntryPointInterfaces(opt::IRContext* context, uint32_t id) {
   }
 }
 
+void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
+                       uint32_t type_id, SpvStorageClass storage_class,
+                       uint32_t initializer_id) {
+  // Check various preconditions.
+  assert((storage_class == SpvStorageClassPrivate ||
+          storage_class == SpvStorageClassWorkgroup) &&
+         "Variable's storage class must be either Private or Workgroup");
+
+  auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
+  (void)type_inst;  // Variable becomes unused in release mode.
+  assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
+         GetStorageClassFromPointerType(type_inst) == storage_class &&
+         "Variable's type is invalid");
+
+  if (storage_class == SpvStorageClassWorkgroup) {
+    assert(initializer_id == 0);
+  }
+
+  if (initializer_id != 0) {
+    const auto* constant_inst =
+        context->get_def_use_mgr()->GetDef(initializer_id);
+    (void)constant_inst;  // Variable becomes unused in release mode.
+    assert(constant_inst && spvOpcodeIsConstant(constant_inst->opcode()) &&
+           GetPointeeTypeIdFromPointerType(type_inst) ==
+               constant_inst->type_id() &&
+           "Initializer is invalid");
+  }
+
+  opt::Instruction::OperandList operands = {
+      {SPV_OPERAND_TYPE_STORAGE_CLASS, {static_cast<uint32_t>(storage_class)}}};
+
+  if (initializer_id) {
+    operands.push_back({SPV_OPERAND_TYPE_ID, {initializer_id}});
+  }
+
+  context->module()->AddGlobalValue(MakeUnique<opt::Instruction>(
+      context, SpvOpVariable, type_id, result_id, std::move(operands)));
+
+  AddVariableIdToEntryPointInterfaces(context, result_id);
+}
+
+void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
+                      uint32_t type_id, uint32_t function_id,
+                      uint32_t initializer_id) {
+  // Check various preconditions.
+  auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
+  (void)type_inst;  // Variable becomes unused in release mode.
+  assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
+         GetStorageClassFromPointerType(type_inst) == SpvStorageClassFunction &&
+         "Variable's type is invalid");
+
+  const auto* constant_inst =
+      context->get_def_use_mgr()->GetDef(initializer_id);
+  (void)constant_inst;  // Variable becomes unused in release mode.
+  assert(constant_inst && spvOpcodeIsConstant(constant_inst->opcode()) &&
+         GetPointeeTypeIdFromPointerType(type_inst) ==
+             constant_inst->type_id() &&
+         "Initializer is invalid");
+
+  auto* function = FindFunction(context, function_id);
+  assert(function && "Function id is invalid");
+
+  function->begin()->begin()->InsertBefore(MakeUnique<opt::Instruction>(
+      context, SpvOpVariable, type_id, result_id,
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
+          {SPV_OPERAND_TYPE_ID, {initializer_id}}}));
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

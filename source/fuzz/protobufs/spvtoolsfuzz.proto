@@ -1020,12 +1020,15 @@ message TransformationPushIdThroughVariable {
   // A fresh id for the variable to be stored to.
   uint32 variable_id = 3;
 
+  // Constant to initialize the variable from.
+  uint32 initializer_id = 4;
+
   // The variable storage class (global or local).
-  uint32 variable_storage_class = 4;
+  uint32 variable_storage_class = 5;
 
   // A descriptor for an instruction which the new OpStore
   // and OpLoad instructions might be inserted before.
-  InstructionDescriptor instruction_descriptor = 5;
+  InstructionDescriptor instruction_descriptor = 6;
 
 }
 
