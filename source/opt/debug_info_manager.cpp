@@ -274,8 +274,7 @@ Instruction* DebugInfoManager::GetDebugOperationWithDeref() {
   return deref_operation_;
 }
 
-Instruction* DebugInfoManager::CloneDebugExpressionAndPushDerefOperation(
-    Instruction* dbg_expr) {
+Instruction* DebugInfoManager::DerefDebugExpression(Instruction* dbg_expr) {
   assert(dbg_expr->GetOpenCL100DebugOpcode() ==
          OpenCLDebugInfo100DebugExpression);
   std::unique_ptr<Instruction> deref_expr(dbg_expr->Clone(context()));

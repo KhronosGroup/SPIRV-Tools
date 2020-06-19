@@ -97,7 +97,7 @@ class DebugInfoManager {
 
   // Clones DebugExpress instruction |dbg_expr| and add Deref Operation
   // in the front of the Operation list of |dbg_expr|.
-  Instruction* CloneDebugExpressionAndPushDerefOperation(Instruction* dbg_expr);
+  Instruction* DerefDebugExpression(Instruction* dbg_expr);
 
   // Returns a DebugInfoNone instruction.
   Instruction* GetDebugInfoNone();

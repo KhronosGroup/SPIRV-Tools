@@ -595,17 +595,24 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
     if (use->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100InstructionsMax) {
       switch (use->GetOpenCL100DebugOpcode()) {
         case OpenCLDebugInfo100DebugDeclare: {
+          // If a DebugDeclare maps a local variable to |original_ptr_inst|,
+          // we change it to DebugValue because we will replace
+          // the declaration i.e., |original_ptr_inst| to |new_ptr_inst| i.e., a
+          // value.
           context()->ForgetUses(use);
+
+          // Change DebugDeclare to DebugValue and use |new_ptr_inst| for value.
           use->SetOperand(
               index - 2, {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)});
           use->SetOperand(index, {new_ptr_inst->result_id()});
 
-          // Insert a Deref Operation to the DebugExpress.
+          // Since |new_ptr_inst| is a point, not a value, of the local
+          // variable, we have to use a Deref operation to specify dereferencing
+          // |new_ptr_inst| is the value of the local variable.
           Instruction* dbg_expr =
               def_use_mgr->GetDef(use->GetSingleWordOperand(index + 1));
           auto* deref_expr_instr =
-              get_debug_info_mgr()->CloneDebugExpressionAndPushDerefOperation(
-                  dbg_expr);
+              context()->get_debug_info_mgr()->DerefDebugExpression(dbg_expr);
           use->SetOperand(index + 1, {deref_expr_instr->result_id()});
 
           context()->AnalyzeUses(deref_expr_instr);
