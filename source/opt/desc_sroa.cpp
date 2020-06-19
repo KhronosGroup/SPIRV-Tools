@@ -62,14 +62,18 @@ bool DescriptorScalarReplacement::IsCandidate(Instruction* var) {
   }
 
   // All structures with descriptor assignments must be replaced by variables,
-  // one for each of their members - with the exception of a structure that
-  // contains only a runtime array.
-  if (var_type_inst->opcode() == SpvOpTypeStruct) {
-    if (var_type_inst->NumInOperands() == 1) {
-      Instruction* member_type_inst = context()->get_def_use_mgr()->GetDef(
-          var_type_inst->GetSingleWordInOperand(0));
-      if (member_type_inst->opcode() == SpvOpTypeRuntimeArray) return false;
-    }
+  // one for each of their members - with the exceptions of buffers.
+  // Buffers are represented as structures, but we shouldn't replace a buffer
+  // with its elements. All buffers have offset decorations for members of their
+  // structure types.
+  bool has_offset_decoration = false;
+  context()->get_decoration_mgr()->ForEachDecoration(
+      var_type_inst->result_id(), SpvDecorationOffset,
+      [&has_offset_decoration](const Instruction&) {
+        has_offset_decoration = true;
+      });
+  if (has_offset_decoration) {
+    return false;
   }
 
   bool has_desc_set_decoration = false;
@@ -343,8 +347,8 @@ uint32_t DescriptorScalarReplacement::GetNumBindingsUsedByType(
     return num_elems * GetNumBindingsUsedByType(element_type_id);
   }
 
-  // Structures consume M binding numbers where M is the sum of binding numbers
-  // used by their members.
+  // The number of bindings consumed by a structure is the sum of the bindings
+  // used by its members.
   if (type_inst->opcode() == SpvOpTypeStruct) {
     uint32_t sum = 0;
     for (uint32_t i = 0; i < type_inst->NumInOperands(); i++)

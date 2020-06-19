@@ -134,7 +134,7 @@ std::string GetStructureArrayTestSpirv() {
   )";
 }
 
-TEST_F(DescriptorScalarReplacementTest, ExpandTexture) {
+TEST_F(DescriptorScalarReplacementTest, ExpandArrayOfTextures) {
   const std::string text = R"(
 ; CHECK: OpDecorate [[var1:%\w+]] DescriptorSet 0
 ; CHECK: OpDecorate [[var1]] Binding 0
@@ -203,7 +203,7 @@ TEST_F(DescriptorScalarReplacementTest, ExpandTexture) {
   SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
 }
 
-TEST_F(DescriptorScalarReplacementTest, ExpandSampler) {
+TEST_F(DescriptorScalarReplacementTest, ExpandArrayOfSamplers) {
   const std::string text = R"(
 ; CHECK: OpDecorate [[var1:%\w+]] DescriptorSet 0
 ; CHECK: OpDecorate [[var1]] Binding 1
@@ -254,7 +254,7 @@ TEST_F(DescriptorScalarReplacementTest, ExpandSampler) {
   SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
 }
 
-TEST_F(DescriptorScalarReplacementTest, ExpandSSBO) {
+TEST_F(DescriptorScalarReplacementTest, ExpandArrayOfSSBOs) {
   // Tests the expansion of an SSBO.  Also check that an access chain with more
   // than 1 index is correctly handled.
   const std::string text = R"(
@@ -371,6 +371,133 @@ TEST_F(DescriptorScalarReplacementTest, NameNewVariables) {
                OpReturn
                OpFunctionEnd
   )";
+
+  SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
+}
+
+TEST_F(DescriptorScalarReplacementTest, DontExpandCBuffers) {
+  // Checks that constant buffers are not expanded.
+  // Constant buffers are represented as global structures, but they should not
+  // be replaced with new variables for their elements.
+  /*
+    cbuffer MyCbuffer : register(b1) {
+      float2    a;
+      float2   b;
+    };
+    float main() : A {
+      return a.x + b.y;
+    }
+  */
+  const std::string text = R"(
+; CHECK: OpAccessChain %_ptr_Uniform_float %MyCbuffer %int_0 %int_0
+; CHECK: OpAccessChain %_ptr_Uniform_float %MyCbuffer %int_1 %int_1
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %out_var_A
+               OpSource HLSL 600
+               OpName %type_MyCbuffer "type.MyCbuffer"
+               OpMemberName %type_MyCbuffer 0 "a"
+               OpMemberName %type_MyCbuffer 1 "b"
+               OpName %MyCbuffer "MyCbuffer"
+               OpName %out_var_A "out.var.A"
+               OpName %main "main"
+               OpDecorate %out_var_A Location 0
+               OpDecorate %MyCbuffer DescriptorSet 0
+               OpDecorate %MyCbuffer Binding 1
+               OpMemberDecorate %type_MyCbuffer 0 Offset 0
+               OpMemberDecorate %type_MyCbuffer 1 Offset 8
+               OpDecorate %type_MyCbuffer Block
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+%type_MyCbuffer = OpTypeStruct %v2float %v2float
+%_ptr_Uniform_type_MyCbuffer = OpTypePointer Uniform %type_MyCbuffer
+%_ptr_Output_float = OpTypePointer Output %float
+       %void = OpTypeVoid
+         %13 = OpTypeFunction %void
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+  %MyCbuffer = OpVariable %_ptr_Uniform_type_MyCbuffer Uniform
+  %out_var_A = OpVariable %_ptr_Output_float Output
+       %main = OpFunction %void None %13
+         %15 = OpLabel
+         %16 = OpAccessChain %_ptr_Uniform_float %MyCbuffer %int_0 %int_0
+         %17 = OpLoad %float %16
+         %18 = OpAccessChain %_ptr_Uniform_float %MyCbuffer %int_1 %int_1
+         %19 = OpLoad %float %18
+         %20 = OpFAdd %float %17 %19
+               OpStore %out_var_A %20
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
+}
+
+TEST_F(DescriptorScalarReplacementTest, DontExpandStructuredBuffers) {
+  // Checks that structured buffers are not expanded.
+  // Structured buffers are represented as global structures, that have one
+  // member which is a runtime array.
+  /*
+    struct S {
+      float2   a;
+      float2   b;
+    };
+    RWStructuredBuffer<S> sb;
+    float main() : A {
+      return sb[0].a.x + sb[0].b.x;
+    }
+  */
+  const std::string text = R"(
+; CHECK: OpAccessChain %_ptr_Uniform_float %sb %int_0 %uint_0 %int_0 %int_0
+; CHECK: OpAccessChain %_ptr_Uniform_float %sb %int_0 %uint_0 %int_1 %int_0
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %out_var_A
+               OpName %type_RWStructuredBuffer_S "type.RWStructuredBuffer.S"
+               OpName %S "S"
+               OpMemberName %S 0 "a"
+               OpMemberName %S 1 "b"
+               OpName %sb "sb"
+               OpName %out_var_A "out.var.A"
+               OpName %main "main"
+               OpDecorate %out_var_A Location 0
+               OpDecorate %sb DescriptorSet 0
+               OpDecorate %sb Binding 0
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 8
+               OpDecorate %_runtimearr_S ArrayStride 16
+               OpMemberDecorate %type_RWStructuredBuffer_S 0 Offset 0
+               OpDecorate %type_RWStructuredBuffer_S BufferBlock
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+      %int_1 = OpConstant %int 1
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+          %S = OpTypeStruct %v2float %v2float
+%_runtimearr_S = OpTypeRuntimeArray %S
+%type_RWStructuredBuffer_S = OpTypeStruct %_runtimearr_S
+%_ptr_Uniform_type_RWStructuredBuffer_S = OpTypePointer Uniform %type_RWStructuredBuffer_S
+%_ptr_Output_float = OpTypePointer Output %float
+       %void = OpTypeVoid
+         %17 = OpTypeFunction %void
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+         %sb = OpVariable %_ptr_Uniform_type_RWStructuredBuffer_S Uniform
+  %out_var_A = OpVariable %_ptr_Output_float Output
+       %main = OpFunction %void None %17
+         %19 = OpLabel
+         %20 = OpAccessChain %_ptr_Uniform_float %sb %int_0 %uint_0 %int_0 %int_0
+         %21 = OpLoad %float %20
+         %22 = OpAccessChain %_ptr_Uniform_float %sb %int_0 %uint_0 %int_1 %int_0
+         %23 = OpLoad %float %22
+         %24 = OpFAdd %float %21 %23
+               OpStore %out_var_A %24
+               OpReturn
+               OpFunctionEnd
+)";
 
   SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
 }

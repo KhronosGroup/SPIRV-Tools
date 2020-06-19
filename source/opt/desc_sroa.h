@@ -75,8 +75,8 @@ class DescriptorScalarReplacement : public Pass {
   // 1- A pointer type consumes as many binding numbers as its pointee.
   // 2- An array of size N consumes N*M binding numbers, where M is the number
   // of bindings used by each array element.
-  // 3- A structure consumes M binding numbers where M is the sum of binding
-  // numbers used by its members.
+  // 3- The number of bindings consumed by a structure is the sum of the
+  // bindings used by its members.
   uint32_t GetNumBindingsUsedByType(uint32_t type_id);
 
   // A map from an OpVariable instruction to the set of variables that will be

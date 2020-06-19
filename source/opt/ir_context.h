@@ -358,7 +358,7 @@ class IRContext {
   GetNames(uint32_t id);
 
   // Returns an OpMemberName instruction that targets |struct_type_id| at
-  // index |index|. Returns nullptr if such instruction does not exist.
+  // index |index|. Returns nullptr if no such instruction exists.
   // While the SPIR-V spec does not prohibit having multiple OpMemberName
   // instructions for the same structure member, it is hard to imagine a member
   // having more than one name. This method returns the first one it finds.
