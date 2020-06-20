@@ -477,7 +477,7 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
 
 uint32_t FuzzerPass::FindOrCreateVariableInitializer(
     uint32_t initializer_type_id) {
-  const auto* type_inst =
+  auto* type_inst =
       GetIRContext()->get_def_use_mgr()->GetDef(initializer_type_id);
   assert(type_inst && "|initializer_type_id| is invalid.");
 
@@ -491,18 +491,40 @@ uint32_t FuzzerPass::FindOrCreateVariableInitializer(
     case SpvOpTypeStruct:
       return FindOrCreateZeroConstant(initializer_type_id);
     case SpvOpTypePointer: {
-      auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
-          GetIRContext(), initializer_type_id);
+      if (fuzzerutil::GetStorageClassFromPointerType(
+              GetIRContext(), initializer_type_id) == SpvStorageClassFunction) {
+        // We can't initialize a global variable that points to a pointer with
+        // Function storage class since a local variable is required for the
+        // initialization in this case.
+        assert(false &&
+               "|initializer_type_id| has Function storage class which requires"
+               "a local variable to be present in global scope");
+        return 0;
+      }
+
+      for (const auto& inst : GetIRContext()->types_values()) {
+        // Use an existing variable if it has a suitable type, initialized and
+        // has PointeeValueIsIrrelevant fact.
+        if (inst.opcode() == SpvOpVariable &&
+            inst.type_id() == initializer_type_id && inst.NumInOperands() > 1 &&
+            GetTransformationContext()
+                ->GetFactManager()
+                ->PointeeValueIsIrrelevant(inst.result_id())) {
+          return inst.result_id();
+        }
+      }
+
       auto result = GetFuzzerContext()->GetFreshId();
       ApplyTransformation(TransformationAddGlobalVariable(
-          result,
-          FindOrCreatePointerType(pointee_type_id, SpvStorageClassPrivate),
-          SpvStorageClassPrivate,
-          FindOrCreateVariableInitializer(pointee_type_id), true));
+          result, initializer_type_id,
+          fuzzerutil::GetStorageClassFromPointerType(type_inst),
+          FindOrCreateVariableInitializer(
+              fuzzerutil::GetPointeeTypeIdFromPointerType(type_inst)),
+          true));
       return result;
     }
     default:
-      assert(false && "Variable's initializer has invalid type");
+      assert(false && "Variable initializer's type is not supported");
       return 0;
   }
 }

@@ -229,7 +229,10 @@ class FuzzerPass {
   // suitable to be used as an initializer of the variable, whose pointee's type
   // id is |initializer_type_id|. Creates a new constant instruction or global
   // variable if there is no compatible one in the module. The newly created
-  // global variable will be marked as irrelevant and initialized.
+  // global variable will be marked as irrelevant and initialized. If
+  // |initializer_type_id| is a result id of an OpTypePointer instruction, it
+  // can neither point to (if it's a pointer to a pointer) nor have a Function
+  // storage class.
   uint32_t FindOrCreateVariableInitializer(uint32_t initializer_type_id);
 
  private:
