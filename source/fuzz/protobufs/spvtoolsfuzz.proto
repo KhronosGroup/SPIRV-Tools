@@ -1126,8 +1126,8 @@ message TransformationPushIdThroughVariable {
 message TransformationRemoveParameters {
 
   // Removes parameters from the function with |function_id|. Namely,
-  // parameter_index[i]'th parameter will be removed from the function.
-  // A global variable with result id fresh_id[i] will be used to pass the
+  // |parameter_index[i]|'th parameter will be removed from the function.
+  // A global variable with result id |fresh_id[i]| will be used to pass the
   // value of the parameter into the function.
 
   // Function to remove parameters from.
@@ -1142,8 +1142,8 @@ message TransformationRemoveParameters {
   // Fresh ids of global variables to use instead of removed parameters.
   repeated uint32 fresh_id = 4;
 
-  // initializer_id[i] is a result id for the constant, used to initialize
-  // a global variable with result id fresh_id[i].
+  // |initializer_id[i]| is a result id, used to initialize
+  // a global variable with result id |fresh_id[i]|.
   repeated uint32 initializer_id = 5;
 
 }

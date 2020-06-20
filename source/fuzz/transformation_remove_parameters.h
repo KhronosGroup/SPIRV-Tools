@@ -33,12 +33,34 @@ class TransformationRemoveParameters : public Transformation {
                                  const std::vector<uint32_t>& fresh_id,
                                  const std::vector<uint32_t>& initializer_id);
 
-  // TODO
+  // - |function_id| must be a valid result id of some non-entry-point function
+  //   in the module.
+  // - |new_type_id| is a result id of the OpTypeFunction instruction s.t.
+  //   its return type is the same as the return type of the |function_id|,
+  //   it doesn't contain |parameter_index[i]|'th parameter and the order of
+  //   remaining parameters is preserved.
+  // - |0 <= parameter_index[i] < N| where N is a number of parameters
+  //   of |function_id|. All indices are unique.
+  // - |fresh_id| is a vector of fresh ids.
+  // - |initializer_inst[i].type_id() == param[parameter_index[i]].type_id()|
+  //   where |initializer_inst[i]| is an instruction with result id
+  //   |initializer_id[i]|, |param[i]| is i'th parameter of the function with
+  //   result id |function_id|.
+  // - |parameter_index.size() == fresh_id.size() == initializer_id.size()|.
+  // - |%id = OpTypePointer Private %param[i].type_id()| must exist in the
+  //   module for each |i| in |parameter_index|.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO
+  // For each |i| in |parameter_index|:
+  // - remove i'th parameter from the function
+  // - add a global variable to store the value for the i'th parameter
+  // - add OpStore instruction before each function call to store parameter's
+  //   value into the variable
+  // - add OpLoad in the beginning to load the value from the variable into the
+  //   old parameter's id
+  // - mark created variable with PointeeIsIrrelevant fact.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

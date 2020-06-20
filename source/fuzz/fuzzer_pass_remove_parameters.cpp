@@ -22,6 +22,26 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace {
+
+bool CanRemoveFunctionParameter(const opt::Instruction& type_inst) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
+  //  Add OpTypePointer below when the PR is merged.
+  switch (type_inst.opcode()) {
+    case SpvOpTypeBool:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypeArray:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector:
+    case SpvOpTypeStruct:
+      return true;
+    default:
+      return false;
+  }
+}
+
+}  // namespace
 
 FuzzerPassRemoveParameters::FuzzerPassRemoveParameters(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
@@ -54,34 +74,16 @@ void FuzzerPassRemoveParameters::Apply() {
     std::vector<uint32_t> parameter_index(params.size());
     std::iota(parameter_index.begin(), parameter_index.end(), 0);
 
-    // Remove parameters that can't be used with FindOrCreateZeroConstant.
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
-    //  Think how we can improve this.
+    // Remove parameters that can't be used in variable initialization.
     parameter_index.erase(
         std::remove_if(parameter_index.begin(), parameter_index.end(),
                        [&params, this](uint32_t index) {
-                         const auto* type =
+                         const auto* type_inst =
                              GetIRContext()->get_def_use_mgr()->GetDef(
                                  params[index]->type_id());
-                         assert(type);
+                         assert(type_inst && "Parameter's type is invalid");
 
-                         // GLSL always produces SPIR-V functions that have
-                         // OpTypePointer parameters. Thus, we must use
-                         // OpTypePointer below to be able to run this
-                         // transformation on GLSL-produced SPIR-V.
-                         switch (type->opcode()) {
-                           case SpvOpTypeBool:
-                           case SpvOpTypeInt:
-                           case SpvOpTypeFloat:
-                           case SpvOpTypeArray:
-                           case SpvOpTypeMatrix:
-                           case SpvOpTypeVector:
-                           case SpvOpTypeStruct:
-                           case SpvOpTypePointer:
-                             return false;
-                           default:
-                             return true;
-                         }
+                         return !CanRemoveFunctionParameter(*type_inst);
                        }),
         parameter_index.end());
 
@@ -95,8 +97,7 @@ void FuzzerPassRemoveParameters::Apply() {
         std::min<size_t>(num_to_remove, parameter_index.size()));
 
     // Compute initializers for global variables that will be used to pass
-    // arguments to the function. initializer_ids[i] == 0 if
-    // parameter_index[i]'th parameter has type OpTypePointer.
+    // arguments to the function.
     std::vector<uint32_t> initializer_ids;
 
     for (auto index : parameter_index) {
@@ -107,12 +108,14 @@ void FuzzerPassRemoveParameters::Apply() {
       // Make sure type ids for global variables exist in the module.
       FindOrCreatePointerType(type_inst->result_id(), SpvStorageClassPrivate);
 
-      // TODO: We can recursively create global variables to be used in the
-      //  initializer operand. Think whether this is a good approach.
+      // Create initializer for the global variable.
+      //
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
+      //  Uncomment when the PR is merged.
+      // initializer_ids.push_back(
+      //     FindOrCreateVariableInitializer(type_inst->result_id()));
       initializer_ids.push_back(
-          type_inst->opcode() == SpvOpTypePointer
-              ? 0
-              : FindOrCreateZeroConstant(type_inst->result_id()));
+          FindOrCreateZeroConstant(type_inst->result_id()));
     }
 
     // Compute type ids for the remaining arguments.

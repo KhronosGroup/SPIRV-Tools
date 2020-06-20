@@ -150,24 +150,12 @@ bool TransformationRemoveParameters::IsApplicable(
         ir_context->get_type_mgr()->GetType(params[param_index[i]]->type_id());
     assert(pointee_type && "Parameter type must exist");
 
-    auto initializer_id = message_.initializer_id()[static_cast<int>(i)];
+    const auto* initializer_inst = ir_context->get_def_use_mgr()->GetDef(
+        message_.initializer_id()[static_cast<int>(i)]);
 
-    // Global variables for parameters with pointer types are left
-    // uninitialized for now.
-    if (pointee_type->AsPointer()) {
-      if (initializer_id != 0) {
-        return false;
-      }
-
-      continue;
-    }
-
-    const auto* const_inst =
-        ir_context->get_def_use_mgr()->GetDef(initializer_id);
-
-    // Check that initializer is a constant instruction with correct type.
-    if (!const_inst || !spvOpcodeIsConstant(const_inst->opcode()) ||
-        const_inst->type_id() != params[param_index[i]]->type_id()) {
+    // Check that initializer has correct type.
+    if (!initializer_inst ||
+        initializer_inst->type_id() != params[param_index[i]]->type_id()) {
       return false;
     }
   }
@@ -181,7 +169,7 @@ void TransformationRemoveParameters::Apply(
   // Unpack some |message_| components.
   const auto& parameter_index = message_.parameter_index();
   const auto& fresh_id = message_.fresh_id();
-  // const auto& initializer_id = message_.initializer_id();
+  const auto& initializer_id = message_.initializer_id();
 
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function && "Function must exist");
@@ -189,20 +177,26 @@ void TransformationRemoveParameters::Apply(
   auto params = fuzzerutil::GetParameters(function);
   for (int i = 0, n = parameter_index.size(); i < n; ++i) {
     const auto* param_inst = params[parameter_index[i]];
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3414):
-    //  uncomment when the PR is merged.
-    /*fuzzerutil::AddGlobalVariable(
+
+    // Add global variable to store function's argument.
+    fuzzerutil::AddGlobalVariable(
         ir_context, fresh_id[i],
-        fuzzerutil::MaybeGetPointerType(
-            ir_context, param_inst->type_id(), SpvStorageClassPrivate),
-        SpvStorageClassPrivate, initializer_id[i]);*/
+        fuzzerutil::MaybeGetPointerType(ir_context, param_inst->type_id(),
+                                        SpvStorageClassPrivate),
+        SpvStorageClassPrivate, initializer_id[i]);
 
     if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
             param_inst->result_id())) {
       transformation_context->GetFactManager()
           ->AddFactValueOfPointeeIsIrrelevant(fresh_id[i]);
-      // TODO: Decide whether to remove PointeeIsIrrelevant fact for
-      //  |param_inst->result_id()|.
+      // We don't remove PointeeIsIrrelevant fact for the removed parameter
+      // since its result id is still present in the module (even though it does
+      // not correspond to the OpFunctionParameter instruction).
+
+      // A removed parameter might have been created previously by the
+      // TransformationAddParameter and have a scalar type. Since scalar types
+      // don't support PointeeValueIsIrrelevant, the created variable won't be
+      // marked as irrelevant either.
     }
 
     // Insert OpLoad instruction right after OpVariable instructions. There can
@@ -224,10 +218,7 @@ void TransformationRemoveParameters::Apply(
 
     // Remove the parameter from the function. This must be the last step since
     // this will invalidate |param_inst|.
-    //
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3437):
-    //  uncomment when the PR is merged.
-    // function->RemoveParameter(param_inst->result_id());
+    function->RemoveParameter(param_inst->result_id());
   }
 
   // Update module id bound. |fresh_id| is guaranteed to be non-empty.

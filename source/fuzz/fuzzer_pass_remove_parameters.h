@@ -20,7 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO
+// Iterates over all non-entry-point functions in the module and randomly
+// removes a set of parameters from each of them.
 class FuzzerPassRemoveParameters : public FuzzerPass {
  public:
   FuzzerPassRemoveParameters(
