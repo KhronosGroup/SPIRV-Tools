@@ -52,10 +52,12 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
          %81 = OpTypePointer Private %33
          %36 = OpConstantComposite %33 %24 %24 %24 %24
          %37 = OpTypeMatrix %33 4
+         %84 = OpConstantComposite %37 %36 %36 %36 %36
          %38 = OpTypePointer Function %37
          %82 = OpTypePointer Private %37
          %44 = OpConstant %21 1
          %66 = OpTypeStruct %17 %21 %6 %33 %37
+         %85 = OpConstantComposite %66 %20 %24 %25 %36 %84
          %67 = OpTypePointer Function %66
          %83 = OpTypePointer Private %66
           %4 = OpFunction %2 None %3
@@ -141,54 +143,87 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
 
   // Target id is not fresh (59).
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 59, 19)
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 59, 19,
+                   SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Instruction descriptor is invalid (id 84 is undefined).
+  // Instruction descriptor is invalid (id 86 is undefined).
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(84, SpvOpVariable, 0), 84, 19)
+                   MakeInstructionDescriptor(86, SpvOpVariable, 0), 86, 19,
+                   SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
   // Cannot insert OpCopyMemory before OpPhi.
-  ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(75, SpvOpPhi, 0), 84, 19)
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationAddCopyMemory(MakeInstructionDescriptor(75, SpvOpPhi, 0),
+                                  86, 19, SpvStorageClassPrivate, 20)
+          .IsApplicable(context.get(), transformation_context));
 
-  // Source instruction doesn't exist.
+  // Source instruction is invalid.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 84, 76)
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 76,
+                   SpvStorageClassPrivate, 0)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source instruction's type doesn't exist.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 84, 5)
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 5,
+                   SpvStorageClassPrivate, 0)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source instruction's type is invalid.
+  ASSERT_FALSE(
+      TransformationAddCopyMemory(MakeInstructionDescriptor(41, SpvOpLoad, 0),
+                                  86, 40, SpvStorageClassPrivate, 0)
+          .IsApplicable(context.get(), transformation_context));
+
+  // Storage class is invalid.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(41, SpvOpLoad, 0), 84, 40)
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 19,
+                   SpvStorageClassWorkgroup, 20)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Initializer is 0.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 19,
+                   SpvStorageClassPrivate, 0)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Initializer has wrong type.
+  ASSERT_FALSE(TransformationAddCopyMemory(
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 19,
+                   SpvStorageClassPrivate, 25)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source and target instructions are in different functions.
-  ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(13, SpvOpLoad, 0), 84, 19)
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationAddCopyMemory(MakeInstructionDescriptor(13, SpvOpLoad, 0),
+                                  86, 19, SpvStorageClassPrivate, 20)
+          .IsApplicable(context.get(), transformation_context));
 
   // Source instruction doesn't dominate the target instruction.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(77, SpvOpLogicalEqual, 0), 84, 19)
+                   MakeInstructionDescriptor(77, SpvOpLogicalEqual, 0), 86, 19,
+                   SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source and target instructions are the same.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(19, SpvOpVariable, 0), 84, 19)
+                   MakeInstructionDescriptor(19, SpvOpVariable, 0), 86, 19,
+                   SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
   // Correct transformations.
-  uint32_t fresh_id = 84;
+  uint32_t fresh_id = 86;
   auto descriptor = MakeInstructionDescriptor(27, SpvOpFunctionCall, 0);
-  for (uint32_t source_id : {19, 23, 26, 30, 35, 39, 68}) {
-    TransformationAddCopyMemory transformation(descriptor, fresh_id, source_id);
+  std::vector<uint32_t> source_ids = {19, 23, 26, 30, 35, 39, 68};
+  std::vector<uint32_t> initializers = {20, 24, 25, 25, 36, 84, 85};
+  std::vector<SpvStorageClass> storage_classes = {SpvStorageClassPrivate,
+                                                  SpvStorageClassFunction};
+  for (size_t i = 0, n = source_ids.size(); i < n; ++i) {
+    TransformationAddCopyMemory transformation(
+        descriptor, fresh_id, source_ids[i],
+        storage_classes[i % storage_classes.size()], initializers[i]);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -228,21 +263,23 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
          %81 = OpTypePointer Private %33
          %36 = OpConstantComposite %33 %24 %24 %24 %24
          %37 = OpTypeMatrix %33 4
+         %84 = OpConstantComposite %37 %36 %36 %36 %36
          %38 = OpTypePointer Function %37
          %82 = OpTypePointer Private %37
          %44 = OpConstant %21 1
          %66 = OpTypeStruct %17 %21 %6 %33 %37
+         %85 = OpConstantComposite %66 %20 %24 %25 %36 %84
          %67 = OpTypePointer Function %66
          %83 = OpTypePointer Private %66
-         %84 = OpVariable %79 Private
-         %85 = OpVariable %80 Private
-         %86 = OpVariable %78 Private
-         %87 = OpVariable %78 Private
-         %88 = OpVariable %81 Private
-         %89 = OpVariable %82 Private
-         %90 = OpVariable %83 Private
+         %86 = OpVariable %79 Private %20
+         %88 = OpVariable %78 Private %25
+         %90 = OpVariable %81 Private %36
+         %92 = OpVariable %83 Private %85
           %4 = OpFunction %2 None %3
           %5 = OpLabel
+         %91 = OpVariable %38 Function %84
+         %89 = OpVariable %7 Function %25
+         %87 = OpVariable %22 Function %24
          %19 = OpVariable %18 Function
          %23 = OpVariable %22 Function
          %26 = OpVariable %7 Function
@@ -253,13 +290,13 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
                OpStore %19 %20
                OpStore %23 %24
                OpStore %26 %25
-               OpCopyMemory %84 %19
-               OpCopyMemory %85 %23
-               OpCopyMemory %86 %26
-               OpCopyMemory %87 %30
-               OpCopyMemory %88 %35
-               OpCopyMemory %89 %39
-               OpCopyMemory %90 %68
+               OpCopyMemory %86 %19
+               OpCopyMemory %87 %23
+               OpCopyMemory %88 %26
+               OpCopyMemory %89 %30
+               OpCopyMemory %90 %35
+               OpCopyMemory %91 %39
+               OpCopyMemory %92 %68
          %27 = OpFunctionCall %6 %10 %26
                OpSelectionMerge %29 None
                OpBranchConditional %27 %28 %31

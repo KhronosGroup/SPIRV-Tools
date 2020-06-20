@@ -462,6 +462,8 @@ message TransformationAddConstantScalar {
 message TransformationAddCopyMemory {
 
   // Adds an OpCopyMemory instruction into the module.
+  // Creates either a global or a local variable (based on
+  // |storage_class| field) to copy the target into.
 
   // OpCopyMemory will be inserted before this instruction.
   InstructionDescriptor instruction_descriptor = 1;
@@ -471,6 +473,13 @@ message TransformationAddCopyMemory {
 
   // Source to copy memory from.
   uint32 source_id = 3;
+
+  // Storage class for the target variable. Can be either Function or Private.
+  uint32 storage_class = 4;
+
+  // Result id for the variable's initializer operand. Its type must be equal to
+  // variable's pointee type.
+  uint32 initializer_id = 5;
 
 }
 

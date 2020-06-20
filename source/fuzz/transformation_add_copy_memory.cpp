@@ -26,10 +26,13 @@ TransformationAddCopyMemory::TransformationAddCopyMemory(
 
 TransformationAddCopyMemory::TransformationAddCopyMemory(
     const protobufs::InstructionDescriptor& instruction_descriptor,
-    uint32_t fresh_id, uint32_t source_id) {
+    uint32_t fresh_id, uint32_t source_id, SpvStorageClass storage_class,
+    uint32_t initializer_id) {
   *message_.mutable_instruction_descriptor() = instruction_descriptor;
   message_.set_fresh_id(fresh_id);
   message_.set_source_id(source_id);
+  message_.set_storage_class(storage_class);
+  message_.set_initializer_id(initializer_id);
 }
 
 bool TransformationAddCopyMemory::IsApplicable(
@@ -71,13 +74,41 @@ bool TransformationAddCopyMemory::IsApplicable(
     return false;
   }
 
-  // OpTypePointer with Private storage class exists.
+  // |storage_class| is either Function or Private.
+  if (message_.storage_class() != SpvStorageClassFunction &&
+      message_.storage_class() != SpvStorageClassPrivate) {
+    return false;
+  }
+
+  // OpTypePointer with |message_.storage_class| exists.
   if (!fuzzerutil::MaybeGetPointerType(
           ir_context,
           ir_context->get_type_mgr()->GetId(
               source_type->AsPointer()->pointee_type()),
-          SpvStorageClassPrivate)) {
+          static_cast<SpvStorageClass>(message_.storage_class()))) {
     return false;
+  }
+
+  // Check that |initializer_id| is valid.
+  //
+  // TODO():
+  //  Make initializer non-zero.
+  if (message_.initializer_id() == 0) {
+    // We only allow uninitialized global variables of type pointer to pointer
+    // for now.
+    if (message_.storage_class() != SpvStorageClassPrivate ||
+        !source_type->AsPointer()->pointee_type()->AsPointer()) {
+      return false;
+    }
+  } else {
+    const auto* initializer_inst =
+        ir_context->get_def_use_mgr()->GetDef(message_.initializer_id());
+    if (!initializer_inst ||
+        initializer_inst->type_id() !=
+            ir_context->get_type_mgr()->GetId(
+                source_type->AsPointer()->pointee_type())) {
+      return false;
+    }
   }
 
   // Check that this transformation respects domination rules.
@@ -99,27 +130,26 @@ bool TransformationAddCopyMemory::IsApplicable(
 void TransformationAddCopyMemory::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  // Result id for target variable type.
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3413):
-  //  it would be good to refactor variable creation part into a separate
-  //  function (in, say, fuzzerutil). This will reduce boilerplate here, in
-  //  TransformationPushIdsThroughVariables and two transformations that create
-  //  variables.
+  auto storage_class = static_cast<SpvStorageClass>(message_.storage_class());
   auto type_id = fuzzerutil::MaybeGetPointerType(
       ir_context,
       fuzzerutil::GetPointeeTypeIdFromPointerType(
           ir_context, fuzzerutil::GetTypeId(ir_context, message_.source_id())),
-      SpvStorageClassPrivate);
+      storage_class);
 
-  // Create global target variable.
-  opt::Instruction::OperandList variable_operands = {
-      {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}};
-  ir_context->AddGlobalValue(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpVariable, type_id, message_.fresh_id(),
-      std::move(variable_operands)));
-
-  fuzzerutil::AddVariableIdToEntryPointInterfaces(ir_context,
-                                                  message_.fresh_id());
+  if (storage_class == SpvStorageClassPrivate) {
+    fuzzerutil::AddGlobalVariable(ir_context, message_.fresh_id(), type_id,
+                                  storage_class, message_.initializer_id());
+  } else {
+    assert(storage_class == SpvStorageClassFunction &&
+           "Storage class can be either Private or Function");
+    fuzzerutil::AddLocalVariable(
+        ir_context, message_.fresh_id(), type_id,
+        ir_context->get_instr_block(message_.source_id())
+            ->GetParent()
+            ->result_id(),
+        message_.initializer_id());
+  }
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 

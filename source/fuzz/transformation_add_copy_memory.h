@@ -30,7 +30,8 @@ class TransformationAddCopyMemory : public Transformation {
 
   TransformationAddCopyMemory(
       const protobufs::InstructionDescriptor& instruction_descriptor,
-      uint32_t fresh_id, uint32_t source_id);
+      uint32_t fresh_id, uint32_t source_id, SpvStorageClass storage_class,
+      uint32_t initializer_id);
 
   // - |instruction_descriptor| must point to a valid instruction in the module.
   // - it should be possible to insert OpCopyMemory before
@@ -40,13 +41,16 @@ class TransformationAddCopyMemory : public Transformation {
   // - |fresh_id| must be a fresh id to copy memory into.
   // - type of |source_id| must be OpTypePointer where pointee can be used with
   //   OpCopyMemory.
+  // - |storage_class| must be either Private or Function.
+  // - type ids of instructions with result ids |source_id| and |initialize_id|
+  //   must be the same.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // A global variable with id |target_id| and private storage class is created.
-  // An 'OpCopyMemory %target_id %source_id' instruction is inserted before the
-  // |instruction_descriptor|.
+  // A global or local variable with id |target_id| and |storage_class| class is
+  // created. An 'OpCopyMemory %target_id %source_id' instruction is inserted
+  // before the |instruction_descriptor|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

@@ -60,26 +60,50 @@ void FuzzerPassAddCopyMemory::Apply() {
           return;
         }
 
-        ++inst_it;
+        auto next_iter = inst_it;
+        ++next_iter;
         // Abort if can't insert OpCopyMemory before next instruction (i.e.
         // after the current one).
         if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyMemory,
-                                                          inst_it)) {
+                                                          next_iter)) {
           return;
         }
 
-        // Create a pointer type with Private storage class if needed.
-        FindOrCreatePointerType(GetIRContext()->get_type_mgr()->GetId(
-                                    type->AsPointer()->pointee_type()),
-                                SpvStorageClassPrivate);
+        // Decide whether to create global or local variable. If the copied
+        // object is a pointer, create a global variable. Otherwise, decide at
+        // random.
+        //
+        // TODO():
+        //  We could choose the storage class completely at random if we were to
+        //  initialize global variables that point to pointers.
+        auto storage_class = type->AsPointer()->pointee_type()->AsPointer() ||
+                                     GetFuzzerContext()->ChooseEven()
+                                 ? SpvStorageClassPrivate
+                                 : SpvStorageClassFunction;
+
+        auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
+            GetIRContext(), inst.type_id());
+
+        // Create initializer for the variable.
+        //
+        // TODO():
+        //  We are leaving the variable uninitialized if the copied type is a
+        //  pointer. Fix this.
+        auto initializer_id = type->AsPointer()->pointee_type()->AsPointer()
+                                  ? 0
+                                  : FindOrCreateZeroConstant(pointee_type_id);
+
+        // Create a pointer type with |storage_class| if needed.
+        FindOrCreatePointerType(pointee_type_id, storage_class);
 
         // We need to create a new instruction descriptor for the next
         // instruction in the block. It will be used to insert OpCopyMemory
         // above the instruction it points to (i.e. below |inst|).
 
         ApplyTransformation(TransformationAddCopyMemory(
-            MakeInstructionDescriptor(GetIRContext(), &*inst_it),
-            GetFuzzerContext()->GetFreshId(), inst.result_id()));
+            MakeInstructionDescriptor(GetIRContext(), &*next_iter),
+            GetFuzzerContext()->GetFreshId(), inst.result_id(), storage_class,
+            initializer_id));
       });
 }
 
