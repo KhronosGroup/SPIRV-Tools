@@ -225,6 +225,13 @@ class FuzzerPass {
   // --------------+-------------------------------
   uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id);
 
+  // Returns the result id of the constant instruction or global variable,
+  // suitable to be used as an initializer of the variable, whose pointee's type
+  // id is |initializer_type_id|. Creates a new constant instruction or global
+  // variable if there is no compatible one in the module. The newly created
+  // global variable will be marked as irrelevant and initialized.
+  uint32_t FindOrCreateVariableInitializer(uint32_t initializer_type_id);
+
  private:
   // Array, matrix and vector are *homogeneous* composite types in the sense
   // that every component of one of these types has the same type.  Given a

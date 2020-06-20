@@ -22,6 +22,7 @@
 #include "source/fuzz/transformation_add_constant_composite.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_global_undef.h"
+#include "source/fuzz/transformation_add_global_variable.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
 #include "source/fuzz/transformation_add_type_float.h"
 #include "source/fuzz/transformation_add_type_function.h"
@@ -470,6 +471,38 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
     }
     default:
       assert(false && "Unknown type.");
+      return 0;
+  }
+}
+
+uint32_t FuzzerPass::FindOrCreateVariableInitializer(
+    uint32_t initializer_type_id) {
+  const auto* type_inst =
+      GetIRContext()->get_def_use_mgr()->GetDef(initializer_type_id);
+  assert(type_inst && "|initializer_type_id| is invalid.");
+
+  switch (type_inst->opcode()) {
+    case SpvOpTypeBool:
+    case SpvOpTypeFloat:
+    case SpvOpTypeInt:
+    case SpvOpTypeArray:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector:
+    case SpvOpTypeStruct:
+      return FindOrCreateZeroConstant(initializer_type_id);
+    case SpvOpTypePointer: {
+      auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
+          GetIRContext(), initializer_type_id);
+      auto result = GetFuzzerContext()->GetFreshId();
+      ApplyTransformation(TransformationAddGlobalVariable(
+          result,
+          FindOrCreatePointerType(pointee_type_id, SpvStorageClassPrivate),
+          SpvStorageClassPrivate,
+          FindOrCreateVariableInitializer(pointee_type_id), true));
+      return result;
+    }
+    default:
+      assert(false && "Variable's initializer has invalid type");
       return 0;
   }
 }
