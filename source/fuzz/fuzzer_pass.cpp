@@ -491,11 +491,13 @@ uint32_t FuzzerPass::FindOrCreateVariableInitializer(
     case SpvOpTypeStruct:
       return FindOrCreateZeroConstant(initializer_type_id);
     case SpvOpTypePointer: {
-      if (fuzzerutil::GetStorageClassFromPointerType(
-              GetIRContext(), initializer_type_id) == SpvStorageClassFunction) {
-        // We can't initialize a global variable that points to a pointer with
-        // Function storage class since a local variable is required for the
-        // initialization in this case.
+      auto storage_class =
+          fuzzerutil::GetStorageClassFromPointerType(type_inst);
+
+      // We can't initialize a global variable that points to a pointer with
+      // Function storage class since a local variable is required for the
+      // initialization in this case.
+      if (storage_class == SpvStorageClassFunction) {
         assert(false &&
                "|initializer_type_id| has Function storage class which requires"
                "a local variable to be present in global scope");
@@ -516,8 +518,7 @@ uint32_t FuzzerPass::FindOrCreateVariableInitializer(
 
       auto result = GetFuzzerContext()->GetFreshId();
       ApplyTransformation(TransformationAddGlobalVariable(
-          result, initializer_type_id,
-          fuzzerutil::GetStorageClassFromPointerType(type_inst),
+          result, initializer_type_id, storage_class,
           FindOrCreateVariableInitializer(
               fuzzerutil::GetPointeeTypeIdFromPointerType(type_inst)),
           true));
