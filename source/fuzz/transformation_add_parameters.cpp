@@ -159,8 +159,15 @@ void TransformationAddParameters::Apply(
     function->AddParameter(MakeUnique<opt::Instruction>(
         ir_context, SpvOpFunctionParameter, new_parameter_type[i],
         new_parameter_id[i], opt::Instruction::OperandList()));
-    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        new_parameter_id[i]);
+
+    const auto* parameter_type =
+        ir_context->get_type_mgr()->GetType(new_parameter_type[i]);
+    assert(parameter_type && "Parameter's type is undefined");
+
+    if (parameter_type->AsPointer()) {
+      transformation_context->GetFactManager()
+          ->AddFactValueOfPointeeIsIrrelevant(new_parameter_id[i]);
+    }
   }
 
   // Fix all OpFunctionCall instructions.
