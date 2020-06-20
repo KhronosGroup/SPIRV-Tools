@@ -91,8 +91,8 @@ bool TransformationAddCopyMemory::IsApplicable(
 
   // Check that |initializer_id| is valid.
   //
-  // TODO():
-  //  Make initializer non-zero.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
+  //  Fix when the PR is merged. (Make non-zero).
   if (message_.initializer_id() == 0) {
     // We only allow uninitialized global variables of type pointer to pointer
     // for now.

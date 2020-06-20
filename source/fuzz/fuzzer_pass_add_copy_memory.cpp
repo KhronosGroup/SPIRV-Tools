@@ -73,9 +73,11 @@ void FuzzerPassAddCopyMemory::Apply() {
         // object is a pointer, create a global variable. Otherwise, decide at
         // random.
         //
-        // TODO():
-        //  We could choose the storage class completely at random if we were to
-        //  initialize global variables that point to pointers.
+        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
+        //  Uncomment when the PR is merged.
+        // auto storage_class = GetFuzzerContext()->ChooseEven()
+        //                          ? SpvStorageClassPrivate
+        //                          : SpvStorageClassFunction;
         auto storage_class = type->AsPointer()->pointee_type()->AsPointer() ||
                                      GetFuzzerContext()->ChooseEven()
                                  ? SpvStorageClassPrivate
@@ -86,9 +88,9 @@ void FuzzerPassAddCopyMemory::Apply() {
 
         // Create initializer for the variable.
         //
-        // TODO():
-        //  We are leaving the variable uninitialized if the copied type is a
-        //  pointer. Fix this.
+        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
+        //  Uncomment when the PR is merged.
+        // auto initializer_id = FindOrCreateVariableInitializer(pointee_type_id);
         auto initializer_id = type->AsPointer()->pointee_type()->AsPointer()
                                   ? 0
                                   : FindOrCreateZeroConstant(pointee_type_id);
