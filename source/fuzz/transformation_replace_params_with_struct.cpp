@@ -49,8 +49,8 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     return false;
   }
 
-  // TODO():
-  //  Uncomment when the PR is merged.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3454):
+  //  uncomment when the PR is merged.
   // auto params = fuzzerutil::GetParameters(ir_context, function->result_id());
   std::vector<opt::Instruction*> params;
 
@@ -60,7 +60,7 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
   std::vector<uint32_t> param_index(message_.parameter_index().begin(),
                                     message_.parameter_index().end());
 
-  // TODO():
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3421):
   //  Uncomment when the PR is merged
   // assert(!fuzzerutil::HasDuplicates(parameter_index) &&
   //        "Indices of replaced parameters may not have duplicates");
@@ -147,8 +147,8 @@ void TransformationReplaceParamsWithStruct::Apply(
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function);
 
-  // TODO():
-  //  Uncomment when the PR is merged.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3454):
+  //  uncomment when the PR is merged.
   // auto params = fuzzerutil::GetParameters(ir_context,
   // message_.function_id());
   std::vector<opt::Instruction*> params;
