@@ -218,8 +218,13 @@ class FuzzerContext {
   uint32_t GetChanceOfReplacingLinearAlgebraInstructions() {
     return chance_of_replacing_linear_algebra_instructions_;
   }
+<<<<<<< HEAD
   uint32_t GetChanceOfReplacingParametersWithGlobals() {
     return chance_of_replacing_parameters_with_globals_;
+=======
+  uint32_t GetChanceOfReplacingParametersWithStruct() {
+    return chance_of_replacing_parameters_with_struct_;
+>>>>>>> fff83c91... Implement transformation
   }
   uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
   uint32_t GetChanceOfSwappingConditionalBranchOperands() {
@@ -236,6 +241,9 @@ class FuzzerContext {
   }
   uint32_t GetMaximumNumberOfFunctionParameters() {
     return max_number_of_function_parameters_;
+  }
+  uint32_t GetMaximumNumberOfReplacedParameters() {
+    return max_number_of_replaced_parameters_;
   }
   std::pair<uint32_t, uint32_t> GetRandomBranchWeights() {
     std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
@@ -277,6 +285,11 @@ class FuzzerContext {
     return ChooseBetweenMinAndMax(
         {1, std::min(max_number_of_new_parameters_,
                      GetMaximumNumberOfFunctionParameters() - num_of_params)});
+  }
+  uint32_t GetRandomNumberOfReplacedParameters(uint32_t num_params) {
+    assert(num_params != 0 && "A function must have parameters to replace");
+    return ChooseBetweenMinAndMax(
+        {1, std::min(num_params, GetMaximumNumberOfReplacedParameters())});
   }
   uint32_t GetRandomSizeForNewArray() {
     // Ensure that the array size is non-zero.
@@ -345,6 +358,7 @@ class FuzzerContext {
   uint32_t chance_of_replacing_id_with_synonym_;
   uint32_t chance_of_replacing_linear_algebra_instructions_;
   uint32_t chance_of_replacing_parameters_with_globals_;
+  uint32_t chance_of_replacing_parameters_with_struct_;
   uint32_t chance_of_splitting_block_;
   uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_toggling_access_chain_instruction_;
@@ -359,6 +373,7 @@ class FuzzerContext {
   uint32_t max_new_array_size_limit_;
   uint32_t max_number_of_function_parameters_;
   uint32_t max_number_of_new_parameters_;
+  uint32_t max_number_of_replaced_parameters_;
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.

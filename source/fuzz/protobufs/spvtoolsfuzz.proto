@@ -403,6 +403,7 @@ message Transformation {
     TransformationRecordSynonymousConstants record_synonymous_constants = 56;
     TransformationAddSynonym add_synonym = 57;
     TransformationAddRelaxedDecoration add_relaxed_decoration = 58;
+    TransformationReplaceParamsWithStruct replace_params_with_struct = 59;
     // Add additional option using the next available number.
   }
 }
@@ -1310,6 +1311,28 @@ message TransformationReplaceLinearAlgebraInstruction {
   //   OpTranspose
   //   OpOuterProduct
   InstructionDescriptor instruction_descriptor = 2;
+
+}
+
+message TransformationReplaceParamsWithStruct {
+
+  // Replaces parameters of the function with a struct containing
+  // values of those parameters.
+
+  // Result id of a function to replace parameters of.
+  uint32 function_id = 1;
+
+  // Indices of parameters to replace.
+  repeated uint32 parameter_index = 2;
+
+  // Result id of a new OpTypeFunction instruction.
+  uint32 new_type_id = 3;
+
+  // Fresh id for a new function parameter to be used as a replacement.
+  uint32 fresh_parameter_id = 4;
+
+  // Fresh id for a struct object containing values of the replaced parameters.
+  uint32 fresh_composite_id = 5;
 
 }
 
