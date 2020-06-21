@@ -31,20 +31,27 @@ class TransformationInvertComparisonOperators : public Transformation {
   TransformationInvertComparisonOperators(uint32_t operator_id,
                                           uint32_t fresh_id);
 
-  // TODO
+  // - |operator_id| should be a result id of some instruction for which
+  //   InInversionSupported returs true.
+  // - |fresh_id| must be a fresh id.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO
+  // Inverts the opcode of the instruction with result id |operator_id| (e.g >=
+  // becomes <) and inserts OpLogicalNot instruction after |operator_id|. Also,
+  // changes the result id of OpLogicalNot to |operator_id| and the result id of
+  // the inverted operator to |fresh_id|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
 
+  // Returns true if |opcode| is supported by this transformation.
   static bool IsInversionSupported(SpvOp opcode);
 
  private:
+  // Returns an inverted |opcode| (e.g. < becomes >=, == becomes != etc.)
   static SpvOp GetInvertedInstruction(SpvOp opcode);
 
   protobufs::TransformationInvertComparisonOperators message_;

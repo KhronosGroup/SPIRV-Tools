@@ -74,11 +74,15 @@ void FuzzerPassAddSynonyms::Apply() {
         [this](const opt::Instruction* inst) { CreateCastSynonym(inst); }}}};
 
   for (const auto* type_inst : GetIRContext()->module()->GetTypes()) {
+    // Check that |type_inst| is supported.
     if (kTransformationMap.find(type_inst->opcode()) ==
         kTransformationMap.end()) {
       continue;
     }
 
+    // Collect all instructions that will be used to create synonym for. We
+    // store these in a separate vector to make sure we don't invalidate
+    // iterators by inserting new instructions into the module.
     std::vector<const opt::Instruction*> candidate_instructions;
     GetIRContext()->get_def_use_mgr()->ForEachUser(
         type_inst,
@@ -101,6 +105,7 @@ void FuzzerPassAddSynonyms::Apply() {
           candidate_instructions.push_back(inst);
         });
 
+    // Apply transformations to create synonyms.
     for (const auto* inst : candidate_instructions) {
       const auto& transformations = kTransformationMap.at(inst->opcode());
       transformations[GetFuzzerContext()->RandomIndex(transformations)](inst);

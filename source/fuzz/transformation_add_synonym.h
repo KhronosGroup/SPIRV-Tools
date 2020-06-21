@@ -32,12 +32,19 @@ class TransformationAddSynonym : public Transformation {
       uint32_t synonym_id,
       const protobufs::Instruction& synonymous_instruction);
 
-  // TODO
+  // - |synonym_id| must be a valid result id of some instruction in the module.
+  // - |synonymous_instruction| must be a valid instruction.
+  // - |synonymous_instruction| must have a fresh result id.
+  // - it should be possible to add |synonymous_instruction| after |synonym_id|.
+  // - insertion of |synonymous_instruction| after |synonym_id| satisfies
+  //   domination rules.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO
+  // Inserts |synonymous_instruction| after |synonym_id| and creates a fact that
+  // the result id of |synonymous_instruction| and the |synonym_id| are
+  // synonymous.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

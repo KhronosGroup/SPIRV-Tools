@@ -33,12 +33,26 @@ class TransformationAddFloatCastSynonym : public Transformation {
                                     uint32_t to_int_fresh_id,
                                     uint32_t float_type_id);
 
-  // TODO
+  // - |synonym_id| must be a valid result id of some instruction in the module.
+  // - the instruction with |synonym_id| result id must have either an integral
+  //   or a vector of integers type.
+  // - it should be possible to insert OpConvert* instructions after
+  //   |synonym_id|.
+  // - |to_float_fresh_id| and |to_int_fresh_id| must be fresh ids.
+  // - |float_type_id| must be a result id of OpTypeFloat or OpTypeVector with
+  //   OpTypeFloat components.
+  // - if |synonym_id|'th type is OpTypeInteger then |float_type_id| must be a
+  //   result id of OpTypeFloat with the same width. Otherwise, |float_type_id|
+  //   is a result id of an OpTypeVector with OpTypeFloat components. It must
+  //   have the same component count and the width of components as |synonym_id|
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO
+  // Adds an OpConvertSToF or OpConvertUToF with |to_float_fresh_id| after
+  // |synonym_id| and OpConvertFToS or OpConvertFToU with |to_int_fresh_id|
+  // after |to_float_fresh_id|. Marks |to_int_fresh_id| and |synonym_id| as
+  // synonymous.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

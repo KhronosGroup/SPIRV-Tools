@@ -109,7 +109,7 @@ bool TransformationAddFloatCastSynonym::IsApplicable(
       return false;
     }
 
-    // ...its element must have the same width.
+    // ...its elements must have the same width.
     if (float_vector->element_type()->AsFloat()->width() !=
         synonym_vector->element_type()->AsInteger()->width()) {
       return false;
@@ -130,6 +130,8 @@ void TransformationAddFloatCastSynonym::Apply(
       ir_context->get_type_mgr()->GetType(synonym_inst->type_id());
   assert(synonym_type);
 
+  // Select an instruction to cast based on whether the integers are signed or
+  // not.
   SpvOp convert_to_float_opcode, convert_to_int_opcode;
   if (const auto* vector = synonym_type->AsVector()) {
     convert_to_float_opcode = vector->element_type()->AsInteger()->IsSigned()

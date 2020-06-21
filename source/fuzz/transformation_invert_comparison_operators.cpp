@@ -70,7 +70,10 @@ void TransformationInvertComparisonOperators::Apply(
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}}}));
 
+  // Change the result id of the original operator to |fresh_id|.
   inst->SetResultId(message_.fresh_id());
+
+  // Invert the operator.
   inst->SetOpcode(GetInvertedInstruction(inst->opcode()));
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
