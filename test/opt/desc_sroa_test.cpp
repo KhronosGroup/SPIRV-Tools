@@ -572,18 +572,18 @@ TEST_F(DescriptorScalarReplacementTest, ResourceStructAsFunctionParam) {
   struct T {
     SamplerState s[3];
   };
-  
+
   struct S {
     Texture2D t[2];
     T tt[2];
   };
-  
+
   float4 tex2D(S x, float2 v) {
     return x.t[0].Sample(x.tt[0].s[1], v) + x.t[1].Sample(x.tt[1].s[2], v);
   }
-  
+
   S globalS[2];
-  
+
   float4 main() : SV_Target {
     return tex2D(globalS[0], float2(0,0)) + tex2D(globalS[1], float2(0,0)) ;
   }
