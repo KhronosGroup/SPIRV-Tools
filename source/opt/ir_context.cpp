@@ -355,6 +355,9 @@ void IRContext::ForgetUses(Instruction* inst) {
       get_decoration_mgr()->RemoveDecoration(inst);
     }
   }
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->ClearDebugInfo(inst);
+  }
   RemoveFromIdToName(inst);
 }
 
@@ -366,6 +369,9 @@ void IRContext::AnalyzeUses(Instruction* inst) {
     if (inst->IsDecoration()) {
       get_decoration_mgr()->AddDecoration(inst);
     }
+  }
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->AnalyzeDebugInst(inst);
   }
   if (id_to_name_ &&
       (inst->opcode() == SpvOpName || inst->opcode() == SpvOpMemberName)) {
@@ -424,10 +430,12 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
       }
     }
   }
-  // Notice that we do not need anythings to do for local variables.
-  // DebugLocalVariable does not have an OpVariable operand. Instead,
-  // DebugDeclare/DebugValue has an OpVariable operand for a local
-  // variable. The function inlining pass handles it properly.
+  // Kill DebugValue or DebugDeclare whose operand is |id|.
+  std::vector<Instruction*> dbg_decl_or_value;
+  get_debug_info_mgr()->ForEachDebugDeclareOrValue(
+      id,
+      [&dbg_decl_or_value](Instruction* i) { dbg_decl_or_value.push_back(i); });
+  for (auto* i : dbg_decl_or_value) KillInst(i);
 }
 
 void IRContext::AddCombinatorsForCapability(uint32_t capability) {

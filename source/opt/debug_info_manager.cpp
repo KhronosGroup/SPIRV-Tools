@@ -101,17 +101,26 @@ void DebugInfoManager::RegisterDbgFunction(Instruction* inst) {
   fn_id_to_dbg_fn_[fn_id] = inst;
 }
 
-void DebugInfoManager::RegisterDbgDeclare(uint32_t var_id,
-                                          Instruction* dbg_declare) {
-  assert(dbg_declare->GetOpenCL100DebugOpcode() ==
+void DebugInfoManager::RegisterDbgDeclareOrValue(uint32_t var_or_value_id,
+                                                 Instruction* dbg_inst) {
+  assert(dbg_inst->GetOpenCL100DebugOpcode() ==
              OpenCLDebugInfo100DebugDeclare ||
-         dbg_declare->GetOpenCL100DebugOpcode() ==
-             OpenCLDebugInfo100DebugValue);
-  auto dbg_decl_itr = var_id_to_dbg_decl_.find(var_id);
+         dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue);
+  auto dbg_decl_itr = var_id_to_dbg_decl_.find(var_or_value_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) {
-    var_id_to_dbg_decl_[var_id] = {dbg_declare};
+    var_id_to_dbg_decl_[var_or_value_id] = {dbg_inst};
   } else {
-    dbg_decl_itr->second.push_back(dbg_declare);
+    dbg_decl_itr->second.push_back(dbg_inst);
+  }
+}
+
+void DebugInfoManager::ForEachDebugDeclareOrValue(
+    uint32_t var_or_value_id,
+    const std::function<void(Instruction*)>& f) const {
+  auto dbg_decl_itr = var_id_to_dbg_decl_.find(var_or_value_id);
+  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
+  for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
+    f(dbg_decl_or_val);
   }
 }
 
@@ -388,6 +397,11 @@ void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
 
   uint32_t instr_scope_id = scope_and_line->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
+    if (dbg_decl_or_val->GetOpenCL100DebugOpcode() ==
+            OpenCLDebugInfo100DebugValue &&
+        !IsDebugValueUsedForDeclare(dbg_decl_or_val)) {
+      continue;
+    }
     if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
 
     uint32_t result_id = context()->TakeNextId();
@@ -437,21 +451,22 @@ void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
   }
 }
 
-uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
-    Instruction* inst) {
-  if (inst->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100DebugValue) return 0;
+bool DebugInfoManager::IsDebugValueUsedForDeclare(Instruction* inst) {
+  if (inst->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100DebugValue)
+    return false;
 
   auto* expr =
       GetDbgInst(inst->GetSingleWordOperand(kDebugValueOperandExpressionIndex));
-  if (expr == nullptr) return 0;
-  if (expr->NumOperands() != kDebugExpressOperandOperationIndex + 1) return 0;
+  if (expr == nullptr) return false;
+  if (expr->NumOperands() != kDebugExpressOperandOperationIndex + 1)
+    return false;
 
   auto* operation = GetDbgInst(
       expr->GetSingleWordOperand(kDebugExpressOperandOperationIndex));
-  if (operation == nullptr) return 0;
+  if (operation == nullptr) return false;
   if (operation->GetSingleWordOperand(kDebugOperationOperandOperationIndex) !=
       OpenCLDebugInfo100Deref) {
-    return 0;
+    return false;
   }
 
   uint32_t var_id =
@@ -459,16 +474,16 @@ uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
   if (!context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse)) {
     assert(false &&
            "Checking a DebugValue can be used for declare needs DefUseManager");
-    return 0;
+    return false;
   }
 
   auto* var = context()->get_def_use_mgr()->GetDef(var_id);
   if (var->opcode() == SpvOpVariable &&
       SpvStorageClass(var->GetSingleWordOperand(
           kOpVariableOperandStorageClassIndex)) == SpvStorageClassFunction) {
-    return var_id;
+    return true;
   }
-  return 0;
+  return false;
 }
 
 void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
@@ -493,14 +508,11 @@ void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
     empty_debug_expr_inst_ = dbg_inst;
   }
 
-  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
-    uint32_t var_id =
+  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+      dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+    uint32_t var_or_value_id =
         dbg_inst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
-    RegisterDbgDeclare(var_id, dbg_inst);
-  }
-
-  if (uint32_t var_id = GetVariableIdOfDebugValueUsedForDeclare(dbg_inst)) {
-    RegisterDbgDeclare(var_id, dbg_inst);
+    RegisterDbgDeclareOrValue(var_or_value_id, dbg_inst);
   }
 }
 
@@ -544,10 +556,14 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
     fn_id_to_dbg_fn_.erase(fn_id);
   }
 
-  if (instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
-    auto var_id =
+  if (instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+      instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+    auto var_or_value_id =
         instr->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
-    var_id_to_dbg_decl_.erase(var_id);
+    auto dbg_decl_itr = var_id_to_dbg_decl_.find(var_or_value_id);
+    if (dbg_decl_itr != var_id_to_dbg_decl_.end()) {
+      dbg_decl_itr->second.remove(instr);
+    }
   }
 
   if (debug_info_none_inst_ == instr) {
@@ -555,8 +571,9 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
     for (auto dbg_instr_itr = context()->module()->ext_inst_debuginfo_begin();
          dbg_instr_itr != context()->module()->ext_inst_debuginfo_end();
          ++dbg_instr_itr) {
-      if (dbg_instr_itr->GetOpenCL100DebugOpcode() ==
-          OpenCLDebugInfo100DebugInfoNone) {
+      if (instr != &*dbg_instr_itr &&
+          dbg_instr_itr->GetOpenCL100DebugOpcode() ==
+              OpenCLDebugInfo100DebugInfoNone) {
         debug_info_none_inst_ = &*dbg_instr_itr;
       }
     }
@@ -567,7 +584,7 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
     for (auto dbg_instr_itr = context()->module()->ext_inst_debuginfo_begin();
          dbg_instr_itr != context()->module()->ext_inst_debuginfo_end();
          ++dbg_instr_itr) {
-      if (IsEmptyDebugExpression(&*dbg_instr_itr)) {
+      if (instr != &*dbg_instr_itr && IsEmptyDebugExpression(&*dbg_instr_itr)) {
         empty_debug_expr_inst_ = &*dbg_instr_itr;
       }
     }

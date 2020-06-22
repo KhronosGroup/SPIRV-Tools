@@ -15,8 +15,8 @@
 #ifndef SOURCE_OPT_DEBUG_INFO_MANAGER_H_
 #define SOURCE_OPT_DEBUG_INFO_MANAGER_H_
 
+#include <list>
 #include <unordered_map>
-#include <vector>
 
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
@@ -138,6 +138,12 @@ class DebugInfoManager {
   // Erases |instr| from data structures of this class.
   void ClearDebugInfo(Instruction* instr);
 
+  // Runs the given function |f| on each DebugDeclare or DebugValue
+  // instruction whose variable or value is |var_or_value_id|.
+  void ForEachDebugDeclareOrValue(
+      uint32_t var_or_value_id,
+      const std::function<void(Instruction*)>& f) const;
+
  private:
   IRContext* context() { return context_; }
 
@@ -157,17 +163,18 @@ class DebugInfoManager {
   // in |inst| must not already be registered.
   void RegisterDbgFunction(Instruction* inst);
 
-  // Register the DebugDeclare instruction |dbg_declare| into
-  // |var_id_to_dbg_decl_| using OpVariable id |var_id| as a key.
-  void RegisterDbgDeclare(uint32_t var_id, Instruction* dbg_declare);
+  // Register the DebugDeclare or DebugValue instruction |dbg_inst| into
+  // |var_id_to_dbg_decl_| using |id| as a key.
+  void RegisterDbgDeclareOrValue(uint32_t var_or_value_id,
+                                 Instruction* dbg_inst);
 
   // Returns a DebugExpression instruction without Operation operands.
   Instruction* GetEmptyDebugExpression();
 
-  // Returns the id of Value operand if |inst| is DebugValue who has Deref
-  // operation and its Value operand is a result id of OpVariable with
-  // Function storage class. Otherwise, returns 0.
-  uint32_t GetVariableIdOfDebugValueUsedForDeclare(Instruction* inst);
+  // Returns true if |inst| is DebugValue who has Deref operation and
+  // its Value operand is a result id of OpVariable with Function
+  // storage class. Otherwise, returns 0.
+  bool IsDebugValueUsedForDeclare(Instruction* inst);
 
   // Returns true if a scope |ancestor| is |scope| or an ancestor scope
   // of |scope|.
@@ -191,9 +198,9 @@ class DebugInfoManager {
   // operand is the function.
   std::unordered_map<uint32_t, Instruction*> fn_id_to_dbg_fn_;
 
-  // Mapping from local variable ids to DebugDeclare instructions whose
-  // operand is the local variable.
-  std::unordered_map<uint32_t, std::vector<Instruction*>> var_id_to_dbg_decl_;
+  // Mapping from variable or value ids to DebugDeclare or DebugValue
+  // instructions whose operand is the variable or value.
+  std::unordered_map<uint32_t, std::list<Instruction*>> var_id_to_dbg_decl_;
 
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
