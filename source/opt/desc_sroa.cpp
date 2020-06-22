@@ -302,8 +302,8 @@ uint32_t DescriptorScalarReplacement::CreateReplacementVariable(
         new_binding += idx * GetNumBindingsUsedByType(ptr_element_type_id);
       }
       if (is_struct) {
-        // The binding offset that should be added is the sum of previous
-        // members of the current struct.
+        // The binding offset that should be added is the sum of binding numbers
+        // used by previous members of the current struct.
         for (uint32_t i = 0; i < idx; ++i) {
           new_binding += GetNumBindingsUsedByType(
               pointee_type_inst->GetSingleWordInOperand(i));
@@ -392,8 +392,8 @@ bool DescriptorScalarReplacement::ReplaceLoadedValue(Instruction* var,
                                                      Instruction* value) {
   // |var| is the global variable that has to be eliminated (OpVariable).
   // |value| is the OpLoad instruction that has loaded |var|.
-  // The function expects all of |value| to be OpCompositeExtract instructions.
-  // Otherwise the function returns false with an error message.
+  // The function expects all users of |value| to be OpCompositeExtract
+  // instructions. Otherwise the function returns false with an error message.
   assert(value->opcode() == SpvOpLoad);
   assert(value->GetSingleWordInOperand(0) == var->result_id());
   std::vector<Instruction*> work_list;
