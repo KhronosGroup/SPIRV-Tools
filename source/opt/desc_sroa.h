@@ -69,9 +69,10 @@ class DescriptorScalarReplacement : public Pass {
   bool ReplaceLoadedValue(Instruction* var, Instruction* value);
 
   // Replaces the given OpCompositeExtract |extract| and all of its references
-  // with a replacement variable. |var| is the variable with composite type
-  // whose value is being used by |extract|. Assumes that |extract| is
-  // extracting one index only. Returns true on success, and false otherwise.
+  // with an OpLoad of a replacement variable. |var| is the variable with
+  // composite type whose value is being used by |extract|. Assumes that
+  // |extract| is extracting one index only. Returns true on success, and false
+  // otherwise.
   bool ReplaceCompositeExtract(Instruction* var, Instruction* extract);
 
   // Returns the id of the variable that will be used to replace the |idx|th

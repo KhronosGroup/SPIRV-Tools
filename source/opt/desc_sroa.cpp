@@ -434,7 +434,17 @@ bool DescriptorScalarReplacement::ReplaceCompositeExtract(
 
   uint32_t replacement_var =
       GetReplacementVariable(var, extract->GetSingleWordInOperand(1));
-  context()->ReplaceAllUsesWith(extract->result_id(), replacement_var);
+
+  // The result type of the OpLoad is the same as the result type of the
+  // OpCompositeExtract.
+  uint32_t load_id = TakeNextId();
+  std::unique_ptr<Instruction> load(
+      new Instruction(context(), SpvOpLoad, extract->type_id(), load_id,
+                      std::initializer_list<Operand>{
+                          {SPV_OPERAND_TYPE_ID, {replacement_var}}}));
+  get_def_use_mgr()->AnalyzeInstDefUse(load.get());
+  extract->InsertBefore(std::move(load));
+  context()->ReplaceAllUsesWith(extract->result_id(), load_id);
   context()->KillInst(extract);
   return true;
 }
