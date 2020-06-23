@@ -60,10 +60,8 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
   std::vector<uint32_t> param_index(message_.parameter_index().begin(),
                                     message_.parameter_index().end());
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3421):
-  //  Uncomment when the PR is merged
-  // assert(!fuzzerutil::HasDuplicates(parameter_index) &&
-  //        "Indices of replaced parameters may not have duplicates");
+  assert(!fuzzerutil::HasDuplicates(param_index) &&
+         "Indices of replaced parameters may not have duplicates");
 
   if (param_index.empty() || param_index.size() > params.size()) {
     return false;
