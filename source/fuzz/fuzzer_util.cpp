@@ -675,6 +675,18 @@ bool IsPermutationOfRange(const std::vector<uint32_t>& arr, uint32_t lo,
          *min_max.second == hi;
 }
 
+std::vector<opt::Instruction*> GetParameters(opt::IRContext* ir_context,
+                                             uint32_t function_id) {
+  auto* function = FindFunction(ir_context, function_id);
+  assert(function && "|function_id| is invalid");
+
+  std::vector<opt::Instruction*> result;
+  function->ForEachParam(
+      [&result](opt::Instruction* inst) { result.push_back(inst); });
+
+  return result;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
