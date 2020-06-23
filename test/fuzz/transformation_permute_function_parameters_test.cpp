@@ -220,9 +220,16 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {0, 1})
                    .IsApplicable(context.get(), transformation_context));
 
-  // Permutation has invalid values
+  // Permutation has invalid values 1
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 0, {3, 1, 0})
                    .IsApplicable(context.get(), transformation_context));
+
+#ifndef NDEBUG
+  // Permutation has invalid values 2
+  ASSERT_DEATH(TransformationPermuteFunctionParameters(22, 0, {2, 2, 1})
+                   .IsApplicable(context.get(), transformation_context),
+               "Permutation has duplicates");
+#endif
 
   // Type id is not an OpTypeFunction instruction
   ASSERT_FALSE(TransformationPermuteFunctionParameters(22, 42, {2, 1, 0})

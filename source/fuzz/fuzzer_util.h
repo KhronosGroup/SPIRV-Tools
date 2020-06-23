@@ -252,6 +252,15 @@ void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
                       uint32_t type_id, uint32_t function_id,
                       uint32_t initializer_id);
 
+// Returns true if the vector |arr| has duplicates.
+bool HasDuplicates(const std::vector<uint32_t>& arr);
+
+// Checks that the given vector |arr| contains a permutation of a range
+// [lo, hi]. That being said, all elements in the range are present without
+// duplicates. If |arr| is empty, returns true iff |lo > hi|.
+bool IsPermutationOfRange(const std::vector<uint32_t>& arr, uint32_t lo,
+                          uint32_t hi);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

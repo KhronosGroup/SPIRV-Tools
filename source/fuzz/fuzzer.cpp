@@ -47,6 +47,7 @@
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
+#include "source/fuzz/fuzzer_pass_permute_phi_operands.h"
 #include "source/fuzz/fuzzer_pass_push_ids_through_variables.h"
 #include "source/fuzz/fuzzer_pass_replace_linear_algebra_instructions.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
@@ -303,6 +304,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassAddNoContractionDecorations>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassPermutePhiOperands>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassSwapCommutableOperands>(
