@@ -408,6 +408,7 @@ message Transformation {
     TransformationReplaceCopyMemoryWithLoadStore replace_copy_memory_with_load_store = 61;
     TransformationReplaceLoadStoreWithCopyMemory replace_load_store_with_copy_memory = 62;
     TransformationAddLoopPreheader add_loop_preheader = 63;
+    TransformationMoveInstruction move_instruction = 64;
     // Add additional option using the next available number.
   }
 }
@@ -1122,6 +1123,19 @@ message TransformationMoveBlockDown {
 
   // The id of the block to move down.
   uint32 block_id = 1;
+}
+
+message TransformationMoveInstruction {
+
+  // Inserts |target| instruction before |insert_before| instruction
+  // and removes it from its original position.
+
+  // Inserts |target| instruction before this instruction.
+  InstructionDescriptor insert_before = 1;
+
+  // Descriptor of the instruction to move.
+  InstructionDescriptor target = 2;
+
 }
 
 message TransformationOutlineFunction {

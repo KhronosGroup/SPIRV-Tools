@@ -68,6 +68,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_interchange_signedness_of_integer_operands.h
         fuzzer_pass_interchange_zero_like_constants.h
         fuzzer_pass_merge_blocks.h
+        fuzzer_pass_move_instructions.h
         fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_outline_functions.h
         fuzzer_pass_permute_blocks.h
@@ -134,6 +135,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_load.h
         transformation_merge_blocks.h
         transformation_move_block_down.h
+        transformation_move_instruction.h
         transformation_outline_function.h
         transformation_permute_function_parameters.h
         transformation_permute_phi_operands.h
@@ -199,6 +201,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_interchange_signedness_of_integer_operands.cpp
         fuzzer_pass_interchange_zero_like_constants.cpp
         fuzzer_pass_merge_blocks.cpp
+        fuzzer_pass_move_instructions.cpp
         fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_outline_functions.cpp
         fuzzer_pass_permute_blocks.cpp
@@ -264,6 +267,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_load.cpp
         transformation_merge_blocks.cpp
         transformation_move_block_down.cpp
+        transformation_move_instruction.cpp
         transformation_outline_function.cpp
         transformation_permute_function_parameters.cpp
         transformation_permute_phi_operands.cpp
