@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+#include <unordered_set>
+
 #include "source/fuzz/fuzzer_util.h"
 
 #include "source/opt/build_module.h"
@@ -650,6 +653,26 @@ void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
           {SPV_OPERAND_TYPE_ID, {initializer_id}}}));
+}
+
+bool HasDuplicates(const std::vector<uint32_t>& arr) {
+  return std::unordered_set<uint32_t>(arr.begin(), arr.end()).size() !=
+         arr.size();
+}
+
+bool IsPermutationOfRange(const std::vector<uint32_t>& arr, uint32_t lo,
+                          uint32_t hi) {
+  if (arr.empty()) {
+    return lo > hi;
+  }
+
+  if (HasDuplicates(arr)) {
+    return false;
+  }
+
+  auto min_max = std::minmax_element(arr.begin(), arr.end());
+  return arr.size() == hi - lo + 1 && *min_max.first == lo &&
+         *min_max.second == hi;
 }
 
 }  // namespace fuzzerutil

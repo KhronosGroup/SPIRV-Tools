@@ -185,6 +185,9 @@ class FuzzerContext {
   uint32_t GetChanceOfPermutingParameters() {
     return chance_of_permuting_parameters_;
   }
+  uint32_t GetChanceOfPermutingPhiOperands() {
+    return chance_of_permuting_phi_operands_;
+  }
   uint32_t GetChanceOfPushingIdThroughVariable() {
     return chance_of_pushing_id_through_variable_;
   }
@@ -290,6 +293,7 @@ class FuzzerContext {
   uint32_t chance_of_obfuscating_constant_;
   uint32_t chance_of_outlining_function_;
   uint32_t chance_of_permuting_parameters_;
+  uint32_t chance_of_permuting_phi_operands_;
   uint32_t chance_of_pushing_id_through_variable_;
   uint32_t chance_of_replacing_id_with_synonym_;
   uint32_t chance_of_replacing_linear_algebra_instructions_;
