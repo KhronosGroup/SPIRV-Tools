@@ -31,18 +31,16 @@ TEST(TransformationAddParametersTest, BasicTest) {
           %2 = OpTypeVoid
           %7 = OpTypeBool
          %11 = OpTypeInt 32 1
-         %21 = OpTypePointer Private %11
           %3 = OpTypeFunction %2
          %20 = OpTypeFunction %2 %7
           %6 = OpTypeFunction %7 %7
-         %12 = OpTypeFunction %7 %7 %11 %21
-         %13 = OpTypeFunction %7 %7 %7 %21
-         %14 = OpTypeFunction %11 %7 %11 %21
-         %15 = OpTypeFunction %7 %11 %11 %21
-         %16 = OpTypeFunction %7 %7 %11 %11 %21
+         %12 = OpTypeFunction %7 %7 %11
+         %13 = OpTypeFunction %7 %7 %7
+         %14 = OpTypeFunction %11 %7 %11
+         %15 = OpTypeFunction %7 %11 %11
+         %16 = OpTypeFunction %7 %7 %11 %11
           %8 = OpConstant %11 23
          %17 = OpConstantTrue %7
-         %22 = OpVariable %21 Private %8
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %18 = OpFunctionCall %7 %9 %17
@@ -66,51 +64,51 @@ TEST(TransformationAddParametersTest, BasicTest) {
                                                validator_options);
 
   // Can't modify entry point function.
-  ASSERT_FALSE(TransformationAddParameters(4, 20, {7}, {23}, {17})
+  ASSERT_FALSE(TransformationAddParameters(4, 6, {20}, {21}, {17})
                    .IsApplicable(context.get(), transformation_context));
 
-  // There is no function with result id 29.
-  ASSERT_FALSE(TransformationAddParameters(29, 12, {11, 21}, {23, 24}, {8, 22})
+  // There is no function with result id 10.
+  ASSERT_FALSE(TransformationAddParameters(29, 12, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // There is no OpTypeFunction instruction with result id 21.
-  ASSERT_FALSE(TransformationAddParameters(9, 23, {11, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 21, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type with id 6 has fewer parameters than required.
-  ASSERT_FALSE(TransformationAddParameters(9, 6, {11, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 6, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type with id 16 has more parameters than required.
-  ASSERT_FALSE(TransformationAddParameters(9, 16, {11, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 16, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // New function type is not OpTypeFunction instruction.
-  ASSERT_FALSE(TransformationAddParameters(9, 11, {11, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 11, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // Return type is invalid.
-  ASSERT_FALSE(TransformationAddParameters(9, 14, {11, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 14, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // Types of original parameters are invalid.
-  ASSERT_FALSE(TransformationAddParameters(9, 15, {11, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 15, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // Types of new parameters are invalid.
-  ASSERT_FALSE(TransformationAddParameters(9, 13, {11, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 13, {11}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // OpTypeVoid can't be the type of function parameter.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {2, 21}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 12, {2}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // Vectors, that describe parameters, have different sizes.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {23, 24}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 12, {}, {21}, {8})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11, 21}, {23}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {}, {8})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11, 21}, {23, 24}, {8})
+  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {21}, {})
                    .IsApplicable(context.get(), transformation_context));
 
   // Vectors cannot be empty.
@@ -118,30 +116,24 @@ TEST(TransformationAddParametersTest, BasicTest) {
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameters' ids are not fresh.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11, 21}, {22, 23}, {8, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {20}, {8})
                    .IsApplicable(context.get(), transformation_context));
 
   // Constants for parameters don't exist.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11, 21}, {23, 24}, {23, 24})
+  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {21}, {21})
                    .IsApplicable(context.get(), transformation_context));
 
   // Constants for parameters have invalid type.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11, 21}, {23, 24}, {17, 22})
+  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {21}, {17})
                    .IsApplicable(context.get(), transformation_context));
 
   // Correct transformation.
-  TransformationAddParameters correct(9, 12, {11, 21}, {23, 24}, {8, 22});
+  TransformationAddParameters correct(9, 12, {11}, {21}, {8});
   ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
   correct.Apply(context.get(), &transformation_context);
 
   // The module remains valid.
   ASSERT_TRUE(IsValid(env, context.get()));
-
-  // Fact manager has a fact about new function parameters.
-  //
-  // Only parameter with pointer type can have an irrelevant pointee.
-  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(23));
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(24));
 
   std::string expected_shader = R"(
                OpCapability Shader
@@ -154,27 +146,24 @@ TEST(TransformationAddParametersTest, BasicTest) {
           %2 = OpTypeVoid
           %7 = OpTypeBool
          %11 = OpTypeInt 32 1
-         %21 = OpTypePointer Private %11
           %3 = OpTypeFunction %2
          %20 = OpTypeFunction %2 %7
           %6 = OpTypeFunction %7 %7
-         %12 = OpTypeFunction %7 %7 %11 %21
-         %13 = OpTypeFunction %7 %7 %7 %21
-         %14 = OpTypeFunction %11 %7 %11 %21
-         %15 = OpTypeFunction %7 %11 %11 %21
-         %16 = OpTypeFunction %7 %7 %11 %11 %21
+         %12 = OpTypeFunction %7 %7 %11
+         %13 = OpTypeFunction %7 %7 %7
+         %14 = OpTypeFunction %11 %7 %11
+         %15 = OpTypeFunction %7 %11 %11
+         %16 = OpTypeFunction %7 %7 %11 %11
           %8 = OpConstant %11 23
          %17 = OpConstantTrue %7
-         %22 = OpVariable %21 Private %8
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %18 = OpFunctionCall %7 %9 %17 %8 %22
+         %18 = OpFunctionCall %7 %9 %17 %8
                OpReturn
                OpFunctionEnd
           %9 = OpFunction %7 None %12
          %19 = OpFunctionParameter %7
-         %23 = OpFunctionParameter %11
-         %24 = OpFunctionParameter %21
+         %21 = OpFunctionParameter %11
          %10 = OpLabel
                OpReturnValue %17
                OpFunctionEnd

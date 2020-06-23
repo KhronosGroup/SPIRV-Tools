@@ -139,8 +139,7 @@ bool TransformationAddParameters::IsApplicable(
 }
 
 void TransformationAddParameters::Apply(
-    opt::IRContext* ir_context,
-    TransformationContext* transformation_context) const {
+    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   // Retrieve all data from the message
   auto function_id = message_.function_id();
   const auto& new_parameter_type = message_.new_parameter_type();
@@ -160,14 +159,8 @@ void TransformationAddParameters::Apply(
         ir_context, SpvOpFunctionParameter, new_parameter_type[i],
         new_parameter_id[i], opt::Instruction::OperandList()));
 
-    const auto* parameter_type =
-        ir_context->get_type_mgr()->GetType(new_parameter_type[i]);
-    assert(parameter_type && "Parameter's type is undefined");
-
-    if (parameter_type->AsPointer()) {
-      transformation_context->GetFactManager()
-          ->AddFactValueOfPointeeIsIrrelevant(new_parameter_id[i]);
-    }
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
+    //  Add an PointeeValueIsIrrelevant fact if the parameter is a pointer.
   }
 
   // Fix all OpFunctionCall instructions.
