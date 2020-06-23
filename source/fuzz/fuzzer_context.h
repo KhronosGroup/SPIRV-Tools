@@ -135,6 +135,7 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingNoContractionDecoration() {
     return chance_of_adding_no_contraction_decoration_;
   }
+  uint32_t GetChanceOfAddingParameters() { return chance_of_adding_parameters; }
   uint32_t GetChanceOfAddingStore() { return chance_of_adding_store_; }
   uint32_t GetChanceOfAddingVectorShuffle() {
     return chance_of_adding_vector_shuffle_;
@@ -210,6 +211,9 @@ class FuzzerContext {
   uint32_t GetMaximumEquivalenceClassSizeForDataSynonymFactClosure() {
     return max_equivalence_class_size_for_data_synonym_fact_closure_;
   }
+  uint32_t GetMaximumNumberOfFunctionParameters() {
+    return max_number_of_function_parameters_;
+  }
   std::pair<uint32_t, uint32_t> GetRandomBranchWeights() {
     std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
 
@@ -245,6 +249,12 @@ class FuzzerContext {
   uint32_t GetRandomLoopLimit() {
     return random_generator_->RandomUint32(max_loop_limit_);
   }
+  uint32_t GetRandomNumberOfNewParameters(uint32_t num_of_params) {
+    assert(num_of_params < GetMaximumNumberOfFunctionParameters());
+    return ChooseBetweenMinAndMax(
+        {1, std::min(max_number_of_new_parameters_,
+                     GetMaximumNumberOfFunctionParameters() - num_of_params)});
+  }
   uint32_t GetRandomSizeForNewArray() {
     // Ensure that the array size is non-zero.
     return random_generator_->RandomUint32(max_new_array_size_limit_ - 1) + 1;
@@ -273,6 +283,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_local_variable_;
   uint32_t chance_of_adding_matrix_type_;
   uint32_t chance_of_adding_no_contraction_decoration_;
+  uint32_t chance_of_adding_parameters;
   uint32_t chance_of_adding_store_;
   uint32_t chance_of_adding_vector_shuffle_;
   uint32_t chance_of_adding_vector_type_;
@@ -309,6 +320,8 @@ class FuzzerContext {
   uint32_t max_loop_control_peel_count_;
   uint32_t max_loop_limit_;
   uint32_t max_new_array_size_limit_;
+  uint32_t max_number_of_function_parameters_;
+  uint32_t max_number_of_new_parameters_;
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.

@@ -48,6 +48,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_loads.h
         fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_no_contraction_decorations.h
+        fuzzer_pass_add_parameters.h
         fuzzer_pass_add_stores.h
         fuzzer_pass_add_vector_shuffle_instructions.h
         fuzzer_pass_adjust_branch_weights.h
@@ -94,6 +95,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_global_variable.h
         transformation_add_local_variable.h
         transformation_add_no_contraction_decoration.h
+        transformation_add_parameters.h
         transformation_add_spec_constant_op.h
         transformation_add_type_array.h
         transformation_add_type_boolean.h
@@ -154,6 +156,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_loads.cpp
         fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
+        fuzzer_pass_add_parameters.cpp
         fuzzer_pass_add_stores.cpp
         fuzzer_pass_add_vector_shuffle_instructions.cpp
         fuzzer_pass_adjust_branch_weights.cpp
@@ -199,6 +202,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_global_variable.cpp
         transformation_add_local_variable.cpp
         transformation_add_no_contraction_decoration.cpp
+        transformation_add_parameters.cpp
         transformation_add_spec_constant_op.cpp
         transformation_add_type_array.cpp
         transformation_add_type_boolean.cpp
