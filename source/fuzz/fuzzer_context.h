@@ -179,6 +179,9 @@ class FuzzerContext {
   uint32_t GetChanceOfConstructingComposite() {
     return chance_of_constructing_composite_;
   }
+  uint32_t GetChanceOfCopyingInstruction() {
+    return chance_of_copying_instruction_;
+  }
   uint32_t GetChanceOfCopyingObject() { return chance_of_copying_object_; }
   uint32_t GetChanceOfDonatingAdditionalModule() {
     return chance_of_donating_additional_module_;
@@ -362,6 +365,7 @@ class FuzzerContext {
   uint32_t chance_of_choosing_struct_type_vs_array_type_;
   uint32_t chance_of_choosing_workgroup_storage_class_;
   uint32_t chance_of_constructing_composite_;
+  uint32_t chance_of_copying_instruction_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
   uint32_t chance_of_going_deeper_when_making_access_chain_;

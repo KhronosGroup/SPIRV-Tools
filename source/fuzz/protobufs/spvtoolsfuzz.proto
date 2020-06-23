@@ -411,6 +411,7 @@ message Transformation {
     TransformationMoveInstructionDown move_instruction_down = 64;
     TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
+    TransformationCopyInstruction copy_instruction = 67;
     // Add additional option using the next available number.
   }
 }
@@ -1028,6 +1029,18 @@ message TransformationComputeDataSynonymFactClosure {
   // When searching equivalence classes for implied facts, equivalence classes
   // larger than this size will be skipped.
   uint32 maximum_equivalence_class_size = 1;
+
+}
+
+message TransformationCopyInstruction {
+
+  // A transformation that tries to copy an instruction into preceding basic blocks.
+
+  // An instruction to copy.
+  InstructionDescriptor instruction_descriptor = 1;
+
+  // Fresh ids that will be used as result ids for |instruction_descriptor|'s copies.
+  repeated uint32 fresh_id = 2;
 
 }
 

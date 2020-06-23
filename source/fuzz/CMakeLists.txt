@@ -62,6 +62,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_adjust_selection_controls.h
         fuzzer_pass_apply_id_synonyms.h
         fuzzer_pass_construct_composites.h
+        fuzzer_pass_copy_instructions.h
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
         fuzzer_pass_invert_comparison_operators.h
@@ -131,6 +132,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_extract.h
         transformation_compute_data_synonym_fact_closure.h
         transformation_context.h
+        transformation_copy_instruction.h
         transformation_equation_instruction.h
         transformation_function_call.h
         transformation_invert_comparison_operator.h
@@ -199,6 +201,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_adjust_selection_controls.cpp
         fuzzer_pass_apply_id_synonyms.cpp
         fuzzer_pass_construct_composites.cpp
+        fuzzer_pass_copy_instructions.cpp
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
         fuzzer_pass_invert_comparison_operators.cpp
@@ -267,6 +270,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_extract.cpp
         transformation_compute_data_synonym_fact_closure.cpp
         transformation_context.cpp
+        transformation_copy_instruction.cpp
         transformation_equation_instruction.cpp
         transformation_function_call.cpp
         transformation_invert_comparison_operator.cpp
