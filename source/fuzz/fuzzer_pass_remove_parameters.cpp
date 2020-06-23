@@ -25,8 +25,8 @@ namespace fuzz {
 namespace {
 
 bool CanRemoveFunctionParameter(const opt::Instruction& type_inst) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
-  //  Add OpTypePointer below when the PR is merged.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
+  //  Add OpTypePointer below when the issue is resolved.
   switch (type_inst.opcode()) {
     case SpvOpTypeBool:
     case SpvOpTypeInt:
@@ -54,7 +54,10 @@ FuzzerPassRemoveParameters::~FuzzerPassRemoveParameters() = default;
 
 void FuzzerPassRemoveParameters::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
-    auto params = fuzzerutil::GetParameters(function);
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3454):
+    //  uncomment when the PR is merged
+    // auto params = fuzzerutil::GetParameters(function);
+    std::vector<opt::Instruction*> params;
 
     if (params.empty() || fuzzerutil::FunctionIsEntryPoint(
                               GetIRContext(), function.result_id())) {

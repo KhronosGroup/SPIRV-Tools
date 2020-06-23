@@ -55,17 +55,18 @@ bool TransformationRemoveParameters::IsApplicable(
     return false;
   }
 
-  auto params = fuzzerutil::GetParameters(*function);
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3454):
+  //  uncomment when the PR is merged
+  // auto params = fuzzerutil::GetParameters(*function);
+  std::vector<opt::Instruction*> params;
   assert(!params.empty() &&
          "The function doesn't have any parameters to remove");
 
   std::vector<uint32_t> param_index(message_.parameter_index().begin(),
                                     message_.parameter_index().end());
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3421/):
-  //  uncomment when the PR is merged.
-  // assert(!fuzzerutil::HasDuplicates(parameter_index) &&
-  //        "Duplicated parameter indices.");
+  assert(!fuzzerutil::HasDuplicates(param_index) &&
+         "Duplicated parameter indices.");
 
   // Check that |message_.parameter_id| has valid size.
   if (param_index.empty() || param_index.size() > params.size()) {
