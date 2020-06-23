@@ -261,7 +261,7 @@ bool HasDuplicates(const std::vector<uint32_t>& arr);
 bool IsPermutationOfRange(const std::vector<uint32_t>& arr, uint32_t lo,
                           uint32_t hi);
 
-// Returns OpFunctionParameter instruction corresponding to the function
+// Returns OpFunctionParameter instructions corresponding to the function
 // with result id |function_id|.
 std::vector<opt::Instruction*> GetParameters(opt::IRContext* ir_context,
                                              uint32_t function_id);
