@@ -102,10 +102,9 @@ bool DescriptorScalarReplacement::IsCandidate(Instruction* var) {
 bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
   std::vector<Instruction*> access_chain_work_list;
   std::vector<Instruction*> load_work_list;
-  std::vector<Instruction*> extract_work_list;
   bool failed = !get_def_use_mgr()->WhileEachUser(
-      var->result_id(), [this, &access_chain_work_list, &load_work_list,
-                         &extract_work_list](Instruction* use) {
+      var->result_id(),
+      [this, &access_chain_work_list, &load_work_list](Instruction* use) {
         if (use->opcode() == SpvOpName) {
           return true;
         }
@@ -121,9 +120,6 @@ bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
             return true;
           case SpvOpLoad:
             load_work_list.push_back(use);
-            return true;
-          case SpvOpCompositeExtract:
-            extract_work_list.push_back(use);
             return true;
           default:
             context()->EmitErrorMessage(
@@ -144,11 +140,6 @@ bool DescriptorScalarReplacement::ReplaceCandidate(Instruction* var) {
   }
   for (Instruction* use : load_work_list) {
     if (!ReplaceLoadedValue(var, use)) {
-      return false;
-    }
-  }
-  for (Instruction* use : extract_work_list) {
-    if (!ReplaceCompositeExtract(var, use)) {
       return false;
     }
   }
@@ -426,6 +417,8 @@ bool DescriptorScalarReplacement::ReplaceLoadedValue(Instruction* var,
 bool DescriptorScalarReplacement::ReplaceCompositeExtract(
     Instruction* var, Instruction* extract) {
   assert(extract->opcode() == SpvOpCompositeExtract);
+  // We're currently only supporting extractions of one index at a time. If we
+  // need to, we can handle cases with multiple indexes in the future.
   if (extract->NumInOperands() != 2) {
     context()->EmitErrorMessage(
         "Variable cannot be replaced: invalid instruction", extract);
@@ -442,7 +435,9 @@ bool DescriptorScalarReplacement::ReplaceCompositeExtract(
       new Instruction(context(), SpvOpLoad, extract->type_id(), load_id,
                       std::initializer_list<Operand>{
                           {SPV_OPERAND_TYPE_ID, {replacement_var}}}));
-  get_def_use_mgr()->AnalyzeInstDefUse(load.get());
+  Instruction* load_instr = load.get();
+  get_def_use_mgr()->AnalyzeInstDefUse(load_instr);
+  context()->set_instr_block(load_instr, context()->get_instr_block(extract));
   extract->InsertBefore(std::move(load));
   context()->ReplaceAllUsesWith(extract->result_id(), load_id);
   context()->KillInst(extract);
