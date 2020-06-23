@@ -545,6 +545,190 @@ TEST_F(DescriptorScalarReplacementTest, StructureArrayReplacements) {
   SinglePassRunAndMatch<DescriptorScalarReplacement>(text, true);
 }
 
+TEST_F(DescriptorScalarReplacementTest, ResourceStructAsFunctionParam) {
+  // Checks that a mix of OpAccessChain, OpLoad, and OpCompositeExtract patterns
+  // can be properly replaced with replacement variables.
+  // This pattern can be seen when a global structure of resources is passed to
+  // a function.
+
+  /* High-level source:
+  // globalS[0].t[0]        binding: 0  (used)
+  // globalS[0].t[1]        binding: 1  (used)
+  // globalS[0].tt[0].s[0]  binding: 2
+  // globalS[0].tt[0].s[1]  binding: 3  (used)
+  // globalS[0].tt[0].s[2]  binding: 4
+  // globalS[0].tt[1].s[0]  binding: 5
+  // globalS[0].tt[1].s[1]  binding: 6
+  // globalS[0].tt[1].s[2]  binding: 7  (used)
+  // globalS[1].t[0]        binding: 8  (used)
+  // globalS[1].t[1]        binding: 9  (used)
+  // globalS[1].tt[0].s[0]  binding: 10
+  // globalS[1].tt[0].s[1]  binding: 11 (used)
+  // globalS[1].tt[0].s[2]  binding: 12
+  // globalS[1].tt[1].s[0]  binding: 13
+  // globalS[1].tt[1].s[1]  binding: 14
+  // globalS[1].tt[1].s[2]  binding: 15 (used)
+
+  struct T {
+    SamplerState s[3];
+  };
+
+  struct S {
+    Texture2D t[2];
+    T tt[2];
+  };
+
+  float4 tex2D(S x, float2 v) {
+    return x.t[0].Sample(x.tt[0].s[1], v) + x.t[1].Sample(x.tt[1].s[2], v);
+  }
+
+  S globalS[2];
+
+  float4 main() : SV_Target {
+    return tex2D(globalS[0], float2(0,0)) + tex2D(globalS[1], float2(0,0)) ;
+  }
+  */
+  const std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out_var_SV_Target
+               OpExecutionMode %main OriginUpperLeft
+               OpName %S "S"
+               OpMemberName %S 0 "t"
+               OpMemberName %S 1 "tt"
+               OpName %type_2d_image "type.2d.image"
+               OpName %T "T"
+               OpMemberName %T 0 "s"
+               OpName %type_sampler "type.sampler"
+               OpName %globalS "globalS"
+               OpName %out_var_SV_Target "out.var.SV_Target"
+               OpName %main "main"
+               OpName %type_sampled_image "type.sampled.image"
+               OpDecorate %out_var_SV_Target Location 0
+               OpDecorate %globalS DescriptorSet 0
+               OpDecorate %globalS Binding 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %float = OpTypeFloat 32
+    %float_0 = OpConstant %float 0
+    %v2float = OpTypeVector %float 2
+         %14 = OpConstantComposite %v2float %float_0 %float_0
+      %int_1 = OpConstant %int 1
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%type_2d_image = OpTypeImage %float 2D 2 0 0 1 Unknown
+%_arr_type_2d_image_uint_2 = OpTypeArray %type_2d_image %uint_2
+     %uint_3 = OpConstant %uint 3
+%type_sampler = OpTypeSampler
+%_arr_type_sampler_uint_3 = OpTypeArray %type_sampler %uint_3
+          %T = OpTypeStruct %_arr_type_sampler_uint_3
+%_arr_T_uint_2 = OpTypeArray %T %uint_2
+          %S = OpTypeStruct %_arr_type_2d_image_uint_2 %_arr_T_uint_2
+%_arr_S_uint_2 = OpTypeArray %S %uint_2
+%_ptr_UniformConstant__arr_S_uint_2 = OpTypePointer UniformConstant %_arr_S_uint_2
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+         %27 = OpTypeFunction %void
+%_ptr_UniformConstant_S = OpTypePointer UniformConstant %S
+%type_sampled_image = OpTypeSampledImage %type_2d_image
+    %globalS = OpVariable %_ptr_UniformConstant__arr_S_uint_2 UniformConstant
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %27
+         %29 = OpLabel
+         %30 = OpAccessChain %_ptr_UniformConstant_S %globalS %int_0
+         %31 = OpLoad %S %30
+         %32 = OpCompositeExtract %_arr_type_2d_image_uint_2 %31 0
+         %33 = OpCompositeExtract %type_2d_image %32 0
+         %34 = OpCompositeExtract %type_2d_image %32 1
+         %35 = OpCompositeExtract %_arr_T_uint_2 %31 1
+         %36 = OpCompositeExtract %T %35 0
+         %37 = OpCompositeExtract %_arr_type_sampler_uint_3 %36 0
+         %38 = OpCompositeExtract %type_sampler %37 1
+         %39 = OpCompositeExtract %T %35 1
+         %40 = OpCompositeExtract %_arr_type_sampler_uint_3 %39 0
+         %41 = OpCompositeExtract %type_sampler %40 2
+         %42 = OpSampledImage %type_sampled_image %33 %38
+         %43 = OpImageSampleImplicitLod %v4float %42 %14 None
+         %44 = OpSampledImage %type_sampled_image %34 %41
+         %45 = OpImageSampleImplicitLod %v4float %44 %14 None
+         %46 = OpFAdd %v4float %43 %45
+         %47 = OpAccessChain %_ptr_UniformConstant_S %globalS %int_1
+         %48 = OpLoad %S %47
+         %49 = OpCompositeExtract %_arr_type_2d_image_uint_2 %48 0
+         %50 = OpCompositeExtract %type_2d_image %49 0
+         %51 = OpCompositeExtract %type_2d_image %49 1
+         %52 = OpCompositeExtract %_arr_T_uint_2 %48 1
+         %53 = OpCompositeExtract %T %52 0
+         %54 = OpCompositeExtract %_arr_type_sampler_uint_3 %53 0
+         %55 = OpCompositeExtract %type_sampler %54 1
+         %56 = OpCompositeExtract %T %52 1
+         %57 = OpCompositeExtract %_arr_type_sampler_uint_3 %56 0
+         %58 = OpCompositeExtract %type_sampler %57 2
+         %59 = OpSampledImage %type_sampled_image %50 %55
+         %60 = OpImageSampleImplicitLod %v4float %59 %14 None
+         %61 = OpSampledImage %type_sampled_image %51 %58
+         %62 = OpImageSampleImplicitLod %v4float %61 %14 None
+         %63 = OpFAdd %v4float %60 %62
+         %64 = OpFAdd %v4float %46 %63
+               OpStore %out_var_SV_Target %64
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const std::string checks = R"(
+; CHECK: OpName %globalS_0__t_0_ "globalS[0].t[0]"
+; CHECK: OpName %globalS_0__t_1_ "globalS[0].t[1]"
+; CHECK: OpName %globalS_1__t_0_ "globalS[1].t[0]"
+; CHECK: OpName %globalS_1__t_1_ "globalS[1].t[1]"
+; CHECK: OpName %globalS_0__tt_0__s_1_ "globalS[0].tt[0].s[1]"
+; CHECK: OpName %globalS_0__tt_1__s_2_ "globalS[0].tt[1].s[2]"
+; CHECK: OpName %globalS_1__tt_0__s_1_ "globalS[1].tt[0].s[1]"
+; CHECK: OpName %globalS_1__tt_1__s_2_ "globalS[1].tt[1].s[2]"
+; CHECK: OpDecorate %globalS_0__t_0_ Binding 0
+; CHECK: OpDecorate %globalS_0__t_1_ Binding 1
+; CHECK: OpDecorate %globalS_1__t_0_ Binding 8
+; CHECK: OpDecorate %globalS_1__t_1_ Binding 9
+; CHECK: OpDecorate %globalS_0__tt_0__s_1_ Binding 3
+; CHECK: OpDecorate %globalS_0__tt_1__s_2_ Binding 7
+; CHECK: OpDecorate %globalS_1__tt_0__s_1_ Binding 11
+; CHECK: OpDecorate %globalS_1__tt_1__s_2_ Binding 15
+
+; CHECK: %globalS_0__t_0_ = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
+; CHECK: %globalS_0__t_1_ = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
+; CHECK: %globalS_1__t_0_ = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
+; CHECK: %globalS_1__t_1_ = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
+; CHECK: %globalS_0__tt_0__s_1_ = OpVariable %_ptr_UniformConstant_type_sampler UniformConstant
+; CHECK: %globalS_0__tt_1__s_2_ = OpVariable %_ptr_UniformConstant_type_sampler UniformConstant
+; CHECK: %globalS_1__tt_0__s_1_ = OpVariable %_ptr_UniformConstant_type_sampler UniformConstant
+; CHECK: %globalS_1__tt_1__s_2_ = OpVariable %_ptr_UniformConstant_type_sampler UniformConstant
+
+; CHECK:     [[img_1:%\w+]] = OpLoad %type_2d_image %globalS_0__t_0_
+; CHECK:     [[img_2:%\w+]] = OpLoad %type_2d_image %globalS_0__t_1_
+; CHECK: [[sampler_1:%\w+]] = OpLoad %type_sampler %globalS_0__tt_0__s_1_
+; CHECK: [[sampler_2:%\w+]] = OpLoad %type_sampler %globalS_0__tt_1__s_2_
+
+; CHECK: [[sampled_img_1:%\w+]] = OpSampledImage %type_sampled_image [[img_1]] [[sampler_1]]
+; CHECK:      [[sample_1:%\w+]] = OpImageSampleImplicitLod %v4float [[sampled_img_1]]
+; CHECK: [[sampled_img_2:%\w+]] = OpSampledImage %type_sampled_image [[img_2]] [[sampler_2]]
+; CHECK:      [[sample_2:%\w+]] = OpImageSampleImplicitLod %v4float [[sampled_img_2]]
+; CHECK:                          OpFAdd %v4float [[sample_1]] [[sample_2]]
+
+; CHECK:     [[img_3:%\w+]] = OpLoad %type_2d_image %globalS_1__t_0_
+; CHECK:     [[img_4:%\w+]] = OpLoad %type_2d_image %globalS_1__t_1_
+; CHECK: [[sampler_3:%\w+]] = OpLoad %type_sampler %globalS_1__tt_0__s_1_
+; CHECK: [[sampler_4:%\w+]] = OpLoad %type_sampler %globalS_1__tt_1__s_2_
+
+; CHECK: [[sampled_img_3:%\w+]] = OpSampledImage %type_sampled_image [[img_3]] [[sampler_3]]
+; CHECK:      [[sample_3:%\w+]] = OpImageSampleImplicitLod %v4float [[sampled_img_3]]
+; CHECK: [[sampled_img_4:%\w+]] = OpSampledImage %type_sampled_image [[img_4]] [[sampler_4]]
+; CHECK:      [[sample_4:%\w+]] = OpImageSampleImplicitLod %v4float [[sampled_img_4]]
+; CHECK:                          OpFAdd %v4float [[sample_3]] [[sample_4]]
+)";
+
+  SinglePassRunAndMatch<DescriptorScalarReplacement>(checks + shader, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
