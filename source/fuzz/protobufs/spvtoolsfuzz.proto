@@ -380,6 +380,7 @@ message Transformation {
     TransformationReplaceLinearAlgebraInstruction replace_linear_algebra_instruction = 49;
     TransformationSwapConditionalBranchOperands swap_conditional_branch_operands = 50;
     TransformationPermutePhiOperands permute_phi_operands = 51;
+    TransformationAddParameters add_parameters = 52;
     // Add additional option using the next available number.
   }
 }
@@ -620,6 +621,27 @@ message TransformationAddNoContractionDecoration {
 
   // Result id to be decorated
   uint32 result_id = 1;
+
+}
+
+message TransformationAddParameters {
+
+  // Adds new parameters into the function.
+
+  // Result id of the function to add parameters to.
+  uint32 function_id = 1;
+
+  // New type of the function.
+  uint32 new_type_id = 2;
+
+  // Type ids of parameters to add to the function.
+  repeated uint32 new_parameter_type = 3;
+
+  // Result ids for new parameters.
+  repeated uint32 new_parameter_id = 4;
+
+  // Constants to initialize new parameters from.
+  repeated uint32 constant_id = 5;
 
 }
 

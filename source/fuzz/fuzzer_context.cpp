@@ -38,6 +38,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingLocalVariable = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingParameters = {5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingStore = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorShuffle = {20, 70};
@@ -81,6 +82,10 @@ const uint32_t kDefaultMaxLoopControlPartialCount = 100;
 const uint32_t kDefaultMaxLoopControlPeelCount = 100;
 const uint32_t kDefaultMaxLoopLimit = 20;
 const uint32_t kDefaultMaxNewArraySizeLimit = 100;
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3424):
+//  think whether there is a better limit on the maximum number of parameters.
+const uint32_t kDefaultMaxNumberOfFunctionParameters = 128;
+const uint32_t kDefaultMaxNumberOfNewParameters = 15;
 
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
@@ -104,6 +109,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       max_loop_control_peel_count_(kDefaultMaxLoopControlPeelCount),
       max_loop_limit_(kDefaultMaxLoopLimit),
       max_new_array_size_limit_(kDefaultMaxNewArraySizeLimit),
+      max_number_of_function_parameters_(kDefaultMaxNumberOfFunctionParameters),
+      max_number_of_new_parameters_(kDefaultMaxNumberOfNewParameters),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
   chance_of_adding_access_chain_ =
@@ -129,6 +136,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingMatrixType);
   chance_of_adding_no_contraction_decoration_ =
       ChooseBetweenMinAndMax(kChanceOfAddingNoContractionDecoration);
+  chance_of_adding_parameters =
+      ChooseBetweenMinAndMax(kChanceOfAddingParameters);
   chance_of_adding_store_ = ChooseBetweenMinAndMax(kChanceOfAddingStore);
   chance_of_adding_vector_shuffle_ =
       ChooseBetweenMinAndMax(kChanceOfAddingVectorShuffle);
