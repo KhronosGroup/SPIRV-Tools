@@ -498,7 +498,7 @@ void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
 
     Instruction* added_dbg_value =
         insert_before->InsertBefore(std::move(new_dbg_value));
-    added_dbg_value->UpdateDebugInfo(scope_and_line);
+    added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
     AnalyzeDebugInst(added_dbg_value);
     if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
       context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);

@@ -218,6 +218,9 @@ class DebugInfoManager {
   // DebugOperation whose OpCode is OpenCLDebugInfo100Deref.
   Instruction* deref_operation_;
 
+  // DebugOperation whose OpCode is OpenCLDebugInfo100Deref.
+  Instruction* deref_operation_;
+
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
   Instruction* debug_info_none_inst_;
