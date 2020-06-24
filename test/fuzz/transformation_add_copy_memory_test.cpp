@@ -60,6 +60,7 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
          %85 = OpConstantComposite %66 %20 %24 %25 %36 %84
          %67 = OpTypePointer Function %66
          %83 = OpTypePointer Private %66
+         %86 = OpVariable %79 Private %20
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %19 = OpVariable %18 Function
@@ -147,77 +148,77 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
                    SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Instruction descriptor is invalid (id 86 is undefined).
+  // Instruction descriptor is invalid (id 87 is undefined).
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(86, SpvOpVariable, 0), 86, 19,
+                   MakeInstructionDescriptor(87, SpvOpVariable, 0), 87, 19,
                    SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
   // Cannot insert OpCopyMemory before OpPhi.
   ASSERT_FALSE(
       TransformationAddCopyMemory(MakeInstructionDescriptor(75, SpvOpPhi, 0),
-                                  86, 19, SpvStorageClassPrivate, 20)
+                                  87, 19, SpvStorageClassPrivate, 20)
           .IsApplicable(context.get(), transformation_context));
 
   // Source instruction is invalid.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 76,
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 87, 76,
                    SpvStorageClassPrivate, 0)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source instruction's type doesn't exist.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 5,
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 87, 5,
                    SpvStorageClassPrivate, 0)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source instruction's type is invalid.
   ASSERT_FALSE(
       TransformationAddCopyMemory(MakeInstructionDescriptor(41, SpvOpLoad, 0),
-                                  86, 40, SpvStorageClassPrivate, 0)
+                                  87, 40, SpvStorageClassPrivate, 0)
           .IsApplicable(context.get(), transformation_context));
 
   // Storage class is invalid.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 19,
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 87, 19,
                    SpvStorageClassWorkgroup, 20)
                    .IsApplicable(context.get(), transformation_context));
 
   // Initializer is 0.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 19,
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 87, 19,
                    SpvStorageClassPrivate, 0)
                    .IsApplicable(context.get(), transformation_context));
 
   // Initializer has wrong type.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 86, 19,
+                   MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 87, 19,
                    SpvStorageClassPrivate, 25)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source and target instructions are in different functions.
   ASSERT_FALSE(
       TransformationAddCopyMemory(MakeInstructionDescriptor(13, SpvOpLoad, 0),
-                                  86, 19, SpvStorageClassPrivate, 20)
+                                  87, 19, SpvStorageClassPrivate, 20)
           .IsApplicable(context.get(), transformation_context));
 
   // Source instruction doesn't dominate the target instruction.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(77, SpvOpLogicalEqual, 0), 86, 19,
+                   MakeInstructionDescriptor(77, SpvOpLogicalEqual, 0), 87, 19,
                    SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
   // Source and target instructions are the same.
   ASSERT_FALSE(TransformationAddCopyMemory(
-                   MakeInstructionDescriptor(19, SpvOpVariable, 0), 86, 19,
+                   MakeInstructionDescriptor(19, SpvOpVariable, 0), 87, 19,
                    SpvStorageClassPrivate, 20)
                    .IsApplicable(context.get(), transformation_context));
 
   // Correct transformations.
-  uint32_t fresh_id = 86;
+  uint32_t fresh_id = 87;
   auto descriptor = MakeInstructionDescriptor(27, SpvOpFunctionCall, 0);
-  std::vector<uint32_t> source_ids = {19, 23, 26, 30, 35, 39, 68};
-  std::vector<uint32_t> initializers = {20, 24, 25, 25, 36, 84, 85};
+  std::vector<uint32_t> source_ids = {19, 23, 26, 30, 35, 39, 68, 86};
+  std::vector<uint32_t> initializers = {20, 24, 25, 25, 36, 84, 85, 20};
   std::vector<SpvStorageClass> storage_classes = {SpvStorageClassPrivate,
                                                   SpvStorageClassFunction};
   for (size_t i = 0, n = source_ids.size(); i < n; ++i) {
@@ -272,14 +273,16 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
          %67 = OpTypePointer Function %66
          %83 = OpTypePointer Private %66
          %86 = OpVariable %79 Private %20
-         %88 = OpVariable %78 Private %25
-         %90 = OpVariable %81 Private %36
-         %92 = OpVariable %83 Private %85
+         %87 = OpVariable %79 Private %20
+         %89 = OpVariable %78 Private %25
+         %91 = OpVariable %81 Private %36
+         %93 = OpVariable %83 Private %85
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %91 = OpVariable %38 Function %84
-         %89 = OpVariable %7 Function %25
-         %87 = OpVariable %22 Function %24
+         %94 = OpVariable %18 Function %20
+         %92 = OpVariable %38 Function %84
+         %90 = OpVariable %7 Function %25
+         %88 = OpVariable %22 Function %24
          %19 = OpVariable %18 Function
          %23 = OpVariable %22 Function
          %26 = OpVariable %7 Function
@@ -290,13 +293,14 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
                OpStore %19 %20
                OpStore %23 %24
                OpStore %26 %25
-               OpCopyMemory %86 %19
-               OpCopyMemory %87 %23
-               OpCopyMemory %88 %26
-               OpCopyMemory %89 %30
-               OpCopyMemory %90 %35
-               OpCopyMemory %91 %39
-               OpCopyMemory %92 %68
+               OpCopyMemory %87 %19
+               OpCopyMemory %88 %23
+               OpCopyMemory %89 %26
+               OpCopyMemory %90 %30
+               OpCopyMemory %91 %35
+               OpCopyMemory %92 %39
+               OpCopyMemory %93 %68
+               OpCopyMemory %94 %86
          %27 = OpFunctionCall %6 %10 %26
                OpSelectionMerge %29 None
                OpBranchConditional %27 %28 %31

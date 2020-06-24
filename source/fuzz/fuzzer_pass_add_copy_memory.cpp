@@ -33,25 +33,12 @@ FuzzerPassAddCopyMemory::~FuzzerPassAddCopyMemory() = default;
 
 void FuzzerPassAddCopyMemory::Apply() {
   ForEachInstructionWithInstructionDescriptor(
-      [this](opt::Function* /*unused*/, opt::BasicBlock* /*unused*/,
+      [this](opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
-             const protobufs::InstructionDescriptor& /*unused*/) {
-        auto& inst = *inst_it;
-
-        // Skip the instruction if it doesn't have either the result id or
-        // the type id.
-        if (!inst.result_id() || !inst.type_id()) {
-          return;
-        }
-
-        const auto* type =
-            GetIRContext()->get_type_mgr()->GetType(inst.type_id());
-        assert(type && "Type is nullptr for non-zero type id");
-
-        if (!type->AsPointer() ||
-            !TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
-                *type->AsPointer()->pointee_type())) {
-          // Abort if result type is invalid, opaque or not a pointer.
+             const protobufs::InstructionDescriptor& instruction_descriptor) {
+        // Check that we can insert an OpCopyMemory before this instruction.
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyMemory,
+                                                          inst_it)) {
           return;
         }
 
@@ -60,52 +47,50 @@ void FuzzerPassAddCopyMemory::Apply() {
           return;
         }
 
-        auto next_iter = inst_it;
-        ++next_iter;
-        // Abort if can't insert OpCopyMemory before next instruction (i.e.
-        // after the current one).
-        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyMemory,
-                                                          next_iter)) {
+        // Get all instructions available before |inst_it| according to the
+        // domination rules.
+        auto instructions = FindAvailableInstructions(
+            function, block, inst_it,
+            [](opt::IRContext* context, opt::Instruction* inst) {
+              // Instruction to apply OpCopyMemory to should have both result id
+              // and type id.
+              if (!inst->result_id() || !inst->type_id()) {
+                return false;
+              }
+
+              const auto* type =
+                  context->get_type_mgr()->GetType(inst->type_id());
+              assert(type && "Type is nullptr for non-zero type id");
+
+              // Instructions type should be OpTypePointer and the pointee
+              // should be compatible with OpCopyMemory.
+              return type->AsPointer() &&
+                     TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
+                         *type->AsPointer()->pointee_type());
+            });
+
+        if (instructions.empty()) {
           return;
         }
 
-        // Decide whether to create global or local variable. If the copied
-        // object is a pointer, create a global variable. Otherwise, decide at
-        // random.
-        //
-        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
-        //  Uncomment when the PR is merged.
-        // auto storage_class = GetFuzzerContext()->ChooseEven()
-        //                          ? SpvStorageClassPrivate
-        //                          : SpvStorageClassFunction;
-        auto storage_class = type->AsPointer()->pointee_type()->AsPointer() ||
-                                     GetFuzzerContext()->ChooseEven()
+        const auto* inst =
+            instructions[GetFuzzerContext()->RandomIndex(instructions)];
+
+        // Decide whether to create global or local variable.
+        auto storage_class = GetFuzzerContext()->ChooseEven()
                                  ? SpvStorageClassPrivate
                                  : SpvStorageClassFunction;
 
         auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
-            GetIRContext(), inst.type_id());
-
-        // Create initializer for the variable.
-        //
-        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
-        //  Uncomment when the PR is merged.
-        // auto initializer_id = FindOrCreateVariableInitializer(pointee_type_id);
-        auto initializer_id = type->AsPointer()->pointee_type()->AsPointer()
-                                  ? 0
-                                  : FindOrCreateZeroConstant(pointee_type_id);
+            GetIRContext(), inst->type_id());
 
         // Create a pointer type with |storage_class| if needed.
         FindOrCreatePointerType(pointee_type_id, storage_class);
 
-        // We need to create a new instruction descriptor for the next
-        // instruction in the block. It will be used to insert OpCopyMemory
-        // above the instruction it points to (i.e. below |inst|).
-
         ApplyTransformation(TransformationAddCopyMemory(
-            MakeInstructionDescriptor(GetIRContext(), &*next_iter),
-            GetFuzzerContext()->GetFreshId(), inst.result_id(), storage_class,
-            initializer_id));
+            instruction_descriptor, GetFuzzerContext()->GetFreshId(),
+            inst->result_id(), storage_class,
+            FindOrCreateZeroConstant(pointee_type_id)));
       });
 }
 

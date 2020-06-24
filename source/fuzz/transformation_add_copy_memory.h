@@ -49,7 +49,7 @@ class TransformationAddCopyMemory : public Transformation {
       const TransformationContext& transformation_context) const override;
 
   // A global or local variable with id |target_id| and |storage_class| class is
-  // created. An 'OpCopyMemory %target_id %source_id' instruction is inserted
+  // created. An 'OpCopyMemory %fresh_id %source_id' instruction is inserted
   // before the |instruction_descriptor|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;

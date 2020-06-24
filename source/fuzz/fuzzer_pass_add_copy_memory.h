@@ -20,7 +20,7 @@
 namespace spvtools {
 namespace fuzz {
 
-// Randomly decides whether to add OpCopyMemory after some instruction in the
+// Randomly decides whether to add OpCopyMemory before some instruction in the
 // module.
 class FuzzerPassAddCopyMemory : public FuzzerPass {
  public:

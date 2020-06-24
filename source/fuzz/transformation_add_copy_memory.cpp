@@ -66,11 +66,8 @@ bool TransformationAddCopyMemory::IsApplicable(
   // OpCopyMemory.
   const auto* source_type =
       ir_context->get_type_mgr()->GetType(source_inst->type_id());
-  if (!source_type || !source_type->AsPointer()) {
-    return false;
-  }
-
-  if (!CanUsePointeeWithCopyMemory(*source_type->AsPointer()->pointee_type())) {
+  if (!source_type || !source_type->AsPointer() ||
+      !CanUsePointeeWithCopyMemory(*source_type->AsPointer()->pointee_type())) {
     return false;
   }
 
@@ -80,41 +77,33 @@ bool TransformationAddCopyMemory::IsApplicable(
     return false;
   }
 
+  auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
+      ir_context, source_inst->type_id());
+
   // OpTypePointer with |message_.storage_class| exists.
   if (!fuzzerutil::MaybeGetPointerType(
-          ir_context,
-          ir_context->get_type_mgr()->GetId(
-              source_type->AsPointer()->pointee_type()),
+          ir_context, pointee_type_id,
           static_cast<SpvStorageClass>(message_.storage_class()))) {
     return false;
   }
 
-  // Check that |initializer_id| is valid.
-  //
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3452):
-  //  Fix when the PR is merged. (Make non-zero).
-  if (message_.initializer_id() == 0) {
-    // We only allow uninitialized global variables of type pointer to pointer
-    // for now.
-    if (message_.storage_class() != SpvStorageClassPrivate ||
-        !source_type->AsPointer()->pointee_type()->AsPointer()) {
-      return false;
-    }
-  } else {
-    const auto* initializer_inst =
-        ir_context->get_def_use_mgr()->GetDef(message_.initializer_id());
-    if (!initializer_inst ||
-        initializer_inst->type_id() !=
-            ir_context->get_type_mgr()->GetId(
-                source_type->AsPointer()->pointee_type())) {
-      return false;
-    }
+  // Check that |initializer_id| exists and has valid type.
+  const auto* initializer_inst =
+      ir_context->get_def_use_mgr()->GetDef(message_.initializer_id());
+  if (!initializer_inst || initializer_inst->type_id() != pointee_type_id) {
+    return false;
   }
 
   // Check that this transformation respects domination rules.
   const auto* source_block = ir_context->get_instr_block(source_inst);
   const auto* target_block = ir_context->get_instr_block(inst);
-  assert(source_block && target_block);
+  assert(target_block && "OpCopyMemory can't be a global instruction");
+
+  // Domination rules are satisfied if we are copying memory from a global
+  // instruction.
+  if (!source_block) {
+    return true;
+  }
 
   // Check that both source and target instructions are in the same function.
   if (source_block->GetParent() != target_block->GetParent()) {
@@ -130,6 +119,21 @@ bool TransformationAddCopyMemory::IsApplicable(
 void TransformationAddCopyMemory::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
+  // Insert OpCopyMemory before |instruction_descriptor|.
+  auto* insert_before_inst =
+      FindInstruction(message_.instruction_descriptor(), ir_context);
+  assert(insert_before_inst);
+
+  auto insert_before_iter = fuzzerutil::GetIteratorForInstruction(
+      ir_context->get_instr_block(insert_before_inst), insert_before_inst);
+
+  insert_before_iter.InsertBefore(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpCopyMemory, 0, 0,
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}},
+          {SPV_OPERAND_TYPE_ID, {message_.source_id()}}}));
+
+  // Add global or local variable to copy memory into.
   auto storage_class = static_cast<SpvStorageClass>(message_.storage_class());
   auto type_id = fuzzerutil::MaybeGetPointerType(
       ir_context,
@@ -143,33 +147,17 @@ void TransformationAddCopyMemory::Apply(
   } else {
     assert(storage_class == SpvStorageClassFunction &&
            "Storage class can be either Private or Function");
-    fuzzerutil::AddLocalVariable(
-        ir_context, message_.fresh_id(), type_id,
-        ir_context->get_instr_block(message_.source_id())
-            ->GetParent()
-            ->result_id(),
-        message_.initializer_id());
+    fuzzerutil::AddLocalVariable(ir_context, message_.fresh_id(), type_id,
+                                 ir_context->get_instr_block(insert_before_inst)
+                                     ->GetParent()
+                                     ->result_id(),
+                                 message_.initializer_id());
   }
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 
   transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
       message_.fresh_id());
-
-  // Insert OpCopyMemory before |instruction_descriptor|.
-  auto* insert_before_inst =
-      FindInstruction(message_.instruction_descriptor(), ir_context);
-  assert(insert_before_inst);
-
-  auto insert_before_iter = fuzzerutil::GetIteratorForInstruction(
-      ir_context->get_instr_block(insert_before_inst), insert_before_inst);
-
-  opt::Instruction::OperandList copy_operands = {
-      {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}},
-      {SPV_OPERAND_TYPE_ID, {message_.source_id()}}};
-
-  insert_before_iter.InsertBefore(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpCopyMemory, 0, 0, std::move(copy_operands)));
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(
@@ -200,8 +188,6 @@ bool TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
                          [](const opt::analysis::Type* element) {
                            return CanUsePointeeWithCopyMemory(*element);
                          });
-    case opt::analysis::Type::kPointer:
-      return CanUsePointeeWithCopyMemory(*type.AsPointer()->pointee_type());
     default:
       return false;
   }
