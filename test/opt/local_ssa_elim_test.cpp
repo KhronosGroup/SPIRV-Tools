@@ -2190,9 +2190,9 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariable) {
 ; CHECK: [[dbg_x:%\w+]] = OpExtInst %void [[ext]] DebugLocalVariable [[x_name]]
 
 ; CHECK:      OpStore %f %float_0
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] %float_0
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] %float_0
-; CHECK-NEXT: OpStore %i %int_0
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] %float_0
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] %float_0
+; CHECK:      OpStore %i %int_0
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_i]] %int_0
 
 ; CHECK-NOT:  DebugDeclare
@@ -2200,9 +2200,9 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariable) {
 ; CHECK:      [[loop_head:%\w+]] = OpLabel
 ; CHECK:      [[phi0:%\w+]] = OpPhi %float %float_0
 ; CHECK:      [[phi1:%\w+]] = OpPhi %int %int_0
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[phi0]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi1]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[phi0]]
+; CHECK:      OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi1]]
 ; CHECK:      OpLoopMerge [[loop_merge:%\w+]] [[loop_cont:%\w+]] None
 ; CHECK-NEXT: OpBranch [[loop_body:%\w+]]
 
@@ -2211,9 +2211,9 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariable) {
 
 ; CHECK:      [[bb]] = OpLabel
 ; CHECK:      OpStore %f [[f_val:%\w+]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[f_val]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[f_val]]
-; CHECK-NEXT: OpBranch [[loop_cont]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[f_val]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[f_val]]
+; CHECK:      OpBranch [[loop_cont]]
 
 ; CHECK:      [[loop_cont]] = OpLabel
 ; CHECK:      OpStore %i [[i_val:%\w+]]
@@ -2368,16 +2368,16 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariableInBB) {
 ; CHECK:      [[bb]] = OpLabel
 ; CHECK:      OpExtInst %void [[ext]] DebugScope [[dbg_bb]]
 ; CHECK:      OpStore %f [[f_val:%\w+]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[f_val]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[f_val]]
-; CHECK-NEXT: OpBranch [[bb_child:%\w+]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[f_val]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[f_val]]
+; CHECK:      OpBranch [[bb_child:%\w+]]
 
 ; CHECK:      [[bb_child]] = OpLabel
 ; CHECK:      OpExtInst %void [[ext]] DebugScope [[dbg_bb_child]]
 ; CHECK:      OpStore %f [[new_f_val:%\w+]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[new_f_val]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[new_f_val]]
-; CHECK-NEXT: OpBranch [[loop_cont]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[new_f_val]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[new_f_val]]
+; CHECK:      OpBranch [[loop_cont]]
 
 ; CHECK:      [[loop_cont]] = OpLabel
 ; CHECK:      OpStore %i [[i_val:%\w+]]

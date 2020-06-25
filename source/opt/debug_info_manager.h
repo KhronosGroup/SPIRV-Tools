@@ -16,7 +16,7 @@
 #define SOURCE_OPT_DEBUG_INFO_MANAGER_H_
 
 #include <unordered_map>
-#include <vector>
+#include <unordered_set>
 
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
@@ -157,8 +157,9 @@ class DebugInfoManager {
   // in |inst| must not already be registered.
   void RegisterDbgFunction(Instruction* inst);
 
-  // Register the DebugDeclare instruction |dbg_declare| into
-  // |var_id_to_dbg_decl_| using OpVariable id |var_id| as a key.
+  // Register the DebugDeclare or DebugValue with Deref operation
+  // |dbg_declare| into |var_id_to_dbg_decl_| using OpVariable id
+  // |var_id| as a key.
   void RegisterDbgDeclare(uint32_t var_id, Instruction* dbg_declare);
 
   // Returns a DebugExpression instruction without Operation operands.
@@ -191,9 +192,10 @@ class DebugInfoManager {
   // operand is the function.
   std::unordered_map<uint32_t, Instruction*> fn_id_to_dbg_fn_;
 
-  // Mapping from local variable ids to DebugDeclare instructions whose
-  // operand is the local variable.
-  std::unordered_map<uint32_t, std::vector<Instruction*>> var_id_to_dbg_decl_;
+  // Mapping from variable or value ids to DebugDeclare or DebugValue
+  // instructions whose operand is the variable or value.
+  std::unordered_map<uint32_t, std::unordered_set<Instruction*>>
+      var_id_to_dbg_decl_;
 
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
