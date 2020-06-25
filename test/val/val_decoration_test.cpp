@@ -7097,6 +7097,68 @@ TEST_F(ValidateDecorations, FunctionsWithOpGroupDecorate) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, LocationVariableGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %in_var Location 0
+%float = OpTypeFloat 32
+%ptr_input_float = OpTypePointer Input %float
+%in_var = OpVariable %ptr_input_float Input
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateDecorations, LocationStructMemberGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %struct 0 Location 0
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateDecorations, LocationStructBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %struct Location 0
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Location decoration can only be applied to a variable "
+                        "or member of a structure type"));
+}
+
+TEST_F(ValidateDecorations, LocationFloatBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %float Location 0
+%float = OpTypeFloat 32
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Location decoration can only be applied to a variable "
+                        "or member of a structure type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
