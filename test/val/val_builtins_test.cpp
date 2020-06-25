@@ -2532,7 +2532,9 @@ TEST_F(ValidateBuiltIns, GeometryPositionInOutSuccess) {
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
+OpDecorate %input_type Block
 OpMemberDecorate %input_type 0 BuiltIn Position
+OpDecorate %output_type Block
 OpMemberDecorate %output_type 0 BuiltIn Position
 )";
 
@@ -2543,8 +2545,7 @@ OpMemberDecorate %output_type 0 BuiltIn Position
 %input = OpVariable %input_ptr Input
 %input_f32vec4_ptr = OpTypePointer Input %f32vec4
 %output_type = OpTypeStruct %f32vec4
-%arrayed_output_type = OpTypeArray %output_type %u32_3
-%output_ptr = OpTypePointer Output %arrayed_output_type
+%output_ptr = OpTypePointer Output %output_type
 %output = OpVariable %output_ptr Output
 %output_f32vec4_ptr = OpTypePointer Output %f32vec4
 )";
@@ -2555,7 +2556,7 @@ OpMemberDecorate %output_type 0 BuiltIn Position
   entry_point.interfaces = "%input %output";
   entry_point.body = R"(
 %input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0 %u32_0
-%output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0 %u32_0
+%output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0
 %pos = OpLoad %f32vec4 %input_pos
 OpStore %output_pos %pos
 )";
@@ -3062,6 +3063,8 @@ TEST_F(ValidateBuiltIns, GetUnderlyingTypeNoAssert) {
                       OpEntryPoint Fragment %4 "PSMa" %12 %17
                       OpExecutionMode %4 OriginUpperLeft
                       OpDecorate %gl_PointCoord BuiltIn PointCoord
+                      OpDecorate %12 Location 0
+                      OpDecorate %17 Location 0
               %void = OpTypeVoid
                  %3 = OpTypeFunction %void
              %float = OpTypeFloat 32
