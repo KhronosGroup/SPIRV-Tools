@@ -27,8 +27,8 @@ TransformationAddSynonym::TransformationAddSynonym(
     : message_(std::move(message)) {}
 
 TransformationAddSynonym::TransformationAddSynonym(
-    uint32_t synonym_id, const protobufs::Instruction& synonymous_instruction) {
-  message_.set_synonym_id(synonym_id);
+    uint32_t result_id, const protobufs::Instruction& synonymous_instruction) {
+  message_.set_result_id(result_id);
   *message_.mutable_synonymous_instruction() = synonymous_instruction;
 }
 
@@ -36,7 +36,7 @@ bool TransformationAddSynonym::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
   // Check that |message_.synonym_id| is valid.
-  auto* synonym = ir_context->get_def_use_mgr()->GetDef(message_.synonym_id());
+  auto* synonym = ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   if (!synonym) {
     return false;
   }
@@ -50,7 +50,7 @@ bool TransformationAddSynonym::IsApplicable(
          "Cannot create a synonym to the last instruction in the block");
 
   // Check that we can insert |message._synonymous_instruction| after
-  // |message_.synonym_id|.
+  // |message_.result_id|.
   // instruction.
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
           static_cast<SpvOp>(message_.synonymous_instruction().opcode()),
@@ -80,7 +80,7 @@ void TransformationAddSynonym::Apply(
     TransformationContext* transformation_context) const {
   ApplyImpl(ir_context);
   transformation_context->GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(message_.synonym_id(), {}),
+      MakeDataDescriptor(message_.result_id(), {}),
       MakeDataDescriptor(message_.synonymous_instruction().result_id(), {}),
       ir_context);
   ir_context->InvalidateAnalysesExceptFor(
@@ -91,11 +91,11 @@ void TransformationAddSynonym::ApplyImpl(opt::IRContext* ir_context) const {
   const auto& synonymous_instruction = message_.synonymous_instruction();
 
   const auto* inst =
-      ir_context->get_def_use_mgr()->GetDef(message_.synonym_id());
+      ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   assert(inst);
 
   auto iter = fuzzerutil::GetIteratorForInstruction(
-      ir_context->get_instr_block(message_.synonym_id()), inst);
+      ir_context->get_instr_block(message_.result_id()), inst);
   assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(
              static_cast<SpvOp>(synonymous_instruction.opcode()), iter) &&
          "Can't insert synonymous instruction into the module");

@@ -567,6 +567,10 @@ message TransformationAddFloatCastSynonym {
 
   // Required id of the float type to convert to. This can be a result id
   // of either scalar or vector type, whose components are of type float.
+  //
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3428):
+  //  this transformation has all the information it needs to compute
+  //  result id for a floating point type.
   uint32 float_type_id = 4;
 
 }
@@ -732,10 +736,11 @@ message TransformationAddSpecConstantOp {
 message TransformationAddSynonym {
 
   // Adds a |synonymous_instruction| after the instruction with
-  // result id |synonym_id| and creates a fact that both result ids are synonymous.
+  // result id |result_id| and creates a fact that both instructions
+  // produce synonymous ids.
 
   // Result id of the first synonym.
-  uint32 synonym_id = 1;
+  uint32 result_id = 1;
 
   // Instruction, whose result id is synonymous to |synonym_id|.
   Instruction synonymous_instruction = 3;
