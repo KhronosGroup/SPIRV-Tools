@@ -111,7 +111,7 @@ void DebugInfoManager::RegisterDbgDeclare(uint32_t var_id,
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) {
     var_id_to_dbg_decl_[var_id] = {dbg_declare};
   } else {
-    dbg_decl_itr->second.push_back(dbg_declare);
+    dbg_decl_itr->second.insert(dbg_declare);
   }
 }
 
@@ -544,10 +544,14 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
     fn_id_to_dbg_fn_.erase(fn_id);
   }
 
-  if (instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
-    auto var_id =
+  if (instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+      instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+    auto var_or_value_id =
         instr->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
-    var_id_to_dbg_decl_.erase(var_id);
+    auto dbg_decl_itr = var_id_to_dbg_decl_.find(var_or_value_id);
+    if (dbg_decl_itr != var_id_to_dbg_decl_.end()) {
+      dbg_decl_itr->second.erase(instr);
+    }
   }
 
   if (debug_info_none_inst_ == instr) {
@@ -555,8 +559,9 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
     for (auto dbg_instr_itr = context()->module()->ext_inst_debuginfo_begin();
          dbg_instr_itr != context()->module()->ext_inst_debuginfo_end();
          ++dbg_instr_itr) {
-      if (dbg_instr_itr->GetOpenCL100DebugOpcode() ==
-          OpenCLDebugInfo100DebugInfoNone) {
+      if (instr != &*dbg_instr_itr &&
+          dbg_instr_itr->GetOpenCL100DebugOpcode() ==
+              OpenCLDebugInfo100DebugInfoNone) {
         debug_info_none_inst_ = &*dbg_instr_itr;
       }
     }
@@ -567,7 +572,7 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
     for (auto dbg_instr_itr = context()->module()->ext_inst_debuginfo_begin();
          dbg_instr_itr != context()->module()->ext_inst_debuginfo_end();
          ++dbg_instr_itr) {
-      if (IsEmptyDebugExpression(&*dbg_instr_itr)) {
+      if (instr != &*dbg_instr_itr && IsEmptyDebugExpression(&*dbg_instr_itr)) {
         empty_debug_expr_inst_ = &*dbg_instr_itr;
       }
     }
