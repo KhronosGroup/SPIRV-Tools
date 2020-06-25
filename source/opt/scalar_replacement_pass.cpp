@@ -27,7 +27,6 @@
 
 static const uint32_t kDebugValueOperandValueIndex = 5;
 static const uint32_t kDebugValueOperandExpressionIndex = 6;
-static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 static const uint32_t kDebugInstructionOpcodeIndex = 3;
 
 namespace spvtools {
