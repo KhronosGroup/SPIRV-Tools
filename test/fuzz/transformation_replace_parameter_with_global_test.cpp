@@ -19,7 +19,7 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationRemoveParametersTest, BasicTest) {
+TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
   // TODO
 }
 

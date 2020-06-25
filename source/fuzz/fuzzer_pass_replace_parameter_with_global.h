@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_REMOVE_PARAMETERS_H_
-#define SOURCE_FUZZ_FUZZER_PASS_REMOVE_PARAMETERS_H_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_REPLACE_PARAMETER_WITH_GLOBAL_H_
+#define SOURCE_FUZZ_FUZZER_PASS_REPLACE_PARAMETER_WITH_GLOBAL_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -21,15 +21,15 @@ namespace spvtools {
 namespace fuzz {
 
 // Iterates over all non-entry-point functions in the module and randomly
-// removes a set of parameters from each of them.
-class FuzzerPassRemoveParameters : public FuzzerPass {
+// replaces a parameter with a global variable.
+class FuzzerPassReplaceParameterWithGlobal : public FuzzerPass {
  public:
-  FuzzerPassRemoveParameters(
+  FuzzerPassReplaceParameterWithGlobal(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassRemoveParameters() override;
+  ~FuzzerPassReplaceParameterWithGlobal() override;
 
   void Apply() override;
 };
@@ -37,4 +37,4 @@ class FuzzerPassRemoveParameters : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_REMOVE_PARAMETERS_H_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_REPLACE_PARAMETER_WITH_GLOBAL_H_

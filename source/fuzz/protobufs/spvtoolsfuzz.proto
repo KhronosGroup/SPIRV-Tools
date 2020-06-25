@@ -384,7 +384,7 @@ message Transformation {
     TransformationAddCopyMemory add_copy_memory = 53;
     TransformationInvertComparisonOperator invert_comparison_operator = 54;
     TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
-    TransformationRemoveParameters remove_parameters = 56;
+    TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
     // Add additional option using the next available number.
   }
 }
@@ -1123,28 +1123,25 @@ message TransformationPushIdThroughVariable {
 
 }
 
-message TransformationRemoveParameters {
+message TransformationReplaceParameterWithGlobal {
 
-  // Removes parameters from the function with |function_id|. Namely,
-  // |parameter_index[i]|'th parameter will be removed from the function.
-  // A global variable with result id |fresh_id[i]| will be used to pass the
-  // value of the parameter into the function.
-
-  // Function to remove parameters from.
-  uint32 function_id = 1;
+  // Removes parameter with result id |parameter_id| from its function
+  // and creates a global variable to pass its value to the function instead.
 
   // Result id of the new OpTypeFunction instruction with removed parameters.
   uint32 new_type_id = 2;
 
-  // Indices of parameters to remove.
-  repeated uint32 parameter_index = 3;
+  // Result id of the OpFunctionParameter instruction to remove.
+  uint32 parameter_id = 3;
 
-  // Fresh ids of global variables to use instead of removed parameters.
-  repeated uint32 fresh_id = 4;
+  // Fresh id of a global variable used to pass parameter's value to the function.
+  // This is equal to 0 if parameter is not a pointer or a pointer with Function
+  // storage class.
+  uint32 fresh_id = 4;
 
-  // |initializer_id[i]| is a result id, used to initialize
-  // a global variable with result id |fresh_id[i]|.
-  repeated uint32 initializer_id = 5;
+  // Result id of an instruction used to initialize a global variable.
+  // This is 0 if parameter is a pointer with a Workgroup storage class.
+  uint32 initializer_id = 5;
 
 }
 

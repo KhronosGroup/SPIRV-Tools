@@ -58,11 +58,11 @@
 #include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
 #include "source/fuzz/transformation_push_id_through_variable.h"
-#include "source/fuzz/transformation_remove_parameters.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
 #include "source/fuzz/transformation_replace_linear_algebra_instruction.h"
+#include "source/fuzz/transformation_replace_parameter_with_global.h"
 #include "source/fuzz/transformation_set_function_control.h"
 #include "source/fuzz/transformation_set_loop_control.h"
 #include "source/fuzz/transformation_set_memory_operands_mask.h"
@@ -194,9 +194,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kPushIdThroughVariable:
       return MakeUnique<TransformationPushIdThroughVariable>(
           message.push_id_through_variable());
-    case protobufs::Transformation::TransformationCase::kRemoveParameters:
-      return MakeUnique<TransformationRemoveParameters>(
-          message.remove_parameters());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceParameterWithGlobal:
+      return MakeUnique<TransformationReplaceParameterWithGlobal>(
+          message.replace_parameter_with_global());
     case protobufs::Transformation::TransformationCase::
         kReplaceBooleanConstantWithConstantBinary:
       return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(
