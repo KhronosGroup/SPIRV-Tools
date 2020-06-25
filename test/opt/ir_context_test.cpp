@@ -1011,67 +1011,6 @@ OpFunctionEnd)";
       dbg_decl1->GetSingleWordOperand(kDebugDeclareOperandVariableIndex) == 20);
 }
 
-TEST_F(IRContextTest, KillDebugInstruction) {
-  const std::string text = R"(
-OpCapability Shader
-OpCapability Linkage
-%1 = OpExtInstImport "OpenCL.DebugInfo.100"
-OpMemoryModel Logical GLSL450
-%2 = OpString "test"
-%3 = OpTypeVoid
-%4 = OpTypeFunction %3
-%5 = OpTypeFloat 32
-%6 = OpTypePointer Function %5
-%7 = OpConstant %5 0
-%8 = OpTypeInt 32 0
-%9 = OpConstant %8 32
-%10 = OpExtInst %3 %1 DebugExpression
-%11 = OpExtInst %3 %1 DebugSource %2
-%12 = OpExtInst %3 %1 DebugCompilationUnit 1 4 %11 HLSL
-%13 = OpExtInst %3 %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %3
-%14 = OpExtInst %3 %1 DebugFunction %2 %13 %11 0 0 %12 %2 FlagIsProtected|FlagIsPrivate 0 %17
-%15 = OpExtInst %3 %1 DebugTypeBasic %2 %9 Float
-%16 = OpExtInst %3 %1 DebugLocalVariable %2 %15 %11 0 0 %14 FlagIsLocal
-%27 = OpExtInst %3 %1 DebugLocalVariable %2 %15 %11 1 0 %14 FlagIsLocal
-%17 = OpFunction %3 None %4
-%18 = OpLabel
-%19 = OpExtInst %3 %1 DebugScope %14
-%20 = OpVariable %6 Function
-%26 = OpVariable %6 Function
-OpBranch %21
-%21 = OpLabel
-%22 = OpPhi %5 %7 %18
-OpBranch %23
-%23 = OpLabel
-OpLine %2 0 0
-OpStore %20 %7
-%24 = OpExtInst %3 %1 DebugValue %16 %22 %10
-%25 = OpExtInst %3 %1 DebugDeclare %16 %26 %10
-%28 = OpExtInst %3 %1 DebugValue %27 %22 %10
-%29 = OpExtInst %3 %1 DebugDeclare %27 %26 %10
-OpReturn
-OpFunctionEnd)";
-
-  std::unique_ptr<IRContext> ctx =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ctx->BuildInvalidAnalyses(IRContext::kAnalysisDebugInfo);
-  DummyPassPreservesAll pass(Pass::Status::SuccessWithChange);
-  pass.Run(ctx.get());
-  EXPECT_TRUE(ctx->AreAnalysesValid(IRContext::kAnalysisDebugInfo));
-
-  auto* dbg_decl = ctx->get_def_use_mgr()->GetDef(25);
-  ctx->KillInst(dbg_decl);
-  EXPECT_TRUE(ctx->get_def_use_mgr()->GetDef(25) == nullptr);
-
-  auto* phi = ctx->get_def_use_mgr()->GetDef(22);
-  ctx->KillInst(phi);
-  EXPECT_TRUE(ctx->get_def_use_mgr()->GetDef(24) == nullptr);
-  EXPECT_TRUE(ctx->get_def_use_mgr()->GetDef(28) == nullptr);
-  EXPECT_EQ(ctx->get_def_use_mgr()->GetDef(29)->GetOpenCL100DebugOpcode(),
-            OpenCLDebugInfo100DebugDeclare);
-}
-
 TEST_F(IRContextTest, AddDebugValueAfterReplaceUse) {
   const std::string text = R"(
 OpCapability Shader

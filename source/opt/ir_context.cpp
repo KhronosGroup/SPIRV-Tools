@@ -430,12 +430,6 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
       }
     }
   }
-  // Kill DebugValue or DebugDeclare whose operand is |id|.
-  std::vector<Instruction*> dbg_decl_or_value;
-  get_debug_info_mgr()->ForEachDebugDeclareOrValue(
-      id,
-      [&dbg_decl_or_value](Instruction* i) { dbg_decl_or_value.push_back(i); });
-  for (auto* i : dbg_decl_or_value) KillInst(i);
 }
 
 void IRContext::AddCombinatorsForCapability(uint32_t capability) {
