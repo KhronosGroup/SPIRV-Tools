@@ -23,8 +23,8 @@ namespace spvtools {
 namespace fuzz {
 
 // Randomly decides for each non-entry-point function in the module whether to
-// add new parameters to it. If so, randomly determines the number of parameters
-// to add, their type and creates constants used to initialize them.
+// add one new parameter to it. If so, randomly determines parameter's type and
+// creates a constant to initialize it.
 class FuzzerPassAddParameters : public FuzzerPass {
  public:
   FuzzerPassAddParameters(opt::IRContext* ir_context,

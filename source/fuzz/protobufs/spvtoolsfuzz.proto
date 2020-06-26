@@ -380,7 +380,7 @@ message Transformation {
     TransformationReplaceLinearAlgebraInstruction replace_linear_algebra_instruction = 49;
     TransformationSwapConditionalBranchOperands swap_conditional_branch_operands = 50;
     TransformationPermutePhiOperands permute_phi_operands = 51;
-    TransformationAddParameters add_parameters = 52;
+    TransformationAddParameter add_parameter = 52;
     // Add additional option using the next available number.
   }
 }
@@ -624,24 +624,23 @@ message TransformationAddNoContractionDecoration {
 
 }
 
-message TransformationAddParameters {
+message TransformationAddParameter {
 
-  // Adds new parameters into the function.
+  // Adds a new parameter into the function.
 
   // Result id of the function to add parameters to.
   uint32 function_id = 1;
 
-  // New type of the function.
-  uint32 new_type_id = 2;
+  // Fresh id for a new parameter.
+  uint32 parameter_fresh_id = 2;
 
-  // Type ids of parameters to add to the function.
-  repeated uint32 new_parameter_type = 3;
+  // Result id of the instruction, used to initializer new parameter
+  // in function calls. Type id of that instruction is the type id of the parameter.
+  // It may not be OpTypeVoid.
+  uint32 initializer_id = 3;
 
-  // Result ids for new parameters.
-  repeated uint32 new_parameter_id = 4;
-
-  // Constants to initialize new parameters from.
-  repeated uint32 constant_id = 5;
+  // A fresh id for a new function type. This might not be used.
+  uint32 function_type_fresh_id = 4;
 
 }
 
@@ -1011,12 +1010,8 @@ message TransformationPermuteFunctionParameters {
   // Function, whose parameters will be permuted
   uint32 function_id = 1;
 
-  // |new_type_id| is a result id of a valid OpTypeFunction instruction.
-  // New type is valid if:
-  //   - it has the same number of operands as the old one
-  //   - function's result type is the same as the old one
-  //   - function's arguments are permuted according to |permutation| vector
-  uint32 new_type_id = 2;
+  // Fresh id for a new type of the function.
+  uint32 function_type_fresh_id = 2;
 
   // An array of size |n|, where |n| is a number of arguments to a function
   // with |function_id|. For each i: 0 <= permutation[i] < n.

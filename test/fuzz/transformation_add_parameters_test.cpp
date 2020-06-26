@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_add_parameters.h"
+#include "source/fuzz/transformation_add_parameter.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -32,24 +32,18 @@ TEST(TransformationAddParametersTest, BasicTest) {
           %7 = OpTypeBool
          %11 = OpTypeInt 32 1
           %3 = OpTypeFunction %2
-         %20 = OpTypeFunction %2 %7
           %6 = OpTypeFunction %7 %7
-         %12 = OpTypeFunction %7 %7 %11
-         %13 = OpTypeFunction %7 %7 %7
-         %14 = OpTypeFunction %11 %7 %11
-         %15 = OpTypeFunction %7 %11 %11
-         %16 = OpTypeFunction %7 %7 %11 %11
           %8 = OpConstant %11 23
-         %17 = OpConstantTrue %7
+         %12 = OpConstantTrue %7
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %18 = OpFunctionCall %7 %9 %17
+         %13 = OpFunctionCall %7 %9 %12
                OpReturn
                OpFunctionEnd
           %9 = OpFunction %7 None %6
-         %19 = OpFunctionParameter %7
+         %14 = OpFunctionParameter %7
          %10 = OpLabel
-               OpReturnValue %17
+               OpReturnValue %12
                OpFunctionEnd
   )";
 
@@ -64,71 +58,31 @@ TEST(TransformationAddParametersTest, BasicTest) {
                                                validator_options);
 
   // Can't modify entry point function.
-  ASSERT_FALSE(TransformationAddParameters(4, 6, {20}, {21}, {17})
+  ASSERT_FALSE(TransformationAddParameter(4, 15, 12, 16)
                    .IsApplicable(context.get(), transformation_context));
 
-  // There is no function with result id 10.
-  ASSERT_FALSE(TransformationAddParameters(29, 12, {11}, {21}, {8})
+  // There is no function with result id 29.
+  ASSERT_FALSE(TransformationAddParameter(29, 15, 8, 16)
                    .IsApplicable(context.get(), transformation_context));
 
-  // There is no OpTypeFunction instruction with result id 21.
-  ASSERT_FALSE(TransformationAddParameters(9, 21, {11}, {21}, {8})
+  // Parameter id is not fresh.
+  ASSERT_FALSE(TransformationAddParameter(9, 14, 8, 16)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Function type with id 6 has fewer parameters than required.
-  ASSERT_FALSE(TransformationAddParameters(9, 6, {11}, {21}, {8})
+  // Function type id is not fresh.
+  ASSERT_FALSE(TransformationAddParameter(9, 15, 8, 14)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Function type with id 16 has more parameters than required.
-  ASSERT_FALSE(TransformationAddParameters(9, 16, {11}, {21}, {8})
+  // Function type id and parameter type id are equal.
+  ASSERT_FALSE(TransformationAddParameter(9, 15, 8, 15)
                    .IsApplicable(context.get(), transformation_context));
 
-  // New function type is not OpTypeFunction instruction.
-  ASSERT_FALSE(TransformationAddParameters(9, 11, {11}, {21}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Return type is invalid.
-  ASSERT_FALSE(TransformationAddParameters(9, 14, {11}, {21}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Types of original parameters are invalid.
-  ASSERT_FALSE(TransformationAddParameters(9, 15, {11}, {21}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Types of new parameters are invalid.
-  ASSERT_FALSE(TransformationAddParameters(9, 13, {11}, {21}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // OpTypeVoid can't be the type of function parameter.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {2}, {21}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Vectors, that describe parameters, have different sizes.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {}, {21}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {21}, {})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Vectors cannot be empty.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {}, {}, {})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Parameters' ids are not fresh.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {20}, {8})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Constants for parameters don't exist.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {21}, {21})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Constants for parameters have invalid type.
-  ASSERT_FALSE(TransformationAddParameters(9, 12, {11}, {21}, {17})
+  // Parameter's initializer doesn't exist.
+  ASSERT_FALSE(TransformationAddParameter(9, 15, 15, 16)
                    .IsApplicable(context.get(), transformation_context));
 
   // Correct transformation.
-  TransformationAddParameters correct(9, 12, {11}, {21}, {8});
+  TransformationAddParameter correct(9, 15, 8, 16);
   ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
   correct.Apply(context.get(), &transformation_context);
 
@@ -147,25 +101,19 @@ TEST(TransformationAddParametersTest, BasicTest) {
           %7 = OpTypeBool
          %11 = OpTypeInt 32 1
           %3 = OpTypeFunction %2
-         %20 = OpTypeFunction %2 %7
-          %6 = OpTypeFunction %7 %7
-         %12 = OpTypeFunction %7 %7 %11
-         %13 = OpTypeFunction %7 %7 %7
-         %14 = OpTypeFunction %11 %7 %11
-         %15 = OpTypeFunction %7 %11 %11
-         %16 = OpTypeFunction %7 %7 %11 %11
+          %6 = OpTypeFunction %7 %7 %11
           %8 = OpConstant %11 23
-         %17 = OpConstantTrue %7
+         %12 = OpConstantTrue %7
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %18 = OpFunctionCall %7 %9 %17 %8
+         %13 = OpFunctionCall %7 %9 %12 %8
                OpReturn
                OpFunctionEnd
-          %9 = OpFunction %7 None %12
-         %19 = OpFunctionParameter %7
-         %21 = OpFunctionParameter %11
+          %9 = OpFunction %7 None %6
+         %14 = OpFunctionParameter %7
+         %15 = OpFunctionParameter %11
          %10 = OpLabel
-               OpReturnValue %17
+               OpReturnValue %12
                OpFunctionEnd
   )";
 

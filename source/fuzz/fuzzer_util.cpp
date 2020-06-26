@@ -590,6 +590,8 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
                        uint32_t type_id, SpvStorageClass storage_class,
                        uint32_t initializer_id) {
   // Check various preconditions.
+  assert(result_id != 0 && "Result id can't be 0");
+
   assert((storage_class == SpvStorageClassPrivate ||
           storage_class == SpvStorageClassWorkgroup) &&
          "Variable's storage class must be either Private or Workgroup");
@@ -631,6 +633,8 @@ void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
                       uint32_t type_id, uint32_t function_id,
                       uint32_t initializer_id) {
   // Check various preconditions.
+  assert(result_id != 0 && "Result id can't be 0");
+
   auto* type_inst = context->get_def_use_mgr()->GetDef(type_id);
   (void)type_inst;  // Variable becomes unused in release mode.
   assert(type_inst && type_inst->opcode() == SpvOpTypePointer &&
@@ -685,6 +689,32 @@ std::vector<opt::Instruction*> GetParameters(opt::IRContext* ir_context,
       [&result](opt::Instruction* inst) { result.push_back(inst); });
 
   return result;
+}
+
+void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
+                     const std::vector<uint32_t>& type_ids) {
+  assert(result_id != 0 && "Result id can't be 0");
+  assert(!type_ids.empty() &&
+         "OpTypeFunction always has at least one operand - function's return "
+         "type");
+  assert(IsNonFunctionTypeId(ir_context, type_ids[0]) &&
+         "Return type must not be a function");
+
+  for (size_t i = 1, n = type_ids.size(); i < n; ++i) {
+    const auto* param_type = ir_context->get_type_mgr()->GetType(type_ids[i]);
+    (void)param_type;  // Make compiler happy in release mode.
+    assert(param_type && !param_type->AsVoid() && !param_type->AsFunction() &&
+           "Function's parameter can't have a function or void type");
+  }
+
+  opt::Instruction::OperandList operands;
+  operands.reserve(type_ids.size());
+  for (auto id : type_ids) {
+    operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
+  }
+
+  ir_context->AddType(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpTypeFunction, 0, result_id, std::move(operands)));
 }
 
 }  // namespace fuzzerutil
