@@ -42,7 +42,8 @@ bool TransformationAddCopyMemory::IsApplicable(
     return false;
   }
 
-  // Check that instruction descriptor is valid.
+  // Check that instruction descriptor is valid. This also checks that
+  // |message_.instruction_descriptor| is not a global instruction.
   auto* inst = FindInstruction(message_.instruction_descriptor(), ir_context);
   if (!inst) {
     return false;
@@ -94,26 +95,9 @@ bool TransformationAddCopyMemory::IsApplicable(
     return false;
   }
 
-  // Check that this transformation respects domination rules.
-  const auto* source_block = ir_context->get_instr_block(source_inst);
-  const auto* target_block = ir_context->get_instr_block(inst);
-  assert(target_block && "OpCopyMemory can't be a global instruction");
-
-  // Domination rules are satisfied if we are copying memory from a global
-  // instruction.
-  if (!source_block) {
-    return true;
-  }
-
-  // Check that both source and target instructions are in the same function.
-  if (source_block->GetParent() != target_block->GetParent()) {
-    return false;
-  }
-
-  // Check domination rules.
-  return source_inst != inst &&
-         ir_context->GetDominatorAnalysis(source_block->GetParent())
-             ->Dominates(source_inst, inst);
+  // Check that domination rules are satisfied.
+  return fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, inst,
+                                                    message_.source_id());
 }
 
 void TransformationAddCopyMemory::Apply(
@@ -156,6 +140,12 @@ void TransformationAddCopyMemory::Apply(
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 
+  // Even though the copy memory instruction will - at least temporarily - lead
+  // to the destination and source pointers referring to identical values, this
+  // fact is not guaranteed to hold throughout execution of the SPIR-V code
+  // since the source pointer could be over-written. We thus assume nothing
+  // about the destination pointer, and record this fact so that the destination
+  // pointer can be used freely by other fuzzer passes.
   transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
       message_.fresh_id());
 
