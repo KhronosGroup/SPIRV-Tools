@@ -85,7 +85,6 @@ const uint32_t kDefaultMaxNewArraySizeLimit = 100;
 // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3424):
 //  think whether there is a better limit on the maximum number of parameters.
 const uint32_t kDefaultMaxNumberOfFunctionParameters = 128;
-const uint32_t kDefaultMaxNumberOfNewParameters = 15;
 
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
@@ -110,7 +109,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       max_loop_limit_(kDefaultMaxLoopLimit),
       max_new_array_size_limit_(kDefaultMaxNewArraySizeLimit),
       max_number_of_function_parameters_(kDefaultMaxNumberOfFunctionParameters),
-      max_number_of_new_parameters_(kDefaultMaxNumberOfNewParameters),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
   chance_of_adding_access_chain_ =
