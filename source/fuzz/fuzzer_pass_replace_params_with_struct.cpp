@@ -36,11 +36,8 @@ FuzzerPassReplaceParamsWithStruct::~FuzzerPassReplaceParamsWithStruct() =
 
 void FuzzerPassReplaceParamsWithStruct::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3454):
-    //  uncomment when the PR is merged.
-    // auto params = fuzzerutil::GetParameters(GetIRContext(),
-    //                                         function.result_id());
-    std::vector<opt::Instruction*> params;
+    auto params =
+        fuzzerutil::GetParameters(GetIRContext(), function.result_id());
 
     if (params.empty() || fuzzerutil::FunctionIsEntryPoint(
                               GetIRContext(), function.result_id())) {

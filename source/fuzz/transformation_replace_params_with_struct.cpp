@@ -49,10 +49,7 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     return false;
   }
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3454):
-  //  uncomment when the PR is merged.
-  // auto params = fuzzerutil::GetParameters(ir_context, function->result_id());
-  std::vector<opt::Instruction*> params;
+  auto params = fuzzerutil::GetParameters(ir_context, function->result_id());
 
   // Can't replace parameters if there are no any.
   assert(!params.empty() && "A function must have parameters to be replaced");
@@ -145,11 +142,7 @@ void TransformationReplaceParamsWithStruct::Apply(
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function);
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3454):
-  //  uncomment when the PR is merged.
-  // auto params = fuzzerutil::GetParameters(ir_context,
-  // message_.function_id());
-  std::vector<opt::Instruction*> params;
+  auto params = fuzzerutil::GetParameters(ir_context, message_.function_id());
 
   // Add OpCompositeExtract instructions to extract values of replaced
   // parameters from the added struct parameter.
