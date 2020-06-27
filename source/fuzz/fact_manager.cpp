@@ -588,6 +588,20 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
   // Now try to work out corollaries implied by the new equation and existing
   // facts.
   switch (opcode) {
+    case SpvOpConvertFToS:
+    case SpvOpConvertFToU: {
+      // Equation form: a = int(b)
+      for (auto equation : GetEquations(rhs_dds[0])) {
+        // Equation form: b = float(c)
+        if ((equation.opcode == SpvOpConvertSToF &&
+             opcode == SpvOpConvertFToS) ||
+            (equation.opcode == SpvOpConvertUToF &&
+             opcode == SpvOpConvertFToU)) {
+          // We can thus infer "a = c"
+          AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0], context);
+        }
+      }
+    } break;
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
       for (auto equation : GetEquations(rhs_dds[0])) {

@@ -64,12 +64,40 @@ void FuzzerPassAddEquationInstructions::Apply() {
 
         // Try the opcodes for which we know how to make ids at random until
         // something works.
-        std::vector<SpvOp> candidate_opcodes = {SpvOpIAdd, SpvOpISub,
-                                                SpvOpLogicalNot, SpvOpSNegate};
+        std::vector<SpvOp> candidate_opcodes = {
+            SpvOpIAdd,        SpvOpISub,        SpvOpLogicalNot,
+            SpvOpSNegate,     SpvOpConvertUToF, SpvOpConvertSToF,
+            SpvOpConvertFToU, SpvOpConvertFToS};
         do {
           auto opcode =
               GetFuzzerContext()->RemoveAtRandomIndex(&candidate_opcodes);
           switch (opcode) {
+            case SpvOpConvertFToS:
+            case SpvOpConvertFToU:
+            case SpvOpConvertSToF:
+            case SpvOpConvertUToF: {
+              auto candidate_instructions =
+                  opcode == SpvOpConvertFToS || opcode == SpvOpConvertFToU
+                      ? GetFloatInstructions(available_instructions)
+                      : GetIntegerInstructions(available_instructions);
+
+              if (opcode == SpvOpConvertSToF || opcode == SpvOpConvertUToF) {
+                candidate_instructions = RestrictToSignedness(
+                    candidate_instructions, opcode == SpvOpConvertSToF);
+              }
+
+              if (candidate_instructions.empty()) {
+                break;
+              }
+
+              ApplyTransformation(TransformationEquationInstruction(
+                  GetFuzzerContext()->GetFreshIds(3), opcode,
+                  {candidate_instructions[GetFuzzerContext()->RandomIndex(
+                                              candidate_instructions)]
+                       ->result_id()},
+                  instruction_descriptor));
+              return;
+            } break;
             case SpvOpIAdd:
             case SpvOpISub: {
               // Instructions of integer (scalar or vector) result type are
@@ -117,7 +145,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
 
                 // Add the equation instruction.
                 ApplyTransformation(TransformationEquationInstruction(
-                    GetFuzzerContext()->GetFreshId(), opcode,
+                    GetFuzzerContext()->GetFreshIds(1), opcode,
                     {lhs->result_id(), rhs->result_id()},
                     instruction_descriptor));
                 return;
@@ -131,7 +159,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
                   GetBooleanInstructions(available_instructions);
               if (!boolean_instructions.empty()) {
                 ApplyTransformation(TransformationEquationInstruction(
-                    GetFuzzerContext()->GetFreshId(), opcode,
+                    GetFuzzerContext()->GetFreshIds(1), opcode,
                     {boolean_instructions
                          .at(GetFuzzerContext()->RandomIndex(
                              boolean_instructions))
@@ -147,7 +175,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
                   GetIntegerInstructions(available_instructions);
               if (!integer_instructions.empty()) {
                 ApplyTransformation(TransformationEquationInstruction(
-                    GetFuzzerContext()->GetFreshId(), opcode,
+                    GetFuzzerContext()->GetFreshIds(1), opcode,
                     {integer_instructions
                          .at(GetFuzzerContext()->RandomIndex(
                              integer_instructions))
@@ -175,6 +203,20 @@ FuzzerPassAddEquationInstructions::GetIntegerInstructions(
     auto type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
     if (type->AsInteger() ||
         (type->AsVector() && type->AsVector()->element_type()->AsInteger())) {
+      result.push_back(inst);
+    }
+  }
+  return result;
+}
+
+std::vector<opt::Instruction*>
+FuzzerPassAddEquationInstructions::GetFloatInstructions(
+    const std::vector<opt::Instruction*>& instructions) const {
+  std::vector<opt::Instruction*> result;
+  for (auto& inst : instructions) {
+    auto type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+    if (type->AsFloat() ||
+        (type->AsVector() && type->AsVector()->element_type()->AsFloat())) {
       result.push_back(inst);
     }
   }
@@ -225,10 +267,32 @@ FuzzerPassAddEquationInstructions::RestrictToElementBitWidth(
     if (type->AsVector()) {
       type = type->AsVector()->element_type();
     }
+    assert((type->AsInteger() || type->AsFloat()) &&
+           "Precondition: all input instructions must "
+           "have integer or float scalar or vector type.");
+    if ((type->AsInteger() && type->AsInteger()->width() == bit_width) ||
+        (type->AsFloat() && type->AsFloat()->width() == bit_width)) {
+      result.push_back(inst);
+    }
+  }
+  return result;
+}
+
+std::vector<opt::Instruction*>
+FuzzerPassAddEquationInstructions::RestrictToSignedness(
+    const std::vector<opt::Instruction*>& instructions, bool is_signed) const {
+  std::vector<opt::Instruction*> result;
+  for (auto* inst : instructions) {
+    const auto* type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+    assert(type && "Instructions must have valid type");
+    if (type->AsVector()) {
+      type = type->AsVector()->element_type();
+    }
+
     assert(type->AsInteger() &&
            "Precondition: all input instructions must "
            "have integer scalar or vector type.");
-    if (type->AsInteger()->width() == bit_width) {
+    if (type->AsInteger()->IsSigned() == is_signed) {
       result.push_back(inst);
     }
   }

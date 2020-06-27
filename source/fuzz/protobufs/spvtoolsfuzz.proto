@@ -920,8 +920,8 @@ message TransformationEquationInstruction {
   // equation is guaranteed to hold at any program point where all ids involved
   // are available (i.e. at any program point dominated by the instruction).
 
-  // The result id of the new instruction
-  uint32 fresh_id = 1;
+  // Fresh ids required by this transformation.
+  repeated uint32 fresh_id = 1;
 
   // The instruction's opcode
   uint32 opcode = 2;

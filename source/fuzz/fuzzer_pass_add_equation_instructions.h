@@ -41,6 +41,11 @@ class FuzzerPassAddEquationInstructions : public FuzzerPass {
   std::vector<opt::Instruction*> GetIntegerInstructions(
       const std::vector<opt::Instruction*>& instructions) const;
 
+  // Returns only instructions, that have either a scalar floating-point or a
+  // vector type.
+  std::vector<opt::Instruction*> GetFloatInstructions(
+      const std::vector<opt::Instruction*>& instructions) const;
+
   // Yields those instructions in |instructions| that have boolean scalar or
   // vector result type.
   std::vector<opt::Instruction*> GetBooleanInstructions(
@@ -53,12 +58,17 @@ class FuzzerPassAddEquationInstructions : public FuzzerPass {
       const std::vector<opt::Instruction*>& instructions,
       uint32_t vector_width) const;
 
-  // Requires that |instructions| are integer scalars or vectors.  Returns only
-  // those instructions for which the bit-width of the underlying integer type
-  // is |bit_width|.
+  // Requires that |instructions| are integer or float scalars or vectors.
+  // Returns only those instructions for which the bit-width of the underlying
+  // integer or floating-point type is |bit_width|.
   std::vector<opt::Instruction*> RestrictToElementBitWidth(
       const std::vector<opt::Instruction*>& instructions,
       uint32_t bit_width) const;
+
+  // Requires that |instructions| are integer scalars or vectors. Returns only
+  // those of them that have particular signedness.
+  std::vector<opt::Instruction*> RestrictToSignedness(
+      const std::vector<opt::Instruction*>& instructions, bool is_signed) const;
 };
 
 }  // namespace fuzz

@@ -25,9 +25,13 @@ TransformationEquationInstruction::TransformationEquationInstruction(
     : message_(message) {}
 
 TransformationEquationInstruction::TransformationEquationInstruction(
-    uint32_t fresh_id, SpvOp opcode, const std::vector<uint32_t>& in_operand_id,
+    const std::vector<uint32_t>& fresh_id, SpvOp opcode,
+    const std::vector<uint32_t>& in_operand_id,
     const protobufs::InstructionDescriptor& instruction_to_insert_before) {
-  message_.set_fresh_id(fresh_id);
+  for (auto id : fresh_id) {
+    message_.add_fresh_id(id);
+  }
+
   message_.set_opcode(opcode);
   for (auto id : in_operand_id) {
     message_.add_in_operand_id(id);
@@ -38,10 +42,20 @@ TransformationEquationInstruction::TransformationEquationInstruction(
 
 bool TransformationEquationInstruction::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  // The result id must be fresh.
-  if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
+  // |fresh_id| must all be fresh.
+  if (!std::all_of(message_.fresh_id().begin(), message_.fresh_id().end(),
+                   [ir_context](uint32_t id) {
+                     return fuzzerutil::IsFreshId(ir_context, id);
+                   })) {
     return false;
   }
+
+  // |fresh_id| must not have duplicates.
+  if (fuzzerutil::HasDuplicates(std::vector<uint32_t>(
+          message_.fresh_id().begin(), message_.fresh_id().end()))) {
+    return false;
+  }
+
   // The instruction to insert before must exist.
   auto insert_before =
       FindInstruction(message_.instruction_to_insert_before(), ir_context);
@@ -64,46 +78,53 @@ bool TransformationEquationInstruction::IsApplicable(
     }
   }
 
-  return MaybeGetResultType(ir_context) != 0;
-}
+  // Check that the module remains valid if insert new instruction with
+  // |opcode|.
+  auto opcode = static_cast<SpvOp>(message_.opcode());
+  switch (opcode) {
+    case SpvOpConvertUToF:
+    case SpvOpConvertSToF: {
+      if (message_.in_operand_id_size() != 1 || message_.fresh_id_size() != 3) {
+        return false;
+      }
 
-void TransformationEquationInstruction::Apply(
-    opt::IRContext* ir_context,
-    TransformationContext* transformation_context) const {
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
+      const auto* type = ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0)));
+      if (!type) {
+        return false;
+      }
 
-  opt::Instruction::OperandList in_operands;
-  std::vector<uint32_t> rhs_id;
-  for (auto id : message_.in_operand_id()) {
-    in_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
-    rhs_id.push_back(id);
-  }
+      if (const auto* vector = type->AsVector()) {
+        return vector->element_type()->AsInteger() &&
+               vector->element_type()->AsInteger()->IsSigned() ==
+                   (opcode == SpvOpConvertSToF);
+      } else {
+        return type->AsInteger() &&
+               type->AsInteger()->IsSigned() == (opcode == SpvOpConvertSToF);
+      }
+    }
+    case SpvOpConvertFToU:
+    case SpvOpConvertFToS: {
+      if (message_.in_operand_id_size() != 1 || message_.fresh_id_size() != 3) {
+        return false;
+      }
 
-  FindInstruction(message_.instruction_to_insert_before(), ir_context)
-      ->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, static_cast<SpvOp>(message_.opcode()),
-          MaybeGetResultType(ir_context), message_.fresh_id(), in_operands));
+      const auto* type = ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0)));
+      if (!type) {
+        return false;
+      }
 
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
-
-  transformation_context->GetFactManager()->AddFactIdEquation(
-      message_.fresh_id(), static_cast<SpvOp>(message_.opcode()), rhs_id,
-      ir_context);
-}
-
-protobufs::Transformation TransformationEquationInstruction::ToMessage() const {
-  protobufs::Transformation result;
-  *result.mutable_equation_instruction() = message_;
-  return result;
-}
-
-uint32_t TransformationEquationInstruction::MaybeGetResultType(
-    opt::IRContext* ir_context) const {
-  switch (static_cast<SpvOp>(message_.opcode())) {
+      if (const auto* vector = type->AsVector()) {
+        return vector->element_type()->AsFloat();
+      } else {
+        return type->AsFloat();
+      }
+    }
     case SpvOpIAdd:
     case SpvOpISub: {
-      if (message_.in_operand_id().size() != 2) {
-        return 0;
+      if (message_.in_operand_id_size() != 2 || message_.fresh_id_size() != 1) {
+        return false;
       }
       uint32_t first_operand_width = 0;
       uint32_t first_operand_type_id = 0;
@@ -111,14 +132,14 @@ uint32_t TransformationEquationInstruction::MaybeGetResultType(
         auto operand_inst = ir_context->get_def_use_mgr()->GetDef(
             message_.in_operand_id(index));
         if (!operand_inst || !operand_inst->type_id()) {
-          return 0;
+          return false;
         }
         auto operand_type =
             ir_context->get_type_mgr()->GetType(operand_inst->type_id());
         if (!(operand_type->AsInteger() ||
               (operand_type->AsVector() &&
                operand_type->AsVector()->element_type()->AsInteger()))) {
-          return 0;
+          return false;
         }
         uint32_t operand_width =
             operand_type->AsInteger()
@@ -131,51 +152,159 @@ uint32_t TransformationEquationInstruction::MaybeGetResultType(
           assert(first_operand_width != 0 &&
                  "The first operand should have been processed.");
           if (operand_width != first_operand_width) {
-            return 0;
+            return false;
           }
         }
       }
       assert(first_operand_type_id != 0 &&
              "A type must have been found for the first operand.");
-      return first_operand_type_id;
+      return true;
     }
     case SpvOpLogicalNot: {
-      if (message_.in_operand_id().size() != 1) {
-        return 0;
+      if (message_.in_operand_id_size() != 1 || message_.fresh_id_size() != 1) {
+        return false;
       }
       auto operand_inst =
           ir_context->get_def_use_mgr()->GetDef(message_.in_operand_id(0));
       if (!operand_inst || !operand_inst->type_id()) {
-        return 0;
+        return false;
       }
       auto operand_type =
           ir_context->get_type_mgr()->GetType(operand_inst->type_id());
-      if (!(operand_type->AsBool() ||
-            (operand_type->AsVector() &&
-             operand_type->AsVector()->element_type()->AsBool()))) {
-        return 0;
-      }
-      return operand_inst->type_id();
+      return operand_type->AsBool() ||
+             (operand_type->AsVector() &&
+              operand_type->AsVector()->element_type()->AsBool());
     }
     case SpvOpSNegate: {
-      if (message_.in_operand_id().size() != 1) {
-        return 0;
+      if (message_.in_operand_id_size() != 1 || message_.fresh_id_size() != 1) {
+        return false;
       }
       auto operand_inst =
           ir_context->get_def_use_mgr()->GetDef(message_.in_operand_id(0));
       if (!operand_inst || !operand_inst->type_id()) {
-        return 0;
+        return false;
       }
       auto operand_type =
           ir_context->get_type_mgr()->GetType(operand_inst->type_id());
-      if (!(operand_type->AsInteger() ||
-            (operand_type->AsVector() &&
-             operand_type->AsVector()->element_type()->AsInteger()))) {
-        return 0;
-      }
-      return operand_inst->type_id();
+      return operand_type->AsInteger() ||
+             (operand_type->AsVector() &&
+              operand_type->AsVector()->element_type()->AsInteger());
     }
+    default:
+      assert(false && "Inappropriate opcode for equation instruction.");
+      return false;
+  }
+}
 
+void TransformationEquationInstruction::Apply(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  fuzzerutil::UpdateModuleIdBound(ir_context,
+                                  *std::max_element(message_.fresh_id().begin(),
+                                                    message_.fresh_id().end()));
+
+  opt::Instruction::OperandList in_operands;
+  std::vector<uint32_t> rhs_id;
+  for (auto id : message_.in_operand_id()) {
+    in_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
+    rhs_id.push_back(id);
+  }
+
+  FindInstruction(message_.instruction_to_insert_before(), ir_context)
+      ->InsertBefore(MakeUnique<opt::Instruction>(
+          ir_context, static_cast<SpvOp>(message_.opcode()),
+          ComputeResultTypeId(ir_context), message_.fresh_id(0),
+          std::move(in_operands)));
+
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
+  transformation_context->GetFactManager()->AddFactIdEquation(
+      message_.fresh_id(0), static_cast<SpvOp>(message_.opcode()), rhs_id,
+      ir_context);
+}
+
+protobufs::Transformation TransformationEquationInstruction::ToMessage() const {
+  protobufs::Transformation result;
+  *result.mutable_equation_instruction() = message_;
+  return result;
+}
+
+uint32_t TransformationEquationInstruction::ComputeResultTypeId(
+    opt::IRContext* ir_context) const {
+  auto opcode = static_cast<SpvOp>(message_.opcode());
+  switch (opcode) {
+    case SpvOpConvertUToF:
+    case SpvOpConvertSToF: {
+      assert(message_.in_operand_id_size() == 1 &&
+             "Instruction has invalid number of operands");
+      assert(message_.fresh_id_size() == 3 &&
+             "3 fresh ids must be provided for conversion instructions");
+
+      const auto* type = ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0)));
+      assert(type && "Operand has invalid type");
+
+      if (const auto* vector = type->AsVector()) {
+        assert(vector->element_type()->AsInteger() &&
+               "Conversion to float supports only operands of scalar or vector "
+               "integral type");
+
+        return fuzzerutil::FindOrCreateVectorType(
+            ir_context, message_.fresh_id(1),
+            fuzzerutil::FindOrCreateFloatType(
+                ir_context, message_.fresh_id(2),
+                vector->element_type()->AsInteger()->width()),
+            vector->element_count());
+      } else {
+        assert(type->AsInteger() &&
+               "Conversion to float supports only operands of scalar or vector "
+               "integral type");
+
+        return fuzzerutil::FindOrCreateFloatType(
+            ir_context, message_.fresh_id(1), type->AsInteger()->width());
+      }
+    }
+    case SpvOpConvertFToU:
+    case SpvOpConvertFToS: {
+      assert(message_.in_operand_id_size() == 1 &&
+             "Instruction has invalid number of operands");
+      assert(message_.fresh_id_size() == 3 &&
+             "3 fresh ids must be provided for conversion instructions");
+
+      const auto* type = ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0)));
+      assert(type && "Operand has invalid type");
+
+      if (const auto* vector = type->AsVector()) {
+        assert(vector->element_type()->AsFloat() &&
+               "Conversion to integer supports only operands of scalar or "
+               "vector float type");
+
+        return fuzzerutil::FindOrCreateVectorType(
+            ir_context, message_.fresh_id(1),
+            fuzzerutil::FindOrCreateIntegerType(
+                ir_context, message_.fresh_id(2),
+                vector->element_type()->AsFloat()->width(),
+                opcode == SpvOpConvertFToS),
+            vector->element_count());
+      } else {
+        assert(type->AsFloat() &&
+               "Conversion to integer supports only operands of scalar or "
+               "vector float type");
+
+        return fuzzerutil::FindOrCreateIntegerType(
+            ir_context, message_.fresh_id(1), type->AsFloat()->width(),
+            opcode == SpvOpConvertFToS);
+      }
+    }
+    case SpvOpIAdd:
+    case SpvOpISub:
+    case SpvOpLogicalNot:
+    case SpvOpSNegate:
+      // Type id of the instruction is equal to the type id of one of the
+      // operands. All the necessary checks have been made in the IsApplicable
+      // method.
+      return fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0));
     default:
       assert(false && "Inappropriate opcode for equation instruction.");
       return 0;

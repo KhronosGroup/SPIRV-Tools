@@ -31,7 +31,7 @@ class TransformationEquationInstruction : public Transformation {
       const protobufs::TransformationEquationInstruction& message);
 
   TransformationEquationInstruction(
-      uint32_t fresh_id, SpvOp opcode,
+      const std::vector<uint32_t>& fresh_id, SpvOp opcode,
       const std::vector<uint32_t>& in_operand_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
@@ -63,11 +63,9 @@ class TransformationEquationInstruction : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // A helper that, in one fell swoop, checks that |message_.opcode| and the ids
-  // in |message_.in_operand_id| are compatible, and that the module contains
-  // an appropriate result type id.  If all is well, the result type id is
-  // returned.  Otherwise, 0 is returned.
-  uint32_t MaybeGetResultType(opt::IRContext* ir_context) const;
+  // Returns type id for the equation instruction. Creates a new type if
+  // required.
+  uint32_t ComputeResultTypeId(opt::IRContext* ir_context) const;
 
   protobufs::TransformationEquationInstruction message_;
 };
