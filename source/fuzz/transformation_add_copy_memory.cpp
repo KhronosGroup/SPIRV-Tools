@@ -56,19 +56,10 @@ bool TransformationAddCopyMemory::IsApplicable(
     return false;
   }
 
-  // Check that source instruction exists.
+  // Check that source instruction exists and is valid.
   auto* source_inst =
       ir_context->get_def_use_mgr()->GetDef(message_.source_id());
-  if (!source_inst) {
-    return false;
-  }
-
-  // Check that result type of source instruction exists and can be used with
-  // OpCopyMemory.
-  const auto* source_type =
-      ir_context->get_type_mgr()->GetType(source_inst->type_id());
-  if (!source_type || !source_type->AsPointer() ||
-      !CanUsePointeeWithCopyMemory(*source_type->AsPointer()->pointee_type())) {
+  if (!source_inst || !IsInstructionSupported(ir_context, source_inst)) {
     return false;
   }
 
@@ -158,6 +149,21 @@ protobufs::Transformation TransformationAddCopyMemory::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_copy_memory() = message_;
   return result;
+}
+
+bool TransformationAddCopyMemory::IsInstructionSupported(
+    opt::IRContext* ir_context, opt::Instruction* inst) {
+  if (!inst->result_id() || !inst->type_id() ||
+      inst->opcode() == SpvOpConstantNull ||
+      inst->opcode() == SpvOpUndef) {
+    return false;
+  }
+
+  const auto* type = ir_context->get_type_mgr()->GetType(inst->type_id());
+  assert(type && "Instruction must have a valid type");
+
+  return type->AsPointer() && CanUsePointeeWithCopyMemory(
+                                  *type->AsPointer()->pointee_type());
 }
 
 bool TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(

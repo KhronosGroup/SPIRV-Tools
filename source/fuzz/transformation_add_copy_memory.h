@@ -56,11 +56,15 @@ class TransformationAddCopyMemory : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // Returns true if we can copy memory from |instruction| using OpCopyMemory.
+  static bool IsInstructionSupported(opt::IRContext* ir_context,
+                                     opt::Instruction* inst);
+
+ private:
   // Returns whether the type, pointed to by some OpTypePointer, can be used
   // with OpCopyMemory instruction.
   static bool CanUsePointeeWithCopyMemory(const opt::analysis::Type& type);
 
- private:
   protobufs::TransformationAddCopyMemory message_;
 };
 

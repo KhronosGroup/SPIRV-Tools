@@ -51,23 +51,7 @@ void FuzzerPassAddCopyMemory::Apply() {
         // domination rules.
         auto instructions = FindAvailableInstructions(
             function, block, inst_it,
-            [](opt::IRContext* context, opt::Instruction* inst) {
-              // Instruction to apply OpCopyMemory to should have both result id
-              // and type id.
-              if (!inst->result_id() || !inst->type_id()) {
-                return false;
-              }
-
-              const auto* type =
-                  context->get_type_mgr()->GetType(inst->type_id());
-              assert(type && "Type is nullptr for non-zero type id");
-
-              // Instructions type should be OpTypePointer and the pointee
-              // should be compatible with OpCopyMemory.
-              return type->AsPointer() &&
-                     TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
-                         *type->AsPointer()->pointee_type());
-            });
+            TransformationAddCopyMemory::IsInstructionSupported);
 
         if (instructions.empty()) {
           return;
