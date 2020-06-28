@@ -29,20 +29,20 @@ class TransformationAddSynonym : public Transformation {
       protobufs::TransformationAddSynonym message);
 
   TransformationAddSynonym(
-      uint32_t result_id, const protobufs::Instruction& synonymous_instruction);
+      uint32_t result_id, const protobufs::InstructionDescriptor& insert_before,
+      const protobufs::Instruction& synonymous_instruction);
 
   // - |result_id| must be a valid result id of some instruction in the module.
+  // - |insert_before| must be a valid instruction descriptor and we must be
+  //   able to insert |synonymous_instruction| before |insert_before|.
   // - |synonymous_instruction| must be a valid instruction.
   // - |synonymous_instruction| must have a fresh result id.
-  // - it should be possible to add |synonymous_instruction| after |result_id|.
-  // - insertion of |synonymous_instruction| after |result_id| satisfies
-  //   domination rules.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Inserts |synonymous_instruction| after |result_id| and creates a fact that
-  // the result id of |synonymous_instruction| and the |result_id| are
+  // Inserts |synonymous_instruction| before |insert_before| and creates a fact
+  // that the result id of |synonymous_instruction| and the |result_id| are
   // synonymous.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
@@ -50,8 +50,6 @@ class TransformationAddSynonym : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  void ApplyImpl(opt::IRContext* ir_context) const;
-
   protobufs::TransformationAddSynonym message_;
 };
 

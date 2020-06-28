@@ -22,7 +22,6 @@
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/instruction_message.h"
-#include "source/fuzz/transformation_add_float_cast_synonym.h"
 #include "source/fuzz/transformation_add_synonym.h"
 
 namespace spvtools {
@@ -39,84 +38,106 @@ FuzzerPassAddSynonyms::~FuzzerPassAddSynonyms() = default;
 
 void FuzzerPassAddSynonyms::Apply() {
   using TransformationsMap = std::unordered_map<
-      SpvOp, std::vector<std::function<void(const opt::Instruction*)>>>;
+      SpvOp,
+      std::vector<std::function<void(
+          const opt::Instruction*, const protobufs::InstructionDescriptor&)>>>;
 
   const TransformationsMap kTransformationMap = {
       {SpvOpTypeInt,
-       {[this](const opt::Instruction* inst) {
-          CreateScalarMultiplicationSynonym(inst, SpvOpIMul);
+       {[this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateScalarMultiplicationSynonym(inst, instruction_descriptor,
+                                            SpvOpIMul);
         },
-        [this](const opt::Instruction* inst) {
-          CreateScalarAdditionSynonym(inst, SpvOpIAdd);
-        },
-        [this](const opt::Instruction* inst) { CreateCastSynonym(inst); }}},
+        [this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateScalarAdditionSynonym(inst, instruction_descriptor, SpvOpIAdd);
+        }}},
       {SpvOpTypeFloat,
-       {[this](const opt::Instruction* inst) {
-          CreateScalarMultiplicationSynonym(inst, SpvOpFMul);
+       {[this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateScalarMultiplicationSynonym(inst, instruction_descriptor,
+                                            SpvOpFMul);
         },
-        [this](const opt::Instruction* inst) {
-          CreateScalarAdditionSynonym(inst, SpvOpFAdd);
+        [this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateScalarAdditionSynonym(inst, instruction_descriptor, SpvOpFAdd);
         }}},
       {SpvOpTypeBool,
-       {[this](const opt::Instruction* inst) {
-          CreateScalarMultiplicationSynonym(inst, SpvOpLogicalAnd);
+       {[this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateScalarMultiplicationSynonym(inst, instruction_descriptor,
+                                            SpvOpLogicalAnd);
         },
-        [this](const opt::Instruction* inst) {
-          CreateScalarAdditionSynonym(inst, SpvOpLogicalOr);
+        [this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateScalarAdditionSynonym(inst, instruction_descriptor,
+                                      SpvOpLogicalOr);
         }}},
       {SpvOpTypeVector,
-       {[this](const opt::Instruction* inst) {
-          CreateVectorMultiplicationSynonym(inst);
+       {[this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateVectorMultiplicationSynonym(inst, instruction_descriptor);
         },
-        [this](const opt::Instruction* inst) {
-          CreateVectorAdditionSynonym(inst);
-        },
-        [this](const opt::Instruction* inst) { CreateCastSynonym(inst); }}}};
+        [this](const opt::Instruction* inst,
+               const protobufs::InstructionDescriptor& instruction_descriptor) {
+          CreateVectorAdditionSynonym(inst, instruction_descriptor);
+        }}}};
 
-  for (const auto* type_inst : GetIRContext()->module()->GetTypes()) {
-    // Check that |type_inst| is supported.
-    if (kTransformationMap.find(type_inst->opcode()) ==
-        kTransformationMap.end()) {
-      continue;
-    }
+  ForEachInstructionWithInstructionDescriptor(
+      [this, &kTransformationMap](
+          opt::Function* function, opt::BasicBlock* block,
+          opt::BasicBlock::iterator inst_it,
+          const protobufs::InstructionDescriptor& instruction_descriptor) {
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpIAdd, inst_it)) {
+          return;
+        }
 
-    // Collect all instructions that will be used to create synonym for. We
-    // store these in a separate vector to make sure we don't invalidate
-    // iterators by inserting new instructions into the module.
-    std::vector<const opt::Instruction*> candidate_instructions;
-    GetIRContext()->get_def_use_mgr()->ForEachUser(
-        type_inst,
-        [this, type_inst, &candidate_instructions](opt::Instruction* inst) {
-          if (!fuzzerutil::CanMakeSynonymOf(GetIRContext(), inst)) {
-            return;
-          }
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfAddingSynonyms())) {
+          return;
+        }
 
-          if (!inst->result_id() || !inst->type_id() ||
-              inst->type_id() != type_inst->type_id() ||
-              inst->opcode() == SpvOpUndef) {
-            return;
-          }
+        auto available_instructions = FindAvailableInstructions(
+            function, block, inst_it,
+            [&kTransformationMap](opt::IRContext* ir_context,
+                                  opt::Instruction* inst) {
+              if (!inst->result_id() || !inst->type_id() ||
+                  inst->opcode() == SpvOpUndef) {
+                return false;
+              }
 
-          if (!GetFuzzerContext()->ChoosePercentage(
-                  GetFuzzerContext()->GetChanceOfAddingSynonyms())) {
-            return;
-          }
+              const auto* type_inst =
+                  ir_context->get_def_use_mgr()->GetDef(inst->type_id());
+              assert(type_inst && "Instruction must have a valid type");
+              return kTransformationMap.find(type_inst->opcode()) !=
+                     kTransformationMap.end();
+            });
 
-          candidate_instructions.push_back(inst);
-        });
+        if (available_instructions.empty()) {
+          return;
+        }
 
-    // Apply transformations to create synonyms.
-    for (const auto* inst : candidate_instructions) {
-      const auto& transformations = kTransformationMap.at(inst->opcode());
-      transformations[GetFuzzerContext()->RandomIndex(transformations)](inst);
-    }
-  }
+        const auto* candidate_inst =
+            available_instructions[GetFuzzerContext()->RandomIndex(
+                available_instructions)];
+        const auto* candidate_type_inst =
+            GetIRContext()->get_def_use_mgr()->GetDef(
+                candidate_inst->type_id());
+        const auto& transformations =
+            kTransformationMap.at(candidate_type_inst->opcode());
+
+        transformations[GetFuzzerContext()->RandomIndex(transformations)](
+            candidate_inst, instruction_descriptor);
+      });
 }
 
 void FuzzerPassAddSynonyms::CreateScalarMultiplicationSynonym(
-    const opt::Instruction* inst, SpvOp opcode) {
+    const opt::Instruction* inst,
+    const protobufs::InstructionDescriptor& instruction_descriptor,
+    SpvOp opcode) {
   ApplyTransformation(TransformationAddSynonym(
-      inst->result_id(),
+      inst->result_id(), instruction_descriptor,
       MakeInstructionMessage(
           opcode, inst->type_id(), GetFuzzerContext()->GetFreshId(),
           opt::Instruction::OperandList{
@@ -126,9 +147,11 @@ void FuzzerPassAddSynonyms::CreateScalarMultiplicationSynonym(
 }
 
 void FuzzerPassAddSynonyms::CreateScalarAdditionSynonym(
-    const opt::Instruction* inst, SpvOp opcode) {
+    const opt::Instruction* inst,
+    const protobufs::InstructionDescriptor& instruction_descriptor,
+    SpvOp opcode) {
   ApplyTransformation(TransformationAddSynonym(
-      inst->result_id(),
+      inst->result_id(), instruction_descriptor,
       MakeInstructionMessage(
           opcode, inst->type_id(), GetFuzzerContext()->GetFreshId(),
           opt::Instruction::OperandList{
@@ -137,33 +160,9 @@ void FuzzerPassAddSynonyms::CreateScalarAdditionSynonym(
                {FindOrCreateZeroConstant(inst->type_id())}}})));
 }
 
-void FuzzerPassAddSynonyms::CreateCastSynonym(const opt::Instruction* inst) {
-  const auto* type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
-  assert(type && "Instruction has invalid type");
-
-  uint32_t conversion_target_type_id;
-  if (const auto* vector = type->AsVector()) {
-    if (!vector->element_type()->AsInteger()) {
-      // Ignore vectors with non-integral type.
-      return;
-    }
-    conversion_target_type_id = FindOrCreateVectorType(
-        FindOrCreateFloatType(vector->element_type()->AsInteger()->width()),
-        vector->element_count());
-  } else {
-    assert(type->AsInteger() &&
-           "Instruction must have either a vector or an integer type");
-    conversion_target_type_id =
-        FindOrCreateFloatType(type->AsInteger()->width());
-  }
-
-  ApplyTransformation(TransformationAddFloatCastSynonym(
-      inst->result_id(), GetFuzzerContext()->GetFreshId(),
-      GetFuzzerContext()->GetFreshId(), conversion_target_type_id));
-}
-
 void FuzzerPassAddSynonyms::CreateVectorMultiplicationSynonym(
-    const opt::Instruction* inst) {
+    const opt::Instruction* inst,
+    const protobufs::InstructionDescriptor& instruction_descriptor) {
   const auto* type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
   assert(type && type->AsVector() && "Type of vector is invalid");
 
@@ -184,8 +183,12 @@ void FuzzerPassAddSynonyms::CreateVectorMultiplicationSynonym(
     one_id = FindOrCreateBoolConstant(true);
   }
 
+  // Recompute instruction's type if it was invalidated.
+  type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+  assert(type && type->AsVector() && "Instruction must have a vector type");
+
   ApplyTransformation(TransformationAddSynonym(
-      inst->result_id(),
+      inst->result_id(), instruction_descriptor,
       MakeInstructionMessage(
           opcode, inst->type_id(), GetFuzzerContext()->GetFreshId(),
           opt::Instruction::OperandList{
@@ -198,7 +201,8 @@ void FuzzerPassAddSynonyms::CreateVectorMultiplicationSynonym(
 }
 
 void FuzzerPassAddSynonyms::CreateVectorAdditionSynonym(
-    const opt::Instruction* inst) {
+    const opt::Instruction* inst,
+    const protobufs::InstructionDescriptor& instruction_descriptor) {
   const auto* type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
   assert(type && type->AsVector() && "Type of vector is invalid");
 
@@ -214,7 +218,7 @@ void FuzzerPassAddSynonyms::CreateVectorAdditionSynonym(
   }
 
   ApplyTransformation(TransformationAddSynonym(
-      inst->result_id(),
+      inst->result_id(), instruction_descriptor,
       MakeInstructionMessage(
           opcode, inst->type_id(), GetFuzzerContext()->GetFreshId(),
           opt::Instruction::OperandList{

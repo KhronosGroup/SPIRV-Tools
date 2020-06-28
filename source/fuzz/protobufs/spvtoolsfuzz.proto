@@ -387,7 +387,6 @@ message Transformation {
     TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
     TransformationRecordSynonymousConstants record_synonymous_constants = 57;
     TransformationAddSynonym add_synonym = 58;
-    TransformationAddFloatCastSynonym add_float_cast_synonym = 59;
     // Add additional option using the next available number.
   }
 }
@@ -546,32 +545,6 @@ message TransformationAddDeadContinue {
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
   repeated uint32 phi_id = 3;
-
-}
-
-message TransformationAddFloatCastSynonym {
-
-  // Inserts instructions to the module that convert
-  // |synonym_id| to float and back, and adds a fact that
-  // the converted id and |synonym_id| are synonymous.
-
-  // Id to apply conversion to. This must be a result id of vector or integer type.
-  // If the type is vector, its components must have an integer type.
-  uint32 synonym_id = 1;
-
-  // Fresh id used to store the result of the conversion to float.
-  uint32 to_float_fresh_id = 2;
-
-  // Fresh id used to store the result of the conversion back to int.
-  uint32 to_int_fresh_id = 3;
-
-  // Required id of the float type to convert to. This can be a result id
-  // of either scalar or vector type, whose components are of type float.
-  //
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3428):
-  //  this transformation has all the information it needs to compute
-  //  result id for a floating point type.
-  uint32 float_type_id = 4;
 
 }
 
@@ -735,12 +708,15 @@ message TransformationAddSpecConstantOp {
 
 message TransformationAddSynonym {
 
-  // Adds a |synonymous_instruction| after the instruction with
-  // result id |result_id| and creates a fact that both instructions
-  // produce synonymous ids.
+  // Adds a |synonymous_instruction| before |insert_before| instruction with
+  // and creates a fact that |result_id| and the result id of |synonymous_instruction|
+  // are synonymous.
 
   // Result id of the first synonym.
   uint32 result_id = 1;
+
+  // |synonymous_instruction| will be inserted before this instruction.
+  InstructionDescriptor insert_before = 2;
 
   // Instruction, whose result id is synonymous to |synonym_id|.
   Instruction synonymous_instruction = 3;

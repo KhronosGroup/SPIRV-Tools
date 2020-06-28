@@ -26,7 +26,6 @@
 #include "source/fuzz/transformation_add_dead_block.h"
 #include "source/fuzz/transformation_add_dead_break.h"
 #include "source/fuzz/transformation_add_dead_continue.h"
-#include "source/fuzz/transformation_add_float_cast_synonym.h"
 #include "source/fuzz/transformation_add_function.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_global_variable.h"
@@ -113,9 +112,6 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddDeadContinue:
       return MakeUnique<TransformationAddDeadContinue>(
           message.add_dead_continue());
-    case protobufs::Transformation::TransformationCase::kAddFloatCastSynonym:
-      return MakeUnique<TransformationAddFloatCastSynonym>(
-          message.add_float_cast_synonym());
     case protobufs::Transformation::TransformationCase::kAddFunction:
       return MakeUnique<TransformationAddFunction>(message.add_function());
     case protobufs::Transformation::TransformationCase::kAddGlobalUndef:

@@ -96,7 +96,6 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_dead_block.h
         transformation_add_dead_break.h
         transformation_add_dead_continue.h
-        transformation_add_float_cast_synonym.h
         transformation_add_function.h
         transformation_add_global_undef.h
         transformation_add_global_variable.h
@@ -215,7 +214,6 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_dead_block.cpp
         transformation_add_dead_break.cpp
         transformation_add_dead_continue.cpp
-        transformation_add_float_cast_synonym.cpp
         transformation_add_function.cpp
         transformation_add_global_undef.cpp
         transformation_add_global_variable.cpp

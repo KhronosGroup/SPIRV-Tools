@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_add_synonym.h"
+
 #include <utility>
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/instruction_message.h"
-#include "source/fuzz/transformation_add_synonym.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -27,34 +28,33 @@ TransformationAddSynonym::TransformationAddSynonym(
     : message_(std::move(message)) {}
 
 TransformationAddSynonym::TransformationAddSynonym(
-    uint32_t result_id, const protobufs::Instruction& synonymous_instruction) {
+    uint32_t result_id, const protobufs::InstructionDescriptor& insert_before,
+    const protobufs::Instruction& synonymous_instruction) {
   message_.set_result_id(result_id);
+  *message_.mutable_insert_before() = insert_before;
   *message_.mutable_synonymous_instruction() = synonymous_instruction;
 }
 
 bool TransformationAddSynonym::IsApplicable(
-    opt::IRContext* ir_context,
-    const TransformationContext& transformation_context) const {
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Check that |message_.synonym_id| is valid.
   auto* synonym = ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   if (!synonym) {
     return false;
   }
 
-  auto* block = ir_context->get_instr_block(synonym);
-  assert(block && "Instruction must have a basic block");
+  // Check that |insert_before| is valid.
+  auto* insert_before_inst =
+      FindInstruction(message_.insert_before(), ir_context);
+  if (!insert_before_inst) {
+    return false;
+  }
 
-  auto iter = fuzzerutil::GetIteratorForInstruction(block, synonym);
-  ++iter;
-  assert(iter != block->end() &&
-         "Cannot create a synonym to the last instruction in the block");
-
-  // Check that we can insert |message._synonymous_instruction| after
-  // |message_.result_id|.
-  // instruction.
-  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
-          static_cast<SpvOp>(message_.synonymous_instruction().opcode()),
-          iter)) {
+  // Check that we can insert |message._synonymous_instruction| before
+  // |message_.insert_before| instruction.
+  auto opcode = static_cast<SpvOp>(message_.synonymous_instruction().opcode());
+  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(opcode,
+                                                    insert_before_inst)) {
     return false;
   }
 
@@ -64,45 +64,86 @@ bool TransformationAddSynonym::IsApplicable(
     return false;
   }
 
-  // Make sure that the instruction in |message_.synonymous_instruction| is
-  // valid and the domination rules are satisfied.
-  //
-  // TODO(review): InstructionFromMessage updates module's id bound. Is this the
-  //  desired behaviour?
-  auto clone = fuzzerutil::CloneIRContext(ir_context);
-  ApplyImpl(clone.get());
-  return fuzzerutil::IsValid(clone.get(),
-                             transformation_context.GetValidatorOptions());
+  // Domination rules must be satisfied.
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+          ir_context, insert_before_inst, message_.result_id())) {
+    return false;
+  }
+
+  // Check that new synonymous instruction is valid.
+  switch (opcode) {
+    case SpvOpIAdd:
+    case SpvOpIMul:
+    case SpvOpFAdd:
+    case SpvOpFMul:
+    case SpvOpLogicalOr:
+    case SpvOpLogicalAnd: {
+      if (message_.synonymous_instruction().input_operand_size() != 2) {
+        return false;
+      }
+
+      const auto& lhs = message_.synonymous_instruction().input_operand(0);
+      const auto& rhs = message_.synonymous_instruction().input_operand(1);
+      if (lhs.operand_type() != SPV_OPERAND_TYPE_ID ||
+          rhs.operand_type() != SPV_OPERAND_TYPE_ID) {
+        return false;
+      }
+
+      auto lhs_type_id = fuzzerutil::GetTypeId(ir_context, lhs.operand_data(0));
+      auto rhs_type_id = fuzzerutil::GetTypeId(ir_context, rhs.operand_data(0));
+      if (lhs_type_id != rhs_type_id ||
+          lhs_type_id != message_.synonymous_instruction().result_type_id()) {
+        return false;
+      }
+
+      const auto* type = ir_context->get_type_mgr()->GetType(lhs_type_id);
+      if (!type) {
+        return false;
+      }
+
+      switch (opcode) {
+        case SpvOpIAdd:
+        case SpvOpIMul:
+          return type->AsInteger() ||
+                 (type->AsVector() &&
+                  type->AsVector()->element_type()->AsInteger());
+        case SpvOpFMul:
+        case SpvOpFAdd:
+          return type->AsFloat() ||
+                 (type->AsVector() &&
+                  type->AsVector()->element_type()->AsFloat());
+        case SpvOpLogicalOr:
+        case SpvOpLogicalAnd:
+          return type->AsBool() || (type->AsVector() &&
+                                    type->AsVector()->element_type()->AsBool());
+        default:
+          assert(false && "Unreachable");
+          return false;
+      }
+    }
+    default:
+      assert(false && "Instruction is not supported");
+      return false;
+  }
 }
 
 void TransformationAddSynonym::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  ApplyImpl(ir_context);
+  FindInstruction(message_.insert_before(), ir_context)
+      ->InsertBefore(InstructionFromMessage(ir_context,
+                                            message_.synonymous_instruction()));
+
+  fuzzerutil::UpdateModuleIdBound(
+      ir_context, message_.synonymous_instruction().result_id());
+
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
+
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.result_id(), {}),
       MakeDataDescriptor(message_.synonymous_instruction().result_id(), {}),
       ir_context);
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
-}
-
-void TransformationAddSynonym::ApplyImpl(opt::IRContext* ir_context) const {
-  const auto& synonymous_instruction = message_.synonymous_instruction();
-
-  const auto* inst =
-      ir_context->get_def_use_mgr()->GetDef(message_.result_id());
-  assert(inst);
-
-  auto iter = fuzzerutil::GetIteratorForInstruction(
-      ir_context->get_instr_block(message_.result_id()), inst);
-  assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(
-             static_cast<SpvOp>(synonymous_instruction.opcode()), iter) &&
-         "Can't insert synonymous instruction into the module");
-
-  iter.InsertBefore(InstructionFromMessage(ir_context, synonymous_instruction));
-  fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  synonymous_instruction.result_id());
 }
 
 protobufs::Transformation TransformationAddSynonym::ToMessage() const {
