@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_permute_function_parameters.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -204,8 +205,8 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
                                                validator_options);
 
   // Can't permute main function
-  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 105, {}).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 105, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Can't permute invalid instruction
   ASSERT_FALSE(TransformationPermuteFunctionParameters(101, 105, {})

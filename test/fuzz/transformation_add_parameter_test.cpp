@@ -13,13 +13,14 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_parameter.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationAddParametersTest, BasicTest) {
+TEST(TransformationAddParameterTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"

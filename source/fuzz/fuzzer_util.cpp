@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/fuzzer_util.h"
+
 #include <algorithm>
 #include <unordered_set>
-
-#include "source/fuzz/fuzzer_util.h"
 
 #include "source/opt/build_module.h"
 
@@ -704,7 +704,7 @@ void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
     const auto* param_type = ir_context->get_type_mgr()->GetType(type_ids[i]);
     (void)param_type;  // Make compiler happy in release mode.
     assert(param_type && !param_type->AsVoid() && !param_type->AsFunction() &&
-           "Function's parameter can't have a function or void type");
+           "Function parameter can't have a function or void type");
   }
 
   opt::Instruction::OperandList operands;
@@ -715,6 +715,18 @@ void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
 
   ir_context->AddType(MakeUnique<opt::Instruction>(
       ir_context, SpvOpTypeFunction, 0, result_id, std::move(operands)));
+
+  UpdateModuleIdBound(ir_context, result_id);
+}
+
+uint32_t FindOrCreateFunctionType(opt::IRContext* ir_context,
+                                  uint32_t result_id,
+                                  const std::vector<uint32_t>& type_ids) {
+  if (auto existing_id = FindFunctionType(ir_context, type_ids)) {
+    return existing_id;
+  }
+  AddFunctionType(ir_context, result_id, type_ids);
+  return result_id;
 }
 
 }  // namespace fuzzerutil

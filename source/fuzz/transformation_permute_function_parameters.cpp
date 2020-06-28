@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_permute_function_parameters.h"
+
 #include <vector>
 
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/transformation_permute_function_parameters.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -113,15 +114,9 @@ void TransformationPermuteFunctionParameters::Apply(
           old_function_type_inst->GetSingleWordInOperand(index + 1));
     }
 
-    if (auto new_type_id = fuzzerutil::FindFunctionType(ir_context, type_ids)) {
-      function->DefInst().SetInOperand(1, {new_type_id});
-    } else {
-      fuzzerutil::AddFunctionType(ir_context, message_.function_type_fresh_id(),
-                                  type_ids);
-      function->DefInst().SetInOperand(1, {message_.function_type_fresh_id()});
-      fuzzerutil::UpdateModuleIdBound(ir_context,
-                                      message_.function_type_fresh_id());
-    }
+    function->DefInst().SetInOperand(
+        1, {fuzzerutil::FindOrCreateFunctionType(
+               ir_context, message_.function_type_fresh_id(), type_ids)});
   }
 
   // Adjust OpFunctionParameter instructions
@@ -152,8 +147,7 @@ void TransformationPermuteFunctionParameters::Apply(
 
   // Fix all OpFunctionCall instructions
   ir_context->get_def_use_mgr()->ForEachUser(
-      &function->DefInst(),
-      [this](opt::Instruction* call) {
+      &function->DefInst(), [this](opt::Instruction* call) {
         if (call->opcode() != SpvOpFunctionCall ||
             call->GetSingleWordInOperand(0) != message_.function_id()) {
           return;

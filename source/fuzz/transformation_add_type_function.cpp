@@ -67,9 +67,7 @@ void TransformationAddTypeFunction::Apply(
   type_ids.insert(type_ids.end(), message_.argument_type_id().begin(),
                   message_.argument_type_id().end());
 
-  fuzzerutil::AddFunctionType(ir_context, message_.fresh_id(),
-                              type_ids);
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
+  fuzzerutil::AddFunctionType(ir_context, message_.fresh_id(), type_ids);
   // We have added an instruction to the module, so need to be careful about the
   // validity of existing analyses.
   ir_context->InvalidateAnalysesExceptFor(

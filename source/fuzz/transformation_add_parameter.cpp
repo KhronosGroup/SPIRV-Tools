@@ -61,8 +61,7 @@ bool TransformationAddParameter::IsApplicable(
   }
 
   return fuzzerutil::IsFreshId(ir_context, message_.parameter_fresh_id()) &&
-         fuzzerutil::IsFreshId(ir_context,
-                               message_.function_type_fresh_id()) &&
+         fuzzerutil::IsFreshId(ir_context, message_.function_type_fresh_id()) &&
          message_.parameter_fresh_id() != message_.function_type_fresh_id();
 }
 
@@ -89,8 +88,7 @@ void TransformationAddParameter::Apply(
 
   // Fix all OpFunctionCall instructions.
   ir_context->get_def_use_mgr()->ForEachUser(
-      &function->DefInst(),
-      [this](opt::Instruction* call) {
+      &function->DefInst(), [this](opt::Instruction* call) {
         if (call->opcode() != SpvOpFunctionCall ||
             call->GetSingleWordInOperand(0) != message_.function_id()) {
           return;
@@ -119,15 +117,9 @@ void TransformationAddParameter::Apply(
 
     type_ids.push_back(parameter_type_id);
 
-    if (auto new_type_id = fuzzerutil::FindFunctionType(ir_context, type_ids)) {
-      function->DefInst().SetInOperand(1, {new_type_id});
-    } else {
-      fuzzerutil::AddFunctionType(ir_context, message_.function_type_fresh_id(),
-                                  type_ids);
-      function->DefInst().SetInOperand(1, {message_.function_type_fresh_id()});
-      fuzzerutil::UpdateModuleIdBound(ir_context,
-                                      message_.function_type_fresh_id());
-    }
+    function->DefInst().SetInOperand(
+        1, {fuzzerutil::FindOrCreateFunctionType(
+               ir_context, message_.function_type_fresh_id(), type_ids)});
   }
 
   // Make sure our changes are analyzed.
