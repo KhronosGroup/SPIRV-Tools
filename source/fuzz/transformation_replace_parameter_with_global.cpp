@@ -233,10 +233,6 @@ void TransformationReplaceParameterWithGlobal::Apply(
               {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}}}));
     }
 
-    // In both cases the global variable uses a fresh id so we must update
-    // module's id bound.
-    fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
-
     // If parameter is not a pointer, the condition will fail. Otherwise, we
     // mark global variable as irrelevant if parameter's pointee is irrelevant.
     if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
