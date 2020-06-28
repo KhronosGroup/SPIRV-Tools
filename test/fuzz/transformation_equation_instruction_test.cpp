@@ -673,12 +673,14 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
           %7 = OpTypeVector %6 3
           %8 = OpTypeVector %4 3
           %9 = OpTypeVector %5 3
+         %18 = OpTypeVector %6 4
          %10 = OpConstant %6 12
          %11 = OpConstant %4 12
          %14 = OpConstant %5 12
          %15 = OpConstantComposite %7 %10 %10 %10
          %16 = OpConstantComposite %8 %11 %11 %11
          %17 = OpConstantComposite %9 %14 %14 %14
+         %19 = OpConstantComposite %18 %10 %10 %10 %10
          %12 = OpFunction %2 None %3
          %13 = OpLabel
                OpReturn
@@ -775,56 +777,63 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
 
   {
     TransformationEquationInstruction transformation(
-        {18, 19, 20}, SpvOpConvertSToF, {15}, return_instruction);
+        {20, 21, 22}, SpvOpConvertSToF, {15}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
     TransformationEquationInstruction transformation(
-        {19, 20, 21}, SpvOpConvertSToF, {10}, return_instruction);
+        {21, 22, 23}, SpvOpConvertSToF, {10}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
     TransformationEquationInstruction transformation(
-        {20, 21, 22}, SpvOpConvertUToF, {16}, return_instruction);
+        {22, 23, 24}, SpvOpConvertUToF, {16}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
     TransformationEquationInstruction transformation(
-        {21, 22, 23}, SpvOpConvertUToF, {11}, return_instruction);
+        {23, 24, 25}, SpvOpConvertUToF, {11}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
     TransformationEquationInstruction transformation(
-        {22, 23, 24}, SpvOpConvertFToS, {18}, return_instruction);
+        {24, 25, 26}, SpvOpConvertFToS, {20}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
     TransformationEquationInstruction transformation(
-        {23, 24, 25}, SpvOpConvertFToS, {19}, return_instruction);
+        {25, 26, 27}, SpvOpConvertFToS, {21}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
     TransformationEquationInstruction transformation(
-        {24, 25, 26}, SpvOpConvertFToU, {20}, return_instruction);
+        {26, 27, 28}, SpvOpConvertFToU, {22}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
     TransformationEquationInstruction transformation(
-        {25, 26, 27}, SpvOpConvertFToU, {21}, return_instruction);
+        {27, 28, 29}, SpvOpConvertFToU, {23}, return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(
+        {28, 29, 30}, SpvOpConvertSToF, {19}, return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -833,13 +842,13 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
-                                        MakeDataDescriptor(22, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(10, {}),
-                                        MakeDataDescriptor(23, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(16, {}),
                                         MakeDataDescriptor(24, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(11, {}),
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(10, {}),
                                         MakeDataDescriptor(25, {})));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(16, {}),
+                                        MakeDataDescriptor(26, {})));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(11, {}),
+                                        MakeDataDescriptor(27, {})));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -856,22 +865,26 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
           %7 = OpTypeVector %6 3
           %8 = OpTypeVector %4 3
           %9 = OpTypeVector %5 3
+         %18 = OpTypeVector %6 4
          %10 = OpConstant %6 12
          %11 = OpConstant %4 12
          %14 = OpConstant %5 12
          %15 = OpConstantComposite %7 %10 %10 %10
          %16 = OpConstantComposite %8 %11 %11 %11
          %17 = OpConstantComposite %9 %14 %14 %14
+         %19 = OpConstantComposite %18 %10 %10 %10 %10
+         %29 = OpTypeVector %5 4
          %12 = OpFunction %2 None %3
          %13 = OpLabel
-         %18 = OpConvertSToF %9 %15
-         %19 = OpConvertSToF %5 %10
-         %20 = OpConvertUToF %9 %16
-         %21 = OpConvertUToF %5 %11
-         %22 = OpConvertFToS %7 %18
-         %23 = OpConvertFToS %6 %19
-         %24 = OpConvertFToU %8 %20
-         %25 = OpConvertFToU %4 %21
+         %20 = OpConvertSToF %9 %15
+         %21 = OpConvertSToF %5 %10
+         %22 = OpConvertUToF %9 %16
+         %23 = OpConvertUToF %5 %11
+         %24 = OpConvertFToS %7 %20
+         %25 = OpConvertFToS %6 %21
+         %26 = OpConvertFToU %8 %22
+         %27 = OpConvertFToU %4 %23
+         %28 = OpConvertSToF %29 %19
                OpReturn
                OpFunctionEnd
   )";
