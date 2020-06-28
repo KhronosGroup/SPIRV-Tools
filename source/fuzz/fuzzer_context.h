@@ -175,6 +175,9 @@ class FuzzerContext {
   uint32_t GetChanceOfGoingDeeperWhenMakingAccessChain() {
     return chance_of_going_deeper_when_making_access_chain_;
   }
+  uint32_t GetChanceOfInvertingComparisonOperators() {
+    return chance_of_inverting_comparison_operators_;
+  }
   uint32_t ChanceOfMakingDonorLivesafe() {
     return chance_of_making_donor_livesafe_;
   }
@@ -302,6 +305,7 @@ class FuzzerContext {
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
   uint32_t chance_of_going_deeper_when_making_access_chain_;
+  uint32_t chance_of_inverting_comparison_operators_;
   uint32_t chance_of_making_donor_livesafe_;
   uint32_t chance_of_merging_blocks_;
   uint32_t chance_of_moving_block_down_;
