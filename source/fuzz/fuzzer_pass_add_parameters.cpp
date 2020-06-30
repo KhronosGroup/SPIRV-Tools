@@ -57,9 +57,9 @@ void FuzzerPassAddParameters::Apply() {
       continue;
     }
 
-    auto n = GetFuzzerContext()->GetRandomNumberOfNewParameters(
+    auto num_new_parameters = GetFuzzerContext()->GetRandomNumberOfNewParameters(
         GetNumberOfParameters(function));
-    for (uint32_t i = 0; i < n; ++i) {
+    for (uint32_t i = 0; i < num_new_parameters; ++i) {
       ApplyTransformation(TransformationAddParameter(
           function.result_id(), GetFuzzerContext()->GetFreshId(),
           FindOrCreateZeroConstant(

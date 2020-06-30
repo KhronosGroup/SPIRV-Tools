@@ -700,7 +700,7 @@ void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
   assert(IsNonFunctionTypeId(ir_context, type_ids[0]) &&
          "Return type must not be a function");
 
-  for (size_t i = 1, n = type_ids.size(); i < n; ++i) {
+  for (size_t i = 1; i < type_ids.size(); ++i) {
     const auto* param_type = ir_context->get_type_mgr()->GetType(type_ids[i]);
     (void)param_type;  // Make compiler happy in release mode.
     assert(param_type && !param_type->AsVoid() && !param_type->AsFunction() &&

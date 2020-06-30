@@ -79,8 +79,6 @@ void TransformationAddParameter::Apply(
       ir_context, SpvOpFunctionParameter, parameter_type_id,
       message_.parameter_fresh_id(), opt::Instruction::OperandList()));
 
-  // Update module's id bound. We can safely dereference the result of
-  // max_element since |new_parameter_id| is guaranteed to have elements.
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.parameter_fresh_id());
 
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):

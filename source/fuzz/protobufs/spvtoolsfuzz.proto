@@ -639,7 +639,9 @@ message TransformationAddParameter {
   // It may not be OpTypeVoid.
   uint32 initializer_id = 3;
 
-  // A fresh id for a new function type. This might not be used.
+  // A fresh id for a new function type. This might not be used
+  // if a required function type already exists or if we can change
+  // the old function type.
   uint32 function_type_fresh_id = 4;
 
 }
@@ -1010,7 +1012,9 @@ message TransformationPermuteFunctionParameters {
   // Function, whose parameters will be permuted
   uint32 function_id = 1;
 
-  // Fresh id for a new type of the function.
+  // Fresh id for a new type of the function. This might not be used
+  // if a required function type already exists or if we can change
+  // the old function type.
   uint32 function_type_fresh_id = 2;
 
   // An array of size |n|, where |n| is a number of arguments to a function
