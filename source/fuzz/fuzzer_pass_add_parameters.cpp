@@ -57,11 +57,16 @@ void FuzzerPassAddParameters::Apply() {
       continue;
     }
 
-    ApplyTransformation(TransformationAddParameter(
-        function.result_id(), GetFuzzerContext()->GetFreshId(),
-        FindOrCreateZeroConstant(
-            type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)]),
-        GetFuzzerContext()->GetFreshId()));
+    auto n = GetFuzzerContext()->GetRandomNumberOfNewParameters(
+        GetNumberOfParameters(function));
+    for (uint32_t i = 0; i < n; ++i) {
+      ApplyTransformation(TransformationAddParameter(
+          function.result_id(), GetFuzzerContext()->GetFreshId(),
+          FindOrCreateZeroConstant(
+              type_candidates[GetFuzzerContext()->RandomIndex(
+                  type_candidates)]),
+          GetFuzzerContext()->GetFreshId()));
+    }
   }
 }
 
