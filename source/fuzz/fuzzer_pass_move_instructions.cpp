@@ -38,7 +38,7 @@ void FuzzerPassMoveInstructions::Apply() {
       for (auto insert_before_it = block.begin();
            insert_before_it != block.end(); ++insert_before_it) {
         if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()->GetChanceOfPermutingInstructions())) {
+                GetFuzzerContext()->GetChanceOfMovingInstructions())) {
           continue;
         }
 
