@@ -266,6 +266,24 @@ bool IsPermutationOfRange(const std::vector<uint32_t>& arr, uint32_t lo,
 std::vector<opt::Instruction*> GetParameters(opt::IRContext* ir_context,
                                              uint32_t function_id);
 
+// Creates new OpTypeFunction instruction in the module. |type_ids| may not be
+// empty. It may not contain result ids of OpTypeFunction instructions.
+// |type_ids[i]| may not be a result id of OpTypeVoid instruction for |i >= 1|.
+// |result_id| may not equal to 0. Updates module's id bound to accommodate for
+// |result_id|.
+void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
+                     const std::vector<uint32_t>& type_ids);
+
+// Returns a result id of an OpTypeFunction instruction in the module. Creates a
+// new instruction if required and returns |result_id|. type_ids| may not be
+// empty. It may not contain result ids of OpTypeFunction instructions.
+// |type_ids[i]| may not be a result id of OpTypeVoid instruction for |i >= 1|.
+// |result_id| must not be equal to 0. Updates module's id bound to accommodate
+// for |result_id|.
+uint32_t FindOrCreateFunctionType(opt::IRContext* ir_context,
+                                  uint32_t result_id,
+                                  const std::vector<uint32_t>& type_ids);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
