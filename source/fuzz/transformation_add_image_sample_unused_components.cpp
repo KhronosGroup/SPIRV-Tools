@@ -71,7 +71,8 @@ bool TransformationAddImageSampleUnusedComponents::IsApplicable(
     return false;
   }
 
-  // It must be an OpCompositeConstruct instruction.
+  // It must be an OpCompositeConstruct instruction such that it can be checked
+  // that the original components are present.
   if (coordinate_with_unused_components_instruction->opcode() !=
       SpvOpCompositeConstruct) {
     return false;
@@ -102,6 +103,7 @@ void TransformationAddImageSampleUnusedComponents::Apply(
       FindInstruction(message_.instruction_descriptor(), ir_context);
   image_sample_instruction->SetInOperand(
       1, {message_.coordinate_with_unused_components_id()});
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation

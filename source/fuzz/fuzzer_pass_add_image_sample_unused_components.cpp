@@ -104,7 +104,8 @@ void FuzzerPassAddImageSampleUnusedComponents::Apply() {
         break;
     }
 
-    // Gets |coordinate_type| again because the module has changed.
+    // Gets |coordinate_type| again because the module may have changed due to
+    // the use of FindOrCreateVectorType above.
     coordinate_type = GetIRContext()->get_type_mgr()->GetType(
         coordinate_instruction->type_id());
 
