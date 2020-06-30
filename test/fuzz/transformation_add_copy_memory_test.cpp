@@ -309,14 +309,14 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
                OpStore %19 %20
                OpStore %23 %24
                OpStore %26 %25
-               OpCopyMemory %87 %19
-               OpCopyMemory %88 %23
-               OpCopyMemory %89 %26
-               OpCopyMemory %90 %30
-               OpCopyMemory %91 %35
-               OpCopyMemory %92 %39
-               OpCopyMemory %93 %68
-               OpCopyMemory %94 %86
+               OpCopyMemory %89 %19
+               OpCopyMemory %90 %23
+               OpCopyMemory %91 %26
+               OpCopyMemory %92 %30
+               OpCopyMemory %93 %35
+               OpCopyMemory %94 %39
+               OpCopyMemory %95 %68
+               OpCopyMemory %96 %86
          %27 = OpFunctionCall %6 %10 %26
                OpSelectionMerge %29 None
                OpBranchConditional %27 %28 %31

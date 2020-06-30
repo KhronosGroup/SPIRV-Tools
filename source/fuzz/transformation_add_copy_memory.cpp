@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_copy_memory.h"
+
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/opt/instruction.h"
@@ -154,16 +155,15 @@ protobufs::Transformation TransformationAddCopyMemory::ToMessage() const {
 bool TransformationAddCopyMemory::IsInstructionSupported(
     opt::IRContext* ir_context, opt::Instruction* inst) {
   if (!inst->result_id() || !inst->type_id() ||
-      inst->opcode() == SpvOpConstantNull ||
-      inst->opcode() == SpvOpUndef) {
+      inst->opcode() == SpvOpConstantNull || inst->opcode() == SpvOpUndef) {
     return false;
   }
 
   const auto* type = ir_context->get_type_mgr()->GetType(inst->type_id());
   assert(type && "Instruction must have a valid type");
 
-  return type->AsPointer() && CanUsePointeeWithCopyMemory(
-                                  *type->AsPointer()->pointee_type());
+  return type->AsPointer() &&
+         CanUsePointeeWithCopyMemory(*type->AsPointer()->pointee_type());
 }
 
 bool TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
