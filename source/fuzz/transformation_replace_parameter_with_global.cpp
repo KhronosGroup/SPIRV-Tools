@@ -44,13 +44,13 @@ TransformationReplaceParameterWithGlobal::
     : message_(message) {}
 
 TransformationReplaceParameterWithGlobal::
-    TransformationReplaceParameterWithGlobal(uint32_t new_type_id,
+    TransformationReplaceParameterWithGlobal(uint32_t function_type_fresh_id,
                                              uint32_t parameter_id,
-                                             uint32_t fresh_id,
+                                             uint32_t global_variable_fresh_id,
                                              uint32_t initializer_id) {
-  message_.set_new_type_id(new_type_id);
+  message_.set_function_type_fresh_id(function_type_fresh_id);
   message_.set_parameter_id(parameter_id);
-  message_.set_fresh_id(fresh_id);
+  message_.set_global_variable_fresh_id(global_variable_fresh_id);
   message_.set_initializer_id(initializer_id);
 }
 
@@ -71,50 +71,14 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
     return false;
   }
 
-  auto params = fuzzerutil::GetParameters(ir_context, function->result_id());
-  assert(!params.empty() &&
-         "The function doesn't have any parameters to replace");
-
-  // Check that new function type is valid.
-  const auto* old_type_inst = fuzzerutil::GetFunctionType(ir_context, function);
-  assert(old_type_inst && old_type_inst->opcode() == SpvOpTypeFunction &&
-         "Function type is invalid");
-
-  const auto* new_type_inst =
-      ir_context->get_def_use_mgr()->GetDef(message_.new_type_id());
-  if (!new_type_inst || new_type_inst->opcode() != SpvOpTypeFunction) {
-    return false;
-  }
-
-  // Check that new function type has the same number of operands.
-  if (old_type_inst->NumInOperands() != new_type_inst->NumInOperands() + 1) {
-    return false;
-  }
-
-  // Check that the return type remains the same.
-  if (old_type_inst->GetSingleWordInOperand(0) !=
-      new_type_inst->GetSingleWordInOperand(0)) {
-    return false;
-  }
-
-  // Check that new function type has valid parameters' types.
-  //
-  // We are iterating from 1 since we are no taking return type into account.
-  for (uint32_t i = 1, j = 1, n = old_type_inst->NumInOperands(); i < n;) {
-    if (params[i - 1]->result_id() == message_.parameter_id()) {
-      // Skip replaced parameter in old function's type.
-      i++;
-      continue;
-    }
-
-    if (old_type_inst->GetSingleWordInOperand(i++) !=
-        new_type_inst->GetSingleWordInOperand(j++)) {
-      return false;
-    }
-  }
+  // We already know that the function has at least one parameter -
+  // |parameter_id|.
 
   // Check that replaced parameter has valid type.
-  if (!CanReplaceFunctionParameterType(ir_context, param_inst->type_id())) {
+  const auto* param_type =
+      ir_context->get_type_mgr()->GetType(param_inst->type_id());
+  assert(param_type && "Parameter has invalid type");
+  if (!CanReplaceFunctionParameterType(*param_type)) {
     return false;
   }
 
@@ -122,18 +86,17 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
       ir_context->get_def_use_mgr()->GetDef(param_inst->type_id());
   assert(param_type_inst && "Parameter type must exist");
 
-  auto pointee_type_id =
-      param_type_inst->opcode() == SpvOpTypePointer
-          ? fuzzerutil::GetPointeeTypeIdFromPointerType(param_type_inst)
-          : param_type_inst->result_id();
-
   // Initializer id can be 0 iff parameter is a pointer with Workgroup storage
   // class.
   if (message_.initializer_id() == 0) {
-    return param_type_inst->opcode() == SpvOpTypePointer &&
-           GetStorageClassForGlobalVariable(
-               ir_context, param_inst->type_id()) == SpvStorageClassWorkgroup;
+    return param_type->AsPointer() &&
+           param_type->AsPointer()->storage_class() == SpvStorageClassWorkgroup;
   }
+
+  auto pointee_type_id =
+      param_type->AsPointer()
+          ? fuzzerutil::GetPointeeTypeIdFromPointerType(param_type_inst)
+          : param_type_inst->result_id();
 
   // Check that initializer has valid type.
   if (fuzzerutil::GetTypeId(ir_context, message_.initializer_id()) !=
@@ -149,13 +112,11 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
     return false;
   }
 
-  if (param_type_inst->opcode() != SpvOpTypePointer ||
-      fuzzerutil::GetStorageClassFromPointerType(param_type_inst) ==
-          SpvStorageClassFunction) {
-    return fuzzerutil::IsFreshId(ir_context, message_.fresh_id());
-  }
-
-  return message_.fresh_id() == 0;
+  return fuzzerutil::IsFreshId(ir_context, message_.function_type_fresh_id()) &&
+         fuzzerutil::IsFreshId(ir_context,
+                               message_.global_variable_fresh_id()) &&
+         message_.function_type_fresh_id() !=
+             message_.global_variable_fresh_id();
 }
 
 void TransformationReplaceParameterWithGlobal::Apply(
@@ -178,16 +139,23 @@ void TransformationReplaceParameterWithGlobal::Apply(
   auto global_variable_storage_class =
       GetStorageClassForGlobalVariable(ir_context, param_inst->type_id());
 
+  auto is_local_pointer_or_scalar =
+      param_type_inst->opcode() != SpvOpTypePointer ||
+      fuzzerutil::GetStorageClassFromPointerType(param_type_inst) ==
+          SpvStorageClassFunction;
+
   // If parameter is not a pointer, we use a fresh id for a global variable and
   // insert an OpLoad instruction to load parameter's value. If it's a pointer
   // with Function storage class, we use a fresh id for a global variable and
   // create a local variable to store parameter's value. Otherwise, we can reuse
   // parameter's id for a global variable.
-  //
-  // |message_.fresh_id| is zero if we are reusing parameter's id for a global
-  // variable.
+  auto global_variable_result_id = is_local_pointer_or_scalar
+                                       ? message_.global_variable_fresh_id()
+                                       : message_.parameter_id();
+
+  // Create global variable to store parameter's value.
   fuzzerutil::AddGlobalVariable(
-      ir_context, message_.fresh_id() ?: message_.parameter_id(),
+      ir_context, global_variable_result_id,
       fuzzerutil::MaybeGetPointerType(ir_context, pointee_type_id,
                                       global_variable_storage_class),
       global_variable_storage_class, message_.initializer_id());
@@ -196,9 +164,7 @@ void TransformationReplaceParameterWithGlobal::Apply(
       GetFunctionFromParameterId(ir_context, message_.parameter_id());
   assert(function && "Function must exist");
 
-  if (param_type_inst->opcode() != SpvOpTypePointer ||
-      fuzzerutil::GetStorageClassFromPointerType(param_type_inst) ==
-          SpvStorageClassFunction) {
+  if (is_local_pointer_or_scalar) {
     // Add a local variable to store parameter's value if it's a pointer with
     // Function storage class.
     if (param_type_inst->opcode() == SpvOpTypePointer) {
@@ -224,21 +190,22 @@ void TransformationReplaceParameterWithGlobal::Apply(
       it.InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, SpvOpLoad, param_inst->type_id(), param_inst->result_id(),
           opt::Instruction::OperandList{
-              {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}}}));
+              {SPV_OPERAND_TYPE_ID, {global_variable_result_id}}}));
     } else {
       it.InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, SpvOpCopyMemory, 0, 0,
           opt::Instruction::OperandList{
               {SPV_OPERAND_TYPE_ID, {param_inst->result_id()}},
-              {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}}}));
+              {SPV_OPERAND_TYPE_ID, {global_variable_result_id}}}));
     }
 
     // If parameter is not a pointer, the condition will fail. Otherwise, we
-    // mark global variable as irrelevant if parameter's pointee is irrelevant.
+    // mark the global variable as irrelevant if parameter's pointee is
+    // irrelevant.
     if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
             message_.parameter_id())) {
       transformation_context->GetFactManager()
-          ->AddFactValueOfPointeeIsIrrelevant(message_.fresh_id());
+          ->AddFactValueOfPointeeIsIrrelevant(global_variable_result_id);
     }
   }
 
@@ -258,8 +225,9 @@ void TransformationReplaceParameterWithGlobal::Apply(
 
   // Update all OpFunctionCall.
   ir_context->get_def_use_mgr()->ForEachUser(
-      function->result_id(), [ir_context, this, param_type_inst,
-                              parameter_index](opt::Instruction* inst) {
+      function->result_id(),
+      [ir_context, param_type_inst, parameter_index,
+       global_variable_result_id](opt::Instruction* inst) {
         if (inst->opcode() != SpvOpFunctionCall) {
           return;
         }
@@ -279,8 +247,7 @@ void TransformationReplaceParameterWithGlobal::Apply(
                                                           : SpvOpStore,
             0, 0,
             opt::Instruction::OperandList{
-                {SPV_OPERAND_TYPE_ID,
-                 {message_.fresh_id() ?: message_.parameter_id()}},
+                {SPV_OPERAND_TYPE_ID, {global_variable_result_id}},
                 {SPV_OPERAND_TYPE_ID,
                  {inst->GetSingleWordInOperand(parameter_index + 1)}}}));
 
@@ -292,8 +259,31 @@ void TransformationReplaceParameterWithGlobal::Apply(
   // Remove the parameter from the function.
   function->RemoveParameter(message_.parameter_id());
 
-  // Update function's type id.
-  function->DefInst().SetInOperand(1, {message_.new_type_id()});
+  // Update function's type.
+  auto* old_function_type = fuzzerutil::GetFunctionType(ir_context, function);
+  assert(old_function_type && "Function has invalid type");
+
+  // Preemptively add function's return type id.
+  std::vector<uint32_t> type_ids = {
+      old_function_type->GetSingleWordInOperand(0)};
+
+  // +1 and -1 since the first operand is the return type id.
+  for (uint32_t i = 1; i < old_function_type->NumInOperands(); ++i) {
+    if (i - 1 != parameter_index) {
+      type_ids.push_back(old_function_type->GetSingleWordInOperand(i));
+    }
+  }
+
+  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
+    // Change the old type in place. +1 since the first operand is the result
+    // type id of the function.
+    old_function_type->RemoveInOperand(parameter_index + 1);
+  } else {
+    // Find an existing or create a new function type.
+    function->DefInst().SetInOperand(
+        1, {fuzzerutil::FindOrCreateFunctionType(
+               ir_context, message_.function_type_fresh_id(), type_ids)});
+  }
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(
@@ -308,27 +298,34 @@ protobufs::Transformation TransformationReplaceParameterWithGlobal::ToMessage()
 }
 
 bool TransformationReplaceParameterWithGlobal::CanReplaceFunctionParameterType(
-    opt::IRContext* ir_context, uint32_t param_type_id) {
-  auto* param_type_inst = ir_context->get_def_use_mgr()->GetDef(param_type_id);
-  assert(param_type_inst && "Parameter type is invalid");
-
+    const opt::analysis::Type& type) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
   //  Think about other type instructions we can add here.
-  switch (param_type_inst->opcode()) {
-    case SpvOpTypeBool:
-    case SpvOpTypeInt:
-    case SpvOpTypeFloat:
-    case SpvOpTypeArray:
-    case SpvOpTypeMatrix:
-    case SpvOpTypeVector:
-    case SpvOpTypeStruct:
+  switch (type.kind()) {
+    case opt::analysis::Type::kBool:
+    case opt::analysis::Type::kInteger:
+    case opt::analysis::Type::kFloat:
       return true;
-    case SpvOpTypePointer: {
-      switch (fuzzerutil::GetStorageClassFromPointerType(param_type_inst)) {
+    case opt::analysis::Type::kArray:
+      return CanReplaceFunctionParameterType(*type.AsArray()->element_type());
+    case opt::analysis::Type::kMatrix:
+      return CanReplaceFunctionParameterType(*type.AsMatrix()->element_type());
+    case opt::analysis::Type::kVector:
+      return CanReplaceFunctionParameterType(*type.AsVector()->element_type());
+    case opt::analysis::Type::kStruct:
+      return std::all_of(
+          type.AsStruct()->element_types().begin(),
+          type.AsStruct()->element_types().end(),
+          [](const opt::analysis::Type* element_type) {
+            return CanReplaceFunctionParameterType(*element_type);
+          });
+    case opt::analysis::Type::kPointer: {
+      switch (type.AsPointer()->storage_class()) {
         case SpvStorageClassPrivate:
         case SpvStorageClassFunction:
         case SpvStorageClassWorkgroup:
-          return true;
+          return CanReplaceFunctionParameterType(
+              *type.AsPointer()->pointee_type());
         default:
           return false;
       }
@@ -341,19 +338,18 @@ bool TransformationReplaceParameterWithGlobal::CanReplaceFunctionParameterType(
 SpvStorageClass
 TransformationReplaceParameterWithGlobal::GetStorageClassForGlobalVariable(
     opt::IRContext* ir_context, uint32_t param_type_id) {
-  assert(CanReplaceFunctionParameterType(ir_context, param_type_id));
+  const auto* param_type = ir_context->get_type_mgr()->GetType(param_type_id);
+  assert(param_type && "Parameter type is invalid");
 
-  auto* param_type_inst = ir_context->get_def_use_mgr()->GetDef(param_type_id);
-  assert(param_type_inst && "Parameter type is invalid");
+  assert(CanReplaceFunctionParameterType(*param_type));
 
-  if (param_type_inst->opcode() != SpvOpTypePointer) {
+  if (!param_type->AsPointer()) {
     return SpvStorageClassPrivate;
   }
 
-  auto storage_class =
-      fuzzerutil::GetStorageClassFromPointerType(param_type_inst);
-  return storage_class == SpvStorageClassFunction ? SpvStorageClassPrivate
-                                                  : storage_class;
+  return param_type->AsPointer()->storage_class() == SpvStorageClassFunction
+             ? SpvStorageClassPrivate
+             : param_type->AsPointer()->storage_class();
 }
 
 }  // namespace fuzz

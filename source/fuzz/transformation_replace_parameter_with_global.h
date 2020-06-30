@@ -28,18 +28,15 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
   explicit TransformationReplaceParameterWithGlobal(
       const protobufs::TransformationReplaceParameterWithGlobal& message);
 
-  TransformationReplaceParameterWithGlobal(uint32_t new_type_id,
+  TransformationReplaceParameterWithGlobal(uint32_t function_type_fresh_id,
                                            uint32_t parameter_id,
-                                           uint32_t fresh_id,
+                                           uint32_t global_variable_fresh_id,
                                            uint32_t initializer_id);
 
-  // - |new_type_id| is a result id of the OpTypeFunction instruction s.t.
-  //   its return type is the same as the return type of the |function_id|,
-  //   it doesn't contain parameter with result id |parameter_id| and the order
-  //   of remaining parameters is preserved.
+  // - |function_type_fresh_id| is a fresh id.
   // - |parameter_id| is the result id of the parameter to replace.
-  // - |fresh_id| is 0 if parameter is not a pointer or a pointer with Function
-  //   storage class. Otherwise, this is a fresh id.
+  // - |global_variable_fresh_id| is 0 if parameter is not a pointer or a
+  //   pointer with Function storage class. Otherwise, this is a fresh id.
   // - |initializer_id| is a result id of an instruction used to initialize
   //   a global variable. Its type id must be equal to either the type of the
   //   parameter if the latter is a not a pointer, or to its pointee otherwise.
@@ -65,8 +62,7 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
 
   // Returns true if the type of the parameter is supported by this
   // transformation.
-  static bool CanReplaceFunctionParameterType(opt::IRContext* ir_context,
-                                              uint32_t param_type_id);
+  static bool CanReplaceFunctionParameterType(const opt::analysis::Type& type);
 
   static SpvStorageClass GetStorageClassForGlobalVariable(
       opt::IRContext* ir_context, uint32_t param_type_id);

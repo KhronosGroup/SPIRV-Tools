@@ -1128,16 +1128,17 @@ message TransformationReplaceParameterWithGlobal {
   // Removes parameter with result id |parameter_id| from its function
   // and creates a global variable to pass its value to the function instead.
 
-  // Result id of the new OpTypeFunction instruction with removed parameters.
-  uint32 new_type_id = 2;
+  // Fresh id for a new function type. This might not be used if a required
+  // function type already exists or if we can change the old function type.
+  uint32 function_type_fresh_id = 2;
 
   // Result id of the OpFunctionParameter instruction to remove.
   uint32 parameter_id = 3;
 
   // Fresh id of a global variable used to pass parameter's value to the function.
-  // This is equal to 0 if parameter is not a pointer or a pointer with Function
+  // This is not used if parameter is not a pointer or a pointer with Function
   // storage class.
-  uint32 fresh_id = 4;
+  uint32 global_variable_fresh_id = 4;
 
   // Result id of an instruction used to initialize a global variable.
   // This is 0 if parameter is a pointer with a Workgroup storage class.
