@@ -20,13 +20,12 @@
 namespace spvtools {
 namespace fuzz {
 
-class TransformationToggleNullConstant : public Transformation {
+class TransformationToggleConstantNull : public Transformation {
  public:
-  explicit TransformationToggleNullConstant(
+  explicit TransformationToggleConstantNull(
       const protobufs::TransformationToggleNullConstant& message);
 
-  TransformationToggleNullConstant(
-      protobufs::InstructionDescriptor& instruction_descriptor);
+  TransformationToggleConstantNull(uint32_t constant_id);
 
   // - |message_.instruction_descriptor| must identify an existing scalar
   //   constant (one of OpConstant, OpConstantFalse, OpConstantNull).
@@ -36,6 +35,11 @@ class TransformationToggleNullConstant : public Transformation {
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
+
+  void Apply(opt::IRContext* ir_context,
+             TransformationContext* transformation_context) const override;
+
+  protobufs::Transformation ToMessage() const override;
 
  private:
   protobufs::TransformationToggleNullConstant message_;

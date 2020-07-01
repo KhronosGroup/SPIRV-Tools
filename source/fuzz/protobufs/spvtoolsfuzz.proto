@@ -1318,10 +1318,10 @@ message TransformationToggleAccessChainInstruction {
 message TransformationToggleNullConstant {
 
   // A transformation that replaces a null boolean, int or floating-point null constant (OpConstantNull) with
-  // a zero-valued constant of the same type (OpConstant)
+  // a zero-valued constant of the same type (OpConstant), and vice versa
 
-  // A description for the constant instruction
-  InstructionDescriptor instruction_descriptor = 1;
+  // The result id of the constant declaration instruction
+  uint32 constant_id = 1;
 }
 
 message TransformationVectorShuffle {
