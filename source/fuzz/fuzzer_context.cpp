@@ -192,6 +192,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_toggling_access_chain_instruction_ =
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
+  chance_of_toggling_constant_null_ =
+      ChooseBetweenMinAndMax(kChanceOfTogglingConstantNull);
 }
 
 FuzzerContext::~FuzzerContext() = default;
