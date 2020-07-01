@@ -382,7 +382,7 @@ message Transformation {
     TransformationPermutePhiOperands permute_phi_operands = 51;
     TransformationAddParameter add_parameter = 52;
     TransformationAddCopyMemory add_copy_memory = 53;
-    TransformationToggleNullConstant = 54;
+    TransformationToggleNullConstant toggle_null_constant = 54;
     // Add additional option using the next available number.
   }
 }
