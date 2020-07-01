@@ -14,7 +14,6 @@
 
 #include "source/fuzz/transformation_replace_params_with_struct.h"
 
-#include <unordered_set>
 #include <vector>
 
 #include "source/fuzz/fuzzer_util.h"
