@@ -59,8 +59,7 @@ bool TransformationToggleConstantNull::IsApplicable(
 }
 
 void TransformationToggleConstantNull::Apply(
-    opt::IRContext* ir_context,
-    TransformationContext* /* unused */) const {
+    opt::IRContext* ir_context, TransformationContext* /* unused */) const {
   auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
       message_.constant_id());
 
@@ -99,11 +98,15 @@ void TransformationToggleConstantNull::Apply(
   // Replace the constant with the new one in the constants pool
   ir_context->get_constant_mgr()->RemoveId(message_.constant_id());
   ir_context->get_constant_mgr()->MapInst(instruction);
+
+  // Invalidate analysis of constants since one of the constants changed
+  ir_context->InvalidateAnalyses(opt::IRContext::kAnalysisConstants);
 }
 
-// TODO: Define
 protobufs::Transformation TransformationToggleConstantNull::ToMessage() const {
-  return protobufs::Transformation();
+  protobufs::Transformation result;
+  *result.mutable_toggle_null_constant() = message_;
+  return result;
 }
 
 }  // namespace fuzz
