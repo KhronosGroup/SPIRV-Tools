@@ -755,6 +755,22 @@ uint32_t MaybeGetVectorType(opt::IRContext* ir_context,
   return ir_context->get_type_mgr()->GetId(&type);
 }
 
+uint32_t MaybeGetStructType(opt::IRContext* ir_context,
+                            const std::vector<uint32_t>& component_type_ids) {
+  std::vector<const opt::analysis::Type*> component_types;
+  component_types.reserve(component_type_ids.size());
+
+  for (auto type_id : component_type_ids) {
+    const auto* component_type = ir_context->get_type_mgr()->GetType(type_id);
+    assert(component_type && !component_type->AsFunction() &&
+           "Component type is invalid");
+    component_types.push_back(component_type);
+  }
+
+  opt::analysis::Struct type(component_types);
+  return ir_context->get_type_mgr()->GetId(&type);
+}
+
 void AddIntegerType(opt::IRContext* ir_context, uint32_t result_id,
                     uint32_t width, bool is_signed) {
   ir_context->module()->AddType(MakeUnique<opt::Instruction>(
@@ -796,6 +812,24 @@ void AddVectorType(opt::IRContext* ir_context, uint32_t result_id,
   UpdateModuleIdBound(ir_context, result_id);
 }
 
+void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
+                   const std::vector<uint32_t>& component_type_ids) {
+  opt::Instruction::OperandList operands;
+  operands.reserve(component_type_ids.size());
+
+  for (auto type_id : component_type_ids) {
+    const auto* type = ir_context->get_type_mgr()->GetType(type_id);
+    (void)type;  // Make compiler happy in release mode.
+    assert(type && !type->AsFunction() && "Component's type id is invalid");
+    operands.push_back({SPV_OPERAND_TYPE_ID, {type_id}});
+  }
+
+  ir_context->AddType(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpTypeStruct, 0, result_id, std::move(operands)));
+
+  UpdateModuleIdBound(ir_context, result_id);
+}
+
 uint32_t FindOrCreateIntegerType(opt::IRContext* ir_context, uint32_t result_id,
                                  uint32_t width, bool is_signed) {
   if (auto existing_id = MaybeGetIntegerType(ir_context, width, is_signed)) {
@@ -822,6 +856,16 @@ uint32_t FindOrCreateVectorType(opt::IRContext* ir_context, uint32_t result_id,
     return existing_id;
   }
   AddVectorType(ir_context, result_id, component_type_id, element_count);
+  return result_id;
+}
+
+uint32_t FindOrCreateStructType(
+    opt::IRContext* ir_context, uint32_t result_id,
+    const std::vector<uint32_t>& component_type_ids) {
+  if (auto existing_id = MaybeGetStructType(ir_context, component_type_ids)) {
+    return existing_id;
+  }
+  AddStructType(ir_context, result_id, component_type_ids);
   return result_id;
 }
 

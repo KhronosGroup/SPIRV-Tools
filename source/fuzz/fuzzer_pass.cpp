@@ -28,6 +28,7 @@
 #include "source/fuzz/transformation_add_type_int.h"
 #include "source/fuzz/transformation_add_type_matrix.h"
 #include "source/fuzz/transformation_add_type_pointer.h"
+#include "source/fuzz/transformation_add_type_struct.h"
 #include "source/fuzz/transformation_add_type_vector.h"
 
 namespace spvtools {
@@ -231,6 +232,17 @@ uint32_t FuzzerPass::FindOrCreateMatrixType(uint32_t column_count,
   ApplyTransformation(
       TransformationAddTypeMatrix(result, column_type_id, column_count));
   return result;
+}
+
+uint32_t FuzzerPass::FindOrCreateStructType(
+    const std::vector<uint32_t>& component_type_ids) {
+  if (auto existing_id =
+          fuzzerutil::MaybeGetStructType(GetIRContext(), component_type_ids)) {
+    return existing_id;
+  }
+  auto new_id = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationAddTypeStruct(new_id, component_type_ids));
+  return new_id;
 }
 
 uint32_t FuzzerPass::FindOrCreatePointerType(uint32_t base_type_id,

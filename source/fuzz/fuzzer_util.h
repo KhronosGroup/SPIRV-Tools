@@ -300,6 +300,12 @@ uint32_t MaybeGetFloatType(opt::IRContext* ir_context, uint32_t width);
 uint32_t MaybeGetVectorType(opt::IRContext* ir_context,
                             uint32_t component_type_id, uint32_t element_count);
 
+// Returns a result id of an OpTypeStruct instruction if present. Returns 0
+// otherwise. |component_type_ids| may not contain a result id of an
+// OpTypeFunction.
+uint32_t MaybeGetStructType(opt::IRContext* ir_context,
+                            const std::vector<uint32_t>& component_type_ids);
+
 // Creates a new OpTypeInt instruction in the module. Updates module's id bound
 // to accommodate for |result_id|.
 void AddIntegerType(opt::IRContext* ir_context, uint32_t result_id,
@@ -316,6 +322,12 @@ void AddFloatType(opt::IRContext* ir_context, uint32_t result_id,
 // Updates module's id bound to accommodate for |result_id|.
 void AddVectorType(opt::IRContext* ir_context, uint32_t result_id,
                    uint32_t component_type_id, uint32_t element_count);
+
+// Creates a new OpTypeStruct instruction in the module. Updates module's id
+// bound to accommodate for |result_id|. |component_type_ids| may not contain
+// a result id of an OpTypeFunction.
+void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
+                   const std::vector<uint32_t>& component_type_ids);
 
 // Returns a result id of an OpTypeInt instruction in the module. Creates a new
 // instruction with |result_id|, if no required OpTypeInt is present in the
@@ -340,6 +352,15 @@ uint32_t FindOrCreateFloatType(opt::IRContext* ir_context, uint32_t result_id,
 uint32_t FindOrCreateVectorType(opt::IRContext* ir_context, uint32_t result_id,
                                 uint32_t component_type_id,
                                 uint32_t element_count);
+
+// Returns a result id of an OpTypeStruct instruction in the module. Creates a
+// new instruction with |result_id|, if no required OpTypeStruct is present in
+// the module, and returns |result_id|. Updates module's id bound
+// to accommodate for |result_id|. |component_type_ids| may not contain a result
+// id of an OpTypeFunction.
+uint32_t FindOrCreateStructType(
+    opt::IRContext* ir_context, uint32_t result_id,
+    const std::vector<uint32_t>& component_type_ids);
 
 }  // namespace fuzzerutil
 
