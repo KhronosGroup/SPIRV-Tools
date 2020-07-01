@@ -36,6 +36,8 @@ class TransformationToggleConstantNull : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Replaces an OpConstantNull declaration with the declaration of the
+  // corresponding (zero-valued) numerical or boolean constant
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

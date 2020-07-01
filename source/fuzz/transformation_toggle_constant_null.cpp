@@ -16,6 +16,7 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/opt/instruction.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -57,9 +58,48 @@ bool TransformationToggleConstantNull::IsApplicable(
   return false;
 }
 
-// TODO: Define
 void TransformationToggleConstantNull::Apply(
-    opt::IRContext* /* unused */, TransformationContext* /* unused */) const {}
+    opt::IRContext* ir_context,
+    TransformationContext* /* unused */) const {
+  auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.constant_id());
+
+  auto instruction =
+      ir_context->get_constant_mgr()->GetDefiningInstruction(constant);
+
+  // If OpConstantNull, change it to OpConstant or OpConstantFalse
+  if (constant->AsNullConstant()) {
+    auto kind = constant->type()->kind();
+
+    if (kind == opt::analysis::Type::kBool) {
+      // boolean
+      instruction->SetOpcode(SpvOpConstantFalse);
+    } else {
+      // numerical
+      instruction->SetOpcode(SpvOpConstant);
+      // Add literal operand
+      opt::Operand::OperandData operand_data;
+      operand_data.push_back(0);
+      opt::Operand operand =
+          opt::Operand(SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, operand_data);
+      instruction->AddOperand(std::move(operand));
+      operand =
+          opt::Operand(SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, operand_data);
+    }
+  } else {  // Change it to OpConstantNull
+    // If int or float, remove constant literal operand
+    const uint32_t kLiteralOperandIndex = 2;
+    if (!constant->AsBoolConstant()) {
+      instruction->RemoveOperand(kLiteralOperandIndex);
+    }
+
+    instruction->SetOpcode(SpvOpConstantNull);
+  }
+
+  // Replace the constant with the new one in the constants pool
+  ir_context->get_constant_mgr()->RemoveId(message_.constant_id());
+  ir_context->get_constant_mgr()->MapInst(instruction);
+}
 
 // TODO: Define
 protobufs::Transformation TransformationToggleConstantNull::ToMessage() const {
