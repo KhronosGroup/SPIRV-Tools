@@ -34,28 +34,28 @@ class TransformationReplaceParamsWithStruct : public Transformation {
       const std::vector<uint32_t>& fresh_composite_id,
       uint32_t fresh_struct_type_id);
 
-  // - |function_id| must be a valid result id of some non-entry-point function
-  //   in the module
-  // - |0 <= parameter_index[i] < N| where N is the number of parameters in the
-  //   function
-  // - |new_type_id| is a valid result id of the OpTypeFunction in the module.
-  // - this type should contain all operands' type ids, whose indices are not in
-  //   |parameter_index|. The last operand must be a result id of an
-  //   OpTypeStruct whose i'th component's type is the type of the
-  //   |parameter_index[i]|'th function's parameter.
-  // - |fresh_parameter_id| and |fresh_composite_id| are fresh ids.
+  // - |parameter_id[i]| is a valid result id of some OpFunctionParameter
+  //   instruction. All parameter ids must correspond to parameters of the same
+  //   function. That function may not be an entry-point function.
+  //   |parameter_id| may not be empty or contain duplicates.
+  // - |fresh_composite_id.size()| is equal to the number of callees of the
+  //   function (see GetNumberOfCallees method). All elements of this vector
+  //   should be unique and fresh.
+  // - |fresh_function_type_id|, |fresh_parameter_id|, |fresh_struct_type_id|
+  //   are all fresh unique ids.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Creates a new function parameter whose type id is the last operand to the
-  // |new_type_id| function type. For each |i| in |parameter_index|:
-  // - removes i'th parameter from the function
-  // - adds OpCompositeExtract to load the value of the parameter from the
-  //   struct object
-  // Adjusts function calls accordingly: removes replaced parameters, inserts an
-  // OpCompositeConstruct to create a struct object containing values of the
-  // removed parameters.
+  // - Creates a new function parameter with result id |fresh_parameter_id|.
+  //   Parameter's type is OpTypeStruct with each components type equal to the
+  //   type of the replaced parameter.
+  // - This OpTypeStruct instruction is created with result id
+  //   |fresh_struct_type_id| if no required type is present in the module.
+  // - OpCompositeConstruct with result id from |fresh_composite_id| is inserted
+  //   before each OpFunctionCall instruction.
+  // - OpCompositeExtract with result id equal to the result id of the replaced
+  //   parameter is created in the function.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
