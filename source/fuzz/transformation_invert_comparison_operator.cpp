@@ -57,7 +57,7 @@ bool TransformationInvertComparisonOperator::IsApplicable(
 void TransformationInvertComparisonOperator::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   auto* inst = ir_context->get_def_use_mgr()->GetDef(message_.operator_id());
-  assert(inst);
+  assert(inst && "Result id of an operator is invalid");
 
   // Insert negation after |inst|.
   auto iter = fuzzerutil::GetIteratorForInstruction(

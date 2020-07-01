@@ -32,7 +32,7 @@ class TransformationInvertComparisonOperator : public Transformation {
                                          uint32_t fresh_id);
 
   // - |operator_id| should be a result id of some instruction for which
-  //   InInversionSupported returns true.
+  //   IsInversionSupported returns true.
   // - |fresh_id| must be a fresh id.
   bool IsApplicable(
       opt::IRContext* ir_context,
