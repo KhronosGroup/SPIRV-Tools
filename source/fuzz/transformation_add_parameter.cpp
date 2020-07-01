@@ -104,6 +104,13 @@ void TransformationAddParameter::Apply(
   if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
     // Adjust existing function type if it is used only by this function.
     old_function_type->AddOperand({SPV_OPERAND_TYPE_ID, {parameter_type_id}});
+
+    // We must make sure that all dependencies of |old_function_type| are
+    // evaluated before |old_function_type| (i.e. the domination rules are not
+    // broken). Thus, we move |old_function_type| to the end of the list of all
+    // types in the module.
+    old_function_type->RemoveFromList();
+    ir_context->AddType(std::unique_ptr<opt::Instruction>(old_function_type));
   } else {
     // Otherwise, either create a new type or use an existing one.
     std::vector<uint32_t> type_ids;
