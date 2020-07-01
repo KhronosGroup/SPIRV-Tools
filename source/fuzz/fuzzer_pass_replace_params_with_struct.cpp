@@ -49,35 +49,47 @@ void FuzzerPassReplaceParamsWithStruct::Apply() {
       continue;
     }
 
-    std::vector<uint32_t> parameter_index(params.size());
-    std::iota(parameter_index.begin(), parameter_index.end(), 0);
-    GetFuzzerContext()->Shuffle(&parameter_index);
-    parameter_index.resize(
+    std::vector<uint32_t> parameter_id(params.size());
+    std::iota(parameter_id.begin(), parameter_id.end(), 0);
+
+    // Remove unsupported parameters.
+    auto new_end = std::remove_if(
+        parameter_id.begin(), parameter_id.end(),
+        [this, &params](uint32_t index) {
+          const auto* type =
+              GetIRContext()->get_type_mgr()->GetType(params[index]->type_id());
+          return !type || !TransformationReplaceParamsWithStruct::
+                              IsParameterTypeSupported(*type);
+        });
+
+    parameter_id.erase(new_end, parameter_id.end());
+
+    if (parameter_id.empty()) {
+      continue;
+    }
+
+    auto num_replaced_params = std::min<size_t>(
+        parameter_id.size(),
         GetFuzzerContext()->GetRandomNumberOfReplacedParameters(
             static_cast<uint32_t>(params.size())));
 
-    std::vector<uint32_t> new_argument_types;
-    for (uint32_t i = 0, n = static_cast<uint32_t>(params.size()); i < n; ++i) {
-      if (std::find(parameter_index.begin(), parameter_index.end(), i) ==
-          parameter_index.end()) {
-        new_argument_types.push_back(params[i]->type_id());
-      }
-    }
+    GetFuzzerContext()->Shuffle(&parameter_id);
+    parameter_id.resize(num_replaced_params);
 
-    auto component_type_ids = parameter_index;
-    for (auto& id : component_type_ids) {
-      id = params[id]->type_id();
+    // Map parameters' indices to parameters' ids.
+    for (auto& id : parameter_id) {
+      id = params[id]->result_id();
     }
-
-    new_argument_types.push_back(FindOrCreateStructType(component_type_ids));
 
     ApplyTransformation(TransformationReplaceParamsWithStruct(
-        function.result_id(), parameter_index,
-        FindOrCreateFunctionType(
-            fuzzerutil::GetFunctionType(GetIRContext(), &function)
-                ->GetSingleWordInOperand(0),
-            new_argument_types),
-        GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId()));
+        parameter_id,
+        /*fresh_function_type_id*/ GetFuzzerContext()->GetFreshId(),
+        /*fresh_parameter_id*/ GetFuzzerContext()->GetFreshId(),
+        /*fresh_composite_id*/
+        GetFuzzerContext()->GetFreshIds(
+            TransformationReplaceParamsWithStruct::GetNumberOfCallees(
+                GetIRContext(), function.result_id())),
+        /*fresh_struct_type_id*/ GetFuzzerContext()->GetFreshId()));
   }
 }
 

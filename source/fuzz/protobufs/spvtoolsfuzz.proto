@@ -1319,20 +1319,23 @@ message TransformationReplaceParamsWithStruct {
   // Replaces parameters of the function with a struct containing
   // values of those parameters.
 
-  // Result id of a function to replace parameters of.
-  uint32 function_id = 1;
+  // Result ids of parameters to replace.
+  repeated uint32 parameter_id = 1;
 
-  // Indices of parameters to replace.
-  repeated uint32 parameter_index = 2;
+  // Fresh id for a new function type. This might be unused if the required type
+  // already exists in the module or if we can change the old type.
+  uint32 fresh_function_type_id = 2;
 
-  // Result id of a new OpTypeFunction instruction.
-  uint32 new_type_id = 3;
-
-  // Fresh id for a new function parameter to be used as a replacement.
-  uint32 fresh_parameter_id = 4;
+  // Fresh id for a new struct function parameter to be used as a replacement.
+  uint32 fresh_parameter_id = 3;
 
   // Fresh id for a struct object containing values of the replaced parameters.
-  uint32 fresh_composite_id = 5;
+  // This object will be created before each OpFunctionCall instruction.
+  // Number of elements in this field is equal to the number of callees of the function.
+  repeated uint32 fresh_composite_id = 4;
+
+  // Fresh id for a struct type that contains replaced parameters.
+  uint32 fresh_struct_type_id = 5;
 
 }
 

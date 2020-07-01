@@ -29,9 +29,10 @@ class TransformationReplaceParamsWithStruct : public Transformation {
       const protobufs::TransformationReplaceParamsWithStruct& message);
 
   TransformationReplaceParamsWithStruct(
-      uint32_t function_id, const std::vector<uint32_t>& parameter_index,
-      uint32_t new_type_id, uint32_t fresh_parameter_id,
-      uint32_t fresh_composite_id);
+      const std::vector<uint32_t>& parameter_id,
+      uint32_t fresh_function_type_id, uint32_t fresh_parameter_id,
+      const std::vector<uint32_t>& fresh_composite_id,
+      uint32_t fresh_struct_type_id);
 
   // - |function_id| must be a valid result id of some non-entry-point function
   //   in the module
@@ -59,6 +60,14 @@ class TransformationReplaceParamsWithStruct : public Transformation {
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  // Returns the number of OpFunctionCall instructions in the module that call
+  // |function_id|.
+  static uint32_t GetNumberOfCallees(opt::IRContext* ir_context,
+                                     uint32_t function_id);
+
+  // Returns true if parameter's type is supported by this transformation.
+  static bool IsParameterTypeSupported(const opt::analysis::Type& param_type);
 
  private:
   protobufs::TransformationReplaceParamsWithStruct message_;
