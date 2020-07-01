@@ -73,6 +73,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_swap_commutable_operands.h
         fuzzer_pass_swap_conditional_branch_operands.h
         fuzzer_pass_toggle_access_chain_instruction.h
+        fuzzer_pass_toggle_constant_null.h
         fuzzer_util.h
         id_use_descriptor.h
         instruction_descriptor.h
@@ -184,6 +185,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_swap_commutable_operands.cpp
         fuzzer_pass_swap_conditional_branch_operands.cpp
         fuzzer_pass_toggle_access_chain_instruction.cpp
+        fuzzer_pass_toggle_constant_null.cpp
         fuzzer_util.cpp
         id_use_descriptor.cpp
         instruction_descriptor.cpp

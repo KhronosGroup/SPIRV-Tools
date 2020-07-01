@@ -98,9 +98,6 @@ void TransformationToggleConstantNull::Apply(
   // Replace the constant with the new one in the constants pool
   ir_context->get_constant_mgr()->RemoveId(message_.constant_id());
   ir_context->get_constant_mgr()->MapInst(instruction);
-
-  // Invalidate analysis of constants since one of the constants changed
-  ir_context->InvalidateAnalyses(opt::IRContext::kAnalysisConstants);
 }
 
 protobufs::Transformation TransformationToggleConstantNull::ToMessage() const {
