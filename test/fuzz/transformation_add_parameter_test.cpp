@@ -102,9 +102,9 @@ TEST(TransformationAddParameterTest, BasicTest) {
           %7 = OpTypeBool
          %11 = OpTypeInt 32 1
           %3 = OpTypeFunction %2
-          %6 = OpTypeFunction %7 %7 %11
           %8 = OpConstant %11 23
          %12 = OpConstantTrue %7
+          %6 = OpTypeFunction %7 %7 %11
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %13 = OpFunctionCall %7 %9 %12 %8
