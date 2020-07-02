@@ -921,7 +921,7 @@ message TransformationEquationInstruction {
   // are available (i.e. at any program point dominated by the instruction).
 
   // Fresh ids required by this transformation.
-  repeated uint32 fresh_id = 1;
+  uint32 fresh_id = 1;
 
   // The instruction's opcode
   uint32 opcode = 2;

@@ -90,12 +90,47 @@ void FuzzerPassAddEquationInstructions::Apply() {
                 break;
               }
 
+              const auto* operand =
+                  candidate_instructions[GetFuzzerContext()->RandomIndex(
+                      candidate_instructions)];
+
+              const auto* type =
+                  GetIRContext()->get_type_mgr()->GetType(operand->type_id());
+              assert(type && "Operand has invalid type");
+
+              // Make sure a result type exists in the module.
+              switch (opcode) {
+                case SpvOpConvertFToS:
+                case SpvOpConvertFToU: {
+                  if (const auto* vector = type->AsVector()) {
+                    FindOrCreateVectorType(
+                        FindOrCreateIntegerType(
+                            vector->element_type()->AsFloat()->width(),
+                            opcode == SpvOpConvertFToS),
+                        vector->element_count());
+                  } else {
+                    FindOrCreateIntegerType(type->AsFloat()->width(),
+                                            opcode == SpvOpConvertFToS);
+                  }
+                } break;
+                case SpvOpConvertSToF:
+                case SpvOpConvertUToF: {
+                  if (const auto* vector = type->AsVector()) {
+                    FindOrCreateVectorType(
+                        FindOrCreateFloatType(
+                            vector->element_type()->AsInteger()->width()),
+                        vector->element_count());
+                  } else {
+                    FindOrCreateFloatType(type->AsInteger()->width());
+                  }
+                } break;
+                default:
+                  assert(false && "Unreachable");
+              }
+
               ApplyTransformation(TransformationEquationInstruction(
-                  GetFuzzerContext()->GetFreshIds(3), opcode,
-                  {candidate_instructions[GetFuzzerContext()->RandomIndex(
-                                              candidate_instructions)]
-                       ->result_id()},
-                  instruction_descriptor));
+                  GetFuzzerContext()->GetFreshId(), opcode,
+                  {operand->result_id()}, instruction_descriptor));
               return;
             } break;
             case SpvOpIAdd:
@@ -145,7 +180,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
 
                 // Add the equation instruction.
                 ApplyTransformation(TransformationEquationInstruction(
-                    GetFuzzerContext()->GetFreshIds(1), opcode,
+                    GetFuzzerContext()->GetFreshId(), opcode,
                     {lhs->result_id(), rhs->result_id()},
                     instruction_descriptor));
                 return;
@@ -159,7 +194,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
                   GetBooleanInstructions(available_instructions);
               if (!boolean_instructions.empty()) {
                 ApplyTransformation(TransformationEquationInstruction(
-                    GetFuzzerContext()->GetFreshIds(1), opcode,
+                    GetFuzzerContext()->GetFreshId(), opcode,
                     {boolean_instructions
                          .at(GetFuzzerContext()->RandomIndex(
                              boolean_instructions))
@@ -175,7 +210,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
                   GetIntegerInstructions(available_instructions);
               if (!integer_instructions.empty()) {
                 ApplyTransformation(TransformationEquationInstruction(
-                    GetFuzzerContext()->GetFreshIds(1), opcode,
+                    GetFuzzerContext()->GetFreshId(), opcode,
                     {integer_instructions
                          .at(GetFuzzerContext()->RandomIndex(
                              integer_instructions))
