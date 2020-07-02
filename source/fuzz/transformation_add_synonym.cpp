@@ -18,7 +18,6 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/instruction_message.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -185,6 +184,7 @@ TransformationAddSynonym::MakeSynonymousInstruction(
           break;
         default:
           assert(false && "Unreachable");
+          break;
       }
 
       return MakeUnique<opt::Instruction>(
@@ -226,7 +226,7 @@ uint32_t TransformationAddSynonym::MaybeGetConstantId(
       fuzzerutil::GetTypeId(ir_context, message_.result_id());
   assert(synonym_type_id && "Synonym has invalid type id");
 
-  // TODO():
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3487):
   //  fuzzerutil::MaybeGet* functions will become available when the PR is
   //  merged.
   switch (message_.synonym_type()) {

@@ -14,14 +14,9 @@
 
 #include "source/fuzz/fuzzer_pass_add_synonyms.h"
 
-#include <functional>
-#include <unordered_map>
-#include <vector>
-
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/instruction_message.h"
 #include "source/fuzz/transformation_add_synonym.h"
 
 namespace spvtools {
@@ -102,7 +97,7 @@ void FuzzerPassAddSynonyms::Apply() {
             // This assertion will fail if some SynonymType is missing from the
             // switch statement.
             assert(
-                TransformationAddSynonym::IsAdditionalConstantRequired(
+                !TransformationAddSynonym::IsAdditionalConstantRequired(
                     synonym_type) &&
                 "|synonym_type| requires an additional constant to be present "
                 "in the module");
