@@ -73,6 +73,7 @@ void TransformationAddParameter::Apply(
 
   auto parameter_type_id =
       fuzzerutil::GetTypeId(ir_context, message_.initializer_id());
+  assert(parameter_type_id != 0 && "Initializer has invalid type");
 
   // Add new parameters to the function.
   function->AddParameter(MakeUnique<opt::Instruction>(
