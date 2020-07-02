@@ -29,27 +29,54 @@ class TransformationAddSynonym : public Transformation {
       protobufs::TransformationAddSynonym message);
 
   TransformationAddSynonym(
-      uint32_t result_id, const protobufs::InstructionDescriptor& insert_before,
-      const protobufs::Instruction& synonymous_instruction);
+      uint32_t result_id,
+      protobufs::TransformationAddSynonym::SynonymType synonym_type,
+      uint32_t synonym_fresh_id,
+      const protobufs::InstructionDescriptor& insert_before);
 
   // - |result_id| must be a valid result id of some instruction in the module.
+  // - |synonym_type| is a type of the synonymous instruction that will be
+  //   created.
+  // - |synonym_fresh_id| is a fresh id.
   // - |insert_before| must be a valid instruction descriptor and we must be
-  //   able to insert |synonymous_instruction| before |insert_before|.
-  // - |synonymous_instruction| must be a valid instruction.
-  // - |synonymous_instruction| must have a fresh result id.
+  //   able to insert a new synonymous instruction before |insert_before|.
+  //   |result_id| must be available before |insert_before|.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Inserts |synonymous_instruction| before |insert_before| and creates a fact
-  // that the result id of |synonymous_instruction| and the |result_id| are
-  // synonymous.
+  // Creates a new synonymous instruction according to the |synonym_type| with
+  // result id |synonym_fresh_id|.
+  // Inserts that instruction before |insert_before| and creates a fact
+  // that the |synonym_fresh_id| and the |result_id| are synonymous.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
 
+  // Returns true if we can create a synonym of |inst| according to the
+  // |synonym_type|.
+  static bool IsInstructionValid(
+      opt::IRContext* ir_context, opt::Instruction* inst,
+      protobufs::TransformationAddSynonym::SynonymType synonym_type);
+
+  // Returns true if |synonym_type| requires an additional constant instruction
+  // to be present in the module.
+  static bool IsAdditionalConstantRequired(
+      protobufs::TransformationAddSynonym::SynonymType synonym_type);
+
  private:
+  // Returns a new instruction which is synonymous to |message_.result_id|.
+  std::unique_ptr<opt::Instruction> MakeSynonymousInstruction(
+      opt::IRContext* ir_context) const;
+
+  // Returns a result id of a constant instruction that is required to be
+  // present in some synonym types (e.g. returns a result id of a zero constant
+  // for ADD_ZERO synonym type). Returns 0 if no such instruction is present in
+  // the module. This method should only be called when
+  // IsAdditionalConstantRequired returns true.
+  uint32_t MaybeGetConstantId(opt::IRContext* ir_context) const;
+
   protobufs::TransformationAddSynonym message_;
 };
 

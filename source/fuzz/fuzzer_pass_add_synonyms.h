@@ -32,37 +32,6 @@ class FuzzerPassAddSynonyms : public FuzzerPass {
   ~FuzzerPassAddSynonyms() override;
 
   void Apply() override;
-
- private:
-  // Applies a transformation to create a multiplication by 1 synonym. |inst|
-  // must have a scalar type. |opcode| is an opcode used for multiplication
-  // (e.g. OpFMul, OpIMul etc.)
-  void CreateScalarMultiplicationSynonym(
-      const opt::Instruction* inst,
-      const protobufs::InstructionDescriptor& instruction_descriptor,
-      SpvOp opcode);
-
-  // Applies a transformation to create an addition of 0 synonym. |inst| must
-  // have a scalar type. |opcode| is an opcode used for addition (e.g. OpFAdd,
-  // OpIAdd etc.)
-  void CreateScalarAdditionSynonym(
-      const opt::Instruction* inst,
-      const protobufs::InstructionDescriptor& instruction_descriptor,
-      SpvOp opcode);
-
-  // Applies a transformation to create a multiplication by 1 synonym. |inst|
-  // must be a vector. Depending on the type of the vector's components, either
-  // OpFMul, OpIMul or OpLogicalAnd will be applied.
-  void CreateVectorMultiplicationSynonym(
-      const opt::Instruction* inst,
-      const protobufs::InstructionDescriptor& instruction_descriptor);
-
-  // Applies a transformation to create an addition of 0 synonym. |inst| must
-  // be a vector. Depending on the type of the vector's components, either
-  // OpFAdd, OpIAdd or OpLogicalOr will be applied.
-  void CreateVectorAdditionSynonym(
-      const opt::Instruction* inst,
-      const protobufs::InstructionDescriptor& instruction_descriptor);
 };
 
 }  // namespace fuzz

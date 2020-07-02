@@ -18,6 +18,7 @@
 #include <functional>
 #include <utility>
 
+#include "source/fuzz/protobufs/spvtoolsfuzz.pb.h"
 #include "source/fuzz/random_generator.h"
 #include "source/opt/function.h"
 
@@ -279,6 +280,19 @@ class FuzzerContext {
       uint32_t max_unused_component_count) {
     // Ensure that the number of unused components is non-zero.
     return random_generator_->RandomUint32(max_unused_component_count) + 1;
+  }
+  protobufs::TransformationAddSynonym::SynonymType GetRandomSynonymType() {
+    // value_count is method is guaranteed to return a value greater than 0.
+    auto result_index = ChooseBetweenMinAndMax(
+        {0, static_cast<uint32_t>(
+                protobufs::TransformationAddSynonym::SynonymType_descriptor()
+                    ->value_count() - 1)});
+    auto result = protobufs::TransformationAddSynonym::SynonymType_descriptor()
+                      ->value(result_index)
+                      ->number();
+    assert(protobufs::TransformationAddSynonym::SynonymType_IsValid(result));
+    return static_cast<protobufs::TransformationAddSynonym::SynonymType>(
+        result);
   }
   bool GoDeeperInConstantObfuscation(uint32_t depth) {
     return go_deeper_in_constant_obfuscation_(depth, random_generator_);

@@ -715,11 +715,42 @@ message TransformationAddSynonym {
   // Result id of the first synonym.
   uint32 result_id = 1;
 
-  // |synonymous_instruction| will be inserted before this instruction.
-  InstructionDescriptor insert_before = 2;
+  // Type of the synonym to apply.
+  enum SynonymType {
+    // New synonym is derived by adding zero to the |result_id|.
+    // This doesn't specify whether to add zero to the left or
+    // to the right since we have a special transformation to
+    // swap commutable operands.
+    ADD_ZERO = 0;
 
-  // Instruction, whose result id is synonymous to |synonym_id|.
-  Instruction synonymous_instruction = 3;
+    // New synonym is derived by subtracting zero from the |result_id|.
+    SUB_ZERO = 1;
+
+    // New synonym is derived by multiplying |result_id| by one.
+    // This doesn't specify whether 'one' is a left operand or the right
+    // operand since we have a special transformation to swap commutable operands.
+    MUL_ONE = 2;
+
+    // New synonym is derived by applying OpCopyObject instruction to |result_id|.
+    COPY_OBJECT = 3;
+
+    // New synonym is derived by applying OpLogicalOr to |result_id| with the second
+    // operand being 'false'.
+    LOGICAL_OR = 4;
+
+    // New synonym is derived by applying OpLogicalAnd to |result_id| with the second
+    // operand being 'true'.
+    LOGICAL_AND = 5;
+  }
+
+  // Type of the synonym to create. See SynonymType for more details.
+  SynonymType synonym_type = 2;
+
+  // Fresh result id for a created synonym.
+  uint32 synonym_fresh_id = 3;
+
+  // An instruction to insert a new synonym before.
+  InstructionDescriptor insert_before = 4;
 
 }
 
