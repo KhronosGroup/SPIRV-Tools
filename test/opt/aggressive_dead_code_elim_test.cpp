@@ -5804,8 +5804,6 @@ OpFunctionEnd
 }
 
 TEST_F(AggressiveDCETest, StructuredIfWithConditionalExit) {
-  // We are able to remove "local2" because it is not loaded, but have to keep
-  // the stores to "local1".
   const std::string test =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -5835,9 +5833,12 @@ OpBranchConditional %14 %16 %15
 %16 = OpLabel
 %17 = OpLoad %int %a
 %18 = OpSLessThan %bool %17 %int_100
-OpBranchConditional %18 %19 %15
+OpSelectionMerge %150 None
+OpBranchConditional %18 %19 %150
 %19 = OpLabel
 OpStore %a %int_1
+OpBranch %150
+%150 = OpLabel
 OpBranch %15
 %15 = OpLabel
 OpReturn
