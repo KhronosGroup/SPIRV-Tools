@@ -390,7 +390,8 @@ INSTANTIATE_TEST_SUITE_P(
 
 using OpKillTest = spvtest::TextToBinaryTest;
 
-INSTANTIATE_TEST_SUITE_P(OpKillTest, RoundTripTest, Values("OpKill\n"));
+INSTANTIATE_TEST_SUITE_P(OpKillTest, ControlFlowRoundTripTest,
+                         Values("OpKill\n"));
 
 TEST_F(OpKillTest, ExtraArgsAssemblyError) {
   const std::string input = "OpKill 1";
@@ -401,7 +402,7 @@ TEST_F(OpKillTest, ExtraArgsAssemblyError) {
 
 using OpTerminateInvocationTest = spvtest::TextToBinaryTest;
 
-INSTANTIATE_TEST_SUITE_P(OpTerminateInvocationTest, RoundTripTest,
+INSTANTIATE_TEST_SUITE_P(OpTerminateInvocationTest, ControlFlowRoundTripTest,
                          Values("OpTerminateInvocation\n"));
 
 TEST_F(OpTerminateInvocationTest, ExtraArgsAssemblyError) {
