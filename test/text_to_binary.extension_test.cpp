@@ -905,5 +905,23 @@ INSTANTIATE_TEST_SUITE_P(
              MakeInstruction(SpvOpDecorate, {1, 5300})},
         })));
 
+// SPV_KHR_linkonce_odr
+
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_linkonce_odr, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_3, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_KHR_linkonce_odr\"\n",
+             MakeInstruction(SpvOpExtension,
+                             MakeVector("SPV_KHR_linkonce_odr"))},
+            {"OpDecorate %1 LinkageAttributes \"foobar\" LinkOnceODR\n",
+             MakeInstruction(SpvOpDecorate,
+                             Concatenate({{1, SpvDecorationLinkageAttributes},
+                                          MakeVector("foobar"),
+                                          {SpvLinkageTypeLinkOnceODR}}))},
+        })));
+
 }  // namespace
 }  // namespace spvtools
