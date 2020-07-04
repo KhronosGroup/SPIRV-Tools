@@ -126,6 +126,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_permute_function_parameters.h
         transformation_permute_phi_operands.h
         transformation_push_id_through_variable.h
+        transformation_record_synonymous_constants.h
         transformation_replace_boolean_constant_with_constant_binary.h
         transformation_replace_constant_with_uniform.h
         transformation_replace_id_with_synonym.h
@@ -239,6 +240,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_permute_function_parameters.cpp
         transformation_permute_phi_operands.cpp
         transformation_push_id_through_variable.cpp
+        transformation_record_synonymous_constants.cpp
         transformation_replace_boolean_constant_with_constant_binary.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_replace_id_with_synonym.cpp
