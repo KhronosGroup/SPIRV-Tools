@@ -21,7 +21,8 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(FuzzerPassInterchangeZeroLikeConstants, FloatConstants) {
+// Test that the shader is still valid after applying the transformations.
+TEST(FuzzerPassInterchangeZeroLikeConstants, StillValid) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -84,12 +85,12 @@ TEST(FuzzerPassInterchangeZeroLikeConstants, FloatConstants) {
                OpFunctionEnd
   )";
 
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
 
-  auto prng = MakeUnique<PseudoRandomGenerator>(0);
+  auto generator = MakeUnique<PseudoRandomGenerator>(0);
 
-  for (uint32_t i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     const auto context =
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
@@ -99,7 +100,7 @@ TEST(FuzzerPassInterchangeZeroLikeConstants, FloatConstants) {
     TransformationContext transformation_context(&fact_manager,
                                                  validator_options);
 
-    FuzzerContext fuzzer_context(prng.get(), 100);
+    FuzzerContext fuzzer_context(generator.get(), 33);
     protobufs::TransformationSequence transformation_sequence;
 
     FuzzerPassInterchangeZeroLikeConstants fuzzer_pass(
@@ -108,11 +109,8 @@ TEST(FuzzerPassInterchangeZeroLikeConstants, FloatConstants) {
 
     fuzzer_pass.Apply();
 
-    // We just check that the result is valid.
+    // Check that the transformed shader is still valid
     ASSERT_TRUE(IsValid(env, context.get()));
-
-    std::cout << ToString(env, context.get());
-
   }
 }
 }  // namespace
