@@ -101,6 +101,13 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
 
   ASSERT_TRUE(TransformationRecordSynonymousConstants(11, 9).IsApplicable(
       context.get(), transformation_context));
+
+  // Apply transformation
+  TransformationRecordSynonymousConstants(9, 11).Apply(context.get(),
+                                                       &transformation_context);
+  // Check that the two ids are now synonyms
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(9, {}), MakeDataDescriptor(11, {})));
 }
 
 TEST(TransformationRecordSynonymousConstantsTest, BoolConstants) {
@@ -162,6 +169,14 @@ TEST(TransformationRecordSynonymousConstantsTest, BoolConstants) {
   // %9 and %20 are equivalent
   ASSERT_TRUE(TransformationRecordSynonymousConstants(9, 20).IsApplicable(
       context.get(), transformation_context));
+
+  // Apply transformation
+  TransformationRecordSynonymousConstants(9, 20).Apply(context.get(),
+                                                       &transformation_context);
+
+  // Check that the ids are now synonyms
+  transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(9, {}), MakeDataDescriptor(20, {}));
 }
 
 TEST(TransformationRecordSynonymousConstantsTest, FloatConstants) {
@@ -240,6 +255,14 @@ TEST(TransformationRecordSynonymousConstantsTest, FloatConstants) {
   // %9 and %11 are equivalent
   ASSERT_TRUE(TransformationRecordSynonymousConstants(9, 11).IsApplicable(
       context.get(), transformation_context));
+
+  // Apply transformation
+  TransformationRecordSynonymousConstants(9, 11).Apply(context.get(),
+                                                       &transformation_context);
+
+  // Check that the ids are now synonyms
+  transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(9, {}), MakeDataDescriptor(11, {}));
 }
 
 }  // namespace

@@ -55,10 +55,21 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
          (IsStaticZeroConstant(constant) && synonym->AsNullConstant());
 }
 
-// TODO
 void TransformationRecordSynonymousConstants::Apply(
-    opt::IRContext* /* ir_context */,
-    TransformationContext* /* transformation_context */) const {}
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  protobufs::FactDataSynonym fact_data_synonym;
+  // Define the two equivalent data descriptors (just containing the ids)
+  *fact_data_synonym.mutable_data1() =
+      MakeDataDescriptor(message_.constant_id(), {});
+  *fact_data_synonym.mutable_data2() =
+      MakeDataDescriptor(message_.synonym_id(), {});
+  protobufs::Fact fact;
+  *fact.mutable_data_synonym_fact() = fact_data_synonym;
+
+  // Add the fact to the fact manager
+  transformation_context->GetFactManager()->AddFact(fact, ir_context);
+}
 
 protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
     const {

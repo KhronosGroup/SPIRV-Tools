@@ -37,6 +37,8 @@ class TransformationRecordSynonymousConstants : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Adds the fact that |message_.constant_id| and |message_.synonym_id|
+  // are synonyms to the fact manager. The module is not changed.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
