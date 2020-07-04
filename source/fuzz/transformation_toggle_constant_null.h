@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
 #ifndef SOURCE_FUZZ_TRANSFORMATION_TOGGLE_NULL_CONSTANT_H_
 #define SOURCE_FUZZ_TRANSFORMATION_TOGGLE_NULL_CONSTANT_H_
 
@@ -51,3 +52,4 @@ class TransformationToggleConstantNull : public Transformation {
 }  // namespace spvtools
 
 #endif  // SOURCE_FUZZ_TRANSFORMATION_TOGGLE_NULL_CONSTANT_H_
+*/

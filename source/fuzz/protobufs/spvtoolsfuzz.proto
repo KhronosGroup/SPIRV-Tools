@@ -337,7 +337,7 @@ message Transformation {
     TransformationAddTypeInt add_type_int = 7;
     TransformationAddDeadBreak add_dead_break = 8;
     TransformationReplaceBooleanConstantWithConstantBinary
-      replace_boolean_constant_with_constant_binary = 9;
+        replace_boolean_constant_with_constant_binary = 9;
     TransformationAddTypePointer add_type_pointer = 10;
     TransformationReplaceConstantWithUniform replace_constant_with_uniform = 11;
     TransformationAddDeadContinue add_dead_continue = 12;
@@ -1345,15 +1345,6 @@ message TransformationToggleAccessChainInstruction {
   // A descriptor for an access chain instruction
   InstructionDescriptor instruction_descriptor = 1;
 
-}
-
-message TransformationToggleNullConstant {
-
-  // A transformation that replaces a null boolean, int or floating-point null constant (OpConstantNull) with
-  // a zero-valued constant of the same type (OpConstant), and vice versa
-
-  // The result id of the constant declaration instruction
-  uint32 constant_id = 1;
 }
 
 message TransformationVectorShuffle {

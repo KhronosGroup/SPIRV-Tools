@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
 #include "source/fuzz/fuzzer_pass_toggle_constant_null.h"
 
 #include "source/fuzz/transformation_toggle_constant_null.h"
@@ -57,3 +58,4 @@ void FuzzerPassToggleConstantNull::Apply() {
 }
 }  // namespace fuzz
 }  // namespace spvtools
+*/

@@ -21,10 +21,12 @@ TransformationRecordSynonymousConstants::
         const protobufs::TransformationRecordSynonymousConstants& message)
     : message_(message) {}
 
-// TODO
 TransformationRecordSynonymousConstants::
-    TransformationRecordSynonymousConstants(uint32_t /* constant_id */,
-                                            uint32_t /* synonym_id */) {}
+    TransformationRecordSynonymousConstants(uint32_t constant_id,
+                                            uint32_t synonym_id) {
+  message_.set_constant_id(constant_id);
+  message_.set_synonym_id(synonym_id);
+}
 
 // TODO
 bool TransformationRecordSynonymousConstants::IsApplicable(
@@ -38,10 +40,12 @@ void TransformationRecordSynonymousConstants::Apply(
     opt::IRContext* /* ir_context */,
     TransformationContext* /* transformation_context */) const {}
 
-// TODO
+
 protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
     const {
-  return protobufs::Transformation();
+  protobufs::Transformation result;
+  *result.mutable_record_synonymous_constants() = message_;
+  return result;
 }
 
 }  // namespace fuzz
