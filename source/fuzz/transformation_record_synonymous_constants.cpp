@@ -28,6 +28,11 @@ TransformationRecordSynonymousConstants::
   message_.set_synonym_id(synonym_id);
 }
 
+static inline bool IsStaticZeroConstant(
+    const opt::analysis::Constant* constant) {
+  return constant->AsScalarConstant() && constant->IsZero();
+}
+
 bool TransformationRecordSynonymousConstants::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& /* unused */) const {
@@ -41,15 +46,13 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
     return false;
   }
 
-  auto kind = constant->type()->kind();
-
   // The types must be the same
-  if (kind != synonym->type()->kind()) {
+  if (!constant->type()->IsSame(synonym->type())) {
     return false;
   }
 
-  return (constant->AsNullConstant() && synonym->IsZero()) ||
-         (constant->IsZero() && synonym->AsNullConstant());
+  return (constant->AsNullConstant() && IsStaticZeroConstant(synonym)) ||
+         (IsStaticZeroConstant(constant) && synonym->AsNullConstant());
 }
 
 // TODO

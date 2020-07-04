@@ -32,7 +32,7 @@ class TransformationRecordSynonymousConstants : public Transformation {
   // - |message_.constant_id| and |message_.synonym_id| are equivalent, i.e.
   //   both of them represent zero-like scalar values of the same type (for
   //   example OpConstant of type int and value 0 and OpConstantNull of type
-  //   int), but they are the same.
+  //   int), but they are not the same.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
