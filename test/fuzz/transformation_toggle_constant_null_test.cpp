@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
 #include "source/fuzz/transformation_toggle_constant_null.h"
 
 #include "source/fuzz/instruction_descriptor.h"
@@ -371,4 +372,4 @@ TEST(TransformationToggleConstantNullTest, FloatAndOtherConstantTest) {
 }
 }  // namespace
 }  // namespace fuzz
-}  // namespace spvtools
+}  // namespace spvtools*/

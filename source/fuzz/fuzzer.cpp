@@ -57,7 +57,6 @@
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
-#include "source/fuzz/fuzzer_pass_toggle_constant_null.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/transformation_context.h"
@@ -326,9 +325,6 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassToggleAccessChainInstruction>(
-      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
-      transformation_sequence_out);
-  MaybeAddPass<FuzzerPassToggleConstantNull>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   for (auto& pass : final_passes) {

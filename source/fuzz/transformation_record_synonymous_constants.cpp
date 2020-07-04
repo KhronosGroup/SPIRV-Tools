@@ -28,18 +28,34 @@ TransformationRecordSynonymousConstants::
   message_.set_synonym_id(synonym_id);
 }
 
-// TODO
 bool TransformationRecordSynonymousConstants::IsApplicable(
-    opt::IRContext* /* ir_context */,
-    const TransformationContext& /* transformation_context */) const {
-  return false;
+    opt::IRContext* ir_context,
+    const TransformationContext& /* unused */) const {
+  auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.constant_id());
+  auto synonym = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.synonym_id());
+
+  // The constants must exist
+  if (constant == nullptr || synonym == nullptr) {
+    return false;
+  }
+
+  auto kind = constant->type()->kind();
+
+  // The types must be the same
+  if (kind != synonym->type()->kind()) {
+    return false;
+  }
+
+  return (constant->AsNullConstant() && synonym->IsZero()) ||
+         (constant->IsZero() && synonym->AsNullConstant());
 }
 
 // TODO
 void TransformationRecordSynonymousConstants::Apply(
     opt::IRContext* /* ir_context */,
     TransformationContext* /* transformation_context */) const {}
-
 
 protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
     const {

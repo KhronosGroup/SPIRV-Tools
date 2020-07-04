@@ -211,9 +211,6 @@ class FuzzerContext {
   uint32_t GetChanceOfTogglingAccessChainInstruction() {
     return chance_of_toggling_access_chain_instruction_;
   }
-  uint32_t GetChanceOfTogglingConstantNull() {
-    return chance_of_toggling_constant_null_;
-  }
 
   // Other functions to control transformations. Keep them in alphabetical
   // order.

@@ -77,7 +77,6 @@ const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
     {10, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
     20, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfTogglingConstantNull = {20, 90};
 
 // Default limits for various quantities that are chosen during fuzzing.
 // Keep them in alphabetical order.
@@ -196,8 +195,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_toggling_access_chain_instruction_ =
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
-  chance_of_toggling_constant_null_ =
-      ChooseBetweenMinAndMax(kChanceOfTogglingConstantNull);
 }
 
 FuzzerContext::~FuzzerContext() = default;
