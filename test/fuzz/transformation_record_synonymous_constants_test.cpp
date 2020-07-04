@@ -42,6 +42,7 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
           %6 = OpTypeInt 32 1
           %7 = OpTypePointer Function %6
           %9 = OpConstant %6 0
+         %18 = OpConstant %6 0
          %11 = OpConstantNull %6
          %13 = OpConstant %6 1
          %14 = OpTypeFloat 32
@@ -93,6 +94,10 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
       context.get(), transformation_context));
 
   ASSERT_FALSE(TransformationRecordSynonymousConstants(13, 11).IsApplicable(
+      context.get(), transformation_context));
+
+  // %9 and %18 are equal and thus equivalent
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(9, 18).IsApplicable(
       context.get(), transformation_context));
 
   // %9 and %11 are equivalent

@@ -36,6 +36,11 @@ static inline bool IsStaticZeroConstant(
 bool TransformationRecordSynonymousConstants::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& /* unused */) const {
+  // The ids must be different
+  if (message_.constant_id() == message_.synonym_id()) {
+    return false;
+  }
+
   auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
       message_.constant_id());
   auto synonym = ir_context->get_constant_mgr()->FindDeclaredConstant(
@@ -46,11 +51,18 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
     return false;
   }
 
+  // If the constants are equal, then they are equivalent
+  if (constant == synonym) {
+    return true;
+  }
+
   // The types must be the same
   if (!constant->type()->IsSame(synonym->type())) {
     return false;
   }
 
+  // The constants are equivalent if one is null and the other is a static
+  // constant with value 0.
   return (constant->AsNullConstant() && IsStaticZeroConstant(synonym)) ||
          (IsStaticZeroConstant(constant) && synonym->AsNullConstant());
 }

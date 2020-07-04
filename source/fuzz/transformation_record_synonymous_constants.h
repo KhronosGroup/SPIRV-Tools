@@ -28,11 +28,13 @@ class TransformationRecordSynonymousConstants : public Transformation {
   TransformationRecordSynonymousConstants(uint32_t constant_id,
                                           uint32_t synonym_id);
 
-  // - |message_.constant_id| and |message_.synonym_id| are ids of constants
-  // - |message_.constant_id| and |message_.synonym_id| are equivalent, i.e.
-  //   both of them represent zero-like scalar values of the same type (for
-  //   example OpConstant of type int and value 0 and OpConstantNull of type
-  //   int), but they are not the same.
+  // - |message_.constant_id| and |message_.synonym_id| are distinct ids
+  //   of constants
+  // - |message_.constant_id| and |message_.synonym_id| refer to constants
+  //   that are equal or equivalent.
+  //   Constants are equivalent if both of them represent zero-like scalar
+  //   values of the same type (for example OpConstant of type int and value
+  //   0 and OpConstantNull of type int).
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
