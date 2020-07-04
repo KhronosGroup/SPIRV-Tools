@@ -231,10 +231,6 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kToggleAccessChainInstruction:
       return MakeUnique<TransformationToggleAccessChainInstruction>(
           message.toggle_access_chain_instruction());
-    case protobufs::Transformation::TransformationCase::
-        kToggleNullConstant:
-      return MakeUnique<TransformationToggleConstantNull>(
-          message.toggle_null_constant());
     case protobufs::Transformation::TransformationCase::kVectorShuffle:
       return MakeUnique<TransformationVectorShuffle>(message.vector_shuffle());
     case protobufs::Transformation::TRANSFORMATION_NOT_SET:
