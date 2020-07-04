@@ -110,6 +110,7 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
   // Apply transformation
   TransformationRecordSynonymousConstants(9, 11).Apply(context.get(),
                                                        &transformation_context);
+
   // Check that the two ids are now synonyms
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(9, {}), MakeDataDescriptor(11, {})));

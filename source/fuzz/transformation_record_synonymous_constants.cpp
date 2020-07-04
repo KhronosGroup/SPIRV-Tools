@@ -16,6 +16,14 @@
 
 namespace spvtools {
 namespace fuzz {
+
+namespace {
+static inline bool IsStaticZeroConstant(
+    const opt::analysis::Constant* constant) {
+  return constant->AsScalarConstant() && constant->IsZero();
+}
+}  // namespace
+
 TransformationRecordSynonymousConstants::
     TransformationRecordSynonymousConstants(
         const protobufs::TransformationRecordSynonymousConstants& message)
@@ -26,11 +34,6 @@ TransformationRecordSynonymousConstants::
                                             uint32_t synonym_id) {
   message_.set_constant_id(constant_id);
   message_.set_synonym_id(synonym_id);
-}
-
-static inline bool IsStaticZeroConstant(
-    const opt::analysis::Constant* constant) {
-  return constant->AsScalarConstant() && constant->IsZero();
 }
 
 bool TransformationRecordSynonymousConstants::IsApplicable(
