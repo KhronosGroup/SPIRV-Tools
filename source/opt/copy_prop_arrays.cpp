@@ -29,7 +29,7 @@ const uint32_t kCompositeExtractObjectInOperand = 0;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerPointeeInIdx = 1;
 
-bool IsOpenCL100DebugInstructionReferencingOpVariable(Instruction* di) {
+bool IsOpenCL100DebugDeclareOrValue(Instruction* di) {
   auto dbg_opcode = di->GetOpenCL100DebugOpcode();
   return dbg_opcode == OpenCLDebugInfo100DebugDeclare ||
          dbg_opcode == OpenCLDebugInfo100DebugValue;
@@ -194,7 +194,7 @@ bool CopyPropagateArrays::HasValidReferencesOnly(Instruction* ptr_inst,
           return ptr_inst->opcode() == SpvOpVariable &&
                  store_inst->GetSingleWordInOperand(kStorePointerInOperand) ==
                      ptr_inst->result_id();
-        } else if (IsOpenCL100DebugInstructionReferencingOpVariable(use)) {
+        } else if (IsOpenCL100DebugDeclareOrValue(use)) {
           return true;
         }
         // Some other instruction.  Be conservative.
@@ -500,7 +500,7 @@ bool CopyPropagateArrays::CanUpdateUses(Instruction* original_ptr_inst,
                                                        const_mgr,
                                                        type](Instruction* use,
                                                              uint32_t) {
-    if (IsOpenCL100DebugInstructionReferencingOpVariable(use)) return true;
+    if (IsOpenCL100DebugDeclareOrValue(use)) return true;
 
     switch (use->opcode()) {
       case SpvOpLoad: {
@@ -595,28 +595,33 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
     if (use->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100InstructionsMax) {
       switch (use->GetOpenCL100DebugOpcode()) {
         case OpenCLDebugInfo100DebugDeclare: {
-          // If a DebugDeclare maps a local variable to |original_ptr_inst|,
-          // we change it to DebugValue because we will replace
-          // the declaration i.e., |original_ptr_inst| to |new_ptr_inst| i.e., a
-          // value.
-          context()->ForgetUses(use);
+          if (new_ptr_inst->opcode() == SpvOpVariable ||
+              new_ptr_inst->opcode() == SpvOpFunctionParameter) {
+            context()->ForgetUses(use);
+            use->SetOperand(index, {new_ptr_inst->result_id()});
+            context()->AnalyzeUses(use);
+          } else {
+            // Based on the spec, we cannot use a pointer other than OpVariable
+            // or OpFunctionParameter for DebugDeclare. We have to use
+            // DebugValue with Deref.
 
-          // Change DebugDeclare to DebugValue and use |new_ptr_inst| for value.
-          use->SetOperand(
-              index - 2, {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)});
-          use->SetOperand(index, {new_ptr_inst->result_id()});
+            context()->ForgetUses(use);
 
-          // Since |new_ptr_inst| is a point, not a value, of the local
-          // variable, we have to use a Deref operation to specify dereferencing
-          // |new_ptr_inst| is the value of the local variable.
-          Instruction* dbg_expr =
-              def_use_mgr->GetDef(use->GetSingleWordOperand(index + 1));
-          auto* deref_expr_instr =
-              context()->get_debug_info_mgr()->DerefDebugExpression(dbg_expr);
-          use->SetOperand(index + 1, {deref_expr_instr->result_id()});
+            // Change DebugDeclare to DebugValue.
+            use->SetOperand(
+                index - 2, {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)});
+            use->SetOperand(index, {new_ptr_inst->result_id()});
 
-          context()->AnalyzeUses(deref_expr_instr);
-          context()->AnalyzeUses(use);
+            // Add Deref operation.
+            Instruction* dbg_expr =
+                def_use_mgr->GetDef(use->GetSingleWordOperand(index + 1));
+            auto* deref_expr_instr =
+                context()->get_debug_info_mgr()->DerefDebugExpression(dbg_expr);
+            use->SetOperand(index + 1, {deref_expr_instr->result_id()});
+
+            context()->AnalyzeUses(deref_expr_instr);
+            context()->AnalyzeUses(use);
+          }
           break;
         }
         case OpenCLDebugInfo100DebugValue:
