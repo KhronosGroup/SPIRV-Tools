@@ -306,6 +306,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   void RemoveOperand(uint32_t index) {
     operands_.erase(operands_.begin() + index);
   }
+  // Insert an operand before the |index|-th operand
+  void InsertOperand(uint32_t index, Operand&& operand) {
+    operands_.insert(operands_.begin() + index, operand);
+  }
 
   // The following methods are similar to the above, but are for in operands.
   uint32_t NumInOperands() const {
