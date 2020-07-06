@@ -609,7 +609,8 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
 
             // Change DebugDeclare to DebugValue.
             use->SetOperand(
-                index - 2, {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)});
+                index - 2,
+                {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)});
             use->SetOperand(index, {new_ptr_inst->result_id()});
 
             // Add Deref operation.

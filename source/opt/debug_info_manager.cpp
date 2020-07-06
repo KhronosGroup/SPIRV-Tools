@@ -614,9 +614,10 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
          dbg_instr_itr != context()->module()->ext_inst_debuginfo_end();
          ++dbg_instr_itr) {
       if (instr != &*dbg_instr_itr &&
-          dbg_instr_itr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugOperation &&
-          dbg_instr_itr->GetSingleWordOperand(kDebugOperationOperandOpCodeIndex) ==
-              OpenCLDebugInfo100Deref) {
+          dbg_instr_itr->GetOpenCL100DebugOpcode() ==
+              OpenCLDebugInfo100DebugOperation &&
+          dbg_instr_itr->GetSingleWordOperand(
+              kDebugOperationOperandOpCodeIndex) == OpenCLDebugInfo100Deref) {
         deref_operation_ = &*dbg_instr_itr;
         break;
       }
