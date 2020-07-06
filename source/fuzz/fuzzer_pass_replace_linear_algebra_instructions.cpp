@@ -43,6 +43,7 @@ void FuzzerPassReplaceLinearAlgebraInstructions::Apply() {
     // |spvOpcodeIsLinearAlgebra|.
     if (instruction->opcode() != SpvOpVectorTimesScalar &&
         instruction->opcode() != SpvOpMatrixTimesScalar &&
+        instruction->opcode() != SpvOpVectorTimesMatrix &&
         instruction->opcode() != SpvOpDot) {
       return;
     }
