@@ -370,7 +370,7 @@ void TransformationReplaceLinearAlgebraInstruction::ReplaceOpVectorTimesMatrix(
               {{SPV_OPERAND_TYPE_ID, {matrix_extract_id}},
                {SPV_OPERAND_TYPE_LITERAL_INTEGER, {j}}})));
 
-      // Multiplies the vector component with the scalar.
+      // Multiplies corresponding vector and column components.
       float_multiplication_ids[j] = message_.fresh_ids(fresh_id_index++);
       linear_algebra_instruction->InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, SpvOpFMul,
@@ -381,6 +381,7 @@ void TransformationReplaceLinearAlgebraInstruction::ReplaceOpVectorTimesMatrix(
                {SPV_OPERAND_TYPE_ID, {column_extract_id}}})));
     }
 
+    // Adds the multiplication results.
     std::vector<uint32_t> float_add_ids;
     uint32_t float_add_id = message_.fresh_ids(fresh_id_index++);
     float_add_ids.push_back(float_add_id);
