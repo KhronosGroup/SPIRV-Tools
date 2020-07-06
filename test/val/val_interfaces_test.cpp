@@ -1356,6 +1356,29 @@ OpFunctionEnd
                         "assignment at location 1, component 1"));
 }
 
+TEST_F(ValidateInterfacesTest, VulkanLocationsLargeLocation) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "????????" %17
+               OpExecutionMode %4 OriginUpperLeft
+               OpDecorate %17 Location 4227868160
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+         %17 = OpVariable %_ptr_Input_v3float Input
+          %4 = OpFunction %void None %3
+          %5 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
