@@ -64,11 +64,6 @@ class FuzzerPassAddEquationInstructions : public FuzzerPass {
   std::vector<opt::Instruction*> RestrictToElementBitWidth(
       const std::vector<opt::Instruction*>& instructions,
       uint32_t bit_width) const;
-
-  // Requires that |instructions| are integer scalars or vectors. Returns only
-  // those of them that have particular signedness.
-  std::vector<opt::Instruction*> RestrictToSignedness(
-      const std::vector<opt::Instruction*>& instructions, bool is_signed) const;
 };
 
 }  // namespace fuzz

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_equation_instruction.h"
-
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -698,21 +697,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
-  // OpConvertSToF (OpConvertUToF) requires an operand of signed (unsigned)
-  // scalar or vector of integral components type.
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertSToF, {16},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertSToF, {11},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertUToF, {15},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertUToF, {10},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-
   // OpConvertFToS and OpConvertFToU require an operand of scalar or vector of
   // floating-point components type.
   ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertFToS, {15},
@@ -787,10 +771,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
-                                        MakeDataDescriptor(24, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(10, {}),
-                                        MakeDataDescriptor(25, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(16, {}),
                                         MakeDataDescriptor(26, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(11, {}),
@@ -823,8 +803,8 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
          %21 = OpConvertSToF %5 %10
          %22 = OpConvertUToF %9 %16
          %23 = OpConvertUToF %5 %11
-         %24 = OpConvertFToS %7 %20
-         %25 = OpConvertFToS %6 %21
+         %24 = OpConvertFToS %8 %20
+         %25 = OpConvertFToS %4 %21
          %26 = OpConvertFToU %8 %22
          %27 = OpConvertFToU %4 %23
                OpReturn

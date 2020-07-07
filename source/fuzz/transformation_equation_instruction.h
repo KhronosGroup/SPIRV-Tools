@@ -63,9 +63,9 @@ class TransformationEquationInstruction : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // Returns type id for the equation instruction. Creates a new type if
-  // required.
-  uint32_t ComputeResultTypeId(opt::IRContext* ir_context) const;
+  // Returns type id for the equation instruction. Returns 0 if result type does
+  // not exist.
+  uint32_t MaybeGetResultTypeId(opt::IRContext* ir_context) const;
 
   protobufs::TransformationEquationInstruction message_;
 };

@@ -81,11 +81,6 @@ void FuzzerPassAddEquationInstructions::Apply() {
                       ? GetFloatInstructions(available_instructions)
                       : GetIntegerInstructions(available_instructions);
 
-              if (opcode == SpvOpConvertSToF || opcode == SpvOpConvertUToF) {
-                candidate_instructions = RestrictToSignedness(
-                    candidate_instructions, opcode == SpvOpConvertSToF);
-              }
-
               if (candidate_instructions.empty()) {
                 break;
               }
@@ -102,15 +97,20 @@ void FuzzerPassAddEquationInstructions::Apply() {
               switch (opcode) {
                 case SpvOpConvertFToS:
                 case SpvOpConvertFToU: {
+                  // OpConvertFToU can only convert to unsigned integer type.
+                  auto is_signed = opcode == SpvOpConvertFToU
+                                       ? false
+                                       : GetFuzzerContext()->ChooseEven();
+
                   if (const auto* vector = type->AsVector()) {
                     FindOrCreateVectorType(
                         FindOrCreateIntegerType(
                             vector->element_type()->AsFloat()->width(),
-                            opcode == SpvOpConvertFToS),
+                            is_signed),
                         vector->element_count());
                   } else {
                     FindOrCreateIntegerType(type->AsFloat()->width(),
-                                            opcode == SpvOpConvertFToS);
+                                            is_signed);
                   }
                 } break;
                 case SpvOpConvertSToF:
@@ -126,13 +126,14 @@ void FuzzerPassAddEquationInstructions::Apply() {
                 } break;
                 default:
                   assert(false && "Unreachable");
+                  break;
               }
 
               ApplyTransformation(TransformationEquationInstruction(
                   GetFuzzerContext()->GetFreshId(), opcode,
                   {operand->result_id()}, instruction_descriptor));
               return;
-            } break;
+            }
             case SpvOpIAdd:
             case SpvOpISub: {
               // Instructions of integer (scalar or vector) result type are
@@ -307,27 +308,6 @@ FuzzerPassAddEquationInstructions::RestrictToElementBitWidth(
            "have integer or float scalar or vector type.");
     if ((type->AsInteger() && type->AsInteger()->width() == bit_width) ||
         (type->AsFloat() && type->AsFloat()->width() == bit_width)) {
-      result.push_back(inst);
-    }
-  }
-  return result;
-}
-
-std::vector<opt::Instruction*>
-FuzzerPassAddEquationInstructions::RestrictToSignedness(
-    const std::vector<opt::Instruction*>& instructions, bool is_signed) const {
-  std::vector<opt::Instruction*> result;
-  for (auto* inst : instructions) {
-    const auto* type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
-    assert(type && "Instructions must have valid type");
-    if (type->AsVector()) {
-      type = type->AsVector()->element_type();
-    }
-
-    assert(type->AsInteger() &&
-           "Precondition: all input instructions must "
-           "have integer scalar or vector type.");
-    if (type->AsInteger()->IsSigned() == is_signed) {
       result.push_back(inst);
     }
   }

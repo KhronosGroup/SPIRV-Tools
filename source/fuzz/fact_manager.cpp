@@ -593,12 +593,14 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
       // Equation form: a = int(b)
       for (auto equation : GetEquations(rhs_dds[0])) {
         // Equation form: b = float(c)
-        if ((equation.opcode == SpvOpConvertSToF &&
-             opcode == SpvOpConvertFToS) ||
-            (equation.opcode == SpvOpConvertUToF &&
-             opcode == SpvOpConvertFToU)) {
-          // We can thus infer "a = c"
-          AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0], context);
+        if (equation.opcode == SpvOpConvertSToF ||
+            equation.opcode == SpvOpConvertUToF) {
+          // We can thus infer "a = c" if |a| and |c| have the same type. They
+          // may not have the same type in terms of signedness.
+          if (fuzzerutil::GetTypeId(context, lhs_dd.object()) ==
+              fuzzerutil::GetTypeId(context, equation.operands[0]->object())) {
+            AddDataSynonymFactRecursive(lhs_dd, *equation.operands[0], context);
+          }
         }
       }
     } break;
