@@ -122,8 +122,6 @@ void TransformationReplaceParamsWithStruct::Apply(
     struct_components_ids.push_back(fuzzerutil::GetTypeId(ir_context, id));
   }
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3479):
-  //  fuzzerutil::FindOrCreateStructType is available when the PR is merged.
   auto struct_type_id = fuzzerutil::FindOrCreateStructType(
       ir_context, message_.fresh_struct_type_id(), struct_components_ids);
 
@@ -293,6 +291,8 @@ uint32_t TransformationReplaceParamsWithStruct::GetNumberOfCallees(
 
 bool TransformationReplaceParamsWithStruct::IsParameterTypeSupported(
     const opt::analysis::Type& param_type) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
+  //  Consider adding support for more types of parameters.
   switch (param_type.kind()) {
     case opt::analysis::Type::kBool:
     case opt::analysis::Type::kInteger:
