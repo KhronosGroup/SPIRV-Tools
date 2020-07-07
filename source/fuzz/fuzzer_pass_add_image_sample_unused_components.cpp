@@ -139,8 +139,7 @@ void FuzzerPassAddImageSampleUnusedComponents::Apply() {
         // type is the same as the coordinate. If the coordinate is a vector,
         // then the unused components type is the same as the coordinate
         // components type.
-        // %20 = OpConstant %4 0
-        // %21 = OpConstantComposite %5 %20 %20
+        // |zero_constant_type_id| %5 = OpTypeVector %4 2
         zero_constant_type_id =
             coordinate_type->AsInteger() || coordinate_type->AsFloat()
                 ? FindOrCreateVectorType(coordinate_instruction->type_id(),
