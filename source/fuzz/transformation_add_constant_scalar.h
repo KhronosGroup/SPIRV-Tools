@@ -31,7 +31,8 @@ class TransformationAddConstantScalar : public Transformation {
       const protobufs::TransformationAddConstantScalar& message);
 
   TransformationAddConstantScalar(uint32_t fresh_id, uint32_t type_id,
-                                  std::vector<uint32_t> words);
+                                  const std::vector<uint32_t>& words,
+                                  bool is_irrelevant = false);
 
   // - |message_.fresh_id| must not be used by the module
   // - |message_.type_id| must be the id of a floating-point or integer type

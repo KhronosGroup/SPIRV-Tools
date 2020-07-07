@@ -73,8 +73,8 @@ void FuzzerPassAddParameters::Apply() {
       ApplyTransformation(TransformationAddParameter(
           function.result_id(), GetFuzzerContext()->GetFreshId(),
           FindOrCreateZeroConstant(
-              type_candidates[GetFuzzerContext()->RandomIndex(
-                  type_candidates)]),
+              type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)],
+              true),
           GetFuzzerContext()->GetFreshId()));
     }
   }

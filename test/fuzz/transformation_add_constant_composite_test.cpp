@@ -101,7 +101,30 @@ TEST(TransformationAddConstantCompositeTest, BasicTest) {
       TransformationAddConstantComposite(105, 26, {104, 33}),
 
       // %106 = OpConstantComposite %35 %38 %39 %40
-      TransformationAddConstantComposite(106, 35, {38, 39, 40})};
+      TransformationAddConstantComposite(106, 35, {38, 39, 40}),
+
+      // Same constants but with an irrelevant fact applied.
+
+      // %107 = OpConstantComposite %7 %11 %12
+      TransformationAddConstantComposite(107, 7, {11, 12}, true),
+
+      // %108 = OpConstantComposite %7 %14 %15
+      TransformationAddConstantComposite(108, 7, {14, 15}, true),
+
+      // %109 = OpConstantComposite %7 %17 %18
+      TransformationAddConstantComposite(109, 7, {17, 18}, true),
+
+      // %110 = OpConstantComposite %8 %100 %101 %102
+      TransformationAddConstantComposite(110, 8, {100, 101, 102}, true),
+
+      // %111 = OpConstantComposite %24 %29 %30 %31
+      TransformationAddConstantComposite(111, 24, {29, 30, 31}, true),
+
+      // %112 = OpConstantComposite %26 %104 %33
+      TransformationAddConstantComposite(112, 26, {104, 33}, true),
+
+      // %113 = OpConstantComposite %35 %38 %39 %40
+      TransformationAddConstantComposite(113, 35, {38, 39, 40}, true)};
 
   for (auto& transformation : transformations) {
     ASSERT_TRUE(
@@ -109,6 +132,10 @@ TEST(TransformationAddConstantCompositeTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
   }
   ASSERT_TRUE(IsValid(env, context.get()));
+
+  for (uint32_t id = 107; id <= 113; ++id) {
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(id));
+  }
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -149,6 +176,13 @@ TEST(TransformationAddConstantCompositeTest, BasicTest) {
         %104 = OpConstantComposite %24 %29 %30 %31
         %105 = OpConstantComposite %26 %104 %33
         %106 = OpConstantComposite %35 %38 %39 %40
+        %107 = OpConstantComposite %7 %11 %12
+        %108 = OpConstantComposite %7 %14 %15
+        %109 = OpConstantComposite %7 %17 %18
+        %110 = OpConstantComposite %8 %100 %101 %102
+        %111 = OpConstantComposite %24 %29 %30 %31
+        %112 = OpConstantComposite %26 %104 %33
+        %113 = OpConstantComposite %35 %38 %39 %40
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn

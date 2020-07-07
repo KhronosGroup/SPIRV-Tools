@@ -60,8 +60,9 @@ bool PhiIdsOkForNewEdge(
 // to %some_block, with |bb_to| being the unreachable alternative.  Updates
 // OpPhi instructions in |bb_to| using |phi_ids| so that the new edge is valid.
 void AddUnreachableEdgeAndUpdateOpPhis(
-    opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
-    bool condition_value,
+    opt::IRContext* context,
+    const TransformationContext& transformation_context,
+    opt::BasicBlock* bb_from, opt::BasicBlock* bb_to, bool condition_value,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids);
 
 // Returns true if and only if |loop_header_id| is a loop header and
@@ -302,6 +303,10 @@ uint32_t MaybeGetIntegerType(opt::IRContext* ir_context, uint32_t width,
 // otherwise.
 uint32_t MaybeGetFloatType(opt::IRContext* ir_context, uint32_t width);
 
+// Returns a result id of an OpTypeBool instruction if present. Returns 0
+// otherwise.
+uint32_t MaybeGetBoolType(opt::IRContext* ir_context);
+
 // Returns a result id of an OpTypeVector instruction if present. Returns 0
 // otherwise. |component_type_id| must be a valid result id of an OpTypeInt,
 // OpTypeFloat or OpTypeBool instruction in the module. |element_count| must be
@@ -323,39 +328,52 @@ uint32_t MaybeGetStructType(opt::IRContext* ir_context,
 //   Every component of the composite constant is looked up by calling this
 //   function with the type id of that component.
 // Returns 0 if no such instruction is present in the module.
-uint32_t MaybeGetZeroConstant(opt::IRContext* ir_context,
-                              uint32_t scalar_or_composite_type_id);
+uint32_t MaybeGetZeroConstant(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context,
+    uint32_t scalar_or_composite_type_id, bool is_irrelevant = false);
 
 // Returns the result id of an OpConstant instruction. |scalar_type_id| must be
 // a result id of a scalar type (i.e. int, float or bool). Returns 0 if no such
 // instruction is present in the module.
-uint32_t MaybeGetScalarConstant(opt::IRContext* ir_context,
-                                const std::vector<uint32_t>& words,
-                                uint32_t scalar_type_id);
+uint32_t MaybeGetScalarConstant(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context,
+    const std::vector<uint32_t>& words, uint32_t scalar_type_id,
+    bool is_irrelevant = false);
 
 // Returns the result id of an OpConstantComposite instruction.
 // |composite_type_id| must be a result id of a composite type (i.e. vector,
 // matrix, struct or array). Returns 0 if no such instruction is present in the
 // module.
-uint32_t MaybeGetCompositeConstant(opt::IRContext* ir_context,
-                                   const std::vector<uint32_t>& component_ids,
-                                   uint32_t composite_type_id);
+uint32_t MaybeGetCompositeConstant(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context,
+    const std::vector<uint32_t>& component_ids, uint32_t composite_type_id,
+    bool is_irrelevant = false);
 
 // Returns the result id of an OpConstant instruction of integral type.
 // Returns 0 if no such instruction or type is present in the module.
-uint32_t MaybeGetIntegerConstant(opt::IRContext* ir_context,
-                                 const std::vector<uint32_t>& words,
-                                 uint32_t width, bool is_signed);
+uint32_t MaybeGetIntegerConstant(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context,
+    const std::vector<uint32_t>& words, uint32_t width, bool is_signed,
+    bool is_irrelevant = false);
 
 // Returns the result id of an OpConstant instruction of floating-point type.
 // Returns 0 if no such instruction or type is present in the module.
-uint32_t MaybeGetFloatConstant(opt::IRContext* ir_context,
-                               const std::vector<uint32_t>& words,
-                               uint32_t width);
+uint32_t MaybeGetFloatConstant(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context,
+    const std::vector<uint32_t>& words, uint32_t width,
+    bool is_irrelevant = false);
 
 // Returns the id of a boolean constant with value |value| if it exists in the
 // module, or 0 otherwise.
-uint32_t MaybeGetBoolConstant(opt::IRContext* context, bool value);
+uint32_t MaybeGetBoolConstant(
+    opt::IRContext* context,
+    const TransformationContext& transformation_context, bool value,
+    bool is_irrelevant = false);
 
 // Creates a new OpTypeInt instruction in the module. Updates module's id bound
 // to accommodate for |result_id|.
@@ -386,6 +404,11 @@ inline uint32_t FloatToWord(float value) {
   memcpy(&result, &value, sizeof(uint32_t));
   return result;
 }
+
+uint32_t FindOrCreateIrrelevantId(opt::IRContext* ir_context,
+                                  FactManager* fact_manager,
+                                  uint32_t irrelevant_id, uint32_t function_id,
+                                  uint32_t result_id);
 
 }  // namespace fuzzerutil
 

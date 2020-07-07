@@ -28,7 +28,8 @@ class TransformationAddConstantBoolean : public Transformation {
   explicit TransformationAddConstantBoolean(
       const protobufs::TransformationAddConstantBoolean& message);
 
-  TransformationAddConstantBoolean(uint32_t fresh_id, bool is_true);
+  TransformationAddConstantBoolean(uint32_t fresh_id, bool is_true,
+                                   bool is_irrelevant = false);
 
   // - |message_.fresh_id| must not be used by the module.
   // - The module must already contain OpTypeBool.

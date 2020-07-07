@@ -67,13 +67,7 @@ void FuzzerPassAddDeadBreaks::Apply() {
         if (!block.IsSuccessor(merge_block)) {
           merge_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {
             // Add an additional operand for OpPhi instruction.
-            //
-            // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-            // If we have a way to communicate to the fact manager
-            // that a specific id use is irrelevant and could be replaced with
-            // something else, we should add such a fact about the zero
-            // provided as an OpPhi operand
-            phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id()));
+            phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id(), true));
           });
         }
 

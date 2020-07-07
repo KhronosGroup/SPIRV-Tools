@@ -53,6 +53,12 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   ASSERT_TRUE(TransformationAddConstantBoolean(7, false).IsApplicable(
       context.get(), transformation_context));
 
+  // Irrelevat true and false can both be added as neither is present.
+  ASSERT_TRUE(TransformationAddConstantBoolean(7, true, true)
+                  .IsApplicable(context.get(), transformation_context));
+  ASSERT_TRUE(TransformationAddConstantBoolean(7, false, true)
+                  .IsApplicable(context.get(), transformation_context));
+
   // Id 5 is already taken.
   ASSERT_FALSE(TransformationAddConstantBoolean(5, true).IsApplicable(
       context.get(), transformation_context));
@@ -86,6 +92,23 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   add_false_again.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
+  // We can create an irrelevant OpConstantTrue.
+  TransformationAddConstantBoolean irrelevant_true(102, true, true);
+  ASSERT_TRUE(
+      irrelevant_true.IsApplicable(context.get(), transformation_context));
+  irrelevant_true.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // We can create an irrelevant OpConstantFalse.
+  TransformationAddConstantBoolean irrelevant_false(103, false, true);
+  ASSERT_TRUE(
+      irrelevant_false.IsApplicable(context.get(), transformation_context));
+  irrelevant_false.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(102));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(103));
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -101,6 +124,8 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
         %100 = OpConstantTrue %6
           %8 = OpConstantFalse %6
         %101 = OpConstantFalse %6
+        %102 = OpConstantTrue %6
+        %103 = OpConstantFalse %6
           %4 = OpFunction %2 None %3
           %5 = OpLabel
                OpReturn
@@ -142,6 +167,12 @@ TEST(TransformationAddConstantBooleanTest, NoOpTypeBoolPresent) {
       context.get(), transformation_context));
   ASSERT_FALSE(TransformationAddConstantBoolean(6, false).IsApplicable(
       context.get(), transformation_context));
+
+  // This does not depend on whether the constant is relevant or not.
+  ASSERT_FALSE(TransformationAddConstantBoolean(6, true, true)
+                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationAddConstantBoolean(6, false, true)
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace

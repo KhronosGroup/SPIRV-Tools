@@ -919,11 +919,7 @@ void FuzzerPassDonateModules::HandleDifficultInstruction(
 
   // We find or add a zero constant to the receiving module for the type in
   // question, and add an OpCopyObject instruction that copies this zero.
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-  //  Using this particular constant is arbitrary, so if we have a
-  //  mechanism for noting that an id use is arbitrary and could be
-  //  fuzzed we should use it here.
-  auto zero_constant = FindOrCreateZeroConstant(remapped_type_id);
+  auto zero_constant = FindOrCreateZeroConstant(remapped_type_id, true);
   donated_instructions->push_back(MakeInstructionMessage(
       SpvOpCopyObject, remapped_type_id,
       original_id_to_donated_id->at(instruction.result_id()),

@@ -146,7 +146,11 @@ FuzzerPassAddFunctionCalls::GetAvailableInstructionsSuitableForActualParameters(
                 return false;
               }
             }
-            return true;
+
+            // Consider only irrelevant ids so that we can obfuscate parameters
+            // later
+            return GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
+                inst->result_id());
           });
 
   // Group all the instructions that are potentially viable as function actual
@@ -188,10 +192,6 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
     if (type_to_available_instructions.count(arg_type_id)) {
       std::vector<opt::Instruction*>& candidate_arguments =
           type_to_available_instructions.at(arg_type_id);
-      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177) The value
-      //  selected here is arbitrary.  We should consider adding this
-      //  information as a fact so that the passed parameter could be
-      //  transformed/changed.
       result.push_back(candidate_arguments[GetFuzzerContext()->RandomIndex(
                                                candidate_arguments)]
                            ->result_id());
@@ -241,10 +241,7 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
               true));
         }
       } else {
-        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177): We use
-        //  constant zero for the parameter, but could consider adding a fact
-        //  to allow further passes to obfuscate it.
-        result.push_back(FindOrCreateZeroConstant(arg_type_id));
+        result.push_back(FindOrCreateZeroConstant(arg_type_id, true));
       }
     }
   }

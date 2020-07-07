@@ -172,19 +172,21 @@ class FuzzerPass {
   // with |words| as its value.  If either the required integer type or the
   // constant do not exist, transformations are applied to add them.
   uint32_t FindOrCreateIntegerConstant(const std::vector<uint32_t>& words,
-                                       uint32_t width, bool is_signed);
+                                       uint32_t width, bool is_signed,
+                                       bool is_irrelevant = false);
 
   // Returns the id of an OpConstant instruction, with a floating-point
   // type of width specified by |width|, with |words| as its value.  If either
   // the required floating-point type or the constant do not exist,
   // transformations are applied to add them.
   uint32_t FindOrCreateFloatConstant(const std::vector<uint32_t>& words,
-                                     uint32_t width);
+                                     uint32_t width,
+                                     bool is_irrelevant = false);
 
   // Returns the id of an OpConstantTrue or OpConstantFalse instruction,
   // according to |value|.  If either the required instruction or the bool
   // type do not exist, transformations are applied to add them.
-  uint32_t FindOrCreateBoolConstant(bool value);
+  uint32_t FindOrCreateBoolConstant(bool value, bool is_irrelevant = false);
 
   // Returns the id of an OpConstant instruction of type with |type_id|
   // that consists of |words|. If that instruction doesn't exist,
@@ -192,7 +194,7 @@ class FuzzerPass {
   // result id of either scalar or boolean OpType* instruction that exists
   // in the module.
   uint32_t FindOrCreateConstant(const std::vector<uint32_t>& words,
-                                uint32_t type_id);
+                                uint32_t type_id, bool is_irrelevant = false);
 
   // Returns the id of an OpConstantComposite
   uint32_t FindOrCreateCompositeConstant(
@@ -251,7 +253,8 @@ class FuzzerPass {
   //     uint2 u;  |
   //   }           |
   // --------------+-------------------------------
-  uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id);
+  uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id,
+                                    bool is_irrelevant = false);
 
  private:
   // Array, matrix and vector are *homogeneous* composite types in the sense
@@ -262,19 +265,16 @@ class FuzzerPass {
   // are applied to add it.
   uint32_t GetZeroConstantForHomogeneousComposite(
       const opt::Instruction& composite_type_instruction,
-      uint32_t component_type_id, uint32_t num_components);
+      uint32_t component_type_id, uint32_t num_components, bool is_irrelevant);
 
   // Helper to find an existing composite constant instruction of the given
   // composite type with the given constant components, or to apply
   // transformations to create such an instruction if it does not yet exist.
   // Parameter |composite_type_instruction| must be a composite type
-  // instruction.  The parameters |constants| and |constant_ids| must have the
-  // same size, and it must be the case that for each i, |constant_ids[i]| is
-  // the result id of an instruction that defines |constants[i]|.
+  // instruction.
   uint32_t FindOrCreateCompositeConstant(
       const opt::Instruction& composite_type_instruction,
-      const std::vector<const opt::analysis::Constant*>& constants,
-      const std::vector<uint32_t>& constant_ids);
+      const std::vector<uint32_t>& constant_ids, bool is_irrelevant);
 
   opt::IRContext* ir_context_;
   TransformationContext* transformation_context_;
