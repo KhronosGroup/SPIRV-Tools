@@ -588,10 +588,29 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
   // Now try to work out corollaries implied by the new equation and existing
   // facts.
   switch (opcode) {
+    case SpvOpConvertSToF:
+    case SpvOpConvertUToF: {
+      // Equation form: a = float(b)
+      for (const auto& fact : id_equations_) {
+        for (const auto& equation : fact.second) {
+          // Equation form: c = int(a)
+          if ((equation.opcode == SpvOpConvertFToS ||
+               equation.opcode == SpvOpConvertFToU) &&
+              equation.operands[0]->object() == lhs_dd.object()) {
+            // We can thus infer "c = b" if |c| and |b| have the same type. They
+            // may not have the same type in terms of signedness.
+            if (fuzzerutil::GetTypeId(context, rhs_dds[0]->object()) ==
+                fuzzerutil::GetTypeId(context, fact.first->object())) {
+              AddDataSynonymFactRecursive(*fact.first, *rhs_dds[0], context);
+            }
+          }
+        }
+      }
+    } break;
     case SpvOpConvertFToS:
     case SpvOpConvertFToU: {
       // Equation form: a = int(b)
-      for (auto equation : GetEquations(rhs_dds[0])) {
+      for (const auto& equation : GetEquations(rhs_dds[0])) {
         // Equation form: b = float(c)
         if (equation.opcode == SpvOpConvertSToF ||
             equation.opcode == SpvOpConvertUToF) {
@@ -606,7 +625,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     } break;
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
-      for (auto equation : GetEquations(rhs_dds[0])) {
+      for (const auto& equation : GetEquations(rhs_dds[0])) {
         if (equation.opcode == SpvOpISub) {
           // Equation form: "a = (d - e) + c"
           if (synonymous_.IsEquivalent(*equation.operands[1], *rhs_dds[1])) {
@@ -622,7 +641,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
           }
         }
       }
-      for (auto equation : GetEquations(rhs_dds[1])) {
+      for (const auto& equation : GetEquations(rhs_dds[1])) {
         if (equation.opcode == SpvOpISub) {
           // Equation form: "a = b + (d - e)"
           if (synonymous_.IsEquivalent(*equation.operands[1], *rhs_dds[0])) {
@@ -636,7 +655,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     }
     case SpvOpISub: {
       // Equation form: "a = b - c"
-      for (auto equation : GetEquations(rhs_dds[0])) {
+      for (const auto& equation : GetEquations(rhs_dds[0])) {
         if (equation.opcode == SpvOpIAdd) {
           // Equation form: "a = (d + e) - c"
           if (synonymous_.IsEquivalent(*equation.operands[0], *rhs_dds[1])) {
@@ -662,7 +681,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
         }
       }
 
-      for (auto equation : GetEquations(rhs_dds[1])) {
+      for (const auto& equation : GetEquations(rhs_dds[1])) {
         if (equation.opcode == SpvOpIAdd) {
           // Equation form: "a = b - (d + e)"
           if (synonymous_.IsEquivalent(*equation.operands[0], *rhs_dds[0])) {
@@ -692,7 +711,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     case SpvOpLogicalNot:
     case SpvOpSNegate: {
       // Equation form: "a = !b" or "a = -b"
-      for (auto equation : GetEquations(rhs_dds[0])) {
+      for (const auto& equation : GetEquations(rhs_dds[0])) {
         if (equation.opcode == opcode) {
           // Equation form: "a = !!b" or "a = -(-b)"
           // We can thus infer "a = b"

@@ -77,7 +77,7 @@ void FuzzerPassAddEquationInstructions::Apply() {
             case SpvOpConvertSToF:
             case SpvOpConvertUToF: {
               auto candidate_instructions =
-                  opcode == SpvOpConvertFToS || opcode == SpvOpConvertFToU
+                  (opcode == SpvOpConvertFToS || opcode == SpvOpConvertFToU)
                       ? GetFloatInstructions(available_instructions)
                       : GetIntegerInstructions(available_instructions);
 
@@ -98,6 +98,8 @@ void FuzzerPassAddEquationInstructions::Apply() {
                 case SpvOpConvertFToS:
                 case SpvOpConvertFToU: {
                   // OpConvertFToU can only convert to unsigned integer type.
+                  // OpConvertFToS can convert to both signed and unsigned
+                  // integer types.
                   auto is_signed = opcode == SpvOpConvertFToU
                                        ? false
                                        : GetFuzzerContext()->ChooseEven();
