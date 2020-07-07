@@ -36,15 +36,21 @@ FuzzerPassReplaceParameterWithGlobal::~FuzzerPassReplaceParameterWithGlobal() =
 
 void FuzzerPassReplaceParameterWithGlobal::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
-    auto params =
-        fuzzerutil::GetParameters(GetIRContext(), function.result_id());
-
-    if (params.empty() || fuzzerutil::FunctionIsEntryPoint(
-                              GetIRContext(), function.result_id())) {
+    if (fuzzerutil::FunctionIsEntryPoint(GetIRContext(),
+                                         function.result_id())) {
       continue;
     }
 
-    // Make sure at least one parameter can be replaced.
+    if (!GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()->GetChanceOfReplacingParametersWithGlobals())) {
+      continue;
+    }
+
+    auto params =
+        fuzzerutil::GetParameters(GetIRContext(), function.result_id());
+
+    // Make sure at least one parameter can be replaced. Also checks that the
+    // function has at least one parameter.
     if (std::none_of(params.begin(), params.end(),
                      [this](const opt::Instruction* param) {
                        const auto* param_type =
@@ -57,16 +63,11 @@ void FuzzerPassReplaceParameterWithGlobal::Apply() {
       continue;
     }
 
-    if (!GetFuzzerContext()->ChoosePercentage(
-            GetFuzzerContext()->GetChanceOfReplacingParametersWithGlobals())) {
-      continue;
-    }
-
     // Select id of a parameter to replace.
     const opt::Instruction* replaced_param;
     const opt::analysis::Type* param_type;
     do {
-      replaced_param = params[GetFuzzerContext()->RandomIndex(params)];
+      replaced_param = GetFuzzerContext()->RemoveAtRandomIndex(&params);
       param_type =
           GetIRContext()->get_type_mgr()->GetType(replaced_param->type_id());
       assert(param_type && "Parameter has invalid type");

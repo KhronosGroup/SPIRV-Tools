@@ -40,7 +40,8 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
   // - |initializer_id| is a result id of an instruction used to initialize
   //   a global variable. Its type id must be equal to either the type of the
   //   parameter if the latter is a not a pointer, or to its pointee otherwise.
-  //   If parameter is a pointer with Workgroup storage class, this is 0.
+  //   This must be equal to 0 if parameter is a pointer with Workgroup storage
+  //   class.
   // - the function that contains |parameter_id| may not be an entry-point
   //   function.
   bool IsApplicable(

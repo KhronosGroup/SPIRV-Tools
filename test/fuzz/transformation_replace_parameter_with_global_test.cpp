@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_permute_function_parameters.h"
+#include "source/fuzz/transformation_replace_parameter_with_global.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -20,7 +20,19 @@ namespace fuzz {
 namespace {
 
 TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
-  // TODO
+  std::string shader = R"(
+
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 }
 
 }  // namespace

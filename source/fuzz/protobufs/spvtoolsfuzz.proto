@@ -1141,7 +1141,7 @@ message TransformationReplaceParameterWithGlobal {
   uint32 global_variable_fresh_id = 4;
 
   // Result id of an instruction used to initialize a global variable.
-  // This is 0 if parameter is a pointer with a Workgroup storage class.
+  // This must be 0 if parameter is a pointer with a Workgroup storage class.
   uint32 initializer_id = 5;
 
 }
