@@ -66,10 +66,7 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer =
-      [](spv_message_level_t /* level */, const char* /* source */,
-         const spv_position_t& /* position */,
-         const char* message) { std::cerr << message << std::endl; };
+  const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
