@@ -51,11 +51,7 @@
 #include "source/fuzz/transformation_copy_object.h"
 #include "source/fuzz/transformation_equation_instruction.h"
 #include "source/fuzz/transformation_function_call.h"
-<<<<<<< HEAD
 #include "source/fuzz/transformation_invert_comparison_operator.h"
-=======
-#include "source/fuzz/transformation_invert_comparison_operators.h"
->>>>>>> 38dadc2f... Implement transformations
 #include "source/fuzz/transformation_load.h"
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"

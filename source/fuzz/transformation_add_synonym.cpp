@@ -133,7 +133,7 @@ bool TransformationAddSynonym::IsInstructionValid(
       return type->AsInteger() || type->AsFloat();
     }
     case protobufs::TransformationAddSynonym::COPY_OBJECT:
-      // Copy object has no constraints on the type of the operand.
+      // OpCopyObject has no constraints on the type of the operand.
       return true;
     case protobufs::TransformationAddSynonym::LOGICAL_AND:
     case protobufs::TransformationAddSynonym::LOGICAL_OR: {
@@ -226,9 +226,6 @@ uint32_t TransformationAddSynonym::MaybeGetConstantId(
       fuzzerutil::GetTypeId(ir_context, message_.result_id());
   assert(synonym_type_id && "Synonym has invalid type id");
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3487):
-  //  fuzzerutil::MaybeGet* functions will become available when the PR is
-  //  merged.
   switch (message_.synonym_type()) {
     case protobufs::TransformationAddSynonym::ADD_ZERO:
     case protobufs::TransformationAddSynonym::SUB_ZERO:
