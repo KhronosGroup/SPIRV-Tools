@@ -165,6 +165,9 @@ class FuzzerContext {
   uint32_t GetChanceOfChoosingStructTypeVsArrayType() {
     return chance_of_choosing_struct_type_vs_array_type_;
   }
+  uint32_t GetChanceOfChoosingWorkgroupStorageClass() {
+    return chance_of_choosing_workgroup_storage_class_;
+  }
   uint32_t GetChanceOfConstructingComposite() {
     return chance_of_constructing_composite_;
   }
@@ -301,6 +304,7 @@ class FuzzerContext {
   uint32_t chance_of_adjusting_selection_control_;
   uint32_t chance_of_calling_function_;
   uint32_t chance_of_choosing_struct_type_vs_array_type_;
+  uint32_t chance_of_choosing_workgroup_storage_class_;
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
