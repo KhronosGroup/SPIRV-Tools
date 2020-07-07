@@ -30,8 +30,7 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
 
   TransformationReplaceParameterWithGlobal(uint32_t function_type_fresh_id,
                                            uint32_t parameter_id,
-                                           uint32_t global_variable_fresh_id,
-                                           uint32_t initializer_id);
+                                           uint32_t global_variable_fresh_id);
 
   // - |function_type_fresh_id| is a fresh id.
   // - |parameter_id| is the result id of the parameter to replace.
@@ -64,9 +63,6 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
   // Returns true if the type of the parameter is supported by this
   // transformation.
   static bool CanReplaceFunctionParameterType(const opt::analysis::Type& type);
-
-  static SpvStorageClass GetStorageClassForGlobalVariable(
-      opt::IRContext* ir_context, uint32_t param_type_id);
 
  private:
   protobufs::TransformationReplaceParameterWithGlobal message_;

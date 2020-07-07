@@ -27,42 +27,49 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
                OpEntryPoint Fragment %4 "main"
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
+               OpMemberDecorate %13 0 RelaxedPrecision
+               OpDecorate %16 RelaxedPrecision
           %2 = OpTypeVoid
-          %6 = OpTypeInt 32 1
           %3 = OpTypeFunction %2
-          %7 = OpTypePointer Function %6
-         %21 = OpTypePointer Private %6
-         %22 = OpTypePointer Workgroup %6
-          %8 = OpTypeFunction %2 %7 %21 %22 %6
-         %15 = OpTypeBool
-         %28 = OpConstantFalse %15
-         %16 = OpTypePointer Function %15
-         %18 = OpConstant %6 3
-         %19 = OpConstant %6 4
-         %26 = OpVariable %21 Private
-         %27 = OpVariable %22 Workgroup
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Private %6
+          %8 = OpTypeFloat 32
+          %9 = OpTypePointer Private %8
+         %10 = OpTypeVector %8 2
+         %11 = OpTypePointer Private %10
+         %12 = OpTypeBool
+         %40 = OpTypePointer Function %12
+         %13 = OpTypeStruct %6 %8
+         %14 = OpTypePointer Private %13
+         %15 = OpTypeFunction %2 %6 %8 %10 %13 %40 %12
+         %22 = OpConstant %6 0
+         %23 = OpConstant %8 0
+         %26 = OpConstantComposite %10 %23 %23
+         %27 = OpConstantTrue %12
+         %28 = OpConstantComposite %13 %22 %23
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %17 = OpVariable %16 Function
-         %20 = OpVariable %7 Function
-         %30 = OpFunctionCall %2 %10 %20 %26 %27 %18
+         %41 = OpVariable %40 Function %27
+         %33 = OpFunctionCall %2 %20 %22 %23 %26 %28 %41 %27
                OpReturn
                OpFunctionEnd
-         %10 = OpFunction %2 None %8
-          %9 = OpFunctionParameter %7
-         %23 = OpFunctionParameter %21
-         %24 = OpFunctionParameter %22
-         %25 = OpFunctionParameter %6
-         %11 = OpLabel
+         %20 = OpFunction %2 None %15
+         %16 = OpFunctionParameter %6
+         %17 = OpFunctionParameter %8
+         %18 = OpFunctionParameter %10
+         %19 = OpFunctionParameter %13
+         %42 = OpFunctionParameter %40
+         %43 = OpFunctionParameter %12
+         %21 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = [](spv_message_level_t /* level */, const char* /* source */,
-                           const spv_position_t& /* position */, const char* message) {
-    std::cerr << message << std::endl;
-  };
+  const auto consumer =
+      [](spv_message_level_t /* level */, const char* /* source */,
+         const spv_position_t& /* position */,
+         const char* message) { std::cerr << message << std::endl; };
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -72,70 +79,57 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
                                                validator_options);
 
   // Parameter id is invalid.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 40, 41, 0)
-               .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 50, 51)
+                   .IsApplicable(context.get(), transformation_context));
 
   // Parameter id is not a result id of an OpFunctionParameter instruction.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 20, 41, 18)
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 21, 51)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Initializer is non-zero for a pointer parameter with Workgroup storage
-  // class.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 24, 41, 18)
+  // Parameter has unsupported type.
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 42, 51)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Initializer id is 0 for a scalar parameter.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 25, 41, 0)
+  // Initializer for a global variable doesn't exist in the module.
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 43, 51)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Initializer id is 0 for a pointer parameter with Function storage class.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 9, 41, 0)
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Initializer id is 0 for a pointer parameter with Private storage class.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 23, 41, 0)
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Initializer has invalid type.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 25, 41, 28)
+  // Pointer type for a global variable doesn't exist in the module.
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 43, 51)
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type id is not fresh.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(28, 25, 40, 18)
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(16, 16, 51)
                    .IsApplicable(context.get(), transformation_context));
 
   // Global variable id is not fresh.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 25, 28, 18)
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 16, 16)
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type fresh id and global variable fresh id are equal.
-  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(40, 25, 40, 18)
+  ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 16, 50)
                    .IsApplicable(context.get(), transformation_context));
 
   {
-    // Parameter is a pointer with Function storage class.
-    TransformationReplaceParameterWithGlobal transformation(40, 9, 41, 18);
+    TransformationReplaceParameterWithGlobal transformation(50, 16, 51);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    // Parameter is a pointer with Private storage class.
-    TransformationReplaceParameterWithGlobal transformation(42, 23, 43, 18);
+    TransformationReplaceParameterWithGlobal transformation(52, 17, 53);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    // Parameter is a pointer with Workgroup storage class.
-    TransformationReplaceParameterWithGlobal transformation(42, 24, 43, 0);
+    TransformationReplaceParameterWithGlobal transformation(54, 18, 55);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    // Parameter is a scalar type.
-    TransformationReplaceParameterWithGlobal transformation(42, 25, 43, 18);
+    TransformationReplaceParameterWithGlobal transformation(56, 19, 57);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -148,50 +142,53 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
                OpEntryPoint Fragment %4 "main"
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
+               OpMemberDecorate %13 0 RelaxedPrecision
+               OpDecorate %16 RelaxedPrecision
           %2 = OpTypeVoid
-          %6 = OpTypeInt 32 1
           %3 = OpTypeFunction %2
-          %7 = OpTypePointer Function %6
-         %21 = OpTypePointer Private %6
-         %22 = OpTypePointer Workgroup %6
-          %8 = OpTypeFunction %2
-         %15 = OpTypeBool
-         %28 = OpConstantFalse %15
-         %16 = OpTypePointer Function %15
-         %18 = OpConstant %6 3
-         %19 = OpConstant %6 4
-         %26 = OpVariable %21 Private
-         %27 = OpVariable %22 Workgroup
-         %41 = OpVariable %21 Private %18
-         %23 = OpVariable %21 Private %18
-         %24 = OpVariable %22 Workgroup
-         %43 = OpVariable %21 Private %18
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Private %6
+          %8 = OpTypeFloat 32
+          %9 = OpTypePointer Private %8
+         %10 = OpTypeVector %8 2
+         %11 = OpTypePointer Private %10
+         %12 = OpTypeBool
+         %40 = OpTypePointer Function %12
+         %13 = OpTypeStruct %6 %8
+         %14 = OpTypePointer Private %13
+         %15 = OpTypeFunction %2 %40 %12
+         %22 = OpConstant %6 0
+         %23 = OpConstant %8 0
+         %26 = OpConstantComposite %10 %23 %23
+         %27 = OpConstantTrue %12
+         %28 = OpConstantComposite %13 %22 %23
+         %51 = OpVariable %7 Private %22
+         %53 = OpVariable %9 Private %23
+         %55 = OpVariable %11 Private %26
+         %57 = OpVariable %14 Private %28
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %17 = OpVariable %16 Function
-         %20 = OpVariable %7 Function
-               OpCopyMemory %41 %20
-               OpCopyMemory %23 %26
-               OpCopyMemory %24 %27
-               OpStore %43 %18
-         %30 = OpFunctionCall %2 %10
+         %41 = OpVariable %40 Function %27
+               OpStore %51 %22
+               OpStore %53 %23
+               OpStore %55 %26
+               OpStore %57 %28
+         %33 = OpFunctionCall %2 %20 %41 %27
                OpReturn
                OpFunctionEnd
-         %10 = OpFunction %2 None %8
-         %11 = OpLabel
-          %9 = OpVariable %7 Function %18
-         %25 = OpLoad %6 %43
-               OpCopyMemory %9 %41
+         %20 = OpFunction %2 None %15
+         %42 = OpFunctionParameter %40
+         %43 = OpFunctionParameter %12
+         %21 = OpLabel
+         %19 = OpLoad %13 %57
+         %18 = OpLoad %10 %55
+         %17 = OpLoad %8 %53
+         %16 = OpLoad %6 %51
                OpReturn
                OpFunctionEnd
   )";
 
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
-}
-
-TEST(TransformationReplaceParameterWithGlobalTest,
-     GlobalVariableTypeDoesNotExist) {
-
 }
 
 }  // namespace

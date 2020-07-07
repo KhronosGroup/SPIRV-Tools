@@ -74,33 +74,15 @@ void FuzzerPassReplaceParameterWithGlobal::Apply() {
     } while (!TransformationReplaceParameterWithGlobal::
                  CanReplaceFunctionParameterType(*param_type));
 
-    auto* param_type_inst =
-        GetIRContext()->get_def_use_mgr()->GetDef(replaced_param->type_id());
-    assert(param_type_inst && "Parameter's type does not exist");
+    // Make sure type id for the global variable exists in the module.
+    FindOrCreatePointerType(replaced_param->type_id(), SpvStorageClassPrivate);
 
-    auto global_variable_storage_class =
-        TransformationReplaceParameterWithGlobal::
-            GetStorageClassForGlobalVariable(GetIRContext(),
-                                             replaced_param->type_id());
-
-    auto pointee_type_id =
-        param_type_inst->opcode() == SpvOpTypePointer
-            ? fuzzerutil::GetPointeeTypeIdFromPointerType(param_type_inst)
-            : param_type_inst->result_id();
-
-    // Make sure type ids for global variables exist in the module.
-    FindOrCreatePointerType(pointee_type_id, global_variable_storage_class);
-
-    // fuzzerutil::AddGlobalVariable requires initializer to be 0 if variable's
-    // storage class is Workgroup.
-    auto initializer_id =
-        global_variable_storage_class == SpvStorageClassWorkgroup
-            ? 0
-            : FindOrCreateZeroConstant(pointee_type_id);
+    // Make sure initializer for the global variable exists in the module.
+    FindOrCreateZeroConstant(replaced_param->type_id());
 
     ApplyTransformation(TransformationReplaceParameterWithGlobal(
         GetFuzzerContext()->GetFreshId(), replaced_param->result_id(),
-        GetFuzzerContext()->GetFreshId(), initializer_id));
+        GetFuzzerContext()->GetFreshId()));
   }
 }
 

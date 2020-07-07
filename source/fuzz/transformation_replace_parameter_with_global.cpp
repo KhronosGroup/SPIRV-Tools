@@ -44,14 +44,12 @@ TransformationReplaceParameterWithGlobal::
     : message_(message) {}
 
 TransformationReplaceParameterWithGlobal::
-    TransformationReplaceParameterWithGlobal(uint32_t function_type_fresh_id,
-                                             uint32_t parameter_id,
-                                             uint32_t global_variable_fresh_id,
-                                             uint32_t initializer_id) {
+    TransformationReplaceParameterWithGlobal(
+        uint32_t function_type_fresh_id, uint32_t parameter_id,
+        uint32_t global_variable_fresh_id) {
   message_.set_function_type_fresh_id(function_type_fresh_id);
   message_.set_parameter_id(parameter_id);
   message_.set_global_variable_fresh_id(global_variable_fresh_id);
-  message_.set_initializer_id(initializer_id);
 }
 
 bool TransformationReplaceParameterWithGlobal::IsApplicable(
@@ -82,40 +80,15 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
     return false;
   }
 
-  auto* param_type_inst =
-      ir_context->get_def_use_mgr()->GetDef(param_inst->type_id());
-  assert(param_type_inst && "Parameter type must exist");
-
-  // Initializer id can be 0 iff parameter is a pointer with Workgroup storage
-  // class.
-  if (message_.initializer_id() == 0) {
-    return param_type->AsPointer() &&
-           param_type->AsPointer()->storage_class() == SpvStorageClassWorkgroup;
-  }
-
-  // If |initializer_id| is non-zero then parameter can't be a pointer with
-  // Workgroup storage class.
-  if (param_type->AsPointer() &&
-      param_type->AsPointer()->storage_class() == SpvStorageClassWorkgroup) {
+  // Check that initializer for the global variable exists in the module.
+  if (fuzzerutil::MaybeGetZeroConstant(ir_context, param_inst->type_id()) ==
+      0) {
     return false;
   }
 
-  auto pointee_type_id =
-      param_type->AsPointer()
-          ? fuzzerutil::GetPointeeTypeIdFromPointerType(param_type_inst)
-          : param_type_inst->result_id();
-
-  // Check that initializer has valid type.
-  if (fuzzerutil::GetTypeId(ir_context, message_.initializer_id()) !=
-      pointee_type_id) {
-    return false;
-  }
-
-  // Check that pointer type for a global variable exists.
-  if (!fuzzerutil::MaybeGetPointerType(
-          ir_context, pointee_type_id,
-          GetStorageClassForGlobalVariable(ir_context,
-                                           param_inst->type_id()))) {
+  // Check that pointer type for the global variable exists in the module.
+  if (!fuzzerutil::MaybeGetPointerType(ir_context, param_inst->type_id(),
+                                       SpvStorageClassPrivate)) {
     return false;
   }
 
@@ -127,97 +100,45 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
 }
 
 void TransformationReplaceParameterWithGlobal::Apply(
-    opt::IRContext* ir_context,
-    TransformationContext* transformation_context) const {
+    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   const auto* param_inst =
       ir_context->get_def_use_mgr()->GetDef(message_.parameter_id());
   assert(param_inst && "Parameter must exist");
 
-  auto* param_type_inst =
-      ir_context->get_def_use_mgr()->GetDef(param_inst->type_id());
-  assert(param_type_inst && "Parameter must have a valid type");
-
-  // Get pointee type id for a global variable.
-  auto pointee_type_id =
-      param_type_inst->opcode() == SpvOpTypePointer
-          ? fuzzerutil::GetPointeeTypeIdFromPointerType(param_type_inst)
-          : param_inst->type_id();
-
-  auto global_variable_storage_class =
-      GetStorageClassForGlobalVariable(ir_context, param_inst->type_id());
-
-  auto is_local_pointer_or_scalar =
-      param_type_inst->opcode() != SpvOpTypePointer ||
-      fuzzerutil::GetStorageClassFromPointerType(param_type_inst) ==
-          SpvStorageClassFunction;
-
-  // If parameter is not a pointer, we use a fresh id for a global variable and
-  // insert an OpLoad instruction to load parameter's value. If it's a pointer
-  // with Function storage class, we use a fresh id for a global variable and
-  // create a local variable to store parameter's value. Otherwise, we can reuse
-  // parameter's id for a global variable.
-  auto global_variable_result_id = is_local_pointer_or_scalar
-                                       ? message_.global_variable_fresh_id()
-                                       : message_.parameter_id();
-
   // Create global variable to store parameter's value.
   fuzzerutil::AddGlobalVariable(
-      ir_context, global_variable_result_id,
-      fuzzerutil::MaybeGetPointerType(ir_context, pointee_type_id,
-                                      global_variable_storage_class),
-      global_variable_storage_class, message_.initializer_id());
+      ir_context, message_.global_variable_fresh_id(),
+      fuzzerutil::MaybeGetPointerType(ir_context, param_inst->type_id(),
+                                      SpvStorageClassPrivate),
+      SpvStorageClassPrivate,
+      fuzzerutil::MaybeGetZeroConstant(ir_context, param_inst->type_id()));
 
   auto* function =
       GetFunctionFromParameterId(ir_context, message_.parameter_id());
   assert(function && "Function must exist");
 
-  if (is_local_pointer_or_scalar) {
-    // Add a local variable to store parameter's value if it's a pointer with
-    // Function storage class.
-    if (param_type_inst->opcode() == SpvOpTypePointer) {
-      fuzzerutil::AddLocalVariable(ir_context, param_inst->result_id(),
-                                   param_inst->type_id(), function->result_id(),
-                                   message_.initializer_id());
-    }
-
-    // Insert OpLoad or OpCopyMemory instruction right after OpVariable
-    // instructions. The decision on which instruction to insert is made based
-    // on the parameter's type.
-    auto it = function->begin()->begin();
-    while (it != function->begin()->end() &&
-           !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, it)) {
-      ++it;
-    }
-
-    assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, it) &&
-           "Can't insert OpLoad or OpCopyMemory into the first basic block of "
-           "the function");
-
-    if (param_type_inst->opcode() != SpvOpTypePointer) {
-      it.InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpLoad, param_inst->type_id(), param_inst->result_id(),
-          opt::Instruction::OperandList{
-              {SPV_OPERAND_TYPE_ID, {global_variable_result_id}}}));
-    } else {
-      it.InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpCopyMemory, 0, 0,
-          opt::Instruction::OperandList{
-              {SPV_OPERAND_TYPE_ID, {param_inst->result_id()}},
-              {SPV_OPERAND_TYPE_ID, {global_variable_result_id}}}));
-    }
-
-    // If parameter is not a pointer, the condition will fail. Otherwise, we
-    // mark the global variable as irrelevant if parameter's pointee is
-    // irrelevant.
-    if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
-            message_.parameter_id())) {
-      transformation_context->GetFactManager()
-          ->AddFactValueOfPointeeIsIrrelevant(global_variable_result_id);
-    }
+  // Insert an OpLoad instruction right after OpVariable instructions.
+  auto it = function->begin()->begin();
+  while (it != function->begin()->end() &&
+         !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, it)) {
+    ++it;
   }
 
+  assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, it) &&
+         "Can't insert OpLoad or OpCopyMemory into the first basic block of "
+         "the function");
+
+  it.InsertBefore(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpLoad, param_inst->type_id(), param_inst->result_id(),
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {message_.global_variable_fresh_id()}}}));
+
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+  //  Mark the global variable as irrelevant if replaced parameter is
+  //  irrelevant.
+
   // Calculate the index of the replaced parameter (we need to know this to
-  // remove operands from OpFunctionCall.
+  // remove operands from the OpFunctionCall).
   auto params = fuzzerutil::GetParameters(ir_context, function->result_id());
   auto parameter_index = static_cast<uint32_t>(params.size());
   for (uint32_t i = 0, n = static_cast<uint32_t>(params.size()); i < n; ++i) {
@@ -233,28 +154,20 @@ void TransformationReplaceParameterWithGlobal::Apply(
   // Update all OpFunctionCall.
   ir_context->get_def_use_mgr()->ForEachUser(
       function->result_id(),
-      [ir_context, param_type_inst, parameter_index,
-       global_variable_result_id](opt::Instruction* inst) {
+      [ir_context, parameter_index, this](opt::Instruction* inst) {
         if (inst->opcode() != SpvOpFunctionCall) {
           return;
         }
 
-        auto it = fuzzerutil::GetIteratorForInstruction(
-            ir_context->get_instr_block(inst), inst);
-        assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, it) &&
+        assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, inst) &&
                "Can't insert OpStore right before the function call");
 
-        // Insert either OpStore or OpCopyMemory depending on the type of the
-        // parameter. Neither of those instructions support OpTypeRuntimeArray
-        // but it's okay in this case since we check each parameter's type in
-        // the IsApplicable method.
-        it.InsertBefore(MakeUnique<opt::Instruction>(
-            ir_context,
-            param_type_inst->opcode() == SpvOpTypePointer ? SpvOpCopyMemory
-                                                          : SpvOpStore,
-            0, 0,
+        // Insert an OpStore before the OpFunctionCall. +1 since the first
+        // operand of OpFunctionCall is an id of the function.
+        inst->InsertBefore(MakeUnique<opt::Instruction>(
+            ir_context, SpvOpStore, 0, 0,
             opt::Instruction::OperandList{
-                {SPV_OPERAND_TYPE_ID, {global_variable_result_id}},
+                {SPV_OPERAND_TYPE_ID, {message_.global_variable_fresh_id()}},
                 {SPV_OPERAND_TYPE_ID,
                  {inst->GetSingleWordInOperand(parameter_index + 1)}}}));
 
@@ -326,37 +239,9 @@ bool TransformationReplaceParameterWithGlobal::CanReplaceFunctionParameterType(
           [](const opt::analysis::Type* element_type) {
             return CanReplaceFunctionParameterType(*element_type);
           });
-    case opt::analysis::Type::kPointer: {
-      switch (type.AsPointer()->storage_class()) {
-        case SpvStorageClassPrivate:
-        case SpvStorageClassFunction:
-        case SpvStorageClassWorkgroup:
-          return CanReplaceFunctionParameterType(
-              *type.AsPointer()->pointee_type());
-        default:
-          return false;
-      }
-    }
     default:
       return false;
   }
-}
-
-SpvStorageClass
-TransformationReplaceParameterWithGlobal::GetStorageClassForGlobalVariable(
-    opt::IRContext* ir_context, uint32_t param_type_id) {
-  const auto* param_type = ir_context->get_type_mgr()->GetType(param_type_id);
-  assert(param_type && "Parameter type is invalid");
-
-  assert(CanReplaceFunctionParameterType(*param_type));
-
-  if (!param_type->AsPointer()) {
-    return SpvStorageClassPrivate;
-  }
-
-  return param_type->AsPointer()->storage_class() == SpvStorageClassFunction
-             ? SpvStorageClassPrivate
-             : param_type->AsPointer()->storage_class();
 }
 
 }  // namespace fuzz
