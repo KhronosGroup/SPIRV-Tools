@@ -16,6 +16,7 @@
 #define SOURCE_OPT_DEBUG_INFO_MANAGER_H_
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
@@ -23,6 +24,48 @@
 namespace spvtools {
 namespace opt {
 namespace analysis {
+
+// When an instruction of a callee function is inlined to its caller function,
+// we need the line and the scope information of the function call instruction
+// to generate DebugInlinedAt. This class keeps the data. For multiple inlining
+// of a single instruction, we have to create multiple DebugInlinedAt
+// instructions as a chain. This class keeps the information of the generated
+// DebugInlinedAt chains to reduce the number of chains.
+class DebugInlinedAtContext {
+ public:
+  explicit DebugInlinedAtContext(Instruction* call_inst)
+      : call_inst_line_(call_inst->dbg_line_inst()),
+        call_inst_scope_(call_inst->GetDebugScope()) {}
+
+  const Instruction* GetLineOfCallInstruction() { return call_inst_line_; }
+  const DebugScope& GetScopeOfCallInstruction() { return call_inst_scope_; }
+  // Puts the DebugInlinedAt chain that is generated for the callee instruction
+  // whose DebugInlinedAt of DebugScope is |callee_instr_inlined_at| into
+  // |callee_inlined_at2chain_|.
+  void SetDebugInlinedAtChain(uint32_t callee_instr_inlined_at,
+                              uint32_t chain_head_id) {
+    callee_inlined_at2chain_[callee_instr_inlined_at] = chain_head_id;
+  }
+  // Gets the DebugInlinedAt chain from |callee_inlined_at2chain_|.
+  uint32_t GetDebugInlinedAtChain(uint32_t callee_instr_inlined_at) {
+    auto chain_itr = callee_inlined_at2chain_.find(callee_instr_inlined_at);
+    if (chain_itr != callee_inlined_at2chain_.end()) return chain_itr->second;
+    return kNoInlinedAt;
+  }
+
+ private:
+  // The line information of the function call instruction that will be
+  // replaced by the callee function.
+  const Instruction* call_inst_line_;
+
+  // The scope information of the function call instruction that will be
+  // replaced by the callee function.
+  const DebugScope call_inst_scope_;
+
+  // Map from DebugInlinedAt ids of callee to head ids of new generated
+  // DebugInlinedAt chain.
+  std::unordered_map<uint32_t, uint32_t> callee_inlined_at2chain_;
+};
 
 // A class for analyzing, managing, and creating OpenCL.DebugInfo.100 extension
 // instructions.
@@ -52,6 +95,10 @@ class DebugInfoManager {
   uint32_t CreateDebugInlinedAt(const Instruction* line,
                                 const DebugScope& scope);
 
+  // Clones DebugExpress instruction |dbg_expr| and add Deref Operation
+  // in the front of the Operation list of |dbg_expr|.
+  Instruction* DerefDebugExpression(Instruction* dbg_expr);
+
   // Returns a DebugInfoNone instruction.
   Instruction* GetDebugInfoNone();
 
@@ -74,6 +121,27 @@ class DebugInfoManager {
   Instruction* CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
                                    Instruction* insert_before = nullptr);
 
+  // Returns the debug scope corresponding to an inlining instruction in the
+  // scope |callee_instr_scope| into |inlined_at_ctx|. Generates all new
+  // debug instructions needed to represent the scope.
+  DebugScope BuildDebugScope(const DebugScope& callee_instr_scope,
+                             DebugInlinedAtContext* inlined_at_ctx);
+
+  // Returns DebugInlinedAt corresponding to inlining an instruction, which
+  // was inlined at |callee_inlined_at|, into |inlined_at_ctx|. Generates all
+  // new debug instructions needed to represent the DebugInlinedAt.
+  uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
+                                    DebugInlinedAtContext* inlined_at_ctx);
+
+  // Generates a DebugValue instruction with value |value_id| for every local
+  // variable that is in the scope of |scope_and_line| and whose memory is
+  // |variable_id| and inserts it after the instruction |insert_pos|.
+  void AddDebugValue(Instruction* scope_and_line, uint32_t variable_id,
+                     uint32_t value_id, Instruction* insert_pos);
+
+  // Erases |instr| from data structures of this class.
+  void ClearDebugInfo(Instruction* instr);
+
  private:
   IRContext* context() { return context_; }
 
@@ -85,6 +153,9 @@ class DebugInfoManager {
   // does not exists.
   Instruction* GetDbgInst(uint32_t id);
 
+  // Returns a DebugOperation instruction with OpCode Deref.
+  Instruction* GetDebugOperationWithDeref();
+
   // Registers the debug instruction |inst| into |id_to_dbg_inst_| using id of
   // |inst| as a key.
   void RegisterDbgInst(Instruction* inst);
@@ -92,6 +163,31 @@ class DebugInfoManager {
   // Register the DebugFunction instruction |inst|. The function referenced
   // in |inst| must not already be registered.
   void RegisterDbgFunction(Instruction* inst);
+
+  // Register the DebugDeclare or DebugValue with Deref operation
+  // |dbg_declare| into |var_id_to_dbg_decl_| using OpVariable id
+  // |var_id| as a key.
+  void RegisterDbgDeclare(uint32_t var_id, Instruction* dbg_declare);
+
+  // Returns a DebugExpression instruction without Operation operands.
+  Instruction* GetEmptyDebugExpression();
+
+  // Returns the id of Value operand if |inst| is DebugValue who has Deref
+  // operation and its Value operand is a result id of OpVariable with
+  // Function storage class. Otherwise, returns 0.
+  uint32_t GetVariableIdOfDebugValueUsedForDeclare(Instruction* inst);
+
+  // Returns true if a scope |ancestor| is |scope| or an ancestor scope
+  // of |scope|.
+  bool IsAncestorOfScope(uint32_t scope, uint32_t ancestor);
+
+  // Returns true if the declaration of a local variable |dbg_declare|
+  // is visible in the scope of an instruction |instr_scope_id|.
+  bool IsDeclareVisibleToInstr(Instruction* dbg_declare,
+                               uint32_t instr_scope_id);
+
+  // Returns the parent scope of the scope |child_scope|.
+  uint32_t GetParentScope(uint32_t child_scope);
 
   IRContext* context_;
 
@@ -103,9 +199,22 @@ class DebugInfoManager {
   // operand is the function.
   std::unordered_map<uint32_t, Instruction*> fn_id_to_dbg_fn_;
 
+  // Mapping from variable or value ids to DebugDeclare or DebugValue
+  // instructions whose operand is the variable or value.
+  std::unordered_map<uint32_t, std::unordered_set<Instruction*>>
+      var_id_to_dbg_decl_;
+
+  // DebugOperation whose OpCode is OpenCLDebugInfo100Deref.
+  Instruction* deref_operation_;
+
   // DebugInfoNone instruction. We need only a single DebugInfoNone.
   // To reuse the existing one, we keep it using this member variable.
   Instruction* debug_info_none_inst_;
+
+  // DebugExpression instruction without Operation operands. We need only
+  // a single DebugExpression without Operation operands. To reuse the
+  // existing one, we keep it using this member variable.
+  Instruction* empty_debug_expr_inst_;
 };
 
 }  // namespace analysis

@@ -254,7 +254,7 @@ TEST_F(ValidateWebGPU, NonVulkanKHRMemoryModelBad) {
                         "environment.\n  OpMemoryModel Logical GLSL450\n"));
 }
 
-TEST_F(ValidateWebGPU, WhitelistedExtendedInstructionsImportGood) {
+TEST_F(ValidateWebGPU, AllowListedExtendedInstructionsImportGood) {
   std::string spirv = R"(
           OpCapability Shader
           OpCapability VulkanMemoryModelKHR
@@ -275,7 +275,7 @@ TEST_F(ValidateWebGPU, WhitelistedExtendedInstructionsImportGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
 }
 
-TEST_F(ValidateWebGPU, NonWhitelistedExtendedInstructionsImportBad) {
+TEST_F(ValidateWebGPU, NonAllowListedExtendedInstructionsImportBad) {
   std::string spirv = R"(
      OpCapability Shader
      OpCapability VulkanMemoryModelKHR

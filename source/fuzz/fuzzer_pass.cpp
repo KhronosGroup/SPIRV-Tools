@@ -28,6 +28,7 @@
 #include "source/fuzz/transformation_add_type_int.h"
 #include "source/fuzz/transformation_add_type_matrix.h"
 #include "source/fuzz/transformation_add_type_pointer.h"
+#include "source/fuzz/transformation_add_type_struct.h"
 #include "source/fuzz/transformation_add_type_vector.h"
 
 namespace spvtools {
@@ -161,25 +162,22 @@ uint32_t FuzzerPass::FindOrCreateBoolType() {
   return result;
 }
 
-uint32_t FuzzerPass::FindOrCreate32BitIntegerType(bool is_signed) {
-  opt::analysis::Integer int_type(32, is_signed);
-  auto existing_id = GetIRContext()->get_type_mgr()->GetId(&int_type);
-  if (existing_id) {
+uint32_t FuzzerPass::FindOrCreateIntegerType(uint32_t width, bool is_signed) {
+  if (auto existing_id =
+          fuzzerutil::MaybeGetIntegerType(GetIRContext(), width, is_signed)) {
     return existing_id;
   }
   auto result = GetFuzzerContext()->GetFreshId();
-  ApplyTransformation(TransformationAddTypeInt(result, 32, is_signed));
+  ApplyTransformation(TransformationAddTypeInt(result, width, is_signed));
   return result;
 }
 
-uint32_t FuzzerPass::FindOrCreate32BitFloatType() {
-  opt::analysis::Float float_type(32);
-  auto existing_id = GetIRContext()->get_type_mgr()->GetId(&float_type);
-  if (existing_id) {
+uint32_t FuzzerPass::FindOrCreateFloatType(uint32_t width) {
+  if (auto existing_id = fuzzerutil::MaybeGetFloatType(GetIRContext(), width)) {
     return existing_id;
   }
   auto result = GetFuzzerContext()->GetFreshId();
-  ApplyTransformation(TransformationAddTypeFloat(result, 32));
+  ApplyTransformation(TransformationAddTypeFloat(result, width));
   return result;
 }
 
@@ -205,14 +203,8 @@ uint32_t FuzzerPass::FindOrCreateFunctionType(
 
 uint32_t FuzzerPass::FindOrCreateVectorType(uint32_t component_type_id,
                                             uint32_t component_count) {
-  assert(component_count >= 2 && component_count <= 4 &&
-         "Precondition: component count must be in range [2, 4].");
-  opt::analysis::Type* component_type =
-      GetIRContext()->get_type_mgr()->GetType(component_type_id);
-  assert(component_type && "Precondition: the component type must exist.");
-  opt::analysis::Vector vector_type(component_type, component_count);
-  auto existing_id = GetIRContext()->get_type_mgr()->GetId(&vector_type);
-  if (existing_id) {
+  if (auto existing_id = fuzzerutil::MaybeGetVectorType(
+          GetIRContext(), component_type_id, component_count)) {
     return existing_id;
   }
   auto result = GetFuzzerContext()->GetFreshId();
@@ -228,7 +220,7 @@ uint32_t FuzzerPass::FindOrCreateMatrixType(uint32_t column_count,
   assert(row_count >= 2 && row_count <= 4 &&
          "Precondition: row count must be in range [2, 4].");
   uint32_t column_type_id =
-      FindOrCreateVectorType(FindOrCreate32BitFloatType(), row_count);
+      FindOrCreateVectorType(FindOrCreateFloatType(32), row_count);
   opt::analysis::Type* column_type =
       GetIRContext()->get_type_mgr()->GetType(column_type_id);
   opt::analysis::Matrix matrix_type(column_type, column_count);
@@ -240,6 +232,17 @@ uint32_t FuzzerPass::FindOrCreateMatrixType(uint32_t column_count,
   ApplyTransformation(
       TransformationAddTypeMatrix(result, column_type_id, column_count));
   return result;
+}
+
+uint32_t FuzzerPass::FindOrCreateStructType(
+    const std::vector<uint32_t>& component_type_ids) {
+  if (auto existing_id =
+          fuzzerutil::MaybeGetStructType(GetIRContext(), component_type_ids)) {
+    return existing_id;
+  }
+  auto new_id = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationAddTypeStruct(new_id, component_type_ids));
+  return new_id;
 }
 
 uint32_t FuzzerPass::FindOrCreatePointerType(uint32_t base_type_id,
@@ -257,18 +260,17 @@ uint32_t FuzzerPass::FindOrCreatePointerType(uint32_t base_type_id,
   return result;
 }
 
-uint32_t FuzzerPass::FindOrCreatePointerTo32BitIntegerType(
-    bool is_signed, SpvStorageClass storage_class) {
-  return FindOrCreatePointerType(FindOrCreate32BitIntegerType(is_signed),
+uint32_t FuzzerPass::FindOrCreatePointerToIntegerType(
+    uint32_t width, bool is_signed, SpvStorageClass storage_class) {
+  return FindOrCreatePointerType(FindOrCreateIntegerType(width, is_signed),
                                  storage_class);
 }
 
-uint32_t FuzzerPass::FindOrCreate32BitIntegerConstant(uint32_t word,
-                                                      bool is_signed) {
-  auto uint32_type_id = FindOrCreate32BitIntegerType(is_signed);
+uint32_t FuzzerPass::FindOrCreateIntegerConstant(
+    const std::vector<uint32_t>& words, uint32_t width, bool is_signed) {
+  auto int_type_id = FindOrCreateIntegerType(width, is_signed);
   opt::analysis::IntConstant int_constant(
-      GetIRContext()->get_type_mgr()->GetType(uint32_type_id)->AsInteger(),
-      {word});
+      GetIRContext()->get_type_mgr()->GetType(int_type_id)->AsInteger(), words);
   auto existing_constant =
       GetIRContext()->get_constant_mgr()->FindConstant(&int_constant);
   if (existing_constant) {
@@ -279,15 +281,15 @@ uint32_t FuzzerPass::FindOrCreate32BitIntegerConstant(uint32_t word,
   }
   auto result = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(
-      TransformationAddConstantScalar(result, uint32_type_id, {word}));
+      TransformationAddConstantScalar(result, int_type_id, words));
   return result;
 }
 
-uint32_t FuzzerPass::FindOrCreate32BitFloatConstant(uint32_t word) {
-  auto float_type_id = FindOrCreate32BitFloatType();
+uint32_t FuzzerPass::FindOrCreateFloatConstant(
+    const std::vector<uint32_t>& words, uint32_t width) {
+  auto float_type_id = FindOrCreateFloatType(width);
   opt::analysis::FloatConstant float_constant(
-      GetIRContext()->get_type_mgr()->GetType(float_type_id)->AsFloat(),
-      {word});
+      GetIRContext()->get_type_mgr()->GetType(float_type_id)->AsFloat(), words);
   auto existing_constant =
       GetIRContext()->get_constant_mgr()->FindConstant(&float_constant);
   if (existing_constant) {
@@ -298,7 +300,7 @@ uint32_t FuzzerPass::FindOrCreate32BitFloatConstant(uint32_t word) {
   }
   auto result = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(
-      TransformationAddConstantScalar(result, float_type_id, {word}));
+      TransformationAddConstantScalar(result, float_type_id, words));
   return result;
 }
 
@@ -330,16 +332,10 @@ uint32_t FuzzerPass::FindOrCreateConstant(const std::vector<uint32_t>& words,
     assert(words.size() == 1);
     return FindOrCreateBoolConstant(words[0]);
   } else if (const auto* integer = type->AsInteger()) {
-    assert(integer->width() == 32 && words.size() == 1 &&
-           "Integer must have 32-bit width");
-    return FindOrCreate32BitIntegerConstant(words[0], integer->IsSigned());
+    return FindOrCreateIntegerConstant(words, integer->width(),
+                                       integer->IsSigned());
   } else if (const auto* floating = type->AsFloat()) {
-    // Assertions are not evaluated in release builds so |floating|
-    // variable will be unused.
-    (void)floating;
-    assert(floating->width() == 32 && words.size() == 1 &&
-           "Floating point number must have 32-bit width");
-    return FindOrCreate32BitFloatConstant(words[0]);
+    return FindOrCreateFloatConstant(words, floating->width());
   }
 
   // This assertion will fail in debug build but not in release build
@@ -436,11 +432,19 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
   switch (type_instruction->opcode()) {
     case SpvOpTypeBool:
       return FindOrCreateBoolConstant(false);
-    case SpvOpTypeFloat:
-      return FindOrCreate32BitFloatConstant(0);
-    case SpvOpTypeInt:
-      return FindOrCreate32BitIntegerConstant(
-          0, type_instruction->GetSingleWordInOperand(1) != 0);
+    case SpvOpTypeFloat: {
+      auto width = type_instruction->GetSingleWordInOperand(0);
+      auto num_words = (width + 32 - 1) / 32;
+      return FindOrCreateFloatConstant(std::vector<uint32_t>(num_words, 0),
+                                       width);
+    }
+    case SpvOpTypeInt: {
+      auto width = type_instruction->GetSingleWordInOperand(0);
+      auto num_words = (width + 32 - 1) / 32;
+      return FindOrCreateIntegerConstant(
+          std::vector<uint32_t>(num_words, 0), width,
+          type_instruction->GetSingleWordInOperand(1));
+    }
     case SpvOpTypeArray: {
       return GetZeroConstantForHomogeneousComposite(
           *type_instruction, type_instruction->GetSingleWordInOperand(0),

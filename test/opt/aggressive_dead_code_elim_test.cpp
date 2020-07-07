@@ -413,7 +413,7 @@ OpFunctionEnd
       predefs1 + names_after + predefs2 + func_after, true, true);
 }
 
-TEST_F(AggressiveDCETest, OptWhitelistExtension) {
+TEST_F(AggressiveDCETest, OptAllowListExtension) {
   //  #version 140
   //
   //  in vec4 BaseColor;
@@ -498,7 +498,7 @@ OpFunctionEnd
       predefs1 + names_after + predefs2 + func_after, true, true);
 }
 
-TEST_F(AggressiveDCETest, NoOptBlacklistExtension) {
+TEST_F(AggressiveDCETest, NoOptDenyListExtension) {
   //  #version 140
   //
   //  in vec4 BaseColor;
@@ -6759,6 +6759,127 @@ OpFunctionEnd
   SinglePassRunAndCheck<AggressiveDCEPass>(
       predefs1 + names_before + predefs2_before + func_before,
       predefs1 + names_after + predefs2_after + func_after, true, true);
+}
+
+TEST_F(AggressiveDCETest, MultipleFunctionProcessIndependently) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %entryHistogram "entryHistogram" %gl_GlobalInvocationID %gl_LocalInvocationIndex
+               OpEntryPoint GLCompute %entryAverage "entryAverage" %gl_GlobalInvocationID %gl_LocalInvocationIndex
+               OpExecutionMode %entryHistogram LocalSize 16 16 1
+               OpExecutionMode %entryAverage LocalSize 256 1 1
+               OpSource HLSL 640
+               OpName %type_RWStructuredBuffer_uint "type.RWStructuredBuffer.uint"
+               OpName %uHistogram "uHistogram"
+               OpName %type_ACSBuffer_counter "type.ACSBuffer.counter"
+               OpMemberName %type_ACSBuffer_counter 0 "counter"
+               OpName %counter_var_uHistogram "counter.var.uHistogram"
+               OpName %sharedHistogram "sharedHistogram"
+               OpName %entryHistogram "entryHistogram"
+               OpName %param_var_id "param.var.id"
+               OpName %param_var_idx "param.var.idx"
+               OpName %entryAverage "entryAverage"
+               OpName %param_var_id_0 "param.var.id"
+               OpName %param_var_idx_0 "param.var.idx"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_LocalInvocationIndex BuiltIn LocalInvocationIndex
+               OpDecorate %uHistogram DescriptorSet 0
+               OpDecorate %uHistogram Binding 0
+               OpDecorate %counter_var_uHistogram DescriptorSet 0
+               OpDecorate %counter_var_uHistogram Binding 1
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %type_RWStructuredBuffer_uint 0 Offset 0
+               OpDecorate %type_RWStructuredBuffer_uint BufferBlock
+               OpMemberDecorate %type_ACSBuffer_counter 0 Offset 0
+               OpDecorate %type_ACSBuffer_counter BufferBlock
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_4 = OpConstant %uint 4
+     %uint_8 = OpConstant %uint 8
+    %uint_16 = OpConstant %uint 16
+    %uint_32 = OpConstant %uint 32
+    %uint_64 = OpConstant %uint 64
+   %uint_128 = OpConstant %uint 128
+   %uint_256 = OpConstant %uint 256
+   %uint_512 = OpConstant %uint 512
+   %uint_254 = OpConstant %uint 254
+   %uint_255 = OpConstant %uint 255
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+%type_RWStructuredBuffer_uint = OpTypeStruct %_runtimearr_uint
+%_ptr_Uniform_type_RWStructuredBuffer_uint = OpTypePointer Uniform %type_RWStructuredBuffer_uint
+%type_ACSBuffer_counter = OpTypeStruct %int
+%_ptr_Uniform_type_ACSBuffer_counter = OpTypePointer Uniform %type_ACSBuffer_counter
+%_arr_uint_uint_256 = OpTypeArray %uint %uint_256
+%_ptr_Workgroup__arr_uint_uint_256 = OpTypePointer Workgroup %_arr_uint_uint_256
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+       %void = OpTypeVoid
+         %49 = OpTypeFunction %void
+%_ptr_Function_v3uint = OpTypePointer Function %v3uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+         %52 = OpTypeFunction %void %_ptr_Function_v3uint %_ptr_Function_uint
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+   %uint_264 = OpConstant %uint 264
+       %bool = OpTypeBool
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+ %uHistogram = OpVariable %_ptr_Uniform_type_RWStructuredBuffer_uint Uniform
+%counter_var_uHistogram = OpVariable %_ptr_Uniform_type_ACSBuffer_counter Uniform
+%sharedHistogram = OpVariable %_ptr_Workgroup__arr_uint_uint_256 Workgroup
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+%gl_LocalInvocationIndex = OpVariable %_ptr_Input_uint Input
+%entryHistogram = OpFunction %void None %49
+         %57 = OpLabel
+%param_var_id = OpVariable %_ptr_Function_v3uint Function
+%param_var_idx = OpVariable %_ptr_Function_uint Function
+         %58 = OpLoad %v3uint %gl_GlobalInvocationID
+         %59 = OpLoad %uint %gl_LocalInvocationIndex
+         %79 = OpAccessChain %_ptr_Workgroup_uint %sharedHistogram %int_0
+         %80 = OpAtomicIAdd %uint %79 %uint_1 %uint_0 %uint_1
+               OpReturn
+               OpFunctionEnd
+%entryAverage = OpFunction %void None %49
+         %63 = OpLabel
+%param_var_id_0 = OpVariable %_ptr_Function_v3uint Function
+%param_var_idx_0 = OpVariable %_ptr_Function_uint Function
+         %64 = OpLoad %v3uint %gl_GlobalInvocationID
+         %65 = OpLoad %uint %gl_LocalInvocationIndex
+               OpStore %param_var_idx_0 %65
+         %83 = OpAccessChain %_ptr_Workgroup_uint %sharedHistogram %65
+               OpStore %83 %uint_0
+
+; CHECK:      [[ieq:%\w+]] = OpIEqual
+; CHECK-NEXT: OpSelectionMerge [[merge:%\w+]]
+; CHECK-NEXT: OpBranchConditional [[ieq]] [[not_elim:%\w+]] [[merge]]
+; CHECK-NEXT: [[not_elim]] = OpLabel
+; CHECK:      [[merge]] = OpLabel
+
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %85 = OpIEqual %bool %65 %uint_0
+               OpSelectionMerge %89 None
+               OpBranchConditional %85 %86 %89
+         %86 = OpLabel
+         %88 = OpAccessChain %_ptr_Workgroup_uint %sharedHistogram %65
+               OpStore %88 %uint_1
+               OpBranch %89
+         %89 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %91 = OpAccessChain %_ptr_Workgroup_uint %sharedHistogram %65
+         %92 = OpLoad %uint %91
+         %94 = OpAccessChain %_ptr_Uniform_uint %uHistogram %int_0 %65
+               OpStore %94 %92
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_3);
+
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
