@@ -73,6 +73,10 @@ class VectorDCE : public MemPass {
   bool RewriteInstructions(Function* function,
                            const LiveComponentMap& live_components);
 
+  // Makrs all DebugValue instructions that use |composite| for their values as
+  // dead instructions by putting them into |dead_dbg_value_|.
+  void MarkDebugValueUsesAsDead(Instruction* composite);
+
   // Rewrites the OpCompositeInsert instruction |current_inst| to avoid
   // unnecessary computes given that the only components of the result that are
   // live are |live_components|.
@@ -143,6 +147,9 @@ class VectorDCE : public MemPass {
   // A BitVector that can always be used to say that all components of a vector
   // are live.
   utils::BitVector all_components_live_;
+
+  // OpenCL.DebugInfo.100 DebugValue instructions to be killed.
+  std::vector<Instruction*> dead_dbg_value_;
 };
 
 }  // namespace opt

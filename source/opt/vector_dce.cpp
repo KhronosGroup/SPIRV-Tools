@@ -36,6 +36,7 @@ Pass::Status VectorDCE::Process() {
 
 bool VectorDCE::VectorDCEFunction(Function* function) {
   LiveComponentMap live_components;
+  dead_dbg_value_.clear();
   FindLiveComponents(function, &live_components);
   return RewriteInstructions(function, live_components);
 }
@@ -52,6 +53,10 @@ void VectorDCE::FindLiveComponents(Function* function,
   // components are live because of arbitrary nesting of structs.
   function->ForEachInst(
       [&work_list, this, live_components](Instruction* current_inst) {
+        if (current_inst->GetOpenCL100DebugOpcode() !=
+            OpenCLDebugInfo100InstructionsMax) {
+          return;
+        }
         if (!HasVectorOrScalarResult(current_inst) ||
             !context()->IsCombinatorInstruction(current_inst)) {
           MarkUsesAsLive(current_inst, all_components_live_, live_components,
@@ -315,6 +320,7 @@ bool VectorDCE::RewriteInstructions(
         // OpUndef.
         if (live_component->second.Empty()) {
           modified = true;
+          MarkDebugValueUsesAsDead(current_inst);
           uint32_t undef_id = this->Type2Undef(current_inst->type_id());
           context()->KillNamesAndDecorates(current_inst);
           context()->ReplaceAllUsesWith(current_inst->result_id(), undef_id);
@@ -337,6 +343,7 @@ bool VectorDCE::RewriteInstructions(
             break;
         }
       });
+  for (auto* i : dead_dbg_value_) context()->KillInst(i);
   return modified;
 }
 
@@ -355,6 +362,7 @@ bool VectorDCE::RewriteInsertInstruction(
 
   uint32_t insert_index = current_inst->GetSingleWordInOperand(2);
   if (!live_components.Get(insert_index)) {
+    MarkDebugValueUsesAsDead(current_inst);
     context()->KillNamesAndDecorates(current_inst->result_id());
     uint32_t composite_id =
         current_inst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
@@ -375,6 +383,14 @@ bool VectorDCE::RewriteInsertInstruction(
   }
 
   return false;
+}
+
+void VectorDCE::MarkDebugValueUsesAsDead(Instruction* composite) {
+  context()->get_def_use_mgr()->ForEachUser(
+      composite, [this](Instruction* use) {
+        if (use->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue)
+          dead_dbg_value_.push_back(use);
+      });
 }
 
 void VectorDCE::AddItemToWorkListIfNeeded(
