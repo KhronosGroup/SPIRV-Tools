@@ -35,9 +35,11 @@ void FuzzerPassAddGlobalVariables::Apply() {
     // If the execution model of some entry point is GLCompute,
     // then the variable storage class may be Workgroup.
     if (entry_point.GetSingleWordInOperand(0) == SpvExecutionModelGLCompute) {
-      variable_storage_class = GetFuzzerContext()->ChooseEven()
-                                   ? SpvStorageClassPrivate
-                                   : SpvStorageClassWorkgroup;
+      variable_storage_class =
+          GetFuzzerContext()->ChoosePercentage(
+              GetFuzzerContext()->GetChanceOfChoosingWorkgroupStorageClass())
+              ? SpvStorageClassWorkgroup
+              : SpvStorageClassPrivate;
       break;
     }
   }
