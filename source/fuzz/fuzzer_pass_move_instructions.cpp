@@ -62,6 +62,8 @@ void FuzzerPassMoveInstructions::Apply() {
 std::vector<opt::Instruction*>
 FuzzerPassMoveInstructions::ComputeMoveCandidates(
     opt::BasicBlock* block, opt::BasicBlock::iterator insert_before_it) {
+  // Every candidate belongs to either the |block| or its neighboring blocks
+  // (i.e. its predecessors or successors).
   std::vector<opt::Instruction*> result;
 
   for (auto it = block->begin(); it != block->end(); ++it) {
