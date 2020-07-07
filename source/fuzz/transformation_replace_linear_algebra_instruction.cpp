@@ -60,9 +60,8 @@ bool TransformationReplaceLinearAlgebraInstruction::IsApplicable(
   }
 
   // All ids in |message_.fresh_ids| must be fresh.
-  for (uint32_t i = 0; i < static_cast<uint32_t>(message_.fresh_ids().size());
-       i++) {
-    if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_ids(i))) {
+  for (uint32_t fresh_id : message_.fresh_ids()) {
+    if (!fuzzerutil::IsFreshId(ir_context, fresh_id)) {
       return false;
     }
   }
