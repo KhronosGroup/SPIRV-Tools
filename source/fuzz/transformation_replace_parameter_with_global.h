@@ -34,13 +34,8 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
 
   // - |function_type_fresh_id| is a fresh id.
   // - |parameter_id| is the result id of the parameter to replace.
-  // - |global_variable_fresh_id| is 0 if parameter is not a pointer or a
-  //   pointer with Function storage class. Otherwise, this is a fresh id.
-  // - |initializer_id| is a result id of an instruction used to initialize
-  //   a global variable. Its type id must be equal to either the type of the
-  //   parameter if the latter is a not a pointer, or to its pointee otherwise.
-  //   This must be equal to 0 if parameter is a pointer with Workgroup storage
-  //   class.
+  // - |global_variable_fresh_id| is a fresh id.
+  // - |function_type_fresh_id| is not equal to |global_variable_fresh_id|.
   // - the function that contains |parameter_id| may not be an entry-point
   //   function.
   bool IsApplicable(
@@ -49,12 +44,10 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
 
   // - Removes parameter with result id |parameter_id| from its function
   // - Adds a global variable to store the value for the parameter
-  // - Add an OpStore or OpCopyMemory instruction before each function call to
+  // - Add an OpStore instruction before each function call to
   //   store parameter's value into the variable
-  // - Adds OpLoad or OpCopyMemory at the beginning of the function to load the
-  //   value from the variable into the old parameter's id (or a local variable
-  //   if the parameter is a pointer)
-  // - Marks created variable with PointeeIsIrrelevant fact if needed.
+  // - Adds OpLoad at the beginning of the function to load the
+  //   value from the variable into the old parameter's id
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

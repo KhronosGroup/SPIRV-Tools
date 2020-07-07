@@ -134,7 +134,7 @@ void TransformationReplaceParameterWithGlobal::Apply(
           {SPV_OPERAND_TYPE_ID, {message_.global_variable_fresh_id()}}}));
 
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-  //  Mark the global variable as irrelevant if replaced parameter is
+  //  Mark the global variable's pointee as irrelevant if replaced parameter is
   //  irrelevant.
 
   // Calculate the index of the replaced parameter (we need to know this to

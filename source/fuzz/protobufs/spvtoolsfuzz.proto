@@ -1136,8 +1136,6 @@ message TransformationReplaceParameterWithGlobal {
   uint32 parameter_id = 3;
 
   // Fresh id of a global variable used to pass parameter's value to the function.
-  // This is not used if parameter is not a pointer or a pointer with Function
-  // storage class.
   uint32 global_variable_fresh_id = 4;
 
 }
