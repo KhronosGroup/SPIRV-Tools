@@ -22,13 +22,13 @@ TransformationRecordSynonymousConstants::
     : message_(message) {}
 
 TransformationRecordSynonymousConstants::
-    TransformationRecordSynonymousConstants(uint32_t constant_id,
-                                            uint32_t synonym_id) {
-  message_.set_constant_id(constant_id);
-  message_.set_synonym_id(synonym_id);
+    TransformationRecordSynonymousConstants(uint32_t constant1_id,
+                                            uint32_t constant2_id) {
+  message_.set_constant1_id(constant1_id);
+  message_.set_constant2_id(constant2_id);
 }
 
-static inline bool IsStaticZeroConstant(
+bool IsScalarZeroConstant(
     const opt::analysis::Constant* constant) {
   return constant->AsScalarConstant() && constant->IsZero();
 }
@@ -37,34 +37,44 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& /* unused */) const {
   // The ids must be different
-  if (message_.constant_id() == message_.synonym_id()) {
+  if (message_.constant1_id() == message_.constant2_id()) {
     return false;
   }
 
-  auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.constant_id());
-  auto synonym = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.synonym_id());
+  auto constant1 = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.constant1_id());
+  auto constant2 = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.constant2_id());
 
   // The constants must exist
-  if (constant == nullptr || synonym == nullptr) {
+  if (constant1 == nullptr || constant2 == nullptr) {
     return false;
   }
 
   // If the constants are equal, then they are equivalent
-  if (constant == synonym) {
+  if (constant1 == constant2) {
     return true;
   }
 
-  // The types must be the same
-  if (!constant->type()->IsSame(synonym->type())) {
-    return false;
+  // If the constants are two integers (signed or unsigned), they are equal
+  // if they have the same width and the same data words.
+  if (constant1->AsIntConstant() && constant2->AsIntConstant() &&
+      constant1->type()->AsInteger()->width() ==
+          constant2->type()->AsInteger()->width() &&
+      constant1->AsIntConstant()->words() ==
+          constant2->AsIntConstant()->words()) {
+    return true;
   }
+
+    // The types must be the same
+    if (!constant1->type()->IsSame(constant2->type())) {
+      return false;
+    }
 
   // The constants are equivalent if one is null and the other is a static
   // constant with value 0.
-  return (constant->AsNullConstant() && IsStaticZeroConstant(synonym)) ||
-         (IsStaticZeroConstant(constant) && synonym->AsNullConstant());
+  return (constant1->AsNullConstant() && IsScalarZeroConstant(constant2)) ||
+         (IsScalarZeroConstant(constant1) && constant2->AsNullConstant());
 }
 
 void TransformationRecordSynonymousConstants::Apply(
@@ -73,9 +83,9 @@ void TransformationRecordSynonymousConstants::Apply(
   protobufs::FactDataSynonym fact_data_synonym;
   // Define the two equivalent data descriptors (just containing the ids)
   *fact_data_synonym.mutable_data1() =
-      MakeDataDescriptor(message_.constant_id(), {});
+      MakeDataDescriptor(message_.constant1_id(), {});
   *fact_data_synonym.mutable_data2() =
-      MakeDataDescriptor(message_.synonym_id(), {});
+      MakeDataDescriptor(message_.constant2_id(), {});
   protobufs::Fact fact;
   *fact.mutable_data_synonym_fact() = fact_data_synonym;
 

@@ -39,12 +39,15 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
                OpDecorate %17 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
+          %6 = OpTypeInt 32 0
+         %19 = OpTypeInt 32 1
           %7 = OpTypePointer Function %6
           %9 = OpConstant %6 0
          %18 = OpConstant %6 0
          %11 = OpConstantNull %6
          %13 = OpConstant %6 1
+         %20 = OpConstant %19 1
+         %21 = OpConstant %19 -1
          %14 = OpTypeFloat 32
          %15 = OpTypeVector %14 4
          %16 = OpTypePointer Output %15
@@ -98,6 +101,14 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
 
   // %9 and %18 are equal and thus equivalent
   ASSERT_TRUE(TransformationRecordSynonymousConstants(9, 18).IsApplicable(
+      context.get(), transformation_context));
+
+  // %20 and %21 have different values
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(20, 21).IsApplicable(
+      context.get(), transformation_context));
+
+  // %13 and %20 are equal even if %13 is signed and %20 is unsigned
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(13, 20).IsApplicable(
       context.get(), transformation_context));
 
   // %9 and %11 are equivalent

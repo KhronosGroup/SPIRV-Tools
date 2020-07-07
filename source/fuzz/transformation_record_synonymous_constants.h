@@ -25,8 +25,8 @@ class TransformationRecordSynonymousConstants : public Transformation {
   explicit TransformationRecordSynonymousConstants(
       const protobufs::TransformationRecordSynonymousConstants& message);
 
-  TransformationRecordSynonymousConstants(uint32_t constant_id,
-                                          uint32_t synonym_id);
+  TransformationRecordSynonymousConstants(uint32_t constant1_id,
+                                          uint32_t constant2_id);
 
   // - |message_.constant_id| and |message_.synonym_id| are distinct ids
   //   of constants

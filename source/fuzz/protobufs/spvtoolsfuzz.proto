@@ -1114,15 +1114,19 @@ message TransformationRecordSynonymousConstants {
 
   // A transformation that, given the IDs to two synonymous constants,
   // records the fact that they are synonymous. The module is not changed.
-  // Two constants are synonymous if one of them is either OpConstantFalse
-  // (type bool) or zero-valued OpConstant of type int or float and the other
-  // is OpConstantNull of the same type.
+  // Two constants are synonymous if:
+  // - they have the same type (ignoring the presence of integer sign)
+  // - they have the same opcode (one of OpConstant, OpConstantTrue,
+  //   OpConstantFalse, OpConstantNull)
+  // - they have the same value
+  // If the types are the same, OpConstantNull is equivalent to
+  // OpConstantFalse or OpConstant with value zero.
 
   // The id of a constant
-  uint32 constant_id = 1;
+  uint32 constant1_id = 1;
 
   // The id of the synonym
-  uint32 synonym_id = 2;
+  uint32 constant2_id = 2;
 }
 
 message TransformationReplaceBooleanConstantWithConstantBinary {
