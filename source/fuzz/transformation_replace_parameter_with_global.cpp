@@ -93,6 +93,13 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
            param_type->AsPointer()->storage_class() == SpvStorageClassWorkgroup;
   }
 
+  // If |initializer_id| is non-zero then parameter can't be a pointer with
+  // Workgroup storage class.
+  if (param_type->AsPointer() &&
+      param_type->AsPointer()->storage_class() == SpvStorageClassWorkgroup) {
+    return false;
+  }
+
   auto pointee_type_id =
       param_type->AsPointer()
           ? fuzzerutil::GetPointeeTypeIdFromPointerType(param_type_inst)
