@@ -36,6 +36,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_function_test.cpp
           transformation_add_global_undef_test.cpp
           transformation_add_global_variable_test.cpp
+          transformation_add_image_sample_unused_components_test.cpp
           transformation_add_local_variable_test.cpp
           transformation_add_no_contraction_decoration_test.cpp
           transformation_add_parameter_test.cpp

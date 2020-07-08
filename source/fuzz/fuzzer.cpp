@@ -30,6 +30,7 @@
 #include "source/fuzz/fuzzer_pass_add_equation_instructions.h"
 #include "source/fuzz/fuzzer_pass_add_function_calls.h"
 #include "source/fuzz/fuzzer_pass_add_global_variables.h"
+#include "source/fuzz/fuzzer_pass_add_image_sample_unused_components.h"
 #include "source/fuzz/fuzzer_pass_add_loads.h"
 #include "source/fuzz/fuzzer_pass_add_local_variables.h"
 #include "source/fuzz/fuzzer_pass_add_no_contraction_decorations.h"
@@ -222,6 +223,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddGlobalVariables>(
+        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
+        transformation_sequence_out);
+    MaybeAddPass<FuzzerPassAddImageSampleUnusedComponents>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddLoads>(&passes, ir_context.get(),
