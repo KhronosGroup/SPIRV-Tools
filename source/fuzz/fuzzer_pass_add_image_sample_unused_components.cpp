@@ -150,6 +150,7 @@ void FuzzerPassAddImageSampleUnusedComponents::Apply() {
                       unused_component_count);
         break;
       default:
+        assert(false && "Should be unreachable.");
         break;
     }
 
