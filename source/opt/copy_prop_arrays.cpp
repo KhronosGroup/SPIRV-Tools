@@ -592,7 +592,7 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
     Instruction* use = pair.first;
     uint32_t index = pair.second;
 
-    if (use->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100InstructionsMax) {
+    if (use->IsOpenCL100DebugInstr()) {
       switch (use->GetOpenCL100DebugOpcode()) {
         case OpenCLDebugInfo100DebugDeclare: {
           if (new_ptr_inst->opcode() == SpvOpVariable ||

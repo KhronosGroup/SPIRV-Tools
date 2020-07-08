@@ -518,8 +518,7 @@ uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
 }
 
 void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
-  if (dbg_inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100InstructionsMax)
-    return;
+  if (!dbg_inst->IsOpenCL100DebugInstr()) return;
 
   RegisterDbgInst(dbg_inst);
 
@@ -567,8 +566,7 @@ void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
   // list.
   if (empty_debug_expr_inst_ != nullptr &&
       empty_debug_expr_inst_->PreviousNode() != nullptr &&
-      empty_debug_expr_inst_->PreviousNode()->GetOpenCL100DebugOpcode() !=
-          OpenCLDebugInfo100InstructionsMax) {
+      empty_debug_expr_inst_->PreviousNode()->IsOpenCL100DebugInstr()) {
     empty_debug_expr_inst_->InsertBefore(
         &*context()->module()->ext_inst_debuginfo_begin());
   }
@@ -577,16 +575,14 @@ void DebugInfoManager::AnalyzeDebugInsts(Module& module) {
   // list.
   if (debug_info_none_inst_ != nullptr &&
       debug_info_none_inst_->PreviousNode() != nullptr &&
-      debug_info_none_inst_->PreviousNode()->GetOpenCL100DebugOpcode() !=
-          OpenCLDebugInfo100InstructionsMax) {
+      debug_info_none_inst_->PreviousNode()->IsOpenCL100DebugInstr()) {
     debug_info_none_inst_->InsertBefore(
         &*context()->module()->ext_inst_debuginfo_begin());
   }
 }
 
 void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
-  if (instr == nullptr ||
-      instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100InstructionsMax) {
+  if (instr == nullptr || !instr->IsOpenCL100DebugInstr()) {
     return;
   }
 
