@@ -106,6 +106,10 @@ void TransformationReplaceParameterWithGlobal::Apply(
   assert(param_inst && "Parameter must exist");
 
   // Create global variable to store parameter's value.
+  //
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+  //  Mark the global variable's pointee as irrelevant if replaced parameter is
+  //  irrelevant.
   fuzzerutil::AddGlobalVariable(
       ir_context, message_.global_variable_fresh_id(),
       fuzzerutil::MaybeGetPointerType(ir_context, param_inst->type_id(),
@@ -133,10 +137,6 @@ void TransformationReplaceParameterWithGlobal::Apply(
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {message_.global_variable_fresh_id()}}}));
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-  //  Mark the global variable's pointee as irrelevant if replaced parameter is
-  //  irrelevant.
-
   // Calculate the index of the replaced parameter (we need to know this to
   // remove operands from the OpFunctionCall).
   auto params = fuzzerutil::GetParameters(ir_context, function->result_id());
@@ -151,7 +151,7 @@ void TransformationReplaceParameterWithGlobal::Apply(
   assert(parameter_index != params.size() &&
          "Parameter must exist in the function");
 
-  // Update all OpFunctionCall.
+  // Update all relevant OpFunctionCall instructions.
   ir_context->get_def_use_mgr()->ForEachUser(
       function->result_id(),
       [ir_context, parameter_index, this](opt::Instruction* inst) {
@@ -225,13 +225,10 @@ bool TransformationReplaceParameterWithGlobal::CanReplaceFunctionParameterType(
     case opt::analysis::Type::kBool:
     case opt::analysis::Type::kInteger:
     case opt::analysis::Type::kFloat:
-      return true;
     case opt::analysis::Type::kArray:
-      return CanReplaceFunctionParameterType(*type.AsArray()->element_type());
     case opt::analysis::Type::kMatrix:
-      return CanReplaceFunctionParameterType(*type.AsMatrix()->element_type());
     case opt::analysis::Type::kVector:
-      return CanReplaceFunctionParameterType(*type.AsVector()->element_type());
+      return true;
     case opt::analysis::Type::kStruct:
       return std::all_of(
           type.AsStruct()->element_types().begin(),

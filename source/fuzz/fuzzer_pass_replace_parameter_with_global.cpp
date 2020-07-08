@@ -64,8 +64,8 @@ void FuzzerPassReplaceParameterWithGlobal::Apply() {
     }
 
     // Select id of a parameter to replace.
-    const opt::Instruction* replaced_param;
-    const opt::analysis::Type* param_type;
+    const opt::Instruction* replaced_param = nullptr;
+    const opt::analysis::Type* param_type = nullptr;
     do {
       replaced_param = GetFuzzerContext()->RemoveAtRandomIndex(&params);
       param_type =
@@ -73,6 +73,8 @@ void FuzzerPassReplaceParameterWithGlobal::Apply() {
       assert(param_type && "Parameter has invalid type");
     } while (!TransformationReplaceParameterWithGlobal::
                  CanReplaceFunctionParameterType(*param_type));
+
+    assert(replaced_param && "Unable to find a parameter to replace");
 
     // Make sure type id for the global variable exists in the module.
     FindOrCreatePointerType(replaced_param->type_id(), SpvStorageClassPrivate);
