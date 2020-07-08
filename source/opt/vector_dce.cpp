@@ -53,8 +53,7 @@ void VectorDCE::FindLiveComponents(Function* function,
   // components are live because of arbitrary nesting of structs.
   function->ForEachInst(
       [&work_list, this, live_components](Instruction* current_inst) {
-        if (current_inst->GetOpenCL100DebugOpcode() !=
-            OpenCLDebugInfo100InstructionsMax) {
+        if (current_inst->IsOpenCL100DebugInstr()) {
           return;
         }
         if (!HasVectorOrScalarResult(current_inst) ||
