@@ -591,6 +591,12 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     case SpvOpConvertSToF:
     case SpvOpConvertUToF: {
       // Equation form: a = float(b)
+      //
+      // We need to find all equations where |a| appears on the right-hand side.
+      // GetEquations method can only return all equations for a given left-hand
+      // side operand so we can't use that method. Instead, we simply iterate
+      // over all known equations and check if one has a particular right-hand
+      // side operand.
       for (const auto& fact : id_equations_) {
         for (const auto& equation : fact.second) {
           // Equation form: c = int(a)
