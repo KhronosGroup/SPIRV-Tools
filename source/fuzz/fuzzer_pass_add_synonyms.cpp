@@ -36,6 +36,9 @@ void FuzzerPassAddSynonyms::Apply() {
       [this](opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor) {
+        // Skip |inst_it| if we can't insert anything above it. OpIAdd is just
+        // a representation of some instruction that might be produced by the
+        // transformation.
         if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpIAdd, inst_it)) {
           return;
         }
@@ -47,9 +50,12 @@ void FuzzerPassAddSynonyms::Apply() {
 
         auto synonym_type = GetFuzzerContext()->GetRandomSynonymType();
 
+        // Select all instructions that can be used to create a synonym to.
         auto available_instructions = FindAvailableInstructions(
             function, block, inst_it,
             [synonym_type](opt::IRContext* ir_context, opt::Instruction* inst) {
+              // Check that we can create a synonym to |inst| as described by
+              // the |synonym_type| and insert it before |inst_it|.
               return TransformationAddSynonym::IsInstructionValid(
                   ir_context, inst, synonym_type);
             });
