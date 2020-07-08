@@ -151,6 +151,7 @@ void FuzzerPassAddImageSampleUnusedComponents::Apply() {
         break;
       default:
         assert(false && "Should be unreachable.");
+        zero_constant_type_id = 0;
         break;
     }
 
