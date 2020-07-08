@@ -539,6 +539,11 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // OpenCLDebugInfo100InstructionsMax.
   OpenCLDebugInfo100Instructions GetOpenCL100DebugOpcode() const;
 
+  // Returns true if it is an OpenCL.DebugInfo.100 instruction.
+  bool IsOpenCL100DebugInstr() const {
+    return GetOpenCL100DebugOpcode() != OpenCLDebugInfo100InstructionsMax;
+  }
+
   // Dump this instruction on stderr.  Useful when running interactive
   // debuggers.
   void Dump() const;
