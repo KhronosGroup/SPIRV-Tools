@@ -369,6 +369,11 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
       std::move(new_inlined_at));
 }
 
+bool DebugInfoManager::IsDebugDeclared(uint32_t variable_id) {
+  auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
+  return dbg_decl_itr != var_id_to_dbg_decl_.end();
+}
+
 uint32_t DebugInfoManager::GetParentScope(uint32_t child_scope) {
   auto dbg_scope_itr = id_to_dbg_inst_.find(child_scope);
   assert(dbg_scope_itr != id_to_dbg_inst_.end());
