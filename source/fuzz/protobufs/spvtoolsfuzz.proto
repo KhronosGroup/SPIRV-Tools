@@ -1210,20 +1210,13 @@ message TransformationReplaceLinearAlgebraInstruction {
   //   OpVectorTimesScalar
   //   OpMatrixTimesScalar
   //   OpVectorTimesMatrix
-<<<<<<< HEAD
-=======
   //   OpMatrixTimesVector
->>>>>>> 11946e640c6d8ff38a3956b08676456634d3f968
   //   OpDot
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354):
   // Right now we only support certain operations. When this issue is addressed
   // the supporting comments can be removed.
   // To be supported in the future:
   //   OpTranspose
-<<<<<<< HEAD
-  //   OpMatrixTimesVector
-=======
->>>>>>> 11946e640c6d8ff38a3956b08676456634d3f968
   //   OpMatrixTimesMatrix
   //   OpOuterProduct
   InstructionDescriptor instruction_descriptor = 2;
