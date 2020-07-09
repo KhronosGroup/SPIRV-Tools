@@ -388,7 +388,7 @@ bool VectorDCE::RewriteInsertInstruction(
 void VectorDCE::MarkDebugValueUsesAsDead(
     Instruction* composite, std::vector<Instruction*>* dead_dbg_value) {
   context()->get_def_use_mgr()->ForEachUser(
-      composite, [this, &dead_dbg_value](Instruction* use) {
+      composite, [&dead_dbg_value](Instruction* use) {
         if (use->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue)
           dead_dbg_value->push_back(use);
       });
