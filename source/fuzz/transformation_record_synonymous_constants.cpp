@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Stefano Milizia
+// Modifications Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +17,13 @@
 
 namespace spvtools {
 namespace fuzz {
+
+namespace {
+bool IsScalarZeroConstant(const opt::analysis::Constant* constant) {
+  return constant->AsScalarConstant() && constant->IsZero();
+}
+}  // namespace
+
 TransformationRecordSynonymousConstants::
     TransformationRecordSynonymousConstants(
         const protobufs::TransformationRecordSynonymousConstants& message)
@@ -26,11 +34,6 @@ TransformationRecordSynonymousConstants::
                                             uint32_t constant2_id) {
   message_.set_constant1_id(constant1_id);
   message_.set_constant2_id(constant2_id);
-}
-
-bool IsScalarZeroConstant(
-    const opt::analysis::Constant* constant) {
-  return constant->AsScalarConstant() && constant->IsZero();
 }
 
 bool TransformationRecordSynonymousConstants::IsApplicable(
@@ -66,10 +69,10 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
     return true;
   }
 
-    // The types must be the same
-    if (!constant1->type()->IsSame(constant2->type())) {
-      return false;
-    }
+  // The types must be the same
+  if (!constant1->type()->IsSame(constant2->type())) {
+    return false;
+  }
 
   // The constants are equivalent if one is null and the other is a static
   // constant with value 0.
