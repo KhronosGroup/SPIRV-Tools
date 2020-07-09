@@ -300,7 +300,12 @@ bool VectorDCE::HasScalarResult(const Instruction* inst) const {
 bool VectorDCE::RewriteInstructions(
     Function* function, const VectorDCE::LiveComponentMap& live_components) {
   bool modified = false;
+
+  // Kill DebugValue in the middle of the instruction iteration will result
+  // in accessing a dangling pointer. We keep dead DebugValue instructions
+  // in |dead_dbg_value| to kill them once after the iteration.
   std::vector<Instruction*> dead_dbg_value;
+
   function->ForEachInst([&modified, this, live_components,
                          &dead_dbg_value](Instruction* current_inst) {
     if (!context()->IsCombinatorInstruction(current_inst)) {
