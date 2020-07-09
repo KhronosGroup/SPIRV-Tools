@@ -384,6 +384,7 @@ message Transformation {
     TransformationAddCopyMemory add_copy_memory = 53;
     TransformationInvertComparisonOperator invert_comparison_operator = 54;
     TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
+    TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
     // Add additional option using the next available number.
   }
 }
@@ -1119,6 +1120,23 @@ message TransformationPushIdThroughVariable {
   // A descriptor for an instruction which the new OpStore
   // and OpLoad instructions might be inserted before.
   InstructionDescriptor instruction_descriptor = 6;
+
+}
+
+message TransformationReplaceParameterWithGlobal {
+
+  // Removes parameter with result id |parameter_id| from its function
+  // and creates a global variable to pass its value to the function instead.
+
+  // Fresh id for a new function type. This might not be used if a required
+  // function type already exists or if we can change the old function type.
+  uint32 function_type_fresh_id = 2;
+
+  // Result id of the OpFunctionParameter instruction to remove.
+  uint32 parameter_id = 3;
+
+  // Fresh id of a global variable used to pass parameter's value to the function.
+  uint32 global_variable_fresh_id = 4;
 
 }
 

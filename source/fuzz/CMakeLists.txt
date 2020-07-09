@@ -71,6 +71,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_phi_operands.h
         fuzzer_pass_push_ids_through_variables.h
         fuzzer_pass_replace_linear_algebra_instructions.h
+        fuzzer_pass_replace_parameter_with_global.h
         fuzzer_pass_split_blocks.h
         fuzzer_pass_swap_commutable_operands.h
         fuzzer_pass_swap_conditional_branch_operands.h
@@ -131,6 +132,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_constant_with_uniform.h
         transformation_replace_id_with_synonym.h
         transformation_replace_linear_algebra_instruction.h
+        transformation_replace_parameter_with_global.h
         transformation_set_function_control.h
         transformation_set_loop_control.h
         transformation_set_memory_operands_mask.h
@@ -185,6 +187,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_phi_operands.cpp
         fuzzer_pass_push_ids_through_variables.cpp
         fuzzer_pass_replace_linear_algebra_instructions.cpp
+        fuzzer_pass_replace_parameter_with_global.cpp
         fuzzer_pass_split_blocks.cpp
         fuzzer_pass_swap_commutable_operands.cpp
         fuzzer_pass_swap_conditional_branch_operands.cpp
@@ -244,6 +247,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_constant_with_uniform.cpp
         transformation_replace_id_with_synonym.cpp
         transformation_replace_linear_algebra_instruction.cpp
+        transformation_replace_parameter_with_global.cpp
         transformation_set_function_control.cpp
         transformation_set_loop_control.cpp
         transformation_set_memory_operands_mask.cpp
