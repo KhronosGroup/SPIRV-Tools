@@ -614,6 +614,7 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
       context, SpvOpVariable, type_id, result_id, std::move(operands)));
 
   AddVariableIdToEntryPointInterfaces(context, result_id);
+  UpdateModuleIdBound(context, result_id);
 }
 
 void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
@@ -644,6 +645,8 @@ void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
           {SPV_OPERAND_TYPE_ID, {initializer_id}}}));
+
+  UpdateModuleIdBound(context, result_id);
 }
 
 bool HasDuplicates(const std::vector<uint32_t>& arr) {

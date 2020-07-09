@@ -225,7 +225,8 @@ void AddVariableIdToEntryPointInterfaces(opt::IRContext* context, uint32_t id);
 // Adds a global variable with storage class |storage_class| to the module, with
 // type |type_id| and either no initializer or |initializer_id| as an
 // initializer, depending on whether |initializer_id| is 0. The global variable
-// has result id |result_id|.
+// has result id |result_id|. Updates module's id bound to accommodate for
+// |result_id|.
 //
 // - |type_id| must be the id of a pointer type with the same storage class as
 //   |storage_class|.
@@ -239,6 +240,7 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
 
 // Adds an instruction to the start of |function_id|, of the form:
 //   |result_id| = OpVariable |type_id| Function |initializer_id|.
+// Updates module's id bound to accommodate for |result_id|.
 //
 // - |type_id| must be the id of a pointer type with Function storage class.
 // - |initializer_id| must be the id of a constant with the same type as the
