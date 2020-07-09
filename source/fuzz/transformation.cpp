@@ -63,6 +63,7 @@
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
 #include "source/fuzz/transformation_replace_linear_algebra_instruction.h"
+#include "source/fuzz/transformation_replace_parameter_with_global.h"
 #include "source/fuzz/transformation_set_function_control.h"
 #include "source/fuzz/transformation_set_loop_control.h"
 #include "source/fuzz/transformation_set_memory_operands_mask.h"
@@ -198,6 +199,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kRecordSynonymousConstants:
       return MakeUnique<TransformationRecordSynonymousConstants>(
           message.record_synonymous_constants());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceParameterWithGlobal:
+      return MakeUnique<TransformationReplaceParameterWithGlobal>(
+          message.replace_parameter_with_global());
     case protobufs::Transformation::TransformationCase::
         kReplaceBooleanConstantWithConstantBinary:
       return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(
