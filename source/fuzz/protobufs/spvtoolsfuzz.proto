@@ -383,7 +383,8 @@ message Transformation {
     TransformationAddParameter add_parameter = 52;
     TransformationAddCopyMemory add_copy_memory = 53;
     TransformationInvertComparisonOperator invert_comparison_operator = 54;
-    TransformationRecordSynonymousConstants record_synonymous_constants = 55;
+    TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
+    TransformationRecordSynonymousConstants record_synonymous_constants = 56;
     // Add additional option using the next available number.
   }
 }
@@ -614,6 +615,18 @@ message TransformationAddGlobalVariable {
   // value of the variable, in which case stores to the variable can be
   // performed in an arbitrary fashion.
   bool value_is_irrelevant = 5;
+
+}
+
+message TransformationAddImageSampleUnusedComponents {
+
+  // A transformation that adds unused components to an image sample coordinate.
+
+  // An vector id with the original coordinate and the unused components.
+  uint32 coordinate_with_unused_components_id = 1;
+
+  // A descriptor for an image sample instruction.
+  InstructionDescriptor instruction_descriptor = 2;
 
 }
 
@@ -1197,13 +1210,20 @@ message TransformationReplaceLinearAlgebraInstruction {
   //   OpVectorTimesScalar
   //   OpMatrixTimesScalar
   //   OpVectorTimesMatrix
+<<<<<<< HEAD
+=======
+  //   OpMatrixTimesVector
+>>>>>>> 11946e640c6d8ff38a3956b08676456634d3f968
   //   OpDot
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354):
   // Right now we only support certain operations. When this issue is addressed
   // the supporting comments can be removed.
   // To be supported in the future:
   //   OpTranspose
+<<<<<<< HEAD
   //   OpMatrixTimesVector
+=======
+>>>>>>> 11946e640c6d8ff38a3956b08676456634d3f968
   //   OpMatrixTimesMatrix
   //   OpOuterProduct
   InstructionDescriptor instruction_descriptor = 2;

@@ -46,6 +46,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_equation_instructions.h
         fuzzer_pass_add_function_calls.h
         fuzzer_pass_add_global_variables.h
+        fuzzer_pass_add_image_sample_unused_components.h
         fuzzer_pass_add_loads.h
         fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_no_contraction_decorations.h
@@ -96,6 +97,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_function.h
         transformation_add_global_undef.h
         transformation_add_global_variable.h
+        transformation_add_image_sample_unused_components.h
         transformation_add_local_variable.h
         transformation_add_no_contraction_decoration.h
         transformation_add_parameter.h
@@ -159,6 +161,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_equation_instructions.cpp
         fuzzer_pass_add_function_calls.cpp
         fuzzer_pass_add_global_variables.cpp
+        fuzzer_pass_add_image_sample_unused_components.cpp
         fuzzer_pass_add_loads.cpp
         fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
@@ -208,6 +211,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_function.cpp
         transformation_add_global_undef.cpp
         transformation_add_global_variable.cpp
+        transformation_add_image_sample_unused_components.cpp
         transformation_add_local_variable.cpp
         transformation_add_no_contraction_decoration.cpp
         transformation_add_parameter.cpp
