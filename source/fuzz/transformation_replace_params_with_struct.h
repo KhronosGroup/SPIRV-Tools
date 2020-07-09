@@ -31,8 +31,7 @@ class TransformationReplaceParamsWithStruct : public Transformation {
   TransformationReplaceParamsWithStruct(
       const std::vector<uint32_t>& parameter_id,
       uint32_t fresh_function_type_id, uint32_t fresh_parameter_id,
-      const std::vector<uint32_t>& fresh_composite_id,
-      uint32_t fresh_struct_type_id);
+      const std::vector<uint32_t>& fresh_composite_id);
 
   // - |parameter_id[i]| is a valid result id of some OpFunctionParameter
   //   instruction. All parameter ids must correspond to parameters of the same

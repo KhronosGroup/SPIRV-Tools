@@ -218,13 +218,11 @@ class FuzzerContext {
   uint32_t GetChanceOfReplacingLinearAlgebraInstructions() {
     return chance_of_replacing_linear_algebra_instructions_;
   }
-<<<<<<< HEAD
   uint32_t GetChanceOfReplacingParametersWithGlobals() {
     return chance_of_replacing_parameters_with_globals_;
-=======
+  }
   uint32_t GetChanceOfReplacingParametersWithStruct() {
     return chance_of_replacing_parameters_with_struct_;
->>>>>>> fff83c91... Implement transformation
   }
   uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
   uint32_t GetChanceOfSwappingConditionalBranchOperands() {

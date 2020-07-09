@@ -28,11 +28,9 @@ TransformationReplaceParamsWithStruct::TransformationReplaceParamsWithStruct(
 TransformationReplaceParamsWithStruct::TransformationReplaceParamsWithStruct(
     const std::vector<uint32_t>& parameter_id, uint32_t fresh_function_type_id,
     uint32_t fresh_parameter_id,
-    const std::vector<uint32_t>& fresh_composite_id,
-    uint32_t fresh_struct_type_id) {
+    const std::vector<uint32_t>& fresh_composite_id) {
   message_.set_fresh_function_type_id(fresh_function_type_id);
   message_.set_fresh_parameter_id(fresh_parameter_id);
-  message_.set_fresh_struct_type_id(fresh_struct_type_id);
 
   for (auto id : parameter_id) {
     message_.add_parameter_id(id);
@@ -55,9 +53,6 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
 
   // All ids must correspond to valid parameters of the same function.
   // The function can't be an entry-point function.
-  //
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3434):
-  //  GetFunctionFromParameterId is available when the PR is merged.
   const auto* function =
       fuzzerutil::GetFunctionFromParameterId(ir_context, parameter_id[0]);
   if (!function ||
@@ -66,8 +61,6 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
   }
 
   for (size_t i = 1; i < parameter_id.size(); ++i) {
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3434):
-    //  GetFunctionFromParameterId is available when the PR is merged.
     if (fuzzerutil::GetFunctionFromParameterId(ir_context, parameter_id[i]) !=
         function) {
       return false;
@@ -87,6 +80,16 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     return false;
   }
 
+  // Check that OpTypeStruct exists in the module.
+  std::vector<uint32_t> component_type_ids;
+  for (auto id : message_.parameter_id()) {
+    component_type_ids.push_back(fuzzerutil::GetTypeId(ir_context, id));
+  }
+
+  if (!fuzzerutil::MaybeGetStructType(ir_context, component_type_ids)) {
+    return false;
+  }
+
   // Check that |fresh_composite_id| has valid size.
   if (static_cast<uint32_t>(message_.fresh_composite_id_size()) !=
       GetNumberOfCallees(ir_context, function->result_id())) {
@@ -97,10 +100,9 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
   std::vector<uint32_t> fresh_ids(message_.fresh_composite_id().begin(),
                                   message_.fresh_composite_id().end());
   fresh_ids.insert(fresh_ids.end(), {message_.fresh_function_type_id(),
-                                     message_.fresh_parameter_id(),
-                                     message_.fresh_struct_type_id()});
+                                     message_.fresh_parameter_id()});
 
-  // Check that the result ids for the new parameter and its value are fresh.
+  // Check that all fresh ids are indeed fresh and unique.
   return !fuzzerutil::HasDuplicates(fresh_ids) &&
          std::all_of(fresh_ids.begin(), fresh_ids.end(),
                      [ir_context](uint32_t id) {
@@ -110,8 +112,6 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
 
 void TransformationReplaceParamsWithStruct::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/pull/3434):
-  //  GetFunctionFromParameterId is available when the PR is merged.
   auto* function = fuzzerutil::GetFunctionFromParameterId(
       ir_context, message_.parameter_id(0));
   assert(function);
@@ -122,8 +122,10 @@ void TransformationReplaceParamsWithStruct::Apply(
     struct_components_ids.push_back(fuzzerutil::GetTypeId(ir_context, id));
   }
 
-  auto struct_type_id = fuzzerutil::FindOrCreateStructType(
-      ir_context, message_.fresh_struct_type_id(), struct_components_ids);
+  auto struct_type_id =
+      fuzzerutil::MaybeGetStructType(ir_context, struct_components_ids);
+  assert(struct_type_id &&
+         "IsApplicable should've guaranteed that this value isn't equal to 0");
 
   // Add new parameter to the function.
   function->AddParameter(MakeUnique<opt::Instruction>(
@@ -297,11 +299,9 @@ bool TransformationReplaceParamsWithStruct::IsParameterTypeSupported(
     case opt::analysis::Type::kBool:
     case opt::analysis::Type::kInteger:
     case opt::analysis::Type::kFloat:
-      return true;
     case opt::analysis::Type::kVector:
-      return IsParameterTypeSupported(*param_type.AsVector()->element_type());
     case opt::analysis::Type::kMatrix:
-      return IsParameterTypeSupported(*param_type.AsMatrix()->element_type());
+      return true;
     case opt::analysis::Type::kStruct:
       return std::all_of(param_type.AsStruct()->element_types().begin(),
                          param_type.AsStruct()->element_types().end(),

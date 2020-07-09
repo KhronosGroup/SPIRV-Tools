@@ -1334,9 +1334,6 @@ message TransformationReplaceParamsWithStruct {
   // Number of elements in this field is equal to the number of callees of the function.
   repeated uint32 fresh_composite_id = 4;
 
-  // Fresh id for a struct type that contains replaced parameters.
-  uint32 fresh_struct_type_id = 5;
-
 }
 
 message TransformationSetFunctionControl {

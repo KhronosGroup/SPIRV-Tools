@@ -20,23 +20,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace {
-
-opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
-                                          uint32_t param_id) {
-  auto* param_inst = ir_context->get_def_use_mgr()->GetDef(param_id);
-  assert(param_inst && "Parameter id is invalid");
-
-  for (auto& function : *ir_context->module()) {
-    if (fuzzerutil::InstructionIsFunctionParameter(param_inst, &function)) {
-      return &function;
-    }
-  }
-
-  return nullptr;
-}
-
-}  // namespace
 
 TransformationReplaceParameterWithGlobal::
     TransformationReplaceParameterWithGlobal(
@@ -63,8 +46,8 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
   }
 
   // Check that function exists and is not an entry point.
-  const auto* function =
-      GetFunctionFromParameterId(ir_context, message_.parameter_id());
+  const auto* function = fuzzerutil::GetFunctionFromParameterId(
+      ir_context, message_.parameter_id());
   if (!function ||
       fuzzerutil::FunctionIsEntryPoint(ir_context, function->result_id())) {
     return false;
@@ -124,8 +107,8 @@ void TransformationReplaceParameterWithGlobal::Apply(
         message_.global_variable_fresh_id());
   }
 
-  auto* function =
-      GetFunctionFromParameterId(ir_context, message_.parameter_id());
+  auto* function = fuzzerutil::GetFunctionFromParameterId(
+      ir_context, message_.parameter_id());
   assert(function && "Function must exist");
 
   // Insert an OpLoad instruction right after OpVariable instructions.

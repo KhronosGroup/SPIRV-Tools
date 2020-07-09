@@ -728,6 +728,20 @@ std::vector<opt::Instruction*> GetParameters(opt::IRContext* ir_context,
   return result;
 }
 
+opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
+                                          uint32_t param_id) {
+  auto* param_inst = ir_context->get_def_use_mgr()->GetDef(param_id);
+  assert(param_inst && "Parameter id is invalid");
+
+  for (auto& function : *ir_context->module()) {
+    if (InstructionIsFunctionParameter(param_inst, &function)) {
+      return &function;
+    }
+  }
+
+  return nullptr;
+}
+
 void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
                      const std::vector<uint32_t>& type_ids) {
   assert(result_id != 0 && "Result id can't be 0");

@@ -76,6 +76,14 @@ void FuzzerPassReplaceParamsWithStruct::Apply() {
     GetFuzzerContext()->Shuffle(&parameter_id);
     parameter_id.resize(num_replaced_params);
 
+    // Make sure OpTypeStruct exists in the module.
+    auto component_type_ids = parameter_id;
+    for (auto& id : component_type_ids) {
+      id = params[id]->type_id();
+    }
+
+    FindOrCreateStructType(component_type_ids);
+
     // Map parameters' indices to parameters' ids.
     for (auto& id : parameter_id) {
       id = params[id]->result_id();
@@ -88,8 +96,7 @@ void FuzzerPassReplaceParamsWithStruct::Apply() {
         /*fresh_composite_id*/
         GetFuzzerContext()->GetFreshIds(
             TransformationReplaceParamsWithStruct::GetNumberOfCallees(
-                GetIRContext(), function.result_id())),
-        /*fresh_struct_type_id*/ GetFuzzerContext()->GetFreshId()));
+                GetIRContext(), function.result_id()))));
   }
 }
 
