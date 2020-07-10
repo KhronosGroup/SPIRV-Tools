@@ -239,5 +239,22 @@ uint32_t FuzzerContext::ChooseBetweenMinAndMax(
          random_generator_->RandomUint32(min_max.second - min_max.first + 1);
 }
 
+protobufs::TransformationAddSynonym::SynonymType
+FuzzerContext::GetRandomSynonymType() {
+  // value_count method is guaranteed to return a value greater than 0.
+  auto result_index = ChooseBetweenMinAndMax(
+      {0, static_cast<uint32_t>(
+          protobufs::TransformationAddSynonym::SynonymType_descriptor()
+              ->value_count() -
+              1)});
+  auto result = protobufs::TransformationAddSynonym::SynonymType_descriptor()
+      ->value(result_index)
+      ->number();
+  assert(protobufs::TransformationAddSynonym::SynonymType_IsValid(result) &&
+      "|result| is not a value of SynonymType");
+  return static_cast<protobufs::TransformationAddSynonym::SynonymType>(
+      result);
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

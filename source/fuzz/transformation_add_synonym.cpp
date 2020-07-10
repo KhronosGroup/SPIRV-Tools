@@ -43,6 +43,17 @@ bool TransformationAddSynonym::IsApplicable(
              message_.synonym_type()) &&
          "Synonym type is invalid");
 
+  // |synonym_fresh_id| must be fresh.
+  if (!fuzzerutil::IsFreshId(ir_context, message_.synonym_fresh_id())) {
+    return false;
+  }
+
+  // A constant instruction must be present in the module if required.
+  if (IsAdditionalConstantRequired(message_.synonym_type()) &&
+      MaybeGetConstantId(ir_context) == 0) {
+    return false;
+  }
+
   // Check that |message_.result_id| is valid.
   auto* synonym = ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   if (!synonym) {
@@ -70,19 +81,8 @@ bool TransformationAddSynonym::IsApplicable(
   }
 
   // Domination rules must be satisfied.
-  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
-          ir_context, insert_before_inst, message_.result_id())) {
-    return false;
-  }
-
-  // A constant instruction must be present in the module if required.
-  if (IsAdditionalConstantRequired(message_.synonym_type()) &&
-      MaybeGetConstantId(ir_context) == 0) {
-    return false;
-  }
-
-  // |synonym_fresh_id| must be fresh.
-  return fuzzerutil::IsFreshId(ir_context, message_.synonym_fresh_id());
+  return fuzzerutil::IdIsAvailableBeforeInstruction(
+      ir_context, insert_before_inst, message_.result_id());
 }
 
 void TransformationAddSynonym::Apply(

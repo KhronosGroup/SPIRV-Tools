@@ -37,7 +37,7 @@ void FuzzerPassAddSynonyms::Apply() {
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor) {
         // Skip |inst_it| if we can't insert anything above it. OpIAdd is just
-        // a representation of some instruction that might be produced by the
+        // a representative of some instruction that might be produced by the
         // transformation.
         if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpIAdd, inst_it)) {
           return;
