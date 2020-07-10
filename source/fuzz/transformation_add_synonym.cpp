@@ -48,12 +48,6 @@ bool TransformationAddSynonym::IsApplicable(
     return false;
   }
 
-  // A constant instruction must be present in the module if required.
-  if (IsAdditionalConstantRequired(message_.synonym_type()) &&
-      MaybeGetConstantId(ir_context) == 0) {
-    return false;
-  }
-
   // Check that |message_.result_id| is valid.
   auto* synonym = ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   if (!synonym) {
@@ -77,6 +71,12 @@ bool TransformationAddSynonym::IsApplicable(
   // instruction that can produce a synonym.
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpIAdd,
                                                     insert_before_inst)) {
+    return false;
+  }
+
+  // A constant instruction must be present in the module if required.
+  if (IsAdditionalConstantRequired(message_.synonym_type()) &&
+      MaybeGetConstantId(ir_context) == 0) {
     return false;
   }
 
