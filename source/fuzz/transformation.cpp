@@ -58,6 +58,7 @@
 #include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
 #include "source/fuzz/transformation_push_id_through_variable.h"
+#include "source/fuzz/transformation_record_synonymous_constants.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
@@ -194,6 +195,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kPushIdThroughVariable:
       return MakeUnique<TransformationPushIdThroughVariable>(
           message.push_id_through_variable());
+    case protobufs::Transformation::TransformationCase::
+        kRecordSynonymousConstants:
+      return MakeUnique<TransformationRecordSynonymousConstants>(
+          message.record_synonymous_constants());
     case protobufs::Transformation::TransformationCase::
         kReplaceParameterWithGlobal:
       return MakeUnique<TransformationReplaceParameterWithGlobal>(
