@@ -117,6 +117,8 @@ bool TransformationAddSynonym::IsInstructionValid(
     return false;
   }
 
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
+  //  We can't create a synonym of an irrelevant id.
   switch (synonym_type) {
     case protobufs::TransformationAddSynonym::ADD_ZERO:
     case protobufs::TransformationAddSynonym::SUB_ZERO:
