@@ -18,7 +18,7 @@
 #include <functional>
 #include <utility>
 
-#include "source/fuzz/protobufs/spvtoolsfuzz.pb.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/random_generator.h"
 #include "source/opt/function.h"
 
