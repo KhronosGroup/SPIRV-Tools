@@ -90,13 +90,19 @@ void FuzzerPassAddSynonyms::Apply() {
                   GetIRContext()->get_type_mgr()->GetId(vector->element_type());
               assert(element_type_id && "Vector's element type is invalid");
 
+              auto one_word = vector->element_type()->AsFloat()
+                                  ? fuzzerutil::FloatToWord(1)
+                                  : 1u;
               FindOrCreateCompositeConstant(
                   std::vector<uint32_t>(
                       vector->element_count(),
-                      FindOrCreateConstant({1}, element_type_id)),
+                      FindOrCreateConstant({one_word}, element_type_id)),
                   existing_synonym->type_id());
             } else {
-              FindOrCreateConstant({1}, existing_synonym->type_id());
+              FindOrCreateConstant(
+                  {existing_synonym_type->AsFloat() ? fuzzerutil::FloatToWord(1)
+                                                    : 1u},
+                  existing_synonym->type_id());
             }
           } break;
           default:

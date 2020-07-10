@@ -40,7 +40,7 @@ class TransformationAddSynonym : public Transformation {
   // - |synonym_fresh_id| is a fresh id.
   // - |insert_before| must be a valid instruction descriptor and we must be
   //   able to insert a new synonymous instruction before |insert_before|.
-  //   |result_id| must be available before |insert_before|.
+  // - |result_id| must be available before |insert_before|.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

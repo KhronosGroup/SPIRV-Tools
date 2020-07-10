@@ -241,19 +241,22 @@ uint32_t TransformationAddSynonym::MaybeGetConstantId(
             ir_context->get_type_mgr()->GetId(vector->element_type());
         assert(element_type_id && "Vector's element type is invalid");
 
-        auto scalar_one_id = fuzzerutil::MaybeGetScalarConstant(
-            ir_context, {1}, element_type_id);
-        if (scalar_one_id == 0) {
-          return 0;
+        auto one_word =
+            vector->element_type()->AsFloat() ? fuzzerutil::FloatToWord(1) : 1u;
+        if (auto scalar_one_id = fuzzerutil::MaybeGetScalarConstant(
+                ir_context, {one_word}, element_type_id)) {
+          return fuzzerutil::MaybeGetCompositeConstant(
+              ir_context,
+              std::vector<uint32_t>(vector->element_count(), scalar_one_id),
+              synonym_type_id);
         }
 
-        return fuzzerutil::MaybeGetCompositeConstant(
-            ir_context,
-            std::vector<uint32_t>(vector->element_count(), scalar_one_id),
-            synonym_type_id);
+        return 0;
       } else {
-        return fuzzerutil::MaybeGetScalarConstant(ir_context, {1},
-                                                  synonym_type_id);
+        return fuzzerutil::MaybeGetScalarConstant(
+            ir_context,
+            {synonym_type->AsFloat() ? fuzzerutil::FloatToWord(1) : 1u},
+            synonym_type_id);
       }
     }
     default:
