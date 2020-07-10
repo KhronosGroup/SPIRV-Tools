@@ -307,8 +307,13 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   }
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
-    pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
-        inst, var_id, val_id, inst);
+    bool dbg_value_added =
+        pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(inst, var_id,
+                                                              val_id, inst);
+    if (dbg_value_added)
+      var_ids_added_dbg_value_.insert(var_id);
+    else
+      var_ids_partially_not_added_dbg_value_.insert(var_id);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -491,9 +496,14 @@ bool SSARewriter::ApplyReplacements() {
 
     // Add DebugValue for the new OpPhi instruction.
     insert_it->SetDebugScope(local_var->GetDebugScope());
-    pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
-        &*insert_it, phi_candidate->var_id(), phi_candidate->result_id(),
-        &*insert_it);
+    bool dbg_value_added =
+        pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
+            &*insert_it, phi_candidate->var_id(), phi_candidate->result_id(),
+            &*insert_it);
+    if (dbg_value_added)
+      var_ids_added_dbg_value_.insert(phi_candidate->var_id());
+    else
+      var_ids_partially_not_added_dbg_value_.insert(phi_candidate->var_id());
 
     modified = true;
   }
@@ -587,6 +597,9 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
             << fp->PrettyPrint(0) << "\n\n\n";
 #endif
 
+  var_ids_added_dbg_value_.clear();
+  var_ids_partially_not_added_dbg_value_.clear();
+
   // Collect variables that can be converted into SSA IDs.
   pass_->CollectTargetVars(fp);
 
@@ -615,7 +628,17 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
             << fp->PrettyPrint(0) << "\n";
 #endif
 
-  if (modified) pass_->context()->KillDebugDeclareInsts(fp);
+  if (modified) {
+    // Kill DebugDeclare only if it is added as DebugValue for each store
+    // or phi instruction and there is no store or phi instruction that it
+    // cannot be added as DebugValue because the out-of-scope issue.
+    for (auto var_id : var_ids_added_dbg_value_) {
+      if (var_ids_partially_not_added_dbg_value_.find(var_id) ==
+          var_ids_partially_not_added_dbg_value_.end()) {
+        pass_->context()->get_debug_info_mgr()->KillDebugDeclares(var_id);
+      }
+    }
+  }
 
   return modified ? Pass::Status::SuccessWithChange
                   : Pass::Status::SuccessWithoutChange;
