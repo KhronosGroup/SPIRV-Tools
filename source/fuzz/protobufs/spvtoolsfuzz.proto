@@ -385,6 +385,7 @@ message Transformation {
     TransformationInvertComparisonOperator invert_comparison_operator = 54;
     TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
     TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
+    TransformationRecordSynonymousConstants record_synonymous_constants = 57;
     // Add additional option using the next available number.
   }
 }
@@ -1120,6 +1121,26 @@ message TransformationPushIdThroughVariable {
   // A descriptor for an instruction which the new OpStore
   // and OpLoad instructions might be inserted before.
   InstructionDescriptor instruction_descriptor = 6;
+
+}
+
+message TransformationRecordSynonymousConstants {
+
+  // A transformation that, given the IDs to two synonymous constants,
+  // records the fact that they are synonymous. The module is not changed.
+  // Two constants are synonymous if:
+  // - they have the same type (ignoring the presence of integer sign)
+  // - they have the same opcode (one of OpConstant, OpConstantTrue,
+  //   OpConstantFalse, OpConstantNull)
+  // - they have the same value
+  // If the types are the same, OpConstantNull is equivalent to
+  // OpConstantFalse or OpConstant with value zero.
+
+  // The id of a constant
+  uint32 constant1_id = 1;
+
+  // The id of the synonym
+  uint32 constant2_id = 2;
 
 }
 
