@@ -244,16 +244,15 @@ FuzzerContext::GetRandomSynonymType() {
   // value_count method is guaranteed to return a value greater than 0.
   auto result_index = ChooseBetweenMinAndMax(
       {0, static_cast<uint32_t>(
-          protobufs::TransformationAddSynonym::SynonymType_descriptor()
-              ->value_count() -
+              protobufs::TransformationAddSynonym::SynonymType_descriptor()
+                  ->value_count() -
               1)});
   auto result = protobufs::TransformationAddSynonym::SynonymType_descriptor()
-      ->value(result_index)
-      ->number();
+                    ->value(result_index)
+                    ->number();
   assert(protobufs::TransformationAddSynonym::SynonymType_IsValid(result) &&
-      "|result| is not a value of SynonymType");
-  return static_cast<protobufs::TransformationAddSynonym::SynonymType>(
-      result);
+         "|result| is not a value of SynonymType");
+  return static_cast<protobufs::TransformationAddSynonym::SynonymType>(result);
 }
 
 }  // namespace fuzz
