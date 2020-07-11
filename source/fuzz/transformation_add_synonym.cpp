@@ -173,7 +173,7 @@ TransformationAddSynonym::MakeSynonymousInstruction(
           (synonym_type->AsVector() &&
            synonym_type->AsVector()->element_type()->AsInteger()) ||
           synonym_type->AsInteger();
-      SpvOp opcode;
+      auto opcode = SpvOpNop;
       switch (message_.synonym_type()) {
         case protobufs::TransformationAddSynonym::SUB_ZERO:
           opcode = is_integral ? SpvOpISub : SpvOpFSub;
