@@ -643,10 +643,14 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
           %8 = OpTypeVector %4 3
           %9 = OpTypeVector %5 3
          %10 = OpConstant %6 12
+         %20 = OpConstant %6 12
          %11 = OpConstant %4 12
+         %21 = OpConstant %4 12
          %14 = OpConstant %5 12
          %15 = OpConstantComposite %7 %10 %10 %10
+         %18 = OpConstantComposite %7 %10 %10 %10
          %16 = OpConstantComposite %8 %11 %11 %11
+         %19 = OpConstantComposite %8 %11 %11 %11
          %17 = OpConstantComposite %9 %14 %14 %14
          %12 = OpFunction %2 None %3
          %13 = OpLabel
@@ -668,101 +672,139 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Too few instruction operands.
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertSToF, {},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
   // Too many instruction operands.
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertSToF, {15, 16},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {15, 16},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
   // Operand has no type id.
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertSToF, {7},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {7},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
   // OpConvertSToF and OpConvertUToF require an operand to have scalar or vector
   // of integral components type.
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertSToF, {17},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {17},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertSToF, {14},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {14},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertUToF, {17},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertUToF, {17},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertUToF, {14},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertUToF, {14},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
   // OpConvertFToS and OpConvertFToU require an operand of scalar or vector of
   // floating-point components type.
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertFToS, {15},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToS, {15},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertFToS, {10},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToS, {10},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertFToU, {15},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToU, {15},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(20, SpvOpConvertFToU, {10},
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToU, {10},
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
+  // Add initial facts to the fact manager.
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(15, {}),
+                                  MakeDataDescriptor(18, {}), context.get());
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(16, {}),
+                                  MakeDataDescriptor(19, {}), context.get());
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(10, {}),
+                                  MakeDataDescriptor(20, {}), context.get());
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(11, {}),
+                                  MakeDataDescriptor(21, {}), context.get());
+
   {
-    TransformationEquationInstruction transformation(20, SpvOpConvertSToF, {15},
+    TransformationEquationInstruction transformation(50, SpvOpConvertSToF, {15},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationEquationInstruction transformation(21, SpvOpConvertSToF, {10},
+    TransformationEquationInstruction transformation(51, SpvOpConvertSToF, {10},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationEquationInstruction transformation(22, SpvOpConvertUToF, {16},
+    TransformationEquationInstruction transformation(52, SpvOpConvertUToF, {16},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationEquationInstruction transformation(23, SpvOpConvertUToF, {11},
+    TransformationEquationInstruction transformation(53, SpvOpConvertUToF, {11},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationEquationInstruction transformation(24, SpvOpConvertFToS, {20},
+    TransformationEquationInstruction transformation(54, SpvOpConvertFToS, {50},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationEquationInstruction transformation(25, SpvOpConvertFToS, {21},
+    TransformationEquationInstruction transformation(55, SpvOpConvertFToS, {51},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationEquationInstruction transformation(26, SpvOpConvertFToU, {22},
+    TransformationEquationInstruction transformation(56, SpvOpConvertFToU, {52},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationEquationInstruction transformation(27, SpvOpConvertFToU, {23},
+    TransformationEquationInstruction transformation(57, SpvOpConvertFToU, {53},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(58, SpvOpConvertSToF, {18},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(59, SpvOpConvertUToF, {19},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(60, SpvOpConvertSToF, {20},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(61, SpvOpConvertUToF, {21},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
@@ -771,10 +813,15 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(16, {}),
-                                        MakeDataDescriptor(26, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(11, {}),
-                                        MakeDataDescriptor(27, {})));
+  // Fact manager contains all derived facts.
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(58, {}),
+                                        MakeDataDescriptor(50, {})));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(59, {}),
+                                        MakeDataDescriptor(52, {})));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(60, {}),
+                                        MakeDataDescriptor(51, {})));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(61, {}),
+                                        MakeDataDescriptor(53, {})));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -792,21 +839,29 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
           %8 = OpTypeVector %4 3
           %9 = OpTypeVector %5 3
          %10 = OpConstant %6 12
+         %20 = OpConstant %6 12
          %11 = OpConstant %4 12
+         %21 = OpConstant %4 12
          %14 = OpConstant %5 12
          %15 = OpConstantComposite %7 %10 %10 %10
+         %18 = OpConstantComposite %7 %10 %10 %10
          %16 = OpConstantComposite %8 %11 %11 %11
+         %19 = OpConstantComposite %8 %11 %11 %11
          %17 = OpConstantComposite %9 %14 %14 %14
          %12 = OpFunction %2 None %3
          %13 = OpLabel
-         %20 = OpConvertSToF %9 %15
-         %21 = OpConvertSToF %5 %10
-         %22 = OpConvertUToF %9 %16
-         %23 = OpConvertUToF %5 %11
-         %24 = OpConvertFToS %8 %20
-         %25 = OpConvertFToS %4 %21
-         %26 = OpConvertFToU %8 %22
-         %27 = OpConvertFToU %4 %23
+         %50 = OpConvertSToF %9 %15
+         %51 = OpConvertSToF %5 %10
+         %52 = OpConvertUToF %9 %16
+         %53 = OpConvertUToF %5 %11
+         %54 = OpConvertFToS %8 %50
+         %55 = OpConvertFToS %4 %51
+         %56 = OpConvertFToU %8 %52
+         %57 = OpConvertFToU %4 %53
+         %58 = OpConvertSToF %9 %18
+         %59 = OpConvertUToF %9 %19
+         %60 = OpConvertSToF %5 %20
+         %61 = OpConvertUToF %5 %21
                OpReturn
                OpFunctionEnd
   )";
