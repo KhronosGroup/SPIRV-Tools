@@ -1192,6 +1192,496 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
+TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpMatrixTimesMatrix) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %54 "main"
+               OpExecutionMode %54 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %54 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeFloat 32
+          %5 = OpTypeVector %4 2
+          %6 = OpTypeVector %4 3
+          %7 = OpTypeVector %4 4
+          %8 = OpTypeMatrix %5 2
+          %9 = OpTypeMatrix %5 3
+         %10 = OpTypeMatrix %5 4
+         %11 = OpTypeMatrix %6 2
+         %12 = OpTypeMatrix %6 3
+         %13 = OpTypeMatrix %6 4
+         %14 = OpTypeMatrix %7 2
+         %15 = OpTypeMatrix %7 3
+         %16 = OpTypeMatrix %7 4
+
+; Constant scalars
+         %17 = OpConstant %4 1
+         %18 = OpConstant %4 2
+         %19 = OpConstant %4 3
+         %20 = OpConstant %4 4
+         %21 = OpConstant %4 5
+         %22 = OpConstant %4 6
+         %23 = OpConstant %4 7
+         %24 = OpConstant %4 8
+         %25 = OpConstant %4 9
+         %26 = OpConstant %4 10
+         %27 = OpConstant %4 11
+         %28 = OpConstant %4 12
+         %29 = OpConstant %4 13
+         %30 = OpConstant %4 14
+         %31 = OpConstant %4 15
+         %32 = OpConstant %4 16
+
+; Constant vectors
+         %33 = OpConstantComposite %5 %17 %18
+         %34 = OpConstantComposite %5 %19 %20
+         %35 = OpConstantComposite %5 %21 %22
+         %36 = OpConstantComposite %5 %23 %24
+         %37 = OpConstantComposite %6 %17 %18 %19
+         %38 = OpConstantComposite %6 %20 %21 %22
+         %39 = OpConstantComposite %6 %23 %24 %25
+         %40 = OpConstantComposite %6 %26 %27 %28
+         %41 = OpConstantComposite %7 %17 %18 %19 %20
+         %42 = OpConstantComposite %7 %21 %22 %23 %24
+         %43 = OpConstantComposite %7 %25 %26 %27 %28
+         %44 = OpConstantComposite %7 %29 %30 %31 %32
+
+; Constant matrices
+         %45 = OpConstantComposite %8 %33 %34
+         %46 = OpConstantComposite %9 %33 %34 %35
+         %47 = OpConstantComposite %10 %33 %34 %35 %36
+         %48 = OpConstantComposite %11 %37 %38
+         %49 = OpConstantComposite %12 %37 %38 %39
+         %50 = OpConstantComposite %13 %37 %38 %39 %40
+         %51 = OpConstantComposite %14 %41 %42
+         %52 = OpConstantComposite %15 %41 %42 %43
+         %53 = OpConstantComposite %16 %41 %42 %43 %44
+
+; main function
+         %54 = OpFunction %2 None %3
+         %55 = OpLabel
+
+; Multiplying 2x2 matrix by 2x2 matrix
+         %56 = OpMatrixTimesMatrix %8 %45 %45
+
+; Multiplying 2x2 matrix by 2x3 matrix
+         %57 = OpMatrixTimesMatrix %9 %45 %46
+
+; Multiplying 2x2 matrix by 2x4 matrix
+         %58 = OpMatrixTimesMatrix %10 %45 %47
+
+; Multiplying 2x3 matrix by 3x2 matrix
+         %59 = OpMatrixTimesMatrix %8 %46 %48
+
+; Multiplying 2x3 matrix by 3x3 matrix
+         %60 = OpMatrixTimesMatrix %9 %46 %49
+
+; Multiplying 2x3 matrix by 3x4 matrix
+         %61 = OpMatrixTimesMatrix %10 %46 %50
+
+; Multiplying 2x4 matrix by 4x2 matrix
+         %62 = OpMatrixTimesMatrix %8 %47 %51
+
+; Multiplying 2x4 matrix by 4x3 matrix
+         %63 = OpMatrixTimesMatrix %9 %47 %52
+
+; Multiplying 2x4 matrix by 4x4 matrix
+         %64 = OpMatrixTimesMatrix %10 %47 %53
+
+; Multiplying 3x2 matrix by 2x2 matrix
+         %65 = OpMatrixTimesMatrix %11 %48 %45
+
+; Multiplying 3x2 matrix by 2x3 matrix
+         %66 = OpMatrixTimesMatrix %12 %48 %46
+
+; Multiplying 3x2 matrix by 2x4 matrix
+         %67 = OpMatrixTimesMatrix %13 %48 %47
+
+; Multiplying 3x3 matrix by 3x2 matrix
+         %68 = OpMatrixTimesMatrix %11 %49 %48
+
+; Multiplying 3x3 matrix by 3x3 matrix
+         %69 = OpMatrixTimesMatrix %12 %49 %49
+
+; Multiplying 3x3 matrix by 3x4 matrix
+         %70 = OpMatrixTimesMatrix %13 %49 %50
+
+; Multiplying 3x4 matrix by 4x2 matrix
+         %71 = OpMatrixTimesMatrix %11 %50 %51
+
+; Multiplying 3x4 matrix by 4x3 matrix
+         %72 = OpMatrixTimesMatrix %12 %50 %52
+
+; Multiplying 3x4 matrix by 4x4 matrix
+         %73 = OpMatrixTimesMatrix %13 %50 %53
+
+; Multiplying 4x2 matrix by 2x2 matrix
+         %74 = OpMatrixTimesMatrix %14 %51 %45
+
+; Multiplying 4x2 matrix by 2x3 matrix
+         %75 = OpMatrixTimesMatrix %15 %51 %46
+
+; Multiplying 4x2 matrix by 2x4 matrix
+         %76 = OpMatrixTimesMatrix %16 %51 %47
+
+; Multiplying 4x3 matrix by 3x2 matrix
+         %77 = OpMatrixTimesMatrix %14 %52 %48
+
+; Multiplying 4x3 matrix by 3x3 matrix
+         %78 = OpMatrixTimesMatrix %15 %52 %49
+
+; Multiplying 4x3 matrix by 3x4 matrix
+         %79 = OpMatrixTimesMatrix %16 %52 %50
+
+; Multiplying 4x4 matrix by 4x2 matrix
+         %80 = OpMatrixTimesMatrix %14 %53 %51
+
+; Multiplying 4x4 matrix by 4x3 matrix
+         %81 = OpMatrixTimesMatrix %15 %53 %52
+
+; Multiplying 4x4 matrix by 4x4 matrix
+         %82 = OpMatrixTimesMatrix %16 %53 %53
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager, validator_options);
+
+  auto instruction_descriptor = MakeInstructionDescriptor(56, SpvOpMatrixTimesMatrix, 0);
+  auto transformation = TransformationReplaceLinearAlgebraInstruction({83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116}, instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(57, SpvOpMatrixTimesMatrix, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction({117, 118,  119,  120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166}, instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(58, SpvOpMatrixTimesMatrix, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction({167, 168,  169,  170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232}, instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %54 "main"
+               OpExecutionMode %54 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %54 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeFloat 32
+          %5 = OpTypeVector %4 2
+          %6 = OpTypeVector %4 3
+          %7 = OpTypeVector %4 4
+          %8 = OpTypeMatrix %5 2
+          %9 = OpTypeMatrix %5 3
+         %10 = OpTypeMatrix %5 4
+         %11 = OpTypeMatrix %6 2
+         %12 = OpTypeMatrix %6 3
+         %13 = OpTypeMatrix %6 4
+         %14 = OpTypeMatrix %7 2
+         %15 = OpTypeMatrix %7 3
+         %16 = OpTypeMatrix %7 4
+
+; Constant scalars
+         %17 = OpConstant %4 1
+         %18 = OpConstant %4 2
+         %19 = OpConstant %4 3
+         %20 = OpConstant %4 4
+         %21 = OpConstant %4 5
+         %22 = OpConstant %4 6
+         %23 = OpConstant %4 7
+         %24 = OpConstant %4 8
+         %25 = OpConstant %4 9
+         %26 = OpConstant %4 10
+         %27 = OpConstant %4 11
+         %28 = OpConstant %4 12
+         %29 = OpConstant %4 13
+         %30 = OpConstant %4 14
+         %31 = OpConstant %4 15
+         %32 = OpConstant %4 16
+
+; Constant vectors
+         %33 = OpConstantComposite %5 %17 %18
+         %34 = OpConstantComposite %5 %19 %20
+         %35 = OpConstantComposite %5 %21 %22
+         %36 = OpConstantComposite %5 %23 %24
+         %37 = OpConstantComposite %6 %17 %18 %19
+         %38 = OpConstantComposite %6 %20 %21 %22
+         %39 = OpConstantComposite %6 %23 %24 %25
+         %40 = OpConstantComposite %6 %26 %27 %28
+         %41 = OpConstantComposite %7 %17 %18 %19 %20
+         %42 = OpConstantComposite %7 %21 %22 %23 %24
+         %43 = OpConstantComposite %7 %25 %26 %27 %28
+         %44 = OpConstantComposite %7 %29 %30 %31 %32
+
+; Constant matrices
+         %45 = OpConstantComposite %8 %33 %34
+         %46 = OpConstantComposite %9 %33 %34 %35
+         %47 = OpConstantComposite %10 %33 %34 %35 %36
+         %48 = OpConstantComposite %11 %37 %38
+         %49 = OpConstantComposite %12 %37 %38 %39
+         %50 = OpConstantComposite %13 %37 %38 %39 %40
+         %51 = OpConstantComposite %14 %41 %42
+         %52 = OpConstantComposite %15 %41 %42 %43
+         %53 = OpConstantComposite %16 %41 %42 %43 %44
+
+; main function
+         %54 = OpFunction %2 None %3
+         %55 = OpLabel
+
+; Multiplying 2x2 matrix by 2x2 matrix
+         %83 = OpCompositeExtract %5 %45 0 ; matrix 1 column 0
+         %84 = OpCompositeExtract %5 %45 1 ; matrix 1 column 1
+         %85 = OpCompositeExtract %5 %45 0 ; matrix 2 column 0
+         %86 = OpCompositeExtract %5 %45 1 ; matrix 2 column 1
+         %87 = OpCompositeExtract %4 %83 0 ; matrix 1 row 0 column 0
+         %88 = OpCompositeExtract %4 %85 0 ; matrix 2 row 0 column 0
+         %89 = OpFMul %4 %87 %88
+         %90 = OpCompositeExtract %4 %84 0 ; matrix 1 row 0 column 1
+         %91 = OpCompositeExtract %4 %85 1 ; matrix 2 row 1 column 0
+         %92 = OpFMul %4 %90 %91
+         %93 = OpFAdd %4 %89 %92
+         %94 = OpCompositeExtract %4 %83 1 ; matrix 1 row 1 column 0
+         %95 = OpCompositeExtract %4 %85 0 ; matrix 2 row 0 column 0
+         %96 = OpFMul %4 %94 %95
+         %97 = OpCompositeExtract %4 %84 1 ; matrix 1 row 1 column 1
+         %98 = OpCompositeExtract %4 %85 1 ; matrix 2 row 1 column 0
+         %99 = OpFMul %4 %97 %98
+        %100 = OpFAdd %4 %96 %99
+        %101 = OpCompositeConstruct %5 %93 %100 ; resulting matrix column 0
+        %102 = OpCompositeExtract %4 %83 0 ; matrix 1 row 0 column 0
+        %103 = OpCompositeExtract %4 %86 0 ; matrix 2 row 0 column 1
+        %104 = OpFMul %4 %102 %103
+        %105 = OpCompositeExtract %4 %84 0 ; matrix 1 row 0 column 1
+        %106 = OpCompositeExtract %4 %86 1 ; matrix 2 row 1 column 1
+        %107 = OpFMul %4 %105 %106
+        %108 = OpFAdd %4 %104 %107
+        %109 = OpCompositeExtract %4 %83 1 ; matrix 1 row 1 column 0
+        %110 = OpCompositeExtract %4 %86 0 ; matrix 2 row 0 column 1
+        %111 = OpFMul %4 %109 %110
+        %112 = OpCompositeExtract %4 %84 1 ; matrix 1 row 1 column 1
+        %113 = OpCompositeExtract %4 %86 1 ; matrix 2 row 1 column 1
+        %114 = OpFMul %4 %112 %113
+        %115 = OpFAdd %4 %111 %114
+        %116 = OpCompositeConstruct %5 %108 %115 ; resulting matrix column 1
+         %56 = OpCompositeConstruct %8 %101 %116 ; resulting matrix
+
+; Multiplying 2x2 matrix by 2x3 matrix
+        %117 = OpCompositeExtract %5 %45 0 ; matrix 1 column 0
+        %118 = OpCompositeExtract %5 %45 1 ; matrix 1 column 1
+        %119 = OpCompositeExtract %5 %46 0 ; matrix 2 column 0
+        %120 = OpCompositeExtract %5 %46 1 ; matrix 2 column 1
+        %121 = OpCompositeExtract %5 %46 2 ; matrix 2 column 2
+        %122 = OpCompositeExtract %4 %117 0 ; matrix 1 row 0 column 0
+        %123 = OpCompositeExtract %4 %119 0 ; matrix 2 row 0 column 0
+        %124 = OpFMul %4 %122 %123
+        %125 = OpCompositeExtract %4 %118 0 ; matrix 1 row 0 column 1
+        %126 = OpCompositeExtract %4 %119 1 ; matrix 2 row 1 column 0
+        %127 = OpFMul %4 %125 %126
+        %128 = OpFAdd %4 %124 %127
+        %129 = OpCompositeExtract %4 %117 1 ; matrix 1 row 1 column 0
+        %130 = OpCompositeExtract %4 %119 0 ; matrix 2 row 0 column 0
+        %131 = OpFMul %4 %129 %130
+        %132 = OpCompositeExtract %4 %118 1 ; matrix 1 row 1 column 1
+        %133 = OpCompositeExtract %4 %119 1 ; matrix 2 row 1 column 0
+        %134 = OpFMul %4 %132 %133
+        %135 = OpFAdd %4 %131 %134
+        %136 = OpCompositeConstruct %5 %128 %135 ; resulting matrix column 0
+        %137 = OpCompositeExtract %4 %117 0 ; matrix 1 row 0 column 0
+        %138 = OpCompositeExtract %4 %120 0 ; matrix 2 row 0 column 1
+        %139 = OpFMul %4 %137 %138
+        %140 = OpCompositeExtract %4 %118 0 ; matrix 1 row 0 column 1
+        %141 = OpCompositeExtract %4 %120 1 ; matrix 2 row 1 column 1
+        %142 = OpFMul %4 %140 %141
+        %143 = OpFAdd %4 %139 %142
+        %144 = OpCompositeExtract %4 %117 1 ; matrix 1 row 1 column 0
+        %145 = OpCompositeExtract %4 %120 0 ; matrix 2 row 0 column 1
+        %146 = OpFMul %4 %144 %145
+        %147 = OpCompositeExtract %4 %118 1 ; matrix 1 row 1 column 1
+        %148 = OpCompositeExtract %4 %120 1 ; matrix 2 row 1 column 1
+        %149 = OpFMul %4 %147 %148
+        %150 = OpFAdd %4 %146 %149
+        %151 = OpCompositeConstruct %5 %143 %150 ; resulting matrix column 1
+        %152 = OpCompositeExtract %4 %117 0 ; matrix 1 row 0 column 0
+        %153 = OpCompositeExtract %4 %121 0 ; matrix 2 row 0 column 2
+        %154 = OpFMul %4 %152 %153
+        %155 = OpCompositeExtract %4 %118 0 ; matrix 1 row 0 column 1
+        %156 = OpCompositeExtract %4 %121 1 ; matrix 2 row 1 column 2
+        %157 = OpFMul %4 %155 %156
+        %158 = OpFAdd %4 %154 %157
+        %159 = OpCompositeExtract %4 %117 1 ; matrix 1 row 1 column 0
+        %160 = OpCompositeExtract %4 %121 0 ; matrix 2 row 0 column 2
+        %161 = OpFMul %4 %159 %160
+        %162 = OpCompositeExtract %4 %118 1 ; matrix 1 row 1 column 1
+        %163 = OpCompositeExtract %4 %121 1 ; matrix 2 row 1 column 2
+        %164 = OpFMul %4 %162 %163
+        %165 = OpFAdd %4 %161 %164
+        %166 = OpCompositeConstruct %5 %158 %165 ; resulting matrix column 2
+         %57 = OpCompositeConstruct %9 %136 %151 %166 ; resulting matrix
+
+; Multiplying 2x2 matrix by 2x4 matrix
+        %167 = OpCompositeExtract %5 %45 0 ; matrix 1 column 0
+        %168 = OpCompositeExtract %5 %45 1 ; matrix 1 column 1
+        %169 = OpCompositeExtract %5 %47 0 ; matrix 2 column 0
+        %170 = OpCompositeExtract %5 %47 1 ; matrix 2 column 1
+        %171 = OpCompositeExtract %5 %47 2 ; matrix 2 column 2
+        %172 = OpCompositeExtract %5 %47 3 ; matrix 2 column 3
+        %173 = OpCompositeExtract %4 %167 0 ; matrix 1 row 0 column 0
+        %174 = OpCompositeExtract %4 %169 0 ; matrix 2 row 0 column 0
+        %175 = OpFMul %4 %173 %174
+        %176 = OpCompositeExtract %4 %168 0 ; matrix 1 row 0 column 1
+        %177 = OpCompositeExtract %4 %169 1 ; matrix 2 row 1 column 0
+        %178 = OpFMul %4 %176 %177
+        %179 = OpFAdd %4 %175 %178
+        %180 = OpCompositeExtract %4 %167 1 ; matrix 1 row 1 column 0
+        %181 = OpCompositeExtract %4 %169 0 ; matrix 2 row 0 column 0
+        %182 = OpFMul %4 %180 %181
+        %183 = OpCompositeExtract %4 %168 1 ; matrix 1 row 1 column 1
+        %184 = OpCompositeExtract %4 %169 1 ; matrix 2 row 1 column 0
+        %185 = OpFMul %4 %183 %184
+        %186 = OpFAdd %4 %182 %185
+        %187 = OpCompositeConstruct %5 %179 %186 ; resulting matrix column 0
+        %188 = OpCompositeExtract %4 %167 0 ; matrix 1 row 0 column 0
+        %189 = OpCompositeExtract %4 %170 0 ; matrix 2 row 0 column 1
+        %190 = OpFMul %4 %188 %189
+        %191 = OpCompositeExtract %4 %168 0 ; matrix 1 row 0 column 1
+        %192 = OpCompositeExtract %4 %170 1 ; matrix 2 row 1 column 1
+        %193 = OpFMul %4 %191 %192
+        %194 = OpFAdd %4 %190 %193
+        %195 = OpCompositeExtract %4 %167 1 ; matrix 1 row 1 column 0
+        %196 = OpCompositeExtract %4 %170 0 ; matrix 2 row 0 column 1
+        %197 = OpFMul %4 %195 %196
+        %198 = OpCompositeExtract %4 %168 1 ; matrix 1 row 1 column 1
+        %199 = OpCompositeExtract %4 %170 1 ; matrix 2 row 1 column 1
+        %200 = OpFMul %4 %198 %199
+        %201 = OpFAdd %4 %197 %200
+        %202 = OpCompositeConstruct %5 %194 %201 ; resulting matrix column 1
+        %203 = OpCompositeExtract %4 %167 0 ; matrix 1 row 0 column 0
+        %204 = OpCompositeExtract %4 %171 0 ; matrix 2 row 0 column 2
+        %205 = OpFMul %4 %203 %204
+        %206 = OpCompositeExtract %4 %168 0 ; matrix 1 row 0 column 1
+        %207 = OpCompositeExtract %4 %171 1 ; matrix 2 row 1 column 2
+        %208 = OpFMul %4 %206 %207
+        %209 = OpFAdd %4 %205 %208
+        %210 = OpCompositeExtract %4 %167 1 ; matrix 1 row 1 column 0
+        %211 = OpCompositeExtract %4 %171 0 ; matrix 2 row 0 column 2
+        %212 = OpFMul %4 %210 %211
+        %213 = OpCompositeExtract %4 %168 1 ; matrix 1 row 1 column 1
+        %214 = OpCompositeExtract %4 %171 1 ; matrix 2 row 1 column 2
+        %215 = OpFMul %4 %213 %214
+        %216 = OpFAdd %4 %212 %215
+        %217 = OpCompositeConstruct %5 %209 %216 ; resulting matrix column 2
+        %218 = OpCompositeExtract %4 %167 0 ; matrix 1 row 0 column 0
+        %219 = OpCompositeExtract %4 %172 0 ; matrix 2 row 0 column 3
+        %220 = OpFMul %4 %218 %219
+        %221 = OpCompositeExtract %4 %168 0 ; matrix 1 row 0 column 1
+        %222 = OpCompositeExtract %4 %172 1 ; matrix 2 row 1 column 3
+        %223 = OpFMul %4 %221 %222
+        %224 = OpFAdd %4 %220 %223
+        %225 = OpCompositeExtract %4 %167 1 ; matrix 1 row 1 column 0
+        %226 = OpCompositeExtract %4 %172 0 ; matrix 2 row 0 column 3
+        %227 = OpFMul %4 %225 %226
+        %228 = OpCompositeExtract %4 %168 1 ; matrix 1 row 1 column 1
+        %229 = OpCompositeExtract %4 %172 1 ; matrix 2 row 1 column 3
+        %230 = OpFMul %4 %228 %229
+        %231 = OpFAdd %4 %227 %230
+        %232 = OpCompositeConstruct %5 %224 %231 ; resulting matrix column 3
+         %58 = OpCompositeConstruct %10 %187 %202 %217 %232 ; resulting matrix
+
+; Multiplying 2x3 matrix by 3x2 matrix
+         %59 = OpMatrixTimesMatrix %8 %46 %48
+
+; Multiplying 2x3 matrix by 3x3 matrix
+         %60 = OpMatrixTimesMatrix %9 %46 %49
+
+; Multiplying 2x3 matrix by 3x4 matrix
+         %61 = OpMatrixTimesMatrix %10 %46 %50
+
+; Multiplying 2x4 matrix by 4x2 matrix
+         %62 = OpMatrixTimesMatrix %8 %47 %51
+
+; Multiplying 2x4 matrix by 4x3 matrix
+         %63 = OpMatrixTimesMatrix %9 %47 %52
+
+; Multiplying 2x4 matrix by 4x4 matrix
+         %64 = OpMatrixTimesMatrix %10 %47 %53
+
+; Multiplying 3x2 matrix by 2x2 matrix
+         %65 = OpMatrixTimesMatrix %11 %48 %45
+
+; Multiplying 3x2 matrix by 2x3 matrix
+         %66 = OpMatrixTimesMatrix %12 %48 %46
+
+; Multiplying 3x2 matrix by 2x4 matrix
+         %67 = OpMatrixTimesMatrix %13 %48 %47
+
+; Multiplying 3x3 matrix by 3x2 matrix
+         %68 = OpMatrixTimesMatrix %11 %49 %48
+
+; Multiplying 3x3 matrix by 3x3 matrix
+         %69 = OpMatrixTimesMatrix %12 %49 %49
+
+; Multiplying 3x3 matrix by 3x4 matrix
+         %70 = OpMatrixTimesMatrix %13 %49 %50
+
+; Multiplying 3x4 matrix by 4x2 matrix
+         %71 = OpMatrixTimesMatrix %11 %50 %51
+
+; Multiplying 3x4 matrix by 4x3 matrix
+         %72 = OpMatrixTimesMatrix %12 %50 %52
+
+; Multiplying 3x4 matrix by 4x4 matrix
+         %73 = OpMatrixTimesMatrix %13 %50 %53
+
+; Multiplying 4x2 matrix by 2x2 matrix
+         %74 = OpMatrixTimesMatrix %14 %51 %45
+
+; Multiplying 4x2 matrix by 2x3 matrix
+         %75 = OpMatrixTimesMatrix %15 %51 %46
+
+; Multiplying 4x2 matrix by 2x4 matrix
+         %76 = OpMatrixTimesMatrix %16 %51 %47
+
+; Multiplying 4x3 matrix by 3x2 matrix
+         %77 = OpMatrixTimesMatrix %14 %52 %48
+
+; Multiplying 4x3 matrix by 3x3 matrix
+         %78 = OpMatrixTimesMatrix %15 %52 %49
+
+; Multiplying 4x3 matrix by 3x4 matrix
+         %79 = OpMatrixTimesMatrix %16 %52 %50
+
+; Multiplying 4x4 matrix by 4x2 matrix
+         %80 = OpMatrixTimesMatrix %14 %53 %51
+
+; Multiplying 4x4 matrix by 4x3 matrix
+         %81 = OpMatrixTimesMatrix %15 %53 %52
+
+; Multiplying 4x4 matrix by 4x4 matrix
+         %82 = OpMatrixTimesMatrix %16 %53 %53
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+}
+
 TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpDot) {
   std::string reference_shader = R"(
                OpCapability Shader
