@@ -195,6 +195,9 @@ class FuzzerContext {
   uint32_t GetChanceOfGoingDeeperWhenMakingAccessChain() {
     return chance_of_going_deeper_when_making_access_chain_;
   }
+  uint32_t GetChanceOfInliningFunction() {
+    return chance_of_inlining_function_;
+  }
   uint32_t GetChanceOfInterchangingSignednessOfIntegerOperands() {
     return chance_of_interchanging_signedness_of_integer_operands_;
   }
@@ -383,6 +386,7 @@ class FuzzerContext {
   uint32_t chance_of_donating_additional_module_;
   uint32_t chance_of_going_deeper_to_insert_in_composite_;
   uint32_t chance_of_going_deeper_when_making_access_chain_;
+  uint32_t chance_of_inlining_function_;
   uint32_t chance_of_interchanging_signedness_of_integer_operands_;
   uint32_t chance_of_interchanging_zero_like_constants_;
   uint32_t chance_of_inverting_comparison_operators_;

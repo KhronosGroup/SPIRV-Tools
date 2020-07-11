@@ -61,6 +61,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_compute_data_synonym_fact_closure_test.cpp
           transformation_equation_instruction_test.cpp
           transformation_function_call_test.cpp
+          transformation_inline_function_test.cpp
           transformation_invert_comparison_operator_test.cpp
           transformation_load_test.cpp
           transformation_make_vector_operation_dynamic_test.cpp
