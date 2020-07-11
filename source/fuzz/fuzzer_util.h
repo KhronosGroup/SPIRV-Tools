@@ -277,6 +277,11 @@ bool IsPermutationOfRange(const std::vector<uint32_t>& arr, uint32_t lo,
 std::vector<opt::Instruction*> GetParameters(opt::IRContext* ir_context,
                                              uint32_t function_id);
 
+// Returns all OpFunctionCall instructions that call a function with result id
+// |function_id|.
+std::vector<opt::Instruction*> GetCallers(opt::IRContext* ir_context,
+                                          uint32_t function_id);
+
 // Returns a function that contains OpFunctionParameter instruction with result
 // id |param_id|. Returns nullptr if the module has no such function.
 opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,

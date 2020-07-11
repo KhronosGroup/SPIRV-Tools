@@ -15,6 +15,8 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_REPLACE_PARAMS_WITH_STRUCT_H_
 #define SOURCE_FUZZ_TRANSFORMATION_REPLACE_PARAMS_WITH_STRUCT_H_
 
+#include <unordered_map>
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_context.h"
@@ -31,17 +33,22 @@ class TransformationReplaceParamsWithStruct : public Transformation {
   TransformationReplaceParamsWithStruct(
       const std::vector<uint32_t>& parameter_id,
       uint32_t fresh_function_type_id, uint32_t fresh_parameter_id,
-      const std::vector<uint32_t>& fresh_composite_id);
+      const std::unordered_map<uint32_t, uint32_t>&
+          caller_id_to_fresh_composite_id);
 
   // - |parameter_id[i]| is a valid result id of some OpFunctionParameter
   //   instruction. All parameter ids must correspond to parameters of the same
   //   function. That function may not be an entry-point function.
+  //   Types of all parameters must be supported by this transformation (see
+  //   IsParameterTypeSupported method).
   //   |parameter_id| may not be empty or contain duplicates.
-  // - |fresh_composite_id.size()| is equal to the number of callees of the
-  //   function (see GetNumberOfCallees method). All elements of this vector
-  //   should be unique and fresh.
-  // - |fresh_function_type_id|, |fresh_parameter_id|, |fresh_struct_type_id|
-  //   are all fresh unique ids.
+  // - There must exist an OpTypeStruct instruction containing types of all
+  //   replaced parameters. Type of the i'th component of the struct is equal
+  //   to the type of the instruction with result id |parameter_id[i]|.
+  // - |caller_id_to_fresh_composite_id| should contain a key for at least every
+  //   result id of an OpFunctionCall instruction that calls the function.
+  // - |fresh_function_type_id|, |fresh_parameter_id|,
+  //   |caller_id_to_fresh_composite_id| are all fresh and unique ids.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -49,8 +56,6 @@ class TransformationReplaceParamsWithStruct : public Transformation {
   // - Creates a new function parameter with result id |fresh_parameter_id|.
   //   Parameter's type is OpTypeStruct with each components type equal to the
   //   type of the replaced parameter.
-  // - This OpTypeStruct instruction is created with result id
-  //   |fresh_struct_type_id| if no required type is present in the module.
   // - OpCompositeConstruct with result id from |fresh_composite_id| is inserted
   //   before each OpFunctionCall instruction.
   // - OpCompositeExtract with result id equal to the result id of the replaced
@@ -59,11 +64,6 @@ class TransformationReplaceParamsWithStruct : public Transformation {
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
-
-  // Returns the number of OpFunctionCall instructions in the module that call
-  // |function_id|.
-  static uint32_t GetNumberOfCallees(opt::IRContext* ir_context,
-                                     uint32_t function_id);
 
   // Returns true if parameter's type is supported by this transformation.
   static bool IsParameterTypeSupported(const opt::analysis::Type& param_type);

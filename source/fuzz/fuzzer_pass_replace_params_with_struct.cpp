@@ -70,7 +70,7 @@ void FuzzerPassReplaceParamsWithStruct::Apply() {
 
     auto num_replaced_params = std::min<size_t>(
         parameter_id.size(),
-        GetFuzzerContext()->GetRandomNumberOfReplacedParameters(
+        GetFuzzerContext()->GetRandomNumberOfParametersReplacedWithStruct(
             static_cast<uint32_t>(params.size())));
 
     GetFuzzerContext()->Shuffle(&parameter_id);
@@ -89,14 +89,16 @@ void FuzzerPassReplaceParamsWithStruct::Apply() {
       id = params[id]->result_id();
     }
 
+    std::unordered_map<uint32_t, uint32_t> caller_id_to_fresh_id;
+    for (const auto* inst :
+         fuzzerutil::GetCallers(GetIRContext(), function.result_id())) {
+      caller_id_to_fresh_id[inst->result_id()] =
+          GetFuzzerContext()->GetFreshId();
+    }
+
     ApplyTransformation(TransformationReplaceParamsWithStruct(
-        parameter_id,
-        /*fresh_function_type_id*/ GetFuzzerContext()->GetFreshId(),
-        /*fresh_parameter_id*/ GetFuzzerContext()->GetFreshId(),
-        /*fresh_composite_id*/
-        GetFuzzerContext()->GetFreshIds(
-            TransformationReplaceParamsWithStruct::GetNumberOfCallees(
-                GetIRContext(), function.result_id()))));
+        parameter_id, GetFuzzerContext()->GetFreshId(),
+        GetFuzzerContext()->GetFreshId(), caller_id_to_fresh_id));
   }
 }
 

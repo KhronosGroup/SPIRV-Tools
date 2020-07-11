@@ -146,24 +146,18 @@ void TransformationPermuteFunctionParameters::Apply(
       });
 
   // Fix all OpFunctionCall instructions
-  ir_context->get_def_use_mgr()->ForEachUser(
-      &function->DefInst(), [this](opt::Instruction* call) {
-        if (call->opcode() != SpvOpFunctionCall ||
-            call->GetSingleWordInOperand(0) != message_.function_id()) {
-          return;
-        }
+  for (auto* call : fuzzerutil::GetCallers(ir_context, function->result_id())) {
+    opt::Instruction::OperandList call_operands = {
+        call->GetInOperand(0)  // Function id
+    };
 
-        opt::Instruction::OperandList call_operands = {
-            call->GetInOperand(0)  // Function id
-        };
+    for (auto index : message_.permutation()) {
+      // Take function id into account
+      call_operands.push_back(call->GetInOperand(index + 1));
+    }
 
-        for (auto index : message_.permutation()) {
-          // Take function id into account
-          call_operands.push_back(call->GetInOperand(index + 1));
-        }
-
-        call->SetInOperands(std::move(call_operands));
-      });
+    call->SetInOperands(std::move(call_operands));
+  }
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(

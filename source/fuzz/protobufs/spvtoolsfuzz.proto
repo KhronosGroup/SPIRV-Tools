@@ -1329,10 +1329,13 @@ message TransformationReplaceParamsWithStruct {
   // Fresh id for a new struct function parameter to be used as a replacement.
   uint32 fresh_parameter_id = 3;
 
-  // Fresh id for a struct object containing values of the replaced parameters.
-  // This object will be created before each OpFunctionCall instruction.
-  // Number of elements in this field is equal to the number of callees of the function.
-  repeated uint32 fresh_composite_id = 4;
+  // Fresh ids for struct objects containing values of replaced parameters.
+  // This map contains a fresh id for at least every result id of a relevant
+  // OpFunctionCall instruction.
+  //
+  // Current implementation of the transformation does not have an non-deterministic
+  // behaviour. Change to repeated UInt32Pair if the behaviour changes.
+  map<uint32, uint32> caller_id_to_fresh_composite_id = 4;
 
 }
 

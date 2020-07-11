@@ -101,7 +101,7 @@ const uint32_t kDefaultMaxNewArraySizeLimit = 100;
 //  think whether there is a better limit on the maximum number of parameters.
 const uint32_t kDefaultMaxNumberOfFunctionParameters = 128;
 const uint32_t kDefaultMaxNumberOfNewParameters = 15;
-const uint32_t kDefaultMaxNumberOfReplacedParameters = 5;
+const uint32_t kGetDefaultMaxNumberOfParametersReplacedWithStruct = 5;
 
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
@@ -127,7 +127,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       max_new_array_size_limit_(kDefaultMaxNewArraySizeLimit),
       max_number_of_function_parameters_(kDefaultMaxNumberOfFunctionParameters),
       max_number_of_new_parameters_(kDefaultMaxNumberOfNewParameters),
-      max_number_of_replaced_parameters_(kDefaultMaxNumberOfReplacedParameters),
+      max_number_of_parameters_replaced_with_struct_(
+          kGetDefaultMaxNumberOfParametersReplacedWithStruct),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
   chance_of_adding_access_chain_ =

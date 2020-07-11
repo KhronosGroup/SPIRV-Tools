@@ -28,7 +28,8 @@ TransformationReplaceParamsWithStruct::TransformationReplaceParamsWithStruct(
 TransformationReplaceParamsWithStruct::TransformationReplaceParamsWithStruct(
     const std::vector<uint32_t>& parameter_id, uint32_t fresh_function_type_id,
     uint32_t fresh_parameter_id,
-    const std::vector<uint32_t>& fresh_composite_id) {
+    const std::unordered_map<uint32_t, uint32_t>&
+        caller_id_to_fresh_composite_id) {
   message_.set_fresh_function_type_id(fresh_function_type_id);
   message_.set_fresh_parameter_id(fresh_parameter_id);
 
@@ -36,9 +37,9 @@ TransformationReplaceParamsWithStruct::TransformationReplaceParamsWithStruct(
     message_.add_parameter_id(id);
   }
 
-  for (auto id : fresh_composite_id) {
-    message_.add_fresh_composite_id(id);
-  }
+  message_.mutable_caller_id_to_fresh_composite_id()->insert(
+      caller_id_to_fresh_composite_id.begin(),
+      caller_id_to_fresh_composite_id.end());
 }
 
 bool TransformationReplaceParamsWithStruct::IsApplicable(
@@ -80,7 +81,7 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     return false;
   }
 
-  // Check that OpTypeStruct exists in the module.
+  // Check that a relevant OpTypeStruct exists in the module.
   std::vector<uint32_t> component_type_ids;
   for (auto id : message_.parameter_id()) {
     component_type_ids.push_back(fuzzerutil::GetTypeId(ir_context, id));
@@ -90,19 +91,25 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     return false;
   }
 
-  // Check that |fresh_composite_id| has valid size.
-  if (static_cast<uint32_t>(message_.fresh_composite_id_size()) !=
-      GetNumberOfCallees(ir_context, function->result_id())) {
-    return false;
+  // Check that |callee_id_to_fresh_composite_id| is valid.
+  for (const auto* inst :
+       fuzzerutil::GetCallers(ir_context, function->result_id())) {
+    // Check that the callee is present in the map. It's ok if the map contains
+    // more ids that there are callees (those ids will not be used).
+    if (!message_.caller_id_to_fresh_composite_id().contains(
+            inst->result_id())) {
+      return false;
+    }
   }
 
   // Check that all fresh ids are unique and fresh.
-  std::vector<uint32_t> fresh_ids(message_.fresh_composite_id().begin(),
-                                  message_.fresh_composite_id().end());
-  fresh_ids.insert(fresh_ids.end(), {message_.fresh_function_type_id(),
-                                     message_.fresh_parameter_id()});
+  std::vector<uint32_t> fresh_ids = {message_.fresh_function_type_id(),
+                                     message_.fresh_parameter_id()};
 
-  // Check that all fresh ids are indeed fresh and unique.
+  for (const auto& entry : message_.caller_id_to_fresh_composite_id()) {
+    fresh_ids.push_back(entry.second);
+  }
+
   return !fuzzerutil::HasDuplicates(fresh_ids) &&
          std::all_of(fresh_ids.begin(), fresh_ids.end(),
                      [ir_context](uint32_t id) {
@@ -151,46 +158,36 @@ void TransformationReplaceParamsWithStruct::Apply(
   }
 
   // Update all function calls.
-  std::vector<uint32_t> fresh_composite_id(
-      message_.fresh_composite_id().begin(),
-      message_.fresh_composite_id().end());
+  for (auto* inst : fuzzerutil::GetCallers(ir_context, function->result_id())) {
+    // Create a list of operands for the OpCompositeConstruct instruction.
+    opt::Instruction::OperandList composite_components;
+    for (auto index : param_indices) {
+      // +1 since the first in operand to OpFunctionCall is the result id of
+      // the function.
+      composite_components.emplace_back(
+          std::move(inst->GetInOperand(index + 1)));
+    }
 
-  ir_context->get_def_use_mgr()->ForEachUser(
-      function->result_id(), [&fresh_composite_id, ir_context, struct_type_id,
-                              &param_indices](opt::Instruction* inst) {
-        if (inst->opcode() != SpvOpFunctionCall) {
-          return;
-        }
+    // Remove arguments from the function call. We do it in a separate loop
+    // because otherwise we would have moved invalid operands into
+    // |composite_components|.
+    for (auto index : param_indices) {
+      // +1 since the first in operand to OpFunctionCall is the result id of
+      // the function.
+      inst->RemoveInOperand(index + 1);
+    }
 
-        // Create a list of operands for the OpCompositeConstruct instruction.
-        opt::Instruction::OperandList composite_components;
-        for (auto index : param_indices) {
-          // +1 since the first in operand to OpFunctionCall is the result id of
-          // the function.
-          composite_components.emplace_back(
-              std::move(inst->GetInOperand(index + 1)));
-        }
+    // Insert OpCompositeConstruct before the function call.
+    auto fresh_composite_id =
+        message_.caller_id_to_fresh_composite_id().at(inst->result_id());
+    inst->InsertBefore(MakeUnique<opt::Instruction>(
+        ir_context, SpvOpCompositeConstruct, struct_type_id, fresh_composite_id,
+        std::move(composite_components)));
 
-        // Remove arguments from the function call. We do it in a separate loop
-        // because otherwise we would have moved invalid operands into
-        // |composite_components|.
-        for (auto index : param_indices) {
-          // +1 since the first in operand to OpFunctionCall is the result id of
-          // the function.
-          inst->RemoveInOperand(index + 1);
-        }
-
-        // Insert OpCompositeConstruct before the function call.
-        inst->InsertBefore(MakeUnique<opt::Instruction>(
-            ir_context, SpvOpCompositeConstruct, struct_type_id,
-            fresh_composite_id.back(), std::move(composite_components)));
-
-        // Add a new operand to the OpFunctionCall instruction.
-        inst->AddOperand({SPV_OPERAND_TYPE_ID, {fresh_composite_id.back()}});
-
-        fuzzerutil::UpdateModuleIdBound(ir_context, fresh_composite_id.back());
-        fresh_composite_id.pop_back();
-      });
+    // Add a new operand to the OpFunctionCall instruction.
+    inst->AddOperand({SPV_OPERAND_TYPE_ID, {fresh_composite_id}});
+    fuzzerutil::UpdateModuleIdBound(ir_context, fresh_composite_id);
+  }
 
   // Insert OpCompositeExtract instructions into the entry point block of the
   // function and remove replaced parameters.
@@ -272,25 +269,6 @@ protobufs::Transformation TransformationReplaceParamsWithStruct::ToMessage()
   return result;
 }
 
-uint32_t TransformationReplaceParamsWithStruct::GetNumberOfCallees(
-    opt::IRContext* ir_context, uint32_t function_id) {
-  assert(fuzzerutil::FindFunction(ir_context, function_id) &&
-         "|function_id| is invalid");
-
-  uint32_t result = 0;
-  ir_context->get_def_use_mgr()->ForEachUser(
-      function_id, [&result, function_id](const opt::Instruction* user) {
-        if (user->opcode() != SpvOpFunctionCall ||
-            user->GetSingleWordInOperand(0) != function_id) {
-          return;
-        }
-
-        ++result;
-      });
-
-  return result;
-}
-
 bool TransformationReplaceParamsWithStruct::IsParameterTypeSupported(
     const opt::analysis::Type& param_type) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
@@ -299,6 +277,7 @@ bool TransformationReplaceParamsWithStruct::IsParameterTypeSupported(
     case opt::analysis::Type::kBool:
     case opt::analysis::Type::kInteger:
     case opt::analysis::Type::kFloat:
+    case opt::analysis::Type::kArray:
     case opt::analysis::Type::kVector:
     case opt::analysis::Type::kMatrix:
       return true;

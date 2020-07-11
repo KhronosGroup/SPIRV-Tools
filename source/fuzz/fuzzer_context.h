@@ -240,8 +240,8 @@ class FuzzerContext {
   uint32_t GetMaximumNumberOfFunctionParameters() {
     return max_number_of_function_parameters_;
   }
-  uint32_t GetMaximumNumberOfReplacedParameters() {
-    return max_number_of_replaced_parameters_;
+  uint32_t GetMaximumNumberOfParametersReplacedWithStruct() {
+    return max_number_of_parameters_replaced_with_struct_;
   }
   std::pair<uint32_t, uint32_t> GetRandomBranchWeights() {
     std::pair<uint32_t, uint32_t> branch_weights = {0, 0};
@@ -284,10 +284,11 @@ class FuzzerContext {
         {1, std::min(max_number_of_new_parameters_,
                      GetMaximumNumberOfFunctionParameters() - num_of_params)});
   }
-  uint32_t GetRandomNumberOfReplacedParameters(uint32_t num_params) {
+  uint32_t GetRandomNumberOfParametersReplacedWithStruct(uint32_t num_params) {
     assert(num_params != 0 && "A function must have parameters to replace");
     return ChooseBetweenMinAndMax(
-        {1, std::min(num_params, GetMaximumNumberOfReplacedParameters())});
+        {1, std::min(num_params,
+                     GetMaximumNumberOfParametersReplacedWithStruct())});
   }
   uint32_t GetRandomSizeForNewArray() {
     // Ensure that the array size is non-zero.
@@ -371,7 +372,7 @@ class FuzzerContext {
   uint32_t max_new_array_size_limit_;
   uint32_t max_number_of_function_parameters_;
   uint32_t max_number_of_new_parameters_;
-  uint32_t max_number_of_replaced_parameters_;
+  uint32_t max_number_of_parameters_replaced_with_struct_;
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.

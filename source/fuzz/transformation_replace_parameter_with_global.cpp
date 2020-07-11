@@ -142,29 +142,23 @@ void TransformationReplaceParameterWithGlobal::Apply(
          "Parameter must exist in the function");
 
   // Update all relevant OpFunctionCall instructions.
-  ir_context->get_def_use_mgr()->ForEachUser(
-      function->result_id(),
-      [ir_context, parameter_index, this](opt::Instruction* inst) {
-        if (inst->opcode() != SpvOpFunctionCall) {
-          return;
-        }
+  for (auto* inst : fuzzerutil::GetCallers(ir_context, function->result_id())) {
+    assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, inst) &&
+           "Can't insert OpStore right before the function call");
 
-        assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore, inst) &&
-               "Can't insert OpStore right before the function call");
+    // Insert an OpStore before the OpFunctionCall. +1 since the first
+    // operand of OpFunctionCall is an id of the function.
+    inst->InsertBefore(MakeUnique<opt::Instruction>(
+        ir_context, SpvOpStore, 0, 0,
+        opt::Instruction::OperandList{
+            {SPV_OPERAND_TYPE_ID, {message_.global_variable_fresh_id()}},
+            {SPV_OPERAND_TYPE_ID,
+             {inst->GetSingleWordInOperand(parameter_index + 1)}}}));
 
-        // Insert an OpStore before the OpFunctionCall. +1 since the first
-        // operand of OpFunctionCall is an id of the function.
-        inst->InsertBefore(MakeUnique<opt::Instruction>(
-            ir_context, SpvOpStore, 0, 0,
-            opt::Instruction::OperandList{
-                {SPV_OPERAND_TYPE_ID, {message_.global_variable_fresh_id()}},
-                {SPV_OPERAND_TYPE_ID,
-                 {inst->GetSingleWordInOperand(parameter_index + 1)}}}));
-
-        // +1 since the first operand of OpFunctionCall is an id of the
-        // function.
-        inst->RemoveInOperand(parameter_index + 1);
-      });
+    // +1 since the first operand of OpFunctionCall is an id of the
+    // function.
+    inst->RemoveInOperand(parameter_index + 1);
+  }
 
   // Remove the parameter from the function.
   function->RemoveParameter(message_.parameter_id());
