@@ -371,7 +371,9 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
 
 // Returns a bit pattern that represents a floating-point |value|.
 inline uint32_t FloatToWord(float value) {
-  return *reinterpret_cast<uint32_t*>(&value);
+  uint32_t result;
+  memcpy(&result, &value, sizeof(uint32_t));
+  return result;
 }
 
 }  // namespace fuzzerutil
