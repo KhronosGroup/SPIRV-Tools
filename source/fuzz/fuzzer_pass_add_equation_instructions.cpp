@@ -66,7 +66,8 @@ void FuzzerPassAddEquationInstructions::Apply() {
         // something works.
         std::vector<SpvOp> candidate_opcodes = {
             SpvOpIAdd,    SpvOpISub,        SpvOpLogicalNot,
-            SpvOpSNegate, SpvOpConvertUToF, SpvOpConvertSToF};
+            SpvOpSNegate, SpvOpConvertUToF, SpvOpConvertSToF,
+            SpvOpBitcast};
         do {
           auto opcode =
               GetFuzzerContext()->RemoveAtRandomIndex(&candidate_opcodes);
@@ -103,6 +104,62 @@ void FuzzerPassAddEquationInstructions::Apply() {
                   {operand->result_id()}, instruction_descriptor));
               return;
             }
+            case SpvOpBitcast: {
+              std::vector<const opt::Instruction*> candidate_instructions;
+              for (const auto* inst : available_instructions) {
+                const auto* type =
+                    GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+                assert(type && "Instruction has invalid type");
+                if ((type->AsVector() &&
+                     (type->AsVector()->element_type()->AsInteger() ||
+                      type->AsVector()->element_type()->AsFloat())) ||
+                    type->AsInteger() || type->AsFloat()) {
+                  // We support OpBitcast for only scalars or vectors of
+                  // numerical type.
+                  candidate_instructions.push_back(inst);
+                }
+              }
+
+              if (!candidate_instructions.empty()) {
+                const auto* operand_inst =
+                    candidate_instructions[GetFuzzerContext()->RandomIndex(
+                        candidate_instructions)];
+                const auto* operand_type =
+                    GetIRContext()->get_type_mgr()->GetType(
+                        operand_inst->type_id());
+                assert(operand_type && "Operand instruction has invalid type");
+
+                // Make sure a result type exists in the module.
+                if (const auto* vector = operand_type->AsVector()) {
+                  uint32_t element_type_id;
+                  if (const auto* int_type =
+                          vector->element_type()->AsInteger()) {
+                    element_type_id = FindOrCreateFloatType(int_type->width());
+                  } else {
+                    assert(vector->element_type()->AsFloat() &&
+                           "Vector must have numerical elements");
+                    element_type_id = FindOrCreateIntegerType(
+                        vector->element_type()->AsFloat()->width(),
+                        GetFuzzerContext()->ChooseEven());
+                  }
+
+                  FindOrCreateVectorType(element_type_id,
+                                         vector->element_count());
+                } else if (const auto* int_type = operand_type->AsInteger()) {
+                  FindOrCreateFloatType(int_type->width());
+                } else {
+                  assert(operand_type->AsFloat() &&
+                         "Operand is not a scalar of numerical type");
+                  FindOrCreateIntegerType(operand_type->AsFloat()->width(),
+                                          GetFuzzerContext()->ChooseEven());
+                }
+
+                ApplyTransformation(TransformationEquationInstruction(
+                    GetFuzzerContext()->GetFreshId(), opcode,
+                    {operand_inst->result_id()}, instruction_descriptor));
+                return;
+              }
+            } break;
             case SpvOpIAdd:
             case SpvOpISub: {
               // Instructions of integer (scalar or vector) result type are

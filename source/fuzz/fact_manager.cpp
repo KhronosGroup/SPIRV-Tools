@@ -462,6 +462,13 @@ class FactManager::DataSynonymAndIdEquationFacts {
   void ComputeConversionDataSynonymFacts(const protobufs::DataDescriptor& dd,
                                          opt::IRContext* context);
 
+  // Computes various corollary facts that can be derived from the strongly
+  // connected component |scc|. Take a look at the implementation comments to
+  // learn more about how these facts a computed and why we need a graph
+  // abstraction for that.
+  void ComputeBitcastDataSynonymFacts(const protobufs::DataDescriptor* scc,
+                                      opt::IRContext* context);
+
   // Recurses into sub-components of the data descriptors, if they are
   // composites, to record that their components are pairwise-synonymous.
   void ComputeCompositeDataSynonymFacts(const protobufs::DataDescriptor& dd1,
@@ -472,6 +479,18 @@ class FactManager::DataSynonymAndIdEquationFacts {
   // of equations that are known about them.
   void MakeEquivalent(const protobufs::DataDescriptor& dd1,
                       const protobufs::DataDescriptor& dd2);
+
+  // Merges two connected components, represented by |scc_a| and |scc_b| and
+  // returns a descriptor for the resulting SCC. Both |scc_a| and |scc_b| must
+  // be valid SCCs (i.e. |scc_to_node_.find(scc_[a|b]) != scc_to_node_.end()|).
+  const protobufs::DataDescriptor* MergeConnectedComponents(
+      const protobufs::DataDescriptor* scc_a,
+      const protobufs::DataDescriptor* scc_b);
+
+  // Registers a data descriptor in the equivalence relation and returns its
+  // representative. Additionally, adjusts SCCs to account for a new vertex.
+  const protobufs::DataDescriptor* RegisterDataDescriptor(
+      const protobufs::DataDescriptor& dd);
 
   // Returns true if and only if |dd1| and |dd2| are valid data descriptors
   // whose associated data have the same type (modulo integer signedness).
@@ -515,6 +534,26 @@ class FactManager::DataSynonymAndIdEquationFacts {
   // in that relation.
   std::unordered_map<const protobufs::DataDescriptor*, OperationSet>
       id_equations_;
+
+  // Represents a map from a strongly connected component (SCC) in the graph to
+  // the set of vertices of that component. The SCC is represented by one of its
+  // vertices (i.e. |scc_to_node_[K].contains(K) == true| for some |K|).
+  // Each data descriptor is a representative of some equivalence class.
+  // Check out the documentation for the ComputeBitcastDataSynonymFacts method
+  // to learn more about why we use a graph and SCCs here.
+  std::unordered_map<const protobufs::DataDescriptor*,
+                     std::unordered_set<const protobufs::DataDescriptor*>>
+      scc_to_node_;
+
+  // Represents a map from a vertex in the graph to its strongly connected
+  // component (SCC). The SCC is represented by one of its
+  // vertices (i.e. |node_to_scc_[K]| might be equal to |K| for some |K|).
+  // Each data descriptor is a representative of some equivalence class.
+  // Check out the documentation for the ComputeBitcastDataSynonymFacts method
+  // to learn more about why we use a graph and SCCs here.
+  std::unordered_map<const protobufs::DataDescriptor*,
+                     const protobufs::DataDescriptor*>
+      node_to_scc_;
 };
 
 void FactManager::DataSynonymAndIdEquationFacts::AddFact(
@@ -530,7 +569,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddFact(
 
   // Register the LHS in the equivalence relation if needed.
   if (!synonymous_.Exists(lhs_dd)) {
-    synonymous_.Register(lhs_dd);
+    RegisterDataDescriptor(lhs_dd);
   }
 
   // Get equivalence class representatives for all ids used on the RHS of the
@@ -539,11 +578,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddFact(
   for (auto rhs_id : fact.rhs_id()) {
     // Register a data descriptor based on this id in the equivalence relation
     // if needed, and then record the equivalence class representative.
-    protobufs::DataDescriptor rhs_dd = MakeDataDescriptor(rhs_id, {});
-    if (!synonymous_.Exists(rhs_dd)) {
-      synonymous_.Register(rhs_dd);
-    }
-    rhs_dd_ptrs.push_back(synonymous_.Find(&rhs_dd));
+    rhs_dd_ptrs.push_back(
+        RegisterDataDescriptor(MakeDataDescriptor(rhs_id, {})));
   }
 
   // Now add the fact.
@@ -602,6 +638,15 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     case SpvOpConvertSToF:
     case SpvOpConvertUToF:
       ComputeConversionDataSynonymFacts(*rhs_dds[0], context);
+      break;
+    case SpvOpBitcast:
+      // The equation, that we have just added, might have merged two connected
+      // components, so we need to recompute corollary facts.
+      ComputeBitcastDataSynonymFacts(
+          MergeConnectedComponents(
+              node_to_scc_.at(lhs_dd_representative),
+              node_to_scc_.at(synonymous_.Find(rhs_dds[0]))),
+          context);
       break;
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
@@ -714,13 +759,78 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
   // Both |dd1| and |dd2| are registered in the equivalence relation after this
   // point.
   MakeEquivalent(dd1, dd2);
+  assert(synonymous_.Find(&dd1) == synonymous_.Find(&dd2) &&
+         "|dd1| and |dd2| must have a single representative");
+  assert(node_to_scc_.find(synonymous_.Find(&dd1)) != node_to_scc_.end() &&
+         "|dd1| and |dd2| must belong to the same connected component");
 
   // Compute various corollary facts.
 
-  // |dd1| and |dd2| belong to the same equivalence class so it doesn't matter
-  // which one we use here.
+  // |dd1| and |dd2| might have belonged to different connected components.
+  // We have merged those components once we have marked |dd1| and |dd2| as
+  // synonymous, so we need to recompute corollary facts for the resulting
+  // component.
+  ComputeBitcastDataSynonymFacts(node_to_scc_.at(synonymous_.Find(&dd1)),
+                                 context);
   ComputeConversionDataSynonymFacts(dd1, context);
   ComputeCompositeDataSynonymFacts(dd1, dd2, context);
+}
+
+void FactManager::DataSynonymAndIdEquationFacts::ComputeBitcastDataSynonymFacts(
+    const protobufs::DataDescriptor* scc, opt::IRContext* context) {
+  assert(scc_to_node_.find(scc) != scc_to_node_.end() &&
+         "Connected component is invalid");
+
+  // Consider a graph where each vertex is an equivalence class and each edge
+  // is an equation fact with OpBitcast opcode. Concretely, each edge has a form
+  // |%a = OpBitcast %b| where |a| and |b| belong to some equivalence classes
+  // (i.e. vertices). These edges are undirected. From now on, an edge
+  // |%a = OpBitcast %b| will be denoted as |a -- b| where |a| and |b| are the
+  // equivalence classes (i.e. vertices).
+  //
+  // Consider two edges |a -- b|, |a -- c|. This graph can be a result of any of
+  // four cases (since edges are undirected):
+  // 1. |%a = OpBitcast %b| and |%a = OpBitcast %c|
+  // 2. |%a = OpBitcast %b| and |%c = OpBitcast %a|
+  // 3. |%b = OpBitcast %a| and |%a = OpBitcast %c|
+  // 4. |%b = OpBitcast %a| and |%c = OpBitcast %a|
+  // where |a|s on both equations represent synonymous (not necessarily
+  // identical) ids. In all four cases, |b| and |c| are synonymous if they have
+  // compatible types (we allow two instructions to be synonymous even if they
+  // have different types - e.g. signed and unsigned integers. See
+  // DataDescriptorsAreWellFormedAndComparable method for more details).
+  //
+  // We can generalize this example as follows. Consider a graph that consists
+  // of strongly connected components. Each component consists of vertices and
+  // edges as described above. If there exists a path |a -- ... -- b| in some
+  // component s.t. |a| and |b| have compatible types (as determined by the
+  // DataDescriptorsAreWellFormedAndComparable method), then |a| and |b| are
+  // equivalent (remember that |a| and |b| are equivalence classes and when we
+  // say 'they are equivalent' we mean that all their members are synonymous).
+  // This proposition holds since each edge is an OpBitcast instruction and
+  // this instruction does not change the bit pattern of its operands, it only
+  // changes the type of the pattern. Thus, to ensure that we have computed all
+  // corollary facts, we need to make sure that all pairs of vertices in every
+  // SCC have incompatible types.
+
+  // We create a copy of the std::unordered_set since a recursive call to the
+  // AddDataSynonymFactRecursive method might invalidate set's iterators.
+  auto nodes = scc_to_node_.at(scc);
+
+  // Time complexity of this procedure (assuming AddDataSynonymFactRecursive
+  // only merges vertices in constant time and calls this method) is O(n^4) in
+  // the worst case scenario.
+  for (const auto* node_a : nodes) {
+    for (const auto* node_b : nodes) {
+      // We have to skip the iteration if |node_a| and |node_b| are already
+      // synonymous since we would end up with an infinite recursion otherwise.
+      if (node_a != node_b && !synonymous_.IsEquivalent(*node_a, *node_b) &&
+          DataDescriptorsAreWellFormedAndComparable(context, *node_a,
+                                                    *node_b)) {
+        AddDataSynonymFactRecursive(*node_a, *node_b, context);
+      }
+    }
+  }
 }
 
 void FactManager::DataSynonymAndIdEquationFacts::
@@ -1138,7 +1248,7 @@ void FactManager::DataSynonymAndIdEquationFacts::MakeEquivalent(
   // equivalence relation.
   for (const auto& dd : {dd1, dd2}) {
     if (!synonymous_.Exists(dd)) {
-      synonymous_.Register(dd);
+      RegisterDataDescriptor(dd);
     }
   }
 
@@ -1205,6 +1315,66 @@ void FactManager::DataSynonymAndIdEquationFacts::MakeEquivalent(
   }
   // Delete the no longer-relevant equations about |no_longer_representative|.
   id_equations_.erase(no_longer_representative);
+
+  // We also adjust strongly connected components to account for the merged
+  // vertices.
+  const auto* scc_a = node_to_scc_.at(no_longer_representative);
+  const auto* scc_b = node_to_scc_.at(still_representative);
+
+  scc_to_node_.at(scc_a).erase(no_longer_representative);
+  node_to_scc_.erase(no_longer_representative);
+
+  MergeConnectedComponents(scc_a, scc_b);
+}
+
+const protobufs::DataDescriptor*
+FactManager::DataSynonymAndIdEquationFacts::MergeConnectedComponents(
+    const protobufs::DataDescriptor* scc_a,
+    const protobufs::DataDescriptor* scc_b) {
+  assert(scc_to_node_.find(scc_a) != scc_to_node_.end() &&
+         scc_to_node_.find(scc_b) != scc_to_node_.end() &&
+         "Connected components are invalid");
+
+  if (scc_a == scc_b) {
+    return scc_a;
+  }
+
+  auto& scc_a_nodes = scc_to_node_.at(scc_a);
+  auto& scc_b_nodes = scc_to_node_.at(scc_b);
+
+  if (scc_a_nodes.size() > scc_b_nodes.size()) {
+    scc_a_nodes.insert(scc_b_nodes.begin(), scc_b_nodes.end());
+    for (const auto* node : scc_b_nodes) {
+      node_to_scc_.at(node) = scc_a;
+    }
+
+    scc_to_node_.erase(scc_b);
+    return scc_a;
+  } else {
+    scc_b_nodes.insert(scc_a_nodes.begin(), scc_a_nodes.end());
+    for (const auto* node : scc_a_nodes) {
+      node_to_scc_.at(node) = scc_b;
+    }
+
+    scc_to_node_.erase(scc_a);
+    return scc_b;
+  }
+}
+
+const protobufs::DataDescriptor*
+FactManager::DataSynonymAndIdEquationFacts::RegisterDataDescriptor(
+    const protobufs::DataDescriptor& dd) {
+  if (!synonymous_.Exists(dd)) {
+    const auto* representative = synonymous_.Register(dd);
+    assert(node_to_scc_.find(representative) == node_to_scc_.end() &&
+           scc_to_node_.find(representative) == scc_to_node_.end() &&
+           "The node should not belong to any connected component");
+    node_to_scc_[representative] = representative;
+    scc_to_node_[representative].insert(representative);
+    return representative;
+  }
+
+  return synonymous_.Find(&dd);
 }
 
 bool FactManager::DataSynonymAndIdEquationFacts::
