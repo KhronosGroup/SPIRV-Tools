@@ -1013,45 +1013,6 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
   UpdateModuleIdBound(ir_context, result_id);
 }
 
-uint32_t FindOrCreateIntegerType(opt::IRContext* ir_context, uint32_t result_id,
-                                 uint32_t width, bool is_signed) {
-  if (auto existing_id = MaybeGetIntegerType(ir_context, width, is_signed)) {
-    return existing_id;
-  }
-  AddIntegerType(ir_context, result_id, width, is_signed);
-  return result_id;
-}
-
-uint32_t FindOrCreateFloatType(opt::IRContext* ir_context, uint32_t result_id,
-                               uint32_t width) {
-  if (auto existing_id = MaybeGetFloatType(ir_context, width)) {
-    return existing_id;
-  }
-  AddFloatType(ir_context, result_id, width);
-  return result_id;
-}
-
-uint32_t FindOrCreateVectorType(opt::IRContext* ir_context, uint32_t result_id,
-                                uint32_t component_type_id,
-                                uint32_t element_count) {
-  if (auto existing_id =
-          MaybeGetVectorType(ir_context, component_type_id, element_count)) {
-    return existing_id;
-  }
-  AddVectorType(ir_context, result_id, component_type_id, element_count);
-  return result_id;
-}
-
-uint32_t FindOrCreateStructType(
-    opt::IRContext* ir_context, uint32_t result_id,
-    const std::vector<uint32_t>& component_type_ids) {
-  if (auto existing_id = MaybeGetStructType(ir_context, component_type_ids)) {
-    return existing_id;
-  }
-  AddStructType(ir_context, result_id, component_type_ids);
-  return result_id;
-}
-
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
