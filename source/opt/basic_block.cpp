@@ -160,7 +160,7 @@ bool BasicBlock::IsSuccessor(const BasicBlock* block) const {
   uint32_t succId = block->id();
   bool isSuccessor = false;
   ForEachSuccessorLabel([&isSuccessor, succId](const uint32_t label) {
-    isSuccessor = label == succId;
+    if (label == succId) isSuccessor = true;
   });
   return isSuccessor;
 }
