@@ -701,21 +701,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
-  // OpConvertFToS and OpConvertFToU require an operand of scalar or vector of
-  // floating-point components type.
-  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToS, {15},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToS, {10},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToU, {15},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertFToU, {10},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-
   // Add initial facts to the fact manager.
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(15, {}),
                                   MakeDataDescriptor(18, {}), context.get());
@@ -749,34 +734,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
   }
   {
     TransformationEquationInstruction transformation(53, SpvOpConvertUToF, {11},
-                                                     return_instruction);
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-  }
-  {
-    TransformationEquationInstruction transformation(54, SpvOpConvertFToS, {50},
-                                                     return_instruction);
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-  }
-  {
-    TransformationEquationInstruction transformation(55, SpvOpConvertFToS, {51},
-                                                     return_instruction);
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-  }
-  {
-    TransformationEquationInstruction transformation(56, SpvOpConvertFToU, {52},
-                                                     return_instruction);
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-  }
-  {
-    TransformationEquationInstruction transformation(57, SpvOpConvertFToU, {53},
                                                      return_instruction);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
@@ -854,10 +811,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
          %51 = OpConvertSToF %5 %10
          %52 = OpConvertUToF %9 %16
          %53 = OpConvertUToF %5 %11
-         %54 = OpConvertFToS %8 %50
-         %55 = OpConvertFToS %4 %51
-         %56 = OpConvertFToU %8 %52
-         %57 = OpConvertFToU %4 %53
          %58 = OpConvertSToF %9 %18
          %59 = OpConvertUToF %9 %19
          %60 = OpConvertSToF %5 %20
@@ -867,60 +820,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
-}
-
-TEST(TransformationEquationInstructionTest, IntegerResultTypeDoesNotExist) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %12 "main"
-               OpExecutionMode %12 OriginUpperLeft
-               OpSource ESSL 310
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeFloat 32
-          %7 = OpTypeVector %6 3
-          %8 = OpConstant %6 24
-          %9 = OpConstantComposite %7 %8 %8 %8
-         %12 = OpFunction %2 None %3
-         %13 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  protobufs::InstructionDescriptor return_instruction =
-      MakeInstructionDescriptor(13, SpvOpReturn, 0);
-
-  // Scalar signed integer type doesn't exist.
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpConvertFToS, {8},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Scalar unsigned integer type doesn't exist.
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpConvertFToU, {8},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Vector signed integer type doesn't exist.
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpConvertFToS, {9},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Vector unsigned integer type doesn't exist.
-  ASSERT_FALSE(TransformationEquationInstruction(14, SpvOpConvertFToU, {9},
-                                                 return_instruction)
-                   .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationEquationInstructionTest, FloatResultTypeDoesNotExist) {

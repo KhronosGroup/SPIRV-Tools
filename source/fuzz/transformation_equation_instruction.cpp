@@ -136,54 +136,6 @@ uint32_t TransformationEquationInstruction::MaybeGetResultTypeId(
                                              type->AsInteger()->width());
       }
     }
-    case SpvOpConvertFToU:
-    case SpvOpConvertFToS: {
-      if (message_.in_operand_id_size() != 1) {
-        return 0;
-      }
-
-      const auto* type = ir_context->get_type_mgr()->GetType(
-          fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0)));
-      if (!type) {
-        return 0;
-      }
-
-      if (const auto* vector = type->AsVector()) {
-        if (!vector->element_type()->AsFloat()) {
-          return 0;
-        }
-
-        // Use either an unsigned or a signed type - whichever exists in the
-        // module. At least one of them must exist in the module.
-        auto element_type_id = fuzzerutil::MaybeGetIntegerType(
-            ir_context, vector->element_type()->AsFloat()->width(), false);
-
-        if (element_type_id == 0 ||
-            fuzzerutil::MaybeGetVectorType(ir_context, element_type_id,
-                                           vector->element_count()) == 0) {
-          element_type_id = fuzzerutil::MaybeGetIntegerType(
-              ir_context, vector->element_type()->AsFloat()->width(), true);
-        }
-
-        if (element_type_id == 0) {
-          return 0;
-        }
-
-        return fuzzerutil::MaybeGetVectorType(ir_context, element_type_id,
-                                              vector->element_count());
-      } else {
-        if (!type->AsFloat()) {
-          return 0;
-        }
-
-        // Use either an unsigned or a signed type - whichever exists in the
-        // module. At least one of them must exist in the module.
-        return fuzzerutil::MaybeGetIntegerType(ir_context,
-                                               type->AsFloat()->width(), false)
-                   ?: fuzzerutil::MaybeGetIntegerType(
-                          ir_context, type->AsFloat()->width(), true);
-      }
-    }
     case SpvOpIAdd:
     case SpvOpISub: {
       if (message_.in_operand_id_size() != 2) {

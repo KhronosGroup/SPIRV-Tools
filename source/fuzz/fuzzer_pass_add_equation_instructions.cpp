@@ -66,20 +66,15 @@ void FuzzerPassAddEquationInstructions::Apply() {
         // something works.
         std::vector<SpvOp> candidate_opcodes = {
             SpvOpIAdd,        SpvOpISub,        SpvOpLogicalNot,
-            SpvOpSNegate,     SpvOpConvertUToF, SpvOpConvertSToF,
-            SpvOpConvertFToU, SpvOpConvertFToS};
+            SpvOpSNegate,     SpvOpConvertUToF, SpvOpConvertSToF};
         do {
           auto opcode =
               GetFuzzerContext()->RemoveAtRandomIndex(&candidate_opcodes);
           switch (opcode) {
-            case SpvOpConvertFToS:
-            case SpvOpConvertFToU:
             case SpvOpConvertSToF:
             case SpvOpConvertUToF: {
               auto candidate_instructions =
-                  (opcode == SpvOpConvertFToS || opcode == SpvOpConvertFToU)
-                      ? GetFloatInstructions(available_instructions)
-                      : GetIntegerInstructions(available_instructions);
+                  GetIntegerInstructions(available_instructions);
 
               if (candidate_instructions.empty()) {
                 break;
@@ -94,41 +89,13 @@ void FuzzerPassAddEquationInstructions::Apply() {
               assert(type && "Operand has invalid type");
 
               // Make sure a result type exists in the module.
-              switch (opcode) {
-                case SpvOpConvertFToS:
-                case SpvOpConvertFToU: {
-                  // OpConvertFToU can only convert to unsigned integer type.
-                  // OpConvertFToS can convert to both signed and unsigned
-                  // integer types.
-                  auto is_signed = opcode == SpvOpConvertFToU
-                                       ? false
-                                       : GetFuzzerContext()->ChooseEven();
-
-                  if (const auto* vector = type->AsVector()) {
-                    FindOrCreateVectorType(
-                        FindOrCreateIntegerType(
-                            vector->element_type()->AsFloat()->width(),
-                            is_signed),
-                        vector->element_count());
-                  } else {
-                    FindOrCreateIntegerType(type->AsFloat()->width(),
-                                            is_signed);
-                  }
-                } break;
-                case SpvOpConvertSToF:
-                case SpvOpConvertUToF: {
-                  if (const auto* vector = type->AsVector()) {
-                    FindOrCreateVectorType(
-                        FindOrCreateFloatType(
-                            vector->element_type()->AsInteger()->width()),
-                        vector->element_count());
-                  } else {
-                    FindOrCreateFloatType(type->AsInteger()->width());
-                  }
-                } break;
-                default:
-                  assert(false && "Unreachable");
-                  break;
+              if (const auto* vector = type->AsVector()) {
+                FindOrCreateVectorType(
+                    FindOrCreateFloatType(
+                        vector->element_type()->AsInteger()->width()),
+                    vector->element_count());
+              } else {
+                FindOrCreateFloatType(type->AsInteger()->width());
               }
 
               ApplyTransformation(TransformationEquationInstruction(
