@@ -23,6 +23,8 @@
 namespace spvtools {
 namespace fuzz {
 
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3509):
+//  Remove this transformation.
 class TransformationCopyObject : public Transformation {
  public:
   explicit TransformationCopyObject(

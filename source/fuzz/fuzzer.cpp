@@ -36,6 +36,7 @@
 #include "source/fuzz/fuzzer_pass_add_no_contraction_decorations.h"
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
 #include "source/fuzz/fuzzer_pass_add_stores.h"
+#include "source/fuzz/fuzzer_pass_add_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_vector_shuffle_instructions.h"
 #include "source/fuzz/fuzzer_pass_adjust_branch_weights.h"
 #include "source/fuzz/fuzzer_pass_adjust_function_controls.h"
@@ -241,6 +242,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassAddStores>(&passes, ir_context.get(),
                                       &transformation_context, &fuzzer_context,
                                       transformation_sequence_out);
+    MaybeAddPass<FuzzerPassAddSynonyms>(
+        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
+        transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddVectorShuffleInstructions>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2020 Vasyl Teliman
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_COPY_OBJECTS_H_
-#define SOURCE_FUZZ_FUZZER_PASS_COPY_OBJECTS_H_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_SYNONYMS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_ADD_SYNONYMS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// A fuzzer pass for adding adding copies of objects to the module.
-//
-// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3509):
-//  Use TransformationAddSynonym instead of TransformationCopyObject.
-class FuzzerPassCopyObjects : public FuzzerPass {
+// Sprinkles instructions through the module that produce ids, synonymous to
+// some other instructions.
+class FuzzerPassAddSynonyms : public FuzzerPass {
  public:
-  FuzzerPassCopyObjects(opt::IRContext* ir_context,
+  FuzzerPassAddSynonyms(opt::IRContext* ir_context,
                         TransformationContext* transformation_context,
                         FuzzerContext* fuzzer_context,
                         protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassCopyObjects();
+  ~FuzzerPassAddSynonyms() override;
 
   void Apply() override;
 };
@@ -39,4 +37,4 @@ class FuzzerPassCopyObjects : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_COPY_OBJECTS_H_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_ADD_SYNONYMS_H_

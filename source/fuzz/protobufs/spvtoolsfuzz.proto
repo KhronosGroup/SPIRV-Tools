@@ -386,6 +386,7 @@ message Transformation {
     TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
     TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
     TransformationRecordSynonymousConstants record_synonymous_constants = 57;
+    TransformationAddSynonym add_synonym = 58;
     // Add additional option using the next available number.
   }
 }
@@ -702,6 +703,54 @@ message TransformationAddSpecConstantOp {
 
   // Operands of the |opcode| instruction.
   repeated InstructionOperand operand = 4;
+
+}
+
+message TransformationAddSynonym {
+
+  // Adds a |synonymous_instruction| before |insert_before| instruction with
+  // and creates a fact that |result_id| and the result id of |synonymous_instruction|
+  // are synonymous.
+
+  // Result id of the first synonym.
+  uint32 result_id = 1;
+
+  // Type of the synonym to apply. Some types might produce instructions
+  // with commutative operands. Such types do not specify the order of the
+  // operands since we have a special transformation to swap commutable operands.
+  //
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3499):
+  //  Consider adding more types here.
+  enum SynonymType {
+    // New synonym is derived by adding zero to the |result_id|.
+    ADD_ZERO = 0;
+
+    // New synonym is derived by subtracting zero from the |result_id|.
+    SUB_ZERO = 1;
+
+    // New synonym is derived by multiplying |result_id| by one.
+    MUL_ONE = 2;
+
+    // New synonym is derived by applying OpCopyObject instruction to |result_id|.
+    COPY_OBJECT = 3;
+
+    // New synonym is derived by applying OpLogicalOr to |result_id| with the second
+    // operand being 'false'.
+    LOGICAL_OR = 4;
+
+    // New synonym is derived by applying OpLogicalAnd to |result_id| with the second
+    // operand being 'true'.
+    LOGICAL_AND = 5;
+  }
+
+  // Type of the synonym to create. See SynonymType for more details.
+  SynonymType synonym_type = 2;
+
+  // Fresh result id for a created synonym.
+  uint32 synonym_fresh_id = 3;
+
+  // An instruction to insert a new synonym before.
+  InstructionDescriptor insert_before = 4;
 
 }
 
