@@ -64,6 +64,12 @@ void AddUnreachableEdgeAndUpdateOpPhis(
     bool condition_value,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids);
 
+// Returns true if and only if |loop_header_id| is in fact loop header and
+// |block_id| is a reachable block branching to and dominated by
+// |loop_header_id|.
+bool BlockIsBackEdge(opt::IRContext* context, uint32_t block_id,
+                     uint32_t loop_header_id);
+
 // Returns true if and only if |maybe_loop_header_id| is a loop header and
 // |block_id| is in the continue construct of the associated loop.
 bool BlockIsInLoopContinueConstruct(opt::IRContext* context, uint32_t block_id,

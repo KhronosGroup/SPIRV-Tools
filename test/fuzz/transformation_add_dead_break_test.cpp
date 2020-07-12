@@ -1196,15 +1196,15 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
       TransformationAddDeadBreak(header_for_j, merge_do_while, true, {})
           .IsApplicable(context.get(), transformation_context));
 
-  // Not OK to break loop from its continue construct
+  // Not OK to break loop from its continue construct, except from the back-edge
+  // block.
   ASSERT_FALSE(
       TransformationAddDeadBreak(continue_do_while, merge_do_while, true, {})
           .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(continue_for_j, merge_for_j, false, {})
-          .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddDeadBreak(continue_for_i, merge_for_i, true, {})
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_TRUE(TransformationAddDeadBreak(continue_for_j, merge_for_j, false, {})
+                  .IsApplicable(context.get(), transformation_context));
+  ASSERT_TRUE(TransformationAddDeadBreak(continue_for_i, merge_for_i, true, {})
+                  .IsApplicable(context.get(), transformation_context));
 
   // Not OK to break out of multiple non-loop constructs if not breaking to a
   // loop merge
@@ -1468,11 +1468,12 @@ TEST(TransformationAddDeadBreakTest, NoBreakFromContinueConstruct) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // Not OK to break loop from its continue construct
+  // Not OK to break loop from its continue construct, except from the back-edge
+  // block.
   ASSERT_FALSE(TransformationAddDeadBreak(13, 12, true, {})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 12, true, {})
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_TRUE(TransformationAddDeadBreak(23, 12, true, {})
+                  .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationAddDeadBreakTest, SelectionInContinueConstruct) {
