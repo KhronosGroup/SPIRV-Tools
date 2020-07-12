@@ -759,8 +759,8 @@ void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
   assert(representative &&
          "Representative can't be null for a registered descriptor");
 
-  const auto* type = context->get_type_mgr()->GetType(
-      fuzzerutil::WalkCompositeTypeIndices(
+  const auto* type =
+      context->get_type_mgr()->GetType(fuzzerutil::WalkCompositeTypeIndices(
           context, fuzzerutil::GetTypeId(context, representative->object()),
           representative->index()));
   assert(type && "Data descriptor has invalid type");
@@ -785,8 +785,8 @@ void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
       }
     }
 
-    for (const auto& synonym_vector : {std::move(convert_s_to_f_lhs),
-                                       std::move(convert_u_to_f_lhs)}) {
+    for (const auto& synonym_vector :
+         {std::move(convert_s_to_f_lhs), std::move(convert_u_to_f_lhs)}) {
       for (const auto* synonym_a : synonym_vector) {
         for (const auto* synonym_b : synonym_vector) {
           if (synonym_a == synonym_b) {

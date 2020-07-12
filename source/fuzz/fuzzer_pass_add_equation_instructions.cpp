@@ -65,8 +65,8 @@ void FuzzerPassAddEquationInstructions::Apply() {
         // Try the opcodes for which we know how to make ids at random until
         // something works.
         std::vector<SpvOp> candidate_opcodes = {
-            SpvOpIAdd,        SpvOpISub,        SpvOpLogicalNot,
-            SpvOpSNegate,     SpvOpConvertUToF, SpvOpConvertSToF};
+            SpvOpIAdd,    SpvOpISub,        SpvOpLogicalNot,
+            SpvOpSNegate, SpvOpConvertUToF, SpvOpConvertSToF};
         do {
           auto opcode =
               GetFuzzerContext()->RemoveAtRandomIndex(&candidate_opcodes);

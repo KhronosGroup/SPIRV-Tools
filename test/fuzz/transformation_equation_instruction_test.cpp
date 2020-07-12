@@ -701,16 +701,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
                                                  return_instruction)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Add initial facts to the fact manager.
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(15, {}),
-                                  MakeDataDescriptor(18, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(16, {}),
-                                  MakeDataDescriptor(19, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(10, {}),
-                                  MakeDataDescriptor(20, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(11, {}),
-                                  MakeDataDescriptor(21, {}), context.get());
-
   {
     TransformationEquationInstruction transformation(50, SpvOpConvertSToF, {15},
                                                      return_instruction);
@@ -769,16 +759,6 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
   }
 
   ASSERT_TRUE(IsValid(env, context.get()));
-
-  // Fact manager contains all derived facts.
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(58, {}),
-                                        MakeDataDescriptor(50, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(59, {}),
-                                        MakeDataDescriptor(52, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(60, {}),
-                                        MakeDataDescriptor(51, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(61, {}),
-                                        MakeDataDescriptor(53, {})));
 
   std::string after_transformations = R"(
                OpCapability Shader
