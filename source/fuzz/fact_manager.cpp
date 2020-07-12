@@ -604,15 +604,27 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     case SpvOpConvertSToF:
     case SpvOpConvertUToF: {
       // Equation form: a = float(b)
+      std::vector<protobufs::FactDataSynonym> pending_synonyms;
       for (const auto& fact : id_equations_) {
         for (const auto& equation : fact.second) {
           if (equation.opcode == opcode &&
               synonymous_.IsEquivalent(*equation.operands[0], *rhs_dds[0])) {
             // Equation form: c = float(d). |b| and |d| are synonymous => |a|
             // and |c| are synonymous.
-            AddDataSynonymFactRecursive(lhs_dd, *fact.first, context);
+            //
+            // We store pairs of synonyms into a separate vector since
+            // AddDataSynonymFactRecursive might invalidate iterators to
+            // id_equations_.
+            protobufs::FactDataSynonym synonym;
+            *synonym.mutable_data1() = lhs_dd;
+            *synonym.mutable_data2() = *fact.first;
+            pending_synonyms.push_back(std::move(synonym));
           }
         }
+      }
+
+      for (const auto& synonym : pending_synonyms) {
+        AddDataSynonymFactRecursive(synonym.data1(), synonym.data2(), context);
       }
     } break;
     case SpvOpIAdd: {
@@ -723,6 +735,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
   assert(DataDescriptorsAreWellFormedAndComparable(context, dd1, dd2));
 
   // Record that the data descriptors provided in the fact are equivalent.
+  // Both |dd1| and |dd2| are registered in the equivalence relation after this
+  // point.
   MakeEquivalent(dd1, dd2);
 
   // Compute various corollary facts.
@@ -733,12 +747,22 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
 void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
     const protobufs::DataDescriptor& dd1, const protobufs::DataDescriptor& dd2,
     opt::IRContext* context) {
-  // Compute type of |dd1| and |dd2|. Note that they might have different type
-  // ids but their types must be equal (i.e. |type| below is the same for both
-  // |dd1| and |dd2|).
-  auto type_id = fuzzerutil::WalkCompositeTypeIndices(
-      context, fuzzerutil::GetTypeId(context, dd1.object()), dd1.index());
-  const auto* type = context->get_type_mgr()->GetType(type_id);
+  assert(synonymous_.Exists(dd1) && synonymous_.Exists(dd2) &&
+         "Descriptors should've been registered in the equivalence relation");
+
+  // The fact that |dd1| and |dd2| are synonymous allows us to produce more
+  // corollary facts.
+  assert(synonymous_.IsEquivalent(dd1, dd2) &&
+         "Descriptors shoul've been marked as synonymous");
+
+  const auto* representative = synonymous_.Find(&dd1);
+  assert(representative &&
+         "Representative can't be null for a registered descriptor");
+
+  const auto* type = context->get_type_mgr()->GetType(
+      fuzzerutil::WalkCompositeTypeIndices(
+          context, fuzzerutil::GetTypeId(context, representative->object()),
+          representative->index()));
   assert(type && "Data descriptor has invalid type");
 
   if ((type->AsVector() && type->AsVector()->element_type()->AsInteger()) ||
@@ -746,34 +770,46 @@ void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
     // |dd1| and |dd2| are synonymous. If there exist equation facts of the form
     // |%a = opcode %dd1| and |%b = opcode %dd2| where |opcode| is either
     // OpConvertSToF or OpConvertUToF, then |a| and |b| are synonymous.
-    const protobufs::DataDescriptor* convert_s_to_f_lhs = nullptr;
-    const protobufs::DataDescriptor* convert_u_to_f_lhs = nullptr;
+    std::vector<const protobufs::DataDescriptor*> convert_s_to_f_lhs;
+    std::vector<const protobufs::DataDescriptor*> convert_u_to_f_lhs;
 
     for (const auto& fact : id_equations_) {
       for (const auto& equation : fact.second) {
-        if (google::protobuf::util::MessageDifferencer::Equals(
-                *equation.operands[0], dd1) ||
-            google::protobuf::util::MessageDifferencer::Equals(
-                *equation.operands[0], dd2)) {
-          // Equation form: |%a = opcode %dd1| or |%a = opcode %dd2|.
+        if (synonymous_.IsEquivalent(*equation.operands[0], *representative)) {
           if (equation.opcode == SpvOpConvertSToF) {
-            // Equation form: |%a = OpConvertSToF %dd1| or
-            // |%a = OpConvertSToF %dd2|.
-            if (!convert_s_to_f_lhs) {
-              convert_s_to_f_lhs = fact.first;
-            } else {
-              AddDataSynonymFactRecursive(*convert_s_to_f_lhs, *fact.first,
-                                          context);
-            }
+            convert_s_to_f_lhs.push_back(fact.first);
           } else if (equation.opcode == SpvOpConvertUToF) {
-            // Equation form: |%a = OpConvertUToF %dd1| or
-            // |%a = OpConvertUToF %dd2|.
-            if (!convert_u_to_f_lhs) {
-              convert_u_to_f_lhs = fact.first;
-            } else {
-              AddDataSynonymFactRecursive(*convert_u_to_f_lhs, *fact.first,
-                                          context);
-            }
+            convert_u_to_f_lhs.push_back(fact.first);
+          }
+        }
+      }
+    }
+
+    for (const auto& synonym_vector : {std::move(convert_s_to_f_lhs),
+                                       std::move(convert_u_to_f_lhs)}) {
+      for (const auto* synonym_a : synonym_vector) {
+        for (const auto* synonym_b : synonym_vector) {
+          if (synonym_a == synonym_b) {
+            continue;
+          }
+
+          const auto* type_a = context->get_type_mgr()->GetType(
+              fuzzerutil::WalkCompositeTypeIndices(
+                  context, fuzzerutil::GetTypeId(context, synonym_a->object()),
+                  synonym_a->index()));
+          const auto* type_b = context->get_type_mgr()->GetType(
+              fuzzerutil::WalkCompositeTypeIndices(
+                  context, fuzzerutil::GetTypeId(context, synonym_b->object()),
+                  synonym_b->index()));
+          assert(type_a && type_b &&
+                 "OpBitcast operands must have valid types");
+
+          // |synonym_a| and |synonym_b| might have different types even though
+          // they are defined by the same equations opcodes (i.e. either
+          // OpConvertSToF or OpConvertUToF). Namely, width of the scalar or
+          // vector's components type can be different.
+          if (type_a->IsSame(type_b)) {
+            AddDataSynonymFactRecursive(*synonym_a, *synonym_b, context);
           }
         }
       }

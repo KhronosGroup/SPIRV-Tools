@@ -39,7 +39,6 @@
 // where warnings are ignored.
 
 #include "google/protobuf/util/json_util.h"
-#include "google/protobuf/util/message_differencer.h"
 #include "source/fuzz/protobufs/spvtoolsfuzz.pb.h"
 
 #if defined(__clang__)
