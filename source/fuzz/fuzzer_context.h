@@ -18,6 +18,7 @@
 #include <functional>
 #include <utility>
 
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/random_generator.h"
 #include "source/opt/function.h"
 
@@ -143,6 +144,7 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfAddingParameters() { return chance_of_adding_parameters; }
   uint32_t GetChanceOfAddingStore() { return chance_of_adding_store_; }
+  uint32_t GetChanceOfAddingSynonyms() { return chance_of_adding_synonyms_; }
   uint32_t GetChanceOfAddingVectorShuffle() {
     return chance_of_adding_vector_shuffle_;
   }
@@ -274,6 +276,7 @@ class FuzzerContext {
     // Ensure that the array size is non-zero.
     return random_generator_->RandomUint32(max_new_array_size_limit_ - 1) + 1;
   }
+  protobufs::TransformationAddSynonym::SynonymType GetRandomSynonymType();
   uint32_t GetRandomUnusedComponentCountForImageSample(
       uint32_t max_unused_component_count) {
     // Ensure that the number of unused components is non-zero.
@@ -307,6 +310,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_parameters;
   uint32_t chance_of_adding_store_;
+  uint32_t chance_of_adding_synonyms_;
   uint32_t chance_of_adding_vector_shuffle_;
   uint32_t chance_of_adding_vector_type_;
   uint32_t chance_of_adjusting_branch_weights_;

@@ -34,6 +34,7 @@
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
 #include "source/fuzz/transformation_add_parameter.h"
 #include "source/fuzz/transformation_add_spec_constant_op.h"
+#include "source/fuzz/transformation_add_synonym.h"
 #include "source/fuzz/transformation_add_type_array.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
 #include "source/fuzz/transformation_add_type_float.h"
@@ -131,6 +132,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddSpecConstantOp:
       return MakeUnique<TransformationAddSpecConstantOp>(
           message.add_spec_constant_op());
+    case protobufs::Transformation::TransformationCase::kAddSynonym:
+      return MakeUnique<TransformationAddSynonym>(message.add_synonym());
     case protobufs::Transformation::TransformationCase::kAddTypeArray:
       return MakeUnique<TransformationAddTypeArray>(message.add_type_array());
     case protobufs::Transformation::TransformationCase::kAddTypeBoolean:

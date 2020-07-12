@@ -369,6 +369,13 @@ void AddVectorType(opt::IRContext* ir_context, uint32_t result_id,
 void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
                    const std::vector<uint32_t>& component_type_ids);
 
+// Returns a bit pattern that represents a floating-point |value|.
+inline uint32_t FloatToWord(float value) {
+  uint32_t result;
+  memcpy(&result, &value, sizeof(uint32_t));
+  return result;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

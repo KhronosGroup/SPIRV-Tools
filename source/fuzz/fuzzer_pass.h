@@ -183,6 +183,10 @@ class FuzzerPass {
   uint32_t FindOrCreateConstant(const std::vector<uint32_t>& words,
                                 uint32_t type_id);
 
+  // Returns the id of an OpConstantComposite
+  uint32_t FindOrCreateCompositeConstant(
+      const std::vector<uint32_t>& component_ids, uint32_t type_id);
+
   // Returns the result id of an instruction of the form:
   //   %id = OpUndef %|type_id|
   // If no such instruction exists, a transformation is applied to add it.
