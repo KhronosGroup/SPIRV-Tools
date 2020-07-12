@@ -608,9 +608,11 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
       for (const auto& fact : id_equations_) {
         for (const auto& equation : fact.second) {
           if (equation.opcode == opcode &&
-              synonymous_.IsEquivalent(*equation.operands[0], *rhs_dds[0])) {
-            // Equation form: c = float(d). |b| and |d| are synonymous => |a|
-            // and |c| are synonymous.
+              synonymous_.IsEquivalent(*equation.operands[0], *rhs_dds[0]) &&
+              DataDescriptorsAreWellFormedAndComparable(context, lhs_dd,
+                                                        *fact.first)) {
+            // Equation form: c = float(d). |b| and |d| are synonymous, |a|
+            // and |c| have the same type - they are synonymous.
             //
             // We store pairs of synonyms into a separate vector since
             // AddDataSynonymFactRecursive might invalidate iterators to
@@ -789,26 +791,11 @@ void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
          {std::move(convert_s_to_f_lhs), std::move(convert_u_to_f_lhs)}) {
       for (const auto* synonym_a : synonym_vector) {
         for (const auto* synonym_b : synonym_vector) {
-          if (synonym_a == synonym_b) {
-            continue;
-          }
-
-          const auto* type_a = context->get_type_mgr()->GetType(
-              fuzzerutil::WalkCompositeTypeIndices(
-                  context, fuzzerutil::GetTypeId(context, synonym_a->object()),
-                  synonym_a->index()));
-          const auto* type_b = context->get_type_mgr()->GetType(
-              fuzzerutil::WalkCompositeTypeIndices(
-                  context, fuzzerutil::GetTypeId(context, synonym_b->object()),
-                  synonym_b->index()));
-          assert(type_a && type_b &&
-                 "OpBitcast operands must have valid types");
-
-          // |synonym_a| and |synonym_b| might have different types even though
-          // they are defined by the same equations opcodes (i.e. either
-          // OpConvertSToF or OpConvertUToF). Namely, width of the scalar or
-          // vector's components type can be different.
-          if (type_a->IsSame(type_b)) {
+          if (!synonymous_.IsEquivalent(*synonym_a, *synonym_b) &&
+              DataDescriptorsAreWellFormedAndComparable(context, *synonym_a,
+                                                        *synonym_b)) {
+            // |synonym_a| and |synonym_b| have compatible types - they are
+            // synonymous.
             AddDataSynonymFactRecursive(*synonym_a, *synonym_b, context);
           }
         }
