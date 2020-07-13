@@ -1339,26 +1339,24 @@ FactManager::DataSynonymAndIdEquationFacts::MergeConnectedComponents(
     return scc_a;
   }
 
-  auto& scc_a_nodes = scc_to_node_.at(scc_a);
-  auto& scc_b_nodes = scc_to_node_.at(scc_b);
+  const auto* less_scc = scc_a;
+  const auto* more_scc = scc_b;
 
-  if (scc_a_nodes.size() > scc_b_nodes.size()) {
-    scc_a_nodes.insert(scc_b_nodes.begin(), scc_b_nodes.end());
-    for (const auto* node : scc_b_nodes) {
-      node_to_scc_.at(node) = scc_a;
-    }
+  auto* less_nodes = &scc_to_node_.at(less_scc);
+  auto* more_nodes = &scc_to_node_.at(more_scc);
 
-    scc_to_node_.erase(scc_b);
-    return scc_a;
-  } else {
-    scc_b_nodes.insert(scc_a_nodes.begin(), scc_a_nodes.end());
-    for (const auto* node : scc_a_nodes) {
-      node_to_scc_.at(node) = scc_b;
-    }
-
-    scc_to_node_.erase(scc_a);
-    return scc_b;
+  if (less_nodes->size() > more_nodes->size()) {
+    std::swap(less_nodes, more_nodes);
+    std::swap(less_scc, more_scc);
   }
+
+  more_nodes->insert(less_nodes->begin(), less_nodes->end());
+  for (const auto* node : *less_nodes) {
+    node_to_scc_.at(node) = more_scc;
+  }
+
+  scc_to_node_.erase(less_scc);
+  return more_scc;
 }
 
 const protobufs::DataDescriptor*
