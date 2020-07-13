@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Stefano Milizia
 // Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "fuzzer_pass_interchange_zero_like_constants.h"
+#include "source/fuzz/fuzzer_pass_interchange_zero_like_constants.h"
+#include "source/fuzz/id_use_descriptor.h"
+#include "source/fuzz/transformation_record_synonymous_constants.h"
+#include "source/fuzz/transformation_replace_id_with_synonym.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -22,9 +26,94 @@ FuzzerPassInterchangeZeroLikeConstants::FuzzerPassInterchangeZeroLikeConstants(
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
-void FuzzerPassInterchangeZeroLikeConstants::Apply() {}
 
 FuzzerPassInterchangeZeroLikeConstants::
     ~FuzzerPassInterchangeZeroLikeConstants() = default;
+
+uint32_t FuzzerPassInterchangeZeroLikeConstants::FindOrCreateToggledConstant(
+    opt::Instruction* declaration) {
+  auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
+      declaration->result_id());
+
+  // This pass only toggles zero constants
+  if (!constant->IsZero()) {
+    return 0;
+  }
+
+  if (constant->AsScalarConstant()) {
+    return FindOrCreateNullConstant(declaration->type_id());
+  } else if (constant->AsNullConstant()) {
+    // Add declaration of equivalent scalar constant
+    auto kind = constant->type()->kind();
+    if (kind == opt::analysis::Type::kBool ||
+        kind == opt::analysis::Type::kInteger ||
+        kind == opt::analysis::Type::kFloat) {
+      return FindOrCreateZeroConstant(declaration->type_id());
+    }
+  }
+
+  return 0;
+}
+
+void FuzzerPassInterchangeZeroLikeConstants::AddUseToReplace(
+    opt::Instruction* use_inst, uint32_t use_index, uint32_t replacement_id,
+    std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>&
+        uses_to_replace) {
+  // Only consider this use if it is in a block
+  if (GetIRContext()->get_instr_block(use_inst)) {
+    // Get index of the operands with respect to just the input operands.
+    // (|use_index| refers to all the operands, not just the In operands)
+    uint32_t in_operand_index =
+        use_index - use_inst->NumOperands() + use_inst->NumInOperands();
+    auto id_use_descriptor =
+        MakeIdUseDescriptorFromUse(GetIRContext(), use_inst, in_operand_index);
+    uses_to_replace.emplace_back(
+        std::make_pair(id_use_descriptor, replacement_id));
+  }
+}
+
+void FuzzerPassInterchangeZeroLikeConstants::Apply() {
+  // Find all constants
+  auto constants = GetIRContext()->GetConstants();
+
+  // Make vector keeping track of all the uses we want to replace.
+  // This is a vector of pairs, where the first element is an id use descriptor
+  // identifying the use of a constant id and the second is the id that should
+  // be used to replace it.
+  std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>> uses_to_replace;
+
+  for (auto constant : constants) {
+    uint32_t constant_id = constant->result_id();
+    uint32_t toggled_id = FindOrCreateToggledConstant(constant);
+
+    if (!toggled_id) {
+      // Not a zero-like constant
+      continue;
+    }
+
+    // Record synonymous constants
+    ApplyTransformation(
+        TransformationRecordSynonymousConstants(constant_id, toggled_id));
+
+    // Find all the uses of the constant and, for each, probabilistically
+    // decide whether to replace it.
+    GetIRContext()->get_def_use_mgr()->ForEachUse(
+        constant_id,
+        [this, toggled_id, &uses_to_replace](opt::Instruction* use_inst,
+                                             uint32_t use_index) -> void {
+          if (GetFuzzerContext()->ChoosePercentage(
+                  GetFuzzerContext()
+                      ->GetChanceOfInterchangingZeroLikeConstants())) {
+            AddUseToReplace(use_inst, use_index, toggled_id, uses_to_replace);
+          }
+        });
+  }
+
+  // Replace the ids
+  for (auto use_to_replace : uses_to_replace) {
+    ApplyTransformation(TransformationReplaceIdWithSynonym(
+        use_to_replace.first, use_to_replace.second));
+  }
+}
 }  // namespace fuzz
 }  // namespace spvtools

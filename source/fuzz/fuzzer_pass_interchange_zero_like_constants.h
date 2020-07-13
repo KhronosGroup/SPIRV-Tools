@@ -1,3 +1,4 @@
+// Copyright (c) 2020 Stefano Milizia
 // Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +38,24 @@ class FuzzerPassInterchangeZeroLikeConstants : public FuzzerPass {
   ~FuzzerPassInterchangeZeroLikeConstants() override;
 
   void Apply() override;
+
+ private:
+  // Given the declaration of a zero-like constant, it finds or creates the
+  // corresponding toggled constant (a scalar constant of value 0 becomes a
+  // null constant of the same type and vice versa).
+  // Returns the id of the toggled instruction if the constant is zero-like,
+  // 0 otherwise.
+  uint32_t FindOrCreateToggledConstant(opt::Instruction* declaration);
+
+  // Given an Id use (described by an instruction and an index) and an id with
+  // which the original one should be replaced, adds a pair (with the elements
+  // being the corresponding id use descriptor and the replacement id) to
+  // |uses_to_replace| if the use is in an instruction block, otherwise does
+  // nothing.
+  void AddUseToReplace(
+      opt::Instruction* use_inst, uint32_t use_index, uint32_t replacement_id,
+      std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>&
+          uses_to_replace);
 };
 
 }  // namespace fuzz
