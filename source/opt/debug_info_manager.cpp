@@ -380,9 +380,8 @@ void DebugInfoManager::KillDebugDeclares(uint32_t variable_id) {
     Instruction* kill_inst = nullptr;
     auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
     if (dbg_decl_itr != var_id_to_dbg_decl_.end()) {
-      for (auto dbg_decl : dbg_decl_itr->second) {
-        kill_inst = dbg_decl;
-        break;
+      if (!dbg_decl_itr->second.empty()) {
+        kill_inst = *(dbg_decl_itr->second.begin());
       }
     }
     if (kill_inst)
