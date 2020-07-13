@@ -35,7 +35,7 @@ uint32_t FuzzerPassInterchangeZeroLikeConstants::FindOrCreateToggledConstant(
   auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
       declaration->result_id());
 
-  // This pass only toggles zero constants
+  // This pass only toggles zero-like constants
   if (!constant->IsZero()) {
     return 0;
   }
