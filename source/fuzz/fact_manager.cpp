@@ -819,7 +819,7 @@ void FactManager::DataSynonymAndIdEquationFacts::ComputeBitcastDataSynonymFacts(
 
   // Time complexity of this procedure (assuming AddDataSynonymFactRecursive
   // only merges vertices in constant time and calls this method) is O(n^4) in
-  // the worst case scenario.
+  // the worst case scenario (|n| is a number of vertices in the |scc|).
   for (const auto* node_a : nodes) {
     for (const auto* node_b : nodes) {
       // We have to skip the iteration if |node_a| and |node_b| are already
