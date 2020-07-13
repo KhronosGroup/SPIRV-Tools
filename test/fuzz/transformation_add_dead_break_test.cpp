@@ -1476,6 +1476,111 @@ TEST(TransformationAddDeadBreakTest, NoBreakFromContinueConstruct) {
                   .IsApplicable(context.get(), transformation_context));
 }
 
+TEST(TransformationAddDeadBreakTest, BreakFromBackEdgeBlock) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %10 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 0
+          %5 = OpTypeBool
+          %6 = OpTypePointer Function %4
+
+; Constants
+          %7 = OpConstant %4 0
+          %8 = OpConstant %4 1
+          %9 = OpConstantTrue %5
+
+; main function
+         %10 = OpFunction %2 None %3
+         %11 = OpLabel
+         %12 = OpVariable %6 Function
+               OpStore %12 %7
+               OpBranch %13
+         %13 = OpLabel
+               OpLoopMerge %21 %18 None ; structured loop
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %4 %12
+         %16 = OpULessThan %5 %15 %8 ; i < 1 ?
+               OpBranchConditional %16 %17 %21 ; body or break
+         %17 = OpLabel ; body
+               OpBranch %18
+         %18 = OpLabel ; continue target does not strictly dominates the back-edge block
+         %19 = OpLoad %4 %12
+         %20 = OpIAdd %4 %19 %8 ; ++i
+               OpStore %12 %20
+               OpBranch %13
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto transformation = TransformationAddDeadBreak(18, 21, true, {});
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %10 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 0
+          %5 = OpTypeBool
+          %6 = OpTypePointer Function %4
+
+; Constants
+          %7 = OpConstant %4 0
+          %8 = OpConstant %4 1
+          %9 = OpConstantTrue %5
+
+; main function
+         %10 = OpFunction %2 None %3
+         %11 = OpLabel
+         %12 = OpVariable %6 Function
+               OpStore %12 %7
+               OpBranch %13
+         %13 = OpLabel
+               OpLoopMerge %21 %18 None ; structured loop
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %4 %12
+         %16 = OpULessThan %5 %15 %8 ; i < 1 ?
+               OpBranchConditional %16 %17 %21 ; body or break
+         %17 = OpLabel ; body
+               OpBranch %18
+         %18 = OpLabel ; continue target does not strictly dominates the back-edge block
+         %19 = OpLoad %4 %12
+         %20 = OpIAdd %4 %19 %8 ; ++i
+               OpStore %12 %20
+               OpBranchConditional %9 %13 %21
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+}
+
 TEST(TransformationAddDeadBreakTest, SelectionInContinueConstruct) {
   // Considers some scenarios where there is a selection construct in a loop's
   // continue construct.
