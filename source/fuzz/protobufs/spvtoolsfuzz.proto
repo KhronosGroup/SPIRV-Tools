@@ -387,6 +387,7 @@ message Transformation {
     TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
     TransformationRecordSynonymousConstants record_synonymous_constants = 57;
     TransformationAddSynonym add_synonym = 58;
+    TransformationAddRelaxedDecoration add_relaxed_decoration = 59;
     // Add additional option using the next available number.
   }
 }
@@ -685,6 +686,15 @@ message TransformationAddParameter {
   // if a required function type already exists or if we can change
   // the old function type.
   uint32 function_type_fresh_id = 4;
+
+}
+
+message TransformationAddRelaxedDecoration {
+
+  // Applies OpDecorate RelaxedPrecision to the given result id
+
+  // Result id to be decorated
+  uint32 result_id = 1;
 
 }
 
