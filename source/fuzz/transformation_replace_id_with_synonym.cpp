@@ -57,15 +57,8 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
     return false;
   }
 
-  bool synonym_is_constant =
-      ir_context->get_constant_mgr()->FindDeclaredConstant(
-          message_.synonymous_id());
-
   // Is the use suitable for being replaced in principle?
-  // This is the case if either the synonym is a constant or the id being
-  // replaced is suitable for being replaced by any synonym.
-  if (!synonym_is_constant &&
-      !UseCanBeReplacedWithSynonym(
+  if (!UseCanBeReplacedWithSynonym(
           ir_context, use_instruction,
           message_.id_use_descriptor().in_operand_index())) {
     return false;

@@ -111,8 +111,12 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
 
   // Replace the ids
   for (auto use_to_replace : uses_to_replace) {
-    ApplyTransformation(TransformationReplaceIdWithSynonym(
-        use_to_replace.first, use_to_replace.second));
+    auto transformation = TransformationReplaceIdWithSynonym(
+        use_to_replace.first, use_to_replace.second);
+    if (transformation.IsApplicable(GetIRContext(),
+                                    *GetTransformationContext())) {
+      ApplyTransformation(transformation);
+    }
   }
 }
 }  // namespace fuzz
