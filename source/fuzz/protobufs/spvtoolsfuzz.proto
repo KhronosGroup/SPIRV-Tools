@@ -341,6 +341,7 @@ message Transformation {
     TransformationAddTypePointer add_type_pointer = 10;
     TransformationReplaceConstantWithUniform replace_constant_with_uniform = 11;
     TransformationAddDeadContinue add_dead_continue = 12;
+<<<<<<< HEAD
     TransformationReplaceIdWithSynonym replace_id_with_synonym = 13;
     TransformationSetSelectionControl set_selection_control = 14;
     TransformationCompositeConstruct composite_construct = 15;
@@ -386,6 +387,8 @@ message Transformation {
     TransformationReplaceParameterWithGlobal replace_parameter_with_global = 55;
     TransformationRecordSynonymousConstants record_synonymous_constants = 56;
     TransformationAddSynonym add_synonym = 57;
+    TransformationAddSynonym add_synonym = 58;
+    TransformationAddRelaxedDecoration add_relaxed_decoration = 59;
     // Add additional option using the next available number.
   }
 }
@@ -684,6 +687,15 @@ message TransformationAddParameter {
   // if a required function type already exists or if we can change
   // the old function type.
   uint32 function_type_fresh_id = 4;
+
+}
+
+message TransformationAddRelaxedDecoration {
+
+  // Applies OpDecorate RelaxedPrecision to the given result id
+
+  // Result id to be decorated
+  uint32 result_id = 1;
 
 }
 
