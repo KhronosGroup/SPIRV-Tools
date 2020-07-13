@@ -49,44 +49,53 @@ void FuzzerPassReplaceParamsWithStruct::Apply() {
       continue;
     }
 
-    std::vector<uint32_t> parameter_id(params.size());
-    std::iota(parameter_id.begin(), parameter_id.end(), 0);
+    std::vector<uint32_t> parameter_index(params.size());
+    std::iota(parameter_index.begin(), parameter_index.end(), 0);
 
-    // Remove unsupported parameters.
+    // Remove the indices of unsupported parameters.
     auto new_end = std::remove_if(
-        parameter_id.begin(), parameter_id.end(),
+        parameter_index.begin(), parameter_index.end(),
         [this, &params](uint32_t index) {
           const auto* type =
               GetIRContext()->get_type_mgr()->GetType(params[index]->type_id());
-          return !type || !TransformationReplaceParamsWithStruct::
-                              IsParameterTypeSupported(*type);
+          assert(type && "Parameter has invalid type");
+          return !TransformationReplaceParamsWithStruct::
+              IsParameterTypeSupported(*type);
         });
 
-    parameter_id.erase(new_end, parameter_id.end());
+    // std::remove_if changes the vector so that removed elements are placed at
+    // the end (i.e. [new_end, parameter_index.end()) is a range of removed
+    // elements). However, the size of the vector is not changed so we need to
+    // change that explicitly by popping those elements from the vector.
+    parameter_index.erase(new_end, parameter_index.end());
 
-    if (parameter_id.empty()) {
+    if (parameter_index.empty()) {
       continue;
     }
 
+    // Select |num_replaced_params| parameters at random. We shuffle the vector
+    // of indices for randomization and shrink it to select first
+    // |num_replaced_params| parameters.
     auto num_replaced_params = std::min<size_t>(
-        parameter_id.size(),
+        parameter_index.size(),
         GetFuzzerContext()->GetRandomNumberOfParametersReplacedWithStruct(
             static_cast<uint32_t>(params.size())));
 
-    GetFuzzerContext()->Shuffle(&parameter_id);
-    parameter_id.resize(num_replaced_params);
+    GetFuzzerContext()->Shuffle(&parameter_index);
+    parameter_index.resize(num_replaced_params);
 
     // Make sure OpTypeStruct exists in the module.
-    auto component_type_ids = parameter_id;
-    for (auto& id : component_type_ids) {
-      id = params[id]->type_id();
+    std::vector<uint32_t> component_type_ids;
+    for (auto index : parameter_index) {
+      component_type_ids.push_back(params[index]->type_id());
     }
 
     FindOrCreateStructType(component_type_ids);
 
     // Map parameters' indices to parameters' ids.
-    for (auto& id : parameter_id) {
-      id = params[id]->result_id();
+    std::vector<uint32_t> parameter_id;
+    for (auto index : parameter_index) {
+      parameter_id.push_back(params[index]->result_id());
     }
 
     std::unordered_map<uint32_t, uint32_t> caller_id_to_fresh_id;
