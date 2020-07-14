@@ -47,14 +47,14 @@ class FuzzerPassInterchangeZeroLikeConstants : public FuzzerPass {
   // 0 otherwise.
   uint32_t FindOrCreateToggledConstant(opt::Instruction* declaration);
 
-  // Given an Id use (described by an instruction and an index) and an id with
+  // Given an id use (described by an instruction and an index) and an id with
   // which the original one should be replaced, adds a pair (with the elements
   // being the corresponding id use descriptor and the replacement id) to
   // |uses_to_replace| if the use is in an instruction block, otherwise does
   // nothing.
-  void AddUseToReplace(
+  void MaybeAddUseToReplace(
       opt::Instruction* use_inst, uint32_t use_index, uint32_t replacement_id,
-      std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>&
+      std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>*
           uses_to_replace);
 };
 

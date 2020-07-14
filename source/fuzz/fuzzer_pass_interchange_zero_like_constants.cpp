@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_interchange_zero_like_constants.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/id_use_descriptor.h"
 #include "source/fuzz/transformation_record_synonymous_constants.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
@@ -55,34 +56,32 @@ uint32_t FuzzerPassInterchangeZeroLikeConstants::FindOrCreateToggledConstant(
   return 0;
 }
 
-void FuzzerPassInterchangeZeroLikeConstants::AddUseToReplace(
+void FuzzerPassInterchangeZeroLikeConstants::MaybeAddUseToReplace(
     opt::Instruction* use_inst, uint32_t use_index, uint32_t replacement_id,
-    std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>&
+    std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>*
         uses_to_replace) {
   // Only consider this use if it is in a block
-  if (GetIRContext()->get_instr_block(use_inst)) {
-    // Get index of the operands with respect to just the input operands.
-    // (|use_index| refers to all the operands, not just the In operands)
-    uint32_t in_operand_index =
-        use_index - use_inst->NumOperands() + use_inst->NumInOperands();
-    auto id_use_descriptor =
-        MakeIdUseDescriptorFromUse(GetIRContext(), use_inst, in_operand_index);
-    uses_to_replace.emplace_back(
-        std::make_pair(id_use_descriptor, replacement_id));
+  if (!GetIRContext()->get_instr_block(use_inst)) {
+    return;
   }
+
+  // Get the index of the operand restricted to input operands.
+  uint32_t in_operand_index =
+      fuzzerutil::InOperandIndexFromOperandIndex(*use_inst, use_index);
+  auto id_use_descriptor =
+      MakeIdUseDescriptorFromUse(GetIRContext(), use_inst, in_operand_index);
+  uses_to_replace->emplace_back(
+      std::make_pair(id_use_descriptor, replacement_id));
 }
 
 void FuzzerPassInterchangeZeroLikeConstants::Apply() {
-  // Find all constants
-  auto constants = GetIRContext()->GetConstants();
-
   // Make vector keeping track of all the uses we want to replace.
   // This is a vector of pairs, where the first element is an id use descriptor
   // identifying the use of a constant id and the second is the id that should
   // be used to replace it.
   std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>> uses_to_replace;
 
-  for (auto constant : constants) {
+  for (auto constant : GetIRContext()->GetConstants()) {
     uint32_t constant_id = constant->result_id();
     uint32_t toggled_id = FindOrCreateToggledConstant(constant);
 
@@ -104,7 +103,8 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
           if (GetFuzzerContext()->ChoosePercentage(
                   GetFuzzerContext()
                       ->GetChanceOfInterchangingZeroLikeConstants())) {
-            AddUseToReplace(use_inst, use_index, toggled_id, uses_to_replace);
+            MaybeAddUseToReplace(use_inst, use_index, toggled_id,
+                                 &uses_to_replace);
           }
         });
   }
@@ -115,7 +115,8 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
         use_to_replace.first, use_to_replace.second);
     if (transformation.IsApplicable(GetIRContext(),
                                     *GetTransformationContext())) {
-      ApplyTransformation(transformation);
+      transformation.Apply(GetIRContext(), GetTransformationContext());
+      *GetTransformations()->add_transformation() = transformation.ToMessage();
     }
   }
 }

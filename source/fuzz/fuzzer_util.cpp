@@ -533,6 +533,12 @@ uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
   return 0;
 }
 
+uint32_t InOperandIndexFromOperandIndex(const opt::Instruction& inst,
+                                        uint32_t absolute_index) {
+  // Subtract the number of non-input operands from the index
+  return absolute_index - inst.NumOperands() + inst.NumInOperands();
+}
+
 bool IsNullConstantSupported(const opt::analysis::Type& type) {
   return type.AsBool() || type.AsInteger() || type.AsFloat() ||
          type.AsMatrix() || type.AsVector() || type.AsArray() ||

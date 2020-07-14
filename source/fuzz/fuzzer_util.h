@@ -207,6 +207,11 @@ SpvStorageClass GetStorageClassFromPointerType(opt::IRContext* context,
 uint32_t MaybeGetPointerType(opt::IRContext* context, uint32_t pointee_type_id,
                              SpvStorageClass storage_class);
 
+// Given an instruction |inst| and an operand absolute index |absolute_index|,
+// returns the index of the operand restricted to the input operands.
+uint32_t InOperandIndexFromOperandIndex(const opt::Instruction& inst,
+                                        uint32_t absolute_index);
+
 // Returns true if and only if |type| is one of the types for which it is legal
 // to have an OpConstantNull value.
 bool IsNullConstantSupported(const opt::analysis::Type& type);
