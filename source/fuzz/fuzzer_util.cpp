@@ -156,6 +156,25 @@ void AddUnreachableEdgeAndUpdateOpPhis(
   }
 }
 
+bool BlockIsBackEdge(opt::IRContext* context, uint32_t block_id,
+                     uint32_t loop_header_id) {
+  auto block = context->cfg()->block(block_id);
+  auto loop_header = context->cfg()->block(loop_header_id);
+
+  // |block| and |loop_header| must be defined, |loop_header| must be in fact
+  // loop header and |block| must branch to it.
+  if (!(block && loop_header && loop_header->IsLoopHeader() &&
+        block->IsSuccessor(loop_header))) {
+    return false;
+  }
+
+  // |block_id| must be reachable and be dominated by |loop_header|.
+  opt::DominatorAnalysis* dominator_analysis =
+      context->GetDominatorAnalysis(loop_header->GetParent());
+  return dominator_analysis->IsReachable(block_id) &&
+         dominator_analysis->Dominates(loop_header_id, block_id);
+}
+
 bool BlockIsInLoopContinueConstruct(opt::IRContext* context, uint32_t block_id,
                                     uint32_t maybe_loop_header_id) {
   // We deem a block to be part of a loop's continue construct if the loop's
