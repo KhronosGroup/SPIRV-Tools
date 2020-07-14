@@ -11,3 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#include "source/fuzz/transformation_add_relaxed_decoration.h"
+#include "test/fuzz/fuzz_test_util.h"
+
+namespace spvtools {
+namespace fuzz {
+namespace {}
+}  // namespace fuzz
+}  // namespace spvtools

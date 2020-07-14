@@ -31,10 +31,11 @@ class TransformationAddRelaxedDecoration : public Transformation {
   explicit TransformationAddRelaxedDecoration(uint32_t fresh_id);
 
   // - |message_.result_id| must be the result id of an instruction, which is
-  //   located in a dead block and Relaxed decoration can be applied
+  //   located in a dead block and Relaxed decoration can be applied.
   // - It does not matter whether this instruction is already annotated with the
   //   Relaxed decoration.
   bool IsApplicable(
+
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
@@ -57,6 +58,5 @@ class TransformationAddRelaxedDecoration : public Transformation {
 
 }  // namespace fuzz
 }  // namespace spvtools
-
 
 #endif  // SPIRV_TOOLS_TRANSFORMATION_ADD_RELAXED_DECORATION_H

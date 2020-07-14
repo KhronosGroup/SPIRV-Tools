@@ -38,7 +38,11 @@ bool TransformationAddRelaxedDecoration::IsApplicable(
     return false;
   }
   opt::BasicBlock* cur_block = ir_context->get_instr_block(instr);
-  // current block must be a dead block
+  // The instruction must have a block.
+  if (cur_block == nullptr) {
+    return false;
+  }
+  // |cur_block| must be a dead block.
   if (!(transformation_context.GetFactManager()->BlockIsDead(
           cur_block->id()))) {
     return false;
