@@ -184,14 +184,16 @@ TEST(TransformationAccessChainTest, BasicTest) {
                    .IsApplicable(context.get(), transformation_context));
 
   // Bad: pointer is null
-  ASSERT_FALSE(TransformationAccessChain(
+  ASSERT_DEATH(TransformationAccessChain(
                    100, 45, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
+                   .IsApplicable(context.get(), transformation_context),
+               "Null or undefined pointer");
 
   // Bad: pointer is undef
-  ASSERT_FALSE(TransformationAccessChain(
+  ASSERT_DEATH(TransformationAccessChain(
                    100, 46, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
+                   .IsApplicable(context.get(), transformation_context),
+               "Null or undefined pointer");
 
   // Bad: pointer to result type does not exist
   ASSERT_FALSE(TransformationAccessChain(

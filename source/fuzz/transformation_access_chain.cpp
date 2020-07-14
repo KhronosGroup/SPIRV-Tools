@@ -74,10 +74,7 @@ bool TransformationAccessChain::IsApplicable(
   switch (pointer->opcode()) {
     case SpvOpConstantNull:
     case SpvOpUndef:
-      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3185): When
-      //  fuzzing for real we would like an 'assert(false)' here.  But we also
-      //  want to be able to write negative unit tests.
-      return false;
+      assert(false && "Null or undefined pointer");
     default:
       break;
   }
