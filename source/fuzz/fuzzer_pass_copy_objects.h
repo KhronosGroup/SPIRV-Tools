@@ -21,9 +21,6 @@ namespace spvtools {
 namespace fuzz {
 
 // A fuzzer pass for adding adding copies of objects to the module.
-//
-// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3509):
-//  Use TransformationAddSynonym instead of TransformationCopyObject.
 class FuzzerPassCopyObjects : public FuzzerPass {
  public:
   FuzzerPassCopyObjects(opt::IRContext* ir_context,
