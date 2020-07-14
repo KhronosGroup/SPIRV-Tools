@@ -291,6 +291,7 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
           %5 = OpLabel
          %20 = OpVariable %9 Function
          %27 = OpVariable %9 Function
+               OpStore %53 %21
          %22 = OpAccessChain %15 %20 %14
          %44 = OpCopyObject %9 %20
          %26 = OpAccessChain %25 %20 %23
@@ -386,11 +387,22 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
       initializer_id, instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
+  value_id = 23;
+  value_synonym_id = 110;
+  variable_id = 111;
+  initializer_id = 21;
+  variable_storage_class = SpvStorageClassPrivate;
+  instruction_descriptor = MakeInstructionDescriptor(27, SpvOpStore, 0);
+  transformation = TransformationPushIdThroughVariable(
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      initializer_id, instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
   std::string variant_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %92 %52 %53 %109
+               OpEntryPoint Fragment %4 "main" %92 %52 %53 %109 %111
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpDecorate %92 BuiltIn FragCoord
@@ -421,12 +433,16 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
          %92 = OpVariable %91 Input
          %93 = OpConstantComposite %90 %24 %24 %24 %24
         %109 = OpVariable %51 Private %21
+        %111 = OpVariable %51 Private %21
           %4 = OpFunction %2 None %3
           %5 = OpLabel
         %103 = OpVariable %15 Function %21
         %101 = OpVariable %9 Function %80
          %20 = OpVariable %9 Function
          %27 = OpVariable %9 Function
+               OpStore %111 %23
+        %110 = OpLoad %6 %111
+               OpStore %53 %21
          %22 = OpAccessChain %15 %20 %14
          %44 = OpCopyObject %9 %20
          %26 = OpAccessChain %25 %20 %23
