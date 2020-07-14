@@ -19,29 +19,28 @@
 namespace spvtools {
 namespace fuzz {
 
-TransformationAddRelaxedDecoration::
-TransformationAddRelaxedDecoration(
-    const spvtools::fuzz::protobufs::
-    TransformationAddRelaxedDecoration& message)
+TransformationAddRelaxedDecoration::TransformationAddRelaxedDecoration(
+    const spvtools::fuzz::protobufs::TransformationAddRelaxedDecoration&
+        message)
     : message_(message) {}
 
-TransformationAddRelaxedDecoration::
-TransformationAddRelaxedDecoration(uint32_t result_id) {
+TransformationAddRelaxedDecoration::TransformationAddRelaxedDecoration(
+    uint32_t result_id) {
   message_.set_result_id(result_id);
 }
 
 bool TransformationAddRelaxedDecoration::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& transformation_context) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // |message_.result_id| must be the id of an instruction.
   auto instr = ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   if (!instr) {
     return false;
   }
-  opt::BasicBlock* cur_block =
-      ir_context->get_instr_block(instr);
+  opt::BasicBlock* cur_block = ir_context->get_instr_block(instr);
   // current block must be a dead block
   if (!(transformation_context.GetFactManager()->BlockIsDead(
-      cur_block->id()))) {
+          cur_block->id()))) {
     return false;
   }
   // The instruction must be numeric.
@@ -51,12 +50,12 @@ bool TransformationAddRelaxedDecoration::IsApplicable(
 void TransformationAddRelaxedDecoration::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   // Add a RelaxedPrecision decoration targeting |message_.result_id|.
-  ir_context->get_decoration_mgr()->AddDecoration(message_.result_id(),
-                                                  SpvDecorationRelaxedPrecision);
+  ir_context->get_decoration_mgr()->AddDecoration(
+      message_.result_id(), SpvDecorationRelaxedPrecision);
 }
 
 protobufs::Transformation TransformationAddRelaxedDecoration::ToMessage()
-const {
+    const {
   protobufs::Transformation result;
   *result.mutable_add_relaxed_decoration() = message_;
   return result;
