@@ -398,7 +398,6 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
       initializer_id, instruction_descriptor);
   transformation.Apply(context.get(), &transformation_context);
 
-
   std::string variant_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
