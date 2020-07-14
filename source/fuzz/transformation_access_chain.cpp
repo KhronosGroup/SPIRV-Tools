@@ -74,7 +74,10 @@ bool TransformationAccessChain::IsApplicable(
   switch (pointer->opcode()) {
     case SpvOpConstantNull:
     case SpvOpUndef:
-      assert(false && "Null or undefined pointer");
+      assert(
+          false &&
+          "Access chains should not be created from null/undefined pointers");
+      return false;
     default:
       break;
   }
