@@ -93,6 +93,8 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
         %206 = OpTypeFunction %2 %14 %16
         %223 = OpTypeFunction %2 %6 %8
         %224 = OpTypeFunction %2 %8 %6
+        %233 = OpTypeFunction %2 %42 %24
+        %234 = OpTypeFunction %2 %24 %42
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %66 = OpVariable %15 Function
@@ -151,6 +153,8 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %70 = OpLabel
                OpReturn
                OpFunctionEnd
+
+         ; adjust type of the function in-place
          %12 = OpFunction %8 None %9
          %10 = OpFunctionParameter %7
          %11 = OpFunctionParameter %7
@@ -194,6 +198,8 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %61 = OpFOrdLessThan %24 %59 %60
                OpReturnValue %61
                OpFunctionEnd
+
+        ; create a new function type
         %200 = OpFunction %2 None %206
         %207 = OpFunctionParameter %14
         %208 = OpFunctionParameter %16
@@ -206,6 +212,8 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
         %205 = OpLabel
                OpReturn
                OpFunctionEnd
+
+        ; reuse an existing function type
         %211 = OpFunction %2 None %223
         %212 = OpFunctionParameter %6
         %213 = OpFunctionParameter %8
@@ -225,6 +233,19 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
                OpReturn
                OpFunctionEnd
 
+        ; don't adjust the type of the function if it creates a duplicate
+        %225 = OpFunction %2 None %233
+        %226 = OpFunctionParameter %42
+        %227 = OpFunctionParameter %24
+        %228 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %229 = OpFunction %2 None %234
+        %230 = OpFunctionParameter %24
+        %231 = OpFunctionParameter %42
+        %232 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
@@ -292,6 +313,13 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
   }
   {
     TransformationPermuteFunctionParameters transformation(219, 108, {1, 0});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+  {
+    TransformationPermuteFunctionParameters transformation(229, 109, {1, 0});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -370,6 +398,8 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
         %206 = OpTypeFunction %2 %14 %16
         %223 = OpTypeFunction %2 %6 %8
         %224 = OpTypeFunction %2 %8 %6
+        %233 = OpTypeFunction %2 %42 %24
+        %234 = OpTypeFunction %2 %24 %42
         %107 = OpTypeFunction %2 %16 %14
           %4 = OpFunction %2 None %3
           %5 = OpLabel
@@ -500,6 +530,18 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
         %221 = OpFunctionParameter %6
         %220 = OpFunctionParameter %8
         %222 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %225 = OpFunction %2 None %233
+        %226 = OpFunctionParameter %42
+        %227 = OpFunctionParameter %24
+        %228 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %229 = OpFunction %2 None %233
+        %231 = OpFunctionParameter %42
+        %230 = OpFunctionParameter %24
+        %232 = OpLabel
                OpReturn
                OpFunctionEnd
   )";

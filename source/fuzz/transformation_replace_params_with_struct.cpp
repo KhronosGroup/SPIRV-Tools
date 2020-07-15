@@ -234,39 +234,36 @@ void TransformationReplaceParamsWithStruct::Apply(
   auto* old_function_type = fuzzerutil::GetFunctionType(ir_context, function);
   assert(old_function_type && "Function has invalid type");
 
-  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
-    // Update |old_function_type| in place.
-    old_function_type->AddOperand({SPV_OPERAND_TYPE_ID, {struct_type_id}});
+  std::vector<uint32_t> type_ids = {
+      // Result type of the function.
+      old_function_type->GetSingleWordInOperand(0)};
 
-    // We iterate in reverse order to make sure we have removed correct
-    // operands.
-    for (auto it = indices_of_replaced_params.rbegin();
-         it != indices_of_replaced_params.rend(); ++it) {
-      // +1 since the first in operand to OpTypeFunction is the result type id
-      // of the function.
-      old_function_type->RemoveInOperand(*it + 1);
+  // +1 since the first in operand to OpTypeFunction is the result type id
+  // of the function.
+  for (uint32_t i = 1; i < old_function_type->NumInOperands(); ++i) {
+    if (std::find(indices_of_replaced_params.begin(),
+                  indices_of_replaced_params.end(),
+                  i - 1) == indices_of_replaced_params.end()) {
+      type_ids.push_back(old_function_type->GetSingleWordInOperand(i));
     }
+  }
+
+  type_ids.push_back(struct_type_id);
+
+  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
+      fuzzerutil::FindFunctionType(ir_context, type_ids) == 0) {
+    // Update |old_function_type| in place.
+    opt::Instruction::OperandList replaced_operands;
+    for (auto id : type_ids) {
+      replaced_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
+    }
+
+    old_function_type->SetInOperands(std::move(replaced_operands));
 
     // Make sure domination rules are satisfied.
     old_function_type->RemoveFromList();
     ir_context->AddType(std::unique_ptr<opt::Instruction>(old_function_type));
   } else {
-    std::vector<uint32_t> type_ids = {
-        // Result type of the function.
-        old_function_type->GetSingleWordInOperand(0)};
-
-    // +1 since the first in operand to OpTypeFunction is the result type id
-    // of the function.
-    for (uint32_t i = 1; i < old_function_type->NumInOperands(); ++i) {
-      if (std::find(indices_of_replaced_params.begin(),
-                    indices_of_replaced_params.end(),
-                    i - 1) == indices_of_replaced_params.end()) {
-        type_ids.push_back(old_function_type->GetSingleWordInOperand(i));
-      }
-    }
-
-    type_ids.push_back(struct_type_id);
-
     // Create a new function type or use an existing one.
     function->DefInst().SetInOperand(
         1, {fuzzerutil::FindOrCreateFunctionType(

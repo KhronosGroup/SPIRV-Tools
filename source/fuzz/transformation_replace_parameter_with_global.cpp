@@ -178,7 +178,8 @@ void TransformationReplaceParameterWithGlobal::Apply(
     }
   }
 
-  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
+  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
+      fuzzerutil::FindFunctionType(ir_context, type_ids) == 0) {
     // Change the old type in place. +1 since the first operand is the result
     // type id of the function.
     old_function_type->RemoveInOperand(parameter_index + 1);

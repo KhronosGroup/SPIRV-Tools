@@ -40,6 +40,8 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %12 = OpTypeBool
          %71 = OpTypeFunction %2 %6
          %83 = OpTypeFunction %2 %6 %12
+         %93 = OpTypeFunction %2 %10
+         %94 = OpTypeFunction %2 %8 %10
          %40 = OpTypePointer Function %12
          %13 = OpTypeStruct %6 %8
          %14 = OpTypePointer Private %13
@@ -55,6 +57,8 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %33 = OpFunctionCall %2 %20 %22 %23 %26 %28 %41 %27
                OpReturn
                OpFunctionEnd
+
+         ; adjust type of the function in-place
          %20 = OpFunction %2 None %15
          %16 = OpFunctionParameter %6
          %17 = OpFunctionParameter %8
@@ -65,6 +69,8 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %21 = OpLabel
                OpReturn
                OpFunctionEnd
+
+         ; reuse an existing function type
          %70 = OpFunction %2 None %71
          %72 = OpFunctionParameter %6
          %73 = OpLabel
@@ -75,6 +81,8 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %76 = OpLabel
                OpReturn
                OpFunctionEnd
+
+         ; create a new function type
          %77 = OpFunction %2 None %83
          %78 = OpFunctionParameter %6
          %84 = OpFunctionParameter %12
@@ -85,6 +93,19 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %81 = OpFunctionParameter %6
          %85 = OpFunctionParameter %12
          %82 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+         ; don't adjust the type of the function if it creates a duplicate
+         %86 = OpFunction %2 None %93
+         %87 = OpFunctionParameter %10
+         %89 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %90 = OpFunction %2 None %94
+         %91 = OpFunctionParameter %8
+         %95 = OpFunctionParameter %10
+         %92 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -167,6 +188,12 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
+  {
+    TransformationReplaceParameterWithGlobal transformation(62, 91, 63);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -190,6 +217,8 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %12 = OpTypeBool
          %71 = OpTypeFunction %2 %6
          %83 = OpTypeFunction %2 %6 %12
+         %93 = OpTypeFunction %2 %10
+         %94 = OpTypeFunction %2 %8 %10
          %40 = OpTypePointer Function %12
          %13 = OpTypeStruct %6 %8
          %14 = OpTypePointer Private %13
@@ -206,6 +235,7 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %59 = OpVariable %7 Private %22
          %61 = OpVariable %7 Private %22
          %60 = OpTypeFunction %2 %12
+         %63 = OpVariable %9 Private %23
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %41 = OpVariable %40 Function %27
@@ -246,6 +276,17 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %85 = OpFunctionParameter %12
          %82 = OpLabel
          %81 = OpLoad %6 %61
+               OpReturn
+               OpFunctionEnd
+         %86 = OpFunction %2 None %93
+         %87 = OpFunctionParameter %10
+         %89 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %90 = OpFunction %2 None %93
+         %95 = OpFunctionParameter %10
+         %92 = OpLabel
+         %91 = OpLoad %8 %63
                OpReturn
                OpFunctionEnd
   )";

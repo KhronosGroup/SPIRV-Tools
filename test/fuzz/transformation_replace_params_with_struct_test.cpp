@@ -42,6 +42,9 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %64 = OpTypeStruct %6
          %63 = OpTypeFunction %2 %64
          %65 = OpTypeFunction %2 %6
+         %75 = OpTypeStruct %8
+         %76 = OpTypeFunction %2 %75
+         %77 = OpTypeFunction %2 %8
          %40 = OpTypePointer Function %12
          %13 = OpTypeStruct %6 %8
          %45 = OpTypeStruct %6 %10 %13
@@ -60,6 +63,8 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %33 = OpFunctionCall %2 %20 %22 %23 %26 %28 %41 %27
                OpReturn
                OpFunctionEnd
+
+         ; adjust type of the function in-place
          %20 = OpFunction %2 None %15
          %16 = OpFunctionParameter %6
          %17 = OpFunctionParameter %8
@@ -70,6 +75,8 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %21 = OpLabel
                OpReturn
                OpFunctionEnd
+
+         ; create a new function type
          %50 = OpFunction %2 None %51
          %52 = OpFunctionParameter %12
          %53 = OpLabel
@@ -80,6 +87,8 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %56 = OpLabel
                OpReturn
                OpFunctionEnd
+
+         ; reuse an existing function type
          %57 = OpFunction %2 None %63
          %58 = OpFunctionParameter %64
          %59 = OpLabel
@@ -93,6 +102,18 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %66 = OpFunction %2 None %65
          %67 = OpFunctionParameter %6
          %68 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+         ; don't adjust the type of the function if it creates a duplicate
+         %69 = OpFunction %2 None %76
+         %70 = OpFunctionParameter %75
+         %71 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %72 = OpFunction %2 None %77
+         %73 = OpFunctionParameter %8
+         %74 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -109,100 +130,91 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
 
   // |parameter_id| is empty.
   ASSERT_FALSE(
-      TransformationReplaceParamsWithStruct({}, 70, 71, {{33, 80}, {80, 81}})
+      TransformationReplaceParamsWithStruct({}, 90, 91, {{33, 92}, {90, 93}})
           .IsApplicable(context.get(), transformation_context));
 
   // |parameter_id| has duplicates.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 16, 17}, 70, 71,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 16, 17}, 90, 91,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // |parameter_id| has invalid values.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({21, 16, 17}, 70, 71,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({21, 16, 17}, 90, 91, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 70, 17}, 70, 71,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 90, 17}, 90, 91, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter's belong to different functions.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 52}, 70, 71,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 52}, 90, 91, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter has unsupported type.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 42, 43}, 70, 71,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 42, 43}, 90, 91, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // OpTypeStruct does not exist in the module.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 43}, 70, 71,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 43}, 90, 91, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // |caller_id_to_fresh_composite_id| misses values.
   ASSERT_FALSE(
-      TransformationReplaceParamsWithStruct({16, 17}, 70, 71, {{80, 81}})
+      TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 92}, {90, 93}})
           .IsApplicable(context.get(), transformation_context));
 
   // All fresh ids must be unique.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 70, 70,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 90, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 70, 71,
-                                                     {{33, 70}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 90}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 70, 71,
-                                                     {{33, 72}, {80, 72}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 92}, {90, 92}})
                    .IsApplicable(context.get(), transformation_context));
 
   // All 'fresh' ids must be fresh.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 70, 71,
-                                                     {{33, 33}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 33}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 70, 71,
-                                                     {{33, 33}, {80, 33}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 33, 91, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 33, 71,
-                                                     {{33, 80}, {80, 81}})
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 70, 33,
-                                                     {{33, 80}, {80, 81}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 33, {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   {
-    TransformationReplaceParamsWithStruct transformation({16, 18, 19}, 70, 71,
-                                                         {{33, 72}, {70, 73}});
+    TransformationReplaceParamsWithStruct transformation({16, 18, 19}, 90, 91, {{33, 92}, {90, 93}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({43}, 73, 74,
-                                                         {{33, 75}});
+    TransformationReplaceParamsWithStruct transformation({43}, 93, 94, {{33, 95}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({17, 71, 74}, 76, 77,
-                                                         {{33, 78}});
+    TransformationReplaceParamsWithStruct transformation({17, 91, 94}, 96, 97, {{33, 98}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({55}, 79, 80, {});
+    TransformationReplaceParamsWithStruct transformation({55}, 99, 100, {});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({61}, 81, 82, {});
+    TransformationReplaceParamsWithStruct transformation({61}, 101, 102, {});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
+  {
+    TransformationReplaceParamsWithStruct transformation({73}, 103, 104, {});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string expected_shader = R"(
                OpCapability Shader
@@ -226,6 +238,9 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %64 = OpTypeStruct %6
          %63 = OpTypeFunction %2 %64
          %65 = OpTypeFunction %2 %6
+         %75 = OpTypeStruct %8
+         %76 = OpTypeFunction %2 %75
+         %77 = OpTypeFunction %2 %8
          %40 = OpTypePointer Function %12
          %13 = OpTypeStruct %6 %8
          %45 = OpTypeStruct %6 %10 %13
@@ -238,27 +253,27 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %27 = OpConstantTrue %12
          %28 = OpConstantComposite %13 %22 %23
          %15 = OpTypeFunction %2 %40 %47
-         %79 = OpTypeFunction %2 %46
+         %99 = OpTypeFunction %2 %46
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %41 = OpVariable %40 Function %27
-         %72 = OpCompositeConstruct %45 %22 %26 %28
-         %75 = OpCompositeConstruct %46 %27
-         %78 = OpCompositeConstruct %47 %23 %72 %75
-         %33 = OpFunctionCall %2 %20 %41 %78
+         %92 = OpCompositeConstruct %45 %22 %26 %28
+         %95 = OpCompositeConstruct %46 %27
+         %98 = OpCompositeConstruct %47 %23 %92 %95
+         %33 = OpFunctionCall %2 %20 %41 %98
                OpReturn
                OpFunctionEnd
          %20 = OpFunction %2 None %15
          %42 = OpFunctionParameter %40
-         %77 = OpFunctionParameter %47
+         %97 = OpFunctionParameter %47
          %21 = OpLabel
-         %74 = OpCompositeExtract %46 %77 2
-         %71 = OpCompositeExtract %45 %77 1
-         %17 = OpCompositeExtract %8 %77 0
-         %43 = OpCompositeExtract %12 %74 0
-         %19 = OpCompositeExtract %13 %71 2
-         %18 = OpCompositeExtract %10 %71 1
-         %16 = OpCompositeExtract %6 %71 0
+         %94 = OpCompositeExtract %46 %97 2
+         %91 = OpCompositeExtract %45 %97 1
+         %17 = OpCompositeExtract %8 %97 0
+         %43 = OpCompositeExtract %12 %94 0
+         %19 = OpCompositeExtract %13 %91 2
+         %18 = OpCompositeExtract %10 %91 1
+         %16 = OpCompositeExtract %6 %91 0
                OpReturn
                OpFunctionEnd
          %50 = OpFunction %2 None %51
@@ -266,10 +281,10 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %53 = OpLabel
                OpReturn
                OpFunctionEnd
-         %54 = OpFunction %2 None %79
-         %80 = OpFunctionParameter %46
+         %54 = OpFunction %2 None %99
+        %100 = OpFunctionParameter %46
          %56 = OpLabel
-         %55 = OpCompositeExtract %12 %80 0
+         %55 = OpCompositeExtract %12 %100 0
                OpReturn
                OpFunctionEnd
          %57 = OpFunction %2 None %63
@@ -278,14 +293,25 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
                OpReturn
                OpFunctionEnd
          %60 = OpFunction %2 None %63
-         %82 = OpFunctionParameter %64
+        %102 = OpFunctionParameter %64
          %62 = OpLabel
-         %61 = OpCompositeExtract %6 %82 0
+         %61 = OpCompositeExtract %6 %102 0
                OpReturn
                OpFunctionEnd
          %66 = OpFunction %2 None %65
          %67 = OpFunctionParameter %6
          %68 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %69 = OpFunction %2 None %76
+         %70 = OpFunctionParameter %75
+         %71 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %72 = OpFunction %2 None %76
+        %104 = OpFunctionParameter %75
+         %74 = OpLabel
+         %73 = OpCompositeExtract %8 %104 0
                OpReturn
                OpFunctionEnd
   )";
