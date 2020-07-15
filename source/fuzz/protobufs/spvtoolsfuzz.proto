@@ -341,52 +341,51 @@ message Transformation {
     TransformationAddTypePointer add_type_pointer = 10;
     TransformationReplaceConstantWithUniform replace_constant_with_uniform = 11;
     TransformationAddDeadContinue add_dead_continue = 12;
-    TransformationCopyObject copy_object = 13;
-    TransformationReplaceIdWithSynonym replace_id_with_synonym = 14;
-    TransformationSetSelectionControl set_selection_control = 15;
-    TransformationCompositeConstruct composite_construct = 16;
-    TransformationSetLoopControl set_loop_control = 17;
-    TransformationSetFunctionControl set_function_control = 18;
-    TransformationAddNoContractionDecoration add_no_contraction_decoration = 19;
-    TransformationSetMemoryOperandsMask set_memory_operands_mask = 20;
-    TransformationCompositeExtract composite_extract = 21;
-    TransformationVectorShuffle vector_shuffle = 22;
-    TransformationOutlineFunction outline_function = 23;
-    TransformationMergeBlocks merge_blocks = 24;
-    TransformationAddTypeVector add_type_vector = 25;
-    TransformationAddTypeArray add_type_array = 26;
-    TransformationAddTypeMatrix add_type_matrix = 27;
-    TransformationAddTypeStruct add_type_struct = 28;
-    TransformationAddTypeFunction add_type_function = 29;
-    TransformationAddConstantComposite add_constant_composite = 30;
-    TransformationAddGlobalVariable add_global_variable = 31;
-    TransformationAddGlobalUndef add_global_undef = 32;
-    TransformationAddFunction add_function = 33;
-    TransformationAddDeadBlock add_dead_block = 34;
-    TransformationAddLocalVariable add_local_variable = 35;
-    TransformationLoad load = 36;
-    TransformationStore store = 37;
-    TransformationFunctionCall function_call = 38;
-    TransformationAccessChain access_chain = 39;
-    TransformationEquationInstruction equation_instruction = 40;
-    TransformationSwapCommutableOperands swap_commutable_operands = 41;
-    TransformationPermuteFunctionParameters permute_function_parameters = 42;
-    TransformationToggleAccessChainInstruction toggle_access_chain_instruction = 43;
-    TransformationAddConstantNull add_constant_null = 44;
-    TransformationComputeDataSynonymFactClosure compute_data_synonym_fact_closure = 45;
-    TransformationAdjustBranchWeights adjust_branch_weights = 46;
-    TransformationPushIdThroughVariable push_id_through_variable = 47;
-    TransformationAddSpecConstantOp add_spec_constant_op = 48;
-    TransformationReplaceLinearAlgebraInstruction replace_linear_algebra_instruction = 49;
-    TransformationSwapConditionalBranchOperands swap_conditional_branch_operands = 50;
-    TransformationPermutePhiOperands permute_phi_operands = 51;
-    TransformationAddParameter add_parameter = 52;
-    TransformationAddCopyMemory add_copy_memory = 53;
-    TransformationInvertComparisonOperator invert_comparison_operator = 54;
-    TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 55;
-    TransformationReplaceParameterWithGlobal replace_parameter_with_global = 56;
-    TransformationRecordSynonymousConstants record_synonymous_constants = 57;
-    TransformationAddSynonym add_synonym = 58;
+    TransformationReplaceIdWithSynonym replace_id_with_synonym = 13;
+    TransformationSetSelectionControl set_selection_control = 14;
+    TransformationCompositeConstruct composite_construct = 15;
+    TransformationSetLoopControl set_loop_control = 16;
+    TransformationSetFunctionControl set_function_control = 17;
+    TransformationAddNoContractionDecoration add_no_contraction_decoration = 18;
+    TransformationSetMemoryOperandsMask set_memory_operands_mask = 19;
+    TransformationCompositeExtract composite_extract = 20;
+    TransformationVectorShuffle vector_shuffle = 21;
+    TransformationOutlineFunction outline_function = 22;
+    TransformationMergeBlocks merge_blocks = 23;
+    TransformationAddTypeVector add_type_vector = 24;
+    TransformationAddTypeArray add_type_array = 25;
+    TransformationAddTypeMatrix add_type_matrix = 26;
+    TransformationAddTypeStruct add_type_struct = 27;
+    TransformationAddTypeFunction add_type_function = 28;
+    TransformationAddConstantComposite add_constant_composite = 29;
+    TransformationAddGlobalVariable add_global_variable = 30;
+    TransformationAddGlobalUndef add_global_undef = 31;
+    TransformationAddFunction add_function = 32;
+    TransformationAddDeadBlock add_dead_block = 33;
+    TransformationAddLocalVariable add_local_variable = 34;
+    TransformationLoad load = 35;
+    TransformationStore store = 36;
+    TransformationFunctionCall function_call = 37;
+    TransformationAccessChain access_chain = 38;
+    TransformationEquationInstruction equation_instruction = 39;
+    TransformationSwapCommutableOperands swap_commutable_operands = 40;
+    TransformationPermuteFunctionParameters permute_function_parameters = 41;
+    TransformationToggleAccessChainInstruction toggle_access_chain_instruction = 42;
+    TransformationAddConstantNull add_constant_null = 43;
+    TransformationComputeDataSynonymFactClosure compute_data_synonym_fact_closure = 44;
+    TransformationAdjustBranchWeights adjust_branch_weights = 45;
+    TransformationPushIdThroughVariable push_id_through_variable = 46;
+    TransformationAddSpecConstantOp add_spec_constant_op = 47;
+    TransformationReplaceLinearAlgebraInstruction replace_linear_algebra_instruction = 48;
+    TransformationSwapConditionalBranchOperands swap_conditional_branch_operands = 49;
+    TransformationPermutePhiOperands permute_phi_operands = 50;
+    TransformationAddParameter add_parameter = 51;
+    TransformationAddCopyMemory add_copy_memory = 52;
+    TransformationInvertComparisonOperator invert_comparison_operator = 53;
+    TransformationAddImageSampleUnusedComponents add_image_sample_unused_components = 54;
+    TransformationReplaceParameterWithGlobal replace_parameter_with_global = 55;
+    TransformationRecordSynonymousConstants record_synonymous_constants = 56;
+    TransformationAddSynonym add_synonym = 57;
     // Add additional option using the next available number.
   }
 }
@@ -942,23 +941,6 @@ message TransformationComputeDataSynonymFactClosure {
   // When searching equivalence classes for implied facts, equivalence classes
   // larger than this size will be skipped.
   uint32 maximum_equivalence_class_size = 1;
-
-}
-
-message TransformationCopyObject {
-
-  // A transformation that introduces an OpCopyObject instruction to make a
-  // copy of an object.
-
-  // Id of the object to be copied
-  uint32 object = 1;
-
-  // A descriptor for an instruction in a block before which the new
-  // OpCopyObject instruction should be inserted
-  InstructionDescriptor instruction_to_insert_before = 2;
-
-  // A fresh id for the copied object
-  uint32 fresh_id = 3;
 
 }
 

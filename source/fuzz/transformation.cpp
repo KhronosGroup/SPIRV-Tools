@@ -48,7 +48,6 @@
 #include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_compute_data_synonym_fact_closure.h"
-#include "source/fuzz/transformation_copy_object.h"
 #include "source/fuzz/transformation_equation_instruction.h"
 #include "source/fuzz/transformation_function_call.h"
 #include "source/fuzz/transformation_invert_comparison_operator.h"
@@ -168,8 +167,6 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kComputeDataSynonymFactClosure:
       return MakeUnique<TransformationComputeDataSynonymFactClosure>(
           message.compute_data_synonym_fact_closure());
-    case protobufs::Transformation::TransformationCase::kCopyObject:
-      return MakeUnique<TransformationCopyObject>(message.copy_object());
     case protobufs::Transformation::TransformationCase::kEquationInstruction:
       return MakeUnique<TransformationEquationInstruction>(
           message.equation_instruction());
