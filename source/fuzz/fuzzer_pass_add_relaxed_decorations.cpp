@@ -26,8 +26,7 @@ FuzzerPassAddRelaxedDecorations::FuzzerPassAddRelaxedDecorations(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassAddRelaxedDecorations::
-~FuzzerPassAddRelaxedDecorations() = default;
+FuzzerPassAddRelaxedDecorations::~FuzzerPassAddRelaxedDecorations() = default;
 
 void FuzzerPassAddRelaxedDecorations::Apply() {
   // Consider every instruction in every block in every function.
@@ -35,23 +34,22 @@ void FuzzerPassAddRelaxedDecorations::Apply() {
     for (auto& block : function) {
       for (auto& inst : block) {
         // Restrict attention to numeric instructions (returning 32-bit floats
-        // or ints according to SPIR-V documentation).
-        if (TransformationAddRelaxedDecoration::IsNumeric(
-            inst.opcode())) {
+        // or ints according to SPIR-V documentation) in dead blocks.
+        TransformationAddRelaxedDecoration transformation(inst.result_id());
+        if (transformation.IsApplicable(GetIRContext(),
+                                        *GetTransformationContext())) {
           // Randomly choose whether to apply the RelaxedPrecision decoration to
-          // this arithmetic instruction.
+          // this numeric instruction.
           if (GetFuzzerContext()->ChoosePercentage(
-              GetFuzzerContext()
-                  ->GetChanceOfAddingRelaxedDecoration())) {
-            TransformationAddRelaxedDecoration transformation(
-                inst.result_id());
-            ApplyTransformation(transformation);
+                  GetFuzzerContext()->GetChanceOfAddingRelaxedDecoration())) {
+            transformation.Apply(GetIRContext(), GetTransformationContext());
+            *GetTransformations()->add_transformation() =
+                transformation.ToMessage();
           }
         }
       }
     }
   }
 }
-
 }  // namespace fuzz
 }  // namespace spvtools
