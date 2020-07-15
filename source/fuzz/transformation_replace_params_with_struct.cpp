@@ -78,7 +78,7 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     // Check that the parameter with result id |id| has supported type.
     const auto* type = ir_context->get_type_mgr()->GetType(
         fuzzerutil::GetTypeId(ir_context, id));
-    assert(type && "Parameter has unsupported type");
+    assert(type && "Parameter has invalid type");
     if (!IsParameterTypeSupported(*type)) {
       return false;
     }

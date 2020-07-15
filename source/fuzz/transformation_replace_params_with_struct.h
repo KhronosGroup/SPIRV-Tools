@@ -70,6 +70,8 @@ class TransformationReplaceParamsWithStruct : public Transformation {
   static bool IsParameterTypeSupported(const opt::analysis::Type& param_type);
 
  private:
+  // Returns a result id of the OpTypeStruct instruction required by this
+  // transformation (see docs on the IsApplicable method to learn more).
   uint32_t MaybeGetRequiredStructType(opt::IRContext* ir_context) const;
 
   protobufs::TransformationReplaceParamsWithStruct message_;
