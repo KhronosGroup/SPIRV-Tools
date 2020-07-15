@@ -63,7 +63,8 @@ std::vector<opt::Instruction*>
 FuzzerPassMoveInstructions::ComputeMoveCandidates(
     opt::BasicBlock* block, opt::BasicBlock::iterator insert_before_it) {
   // Every candidate belongs to either the |block| or its neighboring blocks
-  // (i.e. its predecessors or successors).
+  // (i.e. its predecessors or successors). This improves time complexity and
+  // guarantees that an instruction can still end up anywhere in the function.
   std::vector<opt::Instruction*> result;
 
   for (auto it = block->begin(); it != block->end(); ++it) {

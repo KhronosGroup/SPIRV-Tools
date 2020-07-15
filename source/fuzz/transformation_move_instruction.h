@@ -50,11 +50,22 @@ class TransformationMoveInstruction : public Transformation {
                                  opt::BasicBlock::iterator target_it);
 
  private:
-  // Returns true if there is no path from |source_it| to |dest_it| containing
-  // a memory barrier as specified by the IsMemoryBarrier method.
-  static bool PathsHaveNoMemoryBarriers(opt::IRContext* ir_context,
-                                        opt::BasicBlock::iterator source_it,
-                                        opt::BasicBlock::iterator dest_it);
+  // Returns true if there is a path from |source_it| to |dest_it| that contains
+  // an instruction |inst| s.t. |check(inst)| returns |true|. Two iterators
+  // might not be reachable from one another in the control-flow graph.
+  static bool AnyPathContains(
+      opt::IRContext* ir_context, opt::BasicBlock::iterator source_it,
+      opt::BasicBlock::iterator dest_it,
+      const std::function<bool(const opt::Instruction&)>& check);
+
+  // For all paths in the control-flow graph of the form
+  // |a -- a1 -- a2 -- ... -- an -- b|, where |a| and |b| are the blocks with
+  // ids |source_block_id| and |dest_block_id| respectively, returns a vector
+  // of ids s.t. the i'th element of the vector is equal to the |ai|'th id.
+  // The id of the block is equal to the id of its OpLabel instruction.
+  static std::vector<uint32_t> GetBlockIdsFromAllPaths(
+      opt::IRContext* ir_context, uint32_t source_block_id,
+      uint32_t dest_block_id);
 
   // Returns true if both |first| and |second| belong to the |block| and
   // |first| precedes or is equal to |second|.
@@ -67,7 +78,7 @@ class TransformationMoveInstruction : public Transformation {
   // to A depending on the relative location of those positions in the module)
   // that contains an |opcode|. This function returns true if such an attempt
   // changes module's semantics.
-  static bool IsMemoryBarrier(SpvOp opcode);
+  static bool ModifiesOrOrdersMemory(SpvOp opcode);
 
   // Returns true if an instruction with |opcode| can't be moved.
   static bool CanMoveOpcode(SpvOp opcode);

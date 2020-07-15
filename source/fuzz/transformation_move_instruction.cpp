@@ -14,7 +14,7 @@
 
 #include "source/fuzz/transformation_move_instruction.h"
 
-#include <queue>
+#include <stack>
 #include <unordered_set>
 #include <vector>
 
@@ -44,17 +44,32 @@ bool TransformationMoveInstruction::IsApplicable(
     return false;
   }
 
+  // |insert_before_inst| must belong to some block (i.e. it is neither a global
+  // instruction nor function parameter).
+  auto* insert_before_block = ir_context->get_instr_block(insert_before_inst);
+  if (!insert_before_block) {
+    return false;
+  }
+
+  // |target| must be valid.
   auto* target_inst = FindInstruction(message_.target(), ir_context);
   if (!target_inst) {
     return false;
   }
 
+  // |target_inst| must belong to some block (i.e. it is neither a global
+  // instruction nor function parameter).
+  auto* target_block = ir_context->get_instr_block(target_inst);
+  if (!target_block) {
+    return false;
+  }
+
+  // We should be able to move |target| before |insert_before|.
   return CanMoveInstruction(
       ir_context,
-      fuzzerutil::GetIteratorForInstruction(
-          ir_context->get_instr_block(insert_before_inst), insert_before_inst),
-      fuzzerutil::GetIteratorForInstruction(
-          ir_context->get_instr_block(target_inst), target_inst));
+      fuzzerutil::GetIteratorForInstruction(insert_before_block,
+                                            insert_before_inst),
+      fuzzerutil::GetIteratorForInstruction(target_block, target_inst));
 }
 
 void TransformationMoveInstruction::Apply(
@@ -69,7 +84,8 @@ void TransformationMoveInstruction::Apply(
   assert(insert_before_inst != target_inst &&
          "Can't insert target instruction before itself");
 
-  // Target instruction is not disposed after removal.
+  // Target instruction is not disposed after removal, thus it is OK to use it
+  // again below.
   target_inst->RemoveFromList();
 
   insert_before_inst->InsertBefore(
@@ -87,7 +103,7 @@ protobufs::Transformation TransformationMoveInstruction::ToMessage() const {
   return result;
 }
 
-bool TransformationMoveInstruction::IsMemoryBarrier(SpvOp opcode) {
+bool TransformationMoveInstruction::ModifiesOrOrdersMemory(SpvOp opcode) {
   switch (opcode) {
     case SpvOpNop:
     case SpvOpUndef:
@@ -240,7 +256,7 @@ bool TransformationMoveInstruction::CanMoveOpcode(SpvOp opcode) {
     case SpvOpVariable:
       return false;
     default:
-      return !IsMemoryBarrier(opcode);
+      return !ModifiesOrOrdersMemory(opcode);
   }
 }
 
@@ -252,7 +268,7 @@ bool TransformationMoveInstruction::CanMoveInstruction(
     return false;
   }
 
-  // Control-flow instructions and memory barriers can't be moved.
+  // Control-flow instructions, memory barriers/modifiers can't be moved.
   if (!CanMoveOpcode(target_it->opcode())) {
     return false;
   }
@@ -280,15 +296,14 @@ bool TransformationMoveInstruction::CanMoveInstruction(
   const auto* dominator_analysis =
       ir_context->GetDominatorAnalysis(insert_before_block->GetParent());
 
-  if (dominator_analysis->Dominates(&*insert_before_it, &*target_it)) {
-    // We are moving |target| instruction up in the control flow graph. Since
-    // |insert_before| dominates |target| and the domination rules are
-    // transitive, we can infer that |insert_before| dominates all usages of
-    // |target| instruction. We only need to check that
-    // |insert_before| is dominated by all dependencies of |target|.
-
-    for (uint32_t i = 0, n = target_it->NumInOperands(); i < n; ++i) {
+  // Domination rules are transitive. Thus, if |target_inst| dominates
+  // |insert_before_inst|, then the latter is dominated by the former's
+  // dependencies as well. Otherwise, we need to ensure that |insert_before_it|
+  // is dominated by all dependencies of |target_inst|.
+  if (!dominator_analysis->Dominates(&*target_it, &*insert_before_it)) {
+    for (uint32_t i = 0; i < target_it->NumInOperands(); ++i) {
       const auto& operand = target_it->GetInOperand(i);
+      // TODO(review): Maybe use spvIsInIdType(SpvOp) here?
       if (operand.type != SPV_OPERAND_TYPE_ID) {
         continue;
       }
@@ -303,103 +318,177 @@ bool TransformationMoveInstruction::CanMoveInstruction(
       auto* dependency = ir_context->get_def_use_mgr()->GetDef(id);
       assert(dependency && "|target| depends on invalid id");
 
-      // If |dependency| is a global instruction, it will always dominate
-      // |insert_before_it| that points to a local instruction.
+      // If |dependency| is a global instruction or a function parameter, it
+      // will always dominate |insert_before_it| that points to a local
+      // instruction.
       if (ir_context->get_instr_block(dependency) != nullptr &&
           !dominator_analysis->Dominates(dependency, &*insert_before_it)) {
         return false;
       }
     }
-
-    // Check that none of the paths from |insert_before_block| to |target_block|
-    // contain memory barriers.
-    return PathsHaveNoMemoryBarriers(ir_context, insert_before_it, target_it);
-  } else if (dominator_analysis->Dominates(&*target_it, &*insert_before_it)) {
-    // We are moving |target| instruction down in control flow graph. Since
-    // |target| dominates |insert_before| and domination rules are transitive,
-    // we know that |insert_before| is dominated by all dependencies of |target|
-    // as well. We have to make sure that |insert_before| dominates all usages
-    // of |target|.
-
-    return ir_context->get_def_use_mgr()->WhileEachUser(
-               target_it->result_id(),
-               [ir_context, dominator_analysis,
-                insert_before_it](opt::Instruction* user) {
-                 if (!ir_context->get_instr_block(user)) {
-                   // A global instruction uses a local instruction: it didn't
-                   // break domination rules before the transformation - it
-                   // won't after. This situation can happen when |user| is an
-                   // OpDecorate instruction.
-                   return true;
-                 }
-
-                 // There are no tricky corner cases if |insert_before| uses
-                 // |target|.
-                 return dominator_analysis->Dominates(&*insert_before_it, user);
-               }) &&
-           PathsHaveNoMemoryBarriers(ir_context, target_it, insert_before_it);
-  } else {
-    // Domination rules will be broken if neither of blocks dominates the
-    // other one.
-    //
-    // TODO(review): I've been thinking whether its possible to have no
-    //  domination relationship between |insert_before| and |target| and still
-    //  be able to move the instruction without invalidating the module. I
-    //  figured that it's not possible without breaking the rules of structured
-    //  control flow. In any case, I think it's better to skip this
-    //  situation here.
-    return false;
   }
+
+  // As discussed in the previous comment, domination rules are transitive.
+  // Thus, if |insert_before_inst| dominates |target_inst|, then the former
+  // dominates all users of the latter as well. Otherwise, we need to ensure
+  // that |insert_before_it| dominates all users of |target_inst|.
+  if (!dominator_analysis->Dominates(&*insert_before_it, &*target_it)) {
+    auto does_dominate_users = ir_context->get_def_use_mgr()->WhileEachUser(
+        target_it->result_id(), [ir_context, dominator_analysis,
+                                 insert_before_it](opt::Instruction* user) {
+          if (!ir_context->get_instr_block(user)) {
+            // A global instruction uses a local instruction: it didn't
+            // break domination rules before the transformation - it
+            // won't after. This situation can happen when |user| is an
+            // OpDecorate or a similar instruction. Note that
+            // OpFunctionParameter instruction can't use a local id.
+            return true;
+          }
+
+          // There are no tricky corner cases if |insert_before| uses
+          // |target|.
+          return dominator_analysis->Dominates(&*insert_before_it, user);
+        });
+
+    if (!does_dominate_users) {
+      return false;
+    }
+  }
+
+  auto checker = [](const opt::Instruction& inst) {
+    // TODO: we can allow some memory modifiers/barriers in nested function
+    //  calls (e.g. OpStore that uses a local variable).
+    return ModifiesOrOrdersMemory(inst.opcode());
+  };
+
+  // There can be no path from |insert_before_inst| to |target_inst| and vice
+  // versa that contains a memory modifier/barrier.
+  return !AnyPathContains(ir_context, insert_before_it, target_it, checker) &&
+         !AnyPathContains(ir_context, target_it, insert_before_it, checker);
 }
 
-bool TransformationMoveInstruction::PathsHaveNoMemoryBarriers(
-    opt::IRContext* ir_context, opt::BasicBlock::iterator source_it,
-    opt::BasicBlock::iterator dest_it) {
-  auto* source_block = ir_context->get_instr_block(&*source_it);
-  auto* dest_block = ir_context->get_instr_block(&*dest_it);
+std::vector<uint32_t> TransformationMoveInstruction::GetBlockIdsFromAllPaths(
+    opt::IRContext* ir_context, uint32_t source_block_id,
+    uint32_t dest_block_id) {
+  std::unordered_set<uint32_t> visited_block_ids;
+  std::vector<std::vector<uint32_t>> successor_stack = {{source_block_id}};
+  std::vector<size_t> path = {0};
+  std::vector<uint32_t> result;
 
-  if (ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
-          source_block->id()) != 0 ||
-      ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
-          dest_block->id()) != 0) {
-    // TODO: We don't handle cases when an instruction is moved in or out of the
-    //  loop.
-    return false;
-  }
+  while (!path.empty()) {
+    assert(successor_stack.size() == path.size() &&
+           "Invariant: |successor_stack| and |path| should have the same size");
 
-  std::queue<opt::BasicBlock::iterator> q({source_it});
-  std::unordered_set<uint32_t> visited_blocks;
+    auto index = path.back();
+    const auto& current_successors = successor_stack.back();
 
-  while (!q.empty()) {
-    auto it = q.front();
-    q.pop();
+    assert(index != current_successors.size() &&
+           "Invariant: |path| always contains valid indices");
+    assert(!visited_block_ids.count(current_successors[index]) &&
+           "Invariant: top of the stack always contains an unvisited block");
 
-    auto* block = ir_context->get_instr_block(&*it);
-    if (visited_blocks.find(block->id()) != visited_blocks.end()) {
-      continue;
-    }
+    if (current_successors[index] == dest_block_id) {
+      assert(!path.empty() &&
+             "|path.size() - 1| causes underflow if |path| is empty");
+      for (size_t i = 0; i < path.size() - 1; ++i) {
+        result.push_back(successor_stack[i][path[i]]);
+      }
 
-    auto end = block == dest_block ? dest_it : block->end();
-    assert(IteratorsAreOrderedCorrectly(block, it, end) &&
-           "|it| and |end| must belong to the same block and |it| must precede "
-           "|end|");
+      ++index;
+    } else {
+      visited_block_ids.insert(current_successors[index]);
 
-    visited_blocks.insert(block->id());
-
-    for (; it != end; ++it) {
-      if (IsMemoryBarrier(it->opcode())) {
-        return false;
+      while (index < current_successors.size()) {
+        if (!visited_block_ids.count(current_successors[index++])) {
+          break;
+        }
       }
     }
 
-    if (block != dest_block) {
-      block->ForEachSuccessorLabel([&q, ir_context](uint32_t block_id) {
-        q.push(ir_context->cfg()->block(block_id)->begin());
-      });
+    if (index == current_successors.size()) {
+      path.pop_back();
+      successor_stack.pop_back();
+      continue;
+    }
+
+    path.back() = index;
+
+    std::vector<uint32_t> successors;
+    ir_context->cfg()
+        ->block(current_successors[index - 1])
+        ->ForEachSuccessorLabel(
+            [&successors](uint32_t id) { successors.push_back(id); });
+
+    successor_stack.push_back(std::move(successors));
+    path.push_back(0);
+  }
+
+  return result;
+}
+
+bool TransformationMoveInstruction::AnyPathContains(
+    opt::IRContext* ir_context, opt::BasicBlock::iterator source_it,
+    opt::BasicBlock::iterator dest_it,
+    const std::function<bool(const opt::Instruction&)>& check) {
+  auto* source_block = ir_context->get_instr_block(&*source_it);
+  auto* dest_block = ir_context->get_instr_block(&*dest_it);
+
+  assert(source_block && dest_block &&
+         "|source_it| and |dest_it| can't point to global instructions "
+         "or function parameters");
+
+  auto check_with_functions = [ir_context,
+                               &check](const opt::Instruction& inst) {
+    if (check(inst)) {
+      return true;
+    }
+
+    if (inst.opcode() == SpvOpFunctionCall) {
+      const auto* function =
+          fuzzerutil::FindFunction(ir_context, inst.GetSingleWordInOperand(0));
+      assert(function && "|function_id| is invalid");
+
+      return function->WhileEachInst(
+          [&check](const opt::Instruction* inst) { return check(*inst); });
+    }
+
+    return false;
+  };
+
+  if (source_block == dest_block) {
+    assert(IteratorsAreOrderedCorrectly(source_block, source_it, dest_it) &&
+           "|source_it| must precede |dest_it| in the block");
+    return std::any_of(source_it, dest_it, check_with_functions);
+  }
+
+  assert(IteratorsAreOrderedCorrectly(source_block, source_it,
+                                      source_block->end()) &&
+         "|source_it| is invalid");
+  assert(IteratorsAreOrderedCorrectly(dest_block, dest_block->begin(),
+                                      dest_it) &&
+         "|dest_it| is invalid");
+
+  if (std::any_of(source_it, source_block->end(), check_with_functions) ||
+      std::any_of(dest_block->begin(), dest_it, check_with_functions)) {
+    return true;
+  }
+
+  // We are using a DFS with explicit stack.
+  auto block_ids_on_paths =
+      GetBlockIdsFromAllPaths(ir_context, source_block->id(), dest_block->id());
+
+  if (block_ids_on_paths.empty() && !source_block->IsSuccessor(dest_block)) {
+    return false;
+  }
+
+  for (auto id : block_ids_on_paths) {
+    const auto* block = ir_context->cfg()->block(id);
+    if (std::any_of(block->begin(), block->end(), check_with_functions)) {
+      return true;
     }
   }
 
-  return true;
+  return false;
 }
 
 bool TransformationMoveInstruction::IteratorsAreOrderedCorrectly(
