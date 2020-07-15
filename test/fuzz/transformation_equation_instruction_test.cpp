@@ -547,11 +547,9 @@ TEST(TransformationEquationInstructionTest, Bitcast) {
           .IsApplicable(context.get(), transformation_context));
 
   // Operand's type is invalid
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3515):
-  //  Uncomment when the issue is resolved.
-  // ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpBitcast, {13},
-  // insert_before)
-  //                  .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {13}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
 
   // Operand must be a scalar or a vector of numerical type.
 #ifndef NDEBUG
