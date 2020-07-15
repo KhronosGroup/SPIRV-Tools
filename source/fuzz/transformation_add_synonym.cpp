@@ -88,6 +88,7 @@ bool TransformationAddSynonym::IsApplicable(
 void TransformationAddSynonym::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
+  // Add a synonymous instruction.
   FindInstruction(message_.insert_before(), ir_context)
       ->InsertBefore(MakeSynonymousInstruction(ir_context));
 
@@ -96,6 +97,19 @@ void TransformationAddSynonym::Apply(
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
 
+  // Propagate PointeeValueIsIrrelevant fact.
+  const auto* new_synonym_type = ir_context->get_type_mgr()->GetType(
+      fuzzerutil::GetTypeId(ir_context, message_.synonym_fresh_id()));
+  assert(new_synonym_type && "New synonym should have a valid type");
+
+  if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
+          message_.result_id()) &&
+      new_synonym_type->AsPointer()) {
+    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+        message_.synonym_fresh_id());
+  }
+
+  // Mark two ids as synonymous.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.result_id(), {}),
       MakeDataDescriptor(message_.synonym_fresh_id(), {}), ir_context);
@@ -135,8 +149,7 @@ bool TransformationAddSynonym::IsInstructionValid(
       return type->AsInteger() || type->AsFloat();
     }
     case protobufs::TransformationAddSynonym::COPY_OBJECT:
-      // OpCopyObject has no constraints on the type of the operand.
-      return true;
+      return fuzzerutil::CanMakeSynonymOf(ir_context, inst);
     case protobufs::TransformationAddSynonym::LOGICAL_AND:
     case protobufs::TransformationAddSynonym::LOGICAL_OR: {
       // The instruction must be either a scalar or a vector of booleans.
