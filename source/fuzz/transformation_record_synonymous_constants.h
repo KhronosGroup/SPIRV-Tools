@@ -33,11 +33,14 @@ class TransformationRecordSynonymousConstants : public Transformation {
   //   of constants
   // - |message_.constant_id| and |message_.synonym_id| refer to constants
   //   that are equal or equivalent.
-  //   Two integers with the same width and value are equal, even if one is
-  //   signed and the other is not.
-  //   Constants are equivalent if both of them represent zero-like scalar
-  //   values of the same type (for example OpConstant of type int and value
-  //   0 and OpConstantNull of type int).
+  //   TODO: Fix this (Signed and unsigned integers are currently considered
+  //   non-equivalent)
+  //   Two integers with the same width and value are equal,
+  //   even if one is signed and the other is not. Constants are equivalent if
+  //   both of them represent zero-like values of the same type (for example
+  //   OpConstant of type int and value 0 and OpConstantNull of type int).
+  //   Composite constants are equivalent if they have the same type and their
+  //   components are pairwise equivalent.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
