@@ -78,7 +78,7 @@ void FuzzerPassPermuteBlocks::Apply() {
       }
     }
   }
-}
+}  // namespace fuzz
 
 }  // namespace fuzz
 }  // namespace spvtools
