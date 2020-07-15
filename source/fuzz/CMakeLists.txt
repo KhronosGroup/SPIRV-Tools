@@ -64,6 +64,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
         fuzzer_pass_invert_comparison_operators.h
+        fuzzer_pass_interchange_zero_like_constants.h
         fuzzer_pass_merge_blocks.h
         fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_outline_functions.h
@@ -183,6 +184,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
         fuzzer_pass_invert_comparison_operators.cpp
+        fuzzer_pass_interchange_zero_like_constants.cpp
         fuzzer_pass_merge_blocks.cpp
         fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_outline_functions.cpp

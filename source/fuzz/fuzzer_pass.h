@@ -192,6 +192,12 @@ class FuzzerPass {
   // If no such instruction exists, a transformation is applied to add it.
   uint32_t FindOrCreateGlobalUndef(uint32_t type_id);
 
+  // Returns the id of an OpNullConstant instruction of type |type_id|. If
+  // that instruction doesn't exist, it is added through a transformation.
+  // |type_id| must be a valid result id of an OpType* instruction that exists
+  // in the module.
+  uint32_t FindOrCreateNullConstant(uint32_t type_id);
+
   // Define a *basic type* to be an integer, boolean or floating-point type,
   // or a matrix, vector, struct or fixed-size array built from basic types.  In
   // particular, a basic type cannot contain an opaque type (such as an image),
