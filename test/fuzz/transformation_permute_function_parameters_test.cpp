@@ -90,6 +90,9 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %84 = OpConstant %14 5
          %90 = OpConstant %6 3
          %98 = OpConstant %6 4
+        %206 = OpTypeFunction %2 %14 %16
+        %223 = OpTypeFunction %2 %6 %8
+        %224 = OpTypeFunction %2 %8 %6
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %66 = OpVariable %15 Function
@@ -191,6 +194,36 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %61 = OpFOrdLessThan %24 %59 %60
                OpReturnValue %61
                OpFunctionEnd
+        %200 = OpFunction %2 None %206
+        %207 = OpFunctionParameter %14
+        %208 = OpFunctionParameter %16
+        %202 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %203 = OpFunction %2 None %206
+        %209 = OpFunctionParameter %14
+        %210 = OpFunctionParameter %16
+        %205 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %211 = OpFunction %2 None %223
+        %212 = OpFunctionParameter %6
+        %213 = OpFunctionParameter %8
+        %214 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %215 = OpFunction %2 None %224
+        %216 = OpFunctionParameter %8
+        %217 = OpFunctionParameter %6
+        %218 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %219 = OpFunction %2 None %224
+        %220 = OpFunctionParameter %8
+        %221 = OpFunctionParameter %6
+        %222 = OpLabel
+               OpReturn
+               OpFunctionEnd
 
   )";
 
@@ -245,6 +278,20 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
   }
   {
     TransformationPermuteFunctionParameters transformation(28, 106, {1, 0});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+  {
+    TransformationPermuteFunctionParameters transformation(200, 107, {1, 0});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+  {
+    TransformationPermuteFunctionParameters transformation(219, 108, {1, 0});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -320,6 +367,10 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %84 = OpConstant %14 5
          %90 = OpConstant %6 3
          %98 = OpConstant %6 4
+        %206 = OpTypeFunction %2 %14 %16
+        %223 = OpTypeFunction %2 %6 %8
+        %224 = OpTypeFunction %2 %8 %6
+        %107 = OpTypeFunction %2 %16 %14
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %66 = OpVariable %15 Function
@@ -420,6 +471,36 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
          %60 = OpLoad %6 %27
          %61 = OpFOrdLessThan %24 %59 %60
                OpReturnValue %61
+               OpFunctionEnd
+        %200 = OpFunction %2 None %107
+        %208 = OpFunctionParameter %16
+        %207 = OpFunctionParameter %14
+        %202 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %203 = OpFunction %2 None %206
+        %209 = OpFunctionParameter %14
+        %210 = OpFunctionParameter %16
+        %205 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %211 = OpFunction %2 None %223
+        %212 = OpFunctionParameter %6
+        %213 = OpFunctionParameter %8
+        %214 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %215 = OpFunction %2 None %224
+        %216 = OpFunctionParameter %8
+        %217 = OpFunctionParameter %6
+        %218 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %219 = OpFunction %2 None %223
+        %221 = OpFunctionParameter %6
+        %220 = OpFunctionParameter %8
+        %222 = OpLabel
+               OpReturn
                OpFunctionEnd
   )";
 
