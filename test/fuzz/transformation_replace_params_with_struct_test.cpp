@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_replace_params_with_struct.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -139,76 +140,90 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
                    .IsApplicable(context.get(), transformation_context));
 
   // |parameter_id| has invalid values.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({21, 16, 17}, 90, 91, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({21, 16, 17}, 90, 91,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 90, 17}, 90, 91, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 90, 17}, 90, 91,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter's belong to different functions.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 52}, 90, 91, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 52}, 90, 91,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter has unsupported type.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 42, 43}, 90, 91, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17, 42, 43}, 90, 91,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // OpTypeStruct does not exist in the module.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 43}, 90, 91, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 43}, 90, 91,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   // |caller_id_to_fresh_composite_id| misses values.
-  ASSERT_FALSE(
-      TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 92}, {90, 93}})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91,
+                                                     {{33, 92}, {90, 93}})
+                   .IsApplicable(context.get(), transformation_context));
 
   // All fresh ids must be unique.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 90, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 90,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 90}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91,
+                                                     {{33, 90}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 92}, {90, 92}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91,
+                                                     {{33, 92}, {90, 92}})
                    .IsApplicable(context.get(), transformation_context));
 
   // All 'fresh' ids must be fresh.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{33, 33}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91,
+                                                     {{33, 33}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 33, 91, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 33, 91,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 33, {{33, 92}, {90, 93}})
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 33,
+                                                     {{33, 92}, {90, 93}})
                    .IsApplicable(context.get(), transformation_context));
 
   {
-    TransformationReplaceParamsWithStruct transformation({16, 18, 19}, 90, 91, {{33, 92}, {90, 93}});
+    TransformationReplaceParamsWithStruct transformation({16, 18, 19}, 90, 91,
+                                                         {{33, 92}, {90, 93}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({43}, 93, 94, {{33, 95}});
+    TransformationReplaceParamsWithStruct transformation({43}, 93, 94,
+                                                         {{33, 95}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({17, 91, 94}, 96, 97, {{33, 98}});
+    TransformationReplaceParamsWithStruct transformation({17, 91, 94}, 96, 97,
+                                                         {{33, 98}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({55}, 99, 100, {});
+    TransformationReplaceParamsWithStruct transformation({55}, 99, 100, {{}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({61}, 101, 102, {});
+    TransformationReplaceParamsWithStruct transformation({61}, 101, 102, {{}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
   {
-    TransformationReplaceParamsWithStruct transformation({73}, 103, 104, {});
+    TransformationReplaceParamsWithStruct transformation({73}, 103, 104, {{}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
