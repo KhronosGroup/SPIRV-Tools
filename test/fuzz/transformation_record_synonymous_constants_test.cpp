@@ -129,9 +129,9 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
   ApplyTransformationAndCheckFactManager(13, 22, context.get(),
                                          &transformation_context);
 
-  // TODO (https://github.com/KhronosGroup/SPIRV-Tools/issues/3536):
-  // Relax type check for integers.
-  // %13 and %20 are equal even if %13 is signed and %20 is unsigned
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3536):
+  // Relax type check for integers. Uncomment this code once the issue is fixed.
+  // // %13 and %20 are equal even if %13 is signed and %20 is unsigned
   //  ASSERT_TRUE(TransformationRecordSynonymousConstants(13, 20).IsApplicable(
   //      context.get(), transformation_context));
   //
@@ -515,6 +515,121 @@ TEST(TransformationRecordSynonymousConstantsTest, StructCompositeConstants) {
 
   // %25 and %39 are not equivalent (they have different types)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(25, 39).IsApplicable(
+      context.get(), transformation_context));
+}
+
+TEST(TransformationRecordSynonymousConstantsTest, ArrayCompositeConstants) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %24
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "a"
+               OpName %12 "d"
+               OpName %16 "e"
+               OpName %24 "color"
+               OpDecorate %12 RelaxedPrecision
+               OpDecorate %18 RelaxedPrecision
+               OpDecorate %24 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %38 = OpConstant %6 1
+         %10 = OpTypeInt 32 1
+         %11 = OpTypePointer Function %10
+         %13 = OpConstant %10 0
+         %27 = OpConstant %10 4
+         %14 = OpTypeBool
+         %15 = OpTypePointer Function %14
+         %17 = OpConstantFalse %14
+         %22 = OpTypeVector %6 4
+         %28 = OpTypeArray %6 %27
+         %29 = OpTypeArray %28 %27
+         %23 = OpTypePointer Output %22
+         %24 = OpVariable %23 Output
+         %25 = OpConstantComposite %22 %9 %9 %9 %9
+         %31 = OpConstantComposite %28 %9 %9 %9 %9
+         %32 = OpConstantComposite %28 %38 %9 %9 %9
+         %33 = OpConstantNull %28
+         %34 = OpConstantComposite %29 %31 %33 %31 %33
+         %35 = OpConstantComposite %29 %33 %31 %33 %31
+         %36 = OpConstantNull %29
+         %37 = OpConstantComposite %29 %32 %33 %31 %33
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %12 = OpVariable %11 Function
+         %16 = OpVariable %15 Function
+               OpStore %8 %9
+               OpStore %12 %13
+               OpStore %16 %17
+         %18 = OpLoad %10 %12
+         %19 = OpIEqual %14 %18 %13
+               OpSelectionMerge %21 None
+               OpBranchConditional %19 %20 %26
+         %20 = OpLabel
+               OpStore %24 %25
+               OpBranch %21
+         %26 = OpLabel
+               OpStore %24 %25
+               OpBranch %21
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // %25 and %31 are not equivalent (they have different types)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(25, 31).IsApplicable(
+      context.get(), transformation_context));
+
+  // %31 and %32 are not equivalent (their components are not pairwise
+  // equivalent)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(31, 32).IsApplicable(
+      context.get(), transformation_context));
+
+  // %31 and %33 are equivalent (%31 has zero-valued components, 32 is null)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(31, 33).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(31, 33, context.get(),
+                                         &transformation_context);
+
+  // %34 and %35 are equivalent (same type, equivalent components)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(34, 35).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(34, 35, context.get(),
+                                         &transformation_context);
+
+  // %35 and %36 are equivalent (%36 is null, %35 has zero-valued components)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(35, 36).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(35, 36, context.get(),
+                                         &transformation_context);
+
+  // %34 and %37 are not equivalent (they have non-equivalent components)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(34, 37).IsApplicable(
+      context.get(), transformation_context));
+
+  // %36 and %37 are not equivalent (36 is null, 37 does not have all-zero
+  // components)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(36, 37).IsApplicable(
       context.get(), transformation_context));
 }
 
