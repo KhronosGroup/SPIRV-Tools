@@ -61,9 +61,25 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     return false;
   }
 
-  for (size_t i = 1; i < parameter_id.size(); ++i) {
-    if (fuzzerutil::GetFunctionFromParameterId(ir_context, parameter_id[i]) !=
-        function) {
+  // Compute all ids of the function's parameters.
+  std::unordered_set<uint32_t> all_parameter_ids;
+  for (const auto* param :
+       fuzzerutil::GetParameters(ir_context, function->result_id())) {
+    all_parameter_ids.insert(param->result_id());
+  }
+
+  // Check that all elements in |parameter_id| are valid.
+  for (auto id : message_.parameter_id()) {
+    // Check that |id| is a result id of one of the |function|'s parameters.
+    if (!all_parameter_ids.count(id)) {
+      return false;
+    }
+
+    // Check that the parameter with result id |id| has supported type.
+    const auto* type = ir_context->get_type_mgr()->GetType(
+        fuzzerutil::GetTypeId(ir_context, id));
+    assert(type && "Parameter has unsupported type");
+    if (!IsParameterTypeSupported(*type)) {
       return false;
     }
   }
@@ -71,23 +87,8 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
   // We already know that the function has at least |parameter_id.size()|
   // parameters.
 
-  // Check that all parameters have supported types.
-  if (!std::all_of(parameter_id.begin(), parameter_id.end(),
-                   [ir_context](uint32_t id) {
-                     const auto* type = ir_context->get_type_mgr()->GetType(
-                         fuzzerutil::GetTypeId(ir_context, id));
-                     return type && IsParameterTypeSupported(*type);
-                   })) {
-    return false;
-  }
-
   // Check that a relevant OpTypeStruct exists in the module.
-  std::vector<uint32_t> component_type_ids;
-  for (auto id : message_.parameter_id()) {
-    component_type_ids.push_back(fuzzerutil::GetTypeId(ir_context, id));
-  }
-
-  if (!fuzzerutil::MaybeGetStructType(ir_context, component_type_ids)) {
+  if (!MaybeGetRequiredStructType(ir_context)) {
     return false;
   }
 
@@ -121,16 +122,11 @@ void TransformationReplaceParamsWithStruct::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   auto* function = fuzzerutil::GetFunctionFromParameterId(
       ir_context, message_.parameter_id(0));
-  assert(function);
+  assert(function &&
+         "All parameters' ids should've been checked in the IsApplicable");
 
-  // Create a new struct type.
-  std::vector<uint32_t> struct_components_ids;
-  for (auto id : message_.parameter_id()) {
-    struct_components_ids.push_back(fuzzerutil::GetTypeId(ir_context, id));
-  }
-
-  auto struct_type_id =
-      fuzzerutil::MaybeGetStructType(ir_context, struct_components_ids);
+  // Get a type id of the OpTypeStruct used as a type id of the new parameter.
+  auto struct_type_id = MaybeGetRequiredStructType(ir_context);
   assert(struct_type_id &&
          "IsApplicable should've guaranteed that this value isn't equal to 0");
 
@@ -141,8 +137,10 @@ void TransformationReplaceParamsWithStruct::Apply(
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_parameter_id());
 
-  // Compute indices of parameters.
-  std::vector<uint32_t> param_indices;
+  // Compute indices of replaced parameters. This will be used to adjust
+  // OpFunctionCall instructions and create OpCompositeConstruct instructions at
+  // every call site.
+  std::vector<uint32_t> indices_of_replaced_params;
   {
     // We want to destroy |params| after the loop because it will contain
     // dangling pointers when we remove parameters from the function.
@@ -153,7 +151,8 @@ void TransformationReplaceParamsWithStruct::Apply(
                                return param->result_id() == id;
                              });
       assert(it != params.end() && "Parameter's id is invalid");
-      param_indices.push_back(static_cast<uint32_t>(it - params.begin()));
+      indices_of_replaced_params.push_back(
+          static_cast<uint32_t>(it - params.begin()));
     }
   }
 
@@ -161,7 +160,7 @@ void TransformationReplaceParamsWithStruct::Apply(
   for (auto* inst : fuzzerutil::GetCallers(ir_context, function->result_id())) {
     // Create a list of operands for the OpCompositeConstruct instruction.
     opt::Instruction::OperandList composite_components;
-    for (auto index : param_indices) {
+    for (auto index : indices_of_replaced_params) {
       // +1 since the first in operand to OpFunctionCall is the result id of
       // the function.
       composite_components.emplace_back(
@@ -171,7 +170,7 @@ void TransformationReplaceParamsWithStruct::Apply(
     // Remove arguments from the function call. We do it in a separate loop
     // because otherwise we would have moved invalid operands into
     // |composite_components|.
-    for (auto index : param_indices) {
+    for (auto index : indices_of_replaced_params) {
       // +1 since the first in operand to OpFunctionCall is the result id of
       // the function.
       inst->RemoveInOperand(index + 1);
@@ -228,7 +227,7 @@ void TransformationReplaceParamsWithStruct::Apply(
     // Update |old_function_type| in place.
     old_function_type->AddOperand({SPV_OPERAND_TYPE_ID, {struct_type_id}});
 
-    for (auto index : param_indices) {
+    for (auto index : indices_of_replaced_params) {
       // +1 since the first in operand to OpTypeFunction is the result type id
       // of the function.
       old_function_type->RemoveInOperand(index + 1);
@@ -243,8 +242,9 @@ void TransformationReplaceParamsWithStruct::Apply(
     // +1 since the first in operand to OpTypeFunction is the result type id
     // of the function.
     for (uint32_t i = 1; i < old_function_type->NumInOperands(); ++i) {
-      if (std::find(param_indices.begin(), param_indices.end(), i - 1) !=
-          param_indices.end()) {
+      if (std::find(indices_of_replaced_params.begin(),
+                    indices_of_replaced_params.end(),
+                    i - 1) != indices_of_replaced_params.end()) {
         type_ids.push_back(old_function_type->GetSingleWordInOperand(i));
       }
     }
@@ -290,6 +290,16 @@ bool TransformationReplaceParamsWithStruct::IsParameterTypeSupported(
     default:
       return false;
   }
+}
+
+uint32_t TransformationReplaceParamsWithStruct::MaybeGetRequiredStructType(
+    opt::IRContext* ir_context) const {
+  std::vector<uint32_t> component_type_ids;
+  for (auto id : message_.parameter_id()) {
+    component_type_ids.push_back(fuzzerutil::GetTypeId(ir_context, id));
+  }
+
+  return fuzzerutil::MaybeGetStructType(ir_context, component_type_ids);
 }
 
 }  // namespace fuzz

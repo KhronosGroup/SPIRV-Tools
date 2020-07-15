@@ -36,10 +36,11 @@ class TransformationReplaceParamsWithStruct : public Transformation {
       const std::unordered_map<uint32_t, uint32_t>&
           caller_id_to_fresh_composite_id);
 
-  // - |parameter_id[i]| is a valid result id of some OpFunctionParameter
-  //   instruction. All parameter ids must correspond to parameters of the same
-  //   function. That function may not be an entry-point function.
-  //   Types of all parameters must be supported by this transformation (see
+  // - Each element of |parameter_id| is a valid result id of some
+  //   OpFunctionParameter instruction. All parameter ids must correspond to
+  //   parameters of the same function. That function may not be an entry-point
+  //   function.
+  // - Types of all parameters must be supported by this transformation (see
   //   IsParameterTypeSupported method).
   //   |parameter_id| may not be empty or contain duplicates.
   // - There must exist an OpTypeStruct instruction containing types of all
@@ -69,6 +70,8 @@ class TransformationReplaceParamsWithStruct : public Transformation {
   static bool IsParameterTypeSupported(const opt::analysis::Type& param_type);
 
  private:
+  uint32_t MaybeGetRequiredStructType(opt::IRContext* ir_context) const;
+
   protobufs::TransformationReplaceParamsWithStruct message_;
 };
 
