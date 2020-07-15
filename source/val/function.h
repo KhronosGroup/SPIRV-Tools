@@ -97,7 +97,6 @@ class Function {
   /// Registers the end of the block
   ///
   /// @param[in] successors_list A list of ids to the block's successors
-  /// @param[in] branch_instruction the branch instruction that ended the block
   void RegisterBlockEnd(std::vector<uint32_t> successors_list);
 
   /// Registers the end of the function.  This is idempotent.

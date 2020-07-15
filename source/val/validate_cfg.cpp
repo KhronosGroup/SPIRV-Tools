@@ -1120,8 +1120,7 @@ void ReachabilityPass(ValidationState_t& _) {
       auto block = stack.back();
       stack.pop_back();
 
-      if (block->reachable())
-        continue;
+      if (block->reachable()) continue;
 
       block->set_reachable(true);
       for (auto succ : *block->successors()) {
