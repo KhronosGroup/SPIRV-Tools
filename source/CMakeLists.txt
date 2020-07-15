@@ -345,7 +345,7 @@ set_source_files_properties(
 
 spvtools_pch(SPIRV_SOURCES pch_source)
 
-add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES} ../test/fuzz/transformation_add_relaxed_decoration_test.cpp)
+add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})
 target_include_directories(${SPIRV_TOOLS}
   PUBLIC
