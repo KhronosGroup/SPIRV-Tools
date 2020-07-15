@@ -42,7 +42,7 @@ class TransformationReplaceParamsWithStruct : public Transformation {
   //   function.
   // - Types of all parameters must be supported by this transformation (see
   //   IsParameterTypeSupported method).
-  //   |parameter_id| may not be empty or contain duplicates.
+  // - |parameter_id| may not be empty or contain duplicates.
   // - There must exist an OpTypeStruct instruction containing types of all
   //   replaced parameters. Type of the i'th component of the struct is equal
   //   to the type of the instruction with result id |parameter_id[i]|.
