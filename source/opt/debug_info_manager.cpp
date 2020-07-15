@@ -448,6 +448,42 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
   return IsAncestorOfScope(instr_scope_id, decl_scope_id);
 }
 
+void DebugInfoManager::AddDebugValueWithIndex(uint32_t dbg_local_var_id,
+                                              uint32_t value_id,
+                                              uint32_t expr_id,
+                                              uint32_t index_id,
+                                              Instruction* insert_before) {
+  std::unique_ptr<Instruction> new_dbg_value(new Instruction(
+      context(), SpvOpExtInst, context()->get_type_mgr()->GetVoidTypeId(),
+      context()->TakeNextId(),
+      {
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+           {context()
+                ->get_feature_mgr()
+                ->GetExtInstImportId_OpenCL100DebugInfo()}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+           {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {dbg_local_var_id}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {value_id}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+           {expr_id == 0 ? GetEmptyDebugExpression()->result_id() : expr_id}},
+      }));
+  if (index_id) {
+    new_dbg_value->AddOperand(
+        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {index_id}});
+  }
+
+  Instruction* added_dbg_value =
+      insert_before->InsertBefore(std::move(new_dbg_value));
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);
+  if (context()->AreAnalysesValid(
+          IRContext::Analysis::kAnalysisInstrToBlockMapping)) {
+    auto insert_blk = context()->get_instr_block(insert_before);
+    context()->set_instr_block(added_dbg_value, insert_blk);
+  }
+}
+
 void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
                                      uint32_t variable_id, uint32_t value_id,
                                      Instruction* insert_pos) {

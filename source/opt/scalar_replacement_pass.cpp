@@ -25,9 +25,10 @@
 #include "source/opt/types.h"
 #include "source/util/make_unique.h"
 
+static const uint32_t kDebugDeclareOperandLocalVariableIndex = 4;
+static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 static const uint32_t kDebugValueOperandValueIndex = 5;
 static const uint32_t kDebugValueOperandExpressionIndex = 6;
-static const uint32_t kDebugInstructionOpcodeIndex = 3;
 
 namespace spvtools {
 namespace opt {
@@ -88,18 +89,15 @@ Pass::Status ScalarReplacementPass::ReplaceVariable(
           if (ReplaceWholeDebugDeclare(user, replacements)) {
             dead.push_back(user);
             return true;
-          } else {
-            return false;
           }
-          return true;
+          return false;
         }
         if (user->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
           if (ReplaceWholeDebugValue(user, replacements)) {
             dead.push_back(user);
             return true;
-          } else {
-            return false;
           }
+          return false;
         }
         if (!IsAnnotationInst(user->opcode())) {
           switch (user->opcode()) {
@@ -167,39 +165,19 @@ Pass::Status ScalarReplacementPass::ReplaceVariable(
 
 bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
     Instruction* dbg_decl, const std::vector<Instruction*>& replacements) {
-  int32_t idx = 0;
-  BasicBlock* block = context()->get_instr_block(dbg_decl);
-  BasicBlock::iterator where(dbg_decl);
-
-  // Create new expression with Deref operation.
+  // Insert Deref operation to the front of the operation list of |dbg_decl|.
   Instruction* dbg_expr = context()->get_def_use_mgr()->GetDef(
       dbg_decl->GetSingleWordOperand(kDebugValueOperandExpressionIndex));
-  auto* deref_expr_instr =
+  auto* deref_expr =
       context()->get_debug_info_mgr()->DerefDebugExpression(dbg_expr);
 
-  for (auto var : replacements) {
-    // Clone the DebugDeclare and change the opcode to DebugValue.
-    std::unique_ptr<Instruction> new_dbg_value(dbg_decl->Clone(context()));
-    new_dbg_value->SetOperand(kDebugInstructionOpcodeIndex,
-                              {OpenCLDebugInfo100DebugValue});
-    uint32_t new_id = TakeNextId();
-    if (new_id == 0) return false;
-    new_dbg_value->SetResultId(new_id);
-
-    // Update 'Value' operand to the |replacements|.
-    new_dbg_value->SetOperand(kDebugValueOperandValueIndex, {var->result_id()});
-    // Use Deref operation.
-    new_dbg_value->SetOperand(kDebugValueOperandExpressionIndex,
-                              {deref_expr_instr->result_id()});
-    // Append 'Indexes' operand.
-    new_dbg_value->AddOperand(
-        {SPV_OPERAND_TYPE_ID,
-         {context()->get_constant_mgr()->GetSIntConst(idx)}});
-    // Insert the new DebugValue to the basic block.
-    where = where.InsertBefore(std::move(new_dbg_value));
-    get_def_use_mgr()->AnalyzeInstDefUse(&*where);
-    context()->set_instr_block(&*where, block);
-    ++where;
+  // Add DebugValue instruction with Indexes operand and Deref operation.
+  int32_t idx = 0;
+  for (const auto* var : replacements) {
+    context()->get_debug_info_mgr()->AddDebugValueWithIndex(
+        dbg_decl->GetSingleWordOperand(kDebugDeclareOperandLocalVariableIndex),
+        var->result_id(), deref_expr->result_id(),
+        context()->get_constant_mgr()->GetSIntConst(idx), dbg_decl);
     ++idx;
   }
   return true;
@@ -209,7 +187,6 @@ bool ScalarReplacementPass::ReplaceWholeDebugValue(
     Instruction* dbg_value, const std::vector<Instruction*>& replacements) {
   int32_t idx = 0;
   BasicBlock* block = context()->get_instr_block(dbg_value);
-  BasicBlock::iterator where(dbg_value);
   for (auto var : replacements) {
     // Clone the DebugValue.
     std::unique_ptr<Instruction> new_dbg_value(dbg_value->Clone(context()));
@@ -223,10 +200,9 @@ bool ScalarReplacementPass::ReplaceWholeDebugValue(
         {SPV_OPERAND_TYPE_ID,
          {context()->get_constant_mgr()->GetSIntConst(idx)}});
     // Insert the new DebugValue to the basic block.
-    where = where.InsertBefore(std::move(new_dbg_value));
-    get_def_use_mgr()->AnalyzeInstDefUse(&*where);
-    context()->set_instr_block(&*where, block);
-    ++where;
+    auto* added_instr = dbg_value->InsertBefore(std::move(new_dbg_value));
+    get_def_use_mgr()->AnalyzeInstDefUse(added_instr);
+    context()->set_instr_block(added_instr, block);
     ++idx;
   }
   return true;
@@ -809,6 +785,8 @@ bool ScalarReplacementPass::CheckUses(const Instruction* inst,
                                           uint32_t index) {
     if (user->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
         user->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+      // TODO: include num_partial_accesses if it uses Deref operation or
+      // DebugValue has Indexes operand.
       stats->num_full_accesses++;
       return;
     }

@@ -145,6 +145,12 @@ class DebugInfoManager {
   void AddDebugValue(Instruction* scope_and_line, uint32_t variable_id,
                      uint32_t value_id, Instruction* insert_pos);
 
+  // Generates a DebugValue instruction with |dbg_local_var_id|, |value_id|,
+  // |expr_id|, |index_id| operands and inserts it before |insert_before|.
+  void AddDebugValueWithIndex(uint32_t dbg_local_var_id, uint32_t value_id,
+                              uint32_t expr_id, uint32_t index_id,
+                              Instruction* insert_before);
+
   // Erases |instr| from data structures of this class.
   void ClearDebugInfo(Instruction* instr);
 
@@ -214,9 +220,6 @@ class DebugInfoManager {
   // instructions whose operand is the variable or value.
   std::unordered_map<uint32_t, std::unordered_set<Instruction*>>
       var_id_to_dbg_decl_;
-
-  // DebugOperation whose OpCode is OpenCLDebugInfo100Deref.
-  Instruction* deref_operation_;
 
   // DebugOperation whose OpCode is OpenCLDebugInfo100Deref.
   Instruction* deref_operation_;
