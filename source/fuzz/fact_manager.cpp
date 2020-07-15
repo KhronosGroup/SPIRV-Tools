@@ -456,13 +456,11 @@ class FactManager::DataSynonymAndIdEquationFacts {
                                    const protobufs::DataDescriptor& dd2,
                                    opt::IRContext* context);
 
-  // If |dd1| and |dd2| are scalars or vectors of integral type and there exists
-  // a pair of equations |%a = OpConvert[S|U]ToF %dd1| and
-  // |%b = OpConvert[S|U]ToF %dd2| with equal opcodes, then |a| and |b| are
-  // synonymous. This function computes facts of this form.
-  void ComputeConversionSynonymFacts(const protobufs::DataDescriptor& dd1,
-                                     const protobufs::DataDescriptor& dd2,
-                                     opt::IRContext* context);
+  // Computes various corollary facts from the data descriptor |dd| if members
+  // of its equivalence class participate in equation facts with OpConvert*
+  // opcodes. The descriptor should be registered in the equivalence relation.
+  void ComputeConversionDataSynonymFacts(const protobufs::DataDescriptor& dd,
+                                         opt::IRContext* context);
 
   // Recurses into sub-components of the data descriptors, if they are
   // composites, to record that their components are pairwise-synonymous.
@@ -602,33 +600,9 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
   // facts.
   switch (opcode) {
     case SpvOpConvertSToF:
-    case SpvOpConvertUToF: {
-      // Equation form: a = float(b)
-      std::vector<protobufs::FactDataSynonym> pending_synonyms;
-      for (const auto& fact : id_equations_) {
-        for (const auto& equation : fact.second) {
-          if (equation.opcode == opcode &&
-              synonymous_.IsEquivalent(*equation.operands[0], *rhs_dds[0]) &&
-              DataDescriptorsAreWellFormedAndComparable(context, lhs_dd,
-                                                        *fact.first)) {
-            // Equation form: c = float(d). |b| and |d| are synonymous, |a|
-            // and |c| have the same type - they are synonymous.
-            //
-            // We store pairs of synonyms into a separate vector since
-            // AddDataSynonymFactRecursive might invalidate iterators to
-            // id_equations_.
-            protobufs::FactDataSynonym synonym;
-            *synonym.mutable_data1() = lhs_dd;
-            *synonym.mutable_data2() = *fact.first;
-            pending_synonyms.push_back(std::move(synonym));
-          }
-        }
-      }
-
-      for (const auto& synonym : pending_synonyms) {
-        AddDataSynonymFactRecursive(synonym.data1(), synonym.data2(), context);
-      }
-    } break;
+    case SpvOpConvertUToF:
+      ComputeConversionDataSynonymFacts(*rhs_dds[0], context);
+      break;
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
       for (const auto& equation : GetEquations(rhs_dds[0])) {
@@ -742,22 +716,20 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
   MakeEquivalent(dd1, dd2);
 
   // Compute various corollary facts.
-  ComputeConversionSynonymFacts(dd1, dd2, context);
+
+  // |dd1| and |dd2| belong to the same equivalence class so it doesn't matter
+  // which one we use here.
+  ComputeConversionDataSynonymFacts(dd1, context);
   ComputeCompositeDataSynonymFacts(dd1, dd2, context);
 }
 
-void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
-    const protobufs::DataDescriptor& dd1, const protobufs::DataDescriptor& dd2,
-    opt::IRContext* context) {
-  assert(synonymous_.Exists(dd1) && synonymous_.Exists(dd2) &&
-         "Descriptors should've been registered in the equivalence relation");
+void FactManager::DataSynonymAndIdEquationFacts::
+    ComputeConversionDataSynonymFacts(const protobufs::DataDescriptor& dd,
+                                      opt::IRContext* context) {
+  assert(synonymous_.Exists(dd) &&
+         "|dd| should've been registered in the equivalence relation");
 
-  // The fact that |dd1| and |dd2| are synonymous allows us to produce more
-  // corollary facts.
-  assert(synonymous_.IsEquivalent(dd1, dd2) &&
-         "Descriptors shoul've been marked as synonymous");
-
-  const auto* representative = synonymous_.Find(&dd1);
+  const auto* representative = synonymous_.Find(&dd);
   assert(representative &&
          "Representative can't be null for a registered descriptor");
 
@@ -769,9 +741,9 @@ void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
 
   if ((type->AsVector() && type->AsVector()->element_type()->AsInteger()) ||
       type->AsInteger()) {
-    // |dd1| and |dd2| are synonymous. If there exist equation facts of the form
-    // |%a = opcode %dd1| and |%b = opcode %dd2| where |opcode| is either
-    // OpConvertSToF or OpConvertUToF, then |a| and |b| are synonymous.
+    // If there exist equation facts of the form |%a = opcode %representative|
+    // and |%b = opcode %representative| where |opcode| is either OpConvertSToF
+    // or OpConvertUToF, then |a| and |b| are synonymous.
     std::vector<const protobufs::DataDescriptor*> convert_s_to_f_lhs;
     std::vector<const protobufs::DataDescriptor*> convert_u_to_f_lhs;
 
@@ -787,10 +759,10 @@ void FactManager::DataSynonymAndIdEquationFacts::ComputeConversionSynonymFacts(
       }
     }
 
-    for (const auto& synonym_vector :
+    for (const auto& synonyms :
          {std::move(convert_s_to_f_lhs), std::move(convert_u_to_f_lhs)}) {
-      for (const auto* synonym_a : synonym_vector) {
-        for (const auto* synonym_b : synonym_vector) {
+      for (const auto* synonym_a : synonyms) {
+        for (const auto* synonym_b : synonyms) {
           if (!synonymous_.IsEquivalent(*synonym_a, *synonym_b) &&
               DataDescriptorsAreWellFormedAndComparable(context, *synonym_a,
                                                         *synonym_b)) {
