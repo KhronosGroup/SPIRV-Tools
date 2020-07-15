@@ -54,6 +54,12 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
 
   // All ids must correspond to valid parameters of the same function.
   // The function can't be an entry-point function.
+
+  // fuzzerutil::GetFunctionFromParameterId requires a valid id.
+  if (!ir_context->get_def_use_mgr()->GetDef(parameter_id[0])) {
+    return false;
+  }
+
   const auto* function =
       fuzzerutil::GetFunctionFromParameterId(ir_context, parameter_id[0]);
   if (!function ||
@@ -69,7 +75,12 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
   }
 
   // Check that all elements in |parameter_id| are valid.
-  for (auto id : message_.parameter_id()) {
+  for (auto id : parameter_id) {
+    // fuzzerutil::GetFunctionFromParameterId requires a valid id.
+    if (!ir_context->get_def_use_mgr()->GetDef(id)) {
+      return false;
+    }
+
     // Check that |id| is a result id of one of the |function|'s parameters.
     if (!all_parameter_ids.count(id)) {
       return false;
@@ -168,12 +179,12 @@ void TransformationReplaceParamsWithStruct::Apply(
     }
 
     // Remove arguments from the function call. We do it in a separate loop
-    // because otherwise we would have moved invalid operands into
-    // |composite_components|.
-    for (auto index : indices_of_replaced_params) {
+    // and in reverse order to make sure we have removed correct operands.
+    for (auto it = indices_of_replaced_params.rbegin();
+         it != indices_of_replaced_params.rend(); ++it) {
       // +1 since the first in operand to OpFunctionCall is the result id of
       // the function.
-      inst->RemoveInOperand(index + 1);
+      inst->RemoveInOperand(*it + 1);
     }
 
     // Insert OpCompositeConstruct before the function call.
@@ -227,24 +238,29 @@ void TransformationReplaceParamsWithStruct::Apply(
     // Update |old_function_type| in place.
     old_function_type->AddOperand({SPV_OPERAND_TYPE_ID, {struct_type_id}});
 
-    for (auto index : indices_of_replaced_params) {
+    // We iterate in reverse order to make sure we have removed correct
+    // operands.
+    for (auto it = indices_of_replaced_params.rbegin();
+         it != indices_of_replaced_params.rend(); ++it) {
       // +1 since the first in operand to OpTypeFunction is the result type id
       // of the function.
-      old_function_type->RemoveInOperand(index + 1);
+      old_function_type->RemoveInOperand(*it + 1);
     }
 
     // Make sure domination rules are satisfied.
     old_function_type->RemoveFromList();
     ir_context->AddType(std::unique_ptr<opt::Instruction>(old_function_type));
   } else {
-    std::vector<uint32_t> type_ids;
+    std::vector<uint32_t> type_ids = {
+        // Result type of the function.
+        old_function_type->GetSingleWordInOperand(0)};
 
     // +1 since the first in operand to OpTypeFunction is the result type id
     // of the function.
     for (uint32_t i = 1; i < old_function_type->NumInOperands(); ++i) {
       if (std::find(indices_of_replaced_params.begin(),
                     indices_of_replaced_params.end(),
-                    i - 1) != indices_of_replaced_params.end()) {
+                    i - 1) == indices_of_replaced_params.end()) {
         type_ids.push_back(old_function_type->GetSingleWordInOperand(i));
       }
     }
