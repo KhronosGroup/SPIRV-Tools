@@ -322,7 +322,8 @@ TEST(TransformationRecordSynonymousConstantsTest, FloatConstants) {
                                          &transformation_context);
 }
 
-TEST(TransformationRecordSynonymousConstantsTest, VectorCompositeConstants) {
+TEST(TransformationRecordSynonymousConstantsTest,
+     VectorAndMatrixCompositeConstants) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -352,12 +353,17 @@ TEST(TransformationRecordSynonymousConstantsTest, VectorCompositeConstants) {
          %15 = OpTypePointer Function %14
          %17 = OpConstantFalse %14
          %22 = OpTypeVector %6 4
+         %32 = OpTypeMatrix %22 2
          %23 = OpTypePointer Output %22
          %24 = OpVariable %23 Output
          %25 = OpConstantComposite %22 %9 %9 %9 %9
          %27 = OpConstantNull %22
          %29 = OpConstantComposite %22 %9 %28 %28 %9
          %31 = OpConstantComposite %22 %30 %9 %9 %9
+         %33 = OpConstantComposite %32 %25 %29
+         %34 = OpConstantComposite %32 %27 %25
+         %35 = OpConstantNull %32
+         %36 = OpConstantComposite %32 %31 %25
           %4 = OpFunction %2 None %3
           %5 = OpLabel
           %8 = OpVariable %7 Function
@@ -419,6 +425,28 @@ TEST(TransformationRecordSynonymousConstantsTest, VectorCompositeConstants) {
   // %27 and %31 are not equivalent (27 is null, 31 is not zero-like)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(27, 31).IsApplicable(
       context.get(), transformation_context));
+
+  // %35 and %36 are not equivalent (35 is null, 36 has non-zero components)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(35, 36).IsApplicable(
+      context.get(), transformation_context));
+
+  // %33 and %36 are not equivalent (not all components are equivalent)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(33, 36).IsApplicable(
+      context.get(), transformation_context));
+
+  // %33 and %34 are equivalent (same type, equivalent components)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(33, 34).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(33, 34, context.get(),
+                                         &transformation_context);
+
+  // %33 and %35 are equivalent (33 has zero-valued components, 35 is null)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(33, 35).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(33, 35, context.get(),
+                                         &transformation_context);
 }
 
 TEST(TransformationRecordSynonymousConstantsTest, StructCompositeConstants) {
