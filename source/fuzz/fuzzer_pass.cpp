@@ -20,6 +20,7 @@
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_composite.h"
+#include "source/fuzz/transformation_add_constant_null.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
@@ -370,6 +371,27 @@ uint32_t FuzzerPass::FindOrCreateGlobalUndef(uint32_t type_id) {
   }
   auto result = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(TransformationAddGlobalUndef(result, type_id));
+  return result;
+}
+
+uint32_t FuzzerPass::FindOrCreateNullConstant(uint32_t type_id) {
+  // Find existing declaration
+  opt::analysis::NullConstant null_constant(
+      GetIRContext()->get_type_mgr()->GetType(type_id));
+  auto existing_constant =
+      GetIRContext()->get_constant_mgr()->FindConstant(&null_constant);
+
+  // Return if found
+  if (existing_constant) {
+    return GetIRContext()
+        ->get_constant_mgr()
+        ->GetDefiningInstruction(existing_constant)
+        ->result_id();
+  }
+
+  // Create new if not found
+  auto result = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationAddConstantNull(result, type_id));
   return result;
 }
 
