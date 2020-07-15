@@ -24,6 +24,7 @@ if (${SPIRV_BUILD_FUZZER})
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           instruction_descriptor_test.cpp
+          replayer_test.cpp
           transformation_access_chain_test.cpp
           transformation_add_constant_boolean_test.cpp
           transformation_add_constant_composite_test.cpp
