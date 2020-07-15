@@ -14,7 +14,7 @@
 
 #include "source/fuzz/transformation_move_instruction.h"
 
-#include <stack>
+#include <deque>
 #include <unordered_set>
 #include <vector>
 
