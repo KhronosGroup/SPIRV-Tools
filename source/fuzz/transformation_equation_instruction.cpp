@@ -153,6 +153,10 @@ uint32_t TransformationEquationInstruction::MaybeGetResultTypeId(
         return 0;
       }
 
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3539):
+      //  The only constraint on the types of OpBitcast's parameters is that
+      //  they must have the same number of bits. Consider improving the code
+      //  below to support this in full.
       if (const auto* vector = operand_type->AsVector()) {
         uint32_t component_type_id;
         if (const auto* int_type = vector->element_type()->AsInteger()) {
@@ -161,7 +165,9 @@ uint32_t TransformationEquationInstruction::MaybeGetResultTypeId(
         } else if (const auto* float_type = vector->element_type()->AsFloat()) {
           component_type_id = fuzzerutil::MaybeGetIntegerType(
               ir_context, float_type->width(), true);
-          if (component_type_id == 0) {
+          if (component_type_id == 0 ||
+              fuzzerutil::MaybeGetVectorType(ir_context, component_type_id,
+                                             vector->element_count()) == 0) {
             component_type_id = fuzzerutil::MaybeGetIntegerType(
                 ir_context, float_type->width(), false);
           }

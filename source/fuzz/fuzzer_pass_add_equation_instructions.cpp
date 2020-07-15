@@ -130,6 +130,11 @@ void FuzzerPassAddEquationInstructions::Apply() {
                 assert(operand_type && "Operand instruction has invalid type");
 
                 // Make sure a result type exists in the module.
+                //
+                // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3539):
+                //  The only constraint on the types of OpBitcast's parameters
+                //  is that they must have the same number of bits. Consider
+                //  improving the code below to support this in full.
                 if (const auto* vector = operand_type->AsVector()) {
                   uint32_t element_type_id;
                   if (const auto* int_type =
