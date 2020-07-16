@@ -14,7 +14,7 @@
 
 #include "source/fuzz/transformation_move_instruction.h"
 
-#include <deque>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -334,8 +334,25 @@ bool TransformationMoveInstruction::CanMoveInstruction(
   // that |insert_before_it| dominates all users of |target_inst|.
   if (!dominator_analysis->Dominates(&*insert_before_it, &*target_it)) {
     auto does_dominate_users = ir_context->get_def_use_mgr()->WhileEachUser(
-        target_it->result_id(), [ir_context, dominator_analysis,
-                                 insert_before_it](opt::Instruction* user) {
+        target_it->result_id(),
+        [ir_context, dominator_analysis, insert_before_it, target_it,
+         insert_before_block](opt::Instruction* user) {
+          if (user->opcode() == SpvOpPhi) {
+            // We must make sure that |insert_before_block| dominates
+            // the relevant block in the |user|'s operands.
+
+            for (uint32_t i = 0; i < user->NumInOperands(); i += 2) {
+              if (user->GetSingleWordInOperand(i) == target_it->result_id()) {
+                return dominator_analysis->Dominates(
+                    insert_before_block->id(),
+                    user->GetSingleWordInOperand(i + 1));
+              }
+            }
+
+            assert(false && "We should've returned from the loop above");
+            return false;
+          }
+
           if (!ir_context->get_instr_block(user)) {
             // A global instruction uses a local instruction: it didn't
             // break domination rules before the transformation - it
@@ -363,6 +380,17 @@ bool TransformationMoveInstruction::CanMoveInstruction(
 
   // There can be no path from |insert_before_inst| to |target_inst| and vice
   // versa that contains a memory modifier/barrier.
+  //
+  // It is guaranteed that at least one path exists either from
+  // |insert_before_it| to |target_it| or vice versa. To prove that, suppose
+  // that there is no path from either |insert_before_it| to |target_it| or vice
+  // versa and it is still possible to move |target_inst| before
+  // |insert_before_inst|. In that case, both the former and the latter must
+  // dominate the users of the former. That means that all paths from the
+  // entry-point block to some user's block must contain both
+  // |insert_before_inst| and |target_inst|. Which, in turn, implies that there
+  // is a path from either |insert_before_inst| to |target_inst| or vice versa -
+  // contradiction.
   return !AnyPathContains(ir_context, insert_before_it, target_it, checker) &&
          !AnyPathContains(ir_context, target_it, insert_before_it, checker);
 }
@@ -370,59 +398,101 @@ bool TransformationMoveInstruction::CanMoveInstruction(
 std::vector<uint32_t> TransformationMoveInstruction::GetBlockIdsFromAllPaths(
     opt::IRContext* ir_context, uint32_t source_block_id,
     uint32_t dest_block_id) {
-  std::unordered_set<uint32_t> visited_block_ids;
-  std::vector<std::vector<uint32_t>> successor_stack = {{source_block_id}};
-  std::vector<size_t> path = {0};
-  std::vector<uint32_t> result;
-
-  while (!path.empty()) {
-    assert(successor_stack.size() == path.size() &&
-           "Invariant: |successor_stack| and |path| should have the same size");
-
-    auto index = path.back();
-    const auto& current_successors = successor_stack.back();
-
-    assert(index != current_successors.size() &&
-           "Invariant: |path| always contains valid indices");
-    assert(!visited_block_ids.count(current_successors[index]) &&
-           "Invariant: top of the stack always contains an unvisited block");
-
-    if (current_successors[index] == dest_block_id) {
-      assert(!path.empty() &&
-             "|path.size() - 1| causes underflow if |path| is empty");
-      for (size_t i = 0; i < path.size() - 1; ++i) {
-        result.push_back(successor_stack[i][path[i]]);
-      }
-
-      ++index;
-    } else {
-      visited_block_ids.insert(current_successors[index]);
-
-      while (index < current_successors.size()) {
-        if (!visited_block_ids.count(current_successors[index++])) {
-          break;
-        }
-      }
-    }
-
-    if (index == current_successors.size()) {
-      path.pop_back();
-      successor_stack.pop_back();
-      continue;
-    }
-
-    path.back() = index;
-
-    std::vector<uint32_t> successors;
-    ir_context->cfg()
-        ->block(current_successors[index - 1])
-        ->ForEachSuccessorLabel(
-            [&successors](uint32_t id) { successors.push_back(id); });
-
-    successor_stack.push_back(std::move(successors));
-    path.push_back(0);
+  // This function returns all ids of blocks from all paths from
+  // |source_block_id| to |dest_block_id|. If the former and the latter are the
+  // same block, there is no blocks between them.
+  if (source_block_id == dest_block_id) {
+    return {};
   }
 
+  // The following implements an in-place version of DFS. The IterationState
+  // struct is used to store.. the state of iteration over all successors' ids
+  // of some block.
+  struct IterationState {
+    std::vector<uint32_t> data;
+    size_t index;
+  };
+
+  // A map from the block id to its successors.
+  std::unordered_map<uint32_t, IterationState> successors;
+
+  std::vector<uint32_t> stack = {source_block_id};
+
+  // Contains all the elements from the |stack|. Used for constant-time queries.
+  // It is a subset of |visited_block_ids|.
+  std::unordered_set<uint32_t> on_stack = {source_block_id};
+
+  std::unordered_set<uint32_t> visited_block_ids = {source_block_id};
+  std::vector<uint32_t> result;
+
+  while (!stack.empty()) {
+    assert(stack.size() == on_stack.size() && on_stack.count(stack.back()) &&
+           "Invariant: |stack| and |on_stack| have the same elements");
+
+    auto current_block_id = stack.back();
+
+    if (current_block_id == dest_block_id) {
+      // We've reached the destination block - copy all block on the paths
+      // from the source block to the destination block into a |result|.
+      assert(stack.front() == source_block_id &&
+             stack.back() == dest_block_id &&
+             "Invariant: at least |source_block_id| and |dest_block_id|"
+             "must be present on the stack");
+      result.insert(result.end(), stack.begin() + 1, stack.end() - 1);
+
+      // We still want to be able to iterate over all successors of the
+      // destination block to find possible loops.
+    }
+
+    if (!successors.count(current_block_id)) {
+      // We are visiting current block for the first time - insert all
+      // its successors into a map.
+      std::vector<uint32_t> current_successors;
+      ir_context->cfg()
+          ->block(current_block_id)
+          ->ForEachSuccessorLabel([&current_successors](uint32_t id) {
+            current_successors.push_back(id);
+          });
+
+      successors[current_block_id] = {std::move(current_successors), 0};
+    }
+
+    auto& current_successors = successors.at(current_block_id);
+    const auto& data = current_successors.data;
+    auto& index = current_successors.index;
+
+    for (; index < data.size(); ++index) {
+      if (on_stack.count(data[index])) {
+        // The successor is an element on the stack - we've found a loop.
+        // Insert all the elements from the path into a |result| vector.
+        assert(stack.front() == source_block_id &&
+               "Invariant: at least |source_block_id| must be present on the "
+               "stack");
+        result.insert(result.end(), stack.begin() + 1, stack.end());
+        assert(visited_block_ids.count(data[index]) &&
+               "Invariant: |on_stack| is a subset of |visited_block_ids|");
+        continue;
+      }
+
+      if (!visited_block_ids.count(data[index])) {
+        // We haven't visited this block yet - push it on the stack.
+        visited_block_ids.insert(data[index]);
+        stack.push_back(data[index]);
+        on_stack.insert(data[index]);
+        break;
+      }
+    }
+
+    if (index == data.size()) {
+      // There are no more successors of the current block - pop it off the
+      // stack.
+      on_stack.erase(stack.back());
+      stack.pop_back();
+    }
+  }
+
+  assert(!fuzzerutil::HasDuplicates(result) &&
+         "Invariant: |result| may not have any duplicates");
   return result;
 }
 
@@ -461,24 +531,32 @@ bool TransformationMoveInstruction::AnyPathContains(
     return std::any_of(source_it, dest_it, check_with_functions);
   }
 
+  // Get all blocks on all paths from |source_block| to |dest_block|.
+  // The former and the latter are not included in the result.
+  auto block_ids_on_paths =
+      GetBlockIdsFromAllPaths(ir_context, source_block->id(), dest_block->id());
+
+  // If |block_ids_on_paths| is empty then either |dest_block| is an immediate
+  // successor of |source_block|, they are the same or there is no path between
+  // them. We've already handled the case of equal blocks above. Thus,
+  // if |dest_block| is not an immediate successor, we were unable to find any
+  // required instruction.
+  if (block_ids_on_paths.empty() && !source_block->IsSuccessor(dest_block)) {
+    return false;
+  }
+
+  // At this point we are certain that there is a path from |source_block| to
+  // |dest_block|.
   assert(IteratorsAreOrderedCorrectly(source_block, source_it,
                                       source_block->end()) &&
          "|source_it| is invalid");
-  assert(IteratorsAreOrderedCorrectly(dest_block, dest_block->begin(),
-                                      dest_it) &&
-         "|dest_it| is invalid");
+  assert(
+      IteratorsAreOrderedCorrectly(dest_block, dest_block->begin(), dest_it) &&
+      "|dest_it| is invalid");
 
   if (std::any_of(source_it, source_block->end(), check_with_functions) ||
       std::any_of(dest_block->begin(), dest_it, check_with_functions)) {
     return true;
-  }
-
-  // We are using a DFS with explicit stack.
-  auto block_ids_on_paths =
-      GetBlockIdsFromAllPaths(ir_context, source_block->id(), dest_block->id());
-
-  if (block_ids_on_paths.empty() && !source_block->IsSuccessor(dest_block)) {
-    return false;
   }
 
   for (auto id : block_ids_on_paths) {
@@ -507,12 +585,8 @@ bool TransformationMoveInstruction::IteratorsAreOrderedCorrectly(
     }
   }
 
-  if (order.size() == 1) {
-    return (first == block->end() && order[0] == second) ||
-           (second == block->end() && order[0] == first);
-  }
-
-  return order.size() == 2 && order[0] == first && order[1] == second;
+  return (order.size() == 2 && order[0] == first && order[1] == second) ||
+         (order.size() == 1 && order[0] == first && second == block->end());
 }
 
 }  // namespace fuzz
