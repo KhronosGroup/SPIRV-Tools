@@ -450,8 +450,9 @@ class FactManager::DataSynonymAndIdEquationFacts {
   using OperationSet =
       std::unordered_set<Operation, OperationHash, OperationEquals>;
 
-  // Records a fact that |dd1| and |dd2| are synonymous and computes various
-  // corollary facts.
+  // Adds the synonym |dd1| = |dd2| to the set of managed facts, and recurses
+  // into sub-components of the data descriptors, if they are composites, to
+  // record that their components are pairwise-synonymous.
   void AddDataSynonymFactRecursive(const protobufs::DataDescriptor& dd1,
                                    const protobufs::DataDescriptor& dd2,
                                    opt::IRContext* context);
@@ -711,14 +712,9 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
   assert(DataDescriptorsAreWellFormedAndComparable(context, dd1, dd2));
 
   // Record that the data descriptors provided in the fact are equivalent.
-  // Both |dd1| and |dd2| are registered in the equivalence relation after this
-  // point.
   MakeEquivalent(dd1, dd2);
 
   // Compute various corollary facts.
-
-  // |dd1| and |dd2| belong to the same equivalence class so it doesn't matter
-  // which one we use here.
   ComputeConversionDataSynonymFacts(dd1, context);
   ComputeCompositeDataSynonymFacts(dd1, dd2, context);
 }

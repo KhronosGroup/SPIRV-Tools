@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_equation_instruction.h"
+
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -484,6 +485,685 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, Bitcast) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %6 2
+         %10 = OpTypeVector %7 2
+         %11 = OpTypeVector %8 2
+         %21 = OpTypeBool
+         %22 = OpTypeVector %21 2
+         %15 = OpConstant %6 24
+         %16 = OpConstant %7 24
+         %17 = OpConstant %8 24
+         %18 = OpConstantComposite %9 %15 %15
+         %19 = OpConstantComposite %10 %16 %16
+         %20 = OpConstantComposite %11 %17 %17
+         %23 = OpConstantTrue %21
+         %24 = OpConstantComposite %22 %23 %23
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Too many operands.
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpBitcast, {15, 16},
+                                                 insert_before)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Too few operands.
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+
+  // Operand's id is invalid.
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {50}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+
+  // Operand's type is invalid
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {13}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+
+  // Operand must be a scalar or a vector of numerical type.
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      TransformationEquationInstruction(50, SpvOpBitcast, {23}, insert_before)
+          .IsApplicable(context.get(), transformation_context),
+      "Operand is not a scalar or a vector of numerical type");
+  ASSERT_DEATH(
+      TransformationEquationInstruction(50, SpvOpBitcast, {24}, insert_before)
+          .IsApplicable(context.get(), transformation_context),
+      "Only vectors of numerical components are supported");
+#else
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {23}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {24}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+#endif
+
+  for (uint32_t operand_id = 15, fresh_id = 50; operand_id <= 20;
+       ++operand_id, ++fresh_id) {
+    TransformationEquationInstruction transformation(
+        fresh_id, SpvOpBitcast, {operand_id}, insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %6 2
+         %10 = OpTypeVector %7 2
+         %11 = OpTypeVector %8 2
+         %21 = OpTypeBool
+         %22 = OpTypeVector %21 2
+         %15 = OpConstant %6 24
+         %16 = OpConstant %7 24
+         %17 = OpConstant %8 24
+         %18 = OpConstantComposite %9 %15 %15
+         %19 = OpConstantComposite %10 %16 %16
+         %20 = OpConstantComposite %11 %17 %17
+         %23 = OpConstantTrue %21
+         %24 = OpConstantComposite %22 %23 %23
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpBitcast %8 %15
+         %51 = OpBitcast %8 %16
+         %52 = OpBitcast %6 %17
+         %53 = OpBitcast %11 %18
+         %54 = OpBitcast %11 %19
+         %55 = OpBitcast %9 %20
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest,
+     BitcastResultTypeFloatDoesNotExist) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeInt 32 0
+          %9 = OpTypeVector %6 2
+         %10 = OpTypeVector %7 2
+         %15 = OpConstant %6 24
+         %16 = OpConstant %7 24
+         %18 = OpConstantComposite %9 %15 %15
+         %19 = OpConstantComposite %10 %16 %16
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Scalar floating-point type does not exist.
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {15}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {16}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+
+  // Vector of floating-point components does not exist.
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {18}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {19}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist1) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeFloat 32
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Scalar integral type does not exist.
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {17}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+
+  // Vector of integral components does not exist.
+  ASSERT_FALSE(
+      TransformationEquationInstruction(50, SpvOpBitcast, {20}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist2) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %4 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  {
+    TransformationEquationInstruction transformation(50, SpvOpBitcast, {17},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(51, SpvOpBitcast, {20},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %4 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpBitcast %4 %17
+         %51 = OpBitcast %9 %20
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist3) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %4 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  {
+    TransformationEquationInstruction transformation(50, SpvOpBitcast, {17},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(51, SpvOpBitcast, {20},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %4 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpBitcast %4 %17
+         %51 = OpBitcast %9 %20
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist4) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %8 = OpTypeFloat 32
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  {
+    TransformationEquationInstruction transformation(50, SpvOpBitcast, {17},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  ASSERT_FALSE(
+      TransformationEquationInstruction(51, SpvOpBitcast, {20}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %8 = OpTypeFloat 32
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpBitcast %4 %17
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist5) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  {
+    TransformationEquationInstruction transformation(50, SpvOpBitcast, {17},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  ASSERT_FALSE(
+      TransformationEquationInstruction(51, SpvOpBitcast, {20}, insert_before)
+          .IsApplicable(context.get(), transformation_context));
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpBitcast %4 %17
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist6) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %5 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  {
+    TransformationEquationInstruction transformation(50, SpvOpBitcast, {17},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(51, SpvOpBitcast, {20},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %5 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpBitcast %4 %17
+         %51 = OpBitcast %9 %20
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist7) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %4 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  {
+    TransformationEquationInstruction transformation(50, SpvOpBitcast, {17},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(51, SpvOpBitcast, {20},
+                                                     insert_before);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %4 2
+         %11 = OpTypeVector %8 2
+         %17 = OpConstant %8 24
+         %20 = OpConstantComposite %11 %17 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpBitcast %4 %17
+         %51 = OpBitcast %9 %20
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
 TEST(TransformationEquationInstructionTest, Miscellaneous1) {

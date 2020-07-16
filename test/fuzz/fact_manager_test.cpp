@@ -738,7 +738,7 @@ TEST(FactManagerTest, AmbiguousFact) {
                              uniform_buffer_element_descriptor));
 }
 
-TEST(FactManagerTest, CorollaryCompositeFacts) {
+TEST(FactManagerTest, RecursiveAdditionOfFacts) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
