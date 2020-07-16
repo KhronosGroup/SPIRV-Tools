@@ -66,9 +66,15 @@ void FuzzerPassConstructComposites::Apply() {
         // instruction that is global or whose definition strictly dominates the
         // program point) and suitable for making a synonym of, associate it
         // with the id of its result type.
+        auto available_instructions = FindAvailableInstructions(
+            function, block, inst_it,
+            [this](opt::IRContext* ir_context, opt::Instruction* inst) {
+              return fuzzerutil::CanMakeSynonymOf(
+                  ir_context, *GetTransformationContext(), inst);
+            });
+
         TypeIdToInstructions type_id_to_available_instructions;
-        for (auto instruction : FindAvailableInstructions(
-                 function, block, inst_it, fuzzerutil::CanMakeSynonymOf)) {
+        for (auto instruction : available_instructions) {
           RecordAvailableInstruction(instruction,
                                      &type_id_to_available_instructions);
         }

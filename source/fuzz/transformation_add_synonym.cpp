@@ -135,8 +135,7 @@ bool TransformationAddSynonym::IsInstructionValid(
     return false;
   }
 
-  if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          inst->result_id())) {
+  if (!fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context, inst)) {
     return false;
   }
 
@@ -156,7 +155,9 @@ bool TransformationAddSynonym::IsInstructionValid(
       return type->AsInteger() || type->AsFloat();
     }
     case protobufs::TransformationAddSynonym::COPY_OBJECT:
-      return fuzzerutil::CanMakeSynonymOf(ir_context, inst);
+      // All constraints on synonymous OpCopyObject instructions have been
+      // checked in the fuzzerutil::CanMakeSynonymOf.
+      return true;
     case protobufs::TransformationAddSynonym::LOGICAL_AND:
     case protobufs::TransformationAddSynonym::LOGICAL_OR: {
       // The instruction must be either a scalar or a vector of booleans.

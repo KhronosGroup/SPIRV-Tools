@@ -40,7 +40,8 @@ TransformationCompositeConstruct::TransformationCompositeConstruct(
 }
 
 bool TransformationCompositeConstruct::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     // We require the id for the composite constructor to be unused.
     return false;
@@ -87,9 +88,14 @@ bool TransformationCompositeConstruct::IsApplicable(
 
   // Now check whether every component being used to initialize the composite is
   // available at the desired program point.
-  for (auto& component : message_.component()) {
+  for (auto component : message_.component()) {
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
                                                     component)) {
+      return false;
+    }
+
+    // |component| can't be an irrelevant id.
+    if (transformation_context.GetFactManager()->IdIsIrrelevant(component)) {
       return false;
     }
   }

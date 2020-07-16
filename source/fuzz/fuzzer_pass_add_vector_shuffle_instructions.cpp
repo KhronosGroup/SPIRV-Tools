@@ -60,16 +60,22 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
         std::vector<opt::Instruction*> vector_instructions =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
-                [instruction_descriptor](
+                [this, instruction_descriptor](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
-                  if (!instruction->type_id()) {
+                  if (!instruction->type_id() || !instruction->result_id()) {
                     return false;
                   }
 
                   if (!ir_context->get_type_mgr()
                            ->GetType(instruction->type_id())
                            ->AsVector()) {
+                    return false;
+                  }
+
+                  if (GetTransformationContext()
+                          ->GetFactManager()
+                          ->IdIsIrrelevant(instruction->result_id())) {
                     return false;
                   }
 
