@@ -42,6 +42,7 @@ bool TransformationEquationInstruction::IsApplicable(
   if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     return false;
   }
+
   // The instruction to insert before must exist.
   auto insert_before =
       FindInstruction(message_.instruction_to_insert_before(), ir_context);
@@ -64,7 +65,7 @@ bool TransformationEquationInstruction::IsApplicable(
     }
   }
 
-  return MaybeGetResultType(ir_context) != 0;
+  return MaybeGetResultTypeId(ir_context) != 0;
 }
 
 void TransformationEquationInstruction::Apply(
@@ -82,7 +83,8 @@ void TransformationEquationInstruction::Apply(
   FindInstruction(message_.instruction_to_insert_before(), ir_context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, static_cast<SpvOp>(message_.opcode()),
-          MaybeGetResultType(ir_context), message_.fresh_id(), in_operands));
+          MaybeGetResultTypeId(ir_context), message_.fresh_id(),
+          std::move(in_operands)));
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
@@ -97,12 +99,46 @@ protobufs::Transformation TransformationEquationInstruction::ToMessage() const {
   return result;
 }
 
-uint32_t TransformationEquationInstruction::MaybeGetResultType(
+uint32_t TransformationEquationInstruction::MaybeGetResultTypeId(
     opt::IRContext* ir_context) const {
-  switch (static_cast<SpvOp>(message_.opcode())) {
+  auto opcode = static_cast<SpvOp>(message_.opcode());
+  switch (opcode) {
+    case SpvOpConvertUToF:
+    case SpvOpConvertSToF: {
+      if (message_.in_operand_id_size() != 1) {
+        return 0;
+      }
+
+      const auto* type = ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0)));
+      if (!type) {
+        return 0;
+      }
+
+      if (const auto* vector = type->AsVector()) {
+        if (!vector->element_type()->AsInteger()) {
+          return 0;
+        }
+
+        if (auto element_type_id = fuzzerutil::MaybeGetFloatType(
+                ir_context, vector->element_type()->AsInteger()->width())) {
+          return fuzzerutil::MaybeGetVectorType(ir_context, element_type_id,
+                                                vector->element_count());
+        }
+
+        return 0;
+      } else {
+        if (!type->AsInteger()) {
+          return 0;
+        }
+
+        return fuzzerutil::MaybeGetFloatType(ir_context,
+                                             type->AsInteger()->width());
+      }
+    }
     case SpvOpIAdd:
     case SpvOpISub: {
-      if (message_.in_operand_id().size() != 2) {
+      if (message_.in_operand_id_size() != 2) {
         return 0;
       }
       uint32_t first_operand_width = 0;
@@ -175,7 +211,6 @@ uint32_t TransformationEquationInstruction::MaybeGetResultType(
       }
       return operand_inst->type_id();
     }
-
     default:
       assert(false && "Inappropriate opcode for equation instruction.");
       return 0;
