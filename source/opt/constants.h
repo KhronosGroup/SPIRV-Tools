@@ -630,7 +630,7 @@ class ConstantManager {
   // Returns the id of a 32-bit floating point constant with value |val|.
   uint32_t GetFloatConst(float val);
 
-  // Returns the id of a 32-bit singed integer constant with value |val|.
+  // Returns the id of a 32-bit signed integer constant with value |val|.
   uint32_t GetSIntConst(int32_t val);
 
  private:
