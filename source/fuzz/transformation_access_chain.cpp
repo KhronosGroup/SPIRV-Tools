@@ -294,8 +294,9 @@ std::tuple<bool, uint32_t, uint32_t>
 TransformationAccessChain::GetIndexValueAndId(
     opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
     bool add_clamping_instructions, std::vector<uint32_t> fresh_ids) const {
+  auto object_type_def = ir_context->get_def_use_mgr()->GetDef(object_type_id);
   // The object being indexed must be a composite
-  if (!spvOpcodeIsComposite(static_cast<SpvOp>(object_type_id))) {
+  if (!spvOpcodeIsComposite(object_type_def->opcode())) {
     return {false, 0, 0};
   }
 
@@ -332,12 +333,14 @@ TransformationAccessChain::GetIndexValueAndId(
       // Constant with value bound-1 not found
       return {false, 0, 0};
     }
+
+    return {true, bound - 1, bound_minus_one_id};
   }
 
   // The index is not a constant
 
   // Structs can only be accessed via constants
-  if (object_type_id == SpvOpTypeStruct) {
+  if (object_type_def->opcode() == SpvOpTypeStruct) {
     return {false, 0, 0};
   }
 
