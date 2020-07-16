@@ -346,8 +346,8 @@ uint32_t FuzzerPass::FindOrCreateCompositeConstant(
     const std::vector<uint32_t>& component_ids, uint32_t type_id,
     bool is_irrelevant) {
   if (auto existing_constant = fuzzerutil::MaybeGetCompositeConstant(
-          GetIRContext(), *GetTransformationContext(),
-          component_ids, type_id, is_irrelevant)) {
+          GetIRContext(), *GetTransformationContext(), component_ids, type_id,
+          is_irrelevant)) {
     return existing_constant;
   }
   uint32_t result = GetFuzzerContext()->GetFreshId();

@@ -971,13 +971,18 @@ uint32_t MaybeGetCompositeConstant(
         transformation_context.GetFactManager()->IdIsIrrelevant(
             inst.result_id()) == is_irrelevant &&
         inst.NumInOperands() == component_ids.size()) {
+      bool is_match = true;
+
       for (uint32_t i = 0; i < inst.NumInOperands(); ++i) {
         if (inst.GetSingleWordInOperand(i) != component_ids[i]) {
-          return 0;
+          is_match = false;
+          break;
         }
       }
 
-      return inst.result_id();
+      if (is_match) {
+        return inst.result_id();
+      }
     }
   }
 

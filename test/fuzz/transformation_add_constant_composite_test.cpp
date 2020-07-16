@@ -69,39 +69,39 @@ TEST(TransformationAddConstantCompositeTest, BasicTest) {
                                                validator_options);
 
   // Too few ids
-  ASSERT_FALSE(TransformationAddConstantComposite(103, 8, {100, 101})
+  ASSERT_FALSE(TransformationAddConstantComposite(103, 8, {100, 101}, false)
                    .IsApplicable(context.get(), transformation_context));
   // Too many ids
-  ASSERT_FALSE(TransformationAddConstantComposite(101, 7, {14, 15, 14})
+  ASSERT_FALSE(TransformationAddConstantComposite(101, 7, {14, 15, 14}, false)
                    .IsApplicable(context.get(), transformation_context));
   // Id already in use
-  ASSERT_FALSE(TransformationAddConstantComposite(40, 7, {11, 12})
+  ASSERT_FALSE(TransformationAddConstantComposite(40, 7, {11, 12}, false)
                    .IsApplicable(context.get(), transformation_context));
   // %39 is not a type
-  ASSERT_FALSE(TransformationAddConstantComposite(100, 39, {11, 12})
+  ASSERT_FALSE(TransformationAddConstantComposite(100, 39, {11, 12}, false)
                    .IsApplicable(context.get(), transformation_context));
 
   TransformationAddConstantComposite transformations[] = {
       // %100 = OpConstantComposite %7 %11 %12
-      TransformationAddConstantComposite(100, 7, {11, 12}),
+      TransformationAddConstantComposite(100, 7, {11, 12}, false),
 
       // %101 = OpConstantComposite %7 %14 %15
-      TransformationAddConstantComposite(101, 7, {14, 15}),
+      TransformationAddConstantComposite(101, 7, {14, 15}, false),
 
       // %102 = OpConstantComposite %7 %17 %18
-      TransformationAddConstantComposite(102, 7, {17, 18}),
+      TransformationAddConstantComposite(102, 7, {17, 18}, false),
 
       // %103 = OpConstantComposite %8 %100 %101 %102
-      TransformationAddConstantComposite(103, 8, {100, 101, 102}),
+      TransformationAddConstantComposite(103, 8, {100, 101, 102}, false),
 
       // %104 = OpConstantComposite %24 %29 %30 %31
-      TransformationAddConstantComposite(104, 24, {29, 30, 31}),
+      TransformationAddConstantComposite(104, 24, {29, 30, 31}, false),
 
       // %105 = OpConstantComposite %26 %104 %33
-      TransformationAddConstantComposite(105, 26, {104, 33}),
+      TransformationAddConstantComposite(105, 26, {104, 33}, false),
 
       // %106 = OpConstantComposite %35 %38 %39 %40
-      TransformationAddConstantComposite(106, 35, {38, 39, 40}),
+      TransformationAddConstantComposite(106, 35, {38, 39, 40}, false),
 
       // Same constants but with an irrelevant fact applied.
 
@@ -132,6 +132,10 @@ TEST(TransformationAddConstantCompositeTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
   }
   ASSERT_TRUE(IsValid(env, context.get()));
+
+  for (uint32_t id = 100; id <= 106; ++id) {
+    ASSERT_FALSE(fact_manager.IdIsIrrelevant(id));
+  }
 
   for (uint32_t id = 107; id <= 113; ++id) {
     ASSERT_TRUE(fact_manager.IdIsIrrelevant(id));

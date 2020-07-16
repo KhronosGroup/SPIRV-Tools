@@ -55,9 +55,12 @@ class TransformationAddSynonym : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
   // Returns true if we can create a synonym of |inst| according to the
-  // |synonym_type|.
+  // |synonym_type|. |transformation_context| is used to check for the
+  // IdIsIrrelevant fact.
   static bool IsInstructionValid(
-      opt::IRContext* ir_context, opt::Instruction* inst,
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context,
+      opt::Instruction* inst,
       protobufs::TransformationAddSynonym::SynonymType synonym_type);
 
   // Returns true if |synonym_type| requires an additional constant instruction
@@ -67,15 +70,20 @@ class TransformationAddSynonym : public Transformation {
 
  private:
   // Returns a new instruction which is synonymous to |message_.result_id|.
+  // |transformation_context| is used to check for the IdIsIrrelevant fact.
   std::unique_ptr<opt::Instruction> MakeSynonymousInstruction(
-      opt::IRContext* ir_context) const;
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const;
 
   // Returns a result id of a constant instruction that is required to be
   // present in some synonym types (e.g. returns a result id of a zero constant
   // for ADD_ZERO synonym type). Returns 0 if no such instruction is present in
   // the module. This method should only be called when
   // IsAdditionalConstantRequired returns true.
-  uint32_t MaybeGetConstantId(opt::IRContext* ir_context) const;
+  // |transformation_context| is used to check for the IdIsIrrelevant fact.
+  uint32_t MaybeGetConstantId(
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const;
 
   protobufs::TransformationAddSynonym message_;
 };

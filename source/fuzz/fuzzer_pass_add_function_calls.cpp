@@ -219,7 +219,7 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
           ApplyTransformation(TransformationAddLocalVariable(
               fresh_variable_id, arg_type_id, caller_function->result_id(),
               FindOrCreateZeroConstant(
-                  type_instruction->GetSingleWordInOperand(1)),
+                  type_instruction->GetSingleWordInOperand(1), false),
               true));
         } else {
           assert((storage_class == SpvStorageClassPrivate ||
@@ -233,7 +233,7 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
               fresh_variable_id, arg_type_id, storage_class,
               storage_class == SpvStorageClassPrivate
                   ? FindOrCreateZeroConstant(
-                        type_instruction->GetSingleWordInOperand(1))
+                        type_instruction->GetSingleWordInOperand(1), false)
                   : 0,
               true));
         }
