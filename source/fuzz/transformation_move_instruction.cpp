@@ -430,6 +430,8 @@ std::vector<uint32_t> TransformationMoveInstruction::GetBlockIdsFromAllPaths(
   while (!stack.empty()) {
     assert(stack.size() == on_stack.size() && on_stack.count(stack.back()) &&
            "Invariant: |stack| and |on_stack| have the same elements");
+    assert(visited_block_ids.count(stack.back()) &&
+           "Invariant: |stack| contains only visited blocks");
 
     auto current_block_id = stack.back();
 
@@ -487,8 +489,10 @@ std::vector<uint32_t> TransformationMoveInstruction::GetBlockIdsFromAllPaths(
 
     if (index == data.size()) {
       // There are no more successors of the current block - pop it off the
-      // stack.
+      // stack. We also know that we won't be visiting this block again so we
+      // can remove its successors from the map.
       on_stack.erase(stack.back());
+      successors.erase(stack.back());
       stack.pop_back();
     }
   }
