@@ -313,7 +313,7 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
     if (dbg_value_added)
       var_ids_added_dbg_value_.insert(var_id);
     else
-      var_ids_partially_not_added_dbg_value_.insert(var_id);
+      var_ids_not_added_dbg_value_.insert(var_id);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -503,7 +503,7 @@ bool SSARewriter::ApplyReplacements() {
     if (dbg_value_added)
       var_ids_added_dbg_value_.insert(phi_candidate->var_id());
     else
-      var_ids_partially_not_added_dbg_value_.insert(phi_candidate->var_id());
+      var_ids_not_added_dbg_value_.insert(phi_candidate->var_id());
 
     modified = true;
   }
@@ -598,7 +598,7 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
 #endif
 
   var_ids_added_dbg_value_.clear();
-  var_ids_partially_not_added_dbg_value_.clear();
+  var_ids_not_added_dbg_value_.clear();
 
   // Collect variables that can be converted into SSA IDs.
   pass_->CollectTargetVars(fp);
@@ -629,12 +629,10 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
 #endif
 
   if (modified) {
-    // Kill DebugDeclare only if it is added as DebugValue for each store
-    // or phi instruction and there is no store or phi instruction that it
-    // cannot be added as DebugValue because the out-of-scope issue.
     for (auto var_id : var_ids_added_dbg_value_) {
-      if (var_ids_partially_not_added_dbg_value_.find(var_id) ==
-          var_ids_partially_not_added_dbg_value_.end()) {
+      // If we do not add DebugValue for a DebugDeclare, we must not remove it.
+      if (var_ids_not_added_dbg_value_.find(var_id) ==
+          var_ids_not_added_dbg_value_.end()) {
         pass_->context()->get_debug_info_mgr()->KillDebugDeclares(var_id);
       }
     }

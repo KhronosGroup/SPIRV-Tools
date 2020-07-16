@@ -288,9 +288,8 @@ class SSARewriter {
   // phi instructions.
   std::unordered_set<uint32_t> var_ids_added_dbg_value_;
 
-  // Set of OpVariable ids that tries to add DebugValue but failed because
-  // a store or phi instruction is not under its declaration scope.
-  std::unordered_set<uint32_t> var_ids_partially_not_added_dbg_value_;
+  // Set of OpVariable ids that we fail to add DebugValue.
+  std::unordered_set<uint32_t> var_ids_not_added_dbg_value_;
 
   // Memory pass requesting the SSA rewriter.
   MemPass* pass_;
