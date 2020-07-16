@@ -626,6 +626,236 @@ TEST(TransformationEquationInstructionTest, Miscellaneous2) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationEquationInstructionTest, ConversionInstructions) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %4 = OpTypeInt 32 0
+          %5 = OpTypeFloat 32
+          %7 = OpTypeVector %6 3
+          %8 = OpTypeVector %4 3
+          %9 = OpTypeVector %5 3
+         %10 = OpConstant %6 12
+         %20 = OpConstant %6 12
+         %11 = OpConstant %4 12
+         %21 = OpConstant %4 12
+         %14 = OpConstant %5 12
+         %15 = OpConstantComposite %7 %10 %10 %10
+         %18 = OpConstantComposite %7 %10 %10 %10
+         %16 = OpConstantComposite %8 %11 %11 %11
+         %19 = OpConstantComposite %8 %11 %11 %11
+         %17 = OpConstantComposite %9 %14 %14 %14
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  protobufs::InstructionDescriptor return_instruction =
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Too few instruction operands.
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Too many instruction operands.
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {15, 16},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Operand has no type id.
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {7},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // OpConvertSToF and OpConvertUToF require an operand to have scalar or vector
+  // of integral components type.
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {17},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertSToF, {14},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertUToF, {17},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationEquationInstruction(50, SpvOpConvertUToF, {14},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+
+  {
+    TransformationEquationInstruction transformation(50, SpvOpConvertSToF, {15},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(51, SpvOpConvertSToF, {10},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(52, SpvOpConvertUToF, {16},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(53, SpvOpConvertUToF, {11},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(58, SpvOpConvertSToF, {18},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(59, SpvOpConvertUToF, {19},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(60, SpvOpConvertSToF, {20},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+  {
+    TransformationEquationInstruction transformation(61, SpvOpConvertUToF, {21},
+                                                     return_instruction);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+  }
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %4 = OpTypeInt 32 0
+          %5 = OpTypeFloat 32
+          %7 = OpTypeVector %6 3
+          %8 = OpTypeVector %4 3
+          %9 = OpTypeVector %5 3
+         %10 = OpConstant %6 12
+         %20 = OpConstant %6 12
+         %11 = OpConstant %4 12
+         %21 = OpConstant %4 12
+         %14 = OpConstant %5 12
+         %15 = OpConstantComposite %7 %10 %10 %10
+         %18 = OpConstantComposite %7 %10 %10 %10
+         %16 = OpConstantComposite %8 %11 %11 %11
+         %19 = OpConstantComposite %8 %11 %11 %11
+         %17 = OpConstantComposite %9 %14 %14 %14
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpConvertSToF %9 %15
+         %51 = OpConvertSToF %5 %10
+         %52 = OpConvertUToF %9 %16
+         %53 = OpConvertUToF %5 %11
+         %58 = OpConvertSToF %9 %18
+         %59 = OpConvertUToF %9 %19
+         %60 = OpConvertSToF %5 %20
+         %61 = OpConvertUToF %5 %21
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
+}
+
+TEST(TransformationEquationInstructionTest, FloatResultTypeDoesNotExist) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 3
+          %9 = OpTypeVector %7 3
+         %10 = OpConstant %6 24
+         %11 = OpConstant %7 25
+         %14 = OpConstantComposite %8 %10 %10 %10
+         %15 = OpConstantComposite %9 %11 %11 %11
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  protobufs::InstructionDescriptor return_instruction =
+      MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Scalar float type doesn't exist.
+  ASSERT_FALSE(TransformationEquationInstruction(16, SpvOpConvertUToF, {10},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationEquationInstruction(16, SpvOpConvertSToF, {11},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Vector float type doesn't exist.
+  ASSERT_FALSE(TransformationEquationInstruction(16, SpvOpConvertUToF, {14},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationEquationInstruction(16, SpvOpConvertSToF, {15},
+                                                 return_instruction)
+                   .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
