@@ -132,9 +132,8 @@ bool PhiIdsOkForNewEdge(
 }
 
 void AddUnreachableEdgeAndUpdateOpPhis(
-    opt::IRContext* context,
-    const TransformationContext& transformation_context,
-    opt::BasicBlock* bb_from, opt::BasicBlock* bb_to, bool condition_value,
+    opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
+    uint32_t bool_id,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids) {
   assert(PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids) &&
          "Precondition on phi_ids is not satisfied");
@@ -142,11 +141,13 @@ void AddUnreachableEdgeAndUpdateOpPhis(
          "Precondition on terminator of bb_from is not satisfied");
 
   // Get the id of the boolean constant to be used as the condition.
-  uint32_t bool_id = MaybeGetBoolConstant(context, transformation_context,
-                                          condition_value, false);
-  assert(
-      bool_id &&
-      "Precondition that condition value must be available is not satisfied");
+  auto condition_inst = context->get_def_use_mgr()->GetDef(bool_id);
+  assert(condition_inst &&
+         (condition_inst->opcode() == SpvOpConstantTrue ||
+          condition_inst->opcode() == SpvOpConstantFalse) &&
+         "|bool_id| is invalid");
+
+  auto condition_value = condition_inst->opcode() == SpvOpConstantTrue;
 
   const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
   auto successor = bb_from->terminator()->GetSingleWordInOperand(0);

@@ -53,16 +53,17 @@ bool PhiIdsOkForNewEdge(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids);
 
-// Requires that a boolean constant with value |condition_value| is available,
-// that PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids) holds, and that
-// bb_from ends with "OpBranch %some_block".  Turns OpBranch into
-// "OpBranchConditional |condition_value| ...", such that control will branch
-// to %some_block, with |bb_to| being the unreachable alternative.  Updates
-// OpPhi instructions in |bb_to| using |phi_ids| so that the new edge is valid.
+// Requires that a |bool_id| is a valid result id of either OpConstantTrue or
+// OpConstantFalse, that PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids)
+// holds, and that bb_from ends with "OpBranch %some_block".  Turns OpBranch
+// into "OpBranchConditional |condition_value| ...", such that control will
+// branch to %some_block, with |bb_to| being the unreachable alternative.
+// Updates OpPhi instructions in |bb_to| using |phi_ids| so that the new edge is
+// valid. |condition_value| above is equal to |true| if |bool_id| is a result id
+// of an OpConstantTrue instruction.
 void AddUnreachableEdgeAndUpdateOpPhis(
-    opt::IRContext* context,
-    const TransformationContext& transformation_context,
-    opt::BasicBlock* bb_from, opt::BasicBlock* bb_to, bool condition_value,
+    opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
+    uint32_t bool_id,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids);
 
 // Returns true if and only if |loop_header_id| is a loop header and
@@ -328,6 +329,8 @@ uint32_t MaybeGetStructType(opt::IRContext* ir_context,
 //   Every component of the composite constant is looked up by calling this
 //   function with the type id of that component.
 // Returns 0 if no such instruction is present in the module.
+// The returned id either participates in IdIsIrrelevant fact or not, depending
+// on the |is_irrelevant| parameter.
 uint32_t MaybeGetZeroConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
@@ -335,7 +338,8 @@ uint32_t MaybeGetZeroConstant(
 
 // Returns the result id of an OpConstant instruction. |scalar_type_id| must be
 // a result id of a scalar type (i.e. int, float or bool). Returns 0 if no such
-// instruction is present in the module.
+// instruction is present in the module. The returned id either participates in
+// IdIsIrrelevant fact or not, depending on the |is_irrelevant| parameter.
 uint32_t MaybeGetScalarConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
@@ -345,7 +349,8 @@ uint32_t MaybeGetScalarConstant(
 // Returns the result id of an OpConstantComposite instruction.
 // |composite_type_id| must be a result id of a composite type (i.e. vector,
 // matrix, struct or array). Returns 0 if no such instruction is present in the
-// module.
+// module. The returned id either participates in IdIsIrrelevant fact or not,
+// depending on the |is_irrelevant| parameter.
 uint32_t MaybeGetCompositeConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
@@ -354,6 +359,8 @@ uint32_t MaybeGetCompositeConstant(
 
 // Returns the result id of an OpConstant instruction of integral type.
 // Returns 0 if no such instruction or type is present in the module.
+// The returned id either participates in IdIsIrrelevant fact or not, depending
+// on the |is_irrelevant| parameter.
 uint32_t MaybeGetIntegerConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
@@ -362,6 +369,8 @@ uint32_t MaybeGetIntegerConstant(
 
 // Returns the result id of an OpConstant instruction of floating-point type.
 // Returns 0 if no such instruction or type is present in the module.
+// The returned id either participates in IdIsIrrelevant fact or not, depending
+// on the |is_irrelevant| parameter.
 uint32_t MaybeGetFloatConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
@@ -369,7 +378,8 @@ uint32_t MaybeGetFloatConstant(
     bool is_irrelevant = false);
 
 // Returns the id of a boolean constant with value |value| if it exists in the
-// module, or 0 otherwise.
+// module, or 0 otherwise. The returned id either participates in IdIsIrrelevant
+// fact or not, depending on the |is_irrelevant| parameter.
 uint32_t MaybeGetBoolConstant(
     opt::IRContext* context,
     const TransformationContext& transformation_context, bool value,
@@ -404,11 +414,6 @@ inline uint32_t FloatToWord(float value) {
   memcpy(&result, &value, sizeof(uint32_t));
   return result;
 }
-
-uint32_t FindOrCreateIrrelevantId(opt::IRContext* ir_context,
-                                  FactManager* fact_manager,
-                                  uint32_t irrelevant_id, uint32_t function_id,
-                                  uint32_t result_id);
 
 }  // namespace fuzzerutil
 

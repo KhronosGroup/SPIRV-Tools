@@ -42,9 +42,11 @@ class TransformationAddConstantComposite : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Adds an OpConstantComposite instruction defining a constant of type
-  // |message_.type_id|, using |message_.constituent_id| as constituents, with
-  // result id |message_.fresh_id|.
+  // - Adds an OpConstantComposite instruction defining a constant of type
+  //   |message_.type_id|, using |message_.constituent_id| as constituents, with
+  //   result id |message_.fresh_id|.
+  // - Creates an IdIsIrrelevant fact about |fresh_id| if |is_irrelevant| is
+  //   true.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

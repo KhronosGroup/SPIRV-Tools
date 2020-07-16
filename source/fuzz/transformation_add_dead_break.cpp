@@ -203,10 +203,11 @@ void TransformationAddDeadBreak::ApplyImpl(
     spvtools::opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
   fuzzerutil::AddUnreachableEdgeAndUpdateOpPhis(
-      ir_context, transformation_context,
-      ir_context->cfg()->block(message_.from_block()),
+      ir_context, ir_context->cfg()->block(message_.from_block()),
       ir_context->cfg()->block(message_.to_block()),
-      message_.break_condition_value(), message_.phi_id());
+      fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
+                                       message_.break_condition_value(), false),
+      message_.phi_id());
 }
 
 }  // namespace fuzz

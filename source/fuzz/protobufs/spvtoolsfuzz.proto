@@ -255,8 +255,8 @@ message FactIdEquation {
 message FactIdIsIrrelevant {
 
   // Records a fact that |result_id| is irrelevant (i.e. it's usage doesn't
-  // change the semantics of the module). This implies that this id can later
-  // be replaced with some other id of the same type.
+  // change the semantics of the module). This implies that a use of this id
+  // can later be replaced with some other id of the same type.
 
   // An irrelevant id.
   uint32 result_id = 1;
@@ -430,6 +430,7 @@ message TransformationAddConstantBoolean {
 
   // Supports adding the constants true and false to a module, which may be
   // necessary in order to enable other transformations if they are not present.
+  // Also, creates an IdIsIrrelevant fact about |fresh_id| if |is_irrelevant| is true.
 
   uint32 fresh_id = 1;
   bool is_true = 2;
@@ -442,6 +443,8 @@ message TransformationAddConstantBoolean {
 message TransformationAddConstantComposite {
 
   // Adds a constant of the given composite type to the module.
+  // Also, creates an IdIsIrrelevant fact about |fresh_id| if
+  // |is_irrelevant| is true.
 
   // Fresh id for the composite
   uint32 fresh_id = 1;
@@ -472,6 +475,8 @@ message TransformationAddConstantNull {
 message TransformationAddConstantScalar {
 
   // Adds a constant of the given scalar type.
+  // Also, creates an IdIsIrrelevant fact about
+  // |fresh_id| if |is_irrelevant| is true.
 
   // Id for the constant
   uint32 fresh_id = 1;

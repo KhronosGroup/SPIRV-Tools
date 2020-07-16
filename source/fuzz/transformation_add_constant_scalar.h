@@ -43,6 +43,7 @@ class TransformationAddConstantScalar : public Transformation {
       const TransformationContext& transformation_context) const override;
 
   // Adds a new OpConstant instruction with the given type and words.
+  // Creates an IdIsIrrelevant fact about |fresh_id| if |is_irrelevant| is true.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

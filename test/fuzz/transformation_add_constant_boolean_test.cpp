@@ -53,7 +53,7 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   ASSERT_TRUE(TransformationAddConstantBoolean(7, false).IsApplicable(
       context.get(), transformation_context));
 
-  // Irrelevat true and false can both be added as neither is present.
+  // Irrelevant true and false can both be added as neither is present.
   ASSERT_TRUE(TransformationAddConstantBoolean(7, true, true)
                   .IsApplicable(context.get(), transformation_context));
   ASSERT_TRUE(TransformationAddConstantBoolean(7, false, true)

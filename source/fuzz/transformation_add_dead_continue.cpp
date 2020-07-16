@@ -150,9 +150,11 @@ void TransformationAddDeadContinue::ApplyImpl(
                 message_.from_block());
   assert(continue_block && "message_.from_block must be in a loop.");
   fuzzerutil::AddUnreachableEdgeAndUpdateOpPhis(
-      ir_context, transformation_context, bb_from,
-      ir_context->cfg()->block(continue_block),
-      message_.continue_condition_value(), message_.phi_id());
+      ir_context, bb_from, ir_context->cfg()->block(continue_block),
+      fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
+                                       message_.continue_condition_value(),
+                                       false),
+      message_.phi_id());
 }
 
 }  // namespace fuzz

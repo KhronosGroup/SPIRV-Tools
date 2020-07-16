@@ -147,10 +147,7 @@ FuzzerPassAddFunctionCalls::GetAvailableInstructionsSuitableForActualParameters(
               }
             }
 
-            // Consider only irrelevant ids so that we can obfuscate parameters
-            // later
-            return GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-                inst->result_id());
+            return true;
           });
 
   // Group all the instructions that are potentially viable as function actual
@@ -241,6 +238,8 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
               true));
         }
       } else {
+        // We mark the constant as irrelevant so that we can replace it with a
+        // more interesting value later.
         result.push_back(FindOrCreateZeroConstant(arg_type_id, true));
       }
     }

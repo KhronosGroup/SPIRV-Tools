@@ -66,7 +66,9 @@ void FuzzerPassAddDeadBreaks::Apply() {
         // anything.
         if (!block.IsSuccessor(merge_block)) {
           merge_block->ForEachPhiInst([this, &phi_ids](opt::Instruction* phi) {
-            // Add an additional operand for OpPhi instruction.
+            // Add an additional operand for OpPhi instruction. We mark the
+            // constant as irrelevant so that we can replace it with a more
+            // interesting value later.
             phi_ids.push_back(FindOrCreateZeroConstant(phi->type_id(), true));
           });
         }
