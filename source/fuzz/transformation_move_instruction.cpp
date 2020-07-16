@@ -391,8 +391,10 @@ bool TransformationMoveInstruction::CanMoveInstruction(
   // |insert_before_inst| and |target_inst|. Which, in turn, implies that there
   // is a path from either |insert_before_inst| to |target_inst| or vice versa -
   // contradiction.
-  return !AnyPathContains(ir_context, insert_before_it, target_it, checker) &&
-         !AnyPathContains(ir_context, target_it, insert_before_it, checker);
+  return !AnyExecutionPathContains(ir_context, insert_before_it, target_it,
+                                   checker) &&
+         !AnyExecutionPathContains(ir_context, target_it, insert_before_it,
+                                   checker);
 }
 
 std::vector<uint32_t> TransformationMoveInstruction::GetBlockIdsFromAllPaths(
@@ -406,7 +408,7 @@ std::vector<uint32_t> TransformationMoveInstruction::GetBlockIdsFromAllPaths(
   }
 
   // The following implements an in-place version of DFS. The IterationState
-  // struct is used to store.. the state of iteration over all successors' ids
+  // struct is used to store... the state of iteration over all successors' ids
   // of some block.
   struct IterationState {
     std::vector<uint32_t> data;
@@ -496,7 +498,7 @@ std::vector<uint32_t> TransformationMoveInstruction::GetBlockIdsFromAllPaths(
   return result;
 }
 
-bool TransformationMoveInstruction::AnyPathContains(
+bool TransformationMoveInstruction::AnyExecutionPathContains(
     opt::IRContext* ir_context, opt::BasicBlock::iterator source_it,
     opt::BasicBlock::iterator dest_it,
     const std::function<bool(const opt::Instruction&)>& check) {

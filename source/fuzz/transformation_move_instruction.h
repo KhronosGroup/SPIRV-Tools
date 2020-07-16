@@ -50,11 +50,12 @@ class TransformationMoveInstruction : public Transformation {
                                  opt::BasicBlock::iterator target_it);
 
  private:
-  // Returns true if there is a path from |source_it| to |dest_it| that contains
-  // an instruction |inst| s.t. |check(inst)| returns |true|. Two iterators
-  // might not be reachable from one another in the control-flow graph. Returns
-  // false if there is no path from |source_it| to |dest_it|.
-  static bool AnyPathContains(
+  // Returns true if there is an execution path (including nested function
+  // calls) from |source_it| to |dest_it| that contains an instruction |inst|
+  // s.t. |check(inst)| returns |true|. Two iterators might not be reachable
+  // from one another in the control-flow graph (the function returns false in
+  // this case).
+  static bool AnyExecutionPathContains(
       opt::IRContext* ir_context, opt::BasicBlock::iterator source_it,
       opt::BasicBlock::iterator dest_it,
       const std::function<bool(const opt::Instruction&)>& check);
