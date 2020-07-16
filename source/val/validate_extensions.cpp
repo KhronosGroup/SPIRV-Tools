@@ -2682,13 +2682,36 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             ValidateOperandDebugType(_, "Base Type", inst, 5, ext_inst_name);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
         for (uint32_t i = 6; i < num_words; ++i) {
-          CHECK_OPERAND("Component Count", SpvOpConstant, i);
+          bool invalid = false;
           auto* component_count = _.FindDef(inst->word(i));
-          if (!_.IsIntScalarType(component_count->type_id()) ||
-              !component_count->word(3)) {
+          if (component_count->opcode() == SpvOpConstant) {
+            if (!_.IsIntScalarType(component_count->type_id()) ||
+                !component_count->word(3)) {
+              invalid = true;
+            }
+          } else if (OpenCLDebugInfo100Instructions(component_count->word(4)) ==
+                         OpenCLDebugInfo100DebugLocalVariable ||
+                     OpenCLDebugInfo100Instructions(component_count->word(4)) ==
+                         OpenCLDebugInfo100DebugGlobalVariable) {
+            auto* component_count_type = _.FindDef(component_count->word(6));
+            if (OpenCLDebugInfo100Instructions(component_count_type->word(4)) !=
+                    OpenCLDebugInfo100DebugTypeBasic ||
+                (OpenCLDebugInfo100DebugBaseTypeAttributeEncoding(
+                     component_count_type->word(7)) !=
+                     OpenCLDebugInfo100Signed &&
+                 OpenCLDebugInfo100DebugBaseTypeAttributeEncoding(
+                     component_count_type->word(7)) !=
+                     OpenCLDebugInfo100Unsigned)) {
+              invalid = true;
+            }
+          } else {
+            invalid = true;
+          }
+          if (invalid) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": Component Count must be positive "
-                   << "integer";
+                   << ext_inst_name() << ": Component Count must be "
+                   << "OpConstant, DebugGlobalVariable, or "
+                   << "DebugLocalVariable with an integer scalar type";
           }
         }
         break;
@@ -2830,11 +2853,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
         CHECK_OPERAND("Linkage Name", SpvOpString, 11);
-        // TODO: The current OpenCL.100.DebugInfo spec says "Function
-        // is an OpFunction which is described by this instruction.".
-        // However, the function definition can be opted-out e.g.,
-        // inlining. We assume that Function operand can be a
-        // DebugInfoNone, but we must discuss it and update the spec.
         if (!DoesDebugInfoOperandMatchExpectation(
                 _,
                 [](OpenCLDebugInfo100Instructions dbg_inst) {
@@ -2870,9 +2888,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         break;
       }
       case OpenCLDebugInfo100DebugScope: {
-        // TODO(https://gitlab.khronos.org/spirv/SPIR-V/issues/533): We are
-        // still in spec discussion about what must be "Scope" operand of
-        // DebugScope. Update this code if the conclusion is different.
         auto validate_scope =
             ValidateOperandLexicalScope(_, "Scope", inst, 5, ext_inst_name);
         if (validate_scope != SPV_SUCCESS) return validate_scope;
@@ -2896,11 +2911,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLDebugInfo100DebugDeclare: {
         CHECK_DEBUG_OPERAND("Local Variable",
                             OpenCLDebugInfo100DebugLocalVariable, 5);
-
-        // TODO: We must discuss DebugDeclare.Variable of
-        // OpenCL.100.DebugInfo. Currently, it says "Variable must be an id of
-        // OpVariable instruction which defines the local variable.", but we
-        // want to allow OpFunctionParameter as well.
         auto* operand = _.FindDef(inst->word(6));
         if (operand->opcode() != SpvOpVariable &&
             operand->opcode() != SpvOpFunctionParameter) {
