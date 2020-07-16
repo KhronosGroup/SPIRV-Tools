@@ -33,8 +33,11 @@ class TransformationAccessChain : public Transformation {
   TransformationAccessChain(
       uint32_t fresh_id, uint32_t pointer_id,
       const std::vector<uint32_t>& index_id,
-      const protobufs::InstructionDescriptor& instruction_to_insert_before);
+      const protobufs::InstructionDescriptor& instruction_to_insert_before,
+      const std::vector<uint32_t>& fresh_id_for_clamping = std::vector<uint32_t>()
+      );
 
+  // TODO: Update
   // - |message_.fresh_id| must be fresh
   // - |message_.instruction_to_insert_before| must identify an instruction
   //   before which it is legitimate to insert an OpAccessChain instruction
@@ -68,11 +71,36 @@ class TransformationAccessChain : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // Returns {false, 0} if |index_id| does not correspond to a 32-bit integer
-  // constant.  Otherwise, returns {true, value}, where value is the value of
-  // the 32-bit integer constant to which |index_id| corresponds.
-  std::pair<bool, uint32_t> GetIndexValue(opt::IRContext* ir_context,
-                                          uint32_t index_id) const;
+  // Returns {false, 0, 0} if:
+  // - |index_id| does not correspond to a 32-bit integer
+  // - the object being indexed is not a composite type
+  // - the object type is a struct and the index is not a constant
+  // - the object being indexed is not a composite type
+  // - it is not possible to clamp the index variable to the bound
+  // Returns {true, value, new_id} otherwise, where:
+  // - value is the value of the index if it is a constant, 0 otherwise
+  // - new_id is the id at which the index for addressing the composite can
+  //   be found: it will be the same as |index_id| if the index is a constant,
+  //   otherwise it is the index of the newly-defined clamped index variable
+  // This method only modifies the module if add_clamping_instructions is true.
+  // |fresh_ids| contains the fresh ids needed for clamping, but it can be
+  // if clamping is not needed.
+  std::tuple<bool, uint32_t, uint32_t> GetIndexValueAndId(
+      opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
+      bool add_clamping_instructions,
+      std::vector<uint32_t> fresh_ids = std::vector<uint32_t>()) const;
+
+  // Try to clamp the integer variable defined by |int_inst| so that the
+  // result is smaller than the given bound. The |fresh_ids| are used to
+  // add new instructions to the module, to perform such operations.
+  // The instructions are inserted just before
+  // |message_.instruction_to_insert_before|.
+  // Returns false if a constant with value |bound|-1 is not found in the
+  // module or if the bool type is not found in the module, true otherwise.
+  bool TryToClampIntVariable(opt::IRContext* ir_context,
+                             const opt::Instruction& int_inst, uint32_t bound,
+                             std::pair<uint32_t, uint32_t> fresh_ids,
+                             bool add_clamping_instructions) const;
 
   protobufs::TransformationAccessChain message_;
 };

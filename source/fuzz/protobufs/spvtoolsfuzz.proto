@@ -429,6 +429,9 @@ message TransformationAccessChain {
   // OpAccessChain instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 4;
 
+  // Additional fresh ids, required to clamp index variables
+  repeated uint32 fresh_id_for_clamping = 5;
+
 }
 
 message TransformationAddConstantBoolean {

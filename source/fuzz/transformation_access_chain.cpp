@@ -22,6 +22,60 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+// Given a context, a value and a type id, returns the id of an integer
+// constant with the same type and given value.
+// The type id must correspond to an integer type.
+uint32_t FindIntConstant(opt::IRContext* ir_context, uint32_t value,
+                         uint32_t int_type_id) {
+  auto int_type_inst = ir_context->get_def_use_mgr()->GetDef(int_type_id);
+
+  assert(int_type_inst && "The given type id must exist.");
+
+  auto int_type = ir_context->get_type_mgr()
+                      ->GetType(int_type_inst->result_id())
+                      ->AsInteger();
+
+  assert(int_type && "The given type id must correspond to an integer type.");
+
+  opt::analysis::IntConstant bound_minus_one(int_type, {value});
+
+  // Check that the constant exists in the module
+  if (!ir_context->get_constant_mgr()->FindConstant(&bound_minus_one)) {
+    return 0;
+  }
+
+  return ir_context->get_constant_mgr()
+      ->GetDefiningInstruction(&bound_minus_one)
+      ->result_id();
+}
+
+// TODO: This is copied from TransformationAddFunction. Move it somewhere
+// where it can be accessed by both.
+uint32_t GetBoundForCompositeIndex(
+    opt::IRContext* ir_context, const opt::Instruction& composite_type_inst) {
+  switch (composite_type_inst.opcode()) {
+    case SpvOpTypeArray:
+      return fuzzerutil::GetArraySize(composite_type_inst, ir_context);
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector:
+      return composite_type_inst.GetSingleWordInOperand(1);
+    case SpvOpTypeStruct: {
+      return fuzzerutil::GetNumberOfStructMembers(composite_type_inst);
+    }
+    case SpvOpTypeRuntimeArray:
+      assert(false &&
+             "GetBoundForCompositeIndex should not be invoked with an "
+             "OpTypeRuntimeArray, which does not have a static bound.");
+      return 0;
+    default:
+      assert(false && "Unknown composite type.");
+      return 0;
+  }
+}
+
+}  // namespace
+
 TransformationAccessChain::TransformationAccessChain(
     const spvtools::fuzz::protobufs::TransformationAccessChain& message)
     : message_(message) {}
@@ -29,7 +83,8 @@ TransformationAccessChain::TransformationAccessChain(
 TransformationAccessChain::TransformationAccessChain(
     uint32_t fresh_id, uint32_t pointer_id,
     const std::vector<uint32_t>& index_id,
-    const protobufs::InstructionDescriptor& instruction_to_insert_before) {
+    const protobufs::InstructionDescriptor& instruction_to_insert_before,
+    const std::vector<uint32_t>& fresh_id_for_clamping) {
   message_.set_fresh_id(fresh_id);
   message_.set_pointer_id(pointer_id);
   for (auto id : index_id) {
@@ -37,6 +92,9 @@ TransformationAccessChain::TransformationAccessChain(
   }
   *message_.mutable_instruction_to_insert_before() =
       instruction_to_insert_before;
+  for (auto clamping_id : fresh_id_for_clamping) {
+    message_.add_fresh_id_for_clamping(clamping_id);
+  }
 }
 
 bool TransformationAccessChain::IsApplicable(
@@ -96,23 +154,44 @@ bool TransformationAccessChain::IsApplicable(
   // Start from the base type of the pointer.
   uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
 
+  uint32_t clamping_ids_used = 0;
+
   // Consider the given index ids in turn.
   for (auto index_id : message_.index_id()) {
     // Try to get the integer value associated with this index is.  The first
     // component of the result will be false if the id did not correspond to an
     // integer.  Otherwise, the integer with which the id is associated is the
     // second component.
-    std::pair<bool, uint32_t> maybe_index_value =
-        GetIndexValue(ir_context, index_id);
-    if (!maybe_index_value.first) {
-      // There was no integer: this index is no good.
+    bool found_index_value;
+    uint32_t index_value;
+
+    std::vector<uint32_t> clamping_ids;
+
+    // If the index is not a constant, we need to use two ids for clamping
+    if (!ir_context->get_constant_mgr()->FindDeclaredConstant(index_id)) {
+      if (message_.fresh_id_for_clamping().size() - clamping_ids_used < 2) {
+        // We don't have enough ids
+        return false;
+      }
+
+      // Get two new ids to use and update the amount used
+      clamping_ids.push_back(clamping_ids_used++);
+      clamping_ids.push_back(clamping_ids_used++);
+    }
+
+    std::tie(found_index_value, index_value, std::ignore) = GetIndexValueAndId(
+        ir_context, index_id, subobject_type_id, false, clamping_ids);
+
+    if (!found_index_value) {
+      // This index cannot be used
       return false;
     }
+
     // Try to walk down the type using this index.  This will yield 0 if the
     // type is not a composite or the index is out of bounds, and the id of
     // the next type otherwise.
     subobject_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
-        ir_context, subobject_type_id, maybe_index_value.second);
+        ir_context, subobject_type_id, index_value);
     if (!subobject_type_id) {
       // Either the type was not a composite (so that too many indices were
       // provided), or the index was out of bounds.
@@ -152,12 +231,28 @@ void TransformationAccessChain::Apply(
       ir_context->get_def_use_mgr()->GetDef(message_.pointer_id())->type_id());
   uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
 
+  uint32_t clamping_ids_used = 0;
+
   // Go through the index ids in turn.
   for (auto index_id : message_.index_id()) {
-    // Add the index id to the operands.
-    operands.push_back({SPV_OPERAND_TYPE_ID, {index_id}});
+    std::vector<uint32_t> clamping_ids;
+
+    uint32_t index_value;
+    uint32_t new_index_id;
+
+    if (!ir_context->get_constant_mgr()->FindDeclaredConstant(index_id)) {
+      // Get two new ids to use and update the amount used
+      clamping_ids.push_back(clamping_ids_used++);
+      clamping_ids.push_back(clamping_ids_used++);
+    }
+
     // Get the integer value associated with the index id.
-    uint32_t index_value = GetIndexValue(ir_context, index_id).second;
+    std::tie(std::ignore, index_value, new_index_id) = GetIndexValueAndId(
+        ir_context, index_id, subobject_type_id, true, clamping_ids);
+
+    // Add the correct index id to the operands.
+    operands.push_back({SPV_OPERAND_TYPE_ID, {new_index_id}});
+
     // Walk to the next type in the composite object using this index.
     subobject_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
         ir_context, subobject_type_id, index_value);
@@ -195,22 +290,126 @@ protobufs::Transformation TransformationAccessChain::ToMessage() const {
   return result;
 }
 
-std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValue(
-    opt::IRContext* ir_context, uint32_t index_id) const {
-  auto index_instruction = ir_context->get_def_use_mgr()->GetDef(index_id);
-  if (!index_instruction || !spvOpcodeIsConstant(index_instruction->opcode())) {
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3179) We could
-    //  allow non-constant indices when looking up non-structs, using clamping
-    //  to ensure they are in-bounds.
-    return {false, 0};
+std::tuple<bool, uint32_t, uint32_t>
+TransformationAccessChain::GetIndexValueAndId(
+    opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
+    bool add_clamping_instructions, std::vector<uint32_t> fresh_ids) const {
+  // The object being indexed must be a composite
+  if (!spvOpcodeIsComposite(static_cast<SpvOp>(object_type_id))) {
+    return {false, 0, 0};
   }
+
+  // Get the defining instruction of the index
+  auto index_instruction = ir_context->get_def_use_mgr()->GetDef(index_id);
+  if (!index_instruction) {
+    return {false, 0, 0};
+  }
+
+  // The index type must be 32-bit integer
   auto index_type =
       ir_context->get_def_use_mgr()->GetDef(index_instruction->type_id());
   if (index_type->opcode() != SpvOpTypeInt ||
       index_type->GetSingleWordInOperand(0) != 32) {
-    return {false, 0};
+    return {false, 0, 0};
   }
-  return {true, index_instruction->GetSingleWordInOperand(0)};
+
+  uint32_t bound = GetBoundForCompositeIndex(
+      ir_context, *ir_context->get_def_use_mgr()->GetDef(object_type_id));
+
+  // If the index is a constant, just get its value if it is in bounds
+  if (spvOpcodeIsConstant(index_instruction->opcode())) {
+    uint32_t value = index_instruction->GetSingleWordInOperand(0);
+
+    if (value < bound) {
+      return {true, value, index_id};
+    }
+
+    // The constant is out of bound. We need to use a constant with value
+    // bound-1
+    uint32_t bound_minus_one_id =
+        FindIntConstant(ir_context, bound - 1, index_instruction->type_id());
+    if (bound_minus_one_id == 0) {
+      // Constant with value bound-1 not found
+      return {false, 0, 0};
+    }
+  }
+
+  // The index is not a constant
+
+  // Structs can only be accessed via constants
+  if (object_type_id == SpvOpTypeStruct) {
+    return {false, 0, 0};
+  }
+
+  // The index is not a constant or it is not in bounds
+
+  // We need at least two fresh ids to clamp the index variable
+  if (fresh_ids.size() < 2) {
+    return {false, 0, 0};
+  }
+
+  // Perform the clamping using the fresh ids at our disposal.
+  // The module will not be changed if |add_clamping_instructions| is not set.
+  if (!TryToClampIntVariable(ir_context, *index_instruction, bound /*bound*/,
+                             std::make_pair(fresh_ids[0], fresh_ids[1]),
+                             add_clamping_instructions)) {
+    // It was not possible to clamp the variable
+    return {false, 0, 0};
+  }
+
+  // The clamped variable will be at id |fresh_ids[1]|
+  return {true, 0, fresh_ids[1]};
+}
+
+bool TransformationAccessChain::TryToClampIntVariable(
+    opt::IRContext* ir_context, const opt::Instruction& int_inst,
+    uint32_t bound, std::pair<uint32_t, uint32_t> fresh_ids,
+    bool add_clamping_instructions) const {
+  // The module must have an integer constant of value the bound - 1
+  auto bound_minus_one_id =
+      FindIntConstant(ir_context, bound - 1, int_inst.type_id());
+  if (!bound_minus_one_id) {
+    return false;
+  }
+
+  // The module must have the definition of bool type to make a comparison
+  opt::analysis::Bool bool_type;
+  uint32_t bool_type_id = ir_context->get_type_mgr()->GetId(&bool_type);
+  if (!bool_type_id) {
+    return false;
+  }
+
+  auto int_type_inst =
+      ir_context->get_def_use_mgr()->GetDef(int_inst.type_id());
+
+  // Clamp the variable and add the corresponding instructions in the module
+  // if |add_clamping_instructions| is set
+  if (add_clamping_instructions) {
+    auto instruction_to_insert_before =
+        FindInstruction(message_.instruction_to_insert_before(), ir_context);
+
+    // Compare the index with the bound via an instruction of the form:
+    //   %fresh_ids.first = OpULessThanEqual %bool %int_id %bound_minus_one
+    fuzzerutil::UpdateModuleIdBound(ir_context, fresh_ids.first);
+    instruction_to_insert_before->InsertBefore(MakeUnique<opt::Instruction>(
+        ir_context, SpvOpULessThanEqual, bool_type_id, fresh_ids.first,
+        opt::Instruction::OperandList(
+            {{SPV_OPERAND_TYPE_ID, {int_inst.result_id()}},
+             {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
+
+    // Select the index if in-bounds, otherwise one less than the bound:
+    //   %fresh_ids.second = OpSelect %int_type %fresh_ids.first %int_id
+    //                           %bound_minus_one
+    fuzzerutil::UpdateModuleIdBound(ir_context, fresh_ids.second);
+    instruction_to_insert_before->InsertBefore(MakeUnique<opt::Instruction>(
+        ir_context, SpvOpSelect, int_type_inst->result_id(), fresh_ids.second,
+        opt::Instruction::OperandList(
+            {{SPV_OPERAND_TYPE_ID, {fresh_ids.first}},
+             {SPV_OPERAND_TYPE_ID, {int_inst.result_id()}},
+             {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
+  }
+
+  return true;
 }
 
 }  // namespace fuzz
