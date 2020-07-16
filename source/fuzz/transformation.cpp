@@ -129,8 +129,7 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.add_no_contraction_decoration());
     case protobufs::Transformation::TransformationCase::kAddParameter:
       return MakeUnique<TransformationAddParameter>(message.add_parameter());
-    case protobufs::Transformation::TransformationCase::
-      kAddRelaxedDecoration:
+    case protobufs::Transformation::TransformationCase::kAddRelaxedDecoration:
       return MakeUnique<TransformationAddRelaxedDecoration>(
           message.add_relaxed_decoration());
     case protobufs::Transformation::TransformationCase::kAddSpecConstantOp:
