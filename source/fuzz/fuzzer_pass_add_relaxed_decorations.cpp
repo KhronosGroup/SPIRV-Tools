@@ -33,15 +33,15 @@ void FuzzerPassAddRelaxedDecorations::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       for (auto& inst : block) {
-        // Restrict attention to numeric instructions (returning 32-bit floats
-        // or ints according to SPIR-V documentation) in dead blocks.
-        TransformationAddRelaxedDecoration transformation(inst.result_id());
-        if (transformation.IsApplicable(GetIRContext(),
-                                        *GetTransformationContext())) {
-          // Randomly choose whether to apply the RelaxedPrecision decoration to
-          // this numeric instruction.
-          if (GetFuzzerContext()->ChoosePercentage(
-                  GetFuzzerContext()->GetChanceOfAddingRelaxedDecoration())) {
+        // Randomly choose whether to apply the RelaxedPrecision decoration
+        // to this numeric instruction.
+        if (GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfAddingRelaxedDecoration())) {
+          TransformationAddRelaxedDecoration transformation(inst.result_id());
+          // Restrict attention to numeric instructions (returning 32-bit
+          // floats or ints according to SPIR-V documentation) in dead blocks.
+          if (transformation.IsApplicable(GetIRContext(),
+                                          *GetTransformationContext())) {
             transformation.Apply(GetIRContext(), GetTransformationContext());
             *GetTransformations()->add_transformation() =
                 transformation.ToMessage();
