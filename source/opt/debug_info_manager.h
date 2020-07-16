@@ -133,10 +133,10 @@ class DebugInfoManager {
   uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
                                     DebugInlinedAtContext* inlined_at_ctx);
 
-  // Return true if |variable_id| has DebugDeclare or DebugVal.
+  // Returns true if |variable_id| has DebugDeclare or DebugVal.
   bool IsDebugDeclared(uint32_t variable_id);
 
-  // Kill all DebugDeclares for |variable_id|
+  // Kills all DebugDeclares for |variable_id|
   void KillDebugDeclares(uint32_t variable_id);
 
   // Generates a DebugValue instruction with value |value_id| for every local
@@ -165,6 +165,10 @@ class DebugInfoManager {
   // creates a DebugDeclare mapping the new DebugLocalVariable to |local_var|.
   void ConvertDebugGlobalToLocalVariable(Instruction* dbg_global_var,
                                          Instruction* local_var);
+
+  // Returns true if |instr| is a DebugDeclare or a DebugValue with Deref
+  // that is used for a declaration.
+  bool IsUsedForDebugDeclare(Instruction* instr);
 
  private:
   IRContext* context() { return context_; }

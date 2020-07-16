@@ -554,6 +554,12 @@ uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
   return 0;
 }
 
+bool DebugInfoManager::IsUsedForDebugDeclare(Instruction* instr) {
+  if (!instr->IsOpenCL100DebugInstr()) return false;
+  return instr->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+         GetVariableIdOfDebugValueUsedForDeclare(instr) != 0;
+}
+
 void DebugInfoManager::AnalyzeDebugInst(Instruction* dbg_inst) {
   if (!dbg_inst->IsOpenCL100DebugInstr()) return;
 
