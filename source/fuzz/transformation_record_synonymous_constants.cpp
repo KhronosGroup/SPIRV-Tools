@@ -58,28 +58,23 @@ bool AreEquivalentConstants(opt::IRContext* ir_context, uint32_t constant_id1,
     return scalar1->words() == constant2->AsScalarConstant()->words();
   }
 
-  // If the constants are composite, they are equivalent iff their components
-  // match
-  if (constant1->AsCompositeConstant()) {
-    // Since the types match, we already know that the number of components is
-    // the same. We check that the input operands of the definitions are all
-    // constants and that they are pairwise equivalent.
-    for (uint32_t i = 0; i < def_1->NumInOperands(); i++) {
-      if (!AreEquivalentConstants(ir_context, def_1->GetSingleWordInOperand(i),
-                                  def_2->GetSingleWordInOperand(i))) {
-        return false;
-      }
-    }
+  // The only remaining possibility is that the constants are composite
+  assert(constant1->AsCompositeConstant() &&
+         "Equivalence of constants can only be checked with scalar, composite "
+         "or null constants.");
 
-    // If we get here, all the components are equivalent
-    return true;
+  // Since the types match, we already know that the number of components is
+  // the same. We check that the input operands of the definitions are all
+  // constants and that they are pairwise equivalent.
+  for (uint32_t i = 0; i < def_1->NumInOperands(); i++) {
+    if (!AreEquivalentConstants(ir_context, def_1->GetSingleWordInOperand(i),
+                                def_2->GetSingleWordInOperand(i))) {
+      return false;
+    }
   }
 
-  // If we get here, the type is not sensible to check for equivalence
-  assert(false &&
-         "Equivalency of constants can only be checked with scalar, composite "
-         "or null constants.");
-  return false;
+  // If we get here, all the components are equivalent
+  return true;
 }
 }  // namespace
 
