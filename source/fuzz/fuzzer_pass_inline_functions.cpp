@@ -37,8 +37,20 @@ void FuzzerPassInlineFunctions::Apply() {
       while (instruction != block.end()) {
         // |instruction| must be OpFunctionCall to consider applying the
         // transformation.
-        if (instruction->opcode() != SpvOpFunctionCall ||
-            !GetFuzzerContext()->ChoosePercentage(
+        if (instruction->opcode() != SpvOpFunctionCall) {
+          ++instruction;
+          continue;
+        }
+
+        // |called_function| must not have an early return.
+        auto called_function = fuzzerutil::FindFunction(
+            GetIRContext(), instruction->GetSingleWordInOperand(0));
+        if (called_function->HasEarlyReturn()) {
+          ++instruction;
+          continue;
+        }
+
+        if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfInliningFunction())) {
           ++instruction;
           continue;
@@ -46,8 +58,6 @@ void FuzzerPassInlineFunctions::Apply() {
 
         // Mapping the called function instructions.
         std::map<uint32_t, uint32_t> result_id_map;
-        auto called_function = fuzzerutil::FindFunction(
-            GetIRContext(), instruction->GetSingleWordInOperand(0));
         for (auto& called_function_block : *called_function) {
           // The called function entry block label will not be inlined.
           if (&called_function_block != &*called_function->entry()) {
@@ -56,15 +66,10 @@ void FuzzerPassInlineFunctions::Apply() {
           }
 
           for (auto& instruction_to_inline : called_function_block) {
-            // If the |instruction_to_inline| result id is the returned value,
-            // then it will be mapped to the function call result id.
-            if (called_function->tail()->tail()->opcode() == SpvOpReturnValue &&
-                instruction_to_inline.HasResultId() &&
+            // The return value id will not be mapped.
+            if (instruction_to_inline.HasResultId() &&
                 instruction_to_inline.result_id() ==
-                    called_function->tail()->tail()->GetSingleWordInOperand(
-                        0)) {
-              result_id_map[instruction_to_inline.result_id()] =
-                  instruction->result_id();
+                    called_function->GetReturnValueId()) {
               continue;
             }
 

@@ -1106,9 +1106,11 @@ message TransformationFunctionCall {
 
 message TransformationInlineFunction {
 
-  // This transformation inlines a function by mapping the function instructions to suitable ids.
+  // This transformation inlines a function by mapping the function instructions to fresh ids.
 
-  // Map field to map the called function instructions to suitable ids.
+  // For each result id defined by the called function,
+  // this map provides an associated fresh id that can
+  // be used in the inlined version of the function call.
   map<uint32, uint32> result_id_map = 1;
 
   // Result id of the function call instruction.

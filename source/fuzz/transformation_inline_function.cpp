@@ -35,6 +35,16 @@ TransformationInlineFunction::TransformationInlineFunction(
 
 bool TransformationInlineFunction::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+  // The values in the |message_.result_id_map| must be all fresh and all
+  // distinct.
+  std::set<uint32_t> ids_used_by_this_transformation;
+  for (auto& pair : message_.result_id_map()) {
+    if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+            pair.second, ir_context, &ids_used_by_this_transformation)) {
+      return false;
+    }
+  }
+
   // |function_call_instruction| must be defined and must be an OpFunctionCall
   // instruction.
   auto function_call_instruction =
@@ -51,30 +61,21 @@ bool TransformationInlineFunction::IsApplicable(
     return false;
   }
 
-  for (auto& pair : message_.result_id_map()) {
-    // |value_instruction| must be defined and must be a |called_function|
-    // instruction.
-    auto value_instruction = ir_context->get_def_use_mgr()->GetDef(pair.first);
-    if (value_instruction == nullptr ||
-        ir_context->get_instr_block(value_instruction)->GetParent() !=
-            called_function) {
+  // |message_.result_id_map| must have an entry for every result id in the
+  // called function.
+  for (auto& block : *called_function) {
+    // Since the entry block label will not be inlined, only the remaining
+    // labels must have a corresponding value in the map.
+    if (&block != &*called_function->entry() &&
+        !message_.result_id_map().count(block.GetLabel()->result_id())) {
       return false;
     }
-
-    // If it exists, the return value must map to the function call result id.
-    if (called_function->tail()->tail()->opcode() == SpvOpReturnValue &&
-        pair.first ==
-            called_function->tail()->tail()->GetSingleWordInOperand(0)) {
-      if (pair.second == function_call_instruction->result_id()) {
-        continue;
-      } else {
+    for (auto& instruction : block) {
+      if (instruction.HasResultId() &&
+          instruction.result_id() != called_function->GetReturnValueId() &&
+          !message_.result_id_map().count(instruction.result_id())) {
         return false;
       }
-    }
-
-    // The remaining result ids must map to fresh ids.
-    if (!fuzzerutil::IsFreshId(ir_context, pair.second)) {
-      return false;
     }
   }
 
@@ -134,11 +135,20 @@ void TransformationInlineFunction::Apply(
 
       // If |cloned_instruction| has a result id, then set it to its mapped
       // value.
-      if (cloned_instruction->HasResultId()) {
+      if (cloned_instruction->HasResultId() &&
+          message_.result_id_map().count(cloned_instruction->result_id())) {
         uint32_t result_id =
             message_.result_id_map().at(cloned_instruction->result_id());
         cloned_instruction->SetResultId(result_id);
         fuzzerutil::UpdateModuleIdBound(ir_context, result_id);
+      }
+
+      // If the called function return instruction is OpReturnValue and the
+      // |cloned_instruction| result id is the returned value, then sets the
+      // |cloned_instruction| result id to the function call result id.
+      if (cloned_instruction->result_id() ==
+          called_function->GetReturnValueId()) {
+        cloned_instruction->SetResultId(function_call_instruction->result_id());
       }
 
       if (cloned_instruction->opcode() == SpvOpVariable) {

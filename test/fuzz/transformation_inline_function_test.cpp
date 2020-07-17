@@ -112,9 +112,8 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                       {34, 56},
                                                       {35, 57},
                                                       {36, 58},
-                                                      {37, 59},
-                                                      {38, 44}},
-                                                     44);
+                                                      {37, 59}},
+                                                     60);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
@@ -134,8 +133,7 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                  {34, 56},
                                                  {35, 57},
                                                  {36, 58},
-                                                 {37, 59},
-                                                 {38, 42}},
+                                                 {37, 59}},
                                                 42);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -156,8 +154,7 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                  {34, 56},
                                                  {35, 57},
                                                  {36, 58},
-                                                 {37, 59},
-                                                 {38, 43}},
+                                                 {37, 59}},
                                                 43);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -256,8 +253,7 @@ TEST(TransformationInlineFunctionTest, Apply) {
                                                       {34, 56},
                                                       {35, 57},
                                                       {36, 58},
-                                                      {37, 59},
-                                                      {38, 43}},
+                                                      {37, 59}},
                                                      43);
   transformation.Apply(context.get(), &transformation_context);
   context.get()->KillInst(function_call_instruction);
