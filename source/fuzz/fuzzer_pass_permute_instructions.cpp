@@ -46,6 +46,8 @@ void FuzzerPassPermuteInstructions::Apply() {
           continue;
         }
 
+        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3458):
+        //  Consider moving instructions between different basic blocks.
         TransformationMoveInstructionDown transformation(
             MakeInstructionDescriptor(GetIRContext(), *it));
         while (transformation.IsApplicable(GetIRContext(),
