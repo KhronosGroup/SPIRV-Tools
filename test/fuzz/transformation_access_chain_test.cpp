@@ -150,7 +150,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
                    100, 43, {1000}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: index id is not a constant
+  // Bad: index id is not a constant and the pointer refers to a struct
   ASSERT_FALSE(TransformationAccessChain(
                    100, 43, {24}, MakeInstructionDescriptor(25, SpvOpIAdd, 0))
                    .IsApplicable(context.get(), transformation_context));
@@ -161,12 +161,11 @@ TEST(TransformationAccessChainTest, BasicTest) {
                                 MakeInstructionDescriptor(24, SpvOpLoad, 0))
           .IsApplicable(context.get(), transformation_context));
 
-  // Bad: index id is out of bounds
-  // TODO: Should this be allowed now?
-  //  ASSERT_FALSE(
-  //      TransformationAccessChain(100, 43, {80, 83},
-  //                                MakeInstructionDescriptor(24, SpvOpLoad, 0))
-  //          .IsApplicable(context.get(), transformation_context));
+  // Bad: index id is out of bounds when accessing a struct
+  ASSERT_FALSE(
+      TransformationAccessChain(100, 43, {83, 80},
+                                MakeInstructionDescriptor(24, SpvOpLoad, 0))
+          .IsApplicable(context.get(), transformation_context));
 
   // Bad: attempt to insert before variable
   ASSERT_FALSE(TransformationAccessChain(
@@ -476,6 +475,107 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
           %5 = OpLabel
         %100 = OpAccessChain %8 %11
         %101 = OpAccessChain %10 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationAccessChainTest, ClampingVariables) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %4
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %9 = OpTypeVoid
+          %3 = OpTypeFunction %9
+         %10 = OpTypeInt 32 1
+         %11 = OpTypeVector %10 4
+         %12 = OpTypePointer Function %11
+         %13 = OpConstant %10 0
+         %15 = OpConstant %10 1
+         %16 = OpConstant %10 3
+         %17 = OpConstant %10 2
+         %18 = OpConstant %10 10
+         %14 = OpConstantComposite %11 %13 %15 %16 %17
+         %19 = OpTypePointer Function %10
+         %21 = OpTypeInt 32 0
+         %24 = OpConstant %21 1
+         %25 = OpTypeFloat 32
+         %26 = OpTypeVector %25 4
+         %27 = OpTypePointer Output %26
+          %4 = OpVariable %27 Output
+          %2 = OpFunction %9 None %3
+          %5 = OpLabel
+          %6 = OpVariable %12 Function
+          %7 = OpVariable %19 Function
+          %8 = OpVariable %19 Function
+               OpStore %6 %14
+               OpStore %7 %13
+         %22 = OpLoad %10 %7
+         %23 = OpAccessChain %19 %6 %22
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  {
+    // Out of bounds constant index is clamped to be in-bound
+    // (the corresponding constant must be in the module)
+    TransformationAccessChain transformation(
+        100, 6, {18}, MakeInstructionDescriptor(22, SpvOpReturn, 0));
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %4
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %9 = OpTypeVoid
+          %3 = OpTypeFunction %9
+         %10 = OpTypeInt 32 1
+         %11 = OpTypeVector %10 4
+         %12 = OpTypePointer Function %11
+         %13 = OpConstant %10 0
+         %15 = OpConstant %10 1
+         %16 = OpConstant %10 3
+         %17 = OpConstant %10 2
+         %18 = OpConstant %10 10
+         %14 = OpConstantComposite %11 %13 %15 %16 %17
+         %19 = OpTypePointer Function %10
+         %21 = OpTypeInt 32 0
+         %24 = OpConstant %21 1
+         %25 = OpTypeFloat 32
+         %26 = OpTypeVector %25 4
+         %27 = OpTypePointer Output %26
+          %4 = OpVariable %27 Output
+          %2 = OpFunction %9 None %3
+          %5 = OpLabel
+          %6 = OpVariable %12 Function
+          %7 = OpVariable %19 Function
+          %8 = OpVariable %19 Function
+               OpStore %6 %14
+               OpStore %7 %13
+         %22 = OpLoad %10 %7
+         %23 = OpAccessChain %19 %6 %22
+        %100 = OpAccessChain %19 %6 %16
                OpReturn
                OpFunctionEnd
   )";

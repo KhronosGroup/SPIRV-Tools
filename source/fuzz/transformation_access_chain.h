@@ -47,6 +47,15 @@ class TransformationAccessChain : public Transformation {
   // - |message_.index_id| must be a sequence of ids of 32-bit integer constants
   //   such that it is possible to walk the pointee type of
   //   |message_.pointer_id| using these indices, remaining in-bounds.
+  // - The indices can be non-constant if the pointee type of
+  //   |message_.pointer_id| is not a struct. In this case, enough fresh ids
+  //   must be given in |message_.fresh_id_for_clamping| to perform clamping
+  //   (2 ids for each non-constant index are required). This requires the
+  //   bool type and a constant of value (bound - 1) to be declared in the
+  //   module.
+  // - The index can be an out-of-bound constant if the pointee type of
+  //   |message_.pointer_id| is not a struct and a constant with the same type
+  //   id and value (bound-1) can be found in the module.
   // - If type t is the final type reached by walking these indices, the module
   //   must include an instruction "OpTypePointer SC %t" where SC is the storage
   //   class associated with |message_.pointer_id|
@@ -60,6 +69,9 @@ class TransformationAccessChain : public Transformation {
   // type reached by walking the pointee type of |message_.pointer_id| using
   // the indices in |message_.index_id|, and with the same storage class as
   // |message_.pointer_id|.
+  //
+  // If some of the indices do not correspond to constants, instructions to
+  // clamp them are added just before the OpAccessChain instruction.
   //
   // If the fact manager in |transformation_context| reports that
   // |message_.pointer_id| has an irrelevant pointee value, then the fact that

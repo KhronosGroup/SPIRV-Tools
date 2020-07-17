@@ -325,7 +325,12 @@ TransformationAccessChain::GetIndexValueAndId(
       return {true, value, index_id};
     }
 
-    // The constant is out of bound. We need to use a constant with value
+    // Indices for structs must be in-bound constants
+    if (object_type_def->opcode() == SpvOpTypeStruct) {
+      return {false, 0, 0};
+    }
+
+    // The constant is out of bounds. We need to use a constant with value
     // bound-1
     uint32_t bound_minus_one_id =
         FindIntConstant(ir_context, bound - 1, index_instruction->type_id());
