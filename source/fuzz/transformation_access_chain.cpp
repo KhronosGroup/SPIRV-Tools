@@ -167,16 +167,19 @@ bool TransformationAccessChain::IsApplicable(
 
     std::vector<uint32_t> clamping_ids;
 
-    // If the index is not a constant, we need to use two ids for clamping
-    if (!ir_context->get_constant_mgr()->FindDeclaredConstant(index_id)) {
+    // If the object is not a struct, we need to use two ids for clamping
+    if (ir_context->get_def_use_mgr()->GetDef(subobject_type_id)->opcode() !=
+        SpvOpTypeStruct) {
       if (message_.fresh_id_for_clamping().size() - clamping_ids_used < 2) {
         // We don't have enough ids
         return false;
       }
 
       // Get two new ids to use and update the amount used
-      clamping_ids.push_back(clamping_ids_used++);
-      clamping_ids.push_back(clamping_ids_used++);
+      clamping_ids.push_back(
+          message_.fresh_id_for_clamping()[clamping_ids_used++]);
+      clamping_ids.push_back(
+          message_.fresh_id_for_clamping()[clamping_ids_used++]);
     }
 
     std::tie(found_index_value, index_value, std::ignore) = GetIndexValueAndId(
@@ -240,10 +243,13 @@ void TransformationAccessChain::Apply(
     uint32_t index_value;
     uint32_t new_index_id;
 
-    if (!ir_context->get_constant_mgr()->FindDeclaredConstant(index_id)) {
+    if (ir_context->get_def_use_mgr()->GetDef(subobject_type_id)->opcode() !=
+        SpvOpTypeStruct) {
       // Get two new ids to use and update the amount used
-      clamping_ids.push_back(clamping_ids_used++);
-      clamping_ids.push_back(clamping_ids_used++);
+      clamping_ids.push_back(
+          message_.fresh_id_for_clamping()[clamping_ids_used++]);
+      clamping_ids.push_back(
+          message_.fresh_id_for_clamping()[clamping_ids_used++]);
     }
 
     // Get the integer value associated with the index id.
@@ -317,39 +323,24 @@ TransformationAccessChain::GetIndexValueAndId(
   uint32_t bound = GetBoundForCompositeIndex(
       ir_context, *ir_context->get_def_use_mgr()->GetDef(object_type_id));
 
-  // If the index is a constant, just get its value if it is in bounds
-  if (spvOpcodeIsConstant(index_instruction->opcode())) {
+  // If the object being traversed is a struct, the id must correspond to an
+  // in-bound constant
+  if (object_type_def->opcode() == SpvOpTypeStruct) {
+    if (!spvOpcodeIsConstant(index_instruction->opcode())) {
+      return {false, 0, 0};
+    }
+
+    // The index is a constant. It must be in bounds.
     uint32_t value = index_instruction->GetSingleWordInOperand(0);
 
-    if (value < bound) {
-      return {true, value, index_id};
-    }
-
-    // Indices for structs must be in-bound constants
-    if (object_type_def->opcode() == SpvOpTypeStruct) {
+    if (value >= bound) {
       return {false, 0, 0};
     }
 
-    // The constant is out of bounds. We need to use a constant with value
-    // bound-1
-    uint32_t bound_minus_one_id =
-        FindIntConstant(ir_context, bound - 1, index_instruction->type_id());
-    if (bound_minus_one_id == 0) {
-      // Constant with value bound-1 not found
-      return {false, 0, 0};
-    }
-
-    return {true, bound - 1, bound_minus_one_id};
+    return {true, value, index_id};
   }
 
-  // The index is not a constant
-
-  // Structs can only be accessed via constants
-  if (object_type_def->opcode() == SpvOpTypeStruct) {
-    return {false, 0, 0};
-  }
-
-  // The index is not a constant or it is not in bounds
+  // The object being traverse is a struct. We must clamp the index.
 
   // We need at least two fresh ids to clamp the index variable
   if (fresh_ids.size() < 2) {

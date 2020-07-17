@@ -48,13 +48,10 @@ class TransformationAccessChain : public Transformation {
   //   |message_.pointer_id| using these indices.
   // - All indices used to access a struct must be OpConstant.
   // - The indices used to index non-struct composites will be clamped to be
-  //   in bound. Enough pairs of fresh ids must be given in
-  //   |message_.fresh_id_for_clamping| to perform clamping (one pair for
+  //   in bound. Enough fresh ids must be given in
+  //   |message_.fresh_id_for_clamping| to perform clamping (2 for
   //   each index accessing a non-struct). This requires the bool type and
   //   a constant of value (bound - 1) to be declared in the module.
-  // - The index can be an out-of-bound constant if the pointee type of
-  //   |message_.pointer_id| is not a struct and a constant with the same type
-  //   id and value (bound-1) can be found in the module.
   // - If type t is the final type reached by walking these indices, the module
   //   must include an instruction "OpTypePointer SC %t" where SC is the storage
   //   class associated with |message_.pointer_id|
