@@ -18,13 +18,55 @@
 namespace spvtools {
 namespace fuzz {
 
-namespace {
+TransformationRecordSynonymousConstants::
+    TransformationRecordSynonymousConstants(
+        const protobufs::TransformationRecordSynonymousConstants& message)
+    : message_(message) {}
 
-// Returns true if the two given constants are equivalent
-// (the description of IsApplicable specifies the conditions they must satisfy
-// to be considered equivalent)
-bool AreEquivalentConstants(opt::IRContext* ir_context, uint32_t constant_id1,
-                            uint32_t constant_id2) {
+TransformationRecordSynonymousConstants::
+    TransformationRecordSynonymousConstants(uint32_t constant1_id,
+                                            uint32_t constant2_id) {
+  message_.set_constant1_id(constant1_id);
+  message_.set_constant2_id(constant2_id);
+}
+
+bool TransformationRecordSynonymousConstants::IsApplicable(
+    opt::IRContext* ir_context,
+    const TransformationContext& /* unused */) const {
+  // The ids must be different
+  if (message_.constant1_id() == message_.constant2_id()) {
+    return false;
+  }
+
+  return AreEquivalentConstants(ir_context, message_.constant1_id(),
+                                message_.constant2_id());
+}
+
+void TransformationRecordSynonymousConstants::Apply(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  protobufs::FactDataSynonym fact_data_synonym;
+  // Define the two equivalent data descriptors (just containing the ids)
+  *fact_data_synonym.mutable_data1() =
+      MakeDataDescriptor(message_.constant1_id(), {});
+  *fact_data_synonym.mutable_data2() =
+      MakeDataDescriptor(message_.constant2_id(), {});
+  protobufs::Fact fact;
+  *fact.mutable_data_synonym_fact() = fact_data_synonym;
+
+  // Add the fact to the fact manager
+  transformation_context->GetFactManager()->AddFact(fact, ir_context);
+}
+
+protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
+    const {
+  protobufs::Transformation result;
+  *result.mutable_record_synonymous_constants() = message_;
+  return result;
+}
+
+bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
+    opt::IRContext* ir_context, uint32_t constant_id1, uint32_t constant_id2) {
   opt::Instruction* def_1 = ir_context->get_def_use_mgr()->GetDef(constant_id1);
   opt::Instruction* def_2 = ir_context->get_def_use_mgr()->GetDef(constant_id2);
 
@@ -75,54 +117,6 @@ bool AreEquivalentConstants(opt::IRContext* ir_context, uint32_t constant_id1,
 
   // If we get here, all the components are equivalent
   return true;
-}
-}  // namespace
-
-TransformationRecordSynonymousConstants::
-    TransformationRecordSynonymousConstants(
-        const protobufs::TransformationRecordSynonymousConstants& message)
-    : message_(message) {}
-
-TransformationRecordSynonymousConstants::
-    TransformationRecordSynonymousConstants(uint32_t constant1_id,
-                                            uint32_t constant2_id) {
-  message_.set_constant1_id(constant1_id);
-  message_.set_constant2_id(constant2_id);
-}
-
-bool TransformationRecordSynonymousConstants::IsApplicable(
-    opt::IRContext* ir_context,
-    const TransformationContext& /* unused */) const {
-  // The ids must be different
-  if (message_.constant1_id() == message_.constant2_id()) {
-    return false;
-  }
-
-  return AreEquivalentConstants(ir_context, message_.constant1_id(),
-                                message_.constant2_id());
-}
-
-void TransformationRecordSynonymousConstants::Apply(
-    opt::IRContext* ir_context,
-    TransformationContext* transformation_context) const {
-  protobufs::FactDataSynonym fact_data_synonym;
-  // Define the two equivalent data descriptors (just containing the ids)
-  *fact_data_synonym.mutable_data1() =
-      MakeDataDescriptor(message_.constant1_id(), {});
-  *fact_data_synonym.mutable_data2() =
-      MakeDataDescriptor(message_.constant2_id(), {});
-  protobufs::Fact fact;
-  *fact.mutable_data_synonym_fact() = fact_data_synonym;
-
-  // Add the fact to the fact manager
-  transformation_context->GetFactManager()->AddFact(fact, ir_context);
-}
-
-protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
-    const {
-  protobufs::Transformation result;
-  *result.mutable_record_synonymous_constants() = message_;
-  return result;
 }
 
 }  // namespace fuzz

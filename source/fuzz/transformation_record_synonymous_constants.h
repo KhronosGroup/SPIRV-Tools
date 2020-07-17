@@ -54,6 +54,13 @@ class TransformationRecordSynonymousConstants : public Transformation {
 
  private:
   protobufs::TransformationRecordSynonymousConstants message_;
+
+  // Returns true if the two given constants are equivalent
+  // (the description of IsApplicable specifies the conditions they must satisfy
+  // to be considered equivalent)
+  static bool AreEquivalentConstants(opt::IRContext* ir_context,
+                                     uint32_t constant_id1,
+                                     uint32_t constant_id2);
 };
 
 }  // namespace fuzz
