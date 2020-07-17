@@ -1436,6 +1436,8 @@ bool FactManager::AddFact(const fuzz::protobufs::Fact& fact,
 void FactManager::AddFactDataSynonym(const protobufs::DataDescriptor& data1,
                                      const protobufs::DataDescriptor& data2,
                                      opt::IRContext* context) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550):
+  //  assert that neither |data1| nor |data2| are irrelevant.
   protobufs::FactDataSynonym fact;
   *fact.mutable_data1() = data1;
   *fact.mutable_data2() = data2;
@@ -1538,6 +1540,8 @@ void FactManager::AddFactIdIsIrrelevant(uint32_t result_id) {
 void FactManager::AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
                                     const std::vector<uint32_t>& rhs_id,
                                     opt::IRContext* context) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550):
+  //  assert that elements of |rhs_id| are not irrelevant.
   protobufs::FactIdEquation fact;
   fact.set_lhs_id(lhs_id);
   fact.set_opcode(opcode);
