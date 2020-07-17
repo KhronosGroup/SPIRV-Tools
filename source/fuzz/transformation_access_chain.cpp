@@ -192,6 +192,12 @@ bool TransformationAccessChain::IsApplicable(
       fresh_ids.first = pair.first();
       fresh_ids.second = pair.second();
 
+      // Check that the ids are actually fresh
+      if (!fuzzerutil::IsFreshId(ir_context, fresh_ids.first) ||
+          !fuzzerutil::IsFreshId(ir_context, fresh_ids.second)) {
+        return false;
+      }
+
       if (!GetIndexValueOrId(ir_context, index_id, subobject_type_id, false,
                              fresh_ids)
                .first) {

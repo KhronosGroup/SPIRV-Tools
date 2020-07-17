@@ -460,8 +460,8 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
                OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
           %4 = OpTypeVoid
-          %5 = OpTypeFunction %4
-          %6 = OpTypeBool
+          %5 = OpTypeBool
+          %6 = OpTypeFunction %4
           %7 = OpTypeInt 32 1
           %8 = OpTypeVector %7 4
           %9 = OpTypePointer Function %8
@@ -469,24 +469,42 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
          %11 = OpConstant %7 1
          %12 = OpConstant %7 3
          %13 = OpConstant %7 2
-         %14 = OpConstant %7 10
-         %15 = OpConstantComposite %8 %10 %11 %12 %13
-         %16 = OpTypePointer Function %7
-         %17 = OpTypeInt 32 0
-         %18 = OpConstant %17 1
-         %19 = OpTypeFloat 32
-         %20 = OpTypeVector %19 4
-         %21 = OpTypePointer Output %20
-          %3 = OpVariable %21 Output
-          %2 = OpFunction %4 None %5
-         %22 = OpLabel
-         %23 = OpVariable %9 Function
-         %24 = OpVariable %16 Function
-         %25 = OpVariable %16 Function
-               OpStore %23 %15
-               OpStore %24 %10
-         %26 = OpLoad %7 %24
-         %27 = OpAccessChain %16 %23 %26
+         %14 = OpConstantComposite %8 %10 %11 %12 %13
+         %15 = OpTypePointer Function %7
+         %16 = OpTypeInt 32 0
+         %17 = OpConstant %16 1
+         %18 = OpConstant %16 3
+         %19 = OpTypeStruct %8
+         %20 = OpTypePointer Function %19
+         %21 = OpConstant %16 9
+         %22 = OpConstant %16 10
+         %23 = OpTypeArray %19 %22
+         %24 = OpTypePointer Function %23
+         %25 = OpTypeFloat 32
+         %26 = OpTypeVector %25 4
+         %27 = OpTypePointer Output %26
+          %3 = OpVariable %27 Output
+          %2 = OpFunction %4 None %6
+         %28 = OpLabel
+         %29 = OpVariable %9 Function
+         %30 = OpVariable %15 Function
+         %31 = OpVariable %15 Function
+         %32 = OpVariable %20 Function
+         %33 = OpVariable %15 Function
+         %34 = OpVariable %24 Function
+               OpStore %29 %14
+               OpStore %30 %10
+         %36 = OpLoad %7 %30
+         %38 = OpLoad %8 %29
+         %39 = OpCompositeConstruct %19 %38
+         %40 = OpLoad %7 %30
+         %41 = OpAccessChain %15 %32 %10 %40
+         %42 = OpLoad %8 %29
+         %43 = OpCompositeConstruct %19 %42
+         %44 = OpAccessChain %20 %34 %11
+         %45 = OpLoad %7 %30
+         %46 = OpLoad %7 %33
+         %47 = OpAccessChain %15 %34 %45 %10 %46
                OpReturn
                OpFunctionEnd
   )";
@@ -502,10 +520,19 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
                                                validator_options);
 
   {
-    // The out of bounds constant index is clamped to be in-bound
     TransformationAccessChain transformation(
-        100, 23, {14}, MakeInstructionDescriptor(26, SpvOpReturn, 0),
+        100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
         {{200, 201}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        101, 29, {36}, MakeInstructionDescriptor(38, SpvOpLoad, 0),
+        {{202, 203}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -520,8 +547,8 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
                OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
           %4 = OpTypeVoid
-          %5 = OpTypeFunction %4
-          %6 = OpTypeBool
+          %5 = OpTypeBool
+          %6 = OpTypeFunction %4
           %7 = OpTypeInt 32 1
           %8 = OpTypeVector %7 4
           %9 = OpTypePointer Function %8
@@ -529,27 +556,48 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
          %11 = OpConstant %7 1
          %12 = OpConstant %7 3
          %13 = OpConstant %7 2
-         %14 = OpConstant %7 10
-         %15 = OpConstantComposite %8 %10 %11 %12 %13
-         %16 = OpTypePointer Function %7
-         %17 = OpTypeInt 32 0
-         %18 = OpConstant %17 1
-         %19 = OpTypeFloat 32
-         %20 = OpTypeVector %19 4
-         %21 = OpTypePointer Output %20
-          %3 = OpVariable %21 Output
-          %2 = OpFunction %4 None %5
-         %22 = OpLabel
-         %23 = OpVariable %9 Function
-         %24 = OpVariable %16 Function
-         %25 = OpVariable %16 Function
-               OpStore %23 %15
-               OpStore %24 %10
-         %26 = OpLoad %7 %24
-         %27 = OpAccessChain %16 %23 %26
-        %200 = OpULessThanEqual %6 %14 %12
-        %201 = OpSelect %7 %200 %14 %12
-        %100 = OpAccessChain %16 %23 %201
+         %14 = OpConstantComposite %8 %10 %11 %12 %13
+         %15 = OpTypePointer Function %7
+         %16 = OpTypeInt 32 0
+         %17 = OpConstant %16 1
+         %18 = OpConstant %16 3
+         %19 = OpTypeStruct %8
+         %20 = OpTypePointer Function %19
+         %21 = OpConstant %16 9
+         %22 = OpConstant %16 10
+         %23 = OpTypeArray %19 %22
+         %24 = OpTypePointer Function %23
+         %25 = OpTypeFloat 32
+         %26 = OpTypeVector %25 4
+         %27 = OpTypePointer Output %26
+          %3 = OpVariable %27 Output
+          %2 = OpFunction %4 None %6
+         %28 = OpLabel
+         %29 = OpVariable %9 Function
+         %30 = OpVariable %15 Function
+         %31 = OpVariable %15 Function
+         %32 = OpVariable %20 Function
+         %33 = OpVariable %15 Function
+         %34 = OpVariable %24 Function
+               OpStore %29 %14
+               OpStore %30 %10
+        %200 = OpULessThanEqual %5 %17 %18
+        %201 = OpSelect %16 %200 %17 %18
+        %100 = OpAccessChain %15 %29 %201
+         %36 = OpLoad %7 %30
+        %202 = OpULessThanEqual %5 %36 %12
+        %203 = OpSelect %7 %202 %36 %12
+        %101 = OpAccessChain %15 %29 %203
+         %38 = OpLoad %8 %29
+         %39 = OpCompositeConstruct %19 %38
+         %40 = OpLoad %7 %30
+         %41 = OpAccessChain %15 %32 %10 %40
+         %42 = OpLoad %8 %29
+         %43 = OpCompositeConstruct %19 %42
+         %44 = OpAccessChain %20 %34 %11
+         %45 = OpLoad %7 %30
+         %46 = OpLoad %7 %33
+         %47 = OpAccessChain %15 %34 %45 %10 %46
                OpReturn
                OpFunctionEnd
   )";
