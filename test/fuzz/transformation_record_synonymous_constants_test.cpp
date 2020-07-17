@@ -353,17 +353,21 @@ TEST(TransformationRecordSynonymousConstantsTest,
          %15 = OpTypePointer Function %14
          %17 = OpConstantFalse %14
          %22 = OpTypeVector %6 4
+         %37 = OpTypeVector %6 3
          %32 = OpTypeMatrix %22 2
+         %39 = OpTypeMatrix %22 3
          %23 = OpTypePointer Output %22
          %24 = OpVariable %23 Output
          %25 = OpConstantComposite %22 %9 %9 %9 %9
          %27 = OpConstantNull %22
          %29 = OpConstantComposite %22 %9 %28 %28 %9
          %31 = OpConstantComposite %22 %30 %9 %9 %9
+         %38 = OpConstantComposite %37 %9 %9 %9
          %33 = OpConstantComposite %32 %25 %29
          %34 = OpConstantComposite %32 %27 %25
          %35 = OpConstantNull %32
          %36 = OpConstantComposite %32 %31 %25
+         %40 = OpConstantComposite %39 %25 %25 %25
           %4 = OpFunction %2 None %3
           %5 = OpLabel
           %8 = OpVariable %7 Function
@@ -426,12 +430,20 @@ TEST(TransformationRecordSynonymousConstantsTest,
   ASSERT_FALSE(TransformationRecordSynonymousConstants(27, 31).IsApplicable(
       context.get(), transformation_context));
 
+  // %25 and %38 are not equivalent (they have different sizes)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(25, 38).IsApplicable(
+      context.get(), transformation_context));
+
   // %35 and %36 are not equivalent (35 is null, 36 has non-zero components)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(35, 36).IsApplicable(
       context.get(), transformation_context));
 
   // %33 and %36 are not equivalent (not all components are equivalent)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(33, 36).IsApplicable(
+      context.get(), transformation_context));
+
+  // %33 and %40 are not equivalent (they have different sizes)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(33, 40).IsApplicable(
       context.get(), transformation_context));
 
   // %33 and %34 are equivalent (same type, equivalent components)
@@ -572,16 +584,19 @@ TEST(TransformationRecordSynonymousConstantsTest, ArrayCompositeConstants) {
          %11 = OpTypePointer Function %10
          %13 = OpConstant %10 0
          %27 = OpConstant %10 4
+         %39 = OpConstant %10 2
          %14 = OpTypeBool
          %15 = OpTypePointer Function %14
          %17 = OpConstantFalse %14
          %22 = OpTypeVector %6 4
          %28 = OpTypeArray %6 %27
          %29 = OpTypeArray %28 %27
+         %40 = OpTypeArray %6 %39
          %23 = OpTypePointer Output %22
          %24 = OpVariable %23 Output
          %25 = OpConstantComposite %22 %9 %9 %9 %9
          %31 = OpConstantComposite %28 %9 %9 %9 %9
+         %41 = OpConstantComposite %40 %9 %9
          %32 = OpConstantComposite %28 %38 %9 %9 %9
          %33 = OpConstantNull %28
          %34 = OpConstantComposite %29 %31 %33 %31 %33
@@ -623,6 +638,10 @@ TEST(TransformationRecordSynonymousConstantsTest, ArrayCompositeConstants) {
 
   // %25 and %31 are not equivalent (they have different types)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(25, 31).IsApplicable(
+      context.get(), transformation_context));
+
+  // %25 and %41 are not equivalent (they have different sizes)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(25, 41).IsApplicable(
       context.get(), transformation_context));
 
   // %31 and %32 are not equivalent (their components are not pairwise
