@@ -183,15 +183,23 @@ TEST(TransformationAccessChainTest, BasicTest) {
                    100, 43, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 100))
                    .IsApplicable(context.get(), transformation_context));
 
+#ifndef NDEBUG
   // Bad: pointer is null
-  ASSERT_FALSE(TransformationAccessChain(
-                   100, 45, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_DEATH(
+      TransformationAccessChain(100, 45, {80},
+                                MakeInstructionDescriptor(24, SpvOpLoad, 0))
+          .IsApplicable(context.get(), transformation_context),
+      "Access chains should not be created from null/undefined pointers");
+#endif
 
+#ifndef NDEBUG
   // Bad: pointer is undef
-  ASSERT_FALSE(TransformationAccessChain(
-                   100, 46, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_DEATH(
+      TransformationAccessChain(100, 46, {80},
+                                MakeInstructionDescriptor(24, SpvOpLoad, 0))
+          .IsApplicable(context.get(), transformation_context),
+      "Access chains should not be created from null/undefined pointers");
+#endif
 
   // Bad: pointer to result type does not exist
   ASSERT_FALSE(TransformationAccessChain(
