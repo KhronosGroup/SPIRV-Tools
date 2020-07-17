@@ -34,25 +34,24 @@ class TransformationAccessChain : public Transformation {
       uint32_t fresh_id, uint32_t pointer_id,
       const std::vector<uint32_t>& index_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before,
-      const std::vector<uint32_t>& fresh_id_for_clamping = std::vector<uint32_t>()
-      );
+      const std::vector<uint32_t>& fresh_id_for_clamping =
+          std::vector<uint32_t>());
 
-  // TODO: Update
   // - |message_.fresh_id| must be fresh
   // - |message_.instruction_to_insert_before| must identify an instruction
   //   before which it is legitimate to insert an OpAccessChain instruction
   // - |message_.pointer_id| must be a result id with pointer type that is
   //   available (according to dominance rules) at the insertion point.
   // - The pointer must not be OpConstantNull or OpUndef
-  // - |message_.index_id| must be a sequence of ids of 32-bit integer constants
+  // - |message_.index_id| must be a sequence of ids of 32-bit integers
   //   such that it is possible to walk the pointee type of
-  //   |message_.pointer_id| using these indices, remaining in-bounds.
-  // - The indices can be non-constant if the pointee type of
-  //   |message_.pointer_id| is not a struct. In this case, enough fresh ids
-  //   must be given in |message_.fresh_id_for_clamping| to perform clamping
-  //   (2 ids for each non-constant index are required). This requires the
-  //   bool type and a constant of value (bound - 1) to be declared in the
-  //   module.
+  //   |message_.pointer_id| using these indices.
+  // - All indices used to access a struct must be OpConstant.
+  // - The indices used to index non-struct composites will be clamped to be
+  //   in bound. Enough pairs of fresh ids must be given in
+  //   |message_.fresh_id_for_clamping| to perform clamping (one pair for
+  //   each index accessing a non-struct). This requires the bool type and
+  //   a constant of value (bound - 1) to be declared in the module.
   // - The index can be an out-of-bound constant if the pointee type of
   //   |message_.pointer_id| is not a struct and a constant with the same type
   //   id and value (bound-1) can be found in the module.
@@ -70,8 +69,8 @@ class TransformationAccessChain : public Transformation {
   // the indices in |message_.index_id|, and with the same storage class as
   // |message_.pointer_id|.
   //
-  // If some of the indices do not correspond to constants, instructions to
-  // clamp them are added just before the OpAccessChain instruction.
+  // For each of the indices traversing non-struct composites, two clamping
+  // instructions are added using ids in |message_.fresh_id_for_clamping|
   //
   // If the fact manager in |transformation_context| reports that
   // |message_.pointer_id| has an irrelevant pointee value, then the fact that
