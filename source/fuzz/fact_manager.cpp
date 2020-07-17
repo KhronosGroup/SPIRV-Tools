@@ -540,21 +540,25 @@ class FactManager::DataSynonymAndIdEquationFacts {
       id_equations_;
 
   // Represents a map from a strongly connected component (SCC) in the graph to
-  // the set of vertices of that component. The SCC is represented by one of its
-  // vertices (i.e. |scc_to_node_[K].contains(K) == true| for some |K|).
-  // Each data descriptor is a representative of some equivalence class.
-  // Check out the documentation for the ComputeBitcastDataSynonymFacts method
-  // to learn more about why we use a graph and SCCs here.
+  // the set of vertices of that component. The graph is used to compute
+  // corollary facts from the OpBitcast equation facts (see implementation
+  // comments in the ComputeBitcastDataSynonymFacts method to learn why we need
+  // a graph here). The SCC is represented by one of its vertices (i.e.
+  // |scc_to_node_[K].contains(K) == true| for some |K|). Each data descriptor
+  // is a representative of some equivalence class.
   std::unordered_map<const protobufs::DataDescriptor*,
                      std::unordered_set<const protobufs::DataDescriptor*>>
       scc_to_node_;
 
   // Represents a map from a vertex in the graph to its strongly connected
-  // component (SCC). The SCC is represented by one of its
-  // vertices (i.e. |node_to_scc_[K]| might be equal to |K| for some |K|).
-  // Each data descriptor is a representative of some equivalence class.
-  // Check out the documentation for the ComputeBitcastDataSynonymFacts method
-  // to learn more about why we use a graph and SCCs here.
+  // component (SCC). The graph is used to compute corollary facts from the
+  // OpBitcast equation facts (see implementation comments in the
+  // ComputeBitcastDataSynonymFacts method to learn why we need a graph here).
+  // The SCC is represented by one of its vertices (i.e. |node_to_scc_[K]| might
+  // be equal to |K| for some |K|). Each data descriptor is a representative of
+  // some equivalence class. Check out the documentation for the
+  // ComputeBitcastDataSynonymFacts method to learn more about why we use a
+  // graph and SCCs here.
   std::unordered_map<const protobufs::DataDescriptor*,
                      const protobufs::DataDescriptor*>
       node_to_scc_;
