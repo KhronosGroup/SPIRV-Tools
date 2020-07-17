@@ -485,9 +485,9 @@ Instruction* DebugInfoManager::AddDebugValueWithIndex(
   return added_dbg_value;
 }
 
-void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
-                                     uint32_t variable_id, uint32_t value_id,
-                                     Instruction* insert_pos) {
+void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
+    Instruction* scope_and_line, uint32_t variable_id, uint32_t value_id,
+    Instruction* insert_pos) {
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
 
