@@ -56,7 +56,7 @@
 #include "source/fuzz/transformation_load.h"
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"
-#include "source/fuzz/transformation_move_instruction.h"
+#include "source/fuzz/transformation_move_instruction_down.h"
 #include "source/fuzz/transformation_outline_function.h"
 #include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
@@ -196,7 +196,7 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
       return MakeUnique<TransformationMoveBlockDown>(message.move_block_down());
     case protobufs::Transformation::TransformationCase::kMoveInstruction:
-      return MakeUnique<TransformationMoveInstruction>(
+      return MakeUnique<TransformationMoveInstructionDown>(
           message.move_instruction());
     case protobufs::Transformation::TransformationCase::kOutlineFunction:
       return MakeUnique<TransformationOutlineFunction>(

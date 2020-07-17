@@ -408,7 +408,7 @@ message Transformation {
     TransformationReplaceCopyMemoryWithLoadStore replace_copy_memory_with_load_store = 61;
     TransformationReplaceLoadStoreWithCopyMemory replace_load_store_with_copy_memory = 62;
     TransformationAddLoopPreheader add_loop_preheader = 63;
-    TransformationMoveInstruction move_instruction = 64;
+    TransformationMoveInstructionDown move_instruction_down = 64;
     // Add additional option using the next available number.
   }
 }
@@ -1125,16 +1125,12 @@ message TransformationMoveBlockDown {
   uint32 block_id = 1;
 }
 
-message TransformationMoveInstruction {
+message TransformationMoveInstructionDown {
 
-  // Inserts |target| instruction before |insert_before| instruction
-  // and removes it from its original position.
+  // Swaps |instruction| with the next instruction in the block.
 
-  // Inserts |target| instruction before this instruction.
-  InstructionDescriptor insert_before = 1;
-
-  // Descriptor of the instruction to move.
-  InstructionDescriptor target = 2;
+  // The instruction to move down.
+  InstructionDescriptor instruction = 1;
 
 }
 

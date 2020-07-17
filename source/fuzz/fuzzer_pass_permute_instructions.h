@@ -21,23 +21,16 @@ namespace spvtools {
 namespace fuzz {
 
 // TODO
-class FuzzerPassMoveInstructions : public FuzzerPass {
+class FuzzerPassPermuteInstructions : public FuzzerPass {
  public:
-  FuzzerPassMoveInstructions(
+  FuzzerPassPermuteInstructions(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassMoveInstructions() override;
+  ~FuzzerPassPermuteInstructions() override;
 
   void Apply() override;
-
- private:
-  // Returns a set of instructions that can be moved before |insert_before_it|.
-  // Each instruction in the set is either from the |block| or one of its
-  // neighbouring blocks (i.e. successors and predecessors).
-  std::vector<opt::Instruction*> ComputeMoveCandidates(
-      opt::BasicBlock* block, opt::BasicBlock::iterator insert_before_it);
 };
 
 }  // namespace fuzz
