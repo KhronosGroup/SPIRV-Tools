@@ -158,36 +158,44 @@ bool TransformationAccessChain::IsApplicable(
 
   // Consider the given index ids in turn.
   for (auto index_id : message_.index_id()) {
-    // Try to get the integer value associated with this index is.  The first
-    // component of the result will be false if the id did not correspond to an
-    // integer.  Otherwise, the integer with which the id is associated is the
-    // second component.
-    bool found_index_value;
+    // The index value will correspond to the value of the index if the object
+    // is a struct, otherwise the value 0 will be used.
     uint32_t index_value;
 
-    std::vector<uint32_t> clamping_ids;
-
-    // If the object is not a struct, we need to use two ids for clamping
-    if (ir_context->get_def_use_mgr()->GetDef(subobject_type_id)->opcode() !=
+    // Check whether the object is a struct
+    if (ir_context->get_def_use_mgr()->GetDef(subobject_type_id)->opcode() ==
         SpvOpTypeStruct) {
+      // It is a struct: we need to retrieve the integer value
+
+      bool successful;
+      std::tie(successful, index_value) =
+          GetIndexValueOrId(ir_context, index_id, subobject_type_id);
+
+      if (!successful) {
+        return false;
+      }
+    } else {
+      // It is not a struct: the index will need clamping
+
       if (message_.fresh_id_for_clamping().size() - clamping_ids_used < 2) {
         // We don't have enough ids
         return false;
       }
 
       // Get two new ids to use and update the amount used
-      clamping_ids.push_back(
-          message_.fresh_id_for_clamping()[clamping_ids_used++]);
-      clamping_ids.push_back(
-          message_.fresh_id_for_clamping()[clamping_ids_used++]);
-    }
+      std::pair<uint32_t, uint32_t> fresh_ids = {
+          message_.fresh_id_for_clamping()[clamping_ids_used],
+          message_.fresh_id_for_clamping()[clamping_ids_used + 1]};
 
-    std::tie(found_index_value, index_value, std::ignore) = GetIndexValueAndId(
-        ir_context, index_id, subobject_type_id, false, clamping_ids);
+      clamping_ids_used += 2;
 
-    if (!found_index_value) {
-      // This index cannot be used
-      return false;
+      if (!GetIndexValueOrId(ir_context, index_id, subobject_type_id, false,
+                             fresh_ids)
+               .first) {
+        return false;
+      }
+
+      index_value = 0;
     }
 
     // Try to walk down the type using this index.  This will yield 0 if the
@@ -238,23 +246,37 @@ void TransformationAccessChain::Apply(
 
   // Go through the index ids in turn.
   for (auto index_id : message_.index_id()) {
-    std::vector<uint32_t> clamping_ids;
-
     uint32_t index_value;
+
+    // Actual id to be used in the instruction: the original id
+    // or the clamped one.
     uint32_t new_index_id;
 
-    if (ir_context->get_def_use_mgr()->GetDef(subobject_type_id)->opcode() !=
+    // Check whether the object is a struct
+    if (ir_context->get_def_use_mgr()->GetDef(subobject_type_id)->opcode() ==
         SpvOpTypeStruct) {
-      // Get two new ids to use and update the amount used
-      clamping_ids.push_back(
-          message_.fresh_id_for_clamping()[clamping_ids_used++]);
-      clamping_ids.push_back(
-          message_.fresh_id_for_clamping()[clamping_ids_used++]);
-    }
+      // It is a struct: we need to retrieve the integer value
 
-    // Get the integer value associated with the index id.
-    std::tie(std::ignore, index_value, new_index_id) = GetIndexValueAndId(
-        ir_context, index_id, subobject_type_id, true, clamping_ids);
+      index_value =
+          GetIndexValueOrId(ir_context, index_id, subobject_type_id).second;
+
+      new_index_id = index_id;
+
+    } else {
+      // It is not a struct: the index will need clamping
+
+      // Get two new ids to use and update the amount used
+      std::pair<uint32_t, uint32_t> fresh_ids = {
+          message_.fresh_id_for_clamping()[clamping_ids_used],
+          message_.fresh_id_for_clamping()[clamping_ids_used + 1]};
+      clamping_ids_used += 2;
+
+      new_index_id = GetIndexValueOrId(ir_context, index_id, subobject_type_id,
+                                       true, fresh_ids)
+                         .second;
+
+      index_value = 0;
+    }
 
     // Add the correct index id to the operands.
     operands.push_back({SPV_OPERAND_TYPE_ID, {new_index_id}});
@@ -296,20 +318,20 @@ protobufs::Transformation TransformationAccessChain::ToMessage() const {
   return result;
 }
 
-std::tuple<bool, uint32_t, uint32_t>
-TransformationAccessChain::GetIndexValueAndId(
+std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValueOrId(
     opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
-    bool add_clamping_instructions, std::vector<uint32_t> fresh_ids) const {
+    bool add_clamping_instructions,
+    std::pair<uint32_t, uint32_t> fresh_ids) const {
   auto object_type_def = ir_context->get_def_use_mgr()->GetDef(object_type_id);
   // The object being indexed must be a composite
   if (!spvOpcodeIsComposite(object_type_def->opcode())) {
-    return {false, 0, 0};
+    return {false, 0};
   }
 
   // Get the defining instruction of the index
   auto index_instruction = ir_context->get_def_use_mgr()->GetDef(index_id);
   if (!index_instruction) {
-    return {false, 0, 0};
+    return {false, 0};
   }
 
   // The index type must be 32-bit integer
@@ -317,7 +339,7 @@ TransformationAccessChain::GetIndexValueAndId(
       ir_context->get_def_use_mgr()->GetDef(index_instruction->type_id());
   if (index_type->opcode() != SpvOpTypeInt ||
       index_type->GetSingleWordInOperand(0) != 32) {
-    return {false, 0, 0};
+    return {false, 0};
   }
 
   uint32_t bound = GetBoundForCompositeIndex(
@@ -327,37 +349,36 @@ TransformationAccessChain::GetIndexValueAndId(
   // in-bound constant
   if (object_type_def->opcode() == SpvOpTypeStruct) {
     if (!spvOpcodeIsConstant(index_instruction->opcode())) {
-      return {false, 0, 0};
+      return {false, 0};
     }
 
     // The index is a constant. It must be in bounds.
     uint32_t value = index_instruction->GetSingleWordInOperand(0);
 
     if (value >= bound) {
-      return {false, 0, 0};
+      return {false, 0};
     }
 
-    return {true, value, index_id};
+    return {true, value};
   }
 
   // The object being traverse is a struct. We must clamp the index.
 
-  // We need at least two fresh ids to clamp the index variable
-  if (fresh_ids.size() < 2) {
-    return {false, 0, 0};
+  // The fresh ids need to have been given
+  if (fresh_ids.first == 0 || fresh_ids.second == 0) {
+    return {false, 0};
   }
 
   // Perform the clamping using the fresh ids at our disposal.
   // The module will not be changed if |add_clamping_instructions| is not set.
   if (!TryToClampIntVariable(ir_context, *index_instruction, bound /*bound*/,
-                             std::make_pair(fresh_ids[0], fresh_ids[1]),
-                             add_clamping_instructions)) {
+                             fresh_ids, add_clamping_instructions)) {
     // It was not possible to clamp the variable
-    return {false, 0, 0};
+    return {false, 0};
   }
 
   // The clamped variable will be at id |fresh_ids[1]|
-  return {true, 0, fresh_ids[1]};
+  return {true, fresh_ids.second};
 }
 
 bool TransformationAccessChain::TryToClampIntVariable(

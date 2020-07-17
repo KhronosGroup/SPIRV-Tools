@@ -79,24 +79,24 @@ class TransformationAccessChain : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // Returns {false, 0, 0} if:
+  // Returns {false, 0} if:
   // - |index_id| does not correspond to a 32-bit integer
   // - the object being indexed is not a composite type
-  // - the object type is a struct and the index is not a constant
-  // - the object being indexed is not a composite type
+  // - the object type is a struct and the index is not a constant or
+  //   the index is out of bounds
   // - it is not possible to clamp the index variable to the bound
-  // Returns {true, value, new_id} otherwise, where:
-  // - value is the value of the index if it is a constant, 0 otherwise
-  // - new_id is the id at which the index for addressing the composite can
-  //   be found: it will be the same as |index_id| if the index is a constant,
-  //   otherwise it is the index of the newly-defined clamped index variable
+  // Otherwise, returns:
+  // - {true, value} if the object being indexed is a struct (and the index
+  //   is thus a constant), where value is the value of the constant
+  // - {true, clamped_id} if the object being indexed is not a struct, where
+  //   clamped_id is the id at which to find the clamped index id
   // This method only modifies the module if add_clamping_instructions is true.
-  // |fresh_ids| contains the fresh ids needed for clamping, but it can be
-  // if clamping is not needed.
-  std::tuple<bool, uint32_t, uint32_t> GetIndexValueAndId(
+  // |fresh_ids| contains the fresh ids needed for clamping, and it is ignored
+  // if clamping is not needed (i.e. the object is a struct).
+  std::pair<bool, uint32_t> GetIndexValueOrId(
       opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
-      bool add_clamping_instructions,
-      std::vector<uint32_t> fresh_ids = std::vector<uint32_t>()) const;
+      bool add_clamping_instructions = false,
+      std::pair<uint32_t, uint32_t> fresh_ids = {0, 0}) const;
 
   // Try to clamp the integer variable defined by |int_inst| so that the
   // result is smaller than the given bound. The |fresh_ids| are used to
