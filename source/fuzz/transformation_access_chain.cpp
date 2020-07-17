@@ -84,7 +84,7 @@ TransformationAccessChain::TransformationAccessChain(
     uint32_t fresh_id, uint32_t pointer_id,
     const std::vector<uint32_t>& index_id,
     const protobufs::InstructionDescriptor& instruction_to_insert_before,
-    const std::vector<uint32_t>& fresh_id_for_clamping) {
+    const std::vector<std::pair<uint32_t, uint32_t>>& fresh_ids_for_clamping) {
   message_.set_fresh_id(fresh_id);
   message_.set_pointer_id(pointer_id);
   for (auto id : index_id) {
@@ -92,8 +92,11 @@ TransformationAccessChain::TransformationAccessChain(
   }
   *message_.mutable_instruction_to_insert_before() =
       instruction_to_insert_before;
-  for (auto clamping_id : fresh_id_for_clamping) {
-    message_.add_fresh_id_for_clamping(clamping_id);
+  for (auto clamping_ids_pair : fresh_ids_for_clamping) {
+    protobufs::UInt32Pair pair;
+    pair.set_first(clamping_ids_pair.first);
+    pair.set_second(clamping_ids_pair.second);
+    *message_.add_fresh_ids_for_clamping() = pair;
   }
 }
 
@@ -154,7 +157,7 @@ bool TransformationAccessChain::IsApplicable(
   // Start from the base type of the pointer.
   uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
 
-  uint32_t clamping_ids_used = 0;
+  int id_pairs_used = 0;
 
   // Consider the given index ids in turn.
   for (auto index_id : message_.index_id()) {
@@ -177,17 +180,17 @@ bool TransformationAccessChain::IsApplicable(
     } else {
       // It is not a struct: the index will need clamping
 
-      if (message_.fresh_id_for_clamping().size() - clamping_ids_used < 2) {
+      if (message_.fresh_ids_for_clamping().size() <= id_pairs_used) {
         // We don't have enough ids
         return false;
       }
 
       // Get two new ids to use and update the amount used
-      std::pair<uint32_t, uint32_t> fresh_ids = {
-          message_.fresh_id_for_clamping()[clamping_ids_used],
-          message_.fresh_id_for_clamping()[clamping_ids_used + 1]};
-
-      clamping_ids_used += 2;
+      protobufs::UInt32Pair pair =
+          message_.fresh_ids_for_clamping()[id_pairs_used++];
+      std::pair<uint32_t, uint32_t> fresh_ids;
+      fresh_ids.first = pair.first();
+      fresh_ids.second = pair.second();
 
       if (!GetIndexValueOrId(ir_context, index_id, subobject_type_id, false,
                              fresh_ids)
@@ -242,7 +245,7 @@ void TransformationAccessChain::Apply(
       ir_context->get_def_use_mgr()->GetDef(message_.pointer_id())->type_id());
   uint32_t subobject_type_id = pointer_type->GetSingleWordInOperand(1);
 
-  uint32_t clamping_ids_used = 0;
+  uint32_t id_pairs_used = 0;
 
   // Go through the index ids in turn.
   for (auto index_id : message_.index_id()) {
@@ -266,10 +269,11 @@ void TransformationAccessChain::Apply(
       // It is not a struct: the index will need clamping
 
       // Get two new ids to use and update the amount used
-      std::pair<uint32_t, uint32_t> fresh_ids = {
-          message_.fresh_id_for_clamping()[clamping_ids_used],
-          message_.fresh_id_for_clamping()[clamping_ids_used + 1]};
-      clamping_ids_used += 2;
+      protobufs::UInt32Pair pair =
+          message_.fresh_ids_for_clamping()[id_pairs_used++];
+      std::pair<uint32_t, uint32_t> fresh_ids;
+      fresh_ids.first = pair.first();
+      fresh_ids.second = pair.second();
 
       new_index_id = GetIndexValueOrId(ir_context, index_id, subobject_type_id,
                                        true, fresh_ids)

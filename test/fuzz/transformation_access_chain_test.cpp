@@ -172,6 +172,12 @@ TEST(TransformationAccessChainTest, BasicTest) {
                    100, 34, {}, MakeInstructionDescriptor(36, SpvOpVariable, 0))
                    .IsApplicable(context.get(), transformation_context));
 
+  // Bad: OpTypeBool must be present in the module to clamp an index
+  ASSERT_FALSE(
+      TransformationAccessChain(100, 36, {80, 81},
+                                MakeInstructionDescriptor(37, SpvOpStore, 0))
+          .IsApplicable(context.get(), transformation_context));
+
   // Bad: pointer not available
   ASSERT_FALSE(
       TransformationAccessChain(
@@ -230,18 +236,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   {
     TransformationAccessChain transformation(
-        102, 36, {80, 81}, MakeInstructionDescriptor(37, SpvOpStore, 0));
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
-  }
-
-  {
-    TransformationAccessChain transformation(
-        103, 44, {}, MakeInstructionDescriptor(44, SpvOpStore, 0));
+        102, 44, {}, MakeInstructionDescriptor(44, SpvOpStore, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -252,7 +247,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   {
     TransformationAccessChain transformation(
-        104, 13, {80}, MakeInstructionDescriptor(21, SpvOpAccessChain, 0));
+        103, 13, {80}, MakeInstructionDescriptor(21, SpvOpAccessChain, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -263,7 +258,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   {
     TransformationAccessChain transformation(
-        105, 34, {}, MakeInstructionDescriptor(44, SpvOpStore, 1));
+        104, 34, {}, MakeInstructionDescriptor(44, SpvOpStore, 1));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -274,7 +269,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   {
     TransformationAccessChain transformation(
-        106, 38, {}, MakeInstructionDescriptor(40, SpvOpFunctionCall, 0));
+        105, 38, {}, MakeInstructionDescriptor(40, SpvOpFunctionCall, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -285,35 +280,13 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   {
     TransformationAccessChain transformation(
-        107, 14, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
+        106, 14, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(107));
-  }
-
-  {
-    TransformationAccessChain transformation(
-        108, 54, {85, 81, 81}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(108));
-  }
-
-  {
-    TransformationAccessChain transformation(
-        109, 48, {80, 80}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(109));
   }
 
   std::string after_transformation = R"(
@@ -367,16 +340,15 @@ TEST(TransformationAccessChainTest, BasicTest) {
          %36 = OpVariable %9 Function
          %38 = OpVariable %11 Function
          %44 = OpCopyObject %9 %36
-        %103 = OpAccessChain %9 %44
+        %102 = OpAccessChain %9 %44
                OpStore %28 %33
-        %105 = OpAccessChain %11 %34
+        %104 = OpAccessChain %11 %34
                OpStore %34 %35
          %37 = OpLoad %8 %28
-        %102 = OpAccessChain %20 %36 %80 %81
                OpStore %36 %37
          %39 = OpLoad %10 %34
                OpStore %38 %39
-        %106 = OpAccessChain %11 %38
+        %105 = OpAccessChain %11 %38
          %40 = OpFunctionCall %10 %15 %36 %38
          %41 = OpLoad %10 %34
          %42 = OpIAdd %10 %41 %40
@@ -388,15 +360,13 @@ TEST(TransformationAccessChainTest, BasicTest) {
          %13 = OpFunctionParameter %9
          %14 = OpFunctionParameter %11
          %16 = OpLabel
-        %104 = OpAccessChain %70 %13 %80
+        %103 = OpAccessChain %70 %13 %80
          %21 = OpAccessChain %20 %13 %17 %19
          %43 = OpCopyObject %9 %13
          %22 = OpLoad %6 %21
          %23 = OpConvertFToS %10 %22
         %100 = OpAccessChain %70 %43 %80
-        %107 = OpAccessChain %11 %14
-        %108 = OpAccessChain %99 %54 %85 %81 %81
-        %109 = OpAccessChain %99 %48 %80 %80
+        %106 = OpAccessChain %11 %14
          %24 = OpLoad %10 %14
          %25 = OpIAdd %10 %23 %24
                OpReturnValue %25
@@ -456,99 +426,25 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
   }
 
   std::string after_transformation = R"(
-; SPIR-V
-; Version: 1.0
-; Generator: Khronos Glslang Reference Front End; 8
-; Bound: 49
-; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %48
+               OpEntryPoint Fragment %4 "main" %11 %12
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
-               OpName %4 "main"
-               OpName %9 "x"
-               OpName %16 "index"
-               OpName %17 "a"
-               OpName %25 "A"
-               OpMemberName %25 0 "x"
-               OpName %27 "str"
-               OpName %33 "index2"
-               OpName %37 "vars"
-               OpName %48 "color"
-               OpDecorate %9 RelaxedPrecision
-               OpDecorate %16 RelaxedPrecision
-               OpDecorate %17 RelaxedPrecision
-               OpDecorate %21 RelaxedPrecision
-               OpDecorate %22 RelaxedPrecision
-               OpDecorate %24 RelaxedPrecision
-               OpMemberDecorate %25 0 RelaxedPrecision
-               OpDecorate %28 RelaxedPrecision
-               OpDecorate %30 RelaxedPrecision
-               OpDecorate %32 RelaxedPrecision
-               OpDecorate %33 RelaxedPrecision
-               OpDecorate %38 RelaxedPrecision
-               OpDecorate %41 RelaxedPrecision
-               OpDecorate %42 RelaxedPrecision
-               OpDecorate %44 RelaxedPrecision
-               OpDecorate %48 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-          %7 = OpTypeVector %6 4
-          %8 = OpTypePointer Function %7
-         %10 = OpConstant %6 0
-         %11 = OpConstant %6 1
-         %12 = OpConstant %6 3
-         %13 = OpConstant %6 2
-         %14 = OpConstantComposite %7 %10 %11 %12 %13
-         %15 = OpTypePointer Function %6
-         %18 = OpTypeInt 32 0
-         %19 = OpConstant %18 1
-         %25 = OpTypeStruct %7
-         %26 = OpTypePointer Function %25
-         %34 = OpConstant %18 10
-         %35 = OpTypeArray %25 %34
-         %36 = OpTypePointer Function %35
-         %45 = OpTypeFloat 32
-         %46 = OpTypeVector %45 4
-         %47 = OpTypePointer Output %46
-         %48 = OpVariable %47 Output
+          %6 = OpTypeFloat 32
+          %7 = OpTypeStruct %6
+          %8 = OpTypePointer Private %7
+          %9 = OpTypeStruct %6
+         %10 = OpTypePointer Private %9
+         %11 = OpVariable %8 Private
+         %12 = OpVariable %10 Private
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %9 = OpVariable %8 Function
-         %16 = OpVariable %15 Function
-         %17 = OpVariable %15 Function
-         %27 = OpVariable %26 Function
-         %33 = OpVariable %15 Function
-         %37 = OpVariable %36 Function
-               OpStore %9 %14
-               OpStore %16 %10
-         %20 = OpAccessChain %15 %9 %19
-         %21 = OpLoad %6 %20
-               OpStore %17 %21
-         %22 = OpLoad %6 %16
-         %23 = OpAccessChain %15 %9 %22
-         %24 = OpLoad %6 %23
-               OpStore %17 %24
-         %28 = OpLoad %7 %9
-         %29 = OpCompositeConstruct %25 %28
-               OpStore %27 %29
-         %30 = OpLoad %6 %16
-         %31 = OpAccessChain %15 %27 %10 %30
-         %32 = OpLoad %6 %31
-               OpStore %17 %32
-               OpStore %33 %11
-         %38 = OpLoad %7 %9
-         %39 = OpCompositeConstruct %25 %38
-         %40 = OpAccessChain %26 %37 %11
-               OpStore %40 %39
-         %41 = OpLoad %6 %16
-         %42 = OpLoad %6 %33
-         %43 = OpAccessChain %15 %37 %41 %10 %42
-         %44 = OpLoad %6 %43
-               OpStore %17 %44
+        %100 = OpAccessChain %8 %11
+        %101 = OpAccessChain %10 %12
                OpReturn
                OpFunctionEnd
   )";
@@ -609,7 +505,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
     // The out of bounds constant index is clamped to be in-bound
     TransformationAccessChain transformation(
         100, 23, {14}, MakeInstructionDescriptor(26, SpvOpReturn, 0),
-        {200, 201});
+        {{200, 201}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);

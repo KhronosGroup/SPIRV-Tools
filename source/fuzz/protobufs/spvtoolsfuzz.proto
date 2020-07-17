@@ -430,7 +430,7 @@ message TransformationAccessChain {
   InstructionDescriptor instruction_to_insert_before = 4;
 
   // Additional fresh ids, required to clamp index variables
-  repeated uint32 fresh_id_for_clamping = 5;
+  repeated UInt32Pair fresh_ids_for_clamping = 5;
 
 }
 

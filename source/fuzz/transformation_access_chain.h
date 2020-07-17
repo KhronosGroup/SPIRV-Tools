@@ -34,8 +34,8 @@ class TransformationAccessChain : public Transformation {
       uint32_t fresh_id, uint32_t pointer_id,
       const std::vector<uint32_t>& index_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before,
-      const std::vector<uint32_t>& fresh_id_for_clamping =
-          std::vector<uint32_t>());
+      const std::vector<std::pair<uint32_t, uint32_t>>& fresh_ids_for_clamping =
+          {});
 
   // - |message_.fresh_id| must be fresh
   // - |message_.instruction_to_insert_before| must identify an instruction
