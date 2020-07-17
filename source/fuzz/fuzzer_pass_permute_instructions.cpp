@@ -54,7 +54,7 @@ void FuzzerPassPermuteInstructions::Apply() {
                                            *GetTransformationContext())) {
           transformation.Apply(GetIRContext(), GetTransformationContext());
           transformation = TransformationMoveInstructionDown(
-              MakeInstructionDescriptor(GetIRContext(), *it))
+              MakeInstructionDescriptor(GetIRContext(), *it));
         }
       }
     }
