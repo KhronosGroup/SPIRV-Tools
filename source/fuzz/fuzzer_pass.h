@@ -105,13 +105,16 @@ class FuzzerPass {
 
   // A generic helper for applying a transformation only if it is applicable.
   // If it is applicable, the transformation is applied and then added to the
-  // sequence of applied transformations. Otherwise, nothing happens.
-  void MaybeApplyTransformation(const Transformation& transformation) {
+  // sequence of applied transformations and the function returns true.
+  // Otherwise, the function returns false.
+  bool MaybeApplyTransformation(const Transformation& transformation) {
     if (transformation.IsApplicable(GetIRContext(),
                                     *GetTransformationContext())) {
       transformation.Apply(GetIRContext(), GetTransformationContext());
       *GetTransformations()->add_transformation() = transformation.ToMessage();
+      return true;
     }
+    return false;
   }
 
   // Returns the id of an OpTypeBool instruction.  If such an instruction does
