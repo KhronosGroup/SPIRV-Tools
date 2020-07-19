@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Google LLC
+// Copyright (c) 2020 Google
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_FUZZER_PASS_REPLACE_COPYOBJECT_WITH_STORE_LOAD_H
-#define SPIRV_TOOLS_FUZZER_PASS_REPLACE_COPYOBJECT_WITH_STORE_LOAD_H
+#ifndef SPIRV_TOOLS_FUZZER_PASS_REPLACE_COPY_OBJECTS_WITH_STORES_LOADS_H
+#define SPIRV_TOOLS_FUZZER_PASS_REPLACE_COPY_OBJECTS_WITH_STORES_LOADS_H
 
 #include "source/fuzz/fuzzer_pass.h"
+
+// Replaces instructions OpCopyObject by creating a new variable, storing into
+// that variable add immediately loading this variable to result id of previous
+// OpCopyObject instruction
 
 namespace spvtools {
 namespace fuzz {
 
-// A pass that applies the ReplaceCopyObjectWithStoreLoad to OpCopyObject
-// instructions.
-class FuzzerPassReplaceCopyObjectWithStoreLoad : public FuzzerPass {
+class FuzzerPassReplaceCopyObjectsWithStoresLoads : public FuzzerPass {
  public:
-  FuzzerPassReplaceCopyObjectWithStoreLoad(
+  FuzzerPassReplaceCopyObjectsWithStoresLoads(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassReplaceCopyObjectWithStoreLoad() override;
+  ~FuzzerPassReplaceCopyObjectsWithStoresLoads() override;
 
   void Apply() override;
 };
@@ -37,4 +39,4 @@ class FuzzerPassReplaceCopyObjectWithStoreLoad : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_FUZZER_PASS_REPLACE_COPYOBJECT_WITH_STORE_LOAD_H
+#endif  // SPIRV_TOOLS_FUZZER_PASS_REPLACE_COPY_OBJECTS_WITH_STORES_LOADS_H

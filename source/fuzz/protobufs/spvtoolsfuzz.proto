@@ -386,6 +386,7 @@ message Transformation {
     TransformationReplaceParameterWithGlobal replace_parameter_with_global = 55;
     TransformationRecordSynonymousConstants record_synonymous_constants = 56;
     TransformationAddSynonym add_synonym = 57;
+    TransformationReplaceCopyObjectWithStoreLoad replace_copy_object_with_store_load = 58;
     // Add additional option using the next available number.
   }
 }
@@ -1231,6 +1232,25 @@ message TransformationReplaceConstantWithUniform {
   // Id that will store the result of a load
   uint32 fresh_id_for_load = 4;
 
+}
+
+message TransformationReplaceCopyObjectWithStoreLoad {
+
+  // A transformation that makes |value_synonym_id| and |value_id| to be
+  // synonymous by storing |value_id| into |variable_id| and
+  // loading |variable_id| to |value_synonym_id|.
+
+  // The result id of initial OpCopyLoad instruction
+  uint32 copy_object_result_id = 1;
+
+  // A fresh id for the variable to be stored to.
+  uint32 fresh_variable_id = 2;
+
+  // The variable storage class (local or global).
+  uint32 variable_storage_class = 3;
+
+  // Constant to initialize the variable from.
+  uint32 variable_initializer_id = 4;
 }
 
 message TransformationReplaceIdWithSynonym {
