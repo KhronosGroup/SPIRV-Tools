@@ -13,9 +13,6 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_relaxed_decoration.h"
-#include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_add_dead_block.h"
-#include "source/fuzz/transformation_equation_instruction.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -52,6 +49,11 @@ TEST(TransformationAddRelaxedDecorationTest, BasicScenarios) {
                OpStore %8 %9
                OpStore %10 %11
                OpStore %14 %15
+               OpSelectionMerge %19 None
+               OpBranchConditional %15 %19 %100
+        %100 = OpLabel
+         %25 = OpISub %6 %9 %11
+         %28 = OpLogicalNot %12 %15
                OpBranch %19
          %19 = OpLabel
          %27 = OpISub %6 %9 %11
@@ -69,29 +71,7 @@ TEST(TransformationAddRelaxedDecorationTest, BasicScenarios) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  TransformationAddDeadBlock transformation1(100, 5, true);
-  ASSERT_TRUE(
-      transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
-
-  protobufs::InstructionDescriptor return_instruction =
-      MakeInstructionDescriptor(100, SpvOpBranch, 0);
-
-  // SpvOpISub is numeric and is in the dead block, so transformation should be
-  // applicable.
-  auto transformation2 = TransformationEquationInstruction(
-      25, SpvOpISub, {9, 11}, return_instruction);
-  ASSERT_TRUE(
-      transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  auto transformation3 = TransformationEquationInstruction(
-      28, SpvOpLogicalNot, {15}, return_instruction);
-  ASSERT_TRUE(
-      transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  fact_manager.AddFactBlockIsDead(100);
 
   // Invalid: 200 is not an id.
   ASSERT_FALSE(TransformationAddRelaxedDecoration(200).IsApplicable(
@@ -105,10 +85,10 @@ TEST(TransformationAddRelaxedDecorationTest, BasicScenarios) {
   // It is valid to add RelaxedPrecision to 25 (and it's fine to
   // have a duplicate).
   for (uint32_t result_id : {25u, 25u}) {
-    TransformationAddRelaxedDecoration transformation4(result_id);
+    TransformationAddRelaxedDecoration transformation(result_id);
     ASSERT_TRUE(
-        transformation4.IsApplicable(context.get(), transformation_context));
-    transformation4.Apply(context.get(), &transformation_context);
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
