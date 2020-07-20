@@ -256,7 +256,8 @@ message FactIdIsIrrelevant {
 
   // Records a fact that |result_id| is irrelevant (i.e. it's usage doesn't
   // change the semantics of the module). This implies that a use of this id
-  // can later be replaced with some other id of the same type.
+  // can later be replaced with some other id of the same type, or the
+  // definition of |result_id| can be changed so that it yields a different value.
 
   // An irrelevant id.
   uint32 result_id = 1;

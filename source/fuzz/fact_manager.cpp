@@ -1541,7 +1541,7 @@ void FactManager::AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
                                     const std::vector<uint32_t>& rhs_id,
                                     opt::IRContext* context) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550):
-  //  assert that elements of |rhs_id| are not irrelevant.
+  //  assert that elements of |rhs_id| and |lhs_id| are not irrelevant.
   protobufs::FactIdEquation fact;
   fact.set_lhs_id(lhs_id);
   fact.set_opcode(opcode);

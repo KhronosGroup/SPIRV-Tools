@@ -185,22 +185,16 @@ class FactManager {
   //==============================
 
   //==============================
-  // Querying facts about pointers with irrelevant pointee values
+  // Querying facts about irrelevant values
 
   // Returns true if and ony if the value of the pointee associated with
   // |pointer_id| is irrelevant.
   bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;
 
-  // End of irrelevant pointee value facts
-  //==============================
-
-  //==============================
-  // Querying facts about irrelevant ids.
-
   // Returns true iff there exists a fact that the |result_id| is irrelevant.
   bool IdIsIrrelevant(uint32_t result_id) const;
 
-  // End of irrelevant ids facts
+  // End of irrelevant value facts
   //==============================
 
  private:
