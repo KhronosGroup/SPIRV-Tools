@@ -159,6 +159,10 @@ bool TransformationAccessChain::IsApplicable(
 
   int id_pairs_used = 0;
 
+  // Keep track of the fresh ids used to make sure that they are distinct
+  std::set<uint32_t> fresh_ids_used;
+  fresh_ids_used.emplace(message_.fresh_id());
+
   // Consider the given index ids in turn.
   for (auto index_id : message_.index_id()) {
     // The index value will correspond to the value of the index if the object
@@ -192,11 +196,18 @@ bool TransformationAccessChain::IsApplicable(
       fresh_ids.first = pair.first();
       fresh_ids.second = pair.second();
 
-      // Check that the ids are actually fresh
+      // Check that the ids are actually fresh and distinct from the others
       if (!fuzzerutil::IsFreshId(ir_context, fresh_ids.first) ||
-          !fuzzerutil::IsFreshId(ir_context, fresh_ids.second)) {
+          !fuzzerutil::IsFreshId(ir_context, fresh_ids.second) ||
+          fresh_ids.first == fresh_ids.second ||
+          fresh_ids_used.count(fresh_ids.first) ||
+          fresh_ids_used.count(fresh_ids.second)) {
         return false;
       }
+
+      // Add the ids to the set of used ids
+      fresh_ids_used.emplace(fresh_ids.first);
+      fresh_ids_used.emplace(fresh_ids.second);
 
       if (!GetIndexValueOrId(ir_context, index_id, subobject_type_id, false,
                              fresh_ids)
@@ -381,8 +392,8 @@ std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValueOrId(
 
   // Perform the clamping using the fresh ids at our disposal.
   // The module will not be changed if |add_clamping_instructions| is not set.
-  if (!TryToClampIntVariable(ir_context, *index_instruction, bound /*bound*/,
-                             fresh_ids, add_clamping_instructions)) {
+  if (!TryToClampIntVariable(ir_context, *index_instruction, bound, fresh_ids,
+                             add_clamping_instructions)) {
     // It was not possible to clamp the variable
     return {false, 0};
   }

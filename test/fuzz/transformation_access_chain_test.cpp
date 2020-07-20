@@ -476,7 +476,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
          %18 = OpConstant %16 3
          %19 = OpTypeStruct %8
          %20 = OpTypePointer Function %19
-         %21 = OpConstant %16 9
+         %21 = OpConstant %7 9
          %22 = OpConstant %16 10
          %23 = OpTypeArray %19 %22
          %24 = OpTypePointer Function %23
@@ -498,13 +498,10 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
          %38 = OpLoad %8 %29
          %39 = OpCompositeConstruct %19 %38
          %40 = OpLoad %7 %30
-         %41 = OpAccessChain %15 %32 %10 %40
          %42 = OpLoad %8 %29
          %43 = OpCompositeConstruct %19 %42
-         %44 = OpAccessChain %20 %34 %11
          %45 = OpLoad %7 %30
          %46 = OpLoad %7 %33
-         %47 = OpAccessChain %15 %34 %45 %10 %46
                OpReturn
                OpFunctionEnd
   )";
@@ -518,6 +515,49 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
+
+  // Bad: no ids given for clamping
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: an id given for clamping is not fresh
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{46, 201}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: an id given for clamping is not fresh
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{200, 46}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: an id given for clamping is the same as the id for the access chain
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{100, 201}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: the fresh ids given are not distinct
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{200, 200}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: not enough ids given for clamping (2 pairs needed)
+  ASSERT_FALSE(
+      TransformationAccessChain(104, 34, {45, 10, 46},
+                                MakeInstructionDescriptor(46, SpvOpReturn, 0),
+                                {{208, 209}, {209, 211}})
+          .IsApplicable(context.get(), transformation_context));
+
+  // Bad: the fresh ids given are not distinct
+  ASSERT_FALSE(
+      TransformationAccessChain(104, 34, {45, 10, 46},
+                                MakeInstructionDescriptor(46, SpvOpReturn, 0),
+                                {{208, 209}, {209, 211}})
+          .IsApplicable(context.get(), transformation_context));
 
   {
     TransformationAccessChain transformation(
@@ -533,6 +573,36 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
     TransformationAccessChain transformation(
         101, 29, {36}, MakeInstructionDescriptor(38, SpvOpLoad, 0),
         {{202, 203}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        102, 32, {10, 40}, MakeInstructionDescriptor(42, SpvOpLoad, 0),
+        {{204, 205}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        103, 34, {11}, MakeInstructionDescriptor(45, SpvOpLoad, 0),
+        {{206, 207}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        104, 34, {45, 10, 46}, MakeInstructionDescriptor(46, SpvOpReturn, 0),
+        {{208, 209}, {210, 211}});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
@@ -563,7 +633,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
          %18 = OpConstant %16 3
          %19 = OpTypeStruct %8
          %20 = OpTypePointer Function %19
-         %21 = OpConstant %16 9
+         %21 = OpConstant %7 9
          %22 = OpConstant %16 10
          %23 = OpTypeArray %19 %22
          %24 = OpTypePointer Function %23
@@ -591,13 +661,21 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
          %38 = OpLoad %8 %29
          %39 = OpCompositeConstruct %19 %38
          %40 = OpLoad %7 %30
-         %41 = OpAccessChain %15 %32 %10 %40
+        %204 = OpULessThanEqual %5 %40 %12
+        %205 = OpSelect %7 %204 %40 %12
+        %102 = OpAccessChain %15 %32 %10 %205
          %42 = OpLoad %8 %29
          %43 = OpCompositeConstruct %19 %42
-         %44 = OpAccessChain %20 %34 %11
+        %206 = OpULessThanEqual %5 %11 %21
+        %207 = OpSelect %7 %206 %11 %21
+        %103 = OpAccessChain %20 %34 %207
          %45 = OpLoad %7 %30
          %46 = OpLoad %7 %33
-         %47 = OpAccessChain %15 %34 %45 %10 %46
+        %208 = OpULessThanEqual %5 %45 %21
+        %209 = OpSelect %7 %208 %45 %21
+        %210 = OpULessThanEqual %5 %46 %12
+        %211 = OpSelect %7 %210 %46 %12
+        %104 = OpAccessChain %15 %34 %209 %10 %211
                OpReturn
                OpFunctionEnd
   )";
