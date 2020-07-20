@@ -45,8 +45,8 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
   auto copy_object_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.copy_object_result_id());
 
-  // The OpCopyObject instruction must be defined.
-  if (!copy_object_instruction) {
+  // This must be a defined OpCopyObject instruction.
+  if (copy_object_instruction->opcode() != SpvOpCopyObject) {
     return false;
   }
 
@@ -71,9 +71,6 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
       pointee_type_id != constant_instruction->type_id()) {
     return false;
   }
-  std::cout << copy_object_instruction->GetSingleWordOperand(0) << std::endl;
-  std::cout << copy_object_instruction->GetSingleWordOperand(1) << std::endl;
-  std::cout << copy_object_instruction->GetSingleWordOperand(2) << std::endl;
   // |message_.variable_storage_class| must be private or function.
   return ((message_.variable_storage_class() == SpvStorageClassPrivate ||
            message_.variable_storage_class() == SpvStorageClassFunction));

@@ -24,27 +24,29 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
+               OpEntryPoint Fragment %4 "main" %11
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "b"
-               OpName %11 "a"
+               OpName %8 "a"
+               OpName %11 "b"
                OpDecorate %8 RelaxedPrecision
                OpDecorate %11 RelaxedPrecision
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
-          %7 = OpTypePointer Private %6
-          %8 = OpVariable %7 Private
-          %9 = OpConstant %6 3
-         %10 = OpTypePointer Function %6
-         %12 = OpConstant %6 2
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %10 = OpTypePointer Private %6
+         %11 = OpVariable %10 Private
+         %12 = OpConstant %6 3
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %11 = OpVariable %10 Function
+          %8 = OpVariable %7 Function
                OpStore %8 %9
                OpStore %11 %12
+        %13 = OpCopyObject %7 %8
+        %14 = OpCopyObject %10 %11
                OpReturn
                OpFunctionEnd
   )";
@@ -60,22 +62,77 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
                                                validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  uint32_t copy_object_result_id = 10;
-  uint32_t fresh_variable_id = 11;
-  uint32_t variable_storage_class = SpvStorageClassFunction;
-  uint32_t variable_initializer_id = 9;
-  auto transformation = TransformationReplaceCopyObjectWithStoreLoad(
-      copy_object_result_id, fresh_variable_id, variable_storage_class,
-      variable_initializer_id);
-  ASSERT_TRUE(
-      transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled;
+  // Invalid: fresh_variable_id=10 is not fresh.
+  auto transformation_invalid_1 = TransformationReplaceCopyObjectWithStoreLoad(
+      13, 10, SpvStorageClassFunction, 9);
+  ASSERT_FALSE(transformation_invalid_1.IsApplicable(context.get(),
+                                                     transformation_context));
+
+  // Invalid: copy_object_result_id=10 is not a CopyObject instruction
+  // result_id.
+  auto transformation_invalid_2 = TransformationReplaceCopyObjectWithStoreLoad(
+      10, 15, SpvStorageClassFunction, 9);
+  ASSERT_FALSE(transformation_invalid_2.IsApplicable(context.get(),
+                                                     transformation_context));
+
+  // Invalid: initializer_id=8 is not a initializer result_id.
+  auto transformation_invalid_3 = TransformationReplaceCopyObjectWithStoreLoad(
+      13, 15, SpvStorageClassFunction, 8);
+  ASSERT_FALSE(transformation_invalid_3.IsApplicable(context.get(),
+                                                     transformation_context));
+  // Invalid: SpvStorageClassUniform is not applicable to the transformation.
+  auto transformation_invalid_4 = TransformationReplaceCopyObjectWithStoreLoad(
+      13, 15, SpvStorageClassUniform, 9);
+  ASSERT_FALSE(transformation_invalid_4.IsApplicable(context.get(),
+                                                     transformation_context));
+
+  auto transformation_valid_1 = TransformationReplaceCopyObjectWithStoreLoad(
+      13, 15, SpvStorageClassFunction, 9);
+  ASSERT_TRUE(transformation_valid_1.IsApplicable(context.get(),
+                                                  transformation_context));
+  transformation_valid_1.Apply(context.get(), &transformation_context);
+
+  auto transformation_valid_2 = TransformationReplaceCopyObjectWithStoreLoad(
+      14, 16, SpvStorageClassPrivate, 12);
+  ASSERT_TRUE(transformation_valid_2.IsApplicable(context.get(),
+                                                  transformation_context));
+  transformation_valid_2.Apply(context.get(), &transformation_context);
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %11 %16
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "a"
+               OpName %11 "b"
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %11 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %10 = OpTypePointer Private %6
+         %11 = OpVariable %10 Private
+         %12 = OpConstant %6 3
+         %16 = OpVariable %10 Private %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpVariable %7 Function %9
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %11 %12
+               OpStore %15 %8
+         %13 = OpLoad %7 %15
+               OpStore %16 %11
+         %14 = OpLoad %10 %16
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace
