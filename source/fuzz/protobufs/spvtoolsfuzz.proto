@@ -170,6 +170,7 @@ message Fact {
     FactFunctionIsLivesafe function_is_livesafe_fact = 4;
     FactPointeeValueIsIrrelevant pointee_value_is_irrelevant_fact = 5;
     FactIdEquation id_equation_fact = 6;
+    FactIdIsIrrelevant id_is_irrelevant = 7;
   }
 }
 
@@ -182,6 +183,7 @@ message FactBlockIsDead {
   // can be made to this block.
 
   uint32 block_id = 1;
+
 }
 
 message FactConstantUniform {
@@ -222,6 +224,7 @@ message FactFunctionIsLivesafe {
   // functions.
 
   uint32 function_id = 1;
+
 }
 
 message FactIdEquation {
@@ -249,6 +252,17 @@ message FactIdEquation {
 
 }
 
+message FactIdIsIrrelevant {
+
+  // Records a fact that |result_id| is irrelevant (i.e. it's usage doesn't
+  // change the semantics of the module). This implies that a use of this id
+  // can later be replaced with some other id of the same type.
+
+  // An irrelevant id.
+  uint32 result_id = 1;
+
+}
+
 message FactPointeeValueIsIrrelevant {
 
   // Records the fact that value of the data pointed to by a pointer id does
@@ -258,6 +272,7 @@ message FactPointeeValueIsIrrelevant {
 
   // A result id of pointer type
   uint32 pointer_id = 1;
+
 }
 
 message AccessChainClampingInfo {
