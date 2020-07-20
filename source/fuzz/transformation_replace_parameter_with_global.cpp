@@ -53,7 +53,8 @@ TransformationReplaceParameterWithGlobal::
 }
 
 bool TransformationReplaceParameterWithGlobal::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // Check that |parameter_id| is valid.
   const auto* param_inst =
       ir_context->get_def_use_mgr()->GetDef(message_.parameter_id());
@@ -81,8 +82,8 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
   }
 
   // Check that initializer for the global variable exists in the module.
-  if (fuzzerutil::MaybeGetZeroConstant(ir_context, param_inst->type_id()) ==
-      0) {
+  if (fuzzerutil::MaybeGetZeroConstant(ir_context, transformation_context,
+                                       param_inst->type_id()) == 0) {
     return false;
   }
 
@@ -100,7 +101,8 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
 }
 
 void TransformationReplaceParameterWithGlobal::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
   const auto* param_inst =
       ir_context->get_def_use_mgr()->GetDef(message_.parameter_id());
   assert(param_inst && "Parameter must exist");
@@ -115,7 +117,8 @@ void TransformationReplaceParameterWithGlobal::Apply(
       fuzzerutil::MaybeGetPointerType(ir_context, param_inst->type_id(),
                                       SpvStorageClassPrivate),
       SpvStorageClassPrivate,
-      fuzzerutil::MaybeGetZeroConstant(ir_context, param_inst->type_id()));
+      fuzzerutil::MaybeGetZeroConstant(ir_context, *transformation_context,
+                                       param_inst->type_id()));
 
   auto* function =
       GetFunctionFromParameterId(ir_context, message_.parameter_id());

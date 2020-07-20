@@ -68,14 +68,17 @@ class TransformationAddSynonym : public Transformation {
  private:
   // Returns a new instruction which is synonymous to |message_.result_id|.
   std::unique_ptr<opt::Instruction> MakeSynonymousInstruction(
-      opt::IRContext* ir_context) const;
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const;
 
   // Returns a result id of a constant instruction that is required to be
   // present in some synonym types (e.g. returns a result id of a zero constant
   // for ADD_ZERO synonym type). Returns 0 if no such instruction is present in
   // the module. This method should only be called when
   // IsAdditionalConstantRequired returns true.
-  uint32_t MaybeGetConstantId(opt::IRContext* ir_context) const;
+  uint32_t MaybeGetConstantId(
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const;
 
   protobufs::TransformationAddSynonym message_;
 };
