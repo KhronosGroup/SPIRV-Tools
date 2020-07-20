@@ -37,12 +37,12 @@ class TransformationAccessChain : public Transformation {
       const std::vector<std::pair<uint32_t, uint32_t>>& fresh_ids_for_clamping =
           {});
 
-  // - |message_.fresh_id| must be fresh
+  // - |message_.fresh_id| must be fresh.
   // - |message_.instruction_to_insert_before| must identify an instruction
-  //   before which it is legitimate to insert an OpAccessChain instruction
+  //   before which it is legitimate to insert an OpAccessChain instruction.
   // - |message_.pointer_id| must be a result id with pointer type that is
   //   available (according to dominance rules) at the insertion point.
-  // - The pointer must not be OpConstantNull or OpUndef
+  // - The pointer must not be OpConstantNull or OpUndef.
   // - |message_.index_id| must be a sequence of ids of 32-bit integers
   //   such that it is possible to walk the pointee type of
   //   |message_.pointer_id| using these indices.
@@ -54,7 +54,7 @@ class TransformationAccessChain : public Transformation {
   //   a constant of value (bound - 1) to be declared in the module.
   // - If type t is the final type reached by walking these indices, the module
   //   must include an instruction "OpTypePointer SC %t" where SC is the storage
-  //   class associated with |message_.pointer_id|
+  //   class associated with |message_.pointer_id|.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -67,7 +67,7 @@ class TransformationAccessChain : public Transformation {
   // |message_.pointer_id|.
   //
   // For each of the indices traversing non-struct composites, two clamping
-  // instructions are added using ids in |message_.fresh_id_for_clamping|
+  // instructions are added using ids in |message_.fresh_id_for_clamping|.
   //
   // If the fact manager in |transformation_context| reports that
   // |message_.pointer_id| has an irrelevant pointee value, then the fact that
@@ -79,36 +79,54 @@ class TransformationAccessChain : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // Returns {false, 0} if:
-  // - |index_id| does not correspond to a 32-bit integer
+  // Returns {false, 0} in each of the following cases:
+  // - |index_id| does not correspond to a 32-bit integer constant
   // - the object being indexed is not a composite type
-  // - the object type is a struct and the index is not a constant or
-  //   the index is out of bounds
-  // - it is not possible to clamp the index variable to the bound
-  // Otherwise, returns:
-  // - {true, value} if the object being indexed is a struct (and the index
-  //   is thus a constant), where value is the value of the constant
-  // - {true, clamped_id} if the object being indexed is not a struct, where
-  //   clamped_id is the id at which to find the clamped index id
-  // This method only modifies the module if add_clamping_instructions is true.
-  // |fresh_ids| contains the fresh ids needed for clamping, and it is ignored
-  // if clamping is not needed (i.e. the object is a struct).
-  std::pair<bool, uint32_t> GetIndexValueOrId(
-      opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
-      bool add_clamping_instructions = false,
-      std::pair<uint32_t, uint32_t> fresh_ids = {0, 0}) const;
+  // - the constant at |index_id| is out of bounds.
+  // Otherwise, returns {true, value}, where value is the value of the constant
+  // at |index_id|.
+  std::pair<bool, uint32_t> GetIndexValue(opt::IRContext* ir_context,
+                                          uint32_t index_id,
+                                          uint32_t object_type_id) const;
 
-  // Try to clamp the integer variable defined by |int_inst| so that the
-  // result is smaller than the given bound. The |fresh_ids| are used to
-  // add new instructions to the module, to perform such operations.
-  // The instructions are inserted just before
-  // |message_.instruction_to_insert_before|.
+  // Returns {false, 0} in each of the following cases:
+  // - |index_id| does not correspond to a 32-bit integer
+  // - the object being indexed is not a composite
+  // - the object being indexed is a struct
+  // - it is not possible to clamp the index to the bound
+  // Otherwise, returns {true, clamped_id}, where clamped_id is the id at which
+  // to find the clamped index id.
+  // Clamping an index to the bound requires:
+  // - a valid pair of fresh ids for the clamping instructions
+  // - The presence of OpTypeBool in the module
+  // - The presence of an integer OpConstant of the same type as the index,
+  //   with the value being the bound - 1.
+  // This method only modifies the module if add_clamping_instructions is true.
+  // |fresh_ids| contains the pair of fresh ids needed for clamping.
+  std::pair<bool, uint32_t> CreateAndGetClampedIndexId(
+      opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
+      bool add_clamping_instructions,
+      std::pair<uint32_t, uint32_t> fresh_ids) const;
+
+  // Returns true if |index_id| corresponds, in the given context, to a 32-bit
+  // integer which can be used to index an object of the type specified by
+  // |object_type_id|. Returns false otherwise.
+  static bool ValidIndexToComposite(opt::IRContext* ir_context,
+                                    uint32_t index_id, uint32_t object_type_id);
+
+  // Tries to clamp the integer defined by |int_inst| so that the result is
+  // smaller than the given bound. The |fresh_ids| are used for the new
+  // instructions necessary to perform such operations.
+  // If |add_clamping_instructions| is true, these new instructions are inserted
+  // just before |message_.instruction_to_insert_before|.
+  // If |add_clamping_instructions| is false, the module is not changed (so no
+  // instructions are added).
   // Returns false if a constant with value |bound|-1 is not found in the
   // module or if the bool type is not found in the module, true otherwise.
-  bool TryToClampIntVariable(opt::IRContext* ir_context,
-                             const opt::Instruction& int_inst, uint32_t bound,
-                             std::pair<uint32_t, uint32_t> fresh_ids,
-                             bool add_clamping_instructions) const;
+  bool TryToClampInteger(opt::IRContext* ir_context,
+                         const opt::Instruction& int_inst, uint32_t bound,
+                         std::pair<uint32_t, uint32_t> fresh_ids,
+                         bool add_clamping_instructions) const;
 
   protobufs::TransformationAccessChain message_;
 };
