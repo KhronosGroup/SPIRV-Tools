@@ -138,21 +138,18 @@ bool TransformationAccessChain::IsApplicable(
       // Get two new ids to use and update the amount used.
       protobufs::UInt32Pair pair =
           message_.fresh_ids_for_clamping()[id_pairs_used++];
-      std::pair<uint32_t, uint32_t> fresh_ids;
-      fresh_ids.first = pair.first();
-      fresh_ids.second = pair.second();
 
       // Check that the ids are actually fresh and not already used by this
       // transformation.
       if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-              fresh_ids.first, ir_context, &fresh_ids_used) ||
+              pair.first(), ir_context, &fresh_ids_used) ||
           !CheckIdIsFreshAndNotUsedByThisTransformation(
-              fresh_ids.second, ir_context, &fresh_ids_used)) {
+              pair.second(), ir_context, &fresh_ids_used)) {
         return false;
       }
 
       if (!CreateAndGetClampedIndexId(ir_context, index_id, subobject_type_id,
-                                      false, fresh_ids)
+                                      false, {pair.first(), pair.second()})
                .first) {
         return false;
       }
