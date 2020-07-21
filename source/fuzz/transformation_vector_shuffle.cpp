@@ -57,9 +57,11 @@ bool TransformationVectorShuffle::IsApplicable(
   if (!vector1_instruction || !vector1_instruction->type_id()) {
     return false;
   }
-  // |vector1| can't be an irrelevant id.
-  if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.vector1())) {
+  // We should be able to create a synonym of |vector1| if it's not irrelevant.
+  if (!transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.vector1()) &&
+      !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
+                                    vector1_instruction)) {
     return false;
   }
   // The second vector must be an instruction with a type id
@@ -68,9 +70,11 @@ bool TransformationVectorShuffle::IsApplicable(
   if (!vector2_instruction || !vector2_instruction->type_id()) {
     return false;
   }
-  // |vector2| can't be an irrelevant id.
-  if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.vector2())) {
+  // We should be able to create a synonym of |vector2| if it's not irrelevant.
+  if (!transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.vector2()) &&
+      !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
+                                    vector2_instruction)) {
     return false;
   }
   auto vector1_type =
@@ -151,46 +155,51 @@ void TransformationVectorShuffle::Apply(
 
   // Add synonym facts relating the defined elements of the shuffle result to
   // the vector components that they come from.
-  for (uint32_t component_index = 0;
-       component_index < static_cast<uint32_t>(message_.component_size());
-       component_index++) {
-    uint32_t component = message_.component(component_index);
-    if (component == 0xFFFFFFFF) {
-      // This component is undefined, so move on - but first note that the
-      // overall shuffle result cannot be synonymous with any vector.
-      continue;
+  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.vector1()) &&
+      !transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.vector2())) {
+    for (uint32_t component_index = 0;
+         component_index < static_cast<uint32_t>(message_.component_size());
+         component_index++) {
+      uint32_t component = message_.component(component_index);
+      if (component == 0xFFFFFFFF) {
+        // This component is undefined, so move on - but first note that the
+        // overall shuffle result cannot be synonymous with any vector.
+        continue;
+      }
+
+      // This describes the element of the result vector associated with
+      // |component_index|.
+      protobufs::DataDescriptor descriptor_for_result_component =
+          MakeDataDescriptor(message_.fresh_id(), {component_index});
+
+      protobufs::DataDescriptor descriptor_for_source_component;
+
+      // Get a data descriptor for the component of the input vector to which
+      // |component| refers.
+      if (component <
+          GetVectorType(ir_context, message_.vector1())->element_count()) {
+        descriptor_for_source_component =
+            MakeDataDescriptor(message_.vector1(), {component});
+      } else {
+        auto index_into_vector_2 =
+            component -
+            GetVectorType(ir_context, message_.vector1())->element_count();
+        assert(index_into_vector_2 <
+                   GetVectorType(ir_context, message_.vector2())
+                       ->element_count() &&
+               "Vector shuffle index is out of bounds.");
+        descriptor_for_source_component =
+            MakeDataDescriptor(message_.vector2(), {index_into_vector_2});
+      }
+
+      // Add a fact relating this input vector component with the associated
+      // result component.
+      transformation_context->GetFactManager()->AddFactDataSynonym(
+          descriptor_for_result_component, descriptor_for_source_component,
+          ir_context);
     }
-
-    // This describes the element of the result vector associated with
-    // |component_index|.
-    protobufs::DataDescriptor descriptor_for_result_component =
-        MakeDataDescriptor(message_.fresh_id(), {component_index});
-
-    protobufs::DataDescriptor descriptor_for_source_component;
-
-    // Get a data descriptor for the component of the input vector to which
-    // |component| refers.
-    if (component <
-        GetVectorType(ir_context, message_.vector1())->element_count()) {
-      descriptor_for_source_component =
-          MakeDataDescriptor(message_.vector1(), {component});
-    } else {
-      auto index_into_vector_2 =
-          component -
-          GetVectorType(ir_context, message_.vector1())->element_count();
-      assert(
-          index_into_vector_2 <
-              GetVectorType(ir_context, message_.vector2())->element_count() &&
-          "Vector shuffle index is out of bounds.");
-      descriptor_for_source_component =
-          MakeDataDescriptor(message_.vector2(), {index_into_vector_2});
-    }
-
-    // Add a fact relating this input vector component with the associated
-    // result component.
-    transformation_context->GetFactManager()->AddFactDataSynonym(
-        descriptor_for_result_component, descriptor_for_source_component,
-        ir_context);
   }
 }
 

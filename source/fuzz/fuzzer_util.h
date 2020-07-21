@@ -93,6 +93,8 @@ bool CanInsertOpcodeBeforeInstruction(
     SpvOp opcode, const opt::BasicBlock::iterator& instruction_in_block);
 
 // Determines whether it is OK to make a synonym of |inst|.
+// |transformation_context| is used to verify that the result id of |inst|
+// does not participate in IdIsIrrelevant fact.
 bool CanMakeSynonymOf(opt::IRContext* ir_context,
                       const TransformationContext& transformation_context,
                       opt::Instruction* inst);

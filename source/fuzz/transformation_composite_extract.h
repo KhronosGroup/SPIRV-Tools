@@ -38,7 +38,6 @@ class TransformationCompositeExtract : public Transformation {
   // - |message_.composite_id| must be the id of an instruction that defines
   //   a composite object, and this id must be available at the instruction
   //   identified by |message_.instruction_to_insert_before|
-  // - |composite_id| may not be an irrelevant id.
   // - |message_.index| must be a suitable set of indices for
   //   |message_.composite_id|, i.e. it must be possible to follow this chain
   //   of indices to reach a sub-object of |message_.composite_id|
@@ -49,7 +48,8 @@ class TransformationCompositeExtract : public Transformation {
   // Adds an OpCompositeConstruct instruction before the instruction identified
   // by |message_.instruction_to_insert_before|, that extracts from
   // |message_.composite_id| via indices |message_.index| into
-  // |message_.fresh_id|.  Generates a data synonym fact relating
+  // |message_.fresh_id|. If |composite_id| is not an irrelevant id,
+  // generates a data synonym fact relating
   // |message_.fresh_id| to the extracted element.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;

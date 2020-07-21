@@ -84,19 +84,20 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
 
   for (auto constant : GetIRContext()->GetConstants()) {
     uint32_t constant_id = constant->result_id();
-    uint32_t toggled_id = FindOrCreateToggledConstant(constant);
-
     if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-            constant_id) ||
-        GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-            toggled_id)) {
+            constant_id)) {
       continue;
     }
 
+    uint32_t toggled_id = FindOrCreateToggledConstant(constant);
     if (!toggled_id) {
       // Not a zero-like constant
       continue;
     }
+
+    assert(!GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
+               toggled_id) &&
+           "FindOrCreateToggledConstant can't produce an irrelevant id");
 
     // Record synonymous constants
     ApplyTransformation(

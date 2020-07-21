@@ -55,8 +55,10 @@ bool TransformationCompositeExtract::IsApplicable(
   if (!composite_instruction) {
     return false;
   }
-  if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.composite_id())) {
+  if (!transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.composite_id()) &&
+      !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
+                                    composite_instruction)) {
     // |composite_id| will participate in DataSynonym facts. Thus, it can't be
     // an irrelevant id.
     return false;
@@ -112,17 +114,20 @@ void TransformationCompositeExtract::Apply(
 
   // Add the fact that the id storing the extracted element is synonymous with
   // the index into the structure.
-  std::vector<uint32_t> indices;
-  for (auto an_index : message_.index()) {
-    indices.push_back(an_index);
+  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.composite_id())) {
+    std::vector<uint32_t> indices;
+    for (auto an_index : message_.index()) {
+      indices.push_back(an_index);
+    }
+    protobufs::DataDescriptor data_descriptor_for_extracted_element =
+        MakeDataDescriptor(message_.composite_id(), std::move(indices));
+    protobufs::DataDescriptor data_descriptor_for_result_id =
+        MakeDataDescriptor(message_.fresh_id(), {});
+    transformation_context->GetFactManager()->AddFactDataSynonym(
+        data_descriptor_for_extracted_element, data_descriptor_for_result_id,
+        ir_context);
   }
-  protobufs::DataDescriptor data_descriptor_for_extracted_element =
-      MakeDataDescriptor(message_.composite_id(), std::move(indices));
-  protobufs::DataDescriptor data_descriptor_for_result_id =
-      MakeDataDescriptor(message_.fresh_id(), {});
-  transformation_context->GetFactManager()->AddFactDataSynonym(
-      data_descriptor_for_extracted_element, data_descriptor_for_result_id,
-      ir_context);
 }
 
 protobufs::Transformation TransformationCompositeExtract::ToMessage() const {

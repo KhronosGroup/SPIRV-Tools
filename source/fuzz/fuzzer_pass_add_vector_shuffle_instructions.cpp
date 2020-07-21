@@ -63,7 +63,7 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
                 [this, instruction_descriptor](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
-                  if (!instruction->type_id() || !instruction->result_id()) {
+                  if (!instruction->result_id() || !instruction->type_id()) {
                     return false;
                   }
 
@@ -73,9 +73,12 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
                     return false;
                   }
 
-                  if (GetTransformationContext()
-                          ->GetFactManager()
-                          ->IdIsIrrelevant(instruction->result_id())) {
+                  if (!GetTransformationContext()
+                           ->GetFactManager()
+                           ->IdIsIrrelevant(instruction->result_id()) &&
+                      !fuzzerutil::CanMakeSynonymOf(ir_context,
+                                                    *GetTransformationContext(),
+                                                    instruction)) {
                     return false;
                   }
 

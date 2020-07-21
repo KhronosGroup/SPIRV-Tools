@@ -14,12 +14,10 @@
 
 #include "source/fuzz/fuzzer_pass_construct_composites.h"
 
-#include <cmath>
 #include <memory>
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_composite_construct.h"
-#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -70,8 +68,17 @@ void FuzzerPassConstructComposites::Apply() {
         auto available_instructions = FindAvailableInstructions(
             function, block, inst_it,
             [this](opt::IRContext* ir_context, opt::Instruction* inst) {
-              return fuzzerutil::CanMakeSynonymOf(
-                  ir_context, *GetTransformationContext(), inst);
+              if (!inst->result_id() || !inst->type_id()) {
+                return false;
+              }
+
+              // We should be able to create synonym if the id is not
+              // irrelevant.
+              return GetTransformationContext()
+                         ->GetFactManager()
+                         ->IdIsIrrelevant(inst->result_id()) ||
+                     fuzzerutil::CanMakeSynonymOf(
+                         ir_context, *GetTransformationContext(), inst);
             });
         for (auto instruction : available_instructions) {
           RecordAvailableInstruction(instruction,
