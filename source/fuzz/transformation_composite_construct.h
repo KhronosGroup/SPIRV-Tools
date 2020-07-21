@@ -40,6 +40,7 @@ class TransformationCompositeConstruct : public Transformation {
   //   order
   // - The elements of |message_.component| must not be the target of any
   //   decorations.
+  // - Elements of |component| may not be irrelevant ids.
   // - |message_.base_instruction_id| must be the result id of an instruction
   //   'base' in some block 'blk'.
   // - 'blk' must contain an instruction 'inst' located |message_.offset|

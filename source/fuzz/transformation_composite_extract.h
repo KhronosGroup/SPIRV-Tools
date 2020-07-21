@@ -38,6 +38,7 @@ class TransformationCompositeExtract : public Transformation {
   // - |message_.composite_id| must be the id of an instruction that defines
   //   a composite object, and this id must be available at the instruction
   //   identified by |message_.instruction_to_insert_before|
+  // - |composite_id| may not be an irrelevant id.
   // - |message_.index| must be a suitable set of indices for
   //   |message_.composite_id|, i.e. it must be possible to follow this chain
   //   of indices to reach a sub-object of |message_.composite_id|

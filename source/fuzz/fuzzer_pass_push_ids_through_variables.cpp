@@ -91,9 +91,9 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
                     return false;
                   }
 
-                  if (!fuzzerutil::CanMakeSynonymOf(
-                          ir_context, *GetTransformationContext(),
-                          instruction)) {
+                  if (!fuzzerutil::CanMakeSynonymOf(ir_context,
+                                                    *GetTransformationContext(),
+                                                    instruction)) {
                     return false;
                   }
 

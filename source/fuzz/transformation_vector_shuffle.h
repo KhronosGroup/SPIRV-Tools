@@ -40,6 +40,7 @@ class TransformationVectorShuffle : public Transformation {
   //   before which it is legitimate to insert an OpVectorShuffle
   // - |message_.vector1| and |message_.vector2| must be instructions of vector
   //   type, and the element types of these vectors must be the same
+  // - |vector1| and |vector2| may not be irrelevant ids.
   // - Each element of |message_.component| must either be 0xFFFFFFFF
   //   (representing an undefined component), or must be less than the combined
   //   sizes of the input vectors

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_interchange_zero_like_constants.h"
+
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/id_use_descriptor.h"
 #include "source/fuzz/transformation_record_synonymous_constants.h"
@@ -85,8 +86,10 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
     uint32_t constant_id = constant->result_id();
     uint32_t toggled_id = FindOrCreateToggledConstant(constant);
 
-    if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(constant_id) ||
-        GetTransformationContext()->GetFactManager()->IdIsIrrelevant(toggled_id)) {
+    if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
+            constant_id) ||
+        GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
+            toggled_id)) {
       continue;
     }
 

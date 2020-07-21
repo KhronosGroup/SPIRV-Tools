@@ -57,8 +57,8 @@ bool TransformationCompositeExtract::IsApplicable(
   }
   if (transformation_context.GetFactManager()->IdIsIrrelevant(
           message_.composite_id())) {
-    // |composite_id| will participate in DataSynonym facts. Thus, it can't be an
-    // irrelevant id.
+    // |composite_id| will participate in DataSynonym facts. Thus, it can't be
+    // an irrelevant id.
     return false;
   }
   if (auto block = ir_context->get_instr_block(composite_instruction)) {

@@ -35,6 +35,7 @@ class TransformationAddSynonym : public Transformation {
       const protobufs::InstructionDescriptor& insert_before);
 
   // - |result_id| must be a valid result id of some instruction in the module.
+  // - |result_id| may not be an irrelevant id.
   // - |synonym_type| is a type of the synonymous instruction that will be
   //   created.
   // - |synonym_fresh_id| is a fresh id.
