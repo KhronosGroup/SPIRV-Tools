@@ -57,7 +57,9 @@ class TransformationAddSynonym : public Transformation {
   // Returns true if we can create a synonym of |inst| according to the
   // |synonym_type|.
   static bool IsInstructionValid(
-      opt::IRContext* ir_context, opt::Instruction* inst,
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context,
+      opt::Instruction* inst,
       protobufs::TransformationAddSynonym::SynonymType synonym_type);
 
   // Returns true if |synonym_type| requires an additional constant instruction

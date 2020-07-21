@@ -248,7 +248,10 @@ bool CanInsertOpcodeBeforeInstruction(
   return opcode == SpvOpPhi || instruction_in_block->opcode() != SpvOpPhi;
 }
 
-bool CanMakeSynonymOf(opt::IRContext* ir_context, opt::Instruction* inst) {
+bool CanMakeSynonymOf(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context,
+    opt::Instruction* inst) {
   if (inst->opcode() == SpvOpSampledImage) {
     // The SPIR-V data rules say that only very specific instructions may
     // may consume the result id of an OpSampledImage, and this excludes the
@@ -257,6 +260,11 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context, opt::Instruction* inst) {
   }
   if (!inst->HasResultId()) {
     // We can only make a synonym of an instruction that generates an id.
+    return false;
+  }
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          inst->result_id())) {
+    // An irrelevant id can't be a synonym of anything.
     return false;
   }
   if (!inst->type_id()) {

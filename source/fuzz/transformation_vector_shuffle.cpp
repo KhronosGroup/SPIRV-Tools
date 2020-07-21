@@ -39,7 +39,8 @@ TransformationVectorShuffle::TransformationVectorShuffle(
 }
 
 bool TransformationVectorShuffle::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // The fresh id must not already be in use.
   if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     return false;
@@ -56,10 +57,20 @@ bool TransformationVectorShuffle::IsApplicable(
   if (!vector1_instruction || !vector1_instruction->type_id()) {
     return false;
   }
+  // |vector1| can't be an irrelevant id.
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.vector1())) {
+    return false;
+  }
   // The second vector must be an instruction with a type id
   auto vector2_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.vector2());
   if (!vector2_instruction || !vector2_instruction->type_id()) {
+    return false;
+  }
+  // |vector2| can't be an irrelevant id.
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.vector2())) {
     return false;
   }
   auto vector1_type =
