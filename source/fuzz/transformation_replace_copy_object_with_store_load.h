@@ -46,9 +46,9 @@ class TransformationReplaceCopyObjectWithStoreLoad : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Stores |value_id| to |variable_id|, loads |variable_id| to
-  // |value_synonym_id| and adds the fact that |value_synonym_id| and |value_id|
-  // are synonymous.
+  // Replaces instruction OpCopyObject with
+  // storing into a new variable and immediately loading this
+  // variable to |result_id| of the original OpCopyObject instruction.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

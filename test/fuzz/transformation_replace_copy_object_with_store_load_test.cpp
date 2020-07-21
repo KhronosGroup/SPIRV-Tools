@@ -89,7 +89,7 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
   ASSERT_FALSE(transformation_invalid_1.IsApplicable(context.get(),
                                                      transformation_context));
 
-  // Invalid: copy_object_result_id=26 is not a CopyObject instruction
+  // Invalid: copy_object_result_id=26 is not a CopyObject instruction.
   auto transformation_invalid_2 = TransformationReplaceCopyObjectWithStoreLoad(
       26, 30, SpvStorageClassFunction, 9);
   ASSERT_FALSE(transformation_invalid_2.IsApplicable(context.get(),
