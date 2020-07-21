@@ -128,6 +128,13 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
                    ->PointeeValueIsIrrelevant(inst->result_id());
       });
 
+  std::unordered_map<uint32_t, std::vector<uint32_t>> pointee_to_result_id;
+  for (const auto* inst : available_pointers) {
+    auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
+        GetIRContext(), inst->type_id());
+    pointee_to_result_id[pointee_type_id].push_back(inst->result_id());
+  }
+
   std::vector<uint32_t> result;
   for (const auto* param :
        fuzzerutil::GetParameters(GetIRContext(), callee.result_id())) {
@@ -142,11 +149,12 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
       continue;
     }
 
-    if (!available_pointers.empty()) {
+    auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
+        GetIRContext(), param->type_id());
+    if (pointee_to_result_id.count(pointee_type_id)) {
       // Use an existing pointer if there are any.
-      result.push_back(available_pointers[GetFuzzerContext()->RandomIndex(
-                                              available_pointers)]
-                           ->result_id());
+      const auto& candidates = pointee_to_result_id[pointee_type_id];
+      result.push_back(candidates[GetFuzzerContext()->RandomIndex(candidates)]);
       continue;
     }
 
@@ -159,11 +167,10 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
     // The id of this variable is what we pass as the parameter to
     // the call.
     result.push_back(fresh_variable_id);
+    pointee_to_result_id[pointee_type_id].push_back(fresh_variable_id);
 
     // Now bring the variable into existence.
     auto storage_class = param_type->AsPointer()->storage_class();
-    auto pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
-        GetIRContext(), param->type_id());
     if (storage_class == SpvStorageClassFunction) {
       // Add a new zero-initialized local variable to the current
       // function, noting that its pointee value is irrelevant.
