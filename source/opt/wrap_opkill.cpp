@@ -117,9 +117,7 @@ uint32_t WrapOpKill::GetVoidFunctionTypeId() {
 
 uint32_t WrapOpKill::GetKillingFuncId(SpvOp opcode) {
   //  Parameterize by opcode
-  assert(opcode == SpvOpKill
-
-         || opcode == SpvOpTerminateInvocation);
+  assert(opcode == SpvOpKill || opcode == SpvOpTerminateInvocation);
 
   std::unique_ptr<Function>* const killing_func =
       (opcode == SpvOpKill) ? &opkill_function_
