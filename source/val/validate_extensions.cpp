@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "spirv/unified1/NonSemanticClspvReflection.h"
+
 #include "OpenCLDebugInfo100.h"
 #include "source/diagnostic.h"
 #include "source/enum_string_mapping.h"
@@ -180,6 +182,13 @@ spv_result_t ValidateOperandDebugType(
          << " is not a valid debug type";
 }
 
+spv_result_t ValidateClspvReflection(ValidationState_t& _, const Instruction* inst, uint32_t version) {
+  (void)_;
+  (void)inst;
+  (void)version;
+  return SPV_SUCCESS;
+}
+
 }  // anonymous namespace
 
 spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
@@ -250,6 +259,30 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
     return ss.str();
   };
+
+  if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN) {
+    auto import_inst = _.FindDef(inst->GetOperandAs<uint32_t>(2));
+    const std::string name(reinterpret_cast<const char*>(
+        import_inst->words().data() + import_inst->operands()[1].offset));
+    const std::string reflection = "NonSemantic.ClspvReflection.";
+    if (name.find(reflection) == 0) {
+      size_t idx = 0;
+      auto version_string = name.substr(reflection.size());
+      uint32_t version =
+          static_cast<uint32_t>(std::stoul(version_string, &idx));
+      if (idx != version_string.size()) {
+        return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
+               << "NonSemantic.ClspvReflection import does not encode the "
+                  "version correctly";
+      }
+      if (version == 0 || version > NonSemanticClspvReflectionRevision) {
+        return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
+               << "Unknown NonSemantic.ClspvReflection import version";
+      }
+
+      return ValidateClspvReflection(_, inst, version);
+    }
+  }
 
   if (ext_inst_type == SPV_EXT_INST_TYPE_GLSL_STD_450) {
     const GLSLstd450 ext_inst_key = GLSLstd450(ext_inst_index);
@@ -2441,10 +2474,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         CHECK_DEBUG_OPERAND("Local Variable",
                             OpenCLDebugInfo100DebugLocalVariable, 5);
 
-        // TODO: We must discuss DebugDeclare.Variable of OpenCL.100.DebugInfo.
-        // Currently, it says "Variable must be an id of OpVariable instruction
-        // which defines the local variable.", but we want to allow
-        // OpFunctionParameter as well.
+        // TODO: We must discuss DebugDeclare.Variable of
+        // OpenCL.100.DebugInfo. Currently, it says "Variable must be an id of
+        // OpVariable instruction which defines the local variable.", but we
+        // want to allow OpFunctionParameter as well.
         auto* operand = _.FindDef(inst->word(6));
         if (operand->opcode() != SpvOpVariable &&
             operand->opcode() != SpvOpFunctionParameter) {
