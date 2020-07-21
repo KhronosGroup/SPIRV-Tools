@@ -65,6 +65,7 @@
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
 #include "source/fuzz/transformation_replace_linear_algebra_instruction.h"
 #include "source/fuzz/transformation_replace_parameter_with_global.h"
+#include "source/fuzz/transformation_replace_params_with_struct.h"
 #include "source/fuzz/transformation_set_function_control.h"
 #include "source/fuzz/transformation_set_loop_control.h"
 #include "source/fuzz/transformation_set_memory_operands_mask.h"
@@ -222,6 +223,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kReplaceLinearAlgebraInstruction:
       return MakeUnique<TransformationReplaceLinearAlgebraInstruction>(
           message.replace_linear_algebra_instruction());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceParamsWithStruct:
+      return MakeUnique<TransformationReplaceParamsWithStruct>(
+          message.replace_params_with_struct());
     case protobufs::Transformation::TransformationCase::kSetFunctionControl:
       return MakeUnique<TransformationSetFunctionControl>(
           message.set_function_control());
