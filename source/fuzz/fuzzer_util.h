@@ -53,7 +53,7 @@ bool PhiIdsOkForNewEdge(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids);
 
-// Requires that a |bool_id| is a valid result id of either OpConstantTrue or
+// Requires that |bool_id| is a valid result id of either OpConstantTrue or
 // OpConstantFalse, that PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids)
 // holds, and that bb_from ends with "OpBranch %some_block".  Turns OpBranch
 // into "OpBranchConditional |condition_value| ...", such that control will
