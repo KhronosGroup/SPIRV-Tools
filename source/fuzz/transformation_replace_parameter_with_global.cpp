@@ -108,10 +108,6 @@ void TransformationReplaceParameterWithGlobal::Apply(
   assert(param_inst && "Parameter must exist");
 
   // Create global variable to store parameter's value.
-  //
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-  //  Mark the global variable's pointee as irrelevant if replaced parameter is
-  //  irrelevant.
   fuzzerutil::AddGlobalVariable(
       ir_context, message_.global_variable_fresh_id(),
       fuzzerutil::MaybeGetPointerType(ir_context, param_inst->type_id(),
@@ -119,6 +115,14 @@ void TransformationReplaceParameterWithGlobal::Apply(
       SpvStorageClassPrivate,
       fuzzerutil::MaybeGetZeroConstant(ir_context, *transformation_context,
                                        param_inst->type_id()));
+
+  // Mark the global variable's pointee as irrelevant if replaced parameter is
+  // irrelevant.
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.parameter_id())) {
+    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+        message_.global_variable_fresh_id());
+  }
 
   auto* function =
       GetFunctionFromParameterId(ir_context, message_.parameter_id());
