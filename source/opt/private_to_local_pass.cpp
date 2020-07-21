@@ -157,6 +157,12 @@ uint32_t PrivateToLocalPass::GetNewType(uint32_t old_type_id) {
 bool PrivateToLocalPass::IsValidUse(const Instruction* inst) const {
   // The cases in this switch have to match the cases in |UpdateUse|.
   // If we don't know how to update it, it is not valid.
+  if (inst->GetOpenCL100DebugOpcode() ==
+          OpenCLDebugInfo100DebugGlobalVariable ||
+      inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+      inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+    return true;
+  }
   switch (inst->opcode()) {
     case SpvOpLoad:
     case SpvOpStore:
@@ -179,6 +185,13 @@ bool PrivateToLocalPass::UpdateUse(Instruction* inst) {
   // The cases in this switch have to match the cases in |IsValidUse|.  If we
   // don't think it is valid, the optimization will not view the variable as a
   // candidate, and therefore the use will not be updated.
+  if (inst->GetOpenCL100DebugOpcode() ==
+          OpenCLDebugInfo100DebugGlobalVariable ||
+      inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
+      inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+    // TODO: Do we have to allow DebugDeclare and DebugValue?
+    return true;
+  }
   switch (inst->opcode()) {
     case SpvOpLoad:
     case SpvOpStore:
