@@ -432,15 +432,21 @@ message TransformationAddConstantBoolean {
 
   // Supports adding the constants true and false to a module, which may be
   // necessary in order to enable other transformations if they are not present.
+  // Also, creates an IdIsIrrelevant fact about |fresh_id| if |is_irrelevant| is true.
 
   uint32 fresh_id = 1;
   bool is_true = 2;
+
+  // If the constant should be marked as irrelevant.
+  bool is_irrelevant = 3;
 
 }
 
 message TransformationAddConstantComposite {
 
   // Adds a constant of the given composite type to the module.
+  // Also, creates an IdIsIrrelevant fact about |fresh_id| if
+  // |is_irrelevant| is true.
 
   // Fresh id for the composite
   uint32 fresh_id = 1;
@@ -450,6 +456,9 @@ message TransformationAddConstantComposite {
 
   // Constituent ids for the composite
   repeated uint32 constituent_id = 3;
+
+  // If the constant should be marked as irrelevant.
+  bool is_irrelevant = 4;
 
 }
 
@@ -468,6 +477,8 @@ message TransformationAddConstantNull {
 message TransformationAddConstantScalar {
 
   // Adds a constant of the given scalar type.
+  // Also, creates an IdIsIrrelevant fact about
+  // |fresh_id| if |is_irrelevant| is true.
 
   // Id for the constant
   uint32 fresh_id = 1;
@@ -477,6 +488,9 @@ message TransformationAddConstantScalar {
 
   // Value of the constant
   repeated uint32 word = 3;
+
+  // If the constant should be marked as irrelevant.
+  bool is_irrelevant = 4;
 
 }
 
