@@ -95,20 +95,6 @@ class TransformationAccessChain : public Transformation {
   static bool ValidIndexToComposite(opt::IRContext* ir_context,
                                     uint32_t index_id, uint32_t object_type_id);
 
-  // Tries to clamp the integer defined by |int_inst| so that the result is
-  // smaller than the given bound. The |fresh_ids| are used for the new
-  // instructions necessary to perform such operations.
-  // If |add_clamping_instructions| is true, these new instructions are inserted
-  // just before |message_.instruction_to_insert_before|.
-  // If |add_clamping_instructions| is false, the module is not changed (so no
-  // instructions are added).
-  // Returns false if a constant with value |bound|-1 is not found in the
-  // module or if the bool type is not found in the module, true otherwise.
-  bool TryToClampInteger(opt::IRContext* ir_context,
-                         const opt::Instruction& int_inst, uint32_t bound,
-                         std::pair<uint32_t, uint32_t> fresh_ids,
-                         bool add_clamping_instructions) const;
-
   protobufs::TransformationAccessChain message_;
 };
 

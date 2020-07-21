@@ -166,9 +166,16 @@ bool TransformationAccessChain::IsApplicable(
           *ir_context->get_def_use_mgr()->GetDef(subobject_type_id),
           ir_context);
 
-      if (!TryToClampInteger(ir_context, *index_instruction, bound,
-                             {fresh_ids.first(), fresh_ids.second()}, false)) {
-        // It was not possible to clamp the integer
+      // The module must have an integer constant of value bound-1 of the same
+      // type as the index.
+      if (!fuzzerutil::MaybeGetIntegerConstantFromValueAndType(
+              ir_context, bound - 1, index_instruction->type_id())) {
+        return false;
+      }
+
+      // The module must have the definition of bool type to make a comparison.
+      opt::analysis::Bool bool_type;
+      if (!ir_context->get_type_mgr()->GetId(&bool_type)) {
         return false;
       }
 
@@ -244,11 +251,8 @@ void TransformationAccessChain::Apply(
       // It is not a struct: the index will need clamping.
 
       // Get two new ids to use and update the amount used.
-      protobufs::UInt32Pair pair =
+      protobufs::UInt32Pair fresh_ids =
           message_.fresh_ids_for_clamping()[id_pairs_used++];
-      std::pair<uint32_t, uint32_t> fresh_ids;
-      fresh_ids.first = pair.first();
-      fresh_ids.second = pair.second();
 
       // Perform the clamping using the fresh ids at our disposal.
       // The module will not be changed if |add_clamping_instructions| is not
@@ -259,9 +263,43 @@ void TransformationAccessChain::Apply(
           *ir_context->get_def_use_mgr()->GetDef(subobject_type_id),
           ir_context);
 
-      TryToClampInteger(ir_context, *index_instruction, bound, fresh_ids, true);
+      auto bound_minus_one_id =
+          fuzzerutil::MaybeGetIntegerConstantFromValueAndType(
+              ir_context, bound - 1, index_instruction->type_id());
 
-      new_index_id = fresh_ids.second;
+      opt::analysis::Bool bool_type;
+      uint32_t bool_type_id = ir_context->get_type_mgr()->GetId(&bool_type);
+
+      auto int_type_inst =
+          ir_context->get_def_use_mgr()->GetDef(index_instruction->type_id());
+
+      // Clamp the integer and add the corresponding instructions in the module
+      // if |add_clamping_instructions| is set.
+      auto instruction_to_insert_before =
+          FindInstruction(message_.instruction_to_insert_before(), ir_context);
+
+      // Compare the index with the bound via an instruction of the form:
+      //   %fresh_ids.first = OpULessThanEqual %bool %int_id %bound_minus_one.
+      fuzzerutil::UpdateModuleIdBound(ir_context, fresh_ids.first());
+      instruction_to_insert_before->InsertBefore(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpULessThanEqual, bool_type_id, fresh_ids.first(),
+          opt::Instruction::OperandList(
+              {{SPV_OPERAND_TYPE_ID, {index_instruction->result_id()}},
+               {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
+
+      // Select the index if in-bounds, otherwise one less than the bound:
+      //   %fresh_ids.second = OpSelect %int_type %fresh_ids.first %int_id
+      //                           %bound_minus_one
+      fuzzerutil::UpdateModuleIdBound(ir_context, fresh_ids.second());
+      instruction_to_insert_before->InsertBefore(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpSelect, int_type_inst->result_id(),
+          fresh_ids.second(),
+          opt::Instruction::OperandList(
+              {{SPV_OPERAND_TYPE_ID, {fresh_ids.first()}},
+               {SPV_OPERAND_TYPE_ID, {index_instruction->result_id()}},
+               {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
+
+      new_index_id = fresh_ids.second();
 
       index_value = 0;
     }
@@ -361,57 +399,6 @@ bool TransformationAccessChain::ValidIndexToComposite(
       return false;
     }
   }
-  return true;
-}
-
-bool TransformationAccessChain::TryToClampInteger(
-    opt::IRContext* ir_context, const opt::Instruction& int_inst,
-    uint32_t bound, std::pair<uint32_t, uint32_t> fresh_ids,
-    bool add_clamping_instructions) const {
-  // The module must have an integer constant of value bound-1.
-  auto bound_minus_one_id = fuzzerutil::MaybeGetIntegerConstantFromValueAndType(
-      ir_context, bound - 1, int_inst.type_id());
-  if (!bound_minus_one_id) {
-    return false;
-  }
-
-  // The module must have the definition of bool type to make a comparison.
-  opt::analysis::Bool bool_type;
-  uint32_t bool_type_id = ir_context->get_type_mgr()->GetId(&bool_type);
-  if (!bool_type_id) {
-    return false;
-  }
-
-  auto int_type_inst =
-      ir_context->get_def_use_mgr()->GetDef(int_inst.type_id());
-
-  // Clamp the integer and add the corresponding instructions in the module
-  // if |add_clamping_instructions| is set.
-  if (add_clamping_instructions) {
-    auto instruction_to_insert_before =
-        FindInstruction(message_.instruction_to_insert_before(), ir_context);
-
-    // Compare the index with the bound via an instruction of the form:
-    //   %fresh_ids.first = OpULessThanEqual %bool %int_id %bound_minus_one.
-    fuzzerutil::UpdateModuleIdBound(ir_context, fresh_ids.first);
-    instruction_to_insert_before->InsertBefore(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpULessThanEqual, bool_type_id, fresh_ids.first,
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID, {int_inst.result_id()}},
-             {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
-
-    // Select the index if in-bounds, otherwise one less than the bound:
-    //   %fresh_ids.second = OpSelect %int_type %fresh_ids.first %int_id
-    //                           %bound_minus_one
-    fuzzerutil::UpdateModuleIdBound(ir_context, fresh_ids.second);
-    instruction_to_insert_before->InsertBefore(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpSelect, int_type_inst->result_id(), fresh_ids.second,
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID, {fresh_ids.first}},
-             {SPV_OPERAND_TYPE_ID, {int_inst.result_id()}},
-             {SPV_OPERAND_TYPE_ID, {bound_minus_one_id}}})));
-  }
-
   return true;
 }
 
