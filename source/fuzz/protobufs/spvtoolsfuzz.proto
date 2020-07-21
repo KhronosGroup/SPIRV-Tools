@@ -423,7 +423,6 @@ message TransformationAccessChain {
   // %t1 = OpULessThanEqual %bool %index %bound_minus_one
   // %t2 = OpSelect %int_type %t1 %index %bound_minus_one
 
-
   // Result id for the access chain
   uint32 fresh_id = 1;
 

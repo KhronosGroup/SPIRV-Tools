@@ -401,10 +401,10 @@ uint32_t MaybeGetIntegerConstant(
     const std::vector<uint32_t>& words, uint32_t width, bool is_signed,
     bool is_irrelevant);
 
-// Returns the id of an integer constant in the module with type |int_type_id|
-// and value |value|, or 0 if no such constant exists in the module.
-// |int_type_id| must exist in the module and it must correspond to an integer
-// type.
+// Returns the id of a 32-bit integer constant in the module with type
+// |int_type_id| and value |value|, or 0 if no such constant exists in the
+// module. |int_type_id| must exist in the module and it must correspond to a
+// 32-bit integer type.
 uint32_t MaybeGetIntegerConstantFromValueAndType(opt::IRContext* ir_context,
                                                  uint32_t value,
                                                  uint32_t int_type_id);

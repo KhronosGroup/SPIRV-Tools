@@ -89,25 +89,6 @@ class TransformationAccessChain : public Transformation {
                                           uint32_t index_id,
                                           uint32_t object_type_id) const;
 
-  // Returns {false, 0} in each of the following cases:
-  // - |index_id| does not correspond to a 32-bit integer
-  // - the object being indexed is not a composite
-  // - the object being indexed is a struct
-  // - it is not possible to clamp the index to the bound
-  // Otherwise, returns {true, clamped_id}, where clamped_id is the id at which
-  // to find the clamped index id.
-  // Clamping an index to the bound requires:
-  // - a valid pair of fresh ids for the clamping instructions
-  // - The presence of OpTypeBool in the module
-  // - The presence of an integer OpConstant of the same type as the index,
-  //   with the value being the bound - 1.
-  // This method only modifies the module if add_clamping_instructions is true.
-  // |fresh_ids| contains the pair of fresh ids needed for clamping.
-  std::pair<bool, uint32_t> CreateAndGetClampedIndexId(
-      opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
-      bool add_clamping_instructions,
-      std::pair<uint32_t, uint32_t> fresh_ids) const;
-
   // Returns true if |index_id| corresponds, in the given context, to a 32-bit
   // integer which can be used to index an object of the type specified by
   // |object_type_id|. Returns false otherwise.

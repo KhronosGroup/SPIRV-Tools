@@ -146,12 +146,28 @@ void FuzzerPassAddAccessChains::Apply() {
           switch (subobject_type->opcode()) {
             case SpvOpTypeArray:
             case SpvOpTypeMatrix:
-            case SpvOpTypeVector:
+            case SpvOpTypeVector: {
               // The index will be clamped
-              index_ids.push_back(FindOrCreateIntegerConstantReadyForClamping(
-                  index_value, bound, &fresh_ids_for_clamping));
+
+              bool is_signed = GetFuzzerContext()->ChooseEven();
+
+              // Make the constant ready for clamping. We need:
+              // - an OpTypeBool to be present in the module
+              // - an OpConstant with the same type as the index and value
+              //   the maximum value for an index
+              // - a new pair of fresh ids for the clamping instructions
+              FindOrCreateBoolType();
+              FindOrCreateIntegerConstant({bound - 1}, 32, is_signed);
+              std::pair<uint32_t, uint32_t> fresh_pair_of_ids = {
+                  GetFuzzerContext()->GetFreshId(),
+                  GetFuzzerContext()->GetFreshId()};
+              fresh_ids_for_clamping.emplace_back(fresh_pair_of_ids);
+
+              index_ids.push_back(
+                  FindOrCreateIntegerConstant({index_value}, 32, is_signed));
               subobject_type_id = subobject_type->GetSingleWordInOperand(0);
-              break;
+
+            } break;
             case SpvOpTypeStruct:
               index_ids.push_back(FindOrCreateIntegerConstant(
                   {index_value}, 32, GetFuzzerContext()->ChooseEven()));
@@ -173,22 +189,6 @@ void FuzzerPassAddAccessChains::Apply() {
             GetFuzzerContext()->GetFreshId(), chosen_pointer->result_id(),
             index_ids, instruction_descriptor, fresh_ids_for_clamping));
       });
-}
-
-uint32_t FuzzerPassAddAccessChains::FindOrCreateIntegerConstantReadyForClamping(
-    uint32_t value, uint32_t bound,
-    std::vector<std::pair<uint32_t, uint32_t>>* fresh_ids_for_clamping) {
-  // Choose the signedness of the constant
-  bool is_signed = GetFuzzerContext()->ChooseEven();
-
-  // Make the constant ready for clamping
-  FindOrCreateBoolType();
-  FindOrCreateIntegerConstant({bound - 1}, 32, is_signed);
-  std::pair<uint32_t, uint32_t> fresh_pair_of_ids = {
-      GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId()};
-  fresh_ids_for_clamping->emplace_back(fresh_pair_of_ids);
-
-  return FindOrCreateIntegerConstant({value}, 32, is_signed);
 }
 
 }  // namespace fuzz

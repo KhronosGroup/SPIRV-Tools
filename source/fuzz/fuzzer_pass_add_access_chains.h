@@ -33,21 +33,6 @@ class FuzzerPassAddAccessChains : public FuzzerPass {
   ~FuzzerPassAddAccessChains();
 
   void Apply() override;
-
- private:
-  // Returns the id of a 32-bit integer constant of value |value|, which is
-  // randomly chosen to be signed or unsigned. If such constant already exists
-  // in the module, it is found, otherwise a new one is created.
-  // Adds instructions to the module so that clamping can be correctly
-  // performed. In particular, it makes sure (by adding them if not present)
-  // that the module has:
-  // - An OpTypeBool instruction
-  // - An OpConstant of the same type as the one whose id is returned, and value
-  //   |bound| - 1
-  // Adds a pair of fresh ids to |fresh_ids_for_clamping|.
-  uint32_t FindOrCreateIntegerConstantReadyForClamping(
-      uint32_t value, uint32_t bound,
-      std::vector<std::pair<uint32_t, uint32_t>>* fresh_ids_for_clamping);
 };
 
 }  // namespace fuzz

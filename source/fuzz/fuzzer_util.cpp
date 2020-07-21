@@ -1137,7 +1137,8 @@ uint32_t MaybeGetIntegerConstantFromValueAndType(opt::IRContext* ir_context,
                       ->GetType(int_type_inst->result_id())
                       ->AsInteger();
 
-  assert(int_type && "The given type id must correspond to an integer type.");
+  assert(int_type && int_type->width() == 32 &&
+         "The given type id must correspond to an 32-bit integer type.");
 
   opt::analysis::IntConstant constant(int_type, {value});
 

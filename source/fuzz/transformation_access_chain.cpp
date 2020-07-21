@@ -136,24 +136,43 @@ bool TransformationAccessChain::IsApplicable(
       }
 
       // Get two new ids to use and update the amount used.
-      protobufs::UInt32Pair pair =
+      protobufs::UInt32Pair fresh_ids =
           message_.fresh_ids_for_clamping()[id_pairs_used++];
 
       // Check that the ids are actually fresh and not already used by this
       // transformation.
       if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-              pair.first(), ir_context, &fresh_ids_used) ||
+              fresh_ids.first(), ir_context, &fresh_ids_used) ||
           !CheckIdIsFreshAndNotUsedByThisTransformation(
-              pair.second(), ir_context, &fresh_ids_used)) {
+              fresh_ids.second(), ir_context, &fresh_ids_used)) {
         return false;
       }
 
-      if (!CreateAndGetClampedIndexId(ir_context, index_id, subobject_type_id,
-                                      false, {pair.first(), pair.second()})
-               .first) {
+      if (!ValidIndexToComposite(ir_context, index_id, subobject_type_id)) {
         return false;
       }
 
+      // Valid fresh ids need to have been given
+      if (fresh_ids.first() == 0 || fresh_ids.second() == 0) {
+        return false;
+      }
+
+      // Perform the clamping using the fresh ids at our disposal.
+      // The module will not be changed if |add_clamping_instructions| is not
+      // set.
+      auto index_instruction = ir_context->get_def_use_mgr()->GetDef(index_id);
+
+      uint32_t bound = fuzzerutil::GetBoundForCompositeIndex(
+          *ir_context->get_def_use_mgr()->GetDef(subobject_type_id),
+          ir_context);
+
+      if (!TryToClampInteger(ir_context, *index_instruction, bound,
+                             {fresh_ids.first(), fresh_ids.second()}, false)) {
+        // It was not possible to clamp the integer
+        return false;
+      }
+
+      // Use value 0 to traverse the composite type
       index_value = 0;
     }
 
@@ -231,10 +250,18 @@ void TransformationAccessChain::Apply(
       fresh_ids.first = pair.first();
       fresh_ids.second = pair.second();
 
-      new_index_id =
-          CreateAndGetClampedIndexId(ir_context, index_id, subobject_type_id,
-                                     true, fresh_ids)
-              .second;
+      // Perform the clamping using the fresh ids at our disposal.
+      // The module will not be changed if |add_clamping_instructions| is not
+      // set.
+      auto index_instruction = ir_context->get_def_use_mgr()->GetDef(index_id);
+
+      uint32_t bound = fuzzerutil::GetBoundForCompositeIndex(
+          *ir_context->get_def_use_mgr()->GetDef(subobject_type_id),
+          ir_context);
+
+      TryToClampInteger(ir_context, *index_instruction, bound, fresh_ids, true);
+
+      new_index_id = fresh_ids.second;
 
       index_value = 0;
     }
@@ -246,15 +273,15 @@ void TransformationAccessChain::Apply(
     subobject_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
         ir_context, subobject_type_id, index_value);
   }
-  // The access chain's result type is a pointer to the composite component that
-  // was reached after following all indices.  The storage class is that of the
-  // original pointer.
+  // The access chain's result type is a pointer to the composite component
+  // that was reached after following all indices.  The storage class is that
+  // of the original pointer.
   uint32_t result_type = fuzzerutil::MaybeGetPointerType(
       ir_context, subobject_type_id,
       static_cast<SpvStorageClass>(pointer_type->GetSingleWordInOperand(0)));
 
-  // Add the access chain instruction to the module, and update the module's id
-  // bound.
+  // Add the access chain instruction to the module, and update the module's
+  // id bound.
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
   FindInstruction(message_.instruction_to_insert_before(), ir_context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
@@ -264,8 +291,8 @@ void TransformationAccessChain::Apply(
   // Conservatively invalidate all analyses.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // If the base pointer's pointee value was irrelevant, the same is true of the
-  // pointee value of the result of this access chain.
+  // If the base pointer's pointee value was irrelevant, the same is true of
+  // the pointee value of the result of this access chain.
   if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
           message_.pointer_id())) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
@@ -303,43 +330,6 @@ std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValue(
   }
 
   return {true, value};
-}
-
-std::pair<bool, uint32_t> TransformationAccessChain::CreateAndGetClampedIndexId(
-    opt::IRContext* ir_context, uint32_t index_id, uint32_t object_type_id,
-    bool add_clamping_instructions,
-    std::pair<uint32_t, uint32_t> fresh_ids) const {
-  if (!ValidIndexToComposite(ir_context, index_id, object_type_id)) {
-    return {false, 0};
-  }
-
-  // The composite must not be a struct
-  auto object_type_def = ir_context->get_def_use_mgr()->GetDef(object_type_id);
-
-  if (object_type_def->opcode() == SpvOpTypeStruct) {
-    return {false, 0};
-  }
-
-  // Valid fresh ids need to have been given
-  if (fresh_ids.first <= 0 || fresh_ids.second <= 0) {
-    return {false, 0};
-  }
-
-  // Perform the clamping using the fresh ids at our disposal.
-  // The module will not be changed if |add_clamping_instructions| is not set.
-  auto index_instruction = ir_context->get_def_use_mgr()->GetDef(index_id);
-
-  uint32_t bound =
-      fuzzerutil::GetBoundForCompositeIndex(*object_type_def, ir_context);
-
-  if (!TryToClampInteger(ir_context, *index_instruction, bound, fresh_ids,
-                         add_clamping_instructions)) {
-    // It was not possible to clamp the integer
-    return {false, 0};
-  }
-
-  // The clamped integer will be at id |fresh_ids[1]|.
-  return {true, fresh_ids.second};
 }
 
 bool TransformationAccessChain::ValidIndexToComposite(
