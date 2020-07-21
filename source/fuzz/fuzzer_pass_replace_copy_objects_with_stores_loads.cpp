@@ -35,13 +35,10 @@ FuzzerPassReplaceCopyObjectsWithStoresLoads::
 
 void FuzzerPassReplaceCopyObjectsWithStoresLoads::Apply() {
   GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
+    // The instruction must be OpCopyObject.
     if (instruction->opcode() != SpvOpCopyObject) return;
-    // Randomly decide whether to replace OpCopyObject.
-    if (!GetFuzzerContext()->ChoosePercentage(
-            GetFuzzerContext()
-                ->GetChanceOfReplacingCopyObjectWithStoreLoad())) {
-      return;
-    }
+    // The |type_id()| of the instruction cannot be a pointer,
+    if (instruction->type_id() == SpvOpTypePointer) return;
 
     // It must be valid to insert OpStore and OpLoad instructions
     // before the instruction OpCopyObject.
@@ -51,25 +48,30 @@ void FuzzerPassReplaceCopyObjectsWithStoresLoads::Apply() {
       return;
     }
 
+    // Randomly decide whether to replace OpCopyObject.
+    if (!GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()
+                ->GetChanceOfReplacingCopyObjectWithStoreLoad())) {
+      return;
+    }
+
     // Randomly decides whether a global or local variable will be added.
     auto variable_storage_class = GetFuzzerContext()->ChooseEven()
                                       ? SpvStorageClassPrivate
                                       : SpvStorageClassFunction;
 
-    // Create a constant to initialize the variable from. This might update
-    // module's id bound so it must be done before any fresh ids are
+    // Find or create a constant to initialize the variable from. This might
+    // update module's id bound so it must be done before any fresh ids are
     // computed.
-    auto copy_object_result_id = instruction->result_id();
 
-    auto* pointer_instr =
-        GetIRContext()->get_def_use_mgr()->GetDef(instruction->type_id());
-    auto pointee_type_id =
-        fuzzerutil::GetPointeeTypeIdFromPointerType(pointer_instr);
-    auto variable_initializer_id = FindOrCreateZeroConstant(pointee_type_id);
+    auto variable_initializer_id =
+        FindOrCreateZeroConstant(instruction->type_id());
 
+    // Make sure that pointer type is defined.
+    FindOrCreatePointerType(instruction->type_id(), variable_storage_class);
     // Applies the transformation replacing OpCopyObject with Store and Load.
     ApplyTransformation(TransformationReplaceCopyObjectWithStoreLoad(
-        copy_object_result_id, GetFuzzerContext()->GetFreshId(),
+        instruction->result_id(), GetFuzzerContext()->GetFreshId(),
         variable_storage_class, variable_initializer_id));
   });
 }

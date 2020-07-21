@@ -17,9 +17,9 @@
 
 #include "source/fuzz/fuzzer_pass.h"
 
-// Replaces instructions OpCopyObject by creating a new variable, storing into
-// that variable add immediately loading this variable to result id of previous
-// OpCopyObject instruction
+// Replaces instructions OpCopyObject with storing into a new variable
+// and immediately loading this variable to |result_id| of the
+// original OpCopyObject instruction.
 
 namespace spvtools {
 namespace fuzz {

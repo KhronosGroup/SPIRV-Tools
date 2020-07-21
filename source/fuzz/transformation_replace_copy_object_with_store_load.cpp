@@ -46,9 +46,12 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
       ir_context->get_def_use_mgr()->GetDef(message_.copy_object_result_id());
 
   // This must be a defined OpCopyObject instruction.
-  if (copy_object_instruction->opcode() != SpvOpCopyObject) {
+  if ((!copy_object_instruction) ||
+      (copy_object_instruction->opcode() != SpvOpCopyObject))
     return false;
-  }
+  // The |type_id()| of the instruction cannot be a pointer,
+  // because we cannot define a pointer to pointer
+  if (copy_object_instruction->type_id() == SpvOpTypePointer) return false;
 
   // It must be valid to insert the OpStore and OpLoad instruction before it.
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore,
@@ -58,20 +61,22 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
     return false;
   }
 
-  const auto* constant_instruction =
-      ir_context->get_def_use_mgr()->GetDef(message_.variable_initializer_id());
-
-  auto* pointer_instr =
-      ir_context->get_def_use_mgr()->GetDef(copy_object_instruction->type_id());
-  auto pointee_type_id =
-      fuzzerutil::GetPointeeTypeIdFromPointerType(pointer_instr);
-  // Check that the initializer is valid.
-  if (!constant_instruction ||
-      !spvOpcodeIsConstant(constant_instruction->opcode()) ||
-      pointee_type_id != constant_instruction->type_id()) {
+  // A pointer type instruction pointing to the value type must be defined.
+  auto pointer_type_id = fuzzerutil::MaybeGetPointerType(
+      ir_context, copy_object_instruction->type_id(),
+      static_cast<SpvStorageClass>(message_.variable_storage_class()));
+  if (!pointer_type_id) {
     return false;
   }
-  // |message_.variable_storage_class| must be private or function.
+
+  // Check that initializer is valid.
+  const auto* constant_inst =
+      ir_context->get_def_use_mgr()->GetDef(message_.variable_initializer_id());
+  if (!constant_inst || !spvOpcodeIsConstant(constant_inst->opcode()) ||
+      copy_object_instruction->type_id() != constant_inst->type_id()) {
+    return false;
+  }
+  // |message_.variable_storage_class| must be Private or Function.
   return ((message_.variable_storage_class() == SpvStorageClassPrivate ||
            message_.variable_storage_class() == SpvStorageClassFunction));
 }
@@ -83,9 +88,11 @@ void TransformationReplaceCopyObjectWithStoreLoad::Apply(
       ir_context->get_def_use_mgr()->GetDef(message_.copy_object_result_id());
   // Get id used as a source by the OpCopyObject instruction.
   uint32_t src_operand = copy_object_instruction->GetSingleWordOperand(2);
-  // A pointer type instruction pointing to the value type is already defined
-  // its the |type_id()| of the instruction.
-  auto pointer_type_id = copy_object_instruction->type_id();
+  // A pointer type instruction pointing to the value type must be defined.
+  auto pointer_type_id = fuzzerutil::MaybeGetPointerType(
+      ir_context, copy_object_instruction->type_id(),
+      static_cast<SpvStorageClass>(message_.variable_storage_class()));
+  assert(pointer_type_id && "The required pointer type must be available.");
 
   // Adds a global or local variable (according to the storage class).
   if (message_.variable_storage_class() == SpvStorageClassPrivate) {

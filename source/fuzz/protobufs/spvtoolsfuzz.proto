@@ -1236,9 +1236,9 @@ message TransformationReplaceConstantWithUniform {
 
 message TransformationReplaceCopyObjectWithStoreLoad {
 
-  // A transformation that makes |value_synonym_id| and |value_id| to be
-  // synonymous by storing |value_id| into |variable_id| and
-  // loading |variable_id| to |value_synonym_id|.
+  // A transformation that replaces instruction OpCopyObject with
+  // storing into a new variable and immediately loading this
+  // variable to |result_id| of the original OpCopyObject instruction.
 
   // The result id of initial OpCopyLoad instruction
   uint32 copy_object_result_id = 1;
