@@ -184,7 +184,7 @@ spv_result_t ValidateOperandDebugType(
 spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
                                            const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 6) {
+  if (num_operands != 6 ) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
   const auto kernel_id = inst->GetOperandAs<uint32_t>(4);
@@ -215,7 +215,7 @@ spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
 spv_result_t ValidateClspvReflectionArgumentInfo(ValidationState_t& _,
                                                  const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 5) {
+  if (num_operands < 5 || num_operands > 9) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
   if (_.GetIdOpcode(inst->GetOperandAs<uint32_t>(4)) != SpvOpString) {
@@ -299,7 +299,7 @@ spv_result_t ValidateArgInfo(ValidationState_t& _, const Instruction* inst,
 spv_result_t ValidateClspvReflectionArgumentBuffer(ValidationState_t& _,
                                                    const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 8) {
+  if (num_operands < 8 || num_operands > 9) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
 
@@ -343,7 +343,7 @@ spv_result_t ValidateClspvReflectionArgumentBuffer(ValidationState_t& _,
 spv_result_t ValidateClspvReflectionArgumentPodBuffer(ValidationState_t& _,
                                                       const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 10) {
+  if (num_operands < 10 || num_operands > 11) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
 
@@ -401,7 +401,7 @@ spv_result_t ValidateClspvReflectionArgumentPodBuffer(ValidationState_t& _,
 spv_result_t ValidateClspvReflectionArgumentPodPushConstant(
     ValidationState_t& _, const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 8) {
+  if (num_operands < 8 || num_operands > 10) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
 
@@ -445,7 +445,7 @@ spv_result_t ValidateClspvReflectionArgumentPodPushConstant(
 spv_result_t ValidateClspvReflectionArgumentWorkgroup(ValidationState_t& _,
                                                       const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 8) {
+  if (num_operands < 8 || num_operands > 10) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
 
@@ -489,7 +489,7 @@ spv_result_t ValidateClspvReflectionArgumentWorkgroup(ValidationState_t& _,
 spv_result_t ValidateClspvReflectionSpecConstantTriple(
     ValidationState_t& _, const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 6) {
+  if (num_operands != 7) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
 
@@ -523,7 +523,7 @@ spv_result_t ValidateClspvReflectionSpecConstantTriple(
 spv_result_t ValidateClspvReflectionSpecConstantWorkDim(
     ValidationState_t& _, const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 4) {
+  if (num_operands != 5) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
 
@@ -543,7 +543,7 @@ spv_result_t ValidateClspvReflectionSpecConstantWorkDim(
 spv_result_t ValidateClspvReflectionPushConstant(ValidationState_t& _,
                                                  const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 5) {
+  if (num_operands != 6) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
   }
 
@@ -562,6 +562,109 @@ spv_result_t ValidateClspvReflectionPushConstant(ValidationState_t& _,
   if (!is_int || !is_const) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Size must be a 32-bit unsigned integer OpConstant";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateClspvReflectionConstantData(ValidationState_t& _,
+                                                 const Instruction* inst) {
+  const auto num_operands = inst->operands().size();
+  if (num_operands != 7) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
+  }
+
+  bool is_int = false;
+  bool is_const = false;
+  uint32_t value = 0;
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(4));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Offset must be a 32-bit unsigned integer OpConstant";
+  }
+
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Size must be a 32-bit unsigned integer OpConstant";
+  }
+
+  if (_.GetIdOpcode(inst->GetOperandAs<uint32_t>(6)) != SpvOpString) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Data must be an OpString";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateClspvReflectionSampler(ValidationState_t& _,
+                                            const Instruction* inst) {
+  const auto num_operands = inst->operands().size();
+  if (num_operands != 7) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
+  }
+
+  bool is_int = false;
+  bool is_const = false;
+  uint32_t value = 0;
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(4));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "DescriptorSet must be a 32-bit unsigned integer OpConstant";
+  }
+
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Binding must be a 32-bit unsigned integer OpConstant";
+  }
+
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Mask must be a 32-bit unsigned integer OpConstant";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateClspvReflectionPropertyRequiredWorkgroupSize(
+    ValidationState_t& _, const Instruction* inst) {
+  const auto num_operands = inst->operands().size();
+  if (num_operands != 8) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
+  }
+
+  if (auto error = ValidateKernelDecl(_, inst)) {
+    return error;
+  }
+
+  bool is_int = false;
+  bool is_const = false;
+  uint32_t value = 0;
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "X must be a 32-bit unsigned integer OpConstant";
+  }
+
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Y must be a 32-bit unsigned integer OpConstant";
+  }
+
+  std::tie(is_int, is_const, value) =
+      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(7));
+  if (!is_int || !is_const) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Z must be a 32-bit unsigned integer OpConstant";
   }
 
   return SPV_SUCCESS;
@@ -606,6 +709,13 @@ spv_result_t ValidateClspvReflection(ValidationState_t& _,
     case NonSemanticClspvReflectionPushConstantNumWorkgroups:
     case NonSemanticClspvReflectionPushConstantRegionGroupOffset:
       return ValidateClspvReflectionPushConstant(_, inst);
+    case NonSemanticClspvReflectionConstantDataStorageBuffer:
+    case NonSemanticClspvReflectionConstantDataUniform:
+      return ValidateClspvReflectionConstantData(_, inst);
+    case NonSemanticClspvReflectionLiteralSampler:
+      return ValidateClspvReflectionSampler(_, inst);
+    case NonSemanticClspvReflectionPropertyRequiredWorkgroupSize:
+      return ValidateClspvReflectionPropertyRequiredWorkgroupSize(_, inst);
     default:
       break;
   }
