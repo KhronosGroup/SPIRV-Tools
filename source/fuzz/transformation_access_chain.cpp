@@ -48,8 +48,12 @@ TransformationAccessChain::TransformationAccessChain(
 
 bool TransformationAccessChain::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+  // Keep track of the fresh ids used to make sure that they are distinct.
+  std::set<uint32_t> fresh_ids_used;
+
   // The result id must be fresh.
-  if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
+  if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+          message_.fresh_id(), ir_context, &fresh_ids_used)) {
     return false;
   }
   // The pointer id must exist and have a type.
@@ -105,10 +109,6 @@ bool TransformationAccessChain::IsApplicable(
 
   int id_pairs_used = 0;
 
-  // Keep track of the fresh ids used to make sure that they are distinct.
-  std::set<uint32_t> fresh_ids_used;
-  fresh_ids_used.emplace(message_.fresh_id());
-
   // Consider the given index ids in turn.
   for (auto index_id : message_.index_id()) {
     // The index value will correspond to the value of the index if the object
@@ -142,18 +142,14 @@ bool TransformationAccessChain::IsApplicable(
       fresh_ids.first = pair.first();
       fresh_ids.second = pair.second();
 
-      // Check that the ids are actually fresh and distinct from the others.
-      if (!fuzzerutil::IsFreshId(ir_context, fresh_ids.first) ||
-          !fuzzerutil::IsFreshId(ir_context, fresh_ids.second) ||
-          fresh_ids.first == fresh_ids.second ||
-          fresh_ids_used.count(fresh_ids.first) ||
-          fresh_ids_used.count(fresh_ids.second)) {
+      // Check that the ids are actually fresh and not already used by this
+      // transformation.
+      if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+              fresh_ids.first, ir_context, &fresh_ids_used) ||
+          !CheckIdIsFreshAndNotUsedByThisTransformation(
+              fresh_ids.second, ir_context, &fresh_ids_used)) {
         return false;
       }
-
-      // Add the ids to the set of used ids.
-      fresh_ids_used.emplace(fresh_ids.first);
-      fresh_ids_used.emplace(fresh_ids.second);
 
       if (!CreateAndGetClampedIndexId(ir_context, index_id, subobject_type_id,
                                       false, fresh_ids)
