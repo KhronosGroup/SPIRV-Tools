@@ -12,39 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_FUNCTION_CALLS_H_
-#define SOURCE_FUZZ_FUZZER_PASS_ADD_FUNCTION_CALLS_H_
+#ifndef SPIRV_TOOLS_FUZZER_PASS_ADD_RELAXED_DECORATIONS_H
+#define SPIRV_TOOLS_FUZZER_PASS_ADD_RELAXED_DECORATIONS_H
 
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// Fuzzer pass that adds calls at random to (a) livesafe functions, from
-// anywhere, and (b) any functions, from dead blocks.
-class FuzzerPassAddFunctionCalls : public FuzzerPass {
+// A pass that applies the Relaxed decoration to numeric instructions.
+class FuzzerPassAddRelaxedDecorations : public FuzzerPass {
  public:
-  FuzzerPassAddFunctionCalls(
+  FuzzerPassAddRelaxedDecorations(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassAddFunctionCalls();
+  ~FuzzerPassAddRelaxedDecorations() override;
 
   void Apply() override;
-
- private:
-  // Randomly chooses suitable arguments to invoke |callee| right before
-  // instruction |caller_inst_it| of block |caller_block| in |caller_function|,
-  // based on both existing available instructions and the addition of new
-  // instructions to the module.
-  std::vector<uint32_t> ChooseFunctionCallArguments(
-      const opt::Function& callee, opt::Function* caller_function,
-      opt::BasicBlock* caller_block,
-      const opt::BasicBlock::iterator& caller_inst_it);
 };
 
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_ADD_FUNCTION_CALLS_H_
+#endif  // SPIRV_TOOLS_FUZZER_PASS_ADD_RELAXED_DECORATIONS_H

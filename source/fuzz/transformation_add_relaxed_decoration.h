@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_TRANSFORMATION_ADD_CONSTANT_SCALAR_H_
-#define SOURCE_FUZZ_TRANSFORMATION_ADD_CONSTANT_SCALAR_H_
-
-#include <vector>
+#ifndef SPIRV_TOOLS_TRANSFORMATION_ADD_RELAXED_DECORATION_H
+#define SPIRV_TOOLS_TRANSFORMATION_ADD_RELAXED_DECORATION_H
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -25,35 +23,40 @@
 namespace spvtools {
 namespace fuzz {
 
-class TransformationAddConstantScalar : public Transformation {
+class TransformationAddRelaxedDecoration : public Transformation {
  public:
-  explicit TransformationAddConstantScalar(
-      const protobufs::TransformationAddConstantScalar& message);
+  explicit TransformationAddRelaxedDecoration(
+      const protobufs::TransformationAddRelaxedDecoration& message);
 
-  TransformationAddConstantScalar(uint32_t fresh_id, uint32_t type_id,
-                                  const std::vector<uint32_t>& words,
-                                  bool is_irrelevant = false);
+  explicit TransformationAddRelaxedDecoration(uint32_t fresh_id);
 
-  // - |message_.fresh_id| must not be used by the module
-  // - |message_.type_id| must be the id of a floating-point or integer type
-  // - The size of |message_.word| must be compatible with the width of this
-  //   type
+  // - |message_.result_id| must be the result id of an instruction, which is
+  //   located in a dead block and Relaxed decoration can be applied.
+  // - It does not matter whether this instruction is already annotated with the
+  //   Relaxed decoration.
   bool IsApplicable(
+
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Adds a new OpConstant instruction with the given type and words.
-  // Creates an IdIsIrrelevant fact about |fresh_id| if |is_irrelevant| is true.
+  // Adds a decoration of the form:
+  //   'OpDecoration |message_.result_id| RelaxedPrecision'
+  // to the module.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
 
+  // Returns true if and only if |opcode| is the opcode of an instruction
+  // that operates on 32-bit integers and 32-bit floats
+  // as defined by the SPIR-V specification.
+  static bool IsNumeric(uint32_t opcode);
+
  private:
-  protobufs::TransformationAddConstantScalar message_;
+  protobufs::TransformationAddRelaxedDecoration message_;
 };
 
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_TRANSFORMATION_ADD_CONSTANT_SCALAR_H_
+#endif  // SPIRV_TOOLS_TRANSFORMATION_ADD_RELAXED_DECORATION_H

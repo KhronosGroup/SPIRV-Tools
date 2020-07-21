@@ -18,12 +18,6 @@
 namespace spvtools {
 namespace fuzz {
 
-namespace {
-bool IsScalarZeroConstant(const opt::analysis::Constant* constant) {
-  return constant->AsScalarConstant() && constant->IsZero();
-}
-}  // namespace
-
 TransformationRecordSynonymousConstants::
     TransformationRecordSynonymousConstants(
         const protobufs::TransformationRecordSynonymousConstants& message)
@@ -44,40 +38,8 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
     return false;
   }
 
-  auto constant1 = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.constant1_id());
-  auto constant2 = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.constant2_id());
-
-  // The constants must exist
-  if (constant1 == nullptr || constant2 == nullptr) {
-    return false;
-  }
-
-  // If the constants are equal, then they are equivalent
-  if (constant1 == constant2) {
-    return true;
-  }
-
-  // If the constants are two integers (signed or unsigned), they are equal
-  // if they have the same width and the same data words.
-  if (constant1->AsIntConstant() && constant2->AsIntConstant() &&
-      constant1->type()->AsInteger()->width() ==
-          constant2->type()->AsInteger()->width() &&
-      constant1->AsIntConstant()->words() ==
-          constant2->AsIntConstant()->words()) {
-    return true;
-  }
-
-  // The types must be the same
-  if (!constant1->type()->IsSame(constant2->type())) {
-    return false;
-  }
-
-  // The constants are equivalent if one is null and the other is a static
-  // constant with value 0.
-  return (constant1->AsNullConstant() && IsScalarZeroConstant(constant2)) ||
-         (IsScalarZeroConstant(constant1) && constant2->AsNullConstant());
+  return AreEquivalentConstants(ir_context, message_.constant1_id(),
+                                message_.constant2_id());
 }
 
 void TransformationRecordSynonymousConstants::Apply(
@@ -101,6 +63,60 @@ protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
   protobufs::Transformation result;
   *result.mutable_record_synonymous_constants() = message_;
   return result;
+}
+
+bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
+    opt::IRContext* ir_context, uint32_t constant_id1, uint32_t constant_id2) {
+  opt::Instruction* def_1 = ir_context->get_def_use_mgr()->GetDef(constant_id1);
+  opt::Instruction* def_2 = ir_context->get_def_use_mgr()->GetDef(constant_id2);
+
+  // Check that the definitions exist
+  assert(def_1 && def_2 && "The constant ids must exist in the module.");
+
+  // The type ids must be the same
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3536): Somehow
+  // relax this for integers (so that unsigned integer and signed integer are
+  // considered the same type)
+  if (def_1->type_id() != def_2->type_id()) {
+    return false;
+  }
+
+  auto constant1 = ir_context->get_constant_mgr()->GetConstantFromInst(def_1);
+  auto constant2 = ir_context->get_constant_mgr()->GetConstantFromInst(def_2);
+
+  assert(constant1 && constant2 && "The ids must refer to constants.");
+
+  // If either constant is null, the other is equivalent iff it is zero-like
+  if (constant1->AsNullConstant()) {
+    return constant2->IsZero();
+  }
+
+  if (constant2->AsNullConstant()) {
+    return constant1->IsZero();
+  }
+
+  // If the constants are scalar, they are equal iff their words are the same
+  if (auto scalar1 = constant1->AsScalarConstant()) {
+    return scalar1->words() == constant2->AsScalarConstant()->words();
+  }
+
+  // The only remaining possibility is that the constants are composite
+  assert(constant1->AsCompositeConstant() &&
+         "Equivalence of constants can only be checked with scalar, composite "
+         "or null constants.");
+
+  // Since the types match, we already know that the number of components is
+  // the same. We check that the input operands of the definitions are all
+  // constants and that they are pairwise equivalent.
+  for (uint32_t i = 0; i < def_1->NumInOperands(); i++) {
+    if (!AreEquivalentConstants(ir_context, def_1->GetSingleWordInOperand(i),
+                                def_2->GetSingleWordInOperand(i))) {
+      return false;
+    }
+  }
+
+  // If we get here, all the components are equivalent
+  return true;
 }
 
 }  // namespace fuzz
