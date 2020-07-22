@@ -398,7 +398,6 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
         %223 = OpTypeFunction %2 %6 %8
         %224 = OpTypeFunction %2 %8 %6
         %233 = OpTypeFunction %2 %42 %24
-        %234 = OpTypeFunction %2 %24 %42
          %25 = OpTypeFunction %24 %7 %15
         %107 = OpTypeFunction %2 %16 %14
           %4 = OpFunction %2 None %3

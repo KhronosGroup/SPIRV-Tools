@@ -255,7 +255,6 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
          %65 = OpTypeFunction %2 %6
          %75 = OpTypeStruct %8
          %76 = OpTypeFunction %2 %75
-         %77 = OpTypeFunction %2 %8
          %40 = OpTypePointer Function %12
          %13 = OpTypeStruct %6 %8
          %45 = OpTypeStruct %6 %10 %13
