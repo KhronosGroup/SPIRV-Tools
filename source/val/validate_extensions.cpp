@@ -181,12 +181,26 @@ spv_result_t ValidateOperandDebugType(
          << " is not a valid debug type";
 }
 
+bool IsUint32Constant(ValidationState_t& _, uint32_t id) {
+  auto inst = _.FindDef(id);
+  if (!inst || inst->opcode() != SpvOpConstant)
+    return false;
+
+  auto type = _.FindDef(inst->type_id());
+  if (!type || type->opcode() != SpvOpTypeInt)
+    return false;
+
+  if (type->GetOperandAs<uint32_t>(1) != 32)
+    return false;
+
+  if (type->GetOperandAs<uint32_t>(2) != 0)
+    return false;
+
+  return true;
+}
+
 spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
                                            const Instruction* inst) {
-  const auto num_operands = inst->operands().size();
-  if (num_operands != 6 ) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
   const auto kernel_id = inst->GetOperandAs<uint32_t>(4);
   const auto kernel = _.FindDef(kernel_id);
   if (kernel->opcode() != SpvOpFunction) {
@@ -205,8 +219,23 @@ spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
     }
   }
 
-  if (_.GetIdOpcode(inst->GetOperandAs<uint32_t>(5)) != SpvOpString) {
+  auto name = _.FindDef(inst->GetOperandAs<uint32_t>(5));
+  if (!name || name->opcode() != SpvOpString) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Name must be an OpString";
+  }
+
+  const std::string name_str = reinterpret_cast<const char*>(
+      name->words().data() + name->operands()[1].offset);
+  bool found = false;
+  for (auto& desc : _.entry_point_descriptions(kernel_id)) {
+    if (name_str == desc.name) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Name must match an entry-point for Kernel";
   }
 
   return SPV_SUCCESS;
@@ -215,9 +244,6 @@ spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
 spv_result_t ValidateClspvReflectionArgumentInfo(ValidationState_t& _,
                                                  const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 5 || num_operands > 9) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
   if (_.GetIdOpcode(inst->GetOperandAs<uint32_t>(4)) != SpvOpString) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Name must be an OpString";
   }
@@ -227,31 +253,22 @@ spv_result_t ValidateClspvReflectionArgumentInfo(ValidationState_t& _,
              << "TypeName must be an OpString";
     }
   }
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
   if (num_operands > 6) {
-    std::tie(is_int, is_const, value) =
-        _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-    if (!is_int || !is_const) {
+    if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "AddressQualifier must be a 32-bit unsigned integer "
                 "OpConstant";
     }
   }
   if (num_operands > 7) {
-    std::tie(is_int, is_const, value) =
-        _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(7));
-    if (!is_int || !is_const) {
+    if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(7))) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "AccessQualifier must be a 32-bit unsigned integer "
                 "OpConstant";
     }
   }
   if (num_operands > 8) {
-    std::tie(is_int, is_const, value) =
-        _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(8));
-    if (!is_int || !is_const) {
+    if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(8))) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "TypeQualifier must be a 32-bit unsigned integer "
                 "OpConstant";
@@ -266,8 +283,7 @@ spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
   const auto decl = _.FindDef(decl_id);
   if (!decl || decl->opcode() != SpvOpExtInst) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Kernel " << _.getIdName(decl_id)
-           << " must be a Kernel extended instruction";
+           << "Kernel must be a Kernel extended instruction";
   }
 
   if (decl->GetOperandAs<uint32_t>(2) != inst->GetOperandAs<uint32_t>(2)) {
@@ -279,8 +295,7 @@ spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
       decl->GetOperandAs<NonSemanticClspvReflectionInstructions>(3);
   if (ext_inst != NonSemanticClspvReflectionKernel) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Kernel " << _.getIdName(decl_id)
-           << " must be a Kernel extended instruction";
+           << "Kernel must be a Kernel extended instruction";
   }
 
   return SPV_SUCCESS;
@@ -291,18 +306,18 @@ spv_result_t ValidateArgInfo(ValidationState_t& _, const Instruction* inst,
   auto info = _.FindDef(inst->GetOperandAs<uint32_t>(id));
   if (!info || info->opcode() != SpvOpExtInst) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Kernel must be an ArgumentInfo extended instruction";
+           << "ArgInfo must be an ArgumentInfo extended instruction";
   }
 
   if (info->GetOperandAs<uint32_t>(2) != inst->GetOperandAs<uint32_t>(2)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "ArgumentInfo must be from the same extended instruction import";
+           << "ArgInfo must be from the same extended instruction import";
   }
 
   auto ext_inst = info->GetOperandAs<NonSemanticClspvReflectionInstructions>(3);
   if (ext_inst != NonSemanticClspvReflectionArgumentInfo) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Kernel must be an ArgumentInfo extended instruction";
+           << "ArgInfo must be an ArgumentInfo extended instruction";
   }
 
   return SPV_SUCCESS;
@@ -311,34 +326,21 @@ spv_result_t ValidateArgInfo(ValidationState_t& _, const Instruction* inst,
 spv_result_t ValidateClspvReflectionArgumentBuffer(ValidationState_t& _,
                                                    const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 8 || num_operands > 9) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
   if (auto error = ValidateKernelDecl(_, inst)) {
     return error;
   }
 
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Ordinal must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "DescriptorSet must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(7));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(7))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Binding must be a 32-bit unsigned integer OpConstant";
   }
@@ -355,48 +357,31 @@ spv_result_t ValidateClspvReflectionArgumentBuffer(ValidationState_t& _,
 spv_result_t ValidateClspvReflectionArgumentPodBuffer(ValidationState_t& _,
                                                       const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 10 || num_operands > 11) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
   if (auto error = ValidateKernelDecl(_, inst)) {
     return error;
   }
 
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Ordinal must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "DescriptorSet must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(7));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(7))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Binding must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(8));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(8))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Offset must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(9));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(9))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Size must be a 32-bit unsigned integer OpConstant";
   }
@@ -413,34 +398,21 @@ spv_result_t ValidateClspvReflectionArgumentPodBuffer(ValidationState_t& _,
 spv_result_t ValidateClspvReflectionArgumentPodPushConstant(
     ValidationState_t& _, const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 8 || num_operands > 10) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
   if (auto error = ValidateKernelDecl(_, inst)) {
     return error;
   }
 
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Ordinal must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Offset must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(7));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(7))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Size must be a 32-bit unsigned integer OpConstant";
   }
@@ -457,34 +429,21 @@ spv_result_t ValidateClspvReflectionArgumentPodPushConstant(
 spv_result_t ValidateClspvReflectionArgumentWorkgroup(ValidationState_t& _,
                                                       const Instruction* inst) {
   const auto num_operands = inst->operands().size();
-  if (num_operands < 8 || num_operands > 10) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
   if (auto error = ValidateKernelDecl(_, inst)) {
     return error;
   }
 
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Ordinal must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "SpecId must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(7));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(7))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "ElemSize must be a 32-bit unsigned integer OpConstant";
   }
@@ -500,31 +459,17 @@ spv_result_t ValidateClspvReflectionArgumentWorkgroup(ValidationState_t& _,
 
 spv_result_t ValidateClspvReflectionSpecConstantTriple(
     ValidationState_t& _, const Instruction* inst) {
-  const auto num_operands = inst->operands().size();
-  if (num_operands != 7) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(4));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "X must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Y must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Y must be a 32-bit unsigned integer OpConstant";
   }
@@ -534,17 +479,7 @@ spv_result_t ValidateClspvReflectionSpecConstantTriple(
 
 spv_result_t ValidateClspvReflectionSpecConstantWorkDim(
     ValidationState_t& _, const Instruction* inst) {
-  const auto num_operands = inst->operands().size();
-  if (num_operands != 5) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(4));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Dim must be a 32-bit unsigned integer OpConstant";
   }
@@ -554,24 +489,12 @@ spv_result_t ValidateClspvReflectionSpecConstantWorkDim(
 
 spv_result_t ValidateClspvReflectionPushConstant(ValidationState_t& _,
                                                  const Instruction* inst) {
-  const auto num_operands = inst->operands().size();
-  if (num_operands != 6) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(4));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Offset must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Size must be a 32-bit unsigned integer OpConstant";
   }
@@ -581,24 +504,12 @@ spv_result_t ValidateClspvReflectionPushConstant(ValidationState_t& _,
 
 spv_result_t ValidateClspvReflectionConstantData(ValidationState_t& _,
                                                  const Instruction* inst) {
-  const auto num_operands = inst->operands().size();
-  if (num_operands != 7) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(4));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Offset must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Size must be a 32-bit unsigned integer OpConstant";
   }
@@ -612,31 +523,17 @@ spv_result_t ValidateClspvReflectionConstantData(ValidationState_t& _,
 
 spv_result_t ValidateClspvReflectionSampler(ValidationState_t& _,
                                             const Instruction* inst) {
-  const auto num_operands = inst->operands().size();
-  if (num_operands != 7) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(4));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "DescriptorSet must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Binding must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Mask must be a 32-bit unsigned integer OpConstant";
   }
@@ -646,35 +543,21 @@ spv_result_t ValidateClspvReflectionSampler(ValidationState_t& _,
 
 spv_result_t ValidateClspvReflectionPropertyRequiredWorkgroupSize(
     ValidationState_t& _, const Instruction* inst) {
-  const auto num_operands = inst->operands().size();
-  if (num_operands != 8) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst) << "Invalid number of operands";
-  }
-
   if (auto error = ValidateKernelDecl(_, inst)) {
     return error;
   }
 
-  bool is_int = false;
-  bool is_const = false;
-  uint32_t value = 0;
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(5));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "X must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(6));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Y must be a 32-bit unsigned integer OpConstant";
   }
 
-  std::tie(is_int, is_const, value) =
-      _.EvalInt32IfConst(inst->GetOperandAs<uint32_t>(7));
-  if (!is_int || !is_const) {
+  if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(7))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Z must be a 32-bit unsigned integer OpConstant";
   }

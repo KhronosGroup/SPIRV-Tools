@@ -8034,6 +8034,541 @@ OpMemoryModel Logical GLSL450
                         "the version correctly"));
 }
 
+TEST_F(ValidateClspvReflection, Kernel) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateClspvReflection, KernelNotAFunction) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo_name %foo_name
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Kernel does not reference a function"));
+}
+
+TEST_F(ValidateClspvReflection, KernelNotAnEntryPoint) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%bar = OpFunction %void None %void_fn
+%bar_entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %bar %foo_name
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Kernel does not reference an entry-point"));
+}
+
+TEST_F(ValidateClspvReflection, KernelNotGLCompute) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %foo "foo"
+OpExecutionMode %foo OriginUpperLeft
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Kernel must refer only to GLCompute entry-points"));
+}
+
+TEST_F(ValidateClspvReflection, KernelNameMismatch) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "bar"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Name must match an entry-point for Kernel"));
+}
+
+using BasicDescriptors = spvtest::ValidateBase<std::string>;
+
+INSTANTIATE_TEST_SUITE_P(ValidateClspvReflectionDescriptors,
+                         BasicDescriptors,
+                         ::testing::ValuesIn(std::vector<std::string>{
+                             "ArgumentStorageBuffer", "ArgumentUniform",
+                             "ArgumentSampledImage", "ArgumentStorageImage",
+                             "ArgumentSampler"}));
+
+TEST_P(BasicDescriptors, Valid) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(BasicDescriptors, KernelNotAnExtendedInstruction) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %int_0 %int_0 %int_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Kernel must be a Kernel extended instruction"));
+}
+
+TEST_P(BasicDescriptors, KernelFromDifferentImport) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+%ext2 = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext2 Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Kernel must be from the same extended instruction import"));
+}
+
+TEST_P(BasicDescriptors, KernelWrongExtendedInstruction) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext ArgumentInfo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Kernel must be a Kernel extended instruction"));
+}
+
+TEST_P(BasicDescriptors, OrdinalWrongType) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %float_0 %int_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ordinal must be a 32-bit unsigned integer OpConstant"));
+}
+
+TEST_P(BasicDescriptors, OrdinalNotConst) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%null = OpConstantNull %int
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %null %int_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ordinal must be a 32-bit unsigned integer OpConstant"));
+}
+
+TEST_P(BasicDescriptors, DescriptorSetWrongType) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %float_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DescriptorSet must be a 32-bit unsigned integer OpConstant"));
+}
+
+TEST_P(BasicDescriptors, DescriptorSetNotConst) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%null = OpConstantNull %int
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %null %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DescriptorSet must be a 32-bit unsigned integer OpConstant"));
+}
+
+TEST_P(BasicDescriptors, BindingWrongType) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %float_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Binding must be a 32-bit unsigned integer OpConstant"));
+}
+
+TEST_P(BasicDescriptors, BindingNotConst) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%null = OpConstantNull %int
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %null)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Binding must be a 32-bit unsigned integer OpConstant"));
+}
+
+TEST_P(BasicDescriptors, ArgumentInfo) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%in_name = OpString "in"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%info = OpExtInst %void %ext ArgumentInfo %in_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %int_0  %info)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(BasicDescriptors, ArgumentInfoNotAnExtendedInstruction) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %int_0 %int_0)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ArgInfo must be an ArgumentInfo extended instruction"));
+}
+
+TEST_P(BasicDescriptors, ArgumentInfoFromDifferentImport) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+%ext2 = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%in_name = OpString "in"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%info = OpExtInst %void %ext2 ArgumentInfo %in_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %int_0 %info)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ArgInfo must be from the same extended instruction import"));
+}
+
+TEST_P(BasicDescriptors, ArgumentInfoWrongExtendedInstruction) {
+  const std::string ext_inst = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%in = OpExtInst %void %ext )" +
+                           ext_inst + R"( %decl %int_0 %int_0 %int_0 %decl)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ArgInfo must be an ArgumentInfo extended instruction"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
