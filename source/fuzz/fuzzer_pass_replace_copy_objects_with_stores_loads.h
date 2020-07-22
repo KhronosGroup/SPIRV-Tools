@@ -17,13 +17,11 @@
 
 #include "source/fuzz/fuzzer_pass.h"
 
+namespace spvtools {
+namespace fuzz {
 // Replaces instructions OpCopyObject with storing into a new variable
 // and immediately loading this variable to |result_id| of the
 // original OpCopyObject instruction.
-
-namespace spvtools {
-namespace fuzz {
-
 class FuzzerPassReplaceCopyObjectsWithStoresLoads : public FuzzerPass {
  public:
   FuzzerPassReplaceCopyObjectsWithStoresLoads(

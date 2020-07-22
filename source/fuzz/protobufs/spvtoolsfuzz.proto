@@ -1237,19 +1237,19 @@ message TransformationReplaceConstantWithUniform {
 message TransformationReplaceCopyObjectWithStoreLoad {
 
   // A transformation that replaces instruction OpCopyObject with
-  // storing into a new variable and immediately loading this
+  // storing into a new variable and immediately loading from this
   // variable to |result_id| of the original OpCopyObject instruction.
 
-  // The result id of initial OpCopyLoad instruction
+  // The result id of initial OpCopyObject instruction
   uint32 copy_object_result_id = 1;
 
   // A fresh id for the variable to be stored to.
   uint32 fresh_variable_id = 2;
 
-  // The variable storage class (local or global).
+  // The variable storage class (Function or Private).
   uint32 variable_storage_class = 3;
 
-  // Constant to initialize the variable from.
+  // Constant to initialize the variable with.
   uint32 variable_initializer_id = 4;
 }
 

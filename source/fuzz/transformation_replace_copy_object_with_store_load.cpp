@@ -46,12 +46,15 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
       ir_context->get_def_use_mgr()->GetDef(message_.copy_object_result_id());
 
   // This must be a defined OpCopyObject instruction.
-  if ((!copy_object_instruction) ||
-      (copy_object_instruction->opcode() != SpvOpCopyObject))
+  if (!copy_object_instruction ||
+      copy_object_instruction->opcode() != SpvOpCopyObject) {
     return false;
+  }
   // The |type_id()| of the instruction cannot be a pointer,
   // because we cannot define a pointer to pointer
-  if (copy_object_instruction->type_id() == SpvOpTypePointer) return false;
+  if (copy_object_instruction->type_id() == SpvOpTypePointer) {
+    return false;
+  }
 
   // It must be valid to insert the OpStore and OpLoad instruction before it.
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpStore,
@@ -77,8 +80,8 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
     return false;
   }
   // |message_.variable_storage_class| must be Private or Function.
-  return ((message_.variable_storage_class() == SpvStorageClassPrivate ||
-           message_.variable_storage_class() == SpvStorageClassFunction));
+  return (message_.variable_storage_class() == SpvStorageClassPrivate ||
+          message_.variable_storage_class() == SpvStorageClassFunction);
 }
 
 void TransformationReplaceCopyObjectWithStoreLoad::Apply(
@@ -86,6 +89,10 @@ void TransformationReplaceCopyObjectWithStoreLoad::Apply(
     TransformationContext* transformation_context) const {
   auto copy_object_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.copy_object_result_id());
+  // |copy_object_instruction| must be defined.
+  assert(copy_object_instruction &&
+         copy_object_instruction->opcode() == SpvOpCopyObject &&
+         "The required OpCopyObject instruction must be defined.");
   // Get id used as a source by the OpCopyObject instruction.
   uint32_t src_operand = copy_object_instruction->GetSingleWordOperand(2);
   // A pointer type instruction pointing to the value type must be defined.
