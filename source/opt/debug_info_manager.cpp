@@ -452,9 +452,11 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
 Instruction* DebugInfoManager::AddDebugValueWithIndex(
     uint32_t dbg_local_var_id, uint32_t value_id, uint32_t expr_id,
     uint32_t index_id, Instruction* insert_before) {
+  uint32_t result_id = context()->TakeNextId();
+  if (!result_id) return nullptr;
   std::unique_ptr<Instruction> new_dbg_value(new Instruction(
       context(), SpvOpExtInst, context()->get_type_mgr()->GetVoidTypeId(),
-      context()->TakeNextId(),
+      result_id,
       {
           {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
            {context()
@@ -513,6 +515,7 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
         AddDebugValueWithIndex(dbg_decl_or_val->GetSingleWordOperand(
                                    kDebugValueOperandLocalVariableIndex),
                                value_id, 0, index_id, insert_before);
+    assert(added_dbg_value != nullptr);
     added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
   }
 }

@@ -173,10 +173,14 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
   // Add DebugValue instruction with Indexes operand and Deref operation.
   int32_t idx = 0;
   for (const auto* var : replacements) {
-    context()->get_debug_info_mgr()->AddDebugValueWithIndex(
-        dbg_decl->GetSingleWordOperand(kDebugDeclareOperandLocalVariableIndex),
-        var->result_id(), deref_expr->result_id(),
-        context()->get_constant_mgr()->GetSIntConst(idx), dbg_decl);
+    Instruction* added_dbg_value =
+        context()->get_debug_info_mgr()->AddDebugValueWithIndex(
+            dbg_decl->GetSingleWordOperand(
+                kDebugDeclareOperandLocalVariableIndex),
+            var->result_id(), deref_expr->result_id(),
+            context()->get_constant_mgr()->GetSIntConst(idx), var->NextNode());
+    if (added_dbg_value == nullptr) return false;
+    added_dbg_value->UpdateDebugInfoFrom(dbg_decl);
     ++idx;
   }
   return true;
