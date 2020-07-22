@@ -167,20 +167,17 @@ void TransformationReplaceParameterWithGlobal::Apply(
   auto* old_function_type = fuzzerutil::GetFunctionType(ir_context, function);
   assert(old_function_type && "Function has invalid type");
 
-  // Preemptively add function's return type id.
-  std::vector<uint32_t> type_ids = {
-      old_function_type->GetSingleWordInOperand(0)};
-
   // +1 and -1 since the first operand is the return type id.
+  std::vector<uint32_t> type_ids;
   for (uint32_t i = 1; i < old_function_type->NumInOperands(); ++i) {
     if (i - 1 != parameter_index) {
       type_ids.push_back(old_function_type->GetSingleWordInOperand(i));
     }
   }
 
-  fuzzerutil::MaybeReuseFunctionType(ir_context, function->result_id(),
-                                     message_.function_type_fresh_id(),
-                                     type_ids);
+  fuzzerutil::UpdateFunctionType(
+      ir_context, function->result_id(), message_.function_type_fresh_id(),
+      old_function_type->GetSingleWordInOperand(0), type_ids);
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(

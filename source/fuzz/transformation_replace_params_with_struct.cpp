@@ -234,12 +234,9 @@ void TransformationReplaceParamsWithStruct::Apply(
   auto* old_function_type = fuzzerutil::GetFunctionType(ir_context, function);
   assert(old_function_type && "Function has invalid type");
 
-  std::vector<uint32_t> type_ids = {
-      // Result type of the function.
-      old_function_type->GetSingleWordInOperand(0)};
-
   // +1 since the first in operand to OpTypeFunction is the result type id
   // of the function.
+  std::vector<uint32_t> type_ids;
   for (uint32_t i = 1; i < old_function_type->NumInOperands(); ++i) {
     if (std::find(indices_of_replaced_params.begin(),
                   indices_of_replaced_params.end(),
@@ -250,9 +247,9 @@ void TransformationReplaceParamsWithStruct::Apply(
 
   type_ids.push_back(struct_type_id);
 
-  fuzzerutil::MaybeReuseFunctionType(ir_context, function->result_id(),
-                                     message_.fresh_function_type_id(),
-                                     type_ids);
+  fuzzerutil::UpdateFunctionType(
+      ir_context, function->result_id(), message_.fresh_function_type_id(),
+      old_function_type->GetSingleWordInOperand(0), type_ids);
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(

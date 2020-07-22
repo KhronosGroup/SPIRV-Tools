@@ -91,8 +91,7 @@ void TransformationPermuteFunctionParameters::Apply(
       fuzzerutil::GetFunctionType(ir_context, function);
   assert(old_function_type_inst && "Function must have a valid type");
 
-  std::vector<uint32_t> type_ids = {
-      old_function_type_inst->GetSingleWordInOperand(0)};
+  std::vector<uint32_t> type_ids;
   for (auto index : message_.permutation()) {
     // +1 since the first operand to OpTypeFunction is a return type.
     type_ids.push_back(
@@ -100,9 +99,9 @@ void TransformationPermuteFunctionParameters::Apply(
   }
 
   // Change function's type.
-  fuzzerutil::MaybeReuseFunctionType(ir_context, function->result_id(),
-                                     message_.function_type_fresh_id(),
-                                     type_ids);
+  fuzzerutil::UpdateFunctionType(
+      ir_context, function->result_id(), message_.function_type_fresh_id(),
+      old_function_type_inst->GetSingleWordInOperand(0), type_ids);
 
   // Adjust OpFunctionParameter instructions
 

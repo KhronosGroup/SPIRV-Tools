@@ -759,19 +759,17 @@ opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
   return nullptr;
 }
 
-uint32_t MaybeReuseFunctionType(
-    opt::IRContext* ir_context, uint32_t function_id,
-    uint32_t new_function_type_result_id,
-    const std::vector<uint32_t>& new_function_type_operands) {
-  assert(!new_function_type_operands.empty() &&
-         "|new_function_type_operands| must have at least one element");
-
-  assert(ir_context->get_type_mgr()->GetType(new_function_type_operands[0]) &&
+uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
+                            uint32_t new_function_type_result_id,
+                            uint32_t return_type_id,
+                            const std::vector<uint32_t>& parameter_type_ids) {
+  // Check some initial constraints.
+  assert(ir_context->get_type_mgr()->GetType(return_type_id) &&
          "Return type is invalid");
-  for (size_t i = 1; i < new_function_type_operands.size(); ++i) {
-    const auto* type =
-        ir_context->get_type_mgr()->GetType(new_function_type_operands[i]);
+  for (auto id : parameter_type_ids) {
+    const auto* type = ir_context->get_type_mgr()->GetType(id);
     (void)type;  // Make compilers happy in release mode.
+    // Parameters can't be OpTypeVoid.
     assert(type && !type->AsVoid() && "Parameter has invalid type");
   }
 
@@ -781,24 +779,33 @@ uint32_t MaybeReuseFunctionType(
   auto* old_function_type = GetFunctionType(ir_context, function);
   assert(old_function_type && "Function has invalid type");
 
+  std::vector<uint32_t> operand_ids = {return_type_id};
+  operand_ids.insert(operand_ids.end(), parameter_type_ids.begin(),
+                     parameter_type_ids.end());
+
   if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
-      FindFunctionType(ir_context, new_function_type_operands) == 0) {
+      FindFunctionType(ir_context, operand_ids) == 0) {
+    // We can change |old_function_type| only if it's used once in the module
+    // and we are certain we won't create a duplicate as a result of the change.
+
     // Update |old_function_type| in-place.
     opt::Instruction::OperandList operands;
-    for (auto id : new_function_type_operands) {
+    for (auto id : operand_ids) {
       operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
     }
 
     old_function_type->SetInOperands(std::move(operands));
 
-    // Make sure domination rules are satisfied.
+    // |operands| may depend on result ids defined below the |old_function_type|
+    // in the module.
     old_function_type->RemoveFromList();
     ir_context->AddType(std::unique_ptr<opt::Instruction>(old_function_type));
     return old_function_type->result_id();
   } else {
-    // Create a new function type or use an existing one.
+    // We can't modify the |old_function_type| so we have to either use an
+    // existing one or create a new one.
     auto type_id = FindOrCreateFunctionType(
-        ir_context, new_function_type_result_id, new_function_type_operands);
+        ir_context, new_function_type_result_id, operand_ids);
     function->DefInst().SetInOperand(1, {type_id});
     return type_id;
   }
