@@ -35,6 +35,7 @@ class TransformationAddSynonym : public Transformation {
       const protobufs::InstructionDescriptor& insert_before);
 
   // - |result_id| must be a valid result id of some instruction in the module.
+  // - |result_id| may not be an irrelevant id.
   // - |synonym_type| is a type of the synonymous instruction that will be
   //   created.
   // - |synonym_fresh_id| is a fresh id.
@@ -57,7 +58,9 @@ class TransformationAddSynonym : public Transformation {
   // Returns true if we can create a synonym of |inst| according to the
   // |synonym_type|.
   static bool IsInstructionValid(
-      opt::IRContext* ir_context, opt::Instruction* inst,
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context,
+      opt::Instruction* inst,
       protobufs::TransformationAddSynonym::SynonymType synonym_type);
 
   // Returns true if |synonym_type| requires an additional constant instruction

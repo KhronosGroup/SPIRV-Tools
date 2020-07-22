@@ -80,7 +80,7 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
         std::vector<opt::Instruction*> value_instructions =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
-                [basic_type_id, instruction_descriptor](
+                [this, basic_type_id, instruction_descriptor](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
                   if (!instruction->result_id() || !instruction->type_id()) {
@@ -88,6 +88,12 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
                   }
 
                   if (instruction->type_id() != basic_type_id) {
+                    return false;
+                  }
+
+                  if (!fuzzerutil::CanMakeSynonymOf(ir_context,
+                                                    *GetTransformationContext(),
+                                                    instruction)) {
                     return false;
                   }
 

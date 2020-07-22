@@ -38,7 +38,8 @@ TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
 }
 
 bool TransformationPushIdThroughVariable::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // |message_.value_synonym_id| and |message_.variable_id| must be fresh.
   if (!fuzzerutil::IsFreshId(ir_context, message_.value_synonym_id()) ||
       !fuzzerutil::IsFreshId(ir_context, message_.variable_id())) {
@@ -70,6 +71,12 @@ bool TransformationPushIdThroughVariable::IsApplicable(
   auto value_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.value_id());
   if (!value_instruction || !value_instruction->type_id()) {
+    return false;
+  }
+
+  // |value_id| may not be an irrelevant id.
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.value_id())) {
     return false;
   }
 

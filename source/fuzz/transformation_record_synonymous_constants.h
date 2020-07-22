@@ -41,6 +41,7 @@ class TransformationRecordSynonymousConstants : public Transformation {
   //   - if both of them represent zero-like values of the same type
   //   - if they are composite constants with the same type and their
   //     components are pairwise equivalent.
+  // - |constant1_id| and |constant2_id| may not be irrelevant.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
