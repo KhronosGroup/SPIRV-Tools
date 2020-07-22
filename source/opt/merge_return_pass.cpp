@@ -319,10 +319,21 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
     // If the instruction is a pointer and variable pointers are not an option,
     // then we have to regenerate the instruction instead of creating an OpPhi
     // instruction.  If not, the Spir-V will be invalid.
-    bool regenerateInstruction =
-        get_def_use_mgr()->GetDef(inst.type_id())->opcode() == SpvOpTypePointer;
-    regenerateInstruction &= !context()->get_feature_mgr()->HasCapability(
-        SpvCapabilityVariablePointers);
+    Instruction* inst_type = get_def_use_mgr()->GetDef(inst.type_id());
+    bool regenerateInstruction = false;
+    if (inst_type->opcode() == SpvOpTypePointer) {
+      if (!context()->get_feature_mgr()->HasCapability(
+              SpvCapabilityVariablePointers)) {
+        regenerateInstruction = true;
+      }
+
+      uint32_t storage_class = inst_type->GetSingleWordInOperand(0);
+      if (storage_class != SpvStorageClassWorkgroup &&
+          storage_class != SpvStorageClassStorageBuffer) {
+        regenerateInstruction = true;
+      }
+    }
+
     if (regenerateInstruction) {
       std::unique_ptr<Instruction> regen_inst(inst.Clone(context()));
       uint32_t new_id = TakeNextId();
