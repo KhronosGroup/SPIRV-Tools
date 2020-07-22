@@ -139,6 +139,11 @@ bool TransformationAccessChain::IsApplicable(
       protobufs::UInt32Pair fresh_ids =
           message_.fresh_ids_for_clamping()[id_pairs_used++];
 
+      // Valid ids need to have been given
+      if (fresh_ids.first() == 0 || fresh_ids.second() == 0) {
+        return false;
+      }
+
       // Check that the ids are actually fresh and not already used by this
       // transformation.
       if (!CheckIdIsFreshAndNotUsedByThisTransformation(
@@ -152,14 +157,7 @@ bool TransformationAccessChain::IsApplicable(
         return false;
       }
 
-      // Valid fresh ids need to have been given
-      if (fresh_ids.first() == 0 || fresh_ids.second() == 0) {
-        return false;
-      }
-
       // Perform the clamping using the fresh ids at our disposal.
-      // The module will not be changed if |add_clamping_instructions| is not
-      // set.
       auto index_instruction = ir_context->get_def_use_mgr()->GetDef(index_id);
 
       uint32_t bound = fuzzerutil::GetBoundForCompositeIndex(
@@ -174,12 +172,13 @@ bool TransformationAccessChain::IsApplicable(
       }
 
       // The module must have the definition of bool type to make a comparison.
-      opt::analysis::Bool bool_type;
-      if (!ir_context->get_type_mgr()->GetId(&bool_type)) {
+      if (!fuzzerutil::MaybeGetBoolType(ir_context)) {
         return false;
       }
 
-      // Use value 0 to traverse the composite type
+      // The index is not necessarily a constant, so we may not know its value.
+      // We can use index 0 because the components of a non-struct composite
+      // all have the same type, and index 0 is always in bounds.
       index_value = 0;
     }
 
@@ -267,8 +266,14 @@ void TransformationAccessChain::Apply(
           fuzzerutil::MaybeGetIntegerConstantFromValueAndType(
               ir_context, bound - 1, index_instruction->type_id());
 
-      opt::analysis::Bool bool_type;
-      uint32_t bool_type_id = ir_context->get_type_mgr()->GetId(&bool_type);
+      assert(bound_minus_one_id &&
+             "A constant of value bound - 1 and the same type as the index "
+             "must exist as a precondition.");
+
+      uint32_t bool_type_id = fuzzerutil::MaybeGetBoolType(ir_context);
+
+      assert(bool_type_id &&
+             "An OpTypeBool instruction must exist as a precondition.");
 
       auto int_type_inst =
           ir_context->get_def_use_mgr()->GetDef(index_instruction->type_id());
