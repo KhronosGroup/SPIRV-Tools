@@ -478,20 +478,22 @@ TEST_F(PrivateToLocalTest, DebugPrivateToLocal) {
          %12 = OpExtInst %3 %10 DebugTypeBasic %11 %14 Float
          %15 = OpExtInst %3 %10 DebugSource %11
          %16 = OpExtInst %3 %10 DebugCompilationUnit 1 4 %15 GLSL
-; CHECK: DebugGlobalVariable {{%\d+}} {{%\d+}} {{%\d+}} 0 0 {{%\d+}} {{%\d+}} [[newvar:%[a-zA-Z_\d]+]]
+; CHECK-NOT: DebugGlobalVariable
+; CHECK: [[dbg_newvar:%[a-zA-Z_\d]+]] = OpExtInst {{%\w+}} {{%\w+}} DebugLocalVariable
          %17 = OpExtInst %3 %10 DebugGlobalVariable %11 %12 %15 0 0 %16 %11 %8 FlagIsDefinition
 
 ; CHECK: OpFunction
           %2 = OpFunction %3 None %4
 ; CHECK: OpLabel
           %7 = OpLabel
-; CHECK-NEXT: [[newvar]] = OpVariable [[newtype]] Function
+; CHECK-NEXT: [[newvar:%[a-zA-Z_\d]+]] = OpVariable [[newtype]] Function
+; CHECK-NEXT: DebugDeclare [[dbg_newvar]] [[newvar]]
 ; CHECK: OpLoad [[float]] [[newvar]]
           %9 = OpLoad %5 %8
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<PrivateToLocalPass>(text, false);
+  SinglePassRunAndMatch<PrivateToLocalPass>(text, true);
 }
 
 }  // namespace
