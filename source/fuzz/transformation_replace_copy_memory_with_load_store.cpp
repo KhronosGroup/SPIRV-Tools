@@ -55,13 +55,15 @@ bool TransformationReplaceCopyMemoryWithLoadStore::IsApplicable(
 }
 
 void TransformationReplaceCopyMemoryWithLoadStore::Apply(
-    opt::IRContext* ir_context, TransformationContext*) const {
+    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   auto copy_memory_instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
   auto target = ir_context->get_def_use_mgr()->GetDef(
       copy_memory_instruction->GetSingleWordInOperand(0));
   auto source = ir_context->get_def_use_mgr()->GetDef(
       copy_memory_instruction->GetSingleWordInOperand(1));
+  std::cout << fuzzerutil::GetTypeId(ir_context, target->result_id())
+            << std::endl;
   assert(target->type_id() == SpvOpTypePointer &&
          source->type_id() == SpvOpTypePointer &&
          "Operands must be of type OpTypePointer");
@@ -72,6 +74,9 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
   assert(target_pointee_type == source_pointee_type &&
          "Operands must have the same type to which they point to.");
 
+  // First, insert the OpStore instruction before the OpCopyMemory instruction
+  // and then insert the OpLoad instruction before the OpStore instruction.
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.source_value());
   FindInstruction(message_.instruction_descriptor(), ir_context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, SpvOpStore, 0, 0,
@@ -82,56 +87,12 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
           ir_context, SpvOpLoad, target_pointee_type, message_.source_value(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {source->result_id()}}})));
+
+  // Remove the CopyObject instruction.
+  ir_context->KillInst(copy_memory_instruction);
+
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
-/*
-auto value_instruction =
-    ir_context->get_def_use_mgr()->GetDef(message_.value_id());
-
-// A pointer type instruction pointing to the value type must be defined.
-auto pointer_type_id = fuzzerutil::MaybeGetPointerType(
-    ir_context, value_instruction->type_id(),
-    static_cast<SpvStorageClass>(message_.variable_storage_class()));
-assert(pointer_type_id && "The required pointer type must be available.");
-
-// Adds whether a global or local variable.
-if (message_.variable_storage_class() == SpvStorageClassPrivate) {
-  fuzzerutil::AddGlobalVariable(ir_context, message_.variable_id(),
-                                pointer_type_id, SpvStorageClassPrivate,
-                                message_.initializer_id());
-} else {
-  auto function_id = ir_context
-                         ->get_instr_block(FindInstruction(
-                             message_.instruction_descriptor(), ir_context))
-                         ->GetParent()
-                         ->result_id();
-  fuzzerutil::AddLocalVariable(ir_context, message_.variable_id(),
-                               pointer_type_id, function_id,
-                               message_.initializer_id());
-}
-
-// First, insert the OpLoad instruction before |instruction_descriptor| and
-// then insert the OpStore instruction before the OpLoad instruction.
-fuzzerutil::UpdateModuleIdBound(ir_context, message_.value_synonym_id());
-FindInstruction(message_.instruction_descriptor(), ir_context)
-    ->InsertBefore(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpLoad, value_instruction->type_id(),
-        message_.value_synonym_id(),
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID, {message_.variable_id()}}})))
-    ->InsertBefore(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpStore, 0, 0,
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID, {message_.variable_id()}},
-             {SPV_OPERAND_TYPE_ID, {message_.value_id()}}})));
-
-ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
-
-// Adds the fact that |message_.value_synonym_id|
-// and |message_.value_id| are synonymous.
-transformation_context->GetFactManager()->AddFactDataSynonym(
-    MakeDataDescriptor(message_.value_synonym_id(), {}),
-    MakeDataDescriptor(message_.value_id(), {}), ir_context);
-    */
 
 protobufs::Transformation
 TransformationReplaceCopyMemoryWithLoadStore::ToMessage() const {

@@ -66,6 +66,12 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
+  std::vector<uint32_t> actual_binary;
+  context.get()->module()->ToBinary(&actual_binary, false);
+  SpirvTools t(env);
+  std::string actual_disassembled;
+  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
+  std::cout << actual_disassembled;
 }
 
 }  // namespace
