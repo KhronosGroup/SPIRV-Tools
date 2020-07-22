@@ -73,6 +73,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_function_parameters.h
         fuzzer_pass_permute_phi_operands.h
         fuzzer_pass_push_ids_through_variables.h
+        fuzzer_pass_replace_copy_memories_with_loads_stores.h
         fuzzer_pass_replace_linear_algebra_instructions.h
         fuzzer_pass_replace_parameter_with_global.h
         fuzzer_pass_replace_params_with_struct.h
@@ -197,6 +198,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_function_parameters.cpp
         fuzzer_pass_permute_phi_operands.cpp
         fuzzer_pass_push_ids_through_variables.cpp
+        fuzzer_pass_replace_copy_memories_with_loads_stores.cpp
         fuzzer_pass_replace_linear_algebra_instructions.cpp
         fuzzer_pass_replace_parameter_with_global.cpp
         fuzzer_pass_replace_params_with_struct.cpp

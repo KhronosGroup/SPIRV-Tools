@@ -43,8 +43,8 @@ bool TransformationReplaceCopyMemoryWithLoadStore::IsApplicable(
   // OpCopyMemory.
   auto copy_memory_instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
-  if ((!copy_memory_instruction) ||
-      (copy_memory_instruction->opcode() != SpvOpCopyMemory)) {
+  if (!copy_memory_instruction ||
+      copy_memory_instruction->opcode() != SpvOpCopyMemory) {
     return false;
   }
   // It must be valid to insert the OpStore and OpLoad instruction before it.
@@ -62,10 +62,12 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
       copy_memory_instruction->GetSingleWordInOperand(0));
   auto source = ir_context->get_def_use_mgr()->GetDef(
       copy_memory_instruction->GetSingleWordInOperand(1));
-  std::cout << fuzzerutil::GetTypeId(ir_context, target->result_id())
-            << std::endl;
-  assert(target->type_id() == SpvOpTypePointer &&
-         source->type_id() == SpvOpTypePointer &&
+  auto target_type_opcode =
+      ir_context->get_def_use_mgr()->GetDef(target->type_id())->opcode();
+  auto source_type_opcode =
+      ir_context->get_def_use_mgr()->GetDef(source->type_id())->opcode();
+  assert(target_type_opcode == SpvOpTypePointer &&
+         source_type_opcode == SpvOpTypePointer &&
          "Operands must be of type OpTypePointer");
   uint32_t target_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
       ir_context, target->type_id());

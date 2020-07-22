@@ -32,19 +32,30 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
                OpName %4 "main"
                OpName %8 "a"
                OpName %10 "b"
+               OpName %14 "c"
+               OpName %16 "d"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
           %7 = OpTypePointer Function %6
           %9 = OpConstant %6 2
          %11 = OpConstant %6 3
+         %12 = OpTypeFloat 32
+         %13 = OpTypePointer Function %12
+         %15 = OpConstant %12 2
+         %17 = OpConstant %12 3
           %4 = OpFunction %2 None %3
           %5 = OpLabel
           %8 = OpVariable %7 Function
          %10 = OpVariable %7 Function
+         %14 = OpVariable %13 Function
+         %16 = OpVariable %13 Function
                OpStore %8 %9
                OpStore %10 %11
-               OpCopyMemory %10 %8
+               OpStore %14 %15
+               OpStore %16 %17
+               OpCopyMemory %8 %10
+               OpCopyMemory %16 %14
                OpReturn
                OpFunctionEnd
     )";
@@ -58,20 +69,80 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
-  auto instruction_descriptor =
+
+  auto instruction_descriptor_invalid_1 =
+      MakeInstructionDescriptor(5, SpvOpStore, 0);
+  auto instruction_descriptor_valid_1 =
       MakeInstructionDescriptor(5, SpvOpCopyMemory, 0);
-  auto transformation =
-      TransformationReplaceCopyMemoryWithLoadStore(20, instruction_descriptor);
-  ASSERT_TRUE(
-      transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  auto instruction_descriptor_valid_2 =
+      MakeInstructionDescriptor(5, SpvOpCopyMemory, 0);
+
+  // Invalid: |source_id| is not fresh
+  auto transformation_invalid_1 = TransformationReplaceCopyMemoryWithLoadStore(
+      15, instruction_descriptor_valid_1);
+  ASSERT_FALSE(transformation_invalid_1.IsApplicable(context.get(),
+                                                     transformation_context));
+
+  // Invalid: |instruction_descriptor_invalid| refers to an instruction OpStore
+  auto transformation_invalid_2 = TransformationReplaceCopyMemoryWithLoadStore(
+      20, instruction_descriptor_invalid_1);
+  ASSERT_FALSE(transformation_invalid_2.IsApplicable(context.get(),
+                                                     transformation_context));
+
+  auto transformation_valid_1 = TransformationReplaceCopyMemoryWithLoadStore(
+      20, instruction_descriptor_valid_1);
+  ASSERT_TRUE(transformation_valid_1.IsApplicable(context.get(),
+                                                  transformation_context));
+  transformation_valid_1.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled;
+
+  auto transformation_valid_2 = TransformationReplaceCopyMemoryWithLoadStore(
+      21, instruction_descriptor_valid_2);
+  ASSERT_TRUE(transformation_valid_2.IsApplicable(context.get(),
+                                                  transformation_context));
+  transformation_valid_2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "a"
+               OpName %10 "b"
+               OpName %14 "c"
+               OpName %16 "d"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+         %12 = OpTypeFloat 32
+         %13 = OpTypePointer Function %12
+         %15 = OpConstant %12 2
+         %17 = OpConstant %12 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %14 = OpVariable %13 Function
+         %16 = OpVariable %13 Function
+               OpStore %8 %9
+               OpStore %10 %11
+               OpStore %14 %15
+               OpStore %16 %17
+         %20 = OpLoad %6 %10
+               OpStore %8 %20
+         %21 = OpLoad %12 %14
+               OpStore %16 %21
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace
