@@ -287,6 +287,16 @@ std::vector<opt::Instruction*> GetCallers(opt::IRContext* ir_context,
 opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
                                           uint32_t param_id);
 
+// Creates a OpTypeFunction instruction with result id
+// |new_function_type_result_id| and operands |new_function_type_operands|.
+// Assigns the created function type as the type of the function with result id
+// |function_id|. Reuses the old type of the function if possible. Returns the
+// result id of the type, the function uses.
+uint32_t MaybeReuseFunctionType(
+    opt::IRContext* ir_context, uint32_t function_id,
+    uint32_t new_function_type_result_id,
+    const std::vector<uint32_t>& new_function_type_operands);
+
 // Creates new OpTypeFunction instruction in the module. |type_ids| may not be
 // empty. It may not contain result ids of OpTypeFunction instructions.
 // |type_ids[i]| may not be a result id of OpTypeVoid instruction for |i >= 1|.

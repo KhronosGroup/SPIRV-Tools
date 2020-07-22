@@ -250,25 +250,9 @@ void TransformationReplaceParamsWithStruct::Apply(
 
   type_ids.push_back(struct_type_id);
 
-  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
-      fuzzerutil::FindFunctionType(ir_context, type_ids) == 0) {
-    // Update |old_function_type| in place.
-    opt::Instruction::OperandList replaced_operands;
-    for (auto id : type_ids) {
-      replaced_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
-    }
-
-    old_function_type->SetInOperands(std::move(replaced_operands));
-
-    // Make sure domination rules are satisfied.
-    old_function_type->RemoveFromList();
-    ir_context->AddType(std::unique_ptr<opt::Instruction>(old_function_type));
-  } else {
-    // Create a new function type or use an existing one.
-    function->DefInst().SetInOperand(
-        1, {fuzzerutil::FindOrCreateFunctionType(
-               ir_context, message_.fresh_function_type_id(), type_ids)});
-  }
+  fuzzerutil::MaybeReuseFunctionType(ir_context, function->result_id(),
+                                     message_.fresh_function_type_id(),
+                                     type_ids);
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(

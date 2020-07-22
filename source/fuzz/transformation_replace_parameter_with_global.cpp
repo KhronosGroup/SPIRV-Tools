@@ -178,17 +178,9 @@ void TransformationReplaceParameterWithGlobal::Apply(
     }
   }
 
-  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
-      fuzzerutil::FindFunctionType(ir_context, type_ids) == 0) {
-    // Change the old type in place. +1 since the first operand is the result
-    // type id of the function.
-    old_function_type->RemoveInOperand(parameter_index + 1);
-  } else {
-    // Find an existing or create a new function type.
-    function->DefInst().SetInOperand(
-        1, {fuzzerutil::FindOrCreateFunctionType(
-               ir_context, message_.function_type_fresh_id(), type_ids)});
-  }
+  fuzzerutil::MaybeReuseFunctionType(ir_context, function->result_id(),
+                                     message_.function_type_fresh_id(),
+                                     type_ids);
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(

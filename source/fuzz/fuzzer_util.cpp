@@ -759,6 +759,51 @@ opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
   return nullptr;
 }
 
+uint32_t MaybeReuseFunctionType(
+    opt::IRContext* ir_context, uint32_t function_id,
+    uint32_t new_function_type_result_id,
+    const std::vector<uint32_t>& new_function_type_operands) {
+  assert(!new_function_type_operands.empty() &&
+         "|new_function_type_operands| must have at least one element");
+
+  assert(ir_context->get_type_mgr()->GetType(new_function_type_operands[0]) &&
+         "Return type is invalid");
+  for (size_t i = 1; i < new_function_type_operands.size(); ++i) {
+    const auto* type =
+        ir_context->get_type_mgr()->GetType(new_function_type_operands[i]);
+    (void)type;  // Make compilers happy in release mode.
+    assert(type && !type->AsVoid() && "Parameter has invalid type");
+  }
+
+  auto* function = FindFunction(ir_context, function_id);
+  assert(function && "|function_id| is invalid");
+
+  auto* old_function_type = GetFunctionType(ir_context, function);
+  assert(old_function_type && "Function has invalid type");
+
+  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
+      FindFunctionType(ir_context, new_function_type_operands) == 0) {
+    // Update |old_function_type| in-place.
+    opt::Instruction::OperandList operands;
+    for (auto id : new_function_type_operands) {
+      operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
+    }
+
+    old_function_type->SetInOperands(std::move(operands));
+
+    // Make sure domination rules are satisfied.
+    old_function_type->RemoveFromList();
+    ir_context->AddType(std::unique_ptr<opt::Instruction>(old_function_type));
+    return old_function_type->result_id();
+  } else {
+    // Create a new function type or use an existing one.
+    auto type_id = FindOrCreateFunctionType(
+        ir_context, new_function_type_result_id, new_function_type_operands);
+    function->DefInst().SetInOperand(1, {type_id});
+    return type_id;
+  }
+}
+
 void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
                      const std::vector<uint32_t>& type_ids) {
   assert(result_id != 0 && "Result id can't be 0");

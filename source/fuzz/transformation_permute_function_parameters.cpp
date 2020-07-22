@@ -100,24 +100,9 @@ void TransformationPermuteFunctionParameters::Apply(
   }
 
   // Change function's type.
-  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type_inst) == 1 &&
-      fuzzerutil::FindFunctionType(ir_context, type_ids) == 0) {
-    // If only the current function uses |old_function_type_inst| - change it
-    // in-place. We can only do that if the module doesn't contain
-    // a function type with the permuted order of operands.
-    opt::Instruction::OperandList permuted_operands;
-    for (auto id : type_ids) {
-      // +1 since the first operand to OpTypeFunction is a return type.
-      permuted_operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
-    }
-
-    old_function_type_inst->SetInOperands(std::move(permuted_operands));
-  } else {
-    // Either use an existing type or create a new one.
-    function->DefInst().SetInOperand(
-        1, {fuzzerutil::FindOrCreateFunctionType(
-               ir_context, message_.function_type_fresh_id(), type_ids)});
-  }
+  fuzzerutil::MaybeReuseFunctionType(ir_context, function->result_id(),
+                                     message_.function_type_fresh_id(),
+                                     type_ids);
 
   // Adjust OpFunctionParameter instructions
 
