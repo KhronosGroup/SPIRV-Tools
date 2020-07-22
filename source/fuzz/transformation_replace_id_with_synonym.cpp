@@ -57,6 +57,34 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
     return false;
   }
 
+  // If the id of interest and the synonym are integer or scalar constants with
+  // different signedness, is the instruction suitable for this replacement?
+  if (ir_context->get_def_use_mgr()->GetDef(id_of_interest)->type_id() !=
+      ir_context->get_def_use_mgr()
+          ->GetDef(message_.synonymous_id())
+          ->type_id()) {
+    // The type ids don't match
+    auto constant1 =
+        ir_context->get_constant_mgr()->FindDeclaredConstant(id_of_interest);
+    auto constant2 = ir_context->get_constant_mgr()->FindDeclaredConstant(
+        message_.synonymous_id());
+
+    if ((constant1->AsVectorConstant() &&
+         constant1->AsVectorConstant()->component_type()->AsInteger() &&
+         constant2->AsVectorConstant() &&
+         constant2->AsVectorConstant()->component_type()->AsInteger()) ||
+        (constant1->AsIntConstant() && constant1->AsIntConstant())) {
+      // Integer vectors or scalars
+      // We assume that the constants can be considered equivalent, since they
+      // have been recorded as synonyms.
+      if (!IsAgnosticToSignednessOfOperand(
+              use_instruction->opcode(),
+              message_.id_use_descriptor().in_operand_index())) {
+        return false;
+      }
+    }
+  }
+
   // Is the use suitable for being replaced in principle?
   if (!UseCanBeReplacedWithSynonym(
           ir_context, use_instruction,
@@ -180,6 +208,43 @@ bool TransformationReplaceIdWithSynonym::UseCanBeReplacedWithSynonym(
   }
 
   return true;
+}
+bool TransformationReplaceIdWithSynonym::IsAgnosticToSignednessOfOperand(
+    SpvOp opcode, uint32_t use_in_operand_index) {
+  switch (opcode) {
+    case SpvOpSNegate:
+    case SpvOpNot:
+    case SpvOpIAdd:
+    case SpvOpISub:
+    case SpvOpIMul:
+    case SpvOpSDiv:
+    case SpvOpSRem:
+    case SpvOpSMod:
+    case SpvOpShiftRightLogical:
+    case SpvOpShiftRightArithmetic:
+    case SpvOpShiftLeftLogical:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+    case SpvOpULessThan:
+    case SpvOpSLessThan:
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan:
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual:
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual:
+      return true;
+    case SpvOpAccessChain:
+      // The signedness of indices does not matter.
+      return use_in_operand_index > 0;
+    default:
+      // Conservatively assume that the id cannot be swapped in other
+      // instructions.
+      return false;
+  }
 }
 
 }  // namespace fuzz
