@@ -45,8 +45,12 @@ void FuzzerPassReplaceCopyObjectsWithStoresLoads::Apply() {
     if (instruction->opcode() != SpvOpCopyObject) {
       return;
     }
-    // The |type_id()| of the instruction cannot be a pointer,
-    if (instruction->type_id() == SpvOpTypePointer) {
+    // The opcode of the type_id instruction cannot be a OpTypePointer,
+    // because we cannot define a pointer to pointer.
+    if (GetIRContext()
+            ->get_def_use_mgr()
+            ->GetDef(instruction->type_id())
+            ->opcode() == SpvOpTypePointer) {
       return;
     }
     // It must be valid to insert OpStore and OpLoad instructions

@@ -50,9 +50,12 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
       copy_object_instruction->opcode() != SpvOpCopyObject) {
     return false;
   }
-  // The |type_id()| of the instruction cannot be a pointer,
-  // because we cannot define a pointer to pointer
-  if (copy_object_instruction->type_id() == SpvOpTypePointer) {
+
+  // The opcode of the type_id instruction cannot be a OpTypePointer,
+  // because we cannot define a pointer to pointer.
+  if (ir_context->get_def_use_mgr()
+          ->GetDef(copy_object_instruction->type_id())
+          ->opcode() == SpvOpTypePointer) {
     return false;
   }
 
