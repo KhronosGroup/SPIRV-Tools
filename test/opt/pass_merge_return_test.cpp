@@ -2380,6 +2380,193 @@ TEST_F(MergeReturnPassTest, PhiWithTooManyEntries) {
   SinglePassRunAndMatch<MergeReturnPass>(before, true);
 }
 
+TEST_F(MergeReturnPassTest, PointerUsedAfterLoop) {
+  // Make sure that a Phi instruction is not generated for an id whose type is a
+  // pointer.  It needs to be regenerated.
+  const std::string before =
+      R"(
+; CHECK: OpFunction %void
+; CHECK: OpFunction %void
+; CHECK-NEXT: [[param:%\w+]] = OpFunctionParameter %_ptr_Function_v2uint
+; CHECK: OpLoopMerge [[merge_bb:%\w+]]
+; CHECK: [[merge_bb]] = OpLabel
+; CHECK-NEXT: [[ac:%\w+]] = OpAccessChain %_ptr_Function_uint [[param]] %uint_1
+; CHECK: OpStore [[ac]] %uint_1
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+          %8 = OpTypeFunction %void %_ptr_Function_v2uint
+     %uint_1 = OpConstant %uint 1
+       %bool = OpTypeBool
+%_ptr_Function_uint = OpTypePointer Function %uint
+      %false = OpConstantFalse %bool
+          %2 = OpFunction %void None %4
+         %13 = OpLabel
+         %14 = OpVariable %_ptr_Function_v2uint Function
+         %15 = OpFunctionCall %void %16 %14
+               OpReturn
+               OpFunctionEnd
+         %16 = OpFunction %void None %8
+         %17 = OpFunctionParameter %_ptr_Function_v2uint
+         %18 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+               OpLoopMerge %20 %21 None
+               OpBranch %22
+         %22 = OpLabel
+               OpSelectionMerge %23 None
+               OpBranchConditional %false %24 %23
+         %24 = OpLabel
+               OpReturn
+         %23 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+         %25 = OpAccessChain %_ptr_Function_uint %17 %uint_1
+               OpBranchConditional %false %19 %20
+         %20 = OpLabel
+               OpStore %25 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(before, true);
+}
+
+TEST_F(MergeReturnPassTest, VariablePointerFunctionScope) {
+  // Make sure that a Phi instruction is not generated for an id whose type is a
+  // function scope pointer, even if the VariablePointers capability is
+  // available.  It needs to be regenerated.
+  const std::string before =
+      R"(
+; CHECK: OpFunction %void
+; CHECK: OpFunction %void
+; CHECK-NEXT: [[param:%\w+]] = OpFunctionParameter %_ptr_Function_v2uint
+; CHECK: OpLoopMerge [[merge_bb:%\w+]]
+; CHECK: [[merge_bb]] = OpLabel
+; CHECK-NEXT: [[ac:%\w+]] = OpAccessChain %_ptr_Function_uint [[param]] %uint_1
+; CHECK: OpStore [[ac]] %uint_1
+               OpCapability Shader
+               OpCapability VariablePointers
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+          %8 = OpTypeFunction %void %_ptr_Function_v2uint
+     %uint_1 = OpConstant %uint 1
+       %bool = OpTypeBool
+%_ptr_Function_uint = OpTypePointer Function %uint
+      %false = OpConstantFalse %bool
+          %2 = OpFunction %void None %4
+         %13 = OpLabel
+         %14 = OpVariable %_ptr_Function_v2uint Function
+         %15 = OpFunctionCall %void %16 %14
+               OpReturn
+               OpFunctionEnd
+         %16 = OpFunction %void None %8
+         %17 = OpFunctionParameter %_ptr_Function_v2uint
+         %18 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+               OpLoopMerge %20 %21 None
+               OpBranch %22
+         %22 = OpLabel
+               OpSelectionMerge %23 None
+               OpBranchConditional %false %24 %23
+         %24 = OpLabel
+               OpReturn
+         %23 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+         %25 = OpAccessChain %_ptr_Function_uint %17 %uint_1
+               OpBranchConditional %false %19 %20
+         %20 = OpLabel
+               OpStore %25 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(before, true);
+}
+
+TEST_F(MergeReturnPassTest, ChainedPointerUsedAfterLoop) {
+  // Make sure that a Phi instruction is not generated for an id whose type is a
+  // pointer.  It needs to be regenerated.
+  const std::string before =
+      R"(
+; CHECK: OpFunction %void
+; CHECK: OpFunction %void
+; CHECK-NEXT: [[param:%\w+]] = OpFunctionParameter %_ptr_Function_
+; CHECK: OpLoopMerge [[merge_bb:%\w+]]
+; CHECK: [[merge_bb]] = OpLabel
+; CHECK-NEXT: [[ac1:%\w+]] = OpAccessChain %_ptr_Function_v2uint [[param]] %uint_1
+; CHECK-NEXT: [[ac2:%\w+]] = OpAccessChain %_ptr_Function_uint [[ac1]] %uint_1
+; CHECK: OpStore [[ac2]] %uint_1
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %v2uint = OpTypeVector %uint 2
+%_arr_v2uint_uint_2 = OpTypeArray %v2uint %uint_2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+%_ptr_Function__arr_v2uint_uint_2 = OpTypePointer Function %_arr_v2uint_uint_2
+%_ptr_Function_uint = OpTypePointer Function %uint
+         %13 = OpTypeFunction %void %_ptr_Function__arr_v2uint_uint_2
+       %bool = OpTypeBool
+      %false = OpConstantFalse %bool
+          %2 = OpFunction %void None %4
+         %16 = OpLabel
+         %17 = OpVariable %_ptr_Function__arr_v2uint_uint_2 Function
+         %18 = OpFunctionCall %void %19 %17
+               OpReturn
+               OpFunctionEnd
+         %19 = OpFunction %void None %13
+         %20 = OpFunctionParameter %_ptr_Function__arr_v2uint_uint_2
+         %21 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpLoopMerge %23 %24 None
+               OpBranch %25
+         %25 = OpLabel
+               OpSelectionMerge %26 None
+               OpBranchConditional %false %27 %26
+         %27 = OpLabel
+               OpReturn
+         %26 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+         %28 = OpAccessChain %_ptr_Function_v2uint %20 %uint_1
+         %29 = OpAccessChain %_ptr_Function_uint %28 %uint_1
+               OpBranchConditional %false %22 %23
+         %23 = OpLabel
+               OpStore %29 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(before, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
