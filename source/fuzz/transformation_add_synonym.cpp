@@ -56,7 +56,8 @@ bool TransformationAddSynonym::IsApplicable(
   }
 
   // Check that we can apply |synonym_type| to |result_id|.
-  if (!IsInstructionValid(ir_context, synonym, message_.synonym_type())) {
+  if (!IsInstructionValid(ir_context, transformation_context, synonym,
+                          message_.synonym_type())) {
     return false;
   }
 
@@ -124,7 +125,8 @@ protobufs::Transformation TransformationAddSynonym::ToMessage() const {
 }
 
 bool TransformationAddSynonym::IsInstructionValid(
-    opt::IRContext* ir_context, opt::Instruction* inst,
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context, opt::Instruction* inst,
     protobufs::TransformationAddSynonym::SynonymType synonym_type) {
   // Instruction must have a result id, type id. We skip OpUndef and
   // OpConstantNull.
@@ -133,8 +135,10 @@ bool TransformationAddSynonym::IsInstructionValid(
     return false;
   }
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-  //  We can't create a synonym of an irrelevant id.
+  if (!fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context, inst)) {
+    return false;
+  }
+
   switch (synonym_type) {
     case protobufs::TransformationAddSynonym::ADD_ZERO:
     case protobufs::TransformationAddSynonym::SUB_ZERO:
@@ -151,7 +155,9 @@ bool TransformationAddSynonym::IsInstructionValid(
       return type->AsInteger() || type->AsFloat();
     }
     case protobufs::TransformationAddSynonym::COPY_OBJECT:
-      return fuzzerutil::CanMakeSynonymOf(ir_context, inst);
+      // All checks for OpCopyObject are handled by
+      // fuzzerutil::CanMakeSynonymOf.
+      return true;
     case protobufs::TransformationAddSynonym::LOGICAL_AND:
     case protobufs::TransformationAddSynonym::LOGICAL_OR: {
       // The instruction must be either a scalar or a vector of booleans.

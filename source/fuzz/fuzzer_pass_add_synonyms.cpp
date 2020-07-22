@@ -53,11 +53,12 @@ void FuzzerPassAddSynonyms::Apply() {
         // Select all instructions that can be used to create a synonym to.
         auto available_instructions = FindAvailableInstructions(
             function, block, inst_it,
-            [synonym_type](opt::IRContext* ir_context, opt::Instruction* inst) {
+            [synonym_type, this](opt::IRContext* ir_context,
+                                 opt::Instruction* inst) {
               // Check that we can create a synonym to |inst| as described by
               // the |synonym_type| and insert it before |inst_it|.
               return TransformationAddSynonym::IsInstructionValid(
-                  ir_context, inst, synonym_type);
+                  ir_context, *GetTransformationContext(), inst, synonym_type);
             });
 
         if (available_instructions.empty()) {
