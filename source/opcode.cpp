@@ -446,7 +446,7 @@ bool spvOpcodeIsReturn(SpvOp opcode) {
 
 bool spvOpcodeIsReturnOrAbort(SpvOp opcode) {
   return spvOpcodeIsReturn(opcode) || opcode == SpvOpKill ||
-         opcode == SpvOpUnreachable;
+         opcode == SpvOpUnreachable || opcode == SpvOpTerminateInvocation;
 }
 
 bool spvOpcodeIsBlockTerminator(SpvOp opcode) {
