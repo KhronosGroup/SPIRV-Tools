@@ -76,18 +76,27 @@ bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
     return false;
   }
 
-  // The type ids must be the same
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3536): Somehow
-  // relax this for integers (so that unsigned integer and signed integer are
-  // considered the same type)
-  if (def_1->type_id() != def_2->type_id()) {
-    return false;
-  }
-
   auto constant1 = ir_context->get_constant_mgr()->GetConstantFromInst(def_1);
   auto constant2 = ir_context->get_constant_mgr()->GetConstantFromInst(def_2);
 
   assert(constant1 && constant2 && "The ids must refer to constants.");
+
+  // The types must be compatible.
+  if (constant1->type()->AsInteger() && constant2->type()->AsInteger()) {
+    // Two integer scalars cannot be equivalent if their width is not the same.
+    if (constant1->type()->AsInteger()->width() !=
+        constant2->type()->AsInteger()->width()) {
+      return false;
+    }
+  } else if (constant1->type()->AsVector() && constant2->type()->AsVector() &&
+             constant1->type()->AsVector()->element_type()->AsInteger() &&
+             constant2->type()->AsVector()->element_type()->AsInteger()) {
+    // Two integer vectors are equivalent even if their type ids don't match,
+    // as long as their components are pairwise equivalent.
+  } else if (def_1->type_id() != def_2->type_id()) {
+    // For everything else, the type ids must match.
+    return false;
+  }
 
   // If either constant is null, the other is equivalent iff it is zero-like
   if (constant1->AsNullConstant()) {

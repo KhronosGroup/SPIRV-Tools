@@ -90,13 +90,19 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
                                                validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
+#ifndef NDEBUG
   // %3 is not a constant declaration
-  ASSERT_FALSE(TransformationRecordSynonymousConstants(3, 9).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_DEATH(TransformationRecordSynonymousConstants(3, 9).IsApplicable(
+                   context.get(), transformation_context),
+               "The ids must refer to constants.");
+#endif
 
+#ifndef NDEBUG
   // Swapping the ids gives the same result
-  ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 3).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_DEATH(TransformationRecordSynonymousConstants(9, 3).IsApplicable(
+                   context.get(), transformation_context),
+               "The ids must refer to constants.");
+#endif
 
   // The two constants must be different
   ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 9).IsApplicable(
@@ -129,14 +135,12 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
   ApplyTransformationAndCheckFactManager(13, 22, context.get(),
                                          &transformation_context);
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3536):
-  // Relax type check for integers. Uncomment this code once the issue is fixed.
-  // // %13 and %20 are equal even if %13 is signed and %20 is unsigned
-  //  ASSERT_TRUE(TransformationRecordSynonymousConstants(13, 20).IsApplicable(
-  //      context.get(), transformation_context));
-  //
-  //  ApplyTransformationAndCheckFactManager(13, 20, context.get(),
-  //                                         &transformation_context);
+  // %13 and %20 are equal even if %13 is signed and %20 is unsigned
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(13, 20).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(13, 20, context.get(),
+                                         &transformation_context);
 
   // %9 and %11 are equivalent (OpConstant with value 0 and OpConstantNull)
   ASSERT_TRUE(TransformationRecordSynonymousConstants(9, 11).IsApplicable(
