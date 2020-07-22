@@ -155,51 +155,58 @@ void TransformationVectorShuffle::Apply(
 
   // Add synonym facts relating the defined elements of the shuffle result to
   // the vector components that they come from.
-  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.vector1()) &&
-      !transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.vector2())) {
-    for (uint32_t component_index = 0;
-         component_index < static_cast<uint32_t>(message_.component_size());
-         component_index++) {
-      uint32_t component = message_.component(component_index);
-      if (component == 0xFFFFFFFF) {
-        // This component is undefined, so move on - but first note that the
-        // overall shuffle result cannot be synonymous with any vector.
+  for (uint32_t component_index = 0;
+       component_index < static_cast<uint32_t>(message_.component_size());
+       component_index++) {
+    uint32_t component = message_.component(component_index);
+    if (component == 0xFFFFFFFF) {
+      // This component is undefined, so move on - but first note that the
+      // overall shuffle result cannot be synonymous with any vector.
+      continue;
+    }
+
+    // This describes the element of the result vector associated with
+    // |component_index|.
+    protobufs::DataDescriptor descriptor_for_result_component =
+        MakeDataDescriptor(message_.fresh_id(), {component_index});
+
+    protobufs::DataDescriptor descriptor_for_source_component;
+
+    // Get a data descriptor for the component of the input vector to which
+    // |component| refers.
+    if (component <
+        GetVectorType(ir_context, message_.vector1())->element_count()) {
+      // Irrelevant id cannot participate in DataSynonym facts.
+      if (transformation_context->GetFactManager()->IdIsIrrelevant(
+              message_.vector1())) {
         continue;
       }
 
-      // This describes the element of the result vector associated with
-      // |component_index|.
-      protobufs::DataDescriptor descriptor_for_result_component =
-          MakeDataDescriptor(message_.fresh_id(), {component_index});
-
-      protobufs::DataDescriptor descriptor_for_source_component;
-
-      // Get a data descriptor for the component of the input vector to which
-      // |component| refers.
-      if (component <
-          GetVectorType(ir_context, message_.vector1())->element_count()) {
-        descriptor_for_source_component =
-            MakeDataDescriptor(message_.vector1(), {component});
-      } else {
-        auto index_into_vector_2 =
-            component -
-            GetVectorType(ir_context, message_.vector1())->element_count();
-        assert(index_into_vector_2 <
-                   GetVectorType(ir_context, message_.vector2())
-                       ->element_count() &&
-               "Vector shuffle index is out of bounds.");
-        descriptor_for_source_component =
-            MakeDataDescriptor(message_.vector2(), {index_into_vector_2});
+      descriptor_for_source_component =
+          MakeDataDescriptor(message_.vector1(), {component});
+    } else {
+      // Irrelevant id cannot participate in DataSynonym facts.
+      if (transformation_context->GetFactManager()->IdIsIrrelevant(
+              message_.vector2())) {
+        continue;
       }
 
-      // Add a fact relating this input vector component with the associated
-      // result component.
-      transformation_context->GetFactManager()->AddFactDataSynonym(
-          descriptor_for_result_component, descriptor_for_source_component,
-          ir_context);
+      auto index_into_vector_2 =
+          component -
+          GetVectorType(ir_context, message_.vector1())->element_count();
+      assert(
+          index_into_vector_2 <
+              GetVectorType(ir_context, message_.vector2())->element_count() &&
+          "Vector shuffle index is out of bounds.");
+      descriptor_for_source_component =
+          MakeDataDescriptor(message_.vector2(), {index_into_vector_2});
     }
+
+    // Add a fact relating this input vector component with the associated
+    // result component.
+    transformation_context->GetFactManager()->AddFactDataSynonym(
+        descriptor_for_result_component, descriptor_for_source_component,
+        ir_context);
   }
 }
 

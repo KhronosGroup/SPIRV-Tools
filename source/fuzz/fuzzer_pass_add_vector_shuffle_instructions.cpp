@@ -79,6 +79,9 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
                       !fuzzerutil::CanMakeSynonymOf(ir_context,
                                                     *GetTransformationContext(),
                                                     instruction)) {
+                    // If the id is irrelevant, we can use it since it will not
+                    // participate in DataSynonym fact. Otherwise, we should be
+                    // able to produce a synonym out of the id.
                     return false;
                   }
 

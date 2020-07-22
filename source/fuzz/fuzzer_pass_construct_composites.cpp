@@ -72,8 +72,9 @@ void FuzzerPassConstructComposites::Apply() {
                 return false;
               }
 
-              // We should be able to create synonym if the id is not
-              // irrelevant.
+              // If the id is irrelevant, we can use it since it will not
+              // participate in DataSynonym fact. Otherwise, we should be able
+              // to produce a synonym out of the id.
               return GetTransformationContext()
                          ->GetFactManager()
                          ->IdIsIrrelevant(inst->result_id()) ||
