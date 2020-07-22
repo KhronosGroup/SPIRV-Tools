@@ -41,6 +41,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_local_variable_test.cpp
           transformation_add_no_contraction_decoration_test.cpp
           transformation_add_parameter_test.cpp
+          transformation_add_relaxed_decoration_test.cpp
           transformation_add_synonym_test.cpp
           transformation_add_type_array_test.cpp
           transformation_add_type_boolean_test.cpp
@@ -71,6 +72,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_replace_constant_with_uniform_test.cpp
           transformation_replace_id_with_synonym_test.cpp
           transformation_replace_linear_algebra_instruction_test.cpp
+          transformation_replace_params_with_struct_test.cpp
           transformation_set_function_control_test.cpp
           transformation_set_loop_control_test.cpp
           transformation_set_memory_operands_mask_test.cpp
