@@ -404,6 +404,7 @@ message Transformation {
     TransformationAddSynonym add_synonym = 57;
     TransformationAddRelaxedDecoration add_relaxed_decoration = 58;
     TransformationReplaceParamsWithStruct replace_params_with_struct = 59;
+    TransformationReplaceCopyMemoryWithLoadStore replace_copy_memory_with_load_store= 60;
     // Add additional option using the next available number.
   }
 }
@@ -1214,6 +1215,19 @@ message TransformationRecordSynonymousConstants {
   // The id of the synonym
   uint32 constant2_id = 2;
 
+}
+
+message TransformationReplaceCopyMemoryWithLoadStore {
+
+   // A transformation that replaces an OpCopyMemory instruction
+   // with loading to source_value and immediately storing it to the
+   // target of original OpCopyMemory instruction.
+
+   // The intermediate value
+   uint32 source_value = 1;
+
+   // The instruction descriptor
+   InstructionDescriptor instruction_descriptor = 2;
 }
 
 message TransformationReplaceParameterWithGlobal {
