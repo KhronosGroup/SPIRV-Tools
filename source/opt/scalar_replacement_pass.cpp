@@ -788,7 +788,7 @@ bool ScalarReplacementPass::CheckUses(const Instruction* inst,
                                           uint32_t index) {
     if (user->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare ||
         user->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
-      // TODO: include num_partial_accesses if it uses Deref operation or
+      // TODO: include num_partial_accesses if it uses Fragment operation or
       // DebugValue has Indexes operand.
       stats->num_full_accesses++;
       return;
