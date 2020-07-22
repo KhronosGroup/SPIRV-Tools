@@ -40,7 +40,8 @@ TransformationCompositeConstruct::TransformationCompositeConstruct(
 }
 
 bool TransformationCompositeConstruct::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     // We require the id for the composite constructor to be unused.
     return false;
@@ -87,7 +88,20 @@ bool TransformationCompositeConstruct::IsApplicable(
 
   // Now check whether every component being used to initialize the composite is
   // available at the desired program point.
-  for (auto& component : message_.component()) {
+  for (auto component : message_.component()) {
+    auto* inst = ir_context->get_def_use_mgr()->GetDef(component);
+    if (!inst) {
+      return false;
+    }
+
+    // We should be able to create a synonym of |component| if it's not
+    // irrelevant.
+    if (!transformation_context.GetFactManager()->IdIsIrrelevant(component) &&
+        !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
+                                      inst)) {
+      return false;
+    }
+
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
                                                     component)) {
       return false;
@@ -130,6 +144,11 @@ void TransformationCompositeConstruct::Apply(
       ir_context->get_type_mgr()->GetType(message_.composite_type_id());
   uint32_t index = 0;
   for (auto component : message_.component()) {
+    if (transformation_context->GetFactManager()->IdIsIrrelevant(component)) {
+      // Irrelevant ids do not participate in DataSynonym facts.
+      continue;
+    }
+
     auto component_type = ir_context->get_type_mgr()->GetType(
         ir_context->get_def_use_mgr()->GetDef(component)->type_id());
     if (composite_type->AsVector() && component_type->AsVector()) {
