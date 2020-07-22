@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2020.5 2020-07-22
+ - Start SPIRV-Tools v2020.5
+
 v2020.4 2020-07-22
  - General
    - Changed variable names to be more descriptive (#3433)
