@@ -58,10 +58,30 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
     opt::IRContext* ir_context, TransformationContext*) const {
   auto copy_memory_instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
-  auto operand_target = copy_memory_instruction->GetSingleWordOperand(0);
-  auto operand_source = copy_memory_instruction->GetSingleWordOperand(1);
-  std::cout << operand_target << std::endl;
-  std::cout << operand_source << std::endl;
+  auto target = ir_context->get_def_use_mgr()->GetDef(
+      copy_memory_instruction->GetSingleWordInOperand(0));
+  auto source = ir_context->get_def_use_mgr()->GetDef(
+      copy_memory_instruction->GetSingleWordInOperand(1));
+  assert(target->type_id() == SpvOpTypePointer &&
+         source->type_id() == SpvOpTypePointer &&
+         "Operands must be of type OpTypePointer");
+  uint32_t target_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
+      ir_context, target->type_id());
+  uint32_t source_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
+      ir_context, source->type_id());
+  assert(target_pointee_type == source_pointee_type &&
+         "Operands must have the same type to which they point to.");
+
+  FindInstruction(message_.instruction_descriptor(), ir_context)
+      ->InsertBefore(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpStore, 0, 0,
+          opt::Instruction::OperandList(
+              {{SPV_OPERAND_TYPE_ID, {target->result_id()}},
+               {SPV_OPERAND_TYPE_ID, {message_.source_value()}}})))
+      ->InsertBefore(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpLoad, target_pointee_type, message_.source_value(),
+          opt::Instruction::OperandList(
+              {{SPV_OPERAND_TYPE_ID, {source->result_id()}}})));
 }
 /*
 auto value_instruction =
