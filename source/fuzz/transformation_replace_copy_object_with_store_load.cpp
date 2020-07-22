@@ -80,8 +80,8 @@ bool TransformationReplaceCopyObjectWithStoreLoad::IsApplicable(
     return false;
   }
   // |message_.variable_storage_class| must be Private or Function.
-  return (message_.variable_storage_class() == SpvStorageClassPrivate ||
-          message_.variable_storage_class() == SpvStorageClassFunction);
+  return message_.variable_storage_class() == SpvStorageClassPrivate ||
+         message_.variable_storage_class() == SpvStorageClassFunction;
 }
 
 void TransformationReplaceCopyObjectWithStoreLoad::Apply(

@@ -19,6 +19,7 @@
 
 namespace spvtools {
 namespace fuzz {
+
 // Replaces instructions OpCopyObject with storing into a new variable
 // and immediately loading this variable to |result_id| of the
 // original OpCopyObject instruction.
