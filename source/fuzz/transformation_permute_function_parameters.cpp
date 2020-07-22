@@ -87,21 +87,26 @@ void TransformationPermuteFunctionParameters::Apply(
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function && "Can't find the function");
 
-  auto* old_function_type_inst =
-      fuzzerutil::GetFunctionType(ir_context, function);
-  assert(old_function_type_inst && "Function must have a valid type");
+  {
+    // We use a separate scope here since |old_function_type_inst| might become
+    // a dangling pointer after the call to the fuzzerutil::UpdateFunctionType.
 
-  std::vector<uint32_t> type_ids;
-  for (auto index : message_.permutation()) {
-    // +1 since the first operand to OpTypeFunction is a return type.
-    type_ids.push_back(
-        old_function_type_inst->GetSingleWordInOperand(index + 1));
+    auto* old_function_type_inst =
+        fuzzerutil::GetFunctionType(ir_context, function);
+    assert(old_function_type_inst && "Function must have a valid type");
+
+    std::vector<uint32_t> parameter_type_ids;
+    for (auto index : message_.permutation()) {
+      // +1 since the first operand to OpTypeFunction is a return type.
+      parameter_type_ids.push_back(
+          old_function_type_inst->GetSingleWordInOperand(index + 1));
+    }
+
+    // Change function's type.
+    fuzzerutil::UpdateFunctionType(
+        ir_context, function->result_id(), message_.function_type_fresh_id(),
+        old_function_type_inst->GetSingleWordInOperand(0), parameter_type_ids);
   }
-
-  // Change function's type.
-  fuzzerutil::UpdateFunctionType(
-      ir_context, function->result_id(), message_.function_type_fresh_id(),
-      old_function_type_inst->GetSingleWordInOperand(0), type_ids);
 
   // Adjust OpFunctionParameter instructions
 

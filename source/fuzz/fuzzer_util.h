@@ -291,8 +291,10 @@ opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
 // |return_type_id| and its parameters' types are |parameter_type_ids|. If a
 // suitable function type already exists in the module, it is used, otherwise
 // |new_function_type_result_id| is used as the result id of a suitable new
-// function type instruction. Returns the result id of the OpTypeFunction
-// instruction that is used as a type of the function with |function_id|.
+// function type instruction. If the old type of the function doesn't have any
+// more users, it is removed from the module. Returns the result id of the
+// OpTypeFunction instruction that is used as a type of the function with
+// |function_id|.
 uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
                             uint32_t new_function_type_result_id,
                             uint32_t return_type_id,

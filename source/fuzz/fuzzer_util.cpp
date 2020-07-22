@@ -806,7 +806,19 @@ uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
     // existing one or create a new one.
     auto type_id = FindOrCreateFunctionType(
         ir_context, new_function_type_result_id, operand_ids);
-    function->DefInst().SetInOperand(1, {type_id});
+
+    if (type_id != old_function_type->result_id()) {
+      function->DefInst().SetInOperand(1, {type_id});
+
+      // DefUseManager hasn't been updated yet, so if the following condition is
+      // true, then |old_function_type| will have no users when this function
+      // returns. We might as well remove it.
+      if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
+        old_function_type->RemoveFromList();
+        delete old_function_type;
+      }
+    }
+
     return type_id;
   }
 }
