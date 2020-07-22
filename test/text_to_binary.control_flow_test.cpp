@@ -388,12 +388,35 @@ INSTANTIATE_TEST_SUITE_P(
     }));
 // clang-format on
 
+using OpKillTest = spvtest::TextToBinaryTest;
+
+INSTANTIATE_TEST_SUITE_P(OpKillTest, ControlFlowRoundTripTest,
+                         Values("OpKill\n"));
+
+TEST_F(OpKillTest, ExtraArgsAssemblyError) {
+  const std::string input = "OpKill 1";
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '1'."));
+}
+
+using OpTerminateInvocationTest = spvtest::TextToBinaryTest;
+
+INSTANTIATE_TEST_SUITE_P(OpTerminateInvocationTest, ControlFlowRoundTripTest,
+                         Values("OpTerminateInvocation\n"));
+
+TEST_F(OpTerminateInvocationTest, ExtraArgsAssemblyError) {
+  const std::string input = "OpTerminateInvocation 1";
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '1'."));
+}
+
 // TODO(dneto): OpPhi
 // TODO(dneto): OpLoopMerge
 // TODO(dneto): OpLabel
 // TODO(dneto): OpBranch
 // TODO(dneto): OpSwitch
-// TODO(dneto): OpKill
 // TODO(dneto): OpReturn
 // TODO(dneto): OpReturnValue
 // TODO(dneto): OpUnreachable
