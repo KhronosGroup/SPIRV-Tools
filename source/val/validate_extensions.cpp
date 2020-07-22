@@ -269,6 +269,12 @@ spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
            << "Kernel " << _.getIdName(decl_id)
            << " must be a Kernel extended instruction";
   }
+
+  if (decl->GetOperandAs<uint32_t>(2) != inst->GetOperandAs<uint32_t>(2)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Kernel must be from the same extended instruction import";
+  }
+
   const auto ext_inst =
       decl->GetOperandAs<NonSemanticClspvReflectionInstructions>(3);
   if (ext_inst != NonSemanticClspvReflectionKernel) {
@@ -287,6 +293,12 @@ spv_result_t ValidateArgInfo(ValidationState_t& _, const Instruction* inst,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Kernel must be an ArgumentInfo extended instruction";
   }
+
+  if (info->GetOperandAs<uint32_t>(2) != inst->GetOperandAs<uint32_t>(2)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "ArgumentInfo must be from the same extended instruction import";
+  }
+
   auto ext_inst = info->GetOperandAs<NonSemanticClspvReflectionInstructions>(3);
   if (ext_inst != NonSemanticClspvReflectionArgumentInfo) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -670,9 +682,9 @@ spv_result_t ValidateClspvReflectionPropertyRequiredWorkgroupSize(
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateClspvReflection(ValidationState_t& _,
-                                     const Instruction* inst,
-                                     uint32_t /*version*/) {
+spv_result_t ValidateClspvReflectionInstruction(ValidationState_t& _,
+                                                const Instruction* inst,
+                                                uint32_t /*version*/) {
   if (!_.IsVoidType(inst->type_id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Return Type must be OpTypeVoid";
@@ -793,30 +805,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
     return ss.str();
   };
-
-  if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_UNKNOWN) {
-    auto import_inst = _.FindDef(inst->GetOperandAs<uint32_t>(2));
-    const std::string name(reinterpret_cast<const char*>(
-        import_inst->words().data() + import_inst->operands()[1].offset));
-    const std::string reflection = "NonSemantic.ClspvReflection.";
-    if (name.find(reflection) == 0) {
-      size_t idx = 0;
-      auto version_string = name.substr(reflection.size());
-      uint32_t version =
-          static_cast<uint32_t>(std::stoul(version_string, &idx));
-      if (idx != version_string.size()) {
-        return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
-               << "NonSemantic.ClspvReflection import does not encode the "
-                  "version correctly";
-      }
-      if (version == 0 || version > NonSemanticClspvReflectionRevision) {
-        return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
-               << "Unknown NonSemantic.ClspvReflection import version";
-      }
-
-      return ValidateClspvReflection(_, inst, version);
-    }
-  }
 
   if (ext_inst_type == SPV_EXT_INST_TYPE_GLSL_STD_450) {
     const GLSLstd450 ext_inst_key = GLSLstd450(ext_inst_index);
@@ -3051,6 +3039,25 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         assert(0);
         break;
     }
+  } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_CLSPVREFLECTION) {
+    auto import_inst = _.FindDef(inst->GetOperandAs<uint32_t>(2));
+    const std::string name(reinterpret_cast<const char*>(
+        import_inst->words().data() + import_inst->operands()[1].offset));
+    const std::string reflection = "NonSemantic.ClspvReflection.";
+    size_t idx = 0;
+    auto version_string = name.substr(reflection.size());
+    uint32_t version = static_cast<uint32_t>(std::stoul(version_string, &idx));
+    if (idx != version_string.size()) {
+      return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
+             << "NonSemantic.ClspvReflection import does not encode the "
+                "version correctly";
+    }
+    if (version == 0 || version > NonSemanticClspvReflectionRevision) {
+      return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
+             << "Unknown NonSemantic.ClspvReflection import version";
+    }
+
+    return ValidateClspvReflectionInstruction(_, inst, version);
   }
 
   return SPV_SUCCESS;
