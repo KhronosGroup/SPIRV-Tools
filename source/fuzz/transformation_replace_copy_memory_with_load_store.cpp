@@ -28,41 +28,40 @@ TransformationReplaceCopyMemoryWithLoadStore::
 
 TransformationReplaceCopyMemoryWithLoadStore::
     TransformationReplaceCopyMemoryWithLoadStore(
-        uint32_t source_value,
-        const protobufs::InstructionDescriptor& instruction_descriptor) {
-  message_.set_source_value(source_value);
-  *message_.mutable_instruction_descriptor() = instruction_descriptor;
+        uint32_t fresh_id, const protobufs::InstructionDescriptor&
+                               copy_memory_instruction_descriptor) {
+  message_.set_fresh_id(fresh_id);
+  *message_.mutable_copy_memory_instruction_descriptor() =
+      copy_memory_instruction_descriptor;
 }
 
 bool TransformationReplaceCopyMemoryWithLoadStore::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  // |message_.source_value| must be fresh.
-  if (!fuzzerutil::IsFreshId(ir_context, message_.source_value())) {
+  // |message_.fresh_id| must be fresh.
+  if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     return false;
   }
-  // The instruction to be replaced must be defined and of opcode
+  // The instruction to be replaced must be defined and have opcode
   // OpCopyMemory.
-  auto copy_memory_instruction =
-      FindInstruction(message_.instruction_descriptor(), ir_context);
+  auto copy_memory_instruction = FindInstruction(
+      message_.copy_memory_instruction_descriptor(), ir_context);
   if (!copy_memory_instruction ||
       copy_memory_instruction->opcode() != SpvOpCopyMemory) {
     return false;
   }
-  // It must be valid to insert the OpStore and OpLoad instruction before it.
-  return (fuzzerutil::CanInsertOpcodeBeforeInstruction(
-              SpvOpStore, copy_memory_instruction) &&
-          fuzzerutil::CanInsertOpcodeBeforeInstruction(
-              SpvOpLoad, copy_memory_instruction));
+  return true;
 }
 
 void TransformationReplaceCopyMemoryWithLoadStore::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  auto copy_memory_instruction =
-      FindInstruction(message_.instruction_descriptor(), ir_context);
+  auto copy_memory_instruction = FindInstruction(
+      message_.copy_memory_instruction_descriptor(), ir_context);
   // |copy_memory_instruction| must be defined.
   assert(copy_memory_instruction &&
          copy_memory_instruction->opcode() == SpvOpCopyMemory &&
          "The required OpCopyMemory instruction must be defined.");
+
+  // Coherence check: Both operands must be pointers.
 
   // Get types of ids used as a source and target of |copy_memory_instruction|.
   auto target = ir_context->get_def_use_mgr()->GetDef(
@@ -74,30 +73,40 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
   auto source_type_opcode =
       ir_context->get_def_use_mgr()->GetDef(source->type_id())->opcode();
 
-  // Both operands must be pointers.
+  // Keep release-mode compilers happy. (No unused variables.)
+  (void)target;
+  (void)source;
+  (void)target_type_opcode;
+  (void)source_type_opcode;
+
   assert(target_type_opcode == SpvOpTypePointer &&
          source_type_opcode == SpvOpTypePointer &&
          "Operands must be of type OpTypePointer");
 
-  // And they must point to the same type.
+  // Coherence check: |source| and |target| must point to the same type.
   uint32_t target_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
       ir_context, target->type_id());
   uint32_t source_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
       ir_context, source->type_id());
+
+  // Keep release-mode compilers happy. (No unused variables.)
+  (void)target_pointee_type;
+  (void)source_pointee_type;
+
   assert(target_pointee_type == source_pointee_type &&
          "Operands must have the same type to which they point to.");
 
   // First, insert the OpStore instruction before the OpCopyMemory instruction
   // and then insert the OpLoad instruction before the OpStore instruction.
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.source_value());
-  FindInstruction(message_.instruction_descriptor(), ir_context)
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
+  FindInstruction(message_.copy_memory_instruction_descriptor(), ir_context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, SpvOpStore, 0, 0,
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {target->result_id()}},
-               {SPV_OPERAND_TYPE_ID, {message_.source_value()}}})))
+               {SPV_OPERAND_TYPE_ID, {message_.fresh_id()}}})))
       ->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpLoad, target_pointee_type, message_.source_value(),
+          ir_context, SpvOpLoad, target_pointee_type, message_.fresh_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {source->result_id()}}})));
 

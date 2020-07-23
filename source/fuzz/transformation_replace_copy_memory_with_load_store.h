@@ -29,12 +29,12 @@ class TransformationReplaceCopyMemoryWithLoadStore : public Transformation {
       const protobufs::TransformationReplaceCopyMemoryWithLoadStore& message);
 
   TransformationReplaceCopyMemoryWithLoadStore(
-      uint32_t source_value,
-      const protobufs::InstructionDescriptor& instruction_descriptor);
+      uint32_t fresh_id, const protobufs::InstructionDescriptor&
+                             copy_memory_instruction_descriptor);
 
-  // - |message_.source_value| must be a fresh id.
-  // - |message_.instruction_descriptor| must refer to an OpCopyMemory
-  //   instruction.
+  // - |message_.fresh_id| must be fresh.
+  // - |message_.copy_memory_instruction_descriptor| must refer to an
+  //   OpCopyMemory instruction.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
