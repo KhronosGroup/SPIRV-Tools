@@ -36,7 +36,6 @@ class TransformationPushIdThroughVariable : public Transformation {
 
   // - |message_.value_id| must be an instruction result id that has the same
   //   type as the pointee type of |message_.pointer_id|
-  // - |value_id| may not be an irrelevant id.
   // - |message_.value_synonym_id| must be fresh
   // - |message_.variable_id| must be fresh
   // - |message_.variable_storage_class| must be either StorageClassPrivate or
@@ -52,8 +51,8 @@ class TransformationPushIdThroughVariable : public Transformation {
       const TransformationContext& transformation_context) const override;
 
   // Stores |value_id| to |variable_id|, loads |variable_id| to
-  // |value_synonym_id| and adds the fact that |value_synonym_id| and |value_id|
-  // are synonymous.
+  // |value_synonym_id|. Adds the fact that |value_synonym_id| and |value_id|
+  // are synonymous if |value_id| is not irrelevant.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

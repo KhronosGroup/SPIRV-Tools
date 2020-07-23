@@ -1532,6 +1532,8 @@ void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id) {
 }
 
 void FactManager::AddFactIdIsIrrelevant(uint32_t result_id) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550):
+  //  assert that |result_id| is not a part of any DataSynonym fact.
   protobufs::FactIdIsIrrelevant fact;
   fact.set_result_id(result_id);
   irrelevant_value_facts_->AddFact(fact);

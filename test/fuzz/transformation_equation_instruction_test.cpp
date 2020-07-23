@@ -1536,6 +1536,56 @@ TEST(TransformationEquationInstructionTest, FloatResultTypeDoesNotExist) {
                    .IsApplicable(context.get(), transformation_context));
 }
 
+TEST(TransformationEquationInstructionTest, HandlesIrrelevantIds) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %30 = OpTypeVector %6 3
+         %15 = OpConstant %6 24
+         %16 = OpConstant %6 37
+         %31 = OpConstantComposite %30 %15 %16 %15
+         %33 = OpTypeBool
+         %32 = OpConstantTrue %33
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto return_instruction = MakeInstructionDescriptor(13, SpvOpReturn, 0);
+
+  // Applicable.
+  TransformationEquationInstruction transformation(14, SpvOpIAdd, {15, 16},
+                                                   return_instruction);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Handles irrelevant ids.
+  fact_manager.AddFactIdIsIrrelevant(16);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  fact_manager.AddFactIdIsIrrelevant(15);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

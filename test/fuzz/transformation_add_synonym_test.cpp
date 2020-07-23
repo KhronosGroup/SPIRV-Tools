@@ -75,6 +75,8 @@ TEST(TransformationAddSynonymTest, NotApplicable) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
+  fact_manager.AddFactIdIsIrrelevant(24);
+
   auto insert_before = MakeInstructionDescriptor(22, SpvOpReturn, 0);
 
 #ifndef NDEBUG
@@ -86,65 +88,73 @@ TEST(TransformationAddSynonymTest, NotApplicable) {
       "Synonym type is invalid");
 #endif
 
-  // |synonym_fresh_id| is not fresh.
-  ASSERT_FALSE(
-      TransformationAddSynonym(9, protobufs::TransformationAddSynonym::ADD_ZERO,
-                               9, insert_before)
-          .IsApplicable(context.get(), transformation_context));
+  // These tests should succeed regardless of the synonym type.
+  for (int i = 0;
+       i < protobufs::TransformationAddSynonym::SynonymType_descriptor()
+               ->value_count();
+       ++i) {
+    const auto* synonym_value =
+        protobufs::TransformationAddSynonym::SynonymType_descriptor()->value(i);
+    ASSERT_TRUE(protobufs::TransformationAddSynonym::SynonymType_IsValid(
+        synonym_value->number()));
+    auto synonym_type =
+        static_cast<protobufs::TransformationAddSynonym::SynonymType>(
+            synonym_value->number());
 
-  // |result_id| is invalid.
-  ASSERT_FALSE(
-      TransformationAddSynonym(
-          40, protobufs::TransformationAddSynonym::ADD_ZERO, 40, insert_before)
-          .IsApplicable(context.get(), transformation_context));
+    // |synonym_fresh_id| is not fresh.
+    ASSERT_FALSE(TransformationAddSynonym(9, synonym_type, 9, insert_before)
+                     .IsApplicable(context.get(), transformation_context));
 
-  // Instruction with |result_id| has no type id.
-  ASSERT_FALSE(
-      TransformationAddSynonym(5, protobufs::TransformationAddSynonym::ADD_ZERO,
-                               40, insert_before)
-          .IsApplicable(context.get(), transformation_context));
+    // |result_id| is invalid.
+    ASSERT_FALSE(TransformationAddSynonym(40, synonym_type, 40, insert_before)
+                     .IsApplicable(context.get(), transformation_context));
 
-  // Instruction with |result_id| is an OpUndef.
-  ASSERT_FALSE(
-      TransformationAddSynonym(
-          25, protobufs::TransformationAddSynonym::ADD_ZERO, 40, insert_before)
-          .IsApplicable(context.get(), transformation_context));
+    // Instruction with |result_id| has no type id.
+    ASSERT_FALSE(TransformationAddSynonym(5, synonym_type, 40, insert_before)
+                     .IsApplicable(context.get(), transformation_context));
 
-  // Instruction with |result_id| is an OpConstantNull.
-  ASSERT_FALSE(
-      TransformationAddSynonym(
-          26, protobufs::TransformationAddSynonym::ADD_ZERO, 40, insert_before)
-          .IsApplicable(context.get(), transformation_context));
+    // Instruction with |result_id| is an OpUndef.
+    ASSERT_FALSE(TransformationAddSynonym(25, synonym_type, 40, insert_before)
+                     .IsApplicable(context.get(), transformation_context));
 
-  // |insert_before| is invalid.
-  ASSERT_FALSE(
-      TransformationAddSynonym(9, protobufs::TransformationAddSynonym::ADD_ZERO,
-                               40, MakeInstructionDescriptor(25, SpvOpStore, 0))
-          .IsApplicable(context.get(), transformation_context));
+    // Instruction with |result_id| is an OpConstantNull.
+    ASSERT_FALSE(TransformationAddSynonym(26, synonym_type, 40, insert_before)
+                     .IsApplicable(context.get(), transformation_context));
 
-  // Can't insert before |insert_before|.
-  ASSERT_FALSE(
-      TransformationAddSynonym(9, protobufs::TransformationAddSynonym::ADD_ZERO,
-                               40, MakeInstructionDescriptor(5, SpvOpLabel, 0))
-          .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddSynonym(
-                   9, protobufs::TransformationAddSynonym::ADD_ZERO, 40,
-                   MakeInstructionDescriptor(22, SpvOpVariable, 0))
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddSynonym(
-                   9, protobufs::TransformationAddSynonym::ADD_ZERO, 40,
-                   MakeInstructionDescriptor(25, SpvOpFunctionEnd, 0))
-                   .IsApplicable(context.get(), transformation_context));
+    // |result_id| is irrelevant.
+    ASSERT_FALSE(TransformationAddSynonym(24, synonym_type, 40, insert_before)
+                     .IsApplicable(context.get(), transformation_context));
 
-  // Domination rules are not satisfied.
-  ASSERT_FALSE(TransformationAddSynonym(
-                   27, protobufs::TransformationAddSynonym::ADD_ZERO, 40,
-                   MakeInstructionDescriptor(27, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
-  ASSERT_FALSE(TransformationAddSynonym(
-                   27, protobufs::TransformationAddSynonym::ADD_ZERO, 40,
-                   MakeInstructionDescriptor(22, SpvOpStore, 1))
-                   .IsApplicable(context.get(), transformation_context));
+    // |insert_before| is invalid.
+    ASSERT_FALSE(
+        TransformationAddSynonym(9, synonym_type, 40,
+                                 MakeInstructionDescriptor(25, SpvOpStore, 0))
+            .IsApplicable(context.get(), transformation_context));
+
+    // Can't insert before |insert_before|.
+    ASSERT_FALSE(
+        TransformationAddSynonym(9, synonym_type, 40,
+                                 MakeInstructionDescriptor(5, SpvOpLabel, 0))
+            .IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(TransformationAddSynonym(
+                     9, synonym_type, 40,
+                     MakeInstructionDescriptor(22, SpvOpVariable, 0))
+                     .IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(TransformationAddSynonym(
+                     9, synonym_type, 40,
+                     MakeInstructionDescriptor(25, SpvOpFunctionEnd, 0))
+                     .IsApplicable(context.get(), transformation_context));
+
+    // Domination rules are not satisfied.
+    ASSERT_FALSE(
+        TransformationAddSynonym(27, synonym_type, 40,
+                                 MakeInstructionDescriptor(27, SpvOpLoad, 0))
+            .IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        TransformationAddSynonym(27, synonym_type, 40,
+                                 MakeInstructionDescriptor(22, SpvOpStore, 1))
+            .IsApplicable(context.get(), transformation_context));
+  }
 }
 
 TEST(TransformationAddSynonymTest, AddZeroSubZeroMulOne) {
