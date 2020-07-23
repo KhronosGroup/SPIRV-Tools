@@ -52,22 +52,19 @@ void FuzzerPassOutlineFunctions::Apply() {
     // If the entry block starts with OpPhi, try to split it.
     if (entry_block->begin()->opcode() == SpvOpPhi) {
       // Find the first non-OpPhi instruction.
-      opt::Instruction* non_phi_inst = nullptr;
-      for (auto phi_inst : *entry_block) {
-        if (phi_inst.NextNode()->opcode() != SpvOpPhi) {
-          non_phi_inst = phi_inst.NextNode();
+      opt::Instruction* non_phi_inst;
+      for (auto instruction : *entry_block) {
+        if (instruction.opcode() != SpvOpPhi) {
+          non_phi_inst = &instruction;
           break;
         }
       }
 
-      // Sanity check.
-      assert(non_phi_inst && non_phi_inst->opcode() != SpvOpPhi &&
-             non_phi_inst->PreviousNode()->opcode() == SpvOpPhi);
-
       // If the split was not applicable, the transformation will not work.
       uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
       if (!MaybeApplyTransformation(TransformationSplitBlock(
-              MakeInstructionDescriptor(GetIRContext(), non_phi_inst),
+              MakeInstructionDescriptor(non_phi_inst->result_id(),
+                                        non_phi_inst->opcode(), 0),
               new_block_id))) {
         return;
       }
