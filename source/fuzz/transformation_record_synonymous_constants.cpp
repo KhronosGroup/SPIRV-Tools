@@ -32,9 +32,16 @@ TransformationRecordSynonymousConstants::
 
 bool TransformationRecordSynonymousConstants::IsApplicable(
     opt::IRContext* ir_context,
-    const TransformationContext& /* unused */) const {
+    const TransformationContext& transformation_context) const {
   // The ids must be different
   if (message_.constant1_id() == message_.constant2_id()) {
+    return false;
+  }
+
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.constant1_id()) ||
+      transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.constant2_id())) {
     return false;
   }
 
@@ -45,17 +52,10 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
 void TransformationRecordSynonymousConstants::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  protobufs::FactDataSynonym fact_data_synonym;
-  // Define the two equivalent data descriptors (just containing the ids)
-  *fact_data_synonym.mutable_data1() =
-      MakeDataDescriptor(message_.constant1_id(), {});
-  *fact_data_synonym.mutable_data2() =
-      MakeDataDescriptor(message_.constant2_id(), {});
-  protobufs::Fact fact;
-  *fact.mutable_data_synonym_fact() = fact_data_synonym;
-
   // Add the fact to the fact manager
-  transformation_context->GetFactManager()->AddFact(fact, ir_context);
+  transformation_context->GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(message_.constant1_id(), {}),
+      MakeDataDescriptor(message_.constant2_id(), {}), ir_context);
 }
 
 protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
@@ -67,11 +67,14 @@ protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()
 
 bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
     opt::IRContext* ir_context, uint32_t constant_id1, uint32_t constant_id2) {
-  opt::Instruction* def_1 = ir_context->get_def_use_mgr()->GetDef(constant_id1);
-  opt::Instruction* def_2 = ir_context->get_def_use_mgr()->GetDef(constant_id2);
+  const auto* def_1 = ir_context->get_def_use_mgr()->GetDef(constant_id1);
+  const auto* def_2 = ir_context->get_def_use_mgr()->GetDef(constant_id2);
 
   // Check that the definitions exist
-  assert(def_1 && def_2 && "The constant ids must exist in the module.");
+  if (!def_1 || !def_2) {
+    // We don't use an assertion since otherwise the shrinker fails.
+    return false;
+  }
 
   // The type ids must be the same
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3536): Somehow
