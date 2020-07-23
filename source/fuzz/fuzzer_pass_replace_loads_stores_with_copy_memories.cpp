@@ -33,7 +33,50 @@ FuzzerPassReplaceLoadsStoresWithCopyMemories::
 FuzzerPassReplaceLoadsStoresWithCopyMemories::
     ~FuzzerPassReplaceLoadsStoresWithCopyMemories() = default;
 
-void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {}
-
+void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
+  // This is the vector of matching OpLoad and OpStore instructions.
+  std::vector<std::pair<opt::Instruction*, opt::Instruction*>>
+      op_load_store_pairs;
+  for (auto& function : *GetIRContext()->module()) {
+    for (auto& block : function) {
+      // Consider separately every block.
+      std::unordered_map<uint32_t, opt::Instruction*> current_op_loads = {};
+      for (auto& instruction : block) {
+        // Add an potential OpLoad instruction.
+        if (instruction.opcode() == SpvOpLoad) {
+          current_op_loads[instruction.result_id()] = &instruction;
+        }
+        if (instruction.opcode() == SpvOpStore) {
+          // We have found the matching OpLoad instruction to the current
+          // OpStore instruction.
+          if (current_op_loads.find(instruction.GetSingleWordOperand(1)) !=
+              current_op_loads.end()) {
+            op_load_store_pairs.push_back(std::make_pair(
+                current_op_loads[instruction.GetSingleWordOperand(1)],
+                &instruction));
+            // We need to clear the hash map. If we don't, there might be
+            // interfering OpStore instructions. Consider for example:
+            // %a = OpLoad %ptr1
+            // OpStore %ptr2 %a <-- we haven't clear the map
+            // OpStore %ptr3 %a <-- if %ptr2 points to the same variable as
+            //    %ptr1, then replacing this instruction with OpCopyMemory %ptr3
+            //    %ptr1 is unsafe.
+            current_op_loads.clear();
+          }
+        }
+      }
+    }
+  }
+  for (auto instr_pair : op_load_store_pairs) {
+    // Randomly decide to apply the transformation for the potaential pairs.
+    if (!GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()
+                ->GetChanceOfReplacingLoadStoreWithCopyMemory())) {
+      ApplyTransformation(TransformationReplaceLoadStoreWithCopyMemory(
+          MakeInstructionDescriptor(GetIRContext(), instr_pair.first),
+          MakeInstructionDescriptor(GetIRContext(), instr_pair.second)));
+    }
+  }
+}
 }  // namespace fuzz
 }  // namespace spvtools

@@ -1356,10 +1356,10 @@ message TransformationReplaceLoadStoreWithCopyMemory {
   // and replaces the OpStore with an equivalent OpCopyMemory.
 
   // The instruction descriptor to OpLoad
-  InstructionDescriptor load_descriptor = 1;
+  InstructionDescriptor load_instruction_descriptor = 1;
 
   // The instruction descriptor to OpStore
-  InstructionDescriptor store_descriptor = 2;
+  InstructionDescriptor store_instruction_descriptor = 2;
 }
 
 message TransformationReplaceParamsWithStruct {
