@@ -404,6 +404,7 @@ message Transformation {
     TransformationAddSynonym add_synonym = 57;
     TransformationAddRelaxedDecoration add_relaxed_decoration = 58;
     TransformationReplaceParamsWithStruct replace_params_with_struct = 59;
+    TransformationReplaceCopyObjectWithStoreLoad replace_copy_object_with_store_load = 60;
     // Add additional option using the next available number.
   }
 }
@@ -1272,6 +1273,25 @@ message TransformationReplaceConstantWithUniform {
   // Id that will store the result of a load
   uint32 fresh_id_for_load = 4;
 
+}
+
+message TransformationReplaceCopyObjectWithStoreLoad {
+
+  // A transformation that replaces instruction OpCopyObject with
+  // storing into a new variable and immediately loading from this
+  // variable to |result_id| of the original OpCopyObject instruction.
+
+  // The result id of initial OpCopyObject instruction
+  uint32 copy_object_result_id = 1;
+
+  // A fresh id for the variable to be stored to.
+  uint32 fresh_variable_id = 2;
+
+  // The variable storage class (Function or Private).
+  uint32 variable_storage_class = 3;
+
+  // Constant to initialize the variable with.
+  uint32 variable_initializer_id = 4;
 }
 
 message TransformationReplaceIdWithSynonym {
