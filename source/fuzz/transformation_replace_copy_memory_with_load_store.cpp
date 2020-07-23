@@ -37,8 +37,9 @@ TransformationReplaceCopyMemoryWithLoadStore::
 bool TransformationReplaceCopyMemoryWithLoadStore::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // |message_.source_value| must be fresh.
-  if (!fuzzerutil::IsFreshId(ir_context, message_.source_value())) return false;
-
+  if (!fuzzerutil::IsFreshId(ir_context, message_.source_value())) {
+    return false;
+  }
   // The instruction to insert before must be defined and of opcode
   // OpCopyMemory.
   auto copy_memory_instruction =
@@ -58,6 +59,12 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   auto copy_memory_instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
+  // |copy_memory_instruction| must be defined.
+  assert(copy_memory_instruction &&
+         copy_memory_instruction->opcode() == SpvOpCopyMemory &&
+         "The required OpCopyMemory instruction must be defined.");
+
+  // Get ids used as a source and target of |copy_memory_instruction|.
   auto target = ir_context->get_def_use_mgr()->GetDef(
       copy_memory_instruction->GetSingleWordInOperand(0));
   auto source = ir_context->get_def_use_mgr()->GetDef(
@@ -66,9 +73,13 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
       ir_context->get_def_use_mgr()->GetDef(target->type_id())->opcode();
   auto source_type_opcode =
       ir_context->get_def_use_mgr()->GetDef(source->type_id())->opcode();
+
+  // Both operands must be pointers.
   assert(target_type_opcode == SpvOpTypePointer &&
          source_type_opcode == SpvOpTypePointer &&
          "Operands must be of type OpTypePointer");
+
+  // And they must point to the same type.
   uint32_t target_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
       ir_context, target->type_id());
   uint32_t source_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
@@ -90,7 +101,7 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {source->result_id()}}})));
 
-  // Remove the CopyObject instruction.
+  // Remove the OpCopyMemory instruction.
   ir_context->KillInst(copy_memory_instruction);
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);

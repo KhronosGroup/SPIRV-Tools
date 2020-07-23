@@ -32,14 +32,16 @@ class TransformationReplaceCopyMemoryWithLoadStore : public Transformation {
       uint32_t source_value,
       const protobufs::InstructionDescriptor& instruction_descriptor);
 
-  // - |source_value| must be fresh
-  // - |instruction_descriptor| must refer to an OpCopyMemory instruction.
+  // - |message_.source_value| must be a fresh id.
+  // - |message_.instruction_descriptor| must refer to an OpCopyMemory
+  //   instruction.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Replaces an OpCopyMemory instruction with loading to source_value and
-  // immediately storing it to the target of original OpCopyMemory instruction.
+  // Replaces instruction OpCopyMemory with loading the source variable to an
+  // intermediate value and storing this value into the target variable of the
+  // original OpCopyMemory instruction.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

@@ -41,7 +41,7 @@ void FuzzerPassReplaceCopyMemoriesWithLoadsStores::Apply() {
                 ->GetChanceOfReplacingCopyMemoryWithLoadStore())) {
       return;
     }
-    // The instruction must be OpCopyObject.
+    // The instruction must be OpCopyMemory.
     if (instruction->opcode() != SpvOpCopyMemory) {
       return;
     }
@@ -56,6 +56,7 @@ void FuzzerPassReplaceCopyMemoriesWithLoadsStores::Apply() {
 
     auto instruction_descriptor =
         MakeInstructionDescriptor(GetIRContext(), instruction);
+
     // Apply the transformation replacing OpCopyMemory with OpLoad and OpStore.
     ApplyTransformation(TransformationReplaceCopyMemoryWithLoadStore(
         GetFuzzerContext()->GetFreshId(), instruction_descriptor));

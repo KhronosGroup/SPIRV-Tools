@@ -1219,9 +1219,9 @@ message TransformationRecordSynonymousConstants {
 
 message TransformationReplaceCopyMemoryWithLoadStore {
 
-   // A transformation that replaces an OpCopyMemory instruction
-   // with loading to source_value and immediately storing it to the
-   // target of original OpCopyMemory instruction.
+   // A transformation that replaces instructions OpCopyMemory with loading
+   // the source variable to an intermediate value and storing this value into the
+   // target variable of the original OpCopyMemory instruction.
 
    // The intermediate value
    uint32 source_value = 1;

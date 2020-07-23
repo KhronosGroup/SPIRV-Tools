@@ -19,6 +19,7 @@
 namespace spvtools {
 namespace fuzz {
 namespace {
+
 TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
   // This is a simple transformation and this test handles the main cases.
 
@@ -77,13 +78,13 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
   auto instruction_descriptor_valid_2 =
       MakeInstructionDescriptor(5, SpvOpCopyMemory, 0);
 
-  // Invalid: |source_id| is not fresh
+  // Invalid: |source_id| is not a fresh id.
   auto transformation_invalid_1 = TransformationReplaceCopyMemoryWithLoadStore(
       15, instruction_descriptor_valid_1);
   ASSERT_FALSE(transformation_invalid_1.IsApplicable(context.get(),
                                                      transformation_context));
 
-  // Invalid: |instruction_descriptor_invalid| refers to an instruction OpStore
+  // Invalid: |instruction_descriptor_invalid| refers to an instruction OpStore.
   auto transformation_invalid_2 = TransformationReplaceCopyMemoryWithLoadStore(
       20, instruction_descriptor_invalid_1);
   ASSERT_FALSE(transformation_invalid_2.IsApplicable(context.get(),

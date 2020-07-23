@@ -20,9 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
-// Replaces instructions OpCopyObject with storing into a new variable
-// and immediately loading this variable to |result_id| of the
-// original OpCopyObject instruction.
+// Replaces instructions OpCopyMemory with loading the source variable to
+// an intermediate value and storing this value into the target variable of
+// the original OpCopyMemory instruction.
 class FuzzerPassReplaceCopyMemoriesWithLoadsStores : public FuzzerPass {
  public:
   FuzzerPassReplaceCopyMemoriesWithLoadsStores(
