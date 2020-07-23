@@ -8156,17 +8156,27 @@ OpFunctionEnd
               HasSubstr("Name must match an entry-point for Kernel"));
 }
 
-using BasicDescriptors = spvtest::ValidateBase<std::string>;
+using ArgumentBasics =
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
 
-INSTANTIATE_TEST_SUITE_P(ValidateClspvReflectionDescriptors,
-                         BasicDescriptors,
-                         ::testing::ValuesIn(std::vector<std::string>{
-                             "ArgumentStorageBuffer", "ArgumentUniform",
-                             "ArgumentSampledImage", "ArgumentStorageImage",
-                             "ArgumentSampler"}));
+INSTANTIATE_TEST_SUITE_P(
+    ValidateClspvReflectionArgumentKernel, ArgumentBasics,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair("ArgumentStorageBuffer", "%int_0 %int_0"),
+        std::make_pair("ArgumentUniform", "%int_0 %int_0"),
+        std::make_pair("ArgumentPodStorageBuffer",
+                       "%int_0 %int_0 %int_0 %int_4"),
+        std::make_pair("ArgumentPodUniform",
+                       "%int_0 %int_0 %int_0 %int_4"),
+        std::make_pair("ArgumentPodPushConstant", "%int_0 %int_4"),
+        std::make_pair("ArgumentSampledImage", "%int_0 %int_0"),
+        std::make_pair("ArgumentStorageImage", "%int_0 %int_0"),
+        std::make_pair("ArgumentSampler", "%int_0 %int_0"),
+        std::make_pair("ArgumentWorkgroup", "%int_0 %int_0")}));
 
-TEST_P(BasicDescriptors, Valid) {
-  const std::string ext_inst = GetParam();
+TEST_P(ArgumentBasics, KernelNotAnExtendedInstruction) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string extra = std::get<1>(GetParam());
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_non_semantic_info"
@@ -8178,39 +8188,14 @@ OpExecutionMode %foo LocalSize 1 1 1
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
-%void_fn = OpTypeFunction %void
-%foo = OpFunction %void None %void_fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-%decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %int_0)";
-
-  CompileSuccessfully(text);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-}
-
-TEST_P(BasicDescriptors, KernelNotAnExtendedInstruction) {
-  const std::string ext_inst = GetParam();
-  const std::string text = R"(
-OpCapability Shader
-OpExtension "SPV_KHR_non_semantic_info"
-%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %foo "foo"
-OpExecutionMode %foo LocalSize 1 1 1
-%foo_name = OpString "foo"
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
 %void_fn = OpTypeFunction %void
 %foo = OpFunction %void None %void_fn
 %entry = OpLabel
 OpReturn
 OpFunctionEnd
 %in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %int_0 %int_0 %int_0 %int_0)";
+                           ext_inst + " %int_0 %int_0 " + extra;
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -8218,8 +8203,9 @@ OpFunctionEnd
               HasSubstr("Kernel must be a Kernel extended instruction"));
 }
 
-TEST_P(BasicDescriptors, KernelFromDifferentImport) {
-  const std::string ext_inst = GetParam();
+TEST_P(ArgumentBasics, KernelFromDifferentImport) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string extra = std::get<1>(GetParam());
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_non_semantic_info"
@@ -8232,6 +8218,7 @@ OpExecutionMode %foo LocalSize 1 1 1
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
 %void_fn = OpTypeFunction %void
 %foo = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -8239,7 +8226,7 @@ OpReturn
 OpFunctionEnd
 %decl = OpExtInst %void %ext2 Kernel %foo %foo_name
 %in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %int_0)";
+                           ext_inst + " %decl %int_0 " + extra;
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -8248,8 +8235,9 @@ OpFunctionEnd
       HasSubstr("Kernel must be from the same extended instruction import"));
 }
 
-TEST_P(BasicDescriptors, KernelWrongExtendedInstruction) {
-  const std::string ext_inst = GetParam();
+TEST_P(ArgumentBasics, KernelWrongExtendedInstruction) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string extra = std::get<1>(GetParam());
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_non_semantic_info"
@@ -8261,6 +8249,7 @@ OpExecutionMode %foo LocalSize 1 1 1
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
 %void_fn = OpTypeFunction %void
 %foo = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -8268,7 +8257,7 @@ OpReturn
 OpFunctionEnd
 %decl = OpExtInst %void %ext ArgumentInfo %foo_name
 %in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %int_0)";
+                           ext_inst + " %decl %int_0 " + extra;
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -8276,185 +8265,9 @@ OpFunctionEnd
               HasSubstr("Kernel must be a Kernel extended instruction"));
 }
 
-TEST_P(BasicDescriptors, OrdinalWrongType) {
-  const std::string ext_inst = GetParam();
-  const std::string text = R"(
-OpCapability Shader
-OpExtension "SPV_KHR_non_semantic_info"
-%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %foo "foo"
-OpExecutionMode %foo LocalSize 1 1 1
-%foo_name = OpString "foo"
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
-%float = OpTypeFloat 32
-%float_0 = OpConstant %float 0
-%void_fn = OpTypeFunction %void
-%foo = OpFunction %void None %void_fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-%decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %float_0 %int_0 %int_0)";
-
-  CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Ordinal must be a 32-bit unsigned integer OpConstant"));
-}
-
-TEST_P(BasicDescriptors, OrdinalNotConst) {
-  const std::string ext_inst = GetParam();
-  const std::string text = R"(
-OpCapability Shader
-OpExtension "SPV_KHR_non_semantic_info"
-%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %foo "foo"
-OpExecutionMode %foo LocalSize 1 1 1
-%foo_name = OpString "foo"
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
-%null = OpConstantNull %int
-%void_fn = OpTypeFunction %void
-%foo = OpFunction %void None %void_fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-%decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %null %int_0 %int_0)";
-
-  CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Ordinal must be a 32-bit unsigned integer OpConstant"));
-}
-
-TEST_P(BasicDescriptors, DescriptorSetWrongType) {
-  const std::string ext_inst = GetParam();
-  const std::string text = R"(
-OpCapability Shader
-OpExtension "SPV_KHR_non_semantic_info"
-%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %foo "foo"
-OpExecutionMode %foo LocalSize 1 1 1
-%foo_name = OpString "foo"
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
-%float = OpTypeFloat 32
-%float_0 = OpConstant %float 0
-%void_fn = OpTypeFunction %void
-%foo = OpFunction %void None %void_fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-%decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %float_0 %int_0)";
-
-  CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("DescriptorSet must be a 32-bit unsigned integer OpConstant"));
-}
-
-TEST_P(BasicDescriptors, DescriptorSetNotConst) {
-  const std::string ext_inst = GetParam();
-  const std::string text = R"(
-OpCapability Shader
-OpExtension "SPV_KHR_non_semantic_info"
-%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %foo "foo"
-OpExecutionMode %foo LocalSize 1 1 1
-%foo_name = OpString "foo"
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
-%null = OpConstantNull %int
-%void_fn = OpTypeFunction %void
-%foo = OpFunction %void None %void_fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-%decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %null %int_0)";
-
-  CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("DescriptorSet must be a 32-bit unsigned integer OpConstant"));
-}
-
-TEST_P(BasicDescriptors, BindingWrongType) {
-  const std::string ext_inst = GetParam();
-  const std::string text = R"(
-OpCapability Shader
-OpExtension "SPV_KHR_non_semantic_info"
-%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %foo "foo"
-OpExecutionMode %foo LocalSize 1 1 1
-%foo_name = OpString "foo"
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
-%float = OpTypeFloat 32
-%float_0 = OpConstant %float 0
-%void_fn = OpTypeFunction %void
-%foo = OpFunction %void None %void_fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-%decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %float_0)";
-
-  CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Binding must be a 32-bit unsigned integer OpConstant"));
-}
-
-TEST_P(BasicDescriptors, BindingNotConst) {
-  const std::string ext_inst = GetParam();
-  const std::string text = R"(
-OpCapability Shader
-OpExtension "SPV_KHR_non_semantic_info"
-%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %foo "foo"
-OpExecutionMode %foo LocalSize 1 1 1
-%foo_name = OpString "foo"
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%int_0 = OpConstant %int 0
-%null = OpConstantNull %int
-%void_fn = OpTypeFunction %void
-%foo = OpFunction %void None %void_fn
-%entry = OpLabel
-OpReturn
-OpFunctionEnd
-%decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %null)";
-
-  CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Binding must be a 32-bit unsigned integer OpConstant"));
-}
-
-TEST_P(BasicDescriptors, ArgumentInfo) {
-  const std::string ext_inst = GetParam();
+TEST_P(ArgumentBasics, ArgumentInfo) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string operands = std::get<1>(GetParam());
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_non_semantic_info"
@@ -8467,6 +8280,7 @@ OpExecutionMode %foo LocalSize 1 1 1
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
 %void_fn = OpTypeFunction %void
 %foo = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -8475,14 +8289,15 @@ OpFunctionEnd
 %decl = OpExtInst %void %ext Kernel %foo %foo_name
 %info = OpExtInst %void %ext ArgumentInfo %in_name
 %in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %int_0  %info)";
+                           ext_inst + " %decl %int_0 " + operands + " %info";
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_P(BasicDescriptors, ArgumentInfoNotAnExtendedInstruction) {
-  const std::string ext_inst = GetParam();
+TEST_P(ArgumentBasics, ArgumentInfoNotAnExtendedInstruction) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string operands = std::get<1>(GetParam());
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_non_semantic_info"
@@ -8494,6 +8309,7 @@ OpExecutionMode %foo LocalSize 1 1 1
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
 %void_fn = OpTypeFunction %void
 %foo = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -8501,7 +8317,7 @@ OpReturn
 OpFunctionEnd
 %decl = OpExtInst %void %ext Kernel %foo %foo_name
 %in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %int_0 %int_0)";
+                           ext_inst + " %decl %int_0 " + operands + " %int_0";
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -8509,8 +8325,9 @@ OpFunctionEnd
               HasSubstr("ArgInfo must be an ArgumentInfo extended instruction"));
 }
 
-TEST_P(BasicDescriptors, ArgumentInfoFromDifferentImport) {
-  const std::string ext_inst = GetParam();
+TEST_P(ArgumentBasics, ArgumentInfoFromDifferentImport) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string operands = std::get<1>(GetParam());
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_non_semantic_info"
@@ -8524,6 +8341,7 @@ OpExecutionMode %foo LocalSize 1 1 1
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
 %void_fn = OpTypeFunction %void
 %foo = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -8532,7 +8350,7 @@ OpFunctionEnd
 %decl = OpExtInst %void %ext Kernel %foo %foo_name
 %info = OpExtInst %void %ext2 ArgumentInfo %in_name
 %in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %int_0 %info)";
+                           ext_inst + " %decl %int_0 " + operands + " %info";
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -8541,8 +8359,227 @@ OpFunctionEnd
       HasSubstr("ArgInfo must be from the same extended instruction import"));
 }
 
-TEST_P(BasicDescriptors, ArgumentInfoWrongExtendedInstruction) {
-  const std::string ext_inst = GetParam();
+using Uint32Constant = spvtest::ValidateBase<std::pair<std::string, std::string>>;
+
+INSTANTIATE_TEST_SUITE_P(
+    ValidateClspvReflectionUint32Constants, Uint32Constant,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair("ArgumentStorageBuffer %decl %float_0 %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentStorageBuffer %decl %null %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentStorageBuffer %decl %int_0 %float_0 %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentStorageBuffer %decl %int_0 %null %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentStorageBuffer %decl %int_0 %int_0 %float_0",
+                       "Binding"),
+        std::make_pair("ArgumentStorageBuffer %decl %int_0 %int_0 %null",
+                       "Binding"),
+        std::make_pair("ArgumentUniform %decl %float_0 %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentUniform %decl %null %int_0 %int_0", "Ordinal"),
+        std::make_pair("ArgumentUniform %decl %int_0 %float_0 %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentUniform %decl %int_0 %null %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentUniform %decl %int_0 %int_0 %float_0",
+                       "Binding"),
+        std::make_pair("ArgumentUniform %decl %int_0 %int_0 %null", "Binding"),
+        std::make_pair("ArgumentSampledImage %decl %float_0 %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentSampledImage %decl %null %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentSampledImage %decl %int_0 %float_0 %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentSampledImage %decl %int_0 %null %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentSampledImage %decl %int_0 %int_0 %float_0",
+                       "Binding"),
+        std::make_pair("ArgumentSampledImage %decl %int_0 %int_0 %null",
+                       "Binding"),
+        std::make_pair("ArgumentStorageImage %decl %float_0 %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentStorageImage %decl %null %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentStorageImage %decl %int_0 %float_0 %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentStorageImage %decl %int_0 %null %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentStorageImage %decl %int_0 %int_0 %float_0",
+                       "Binding"),
+        std::make_pair("ArgumentStorageImage %decl %int_0 %int_0 %null",
+                       "Binding"),
+        std::make_pair("ArgumentSampler %decl %float_0 %int_0 %int_0",
+                       "Ordinal"),
+        std::make_pair("ArgumentSampler %decl %null %int_0 %int_0", "Ordinal"),
+        std::make_pair("ArgumentSampler %decl %int_0 %float_0 %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentSampler %decl %int_0 %null %int_0",
+                       "DescriptorSet"),
+        std::make_pair("ArgumentSampler %decl %int_0 %int_0 %float_0",
+                       "Binding"),
+        std::make_pair("ArgumentSampler %decl %int_0 %int_0 %null", "Binding"),
+        std::make_pair("ArgumentPodStorageBuffer %decl %float_0 %int_0 %int_0 "
+                       "%int_0 %int_4",
+                       "Ordinal"),
+        std::make_pair(
+            "ArgumentPodStorageBuffer %decl %null %int_0 %int_0 %int_0 %int_4",
+            "Ordinal"),
+        std::make_pair("ArgumentPodStorageBuffer %decl %int_0 %float_0 %int_0 "
+                       "%int_0 %int_4",
+                       "DescriptorSet"),
+        std::make_pair(
+            "ArgumentPodStorageBuffer %decl %int_0 %null %int_0 %int_0 %int_4",
+            "DescriptorSet"),
+        std::make_pair("ArgumentPodStorageBuffer %decl %int_0 %int_0 %float_0 "
+                       "%int_0 %int_4",
+                       "Binding"),
+        std::make_pair(
+            "ArgumentPodStorageBuffer %decl %int_0 %int_0 %null %int_0 %int_4",
+            "Binding"),
+        std::make_pair("ArgumentPodStorageBuffer %decl %int_0 %int_0 %int_0 "
+                       "%float_0 %int_4",
+                       "Offset"),
+        std::make_pair(
+            "ArgumentPodStorageBuffer %decl %int_0 %int_0 %int_0 %null %int_4",
+            "Offset"),
+        std::make_pair("ArgumentPodStorageBuffer %decl %int_0 %int_0 %int_0 "
+                       "%int_0 %float_0",
+                       "Size"),
+        std::make_pair(
+            "ArgumentPodStorageBuffer %decl %int_0 %int_0 %int_0 %int_0 %null",
+            "Size"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %float_0 %int_0 %int_0 %int_0 %int_4",
+            "Ordinal"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %null %int_0 %int_0 %int_0 %int_4",
+            "Ordinal"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %float_0 %int_0 %int_0 %int_4",
+            "DescriptorSet"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %null %int_0 %int_0 %int_4",
+            "DescriptorSet"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %int_0 %float_0 %int_0 %int_4",
+            "Binding"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %int_0 %null %int_0 %int_4",
+            "Binding"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %int_0 %int_0 %float_0 %int_4",
+            "Offset"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %int_0 %int_0 %null %int_4",
+            "Offset"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %int_0 %int_0 %int_0 %float_0",
+            "Size"),
+        std::make_pair(
+            "ArgumentPodUniform %decl %int_0 %int_0 %int_0 %int_0 %null",
+            "Size"),
+        std::make_pair("ArgumentPodPushConstant %decl %float_0 %int_0 %int_4",
+                       "Ordinal"),
+        std::make_pair("ArgumentPodPushConstant %decl %null %int_0 %int_4",
+                       "Ordinal"),
+        std::make_pair("ArgumentPodPushConstant %decl %int_0 %float_0 %int_4",
+                       "Offset"),
+        std::make_pair("ArgumentPodPushConstant %decl %int_0 %null %int_4",
+                       "Offset"),
+        std::make_pair("ArgumentPodPushConstant %decl %int_0 %int_0 %float_0",
+                       "Size"),
+        std::make_pair("ArgumentPodPushConstant %decl %int_0 %int_0 %null",
+                       "Size"),
+        std::make_pair("ArgumentWorkgroup %decl %float_0 %int_0 %int_4",
+                       "Ordinal"),
+        std::make_pair("ArgumentWorkgroup %decl %null %int_0 %int_4",
+                       "Ordinal"),
+        std::make_pair("ArgumentWorkgroup %decl %int_0 %float_0 %int_4",
+                       "SpecId"),
+        std::make_pair("ArgumentWorkgroup %decl %int_0 %null %int_4", "SpecId"),
+        std::make_pair("ArgumentWorkgroup %decl %int_0 %int_0 %float_0",
+                       "ElemSize"),
+        std::make_pair("ArgumentWorkgroup %decl %int_0 %int_0 %null",
+                       "ElemSize"),
+        std::make_pair("SpecConstantWorkgroupSize %float_0 %int_0 %int_4", "X"),
+        std::make_pair("SpecConstantWorkgroupSize %null %int_0 %int_4", "X"),
+        std::make_pair("SpecConstantWorkgroupSize %int_0 %float_0 %int_4", "Y"),
+        std::make_pair("SpecConstantWorkgroupSize %int_0 %null %int_4", "Y"),
+        std::make_pair("SpecConstantWorkgroupSize %int_0 %int_0 %float_0", "Z"),
+        std::make_pair("SpecConstantWorkgroupSize %int_0 %int_0 %null", "Z"),
+        std::make_pair("SpecConstantGlobalOffset %float_0 %int_0 %int_4", "X"),
+        std::make_pair("SpecConstantGlobalOffset %null %int_0 %int_4", "X"),
+        std::make_pair("SpecConstantGlobalOffset %int_0 %float_0 %int_4", "Y"),
+        std::make_pair("SpecConstantGlobalOffset %int_0 %null %int_4", "Y"),
+        std::make_pair("SpecConstantGlobalOffset %int_0 %int_0 %float_0", "Z"),
+        std::make_pair("SpecConstantGlobalOffset %int_0 %int_0 %null", "Z"),
+        std::make_pair("SpecConstantWorkDim %float_0", "Dim"),
+        std::make_pair("SpecConstantWorkDim %null", "Dim"),
+        std::make_pair("PushConstantGlobalOffset %float_0 %int_0", "Offset"),
+        std::make_pair("PushConstantGlobalOffset %null %int_0", "Offset"),
+        std::make_pair("PushConstantGlobalOffset %int_0 %float_0", "Size"),
+        std::make_pair("PushConstantGlobalOffset %int_0 %null", "Size"),
+        std::make_pair("PushConstantEnqueuedLocalSize %float_0 %int_0",
+                       "Offset"),
+        std::make_pair("PushConstantEnqueuedLocalSize %null %int_0", "Offset"),
+        std::make_pair("PushConstantEnqueuedLocalSize %int_0 %float_0", "Size"),
+        std::make_pair("PushConstantEnqueuedLocalSize %int_0 %null", "Size"),
+        std::make_pair("PushConstantGlobalSize %float_0 %int_0", "Offset"),
+        std::make_pair("PushConstantGlobalSize %null %int_0", "Offset"),
+        std::make_pair("PushConstantGlobalSize %int_0 %float_0", "Size"),
+        std::make_pair("PushConstantGlobalSize %int_0 %null", "Size"),
+        std::make_pair("PushConstantRegionOffset %float_0 %int_0", "Offset"),
+        std::make_pair("PushConstantRegionOffset %null %int_0", "Offset"),
+        std::make_pair("PushConstantRegionOffset %int_0 %float_0", "Size"),
+        std::make_pair("PushConstantRegionOffset %int_0 %null", "Size"),
+        std::make_pair("PushConstantNumWorkgroups %float_0 %int_0", "Offset"),
+        std::make_pair("PushConstantNumWorkgroups %null %int_0", "Offset"),
+        std::make_pair("PushConstantNumWorkgroups %int_0 %float_0", "Size"),
+        std::make_pair("PushConstantNumWorkgroups %int_0 %null", "Size"),
+        std::make_pair("PushConstantRegionGroupOffset %float_0 %int_0",
+                       "Offset"),
+        std::make_pair("PushConstantRegionGroupOffset %null %int_0", "Offset"),
+        std::make_pair("PushConstantRegionGroupOffset %int_0 %float_0", "Size"),
+        std::make_pair("PushConstantRegionGroupOffset %int_0 %null", "Size"),
+        std::make_pair("ConstantDataStorageBuffer %float_0 %int_0 %data",
+                       "DescriptorSet"),
+        std::make_pair("ConstantDataStorageBuffer %null %int_0 %data",
+                       "DescriptorSet"),
+        std::make_pair("ConstantDataStorageBuffer %int_0 %float_0 %data",
+                       "Binding"),
+        std::make_pair("ConstantDataStorageBuffer %int_0 %null %data",
+                       "Binding"),
+        std::make_pair("ConstantDataUniform %float_0 %int_0 %data",
+                       "DescriptorSet"),
+        std::make_pair("ConstantDataUniform %null %int_0 %data",
+                       "DescriptorSet"),
+        std::make_pair("ConstantDataUniform %int_0 %float_0 %data", "Binding"),
+        std::make_pair("ConstantDataUniform %int_0 %null %data", "Binding"),
+        std::make_pair("LiteralSampler %float_0 %int_0 %int_4",
+                       "DescriptorSet"),
+        std::make_pair("LiteralSampler %null %int_0 %int_4", "DescriptorSet"),
+        std::make_pair("LiteralSampler %int_0 %float_0 %int_4", "Binding"),
+        std::make_pair("LiteralSampler %int_0 %null %int_4", "Binding"),
+        std::make_pair("LiteralSampler %int_0 %int_0 %float_0", "Mask"),
+        std::make_pair("LiteralSampler %int_0 %int_0 %null", "Mask"),
+        std::make_pair(
+            "PropertyRequiredWorkgroupSize %decl %float_0 %int_1 %int_4", "X"),
+        std::make_pair(
+            "PropertyRequiredWorkgroupSize %decl %null %int_1 %int_4", "X"),
+        std::make_pair(
+            "PropertyRequiredWorkgroupSize %decl %int_1 %float_0 %int_4", "Y"),
+        std::make_pair(
+            "PropertyRequiredWorkgroupSize %decl %int_1 %null %int_4", "Y"),
+        std::make_pair(
+            "PropertyRequiredWorkgroupSize %decl %int_1 %int_1 %float_0", "Z"),
+        std::make_pair(
+            "PropertyRequiredWorkgroupSize %decl %int_1 %int_1 %null", "Z")}));
+
+TEST_P(Uint32Constant, Invalid) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string name = std::get<1>(GetParam());
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_non_semantic_info"
@@ -8551,22 +8588,70 @@ OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %foo "foo"
 OpExecutionMode %foo LocalSize 1 1 1
 %foo_name = OpString "foo"
+%data = OpString "1234"
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_4 = OpConstant %int 4
+%null = OpConstantNull %int
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
 %void_fn = OpTypeFunction %void
 %foo = OpFunction %void None %void_fn
 %entry = OpLabel
 OpReturn
 OpFunctionEnd
 %decl = OpExtInst %void %ext Kernel %foo %foo_name
-%in = OpExtInst %void %ext )" +
-                           ext_inst + R"( %decl %int_0 %int_0 %int_0 %decl)";
+%inst = OpExtInst %void %ext )" + ext_inst;
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ArgInfo must be an ArgumentInfo extended instruction"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(name + " must be a 32-bit unsigned integer OpConstant"));
+}
+
+using StringOperand = spvtest::ValidateBase<std::pair<std::string, std::string>>;
+
+INSTANTIATE_TEST_SUITE_P(
+    ValidateClspvReflectionStringOperands, StringOperand,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
+        std::make_pair("ConstantDataStorageBuffer %int_0 %int_0 %int_0",
+                       "Data"),
+        std::make_pair("ConstantDataUniform %int_0 %int_0 %int_0", "Data")}));
+
+TEST_P(StringOperand, Invalid) {
+  const std::string ext_inst = std::get<0>(GetParam());
+  const std::string name = std::get<1>(GetParam());
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%ext = OpExtInstImport "NonSemantic.ClspvReflection.1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %foo "foo"
+OpExecutionMode %foo LocalSize 1 1 1
+%foo_name = OpString "foo"
+%data = OpString "1234"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_4 = OpConstant %int 4
+%null = OpConstantNull %int
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%decl = OpExtInst %void %ext Kernel %foo %foo_name
+%inst = OpExtInst %void %ext )" + ext_inst;
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(name + " must be an OpString"));
 }
 
 }  // namespace

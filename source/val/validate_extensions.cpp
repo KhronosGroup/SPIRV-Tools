@@ -471,7 +471,7 @@ spv_result_t ValidateClspvReflectionSpecConstantTriple(
 
   if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(6))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Y must be a 32-bit unsigned integer OpConstant";
+           << "Z must be a 32-bit unsigned integer OpConstant";
   }
 
   return SPV_SUCCESS;
@@ -506,12 +506,12 @@ spv_result_t ValidateClspvReflectionConstantData(ValidationState_t& _,
                                                  const Instruction* inst) {
   if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Offset must be a 32-bit unsigned integer OpConstant";
+           << "DescriptorSet must be a 32-bit unsigned integer OpConstant";
   }
 
   if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(5))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Size must be a 32-bit unsigned integer OpConstant";
+           << "Binding must be a 32-bit unsigned integer OpConstant";
   }
 
   if (_.GetIdOpcode(inst->GetOperandAs<uint32_t>(6)) != SpvOpString) {
