@@ -15,4 +15,42 @@
 #ifndef SPIRV_TOOLS_TRANSFORMATION_REPLACE_LOAD_STORE_WITH_COPY_MEMORY_H
 #define SPIRV_TOOLS_TRANSFORMATION_REPLACE_LOAD_STORE_WITH_COPY_MEMORY_H
 
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/transformation.h"
+#include "source/fuzz/transformation_context.h"
+#include "source/opt/ir_context.h"
+
+namespace spvtools {
+namespace fuzz {
+
+class TransformationReplaceLoadStoreWithCopyMemory : public Transformation {
+ public:
+  explicit TransformationReplaceLoadStoreWithCopyMemory(
+      const protobufs::TransformationReplaceLoadStoreWithCopyMemory& message);
+
+  TransformationReplaceLoadStoreWithCopyMemory(
+      const protobufs::InstructionDescriptor& load_descriptor,
+      const protobufs::InstructionDescriptor& store_descriptor);
+
+  // - |message_.load_descriptor| must refer to an OpLoad instruction.
+  // - |message_.store_descriptor| must refer to an OpStore instruction.
+  bool IsApplicable(
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const override;
+
+  // Takes a pair of instruction descriptors to OpLoad and OpStore that have the
+  // same intermediate value and replaces the OpStore with an equivalent
+  // OpCopyMemory.
+  void Apply(opt::IRContext* ir_context,
+             TransformationContext* transformation_context) const override;
+
+  protobufs::Transformation ToMessage() const override;
+
+ private:
+  protobufs::TransformationReplaceLoadStoreWithCopyMemory message_;
+};
+
+}  // namespace fuzz
+}  // namespace spvtools
+
 #endif  // SPIRV_TOOLS_TRANSFORMATION_REPLACE_LOAD_STORE_WITH_COPY_MEMORY_H

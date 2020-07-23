@@ -406,6 +406,7 @@ message Transformation {
     TransformationReplaceParamsWithStruct replace_params_with_struct = 59;
     TransformationReplaceCopyObjectWithStoreLoad replace_copy_object_with_store_load = 60;
     TransformationReplaceCopyMemoryWithLoadStore replace_copy_memory_with_load_store = 61;
+    TransformationReplaceLoadStoreWithCopyMemory replace_load_store_with_copy_memory = 62;
     // Add additional option using the next available number.
   }
 }
@@ -1347,6 +1348,18 @@ message TransformationReplaceLinearAlgebraInstruction {
   //   OpOuterProduct
   InstructionDescriptor instruction_descriptor = 2;
 
+}
+
+message TransformationReplaceLoadStoreWithCopyMemory {
+  // A transformation that takes a pair of instruction descriptors
+  // to OpLoad and OpStore that have the same intermediate value
+  // and replaces the OpStore with an equivalent OpCopyMemory.
+
+  // The instruction descriptor to OpLoad
+  InstructionDescriptor load_descriptor = 1;
+
+  // The instruction descriptor to OpStore
+  InstructionDescriptor store_descriptor = 2;
 }
 
 message TransformationReplaceParamsWithStruct {
