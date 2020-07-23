@@ -766,6 +766,70 @@ opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
   return nullptr;
 }
 
+uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
+                            uint32_t new_function_type_result_id,
+                            uint32_t return_type_id,
+                            const std::vector<uint32_t>& parameter_type_ids) {
+  // Check some initial constraints.
+  assert(ir_context->get_type_mgr()->GetType(return_type_id) &&
+         "Return type is invalid");
+  for (auto id : parameter_type_ids) {
+    const auto* type = ir_context->get_type_mgr()->GetType(id);
+    (void)type;  // Make compilers happy in release mode.
+    // Parameters can't be OpTypeVoid.
+    assert(type && !type->AsVoid() && "Parameter has invalid type");
+  }
+
+  auto* function = FindFunction(ir_context, function_id);
+  assert(function && "|function_id| is invalid");
+
+  auto* old_function_type = GetFunctionType(ir_context, function);
+  assert(old_function_type && "Function has invalid type");
+
+  std::vector<uint32_t> operand_ids = {return_type_id};
+  operand_ids.insert(operand_ids.end(), parameter_type_ids.begin(),
+                     parameter_type_ids.end());
+
+  if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
+      FindFunctionType(ir_context, operand_ids) == 0) {
+    // We can change |old_function_type| only if it's used once in the module
+    // and we are certain we won't create a duplicate as a result of the change.
+
+    // Update |old_function_type| in-place.
+    opt::Instruction::OperandList operands;
+    for (auto id : operand_ids) {
+      operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
+    }
+
+    old_function_type->SetInOperands(std::move(operands));
+
+    // |operands| may depend on result ids defined below the |old_function_type|
+    // in the module.
+    old_function_type->RemoveFromList();
+    ir_context->AddType(std::unique_ptr<opt::Instruction>(old_function_type));
+    return old_function_type->result_id();
+  } else {
+    // We can't modify the |old_function_type| so we have to either use an
+    // existing one or create a new one.
+    auto type_id = FindOrCreateFunctionType(
+        ir_context, new_function_type_result_id, operand_ids);
+
+    if (type_id != old_function_type->result_id()) {
+      function->DefInst().SetInOperand(1, {type_id});
+
+      // DefUseManager hasn't been updated yet, so if the following condition is
+      // true, then |old_function_type| will have no users when this function
+      // returns. We might as well remove it.
+      if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
+        old_function_type->RemoveFromList();
+        delete old_function_type;
+      }
+    }
+
+    return type_id;
+  }
+}
+
 void AddFunctionType(opt::IRContext* ir_context, uint32_t result_id,
                      const std::vector<uint32_t>& type_ids) {
   assert(result_id != 0 && "Result id can't be 0");

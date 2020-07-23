@@ -218,11 +218,9 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %71 = OpTypeFunction %2 %6
          %83 = OpTypeFunction %2 %6 %12
          %93 = OpTypeFunction %2 %10
-         %94 = OpTypeFunction %2 %8 %10
          %40 = OpTypePointer Function %12
          %13 = OpTypeStruct %6 %8
          %14 = OpTypePointer Private %13
-         %15 = OpTypeFunction %2 %40 %12
          %22 = OpConstant %6 0
          %23 = OpConstant %8 0
          %26 = OpConstantComposite %10 %23 %23
@@ -232,6 +230,7 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
          %53 = OpVariable %9 Private %23
          %55 = OpVariable %11 Private %26
          %57 = OpVariable %14 Private %28
+         %15 = OpTypeFunction %2 %40 %12
          %59 = OpVariable %7 Private %22
          %61 = OpVariable %7 Private %22
          %60 = OpTypeFunction %2 %12
