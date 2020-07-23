@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_push_id_through_variable.h"
+
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -495,6 +496,210 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
                                         MakeDataDescriptor(106, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
                                         MakeDataDescriptor(108, {})));
+}
+
+TEST(TransformationPushIdThroughVariableTest, AddSynonymsForRelevantIds) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %92 %52 %53
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %92 BuiltIn FragCoord
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFloat 32
+          %8 = OpTypeStruct %6 %7
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeFunction %6 %9
+         %14 = OpConstant %6 0
+         %15 = OpTypePointer Function %6
+         %51 = OpTypePointer Private %6
+         %21 = OpConstant %6 2
+         %23 = OpConstant %6 1
+         %24 = OpConstant %7 1
+         %25 = OpTypePointer Function %7
+         %50 = OpTypePointer Private %7
+         %34 = OpTypeBool
+         %35 = OpConstantFalse %34
+         %60 = OpConstantNull %50
+         %61 = OpUndef %51
+         %52 = OpVariable %50 Private
+         %53 = OpVariable %51 Private
+         %80 = OpConstantComposite %8 %21 %24
+         %90 = OpTypeVector %7 4
+         %91 = OpTypePointer Input %90
+         %92 = OpVariable %91 Input
+         %93 = OpConstantComposite %90 %24 %24 %24 %24
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpVariable %9 Function
+         %27 = OpVariable %9 Function
+         %22 = OpAccessChain %15 %20 %14
+         %44 = OpCopyObject %9 %20
+         %26 = OpAccessChain %25 %20 %23
+         %29 = OpFunctionCall %6 %12 %27
+         %30 = OpAccessChain %15 %20 %14
+         %45 = OpCopyObject %15 %30
+         %81 = OpCopyObject %9 %27
+         %33 = OpAccessChain %15 %20 %14
+               OpSelectionMerge %37 None
+               OpBranchConditional %35 %36 %37
+         %36 = OpLabel
+         %38 = OpAccessChain %15 %20 %14
+         %40 = OpAccessChain %15 %20 %14
+         %43 = OpAccessChain %15 %20 %14
+         %82 = OpCopyObject %9 %27
+               OpBranch %37
+         %37 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %6 None %10
+         %11 = OpFunctionParameter %9
+         %13 = OpLabel
+         %46 = OpCopyObject %9 %11
+         %16 = OpAccessChain %15 %11 %14
+         %95 = OpCopyObject %8 %80
+               OpReturnValue %21
+        %100 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Tests the reference shader validity.
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  uint32_t value_id = 21;
+  uint32_t value_synonym_id = 62;
+  uint32_t variable_id = 63;
+  uint32_t initializer_id = 23;
+  uint32_t variable_storage_class = SpvStorageClassPrivate;
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      initializer_id, instruction_descriptor);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
+                                        MakeDataDescriptor(62, {})));
+}
+
+TEST(TransformationPushIdThroughVariableTest, DontAddSynonymsForIrrelevantIds) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %92 %52 %53
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %92 BuiltIn FragCoord
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFloat 32
+          %8 = OpTypeStruct %6 %7
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeFunction %6 %9
+         %14 = OpConstant %6 0
+         %15 = OpTypePointer Function %6
+         %51 = OpTypePointer Private %6
+         %21 = OpConstant %6 2
+         %23 = OpConstant %6 1
+         %24 = OpConstant %7 1
+         %25 = OpTypePointer Function %7
+         %50 = OpTypePointer Private %7
+         %34 = OpTypeBool
+         %35 = OpConstantFalse %34
+         %60 = OpConstantNull %50
+         %61 = OpUndef %51
+         %52 = OpVariable %50 Private
+         %53 = OpVariable %51 Private
+         %80 = OpConstantComposite %8 %21 %24
+         %90 = OpTypeVector %7 4
+         %91 = OpTypePointer Input %90
+         %92 = OpVariable %91 Input
+         %93 = OpConstantComposite %90 %24 %24 %24 %24
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpVariable %9 Function
+         %27 = OpVariable %9 Function
+         %22 = OpAccessChain %15 %20 %14
+         %44 = OpCopyObject %9 %20
+         %26 = OpAccessChain %25 %20 %23
+         %29 = OpFunctionCall %6 %12 %27
+         %30 = OpAccessChain %15 %20 %14
+         %45 = OpCopyObject %15 %30
+         %81 = OpCopyObject %9 %27
+         %33 = OpAccessChain %15 %20 %14
+               OpSelectionMerge %37 None
+               OpBranchConditional %35 %36 %37
+         %36 = OpLabel
+         %38 = OpAccessChain %15 %20 %14
+         %40 = OpAccessChain %15 %20 %14
+         %43 = OpAccessChain %15 %20 %14
+         %82 = OpCopyObject %9 %27
+               OpBranch %37
+         %37 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %6 None %10
+         %11 = OpFunctionParameter %9
+         %13 = OpLabel
+         %46 = OpCopyObject %9 %11
+         %16 = OpAccessChain %15 %11 %14
+         %95 = OpCopyObject %8 %80
+               OpReturnValue %21
+        %100 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Tests the reference shader validity.
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  fact_manager.AddFactIdIsIrrelevant(21);
+
+  uint32_t value_id = 21;
+  uint32_t value_synonym_id = 62;
+  uint32_t variable_id = 63;
+  uint32_t initializer_id = 23;
+  uint32_t variable_storage_class = SpvStorageClassPrivate;
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(95, SpvOpReturnValue, 0);
+  auto transformation = TransformationPushIdThroughVariable(
+      value_id, value_synonym_id, variable_id, variable_storage_class,
+      initializer_id, instruction_descriptor);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
+                                         MakeDataDescriptor(62, {})));
 }
 
 }  // namespace

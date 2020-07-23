@@ -75,8 +75,10 @@ bool TransformationPushIdThroughVariable::IsApplicable(
   }
 
   // |value_id| may not be an irrelevant id.
-  if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.value_id())) {
+  if (!transformation_context.GetFactManager()->IdIsIrrelevant(
+          message_.value_id()) &&
+      !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
+                                    value_instruction)) {
     return false;
   }
 
@@ -151,11 +153,14 @@ void TransformationPushIdThroughVariable::Apply(
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // Adds the fact that |message_.value_synonym_id|
-  // and |message_.value_id| are synonymous.
-  transformation_context->GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(message_.value_synonym_id(), {}),
-      MakeDataDescriptor(message_.value_id(), {}), ir_context);
+  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.value_id())) {
+    // Adds the fact that |message_.value_synonym_id|
+    // and |message_.value_id| are synonymous.
+    transformation_context->GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(message_.value_synonym_id(), {}),
+        MakeDataDescriptor(message_.value_id(), {}), ir_context);
+  }
 }
 
 protobufs::Transformation TransformationPushIdThroughVariable::ToMessage()

@@ -90,6 +90,8 @@ TEST(TransformationAddParameterTest, BasicTest) {
   // The module remains valid.
   ASSERT_TRUE(IsValid(env, context.get()));
 
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(15));
+
   std::string expected_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
