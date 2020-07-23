@@ -50,7 +50,7 @@ uint32_t FuzzerPassInterchangeZeroLikeConstants::FindOrCreateToggledConstant(
     if (kind == opt::analysis::Type::kBool ||
         kind == opt::analysis::Type::kInteger ||
         kind == opt::analysis::Type::kFloat) {
-      return FindOrCreateZeroConstant(declaration->type_id());
+      return FindOrCreateZeroConstant(declaration->type_id(), false);
     }
   }
 

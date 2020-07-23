@@ -258,7 +258,7 @@ uint32_t TransformationAddSynonym::MaybeGetConstantId(
     case protobufs::TransformationAddSynonym::SUB_ZERO:
     case protobufs::TransformationAddSynonym::LOGICAL_OR:
       return fuzzerutil::MaybeGetZeroConstant(
-          ir_context, transformation_context, synonym_type_id);
+          ir_context, transformation_context, synonym_type_id, false);
     case protobufs::TransformationAddSynonym::MUL_ONE:
     case protobufs::TransformationAddSynonym::LOGICAL_AND: {
       auto synonym_type = ir_context->get_type_mgr()->GetType(synonym_type_id);
@@ -272,12 +272,12 @@ uint32_t TransformationAddSynonym::MaybeGetConstantId(
         auto one_word =
             vector->element_type()->AsFloat() ? fuzzerutil::FloatToWord(1) : 1u;
         if (auto scalar_one_id = fuzzerutil::MaybeGetScalarConstant(
-                ir_context, transformation_context, {one_word},
-                element_type_id)) {
+                ir_context, transformation_context, {one_word}, element_type_id,
+                false)) {
           return fuzzerutil::MaybeGetCompositeConstant(
               ir_context, transformation_context,
               std::vector<uint32_t>(vector->element_count(), scalar_one_id),
-              synonym_type_id);
+              synonym_type_id, false);
         }
 
         return 0;
@@ -285,7 +285,7 @@ uint32_t TransformationAddSynonym::MaybeGetConstantId(
         return fuzzerutil::MaybeGetScalarConstant(
             ir_context, transformation_context,
             {synonym_type->AsFloat() ? fuzzerutil::FloatToWord(1) : 1u},
-            synonym_type_id);
+            synonym_type_id, false);
       }
     }
     default:

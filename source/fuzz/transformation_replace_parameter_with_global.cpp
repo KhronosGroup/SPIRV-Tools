@@ -66,7 +66,7 @@ bool TransformationReplaceParameterWithGlobal::IsApplicable(
 
   // Check that initializer for the global variable exists in the module.
   if (fuzzerutil::MaybeGetZeroConstant(ir_context, transformation_context,
-                                       param_inst->type_id()) == 0) {
+                                       param_inst->type_id(), false) == 0) {
     return false;
   }
 
@@ -97,7 +97,7 @@ void TransformationReplaceParameterWithGlobal::Apply(
                                       SpvStorageClassPrivate),
       SpvStorageClassPrivate,
       fuzzerutil::MaybeGetZeroConstant(ir_context, *transformation_context,
-                                       param_inst->type_id()));
+                                       param_inst->type_id(), false));
 
   // Mark the global variable's pointee as irrelevant if replaced parameter is
   // irrelevant.

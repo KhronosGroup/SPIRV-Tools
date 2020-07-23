@@ -174,7 +174,7 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
       // function, noting that its pointee value is irrelevant.
       ApplyTransformation(TransformationAddLocalVariable(
           fresh_variable_id, param->type_id(), caller_function->result_id(),
-          FindOrCreateZeroConstant(pointee_type_id), true));
+          FindOrCreateZeroConstant(pointee_type_id, false), true));
     } else {
       assert((storage_class == SpvStorageClassPrivate ||
               storage_class == SpvStorageClassWorkgroup) &&
@@ -186,7 +186,7 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
       ApplyTransformation(TransformationAddGlobalVariable(
           fresh_variable_id, param->type_id(), storage_class,
           storage_class == SpvStorageClassPrivate
-              ? FindOrCreateZeroConstant(pointee_type_id)
+              ? FindOrCreateZeroConstant(pointee_type_id, false)
               : 0,
           true));
     }
