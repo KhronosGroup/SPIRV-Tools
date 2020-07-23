@@ -74,7 +74,7 @@ bool TransformationPushIdThroughVariable::IsApplicable(
     return false;
   }
 
-  // |value_id| may not be an irrelevant id.
+  // We should be able to create a synonym of |value_id| if it's not irrelevant.
   if (!transformation_context.GetFactManager()->IdIsIrrelevant(
           message_.value_id()) &&
       !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
