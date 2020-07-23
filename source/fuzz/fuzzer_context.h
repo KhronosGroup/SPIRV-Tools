@@ -212,6 +212,9 @@ class FuzzerContext {
   uint32_t GetChanceOfPushingIdThroughVariable() {
     return chance_of_pushing_id_through_variable_;
   }
+  uint32_t GetChanceOfReplacingCopyMemoryWithLoadStore() {
+    return chance_of_replacing_copy_memory_with_load_store_;
+  }
   uint32_t GetChanceOfReplacingCopyObjectWithStoreLoad() {
     return chance_of_replacing_copyobject_with_store_load_;
   }
@@ -357,6 +360,7 @@ class FuzzerContext {
   uint32_t chance_of_permuting_parameters_;
   uint32_t chance_of_permuting_phi_operands_;
   uint32_t chance_of_pushing_id_through_variable_;
+  uint32_t chance_of_replacing_copy_memory_with_load_store_;
   uint32_t chance_of_replacing_copyobject_with_store_load_;
   uint32_t chance_of_replacing_id_with_synonym_;
   uint32_t chance_of_replacing_linear_algebra_instructions_;
