@@ -40,7 +40,7 @@ bool TransformationReplaceCopyMemoryWithLoadStore::IsApplicable(
   if (!fuzzerutil::IsFreshId(ir_context, message_.source_value())) {
     return false;
   }
-  // The instruction to insert before must be defined and of opcode
+  // The instruction to be replaced must be defined and of opcode
   // OpCopyMemory.
   auto copy_memory_instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
@@ -64,7 +64,7 @@ void TransformationReplaceCopyMemoryWithLoadStore::Apply(
          copy_memory_instruction->opcode() == SpvOpCopyMemory &&
          "The required OpCopyMemory instruction must be defined.");
 
-  // Get ids used as a source and target of |copy_memory_instruction|.
+  // Get types of ids used as a source and target of |copy_memory_instruction|.
   auto target = ir_context->get_def_use_mgr()->GetDef(
       copy_memory_instruction->GetSingleWordInOperand(0));
   auto source = ir_context->get_def_use_mgr()->GetDef(
