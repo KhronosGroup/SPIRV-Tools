@@ -294,6 +294,61 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
+TEST(TransformationReplaceParameterWithGlobalTest,
+     HandlesIrrelevantParameters) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %9 = OpTypeInt 32 1
+          %3 = OpTypeFunction %2
+          %7 = OpTypeFunction %2 %9 %9
+         %12 = OpTypePointer Private %9
+         %13 = OpConstant %9 0
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %7
+         %10 = OpFunctionParameter %9
+         %11 = OpFunctionParameter %9
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  fact_manager.AddFactIdIsIrrelevant(10);
+
+  {
+    TransformationReplaceParameterWithGlobal transformation(20, 10, 21);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(21));
+  }
+  {
+    TransformationReplaceParameterWithGlobal transformation(22, 11, 23);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(23));
+  }
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
