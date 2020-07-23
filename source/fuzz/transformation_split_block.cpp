@@ -135,7 +135,7 @@ void TransformationSplitBlock::Apply(
   // predecessor operand so that the block they used to be inside is now the
   // predecessor.
   new_bb->ForEachPhiInst([block_to_split](opt::Instruction* phi_inst) {
-    // The following assertion is a sanity check.  It is guaranteed to hold
+    // The following assertion is a coherence check.  It is guaranteed to hold
     // if IsApplicable holds.
     assert(phi_inst->NumInOperands() == 2 &&
            "We can only split a block before an OpPhi if block has exactly "
