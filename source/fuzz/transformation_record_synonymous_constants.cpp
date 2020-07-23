@@ -15,6 +15,8 @@
 
 #include "transformation_record_synonymous_constants.h"
 
+#include "source/fuzz/fuzzer_util.h"
+
 namespace spvtools {
 namespace fuzz {
 
@@ -82,19 +84,8 @@ bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
   assert(constant1 && constant2 && "The ids must refer to constants.");
 
   // The types must be compatible.
-  if (constant1->type()->AsInteger() && constant2->type()->AsInteger()) {
-    // Two integer scalars cannot be equivalent if their width is not the same.
-    if (constant1->type()->AsInteger()->width() !=
-        constant2->type()->AsInteger()->width()) {
-      return false;
-    }
-  } else if (constant1->type()->AsVector() && constant2->type()->AsVector() &&
-             constant1->type()->AsVector()->element_type()->AsInteger() &&
-             constant2->type()->AsVector()->element_type()->AsInteger()) {
-    // Two integer vectors are equivalent even if their type ids don't match,
-    // as long as their components are pairwise equivalent.
-  } else if (def_1->type_id() != def_2->type_id()) {
-    // For everything else, the type ids must match.
+  if (!fuzzerutil::TypesArEqualUpToSign(ir_context, def_1->type_id(),
+                                        def_2->type_id())) {
     return false;
   }
 

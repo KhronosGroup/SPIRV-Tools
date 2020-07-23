@@ -98,7 +98,7 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
 #endif
 
 #ifndef NDEBUG
-  // Swapping the ids gives the same result
+  // %3 is not a constant declaration
   ASSERT_DEATH(TransformationRecordSynonymousConstants(9, 3).IsApplicable(
                    context.get(), transformation_context),
                "The ids must refer to constants.");

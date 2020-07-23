@@ -57,32 +57,22 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
     return false;
   }
 
-  // If the id of interest and the synonym are integer or scalar constants with
-  // different signedness, is the instruction suitable for this replacement?
-  if (ir_context->get_def_use_mgr()->GetDef(id_of_interest)->type_id() !=
-      ir_context->get_def_use_mgr()
-          ->GetDef(message_.synonymous_id())
-          ->type_id()) {
-    // The type ids don't match
-    auto constant1 =
-        ir_context->get_constant_mgr()->FindDeclaredConstant(id_of_interest);
-    auto constant2 = ir_context->get_constant_mgr()->FindDeclaredConstant(
-        message_.synonymous_id());
+  uint32_t type_id_of_interest =
+      ir_context->get_def_use_mgr()->GetDef(id_of_interest)->type_id();
+  uint32_t type_id_synonym = ir_context->get_def_use_mgr()
+                                 ->GetDef(message_.synonymous_id())
+                                 ->type_id();
 
-    if ((constant1->AsVectorConstant() &&
-         constant1->AsVectorConstant()->component_type()->AsInteger() &&
-         constant2->AsVectorConstant() &&
-         constant2->AsVectorConstant()->component_type()->AsInteger()) ||
-        (constant1->AsIntConstant() && constant1->AsIntConstant())) {
-      // Integer vectors or scalars
-      // We assume that the constants can be considered equivalent, since they
-      // have been recorded as synonyms.
-      if (!IsAgnosticToSignednessOfOperand(
-              use_instruction->opcode(),
-              message_.id_use_descriptor().in_operand_index())) {
-        return false;
-      }
-    }
+  // If the id of interest and the synonym are scalar or vector integer
+  // constants with different signedness, their use can only be swapped if the
+  // instruction is agnostic to the signedness of the operand.
+  if (type_id_of_interest != type_id_synonym &&
+      fuzzerutil::TypesArEqualUpToSign(ir_context, type_id_of_interest,
+                                       type_id_synonym) &&
+      !IsAgnosticToSignednessOfOperand(
+          use_instruction->opcode(),
+          message_.id_use_descriptor().in_operand_index())) {
+    return false;
   }
 
   // Is the use suitable for being replaced in principle?
@@ -209,6 +199,10 @@ bool TransformationReplaceIdWithSynonym::UseCanBeReplacedWithSynonym(
 
   return true;
 }
+
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3582): Add all
+//  opcodes that are agnostic to signedness of operands to function.
+//  This is not exhaustive yet.
 bool TransformationReplaceIdWithSynonym::IsAgnosticToSignednessOfOperand(
     SpvOp opcode, uint32_t use_in_operand_index) {
   switch (opcode) {

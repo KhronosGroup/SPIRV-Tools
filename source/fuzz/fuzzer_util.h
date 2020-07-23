@@ -349,15 +349,16 @@ uint32_t MaybeGetStructType(opt::IRContext* ir_context,
                             const std::vector<uint32_t>& component_type_ids);
 
 // Recursive definition is the following:
-// - if |scalar_or_composite_type_id| is a result id of a scalar type - returns
-//   a result id of the following constants (depending on the type): int -> 0,
-//   float -> 0.0, bool -> false.
+// - if |scalar_or_composite_type_id| is a result id of a scalar type -
+// returns
+//   a result id of the following constants (depending on the type): int ->
+//   0, float -> 0.0, bool -> false.
 // - otherwise, returns a result id of an OpConstantComposite instruction.
 //   Every component of the composite constant is looked up by calling this
 //   function with the type id of that component.
 // Returns 0 if no such instruction is present in the module.
-// The returned id either participates in IdIsIrrelevant fact or not, depending
-// on the |is_irrelevant| parameter.
+// The returned id either participates in IdIsIrrelevant fact or not,
+// depending on the |is_irrelevant| parameter.
 uint32_t MaybeGetZeroConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
@@ -440,6 +441,13 @@ inline uint32_t FloatToWord(float value) {
   memcpy(&result, &value, sizeof(uint32_t));
   return result;
 }
+
+// Returns true if any of the following is true:
+// - |type1_id| and |type2_id| are the same id
+// - |type1_id| and |type2_id| refer to integer scalar or vector types, only
+//   differing by their signedness.
+bool TypesArEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
+                          uint32_t type2_id);
 
 }  // namespace fuzzerutil
 
