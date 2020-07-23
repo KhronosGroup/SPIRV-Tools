@@ -144,11 +144,6 @@ void TransformationCompositeConstruct::Apply(
       ir_context->get_type_mgr()->GetType(message_.composite_type_id());
   uint32_t index = 0;
   for (auto component : message_.component()) {
-    if (transformation_context->GetFactManager()->IdIsIrrelevant(component)) {
-      // Irrelevant ids do not participate in DataSynonym facts.
-      continue;
-    }
-
     auto component_type = ir_context->get_type_mgr()->GetType(
         ir_context->get_def_use_mgr()->GetDef(component)->type_id());
     if (composite_type->AsVector() && component_type->AsVector()) {
@@ -163,17 +158,23 @@ void TransformationCompositeConstruct::Apply(
       for (uint32_t subvector_index = 0;
            subvector_index < component_type->AsVector()->element_count();
            subvector_index++) {
-        transformation_context->GetFactManager()->AddFactDataSynonym(
-            MakeDataDescriptor(component, {subvector_index}),
-            MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
+        if (!transformation_context->GetFactManager()->IdIsIrrelevant(
+                component)) {
+          transformation_context->GetFactManager()->AddFactDataSynonym(
+              MakeDataDescriptor(component, {subvector_index}),
+              MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
+        }
         index++;
       }
     } else {
       // The other cases are simple: the component is made directly synonymous
       // with the element of the composite being constructed.
-      transformation_context->GetFactManager()->AddFactDataSynonym(
-          MakeDataDescriptor(component, {}),
-          MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
+      if (!transformation_context->GetFactManager()->IdIsIrrelevant(
+              component)) {
+        transformation_context->GetFactManager()->AddFactDataSynonym(
+            MakeDataDescriptor(component, {}),
+            MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
+      }
       index++;
     }
   }
