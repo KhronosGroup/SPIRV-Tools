@@ -179,7 +179,7 @@ class FuzzerPass {
   // on the |is_irrelevant| parameter.
   uint32_t FindOrCreateIntegerConstant(const std::vector<uint32_t>& words,
                                        uint32_t width, bool is_signed,
-                                       bool is_irrelevant);
+                                       bool is_irrelevant = false);
 
   // Returns the id of an OpConstant instruction, with a floating-point
   // type of width specified by |width|, with |words| as its value.  If either
