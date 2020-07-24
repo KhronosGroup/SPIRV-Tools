@@ -77,7 +77,7 @@ void FuzzerPassAddDeadBreaks::Apply() {
         // Make sure the module has a required boolean constant to be used in
         // OpBranchConditional instruction.
         auto break_condition = GetFuzzerContext()->ChooseEven();
-        FindOrCreateBoolConstant(break_condition);
+        FindOrCreateBoolConstant(break_condition, false);
 
         auto candidate_transformation = TransformationAddDeadBreak(
             block.id(), merge_block->id(), break_condition, std::move(phi_ids));

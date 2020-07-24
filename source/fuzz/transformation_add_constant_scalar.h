@@ -32,7 +32,7 @@ class TransformationAddConstantScalar : public Transformation {
 
   TransformationAddConstantScalar(uint32_t fresh_id, uint32_t type_id,
                                   const std::vector<uint32_t>& words,
-                                  bool is_irrelevant = false);
+                                  bool is_irrelevant);
 
   // - |message_.fresh_id| must not be used by the module
   // - |message_.type_id| must be the id of a floating-point or integer type

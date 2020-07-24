@@ -68,7 +68,7 @@ void FuzzerPassReplaceCopyObjectsWithStoresLoads::Apply() {
 
     // Find or create a constant to initialize the variable from.
     auto variable_initializer_id =
-        FindOrCreateZeroConstant(instruction->type_id());
+        FindOrCreateZeroConstant(instruction->type_id(), false);
 
     // Make sure that pointer type is defined.
     FindOrCreatePointerType(instruction->type_id(), variable_storage_class);

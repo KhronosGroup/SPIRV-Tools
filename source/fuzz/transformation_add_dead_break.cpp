@@ -113,7 +113,8 @@ bool TransformationAddDeadBreak::IsApplicable(
   // First, we check that a constant with the same value as
   // |message_.break_condition_value| is present.
   if (!fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
-                                        message_.break_condition_value())) {
+                                        message_.break_condition_value(),
+                                        false)) {
     // The required constant is not present, so the transformation cannot be
     // applied.
     return false;
@@ -206,7 +207,7 @@ void TransformationAddDeadBreak::ApplyImpl(
       ir_context, ir_context->cfg()->block(message_.from_block()),
       ir_context->cfg()->block(message_.to_block()),
       fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
-                                       message_.break_condition_value()),
+                                       message_.break_condition_value(), false),
       message_.phi_id());
 }
 

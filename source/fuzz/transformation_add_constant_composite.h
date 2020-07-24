@@ -32,7 +32,7 @@ class TransformationAddConstantComposite : public Transformation {
 
   TransformationAddConstantComposite(
       uint32_t fresh_id, uint32_t type_id,
-      const std::vector<uint32_t>& constituent_ids, bool is_irrelevant = false);
+      const std::vector<uint32_t>& constituent_ids, bool is_irrelevant);
 
   // - |message_.fresh_id| must be a fresh id
   // - |message_.type_id| must be the id of a composite type

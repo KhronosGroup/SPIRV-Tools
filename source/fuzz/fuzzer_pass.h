@@ -179,7 +179,7 @@ class FuzzerPass {
   // on the |is_irrelevant| parameter.
   uint32_t FindOrCreateIntegerConstant(const std::vector<uint32_t>& words,
                                        uint32_t width, bool is_signed,
-                                       bool is_irrelevant = false);
+                                       bool is_irrelevant);
 
   // Returns the id of an OpConstant instruction, with a floating-point
   // type of width specified by |width|, with |words| as its value.  If either
@@ -188,15 +188,14 @@ class FuzzerPass {
   // participates in IdIsIrrelevant fact or not, depending on the
   // |is_irrelevant| parameter.
   uint32_t FindOrCreateFloatConstant(const std::vector<uint32_t>& words,
-                                     uint32_t width,
-                                     bool is_irrelevant = false);
+                                     uint32_t width, bool is_irrelevant);
 
   // Returns the id of an OpConstantTrue or OpConstantFalse instruction,
   // according to |value|.  If either the required instruction or the bool
   // type do not exist, transformations are applied to add them.
   // The returned id either participates in IdIsIrrelevant fact or not,
   // depending on the |is_irrelevant| parameter.
-  uint32_t FindOrCreateBoolConstant(bool value, bool is_irrelevant = false);
+  uint32_t FindOrCreateBoolConstant(bool value, bool is_irrelevant);
 
   // Returns the id of an OpConstant instruction of type with |type_id|
   // that consists of |words|. If that instruction doesn't exist,
@@ -205,7 +204,7 @@ class FuzzerPass {
   // in the module. The returned id either participates in IdIsIrrelevant fact
   // or not, depending on the |is_irrelevant| parameter.
   uint32_t FindOrCreateConstant(const std::vector<uint32_t>& words,
-                                uint32_t type_id, bool is_irrelevant = false);
+                                uint32_t type_id, bool is_irrelevant);
 
   // Returns the id of an OpConstantComposite instruction of type with |type_id|
   // that consists of |component_ids|. If that instruction doesn't exist,
@@ -216,7 +215,7 @@ class FuzzerPass {
   // depending on the |is_irrelevant| parameter.
   uint32_t FindOrCreateCompositeConstant(
       const std::vector<uint32_t>& component_ids, uint32_t type_id,
-      bool is_irrelevant = false);
+      bool is_irrelevant);
 
   // Returns the result id of an instruction of the form:
   //   %id = OpUndef %|type_id|
@@ -273,7 +272,7 @@ class FuzzerPass {
   //   }           |
   // --------------+-------------------------------
   uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id,
-                                    bool is_irrelevant = false);
+                                    bool is_irrelevant);
 
  private:
   opt::IRContext* ir_context_;
