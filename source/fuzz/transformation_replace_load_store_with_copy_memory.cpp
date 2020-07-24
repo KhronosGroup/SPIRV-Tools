@@ -16,6 +16,7 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/opcode.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -71,7 +72,10 @@ bool TransformationReplaceLoadStoreWithCopyMemory::IsApplicable(
     }
     // We need to make sure that the value pointed by source of OpLoad
     // hasn't changed by the time we see matching OpStore instruction.
-    if (IsInterferingInstruction(it, storage_class)) {
+    if (IsMemoryWritingOpCode(it->opcode())) {
+      return false;
+    } else if (IsMemoryBarrierOpCode(it->opcode()) &&
+               !IsStorageClassSafeAcrossMemoryBarriers(storage_class)) {
       return false;
     }
   }
@@ -116,27 +120,44 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
-bool TransformationReplaceLoadStoreWithCopyMemory::IsInterferingInstruction(
-    opt::Instruction* inst, SpvStorageClass storage_class) {
-  if (inst->opcode() == SpvOpCopyMemory || inst->opcode() == SpvOpStore ||
-      inst->opcode() == SpvOpCopyMemorySized || inst->IsAtomicOp()) {
-    return true;
-  } else if (inst->opcode() == SpvOpMemoryBarrier ||
-             inst->opcode() == SpvOpMemoryNamedBarrier) {
-    switch (storage_class) {
-      // These storage classes of the source variable of the OpLoad instruction
-      // don't invalidate it.
-      case SpvStorageClassUniformConstant:
-      case SpvStorageClassInput:
-      case SpvStorageClassUniform:
-      case SpvStorageClassPrivate:
-      case SpvStorageClassFunction:
-        return false;
-      default:
-        return true;
-    }
+bool TransformationReplaceLoadStoreWithCopyMemory::IsMemoryWritingOpCode(
+    SpvOp op_code) {
+  if (spvOpcodeIsAtomicOp(op_code)) {
+    return op_code != SpvOpAtomicLoad;
   }
-  return false;
+  switch (op_code) {
+    case SpvOpStore:
+    case SpvOpCopyMemory:
+    case SpvOpCopyMemorySized:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool TransformationReplaceLoadStoreWithCopyMemory::IsMemoryBarrierOpCode(
+    SpvOp op_code) {
+  switch (op_code) {
+    case SpvOpMemoryBarrier:
+    case SpvOpMemoryNamedBarrier:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool TransformationReplaceLoadStoreWithCopyMemory::
+    IsStorageClassSafeAcrossMemoryBarriers(SpvStorageClass storage_class) {
+  switch (storage_class) {
+    case SpvStorageClassUniformConstant:
+    case SpvStorageClassInput:
+    case SpvStorageClassUniform:
+    case SpvStorageClassPrivate:
+    case SpvStorageClassFunction:
+      return true;
+    default:
+      return false;
+  }
 }
 
 protobufs::Transformation

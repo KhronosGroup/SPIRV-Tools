@@ -46,10 +46,18 @@ class TransformationReplaceLoadStoreWithCopyMemory : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
-  // Checks if the instruction |inst| might change the value of the source
-  // operand that has the |storage_class| in matching OpLoad instruction.
-  static bool IsInterferingInstruction(opt::Instruction* inst,
-                                       SpvStorageClass storage_class);
+  // Checks if the instruction that has an |op_code| might write to
+  // the source operand of the OpLoad instruction.
+  static bool IsMemoryWritingOpCode(SpvOp op_code);
+
+  // Checks if the instruction that has an |op_code| is a memory barrier that
+  // could interfere with the source operand of the OpLoad instruction
+  static bool IsMemoryBarrierOpCode(SpvOp op_code);
+
+  // Checks if the |storage_class| of the source operand of the OpLoad
+  // instruction implies that a memory barrier instruction is safe.
+  static bool IsStorageClassSafeAcrossMemoryBarriers(
+      SpvStorageClass storage_class);
 
   protobufs::Transformation ToMessage() const override;
 

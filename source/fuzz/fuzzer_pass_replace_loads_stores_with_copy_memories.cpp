@@ -35,6 +35,13 @@ FuzzerPassReplaceLoadsStoresWithCopyMemories::
     ~FuzzerPassReplaceLoadsStoresWithCopyMemories() = default;
 
 void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
+  // We look for matching pairs of instructions OpLoad and
+  // OpStore within the same block. Potential instructions OpLoad to be matched
+  // are stored in a hash map. If we encounter instructions that write to memory
+  // or instructions of memory barriers that could operate on variables within
+  // unsafe storage classes we need to erase the hash map to avoid unsafe
+  // operations.
+
   // A vector of matching OpLoad and OpStore instructions.
   std::vector<std::pair<opt::Instruction*, opt::Instruction*>>
       op_load_store_pairs;
@@ -56,36 +63,26 @@ void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
                 current_op_loads[instruction.GetSingleWordOperand(1)],
                 &instruction));
           }
+        }
+        if (TransformationReplaceLoadStoreWithCopyMemory::IsMemoryWritingOpCode(
+                instruction.opcode())) {
           current_op_loads.clear();
-        } else if (instruction.opcode() == SpvOpCopyMemory ||
-                   instruction.opcode() == SpvOpCopyMemorySized ||
-                   instruction.IsAtomicOp()) {
-          // We need to make sure that the value pointed by source of OpLoad
-          // hasn't changed by the time we see matching OpStore instruction.
-          current_op_loads.clear();
-        } else if (instruction.opcode() == SpvOpMemoryBarrier ||
-                   instruction.opcode() == SpvOpMemoryNamedBarrier) {
+        } else if (TransformationReplaceLoadStoreWithCopyMemory::
+                       IsMemoryBarrierOpCode(instruction.opcode())) {
           for (auto it = current_op_loads.begin();
                it != current_op_loads.end();) {
+            // Get the storage class.
             opt::Instruction* source_id =
                 GetIRContext()->get_def_use_mgr()->GetDef(
                     it->second->GetSingleWordOperand(2));
             SpvStorageClass storage_class =
                 fuzzerutil::GetStorageClassFromPointerType(
                     GetIRContext(), source_id->type_id());
-            switch (storage_class) {
-                // These storage classes of the source variable of an potential
-                // OpLoad instruction don't invalidate it.
-              case SpvStorageClassUniformConstant:
-              case SpvStorageClassInput:
-              case SpvStorageClassUniform:
-              case SpvStorageClassPrivate:
-              case SpvStorageClassFunction:
-                it++;
-                break;
-              default:
-                it = current_op_loads.erase(it);
-                break;
+            if (!TransformationReplaceLoadStoreWithCopyMemory::
+                    IsStorageClassSafeAcrossMemoryBarriers(storage_class)) {
+              it = current_op_loads.erase(it);
+            } else {
+              it++;
             }
           }
         }
@@ -103,6 +100,6 @@ void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
           MakeInstructionDescriptor(GetIRContext(), instr_pair.second)));
     }
   }
-}
+}  // namespace fuzz
 }  // namespace fuzz
 }  // namespace spvtools
