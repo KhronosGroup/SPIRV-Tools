@@ -488,7 +488,16 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
       // move on from this loop.
       continue;
     }
-    auto back_edge_block = ir_context->cfg()->block(back_edge_block_id);
+
+    // If the loop's merge block is unreachable, then it is valid to be before
+    // the loop header. In this case, if the back-edge block branch to the merge
+    // block, then the module will not be valid because blocks must appear
+    // before all blocks they dominate. Therefore, the loop header must
+    // dominates its merge block.
+    if (!ir_context->GetDominatorAnalysis(added_function)
+             ->Dominates(loop_header->id(), loop_header->MergeBlockId())) {
+      return false;
+    }
 
     // Go through the sequence of loop limiter infos and find the one
     // corresponding to this loop.
@@ -560,6 +569,7 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
     // %t4 = OpLogicalOr %bool %c %t3
     //       OpBranchConditional %t4 %loop_merge %loop_header
 
+    auto back_edge_block = ir_context->cfg()->block(back_edge_block_id);
     auto back_edge_block_terminator = back_edge_block->terminator();
     bool compare_using_greater_than_equal;
     if (back_edge_block_terminator->opcode() == SpvOpBranch) {
@@ -675,10 +685,6 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
       }
 
       // Add the new edge, by changing OpBranch to OpBranchConditional.
-      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3162): This
-      //  could be a problem if the merge block was originally unreachable: it
-      //  might now be dominated by other blocks that it appears earlier than in
-      //  the module.
       back_edge_block_terminator->SetOpcode(SpvOpBranchConditional);
       back_edge_block_terminator->SetInOperands(opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID, {loop_limiter_info.compare_id()}},
