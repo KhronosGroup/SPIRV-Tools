@@ -40,7 +40,7 @@ void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       // Consider separately every block.
-      std::unordered_map<uint32_t, opt::Instruction*> current_op_loads = {};
+      std::unordered_map<uint32_t, opt::Instruction*> current_op_loads;
       for (auto& instruction : block) {
         // Add an potential OpLoad instruction.
         if (instruction.opcode() == SpvOpLoad) {
