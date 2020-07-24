@@ -17,6 +17,7 @@
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_replace_load_store_with_copy_memory.h"
+#include "source/opt/instruction.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -38,19 +39,15 @@ void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
   std::vector<std::pair<opt::Instruction*, opt::Instruction*>>
       op_load_store_pairs;
 
-  // A hash map storing potential OpLoad instructions.
-  std::unordered_map<uint32_t, opt::Instruction*> current_op_loads;
-
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
-      // Consider separately every block.
-      current_op_loads.clear();
+      // A hash map storing potential OpLoad instructions.
+      std::unordered_map<uint32_t, opt::Instruction*> current_op_loads;
       for (auto& instruction : block) {
         // Add an potential OpLoad instruction.
         if (instruction.opcode() == SpvOpLoad) {
           current_op_loads[instruction.result_id()] = &instruction;
-        }
-        if (instruction.opcode() == SpvOpStore) {
+        } else if (instruction.opcode() == SpvOpStore) {
           if (current_op_loads.find(instruction.GetSingleWordOperand(1)) !=
               current_op_loads.end()) {
             // We have found the matching OpLoad instruction to the current
@@ -59,20 +56,45 @@ void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
                 current_op_loads[instruction.GetSingleWordOperand(1)],
                 &instruction));
           }
-          // We need to clear the hash map. If we don't, there might be some
-          // interfering OpStore instructions. Consider for example:
-          // %a = OpLoad %ptr1
-          // OpStore %ptr2 %a <-- we haven't clear the map
-          // OpStore %ptr3 %a <-- if %ptr2 points to the same variable as
-          //    %ptr1, then replacing this instruction with OpCopyMemory %ptr3
-          //    %ptr1 is unsafe.
           current_op_loads.clear();
+        } else if (instruction.opcode() == SpvOpCopyMemory ||
+                   instruction.opcode() == SpvOpCopyMemorySized ||
+                   instruction.IsAtomicOp()) {
+          // We need to make sure that the value pointed by source of OpLoad
+          // hasn't changed by the time we see matching OpStore instruction.
+          current_op_loads.clear();
+        } else if (instruction.opcode() == SpvOpMemoryBarrier ||
+                   instruction.opcode() == SpvOpMemoryNamedBarrier) {
+          for (auto it = current_op_loads.begin();
+               it != current_op_loads.end();) {
+            opt::Instruction* source_id =
+                GetIRContext()->get_def_use_mgr()->GetDef(
+                    it->second->GetSingleWordOperand(2));
+            SpvStorageClass storage_class =
+                fuzzerutil::GetStorageClassFromPointerType(
+                    GetIRContext(), source_id->type_id());
+            switch (storage_class) {
+                // These storage classes of the source variable of an potential
+                // OpLoad instruction don't invalidate it.
+              case SpvStorageClassUniformConstant:
+              case SpvStorageClassInput:
+              case SpvStorageClassUniform:
+              case SpvStorageClassPrivate:
+              case SpvStorageClassFunction:
+                it++;
+                break;
+              default:
+                it = current_op_loads.erase(it);
+                break;
+            }
+          }
         }
       }
     }
   }
   for (auto instr_pair : op_load_store_pairs) {
-    // Randomly decide to apply the transformation for the potential pairs.
+    // Randomly decide to apply the transformation for the
+    // potential pairs.
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()
                 ->GetChanceOfReplacingLoadStoreWithCopyMemory())) {

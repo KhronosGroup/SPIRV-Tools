@@ -51,8 +51,31 @@ bool TransformationReplaceLoadStoreWithCopyMemory::IsApplicable(
   }
 
   // Intermediate values of the OpLoad and the OpStore must match.
-  return load_instruction->result_id() ==
-         store_instruction->GetSingleWordOperand(1);
+  if (load_instruction->result_id() !=
+      store_instruction->GetSingleWordOperand(1)) {
+    return false;
+  }
+
+  // Get storage class of the variable pointed by the source operand in OpLoad
+  opt::Instruction* source_id = ir_context->get_def_use_mgr()->GetDef(
+      load_instruction->GetSingleWordOperand(2));
+  SpvStorageClass storage_class = fuzzerutil::GetStorageClassFromPointerType(
+      ir_context, source_id->type_id());
+  // Iterate over all instructions between |load_instruction| and
+  // |store_instruction|.
+  for (auto it = load_instruction; it != store_instruction;
+       it = it->NextNode()) {
+    //|load_instruction| and |store_instruction| are not in the same block.
+    if (it == nullptr) {
+      return false;
+    }
+    // We need to make sure that the value pointed by source of OpLoad
+    // hasn't changed by the time we see matching OpStore instruction.
+    if (IsInterferingInstruction(it, storage_class)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void TransformationReplaceLoadStoreWithCopyMemory::Apply(
@@ -72,47 +95,12 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
              store_instruction->GetSingleWordOperand(1) &&
          "OpLoad and OpStore must refer to the same value.");
 
-  // Coherence check: Both operands must be pointers.
-
-  // Get types of ids used as the source of OpLoad and the target of OpStore.
+  // Get the ids of the source operand of the OpLoad and the target operand of
+  // the OpStore.
   auto source = ir_context->get_def_use_mgr()->GetDef(
       load_instruction->GetSingleWordOperand(2));
   auto target = ir_context->get_def_use_mgr()->GetDef(
       store_instruction->GetSingleWordInOperand(0));
-  auto source_type_opcode =
-      ir_context->get_def_use_mgr()->GetDef(source->type_id())->opcode();
-  auto target_type_opcode =
-      ir_context->get_def_use_mgr()->GetDef(target->type_id())->opcode();
-
-  // Keep release-mode compilers happy. (No unused variables.)
-  (void)target;
-  (void)source;
-  (void)target_type_opcode;
-  (void)source_type_opcode;
-
-  assert(target_type_opcode == SpvOpTypePointer &&
-         source_type_opcode == SpvOpTypePointer &&
-         "The target of OpStore and the source of OpLoad must be of type "
-         "OpTypePointer");
-
-  // Coherence check: |source| and |target| must point to the same type.
-  uint32_t target_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
-      ir_context, target->type_id());
-  uint32_t source_pointee_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
-      ir_context, source->type_id());
-
-  (void)target_pointee_type;
-  (void)source_pointee_type;
-
-  assert(target_pointee_type == source_pointee_type &&
-         "The target of OpStore and the source of OpLoad must point to the "
-         "same type.");
-
-  // Coherence check: The first operand of the OpLoad must match the type to
-  // which the source of OpLoad points to.
-  assert(load_instruction->GetSingleWordOperand(0) == source_pointee_type &&
-         "First operand of the OpLoad must match the type to which the source "
-         "of OpLoad points to.");
 
   // Insert the OpCopyMemory instruction before the OpStore instruction.
   FindInstruction(message_.store_instruction_descriptor(), ir_context)
@@ -126,6 +114,29 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
   ir_context->KillInst(store_instruction);
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+}
+
+bool TransformationReplaceLoadStoreWithCopyMemory::IsInterferingInstruction(
+    opt::Instruction* inst, SpvStorageClass storage_class) {
+  if (inst->opcode() == SpvOpCopyMemory || inst->opcode() == SpvOpStore ||
+      inst->opcode() == SpvOpCopyMemorySized || inst->IsAtomicOp()) {
+    return true;
+  } else if (inst->opcode() == SpvOpMemoryBarrier ||
+             inst->opcode() == SpvOpMemoryNamedBarrier) {
+    switch (storage_class) {
+      // These storage classes of the source variable of the OpLoad instruction
+      // don't invalidate it.
+      case SpvStorageClassUniformConstant:
+      case SpvStorageClassInput:
+      case SpvStorageClassUniform:
+      case SpvStorageClassPrivate:
+      case SpvStorageClassFunction:
+        return false;
+      default:
+        return true;
+    }
+  }
+  return false;
 }
 
 protobufs::Transformation

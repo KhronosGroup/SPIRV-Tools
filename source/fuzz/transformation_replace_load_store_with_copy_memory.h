@@ -46,6 +46,11 @@ class TransformationReplaceLoadStoreWithCopyMemory : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  // Checks if the instruction |inst| might change the value of the source
+  // operand that has the |storage_class| in matching OpLoad instruction.
+  static bool IsInterferingInstruction(opt::Instruction* inst,
+                                       SpvStorageClass storage_class);
+
   protobufs::Transformation ToMessage() const override;
 
  private:
