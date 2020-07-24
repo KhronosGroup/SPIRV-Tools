@@ -42,6 +42,7 @@ bool TransformationReplaceLoadStoreWithCopyMemory::IsApplicable(
   if (!load_instruction || load_instruction->opcode() != SpvOpLoad) {
     return false;
   }
+
   // The OpStore instruction must be defined.
   auto store_instruction =
       FindInstruction(message_.store_instruction_descriptor(), ir_context);
@@ -73,7 +74,7 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
 
   // Coherence check: Both operands must be pointers.
 
-  // Get types of ids used as the source of OpLoad and the target of OpStore
+  // Get types of ids used as the source of OpLoad and the target of OpStore.
   auto source = ir_context->get_def_use_mgr()->GetDef(
       load_instruction->GetSingleWordOperand(2));
   auto target = ir_context->get_def_use_mgr()->GetDef(
@@ -107,13 +108,13 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
          "The target of OpStore and the source of OpLoad must point to the "
          "same type.");
 
-  // Coherence check: First operand of the OpLoad must match the type to which
-  // the source of OpLoad points to.
-
+  // Coherence check: The first operand of the OpLoad must match the type to
+  // which the source of OpLoad points to.
   assert(load_instruction->GetSingleWordOperand(0) == source_pointee_type &&
          "First operand of the OpLoad must match the type to which the source "
          "of OpLoad points to.");
-  // First, insert the OpCopyMemory instruction before the OpStore instruction
+
+  // Insert the OpCopyMemory instruction before the OpStore instruction.
   FindInstruction(message_.store_instruction_descriptor(), ir_context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, SpvOpCopyMemory, 0, 0,
@@ -121,7 +122,7 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
               {{SPV_OPERAND_TYPE_ID, {target->result_id()}},
                {SPV_OPERAND_TYPE_ID, {source->result_id()}}})));
 
-  // Remove the OpCopyMemory instruction.
+  // Remove the OpStore instruction.
   ir_context->KillInst(store_instruction);
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
