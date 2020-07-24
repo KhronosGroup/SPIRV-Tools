@@ -68,7 +68,7 @@ void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
     }
   }
   for (auto instr_pair : op_load_store_pairs) {
-    // Randomly decide to apply the transformation for the potaential pairs.
+    // Randomly decide to apply the transformation for the potential pairs.
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()
                 ->GetChanceOfReplacingLoadStoreWithCopyMemory())) {

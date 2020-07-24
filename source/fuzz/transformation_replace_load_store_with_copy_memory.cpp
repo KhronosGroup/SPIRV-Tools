@@ -110,8 +110,7 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
   // Coherence check: First operand of the OpLoad must match the type to which
   // the source of OpLoad points to.
 
-  auto load_type_operand = load_instruction->GetSingleWordOperand(0);
-  assert(load_type_operand == source_pointee_type &&
+  assert(load_instruction->GetSingleWordOperand(0) == source_pointee_type &&
          "First operand of the OpLoad must match the type to which the source "
          "of OpLoad points to.");
   // First, insert the OpCopyMemory instruction before the OpStore instruction
