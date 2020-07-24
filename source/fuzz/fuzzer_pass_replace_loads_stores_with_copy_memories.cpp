@@ -34,13 +34,17 @@ FuzzerPassReplaceLoadsStoresWithCopyMemories::
     ~FuzzerPassReplaceLoadsStoresWithCopyMemories() = default;
 
 void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
-  // This is a vector of matching OpLoad and OpStore instructions.
+  // A vector of matching OpLoad and OpStore instructions.
   std::vector<std::pair<opt::Instruction*, opt::Instruction*>>
       op_load_store_pairs;
+
+  // A hash map storing potential OpLoad instructions.
+  std::unordered_map<uint32_t, opt::Instruction*> current_op_loads;
+
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       // Consider separately every block.
-      std::unordered_map<uint32_t, opt::Instruction*> current_op_loads;
+      current_op_loads.clear();
       for (auto& instruction : block) {
         // Add an potential OpLoad instruction.
         if (instruction.opcode() == SpvOpLoad) {
