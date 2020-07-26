@@ -210,7 +210,7 @@ else()
 endif()
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  if(WIN32)
+  if(MSVC)
     macro(spvtools_config_package_dir TARGET PATH)
       set(${PATH} ${TARGET}/cmake)
     endmacro()
