@@ -51,7 +51,7 @@ void FuzzerPassReplaceLoadsStoresWithCopyMemories::Apply() {
       // A hash map storing potential OpLoad instructions.
       std::unordered_map<uint32_t, opt::Instruction*> current_op_loads;
       for (auto& instruction : block) {
-        // Add an potential OpLoad instruction.
+        // Add a potential OpLoad instruction.
         if (instruction.opcode() == SpvOpLoad) {
           current_op_loads[instruction.result_id()] = &instruction;
         } else if (instruction.opcode() == SpvOpStore) {

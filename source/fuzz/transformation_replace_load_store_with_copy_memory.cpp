@@ -21,6 +21,12 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+const uint32_t kOpStoreOperandIndexTargetVariable = 0;
+const uint32_t kOpStoreOperandIndexIntermediateIdToWrite = 1;
+const uint32_t kOpLoadOperandIndexSourceVariable = 2;
+}  // namespace
+
 TransformationReplaceLoadStoreWithCopyMemory::
     TransformationReplaceLoadStoreWithCopyMemory(
         const spvtools::fuzz::protobufs::
@@ -37,31 +43,44 @@ TransformationReplaceLoadStoreWithCopyMemory::
 }
 bool TransformationReplaceLoadStoreWithCopyMemory::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+  // This transformation is only applicable to the pair of OpLoad and OpStore
+  // instructions.
+  if (message_.load_instruction_descriptor().target_instruction_opcode() !=
+      SpvOpLoad) {
+    return false;
+  }
+  if (message_.store_instruction_descriptor().target_instruction_opcode() !=
+      SpvOpStore) {
+    return false;
+  }
+
   // The OpLoad instruction must be defined.
   auto load_instruction =
       FindInstruction(message_.load_instruction_descriptor(), ir_context);
-  if (!load_instruction || load_instruction->opcode() != SpvOpLoad) {
+  if (!load_instruction) {
     return false;
   }
 
   // The OpStore instruction must be defined.
   auto store_instruction =
       FindInstruction(message_.store_instruction_descriptor(), ir_context);
-  if (!store_instruction || store_instruction->opcode() != SpvOpStore) {
+  if (!store_instruction) {
     return false;
   }
 
   // Intermediate values of the OpLoad and the OpStore must match.
   if (load_instruction->result_id() !=
-      store_instruction->GetSingleWordOperand(1)) {
+      store_instruction->GetSingleWordOperand(
+          kOpStoreOperandIndexIntermediateIdToWrite)) {
     return false;
   }
 
-  // Get storage class of the variable pointed by the source operand in OpLoad
+  // Get storage class of the variable pointed by the source operand in OpLoad.
   opt::Instruction* source_id = ir_context->get_def_use_mgr()->GetDef(
       load_instruction->GetSingleWordOperand(2));
   SpvStorageClass storage_class = fuzzerutil::GetStorageClassFromPointerType(
       ir_context, source_id->type_id());
+
   // Iterate over all instructions between |load_instruction| and
   // |store_instruction|.
   for (auto it = load_instruction; it != store_instruction;
@@ -70,8 +89,10 @@ bool TransformationReplaceLoadStoreWithCopyMemory::IsApplicable(
     if (it == nullptr) {
       return false;
     }
-    // We need to make sure that the value pointed by source of OpLoad
-    // hasn't changed by the time we see matching OpStore instruction.
+
+    // We need to make sure that the value pointed to by the source of the
+    // OpLoad hasn't changed by the time we see the matching OpStore
+    // instruction.
     if (IsMemoryWritingOpCode(it->opcode())) {
       return false;
     } else if (IsMemoryBarrierOpCode(it->opcode()) &&
@@ -96,23 +117,23 @@ void TransformationReplaceLoadStoreWithCopyMemory::Apply(
 
   // Intermediate values of the OpLoad and the OpStore must match.
   assert(load_instruction->result_id() ==
-             store_instruction->GetSingleWordOperand(1) &&
+             store_instruction->GetSingleWordOperand(
+                 kOpStoreOperandIndexIntermediateIdToWrite) &&
          "OpLoad and OpStore must refer to the same value.");
 
   // Get the ids of the source operand of the OpLoad and the target operand of
   // the OpStore.
-  auto source = ir_context->get_def_use_mgr()->GetDef(
-      load_instruction->GetSingleWordOperand(2));
-  auto target = ir_context->get_def_use_mgr()->GetDef(
-      store_instruction->GetSingleWordInOperand(0));
+  uint32_t source_variable_id =
+      load_instruction->GetSingleWordOperand(kOpLoadOperandIndexSourceVariable);
+  uint32_t target_variable_id = store_instruction->GetSingleWordOperand(
+      kOpStoreOperandIndexTargetVariable);
 
   // Insert the OpCopyMemory instruction before the OpStore instruction.
-  FindInstruction(message_.store_instruction_descriptor(), ir_context)
-      ->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpCopyMemory, 0, 0,
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_ID, {target->result_id()}},
-               {SPV_OPERAND_TYPE_ID, {source->result_id()}}})));
+  store_instruction->InsertBefore(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpCopyMemory, 0, 0,
+      opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_ID, {target_variable_id}},
+           {SPV_OPERAND_TYPE_ID, {source_variable_id}}})));
 
   // Remove the OpStore instruction.
   ir_context->KillInst(store_instruction);

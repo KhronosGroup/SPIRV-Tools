@@ -20,9 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
-// Takes a pair of instruction descriptors to OpLoad and OpStore that have
-// the same intermediate value and replaces the OpStore with an equivalent
-// OpCopyMemory.
+// A fuzzer pass that takes pairs of instruction descriptors to OpLoad and
+// OpStore that have the same intermediate value and in each pair replaces the
+// OpStore with an equivalent OpCopyMemory.
 class FuzzerPassReplaceLoadsStoresWithCopyMemories : public FuzzerPass {
  public:
   FuzzerPassReplaceLoadsStoresWithCopyMemories(

@@ -32,10 +32,14 @@ class TransformationReplaceLoadStoreWithCopyMemory : public Transformation {
       const protobufs::InstructionDescriptor& load_instruction_descriptor,
       const protobufs::InstructionDescriptor& store_instruction_descriptor);
 
-  // - |message_.load_instruction_descriptor| must refer to an OpLoad
-  // instruction.
-  // - |message_.store_instruction_descriptor| must refer to an OpStore
-  // instruction.
+  // - |message_.load_instruction_descriptor| must identify an OpLoad
+  //   instruction.
+  // - |message_.store_instruction_descriptor| must identify an OpStore
+  //   instruction.
+  // - The OpStore must write the intermediate value loaded by the OpLoad.
+  // - The OpLoad and the OpStore must not have certain instruction in between
+  //   (checked by IsMemoryWritingOpCode(), IsMemoryBarrierOpCode(),
+  //   IsStorageClassSafeAcrossMemoryBarriers()).
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -55,7 +59,8 @@ class TransformationReplaceLoadStoreWithCopyMemory : public Transformation {
   static bool IsMemoryBarrierOpCode(SpvOp op_code);
 
   // Checks if the |storage_class| of the source operand of the OpLoad
-  // instruction implies that a memory barrier instruction is safe.
+  // instruction implies that this variable cannot change (due to other threads)
+  // across memory barriers.
   static bool IsStorageClassSafeAcrossMemoryBarriers(
       SpvStorageClass storage_class);
 
