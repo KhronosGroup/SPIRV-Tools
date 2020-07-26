@@ -1333,6 +1333,7 @@ message TransformationReplaceLinearAlgebraInstruction {
   // A descriptor for a linear algebra instruction.
   // This transformation is only applicable if the described instruction has one of the following opcodes.
   // Supported:
+  //   OpTranspose
   //   OpVectorTimesScalar
   //   OpMatrixTimesScalar
   //   OpVectorTimesMatrix
@@ -1343,7 +1344,6 @@ message TransformationReplaceLinearAlgebraInstruction {
   // Right now we only support certain operations. When this issue is addressed
   // the supporting comments can be removed.
   // To be supported in the future:
-  //   OpTranspose
   //   OpOuterProduct
   InstructionDescriptor instruction_descriptor = 2;
 

@@ -52,6 +52,10 @@ class TransformationReplaceLinearAlgebraInstruction : public Transformation {
  private:
   protobufs::TransformationReplaceLinearAlgebraInstruction message_;
 
+  // Replaces an OpTranspose instruction.
+  void ReplaceOpTranspose(opt::IRContext* ir_context,
+                          opt::Instruction* instruction) const;
+
   // Replaces an OpVectorTimesScalar instruction.
   void ReplaceOpVectorTimesScalar(opt::IRContext* ir_context,
                                   opt::Instruction* instruction) const;
