@@ -410,6 +410,7 @@ message Transformation {
     TransformationAddLoopPreheader add_loop_preheader = 63;
     TransformationMoveInstructionDown move_instruction_down = 64;
     TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
+    TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
     // Add additional option using the next available number.
   }
 }
@@ -1282,6 +1283,20 @@ message TransformationRecordSynonymousConstants {
 
   // The id of the synonym
   uint32 constant2_id = 2;
+
+}
+
+message TransformationReplaceAddSubMulWithCarryingExtended {
+   // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow,
+   // OpUMul with OpUMulExtended and OpSMul with OpSMulExtended into
+   // a |fresh_id| and stores the first element of the result into
+   // the original |result_id|.
+
+   //The fresh id.
+   uint32 fresh_id = 1;
+
+   //The result id of the original instruction
+   uint32 result_id = 2;
 
 }
 
