@@ -265,7 +265,6 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_NONE:
       return "NONE";
     default:
-      assert(0 && "Unhandled operand type!");
       break;
   }
   return "unknown";
