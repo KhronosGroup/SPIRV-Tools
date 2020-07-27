@@ -489,11 +489,15 @@ bool TransformationAddFunction::TryToAddLoopLimiters(
       continue;
     }
 
-    // If the loop's merge block is unreachable, then it is valid to be before
-    // the loop header. In this case, if the back-edge block branch to the merge
-    // block, then the module will not be valid because blocks must appear
-    // before all blocks they dominate. Therefore, the loop header must
-    // dominates its merge block.
+    // If the loop's merge block is unreachable, then there are no constraints
+    // on where the merge block appears in relation to the blocks of the loop.
+    // This means we need to be careful when adding a branch from the back-edge
+    // block to the merge block: the branch might make the loop merge reachable,
+    // and it might then be dominated by the loop header and possibly by other
+    // blocks in the loop. Since a block needs to appear before those blocks it
+    // strictly dominates, this could make the module invalid. To avoid this
+    // problem we bail out in the case where the loop header does not dominate
+    // the loop merge.
     if (!ir_context->GetDominatorAnalysis(added_function)
              ->Dominates(loop_header->id(), loop_header->MergeBlockId())) {
       return false;

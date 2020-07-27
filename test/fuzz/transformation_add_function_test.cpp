@@ -2337,6 +2337,8 @@ TEST(TransformationAddFunctionTest, InfiniteLoop) {
   loop_limiter_info.set_logical_op_id(105);
   TransformationAddFunction add_livesafe_function(instructions, 100, 32,
                                                   {loop_limiter_info}, 0, {});
+
+  // To make sure the loop's merge block is reachable, it must be dominated by the loop header.
   ASSERT_FALSE(add_livesafe_function.IsApplicable(context.get(),
                                                   transformation_context));
 }
