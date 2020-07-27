@@ -35,25 +35,23 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
           %7 = OpConstantFalse %6
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-               OpBranch %8
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %9
           %8 = OpLabel
-               OpLoopMerge %10 %9 None
-               OpBranch %9
+               OpBranch %10
           %9 = OpLabel
-               OpBranchConditional %7 %8 %10
+               OpBranch %10
          %10 = OpLabel
-               OpSelectionMerge %13 None
-               OpBranchConditional %7 %11 %12
+               OpLoopMerge %12 %11 None
+               OpBranch %11
          %11 = OpLabel
-               OpBranch %13
+               OpBranchConditional %7 %10 %12
          %12 = OpLabel
+               OpLoopMerge %14 %13 None
                OpBranch %13
          %13 = OpLabel
-               OpLoopMerge %15 %14 None
-               OpBranch %14
+               OpBranchConditional %7 %14 %12
          %14 = OpLabel
-               OpBranchConditional %7 %13 %15
-         %15 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -70,18 +68,65 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %9 is not a loop header
-  ASSERT_FALSE(TransformationAddLoopPreheader(9, 13, {}).IsApplicable(
+  ASSERT_FALSE(TransformationAddLoopPreheader(9, 15, {}).IsApplicable(
       context.get(), transformation_context));
 
-  // The id %10 is not fresh
-  ASSERT_FALSE(TransformationAddLoopPreheader(8, 10, {}).IsApplicable(
-      context.get(), transformation_context));
+  // The id %12 is not fresh
+  ASSERT_FALSE(TransformationAddLoopPreheader(10, 12, {})
+                   .IsApplicable(context.get(), transformation_context));
 
-  ASSERT_TRUE(TransformationAddLoopPreheader(8, 20, {}).IsApplicable(
-      context.get(), transformation_context));
+  auto transformation1 = TransformationAddLoopPreheader(10, 20, {});
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
 
-  ASSERT_TRUE(TransformationAddLoopPreheader(13, 21, {})
-                  .IsApplicable(context.get(), transformation_context));
+  auto transformation2 = TransformationAddLoopPreheader(12, 21, {});
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantFalse %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %20 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+               OpBranch %20
+          %9 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %21 %11 None
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %10 %21
+         %21 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %14 %13 None
+               OpBranch %13
+         %13 = OpLabel
+               OpBranchConditional %7 %14 %12
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationAddLoopPreheaderTest, OpPhi) {

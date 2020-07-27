@@ -78,8 +78,66 @@ bool TransformationAddLoopPreheader::IsApplicable(
 }
 
 void TransformationAddLoopPreheader::Apply(
-    opt::IRContext* /* ir_context */,
-    TransformationContext* /* transformation_context */) const {}
+    opt::IRContext* ir_context,
+    TransformationContext* /* transformation_context */) const {
+  // Find the loop header.
+  opt::BasicBlock* loop_header =
+      fuzzerutil::MaybeFindBlock(ir_context, message_.loop_header_block());
+
+  auto dominator_analysis =
+      ir_context->GetDominatorAnalysis(loop_header->GetParent());
+
+  uint32_t back_edge_block_id = 0;
+
+  // Update the branching instructions of the out-of-loop predecessors of the
+  // header.
+  ir_context->get_def_use_mgr()->ForEachUse(
+      loop_header->id(),
+      [&dominator_analysis, &loop_header, &ir_context, &back_edge_block_id,
+       this](opt::Instruction* use_inst, uint32_t use_index) {
+
+        if (dominator_analysis->Dominates(loop_header->GetLabelInst(),
+                                          use_inst)) {
+          // If |use_inst| is a branch instruction dominated by the header, the
+          // block containing it is the back-edge block.
+          if (use_inst->IsBranch()) {
+            back_edge_block_id = ir_context->get_instr_block(use_inst)->id();
+          }
+          // References to the header inside the loop should not be updated
+          return;
+        }
+
+        // If |use_inst| is not a branch or merge instruction, it should not be
+        // changed.
+        if (!use_inst->IsBranch() &&
+            use_inst->opcode() != SpvOpSelectionMerge &&
+            use_inst->opcode() != SpvOpLoopMerge) {
+          return;
+        }
+
+        // Update the reference.
+        use_inst->SetOperand(use_index, {message_.fresh_id()});
+      });
+
+  // Make a new block for the preheader.
+  std::unique_ptr<opt::BasicBlock> preheader = MakeUnique<opt::BasicBlock>(
+      std::unique_ptr<opt::Instruction>(new opt::Instruction(
+          ir_context, SpvOpLabel, 0, message_.fresh_id(), {})));
+
+  // Update id bound.
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
+
+  preheader->AddInstruction(std::unique_ptr<opt::Instruction>(
+      new opt::Instruction(ir_context, SpvOpBranch, 0, 0,
+                           std::initializer_list<opt::Operand>{opt::Operand(
+                               spv_operand_type_t::SPV_OPERAND_TYPE_RESULT_ID,
+                               {loop_header->id()})})));
+  loop_header->GetParent()->InsertBasicBlockBefore(std::move(preheader),
+                                                   loop_header);
+
+  // Invalidate analyses because the structure of the program changed.
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+}
 
 protobufs::Transformation TransformationAddLoopPreheader::ToMessage() const {
   protobufs::Transformation result;
