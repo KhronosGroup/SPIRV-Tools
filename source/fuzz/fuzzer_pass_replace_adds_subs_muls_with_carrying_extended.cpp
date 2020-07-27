@@ -14,6 +14,7 @@
 
 #include "source/fuzz/fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.h"
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_replace_add_sub_mul_with_carrying_extended.h"
 
 namespace spvtools {
@@ -38,34 +39,54 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
                 ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
       return;
     }
-    /*
-     * std::vector<uint32_t> component_type_ids;
-uint32_t component_1_type_id =
-ir_context->get_def_use_mgr()
-    ->GetDef(instruction->GetSingleWordOperand(2))
-    ->type_id();
-component_type_ids.push_back(component_1_type_id);
-uint32_t component_2_type_id =
-ir_context->get_def_use_mgr()
-    ->GetDef(instruction->GetSingleWordOperand(3))
-    ->type_id();
-component_type_ids.push_back(component_2_type_id);
+    auto instruction_opcode = instruction->opcode();
+    if (instruction_opcode != SpvOpIAdd && instruction_opcode != SpvOpISub &&
+        instruction_opcode != SpvOpIMul) {
+      return;
+    }
 
-fuzzerutil::UpdateModuleIdBound(ir_context, message_.struct_fresh_id());
+    uint32_t operand_1_type_id =
+        GetIRContext()
+            ->get_def_use_mgr()
+            ->GetDef(instruction->GetSingleWordOperand(2))
+            ->type_id();
 
-uint32_t struct_type_id =
-fuzzerutil::MaybeGetStructType(ir_context, component_type_ids);
-if (struct_type_id == 0) {
-fuzzerutil::AddStructType(ir_context, message_.struct_type_fresh_id(),
-                        component_type_ids);
-struct_type_id = message_.struct_type_fresh_id();
-}
-     *
-     */
-          }
+    uint32_t operand_2_type_id =
+        GetIRContext()
+            ->get_def_use_mgr()
+            ->GetDef(instruction->GetSingleWordOperand(3))
+            ->type_id();
+
+    uint32_t operand_1_signedness = GetIRContext()
+                                        ->get_def_use_mgr()
+                                        ->GetDef(operand_1_type_id)
+                                        ->GetSingleWordOperand(2);
+    uint32_t operand_2_signedness = GetIRContext()
+                                        ->get_def_use_mgr()
+                                        ->GetDef(operand_2_type_id)
+                                        ->GetSingleWordOperand(2);
+    switch (instruction_opcode) {
+      case SpvOpIAdd:
+      case SpvOpISub:
+        if (operand_1_signedness != 0 || operand_2_signedness != 0) return;
+        break;
+      default:
+        break;
+    }
+    std::vector<uint32_t> operand_type_ids;
+    operand_type_ids.push_back(operand_1_type_id);
+    operand_type_ids.push_back(operand_2_type_id);
+    uint32_t struct_type_id =
+        fuzzerutil::MaybeGetStructType(GetIRContext(), operand_type_ids);
+    if (struct_type_id == 0) {
+      struct_type_id = GetFuzzerContext()->GetFreshId();
+      fuzzerutil::AddStructType(GetIRContext(), struct_type_id,
+                                operand_type_ids);
+    }
+    ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
+        GetFuzzerContext()->GetFreshId(), struct_type_id,
+        instruction->result_id()));
+  });
 }
 }  // namespace fuzz
 }  // namespace spvtools
-}
-}  // namespace fuzz
-}  // namespace fuzz

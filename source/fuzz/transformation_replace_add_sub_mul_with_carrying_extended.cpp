@@ -50,26 +50,26 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
       instruction_opcode != SpvOpIMul)
     return false;
 
-  uint32_t component_1_type_id =
+  uint32_t operand_1_type_id =
       ir_context->get_def_use_mgr()
           ->GetDef(instruction->GetSingleWordOperand(2))
           ->type_id();
 
-  uint32_t component_2_type_id =
+  uint32_t operand_2_type_id =
       ir_context->get_def_use_mgr()
           ->GetDef(instruction->GetSingleWordOperand(3))
           ->type_id();
 
-  uint32_t component_1_signedness = ir_context->get_def_use_mgr()
-                                        ->GetDef(component_1_type_id)
-                                        ->GetSingleWordOperand(2);
-  uint32_t component_2_signedness = ir_context->get_def_use_mgr()
-                                        ->GetDef(component_2_type_id)
-                                        ->GetSingleWordOperand(2);
+  uint32_t operand_1_signedness = ir_context->get_def_use_mgr()
+                                      ->GetDef(operand_1_type_id)
+                                      ->GetSingleWordOperand(2);
+  uint32_t operand_2_signedness = ir_context->get_def_use_mgr()
+                                      ->GetDef(operand_2_type_id)
+                                      ->GetSingleWordOperand(2);
   switch (instruction_opcode) {
     case SpvOpIAdd:
     case SpvOpISub:
-      return component_1_signedness == 0 && component_2_signedness == 0;
+      return operand_1_signedness == 0 && operand_2_signedness == 0;
     default:
       return true;
   }
@@ -130,7 +130,7 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
           message_.result_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.struct_fresh_id()}},
-               {SPV_OPERAND_TYPE_ID, {0}}})));
+               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}})));
   switch (original_instruction_opcode) {
     case SpvOpIAdd:
       // Insert the OpIAddCarry before the OpCompositeExtract.
@@ -178,6 +178,7 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
                      {SPV_OPERAND_TYPE_ID,
                       {original_instruction->GetSingleWordOperand(3)}}})));
       }
+      break;
     default:
       break;
   }

@@ -13,6 +13,10 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_replace_add_sub_mul_with_carrying_extended.h"
+
+#include <source/fuzz/fuzzer_util.h>
+
+#include "source/fuzz/fuzzer_pass.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -23,47 +27,72 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   // This is a simple transformation and this test handles the main cases.
 
   std::string shader = R"(
-               OpCapability Shader
+                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %7 "int2"
-               OpMemberName %7 0 "a"
-               OpMemberName %7 1 "b"
-               OpName %9 "test"
-               OpName %14 "a"
-               OpName %15 "b"
-               OpName %16 "c"
+               OpName %8 "i1"
+               OpName %10 "i2"
+               OpName %12 "i3"
+               OpName %21 "u1"
+               OpName %23 "u2"
+               OpName %25 "u3"
+               OpName %38 "uint2"
+               OpMemberName %38 0 "a"
+               OpMemberName %38 1 "b"
+               OpName %40 "result_uint"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 0
-          %7 = OpTypeStruct %6 %6
-          %8 = OpTypePointer Function %7
-         %10 = OpConstant %6 2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
          %11 = OpConstant %6 3
-         %12 = OpConstantComposite %7 %10 %11
-         %13 = OpTypePointer Function %6
-         %17 = OpTypeInt 32 1
-         %18 = OpConstant %17 0
+         %19 = OpTypeInt 32 0
+         %20 = OpTypePointer Function %19
+         %22 = OpConstant %19 0
+         %24 = OpConstant %19 1
+         %38 = OpTypeStruct %19 %19
+         %39 = OpTypePointer Private %38
+         %40 = OpVariable %39 Private
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %9 = OpVariable %8 Function
-         %14 = OpVariable %13 Function
-         %15 = OpVariable %13 Function
-         %16 = OpVariable %13 Function
-               OpStore %9 %12
-               OpStore %14 %10
-               OpStore %15 %11
-         %19 = OpAccessChain %13 %9 %18
-         %20 = OpLoad %6 %19
-               OpStore %16 %20
-         %21 = OpLoad %6 %14
-         %22 = OpLoad %6 %15
-         %23 = OpIAdd %6 %21 %22
-               OpStore %16 %23
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %12 = OpVariable %7 Function
+         %21 = OpVariable %20 Function
+         %23 = OpVariable %20 Function
+         %25 = OpVariable %20 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %13 = OpLoad %6 %10
+         %14 = OpLoad %6 %8
+         %15 = OpSDiv %6 %13 %14
+               OpStore %12 %15
+         %16 = OpLoad %6 %10
+         %17 = OpLoad %6 %8
+         %18 = OpIAdd %6 %16 %17
+               OpStore %12 %18
+               OpStore %21 %22
+               OpStore %23 %24
+         %26 = OpLoad %19 %21
+         %27 = OpLoad %19 %23
+         %28 = OpIAdd %19 %26 %27
+               OpStore %25 %28
+         %29 = OpLoad %19 %21
+         %30 = OpLoad %19 %23
+         %31 = OpISub %19 %29 %30
+               OpStore %25 %31
+         %32 = OpLoad %19 %21
+         %33 = OpLoad %19 %23
+         %34 = OpIMul %19 %32 %33
+               OpStore %25 %34
+         %35 = OpLoad %6 %10
+         %36 = OpLoad %6 %8
+         %37 = OpIMul %6 %35 %36
+               OpStore %12 %37
                OpReturn
                OpFunctionEnd
     )";
@@ -76,21 +105,139 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
-  auto transformation_valid_1 =
-      TransformationReplaceAddSubMulWithCarryingExtended(30, 7, 23);
 
-  ASSERT_TRUE(transformation_valid_1.IsApplicable(context.get(),
-                                                  transformation_context));
-  transformation_valid_1.Apply(context.get(), &transformation_context);
+  // Bad: |struct_fresh_id| must be fresh.
+  auto transformation_bad_1 =
+      TransformationReplaceAddSubMulWithCarryingExtended(34, 38, 28);
+
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The transformation cannot be applied to a OpSDiv.
+  auto transformation_bad_2 =
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 15);
+
+  ASSERT_FALSE(
+      transformation_bad_2.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The transformation cannot be applied to OpIAdd that has signed
+  // variables as operands.
+  auto transformation_bad_3 =
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 18);
+
+  ASSERT_FALSE(
+      transformation_bad_3.IsApplicable(context.get(), transformation_context));
+
+  auto transformation_good_1 =
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 28);
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+
+  transformation_good_1.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled;
+  auto transformation_good_2 =
+      TransformationReplaceAddSubMulWithCarryingExtended(51, 38, 31);
+
+  ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_2.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
+
+  auto transformation_good_3 =
+      TransformationReplaceAddSubMulWithCarryingExtended(52, 38, 34);
+  ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
+                                                 transformation_context));
+
+  transformation_good_3.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::vector<uint32_t> operand_type_ids = {6, 6};
+  fuzzerutil::AddStructType(context.get(), 54, operand_type_ids);
+  auto transformation_good_4 =
+      TransformationReplaceAddSubMulWithCarryingExtended(53, 54, 37);
+  ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
+                                                 transformation_context));
+
+  transformation_good_4.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i1"
+               OpName %10 "i2"
+               OpName %12 "i3"
+               OpName %21 "u1"
+               OpName %23 "u2"
+               OpName %25 "u3"
+               OpName %38 "uint2"
+               OpMemberName %38 0 "a"
+               OpMemberName %38 1 "b"
+               OpName %40 "result_uint"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+         %19 = OpTypeInt 32 0
+         %20 = OpTypePointer Function %19
+         %22 = OpConstant %19 0
+         %24 = OpConstant %19 1
+         %38 = OpTypeStruct %19 %19
+         %39 = OpTypePointer Private %38
+         %40 = OpVariable %39 Private
+         %54 = OpTypeStruct %6 %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %12 = OpVariable %7 Function
+         %21 = OpVariable %20 Function
+         %23 = OpVariable %20 Function
+         %25 = OpVariable %20 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %13 = OpLoad %6 %10
+         %14 = OpLoad %6 %8
+         %15 = OpSDiv %6 %13 %14
+               OpStore %12 %15
+         %16 = OpLoad %6 %10
+         %17 = OpLoad %6 %8
+         %18 = OpIAdd %6 %16 %17
+               OpStore %12 %18
+               OpStore %21 %22
+               OpStore %23 %24
+         %26 = OpLoad %19 %21
+         %27 = OpLoad %19 %23
+         %50 = OpIAddCarry %38 %26 %27
+         %28 = OpCompositeExtract %19 %50 0
+               OpStore %25 %28
+         %29 = OpLoad %19 %21
+         %30 = OpLoad %19 %23
+         %51 = OpISubBorrow %38 %29 %30
+         %31 = OpCompositeExtract %19 %51 0
+               OpStore %25 %31
+         %32 = OpLoad %19 %21
+         %33 = OpLoad %19 %23
+         %52 = OpUMulExtended %38 %32 %33
+         %34 = OpCompositeExtract %19 %52 0
+               OpStore %25 %34
+         %35 = OpLoad %6 %10
+         %36 = OpLoad %6 %8
+         %53 = OpSMulExtended %54 %35 %36
+         %37 = OpCompositeExtract %6 %53 0
+               OpStore %12 %37
+               OpReturn
+               OpFunctionEnd
+    )";
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 }  // namespace
