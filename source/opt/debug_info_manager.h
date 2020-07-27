@@ -153,6 +153,11 @@ class DebugInfoManager {
   // Function storage class. Otherwise, returns 0.
   uint32_t GetVariableIdOfDebugValueUsedForDeclare(Instruction* inst);
 
+  // Converts DebugGlobalVariable |dbg_global_var| to a DebugLocalVariable and
+  // creates a DebugDeclare mapping the new DebugLocalVariable to |local_var|.
+  void ConvertDebugGlobalToLocalVariable(Instruction* dbg_global_var,
+                                         Instruction* local_var);
+
  private:
   IRContext* context() { return context_; }
 
