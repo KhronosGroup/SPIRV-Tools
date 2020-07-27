@@ -409,6 +409,7 @@ message Transformation {
     TransformationReplaceLoadStoreWithCopyMemory replace_load_store_with_copy_memory = 62;
     TransformationAddLoopPreheader add_loop_preheader = 63;
     TransformationMoveInstructionDown move_instruction_down = 64;
+    TransformationVectorDynamic vector_dynamic = 65;
     // Add additional option using the next available number.
   }
 }
@@ -1558,6 +1559,16 @@ message TransformationToggleAccessChainInstruction {
 
   // A descriptor for an access chain instruction
   InstructionDescriptor instruction_descriptor = 1;
+
+}
+
+message TransformationVectorDynamic {
+
+  // A transformation that replaces the OpCompositeExtract and OpCompositeInsert
+  // instructions with the OpVectorExtractDynamic and OpVectorInsertDynamic instructions.
+
+  // The composite instruction result id.
+  uint32 instruction_result_id = 1;
 
 }
 

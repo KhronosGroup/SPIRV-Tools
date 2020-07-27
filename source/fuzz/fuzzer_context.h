@@ -246,6 +246,9 @@ class FuzzerContext {
   uint32_t GetChanceOfTogglingAccessChainInstruction() {
     return chance_of_toggling_access_chain_instruction_;
   }
+  uint32_t GetChanceOfVectoringDynamic() {
+    return chance_of_vectoring_dynamic_;
+  }
 
   // Other functions to control transformations. Keep them in alphabetical
   // order.
@@ -381,6 +384,7 @@ class FuzzerContext {
   uint32_t chance_of_splitting_block_;
   uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_toggling_access_chain_instruction_;
+  uint32_t chance_of_vectoring_dynamic_;
 
   // Limits associated with various quantities for which random values are
   // chosen during fuzzing.

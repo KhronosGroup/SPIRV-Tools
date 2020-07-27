@@ -80,6 +80,7 @@
 #include "source/fuzz/transformation_swap_commutable_operands.h"
 #include "source/fuzz/transformation_swap_conditional_branch_operands.h"
 #include "source/fuzz/transformation_toggle_access_chain_instruction.h"
+#include "source/fuzz/transformation_vector_dynamic.h"
 #include "source/fuzz/transformation_vector_shuffle.h"
 #include "source/util/make_unique.h"
 
@@ -277,6 +278,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kToggleAccessChainInstruction:
       return MakeUnique<TransformationToggleAccessChainInstruction>(
           message.toggle_access_chain_instruction());
+    case protobufs::Transformation::TransformationCase::kVectorDynamic:
+      return MakeUnique<TransformationVectorDynamic>(message.vector_dynamic());
     case protobufs::Transformation::TransformationCase::kVectorShuffle:
       return MakeUnique<TransformationVectorShuffle>(message.vector_shuffle());
     case protobufs::Transformation::TRANSFORMATION_NOT_SET:
