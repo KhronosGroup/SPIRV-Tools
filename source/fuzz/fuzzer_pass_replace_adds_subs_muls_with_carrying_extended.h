@@ -20,6 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
+// A fuzzer pass that replaces instructions OpIAdd with OpIAddCarry, OpISub with
+// OpISubBorrow, OpUMul with OpUMulExtended and OpSMul with OpSMulExtended.
 class FuzzerPassReplaceAddsSubsMulsWithCarryingExtended : public FuzzerPass {
  public:
   FuzzerPassReplaceAddsSubsMulsWithCarryingExtended(

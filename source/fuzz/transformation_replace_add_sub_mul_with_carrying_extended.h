@@ -31,12 +31,22 @@ class TransformationReplaceAddSubMulWithCarryingExtended
           message);
 
   explicit TransformationReplaceAddSubMulWithCarryingExtended(
-      uint32_t fresh_id, uint32_t result_id);
+      uint32_t struct_fresh_id, uint32_t struct_type_id, uint32_t result_id);
 
+  // - |message_.struct_fresh_id| must be fresh.
+  // - |message_.struct_type_id| must refer to the proper type of a struct
+  //   holding the intermediate result.
+  // - |message_.result_id| must refer to an OpIAdd or OpISub or OpIMul
+  //   instruction.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow,
+  // OpIMul with OpUMulExtended or OpSMulExtended and stores the result
+  // into a |message_.struct_fresh_id| and extracts the first element of the
+  // result into the original |message_.result_id|. This value is the same as
+  // the result of the original instruction.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

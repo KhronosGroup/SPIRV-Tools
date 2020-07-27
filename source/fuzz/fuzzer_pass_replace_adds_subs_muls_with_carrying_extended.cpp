@@ -32,17 +32,40 @@ FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::
     ~FuzzerPassReplaceAddsSubsMulsWithCarryingExtended() = default;
 
 void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
-  for (auto& function : *GetIRContext()->module()) {
-    for (auto& block : function) {
-      for (auto& inst : block) {
-        (void)inst;
-        if (GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()
-                    ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
-        }
-      }
+  GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
+    if (!GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()
+                ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
+      return;
     }
-  }
+    /*
+     * std::vector<uint32_t> component_type_ids;
+uint32_t component_1_type_id =
+ir_context->get_def_use_mgr()
+    ->GetDef(instruction->GetSingleWordOperand(2))
+    ->type_id();
+component_type_ids.push_back(component_1_type_id);
+uint32_t component_2_type_id =
+ir_context->get_def_use_mgr()
+    ->GetDef(instruction->GetSingleWordOperand(3))
+    ->type_id();
+component_type_ids.push_back(component_2_type_id);
+
+fuzzerutil::UpdateModuleIdBound(ir_context, message_.struct_fresh_id());
+
+uint32_t struct_type_id =
+fuzzerutil::MaybeGetStructType(ir_context, component_type_ids);
+if (struct_type_id == 0) {
+fuzzerutil::AddStructType(ir_context, message_.struct_type_fresh_id(),
+                        component_type_ids);
+struct_type_id = message_.struct_type_fresh_id();
+}
+     *
+     */
+          }
 }
 }  // namespace fuzz
 }  // namespace spvtools
+}
+}  // namespace fuzz
+}  // namespace fuzz

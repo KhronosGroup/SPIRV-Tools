@@ -30,32 +30,40 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "a"
-               OpName %10 "b"
-               OpName %14 "c"
-               OpName %16 "d"
+               OpName %7 "int2"
+               OpMemberName %7 0 "a"
+               OpMemberName %7 1 "b"
+               OpName %9 "test"
+               OpName %14 "a"
+               OpName %15 "b"
+               OpName %16 "c"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-          %7 = OpTypePointer Function %6
-          %9 = OpConstant %6 2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypeStruct %6 %6
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 2
          %11 = OpConstant %6 3
-         %12 = OpTypeFloat 32
-         %13 = OpTypePointer Function %12
-         %15 = OpConstant %12 2
-         %17 = OpConstant %12 3
+         %12 = OpConstantComposite %7 %10 %11
+         %13 = OpTypePointer Function %6
+         %17 = OpTypeInt 32 1
+         %18 = OpConstant %17 0
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %8 = OpVariable %7 Function
-         %10 = OpVariable %7 Function
+          %9 = OpVariable %8 Function
          %14 = OpVariable %13 Function
+         %15 = OpVariable %13 Function
          %16 = OpVariable %13 Function
-               OpStore %8 %9
-               OpStore %10 %11
-               OpStore %14 %15
-               OpStore %16 %17
-               OpCopyMemory %8 %10
-               OpCopyMemory %16 %14
+               OpStore %9 %12
+               OpStore %14 %10
+               OpStore %15 %11
+         %19 = OpAccessChain %13 %9 %18
+         %20 = OpLoad %6 %19
+               OpStore %16 %20
+         %21 = OpLoad %6 %14
+         %22 = OpLoad %6 %15
+         %23 = OpIAdd %6 %21 %22
+               OpStore %16 %23
                OpReturn
                OpFunctionEnd
     )";
@@ -68,6 +76,20 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
+  auto transformation_valid_1 =
+      TransformationReplaceAddSubMulWithCarryingExtended(30, 7, 23);
+
+  ASSERT_TRUE(transformation_valid_1.IsApplicable(context.get(),
+                                                  transformation_context));
+  transformation_valid_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::vector<uint32_t> actual_binary;
+  context.get()->module()->ToBinary(&actual_binary, false);
+  SpirvTools t(env);
+  std::string actual_disassembled;
+  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
+  std::cout << actual_disassembled;
   ASSERT_TRUE(IsValid(env, context.get()));
 }
 
