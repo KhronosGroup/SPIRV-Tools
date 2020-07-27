@@ -373,6 +373,28 @@ uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
   return array_length_constant->GetU32();
 }
 
+uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
+                                   opt::IRContext* ir_context) {
+  switch (composite_type_inst.opcode()) {
+    case SpvOpTypeArray:
+      return fuzzerutil::GetArraySize(composite_type_inst, ir_context);
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector:
+      return composite_type_inst.GetSingleWordInOperand(1);
+    case SpvOpTypeStruct: {
+      return fuzzerutil::GetNumberOfStructMembers(composite_type_inst);
+    }
+    case SpvOpTypeRuntimeArray:
+      assert(false &&
+             "GetBoundForCompositeIndex should not be invoked with an "
+             "OpTypeRuntimeArray, which does not have a static bound.");
+      return 0;
+    default:
+      assert(false && "Unknown composite type.");
+      return 0;
+  }
+}
+
 bool IsValid(opt::IRContext* context, spv_validator_options validator_options) {
   std::vector<uint32_t> binary;
   context->module()->ToBinary(&binary, false);
@@ -1102,6 +1124,32 @@ uint32_t MaybeGetIntegerConstant(
   }
 
   return 0;
+}
+
+uint32_t MaybeGetIntegerConstantFromValueAndType(opt::IRContext* ir_context,
+                                                 uint32_t value,
+                                                 uint32_t int_type_id) {
+  auto int_type_inst = ir_context->get_def_use_mgr()->GetDef(int_type_id);
+
+  assert(int_type_inst && "The given type id must exist.");
+
+  auto int_type = ir_context->get_type_mgr()
+                      ->GetType(int_type_inst->result_id())
+                      ->AsInteger();
+
+  assert(int_type && int_type->width() == 32 &&
+         "The given type id must correspond to an 32-bit integer type.");
+
+  opt::analysis::IntConstant constant(int_type, {value});
+
+  // Check that the constant exists in the module.
+  if (!ir_context->get_constant_mgr()->FindConstant(&constant)) {
+    return 0;
+  }
+
+  return ir_context->get_constant_mgr()
+      ->GetDefiningInstruction(&constant)
+      ->result_id();
 }
 
 uint32_t MaybeGetFloatConstant(
