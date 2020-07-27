@@ -719,14 +719,14 @@ message TransformationAddLoopPreheader {
   // This allows turning instructions of the form:
   //
   //   %loop_header_block = OpLabel
-  //                 %id1 = OpPhi %type %pred1_id %val1 %pred2_id %val2 %backedge_block_id %val3
+  //                 %id1 = OpPhi %type %val1 %pred1_id %val2 %pred2_id %val3 %backedge_block_id
   //
   // into:
   //            %fresh_id = OpLabel
-  //             %phi_id1 = OpPhi %type %pred1_id %val1 %pred2_id %val2
+  //             %phi_id1 = OpPhi %type %val1 %pred1_id %val2 %pred2_id
   //                        OpBranch %header_id
   //   %loop_header_block = OpLabel
-  //                 %id1 = OpPhi %type %fresh_id %phi_id1 %backedge_block_id %val3
+  //                 %id1 = OpPhi %type %phi_id1 %fresh_id %val3 %backedge_block_id
   repeated uint32 phi_id = 3;
 
 }

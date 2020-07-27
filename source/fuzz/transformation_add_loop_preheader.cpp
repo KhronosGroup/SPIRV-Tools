@@ -35,7 +35,7 @@ TransformationAddLoopPreheader::TransformationAddLoopPreheader(
 
 bool TransformationAddLoopPreheader::IsApplicable(
     opt::IRContext* ir_context,
-    const TransformationContext& transformation_context) const {
+    const TransformationContext& /* unused */) const {
   // |message_.loop_header_block()| must be the id of a loop header block.
   opt::BasicBlock* loop_header_block =
       fuzzerutil::MaybeFindBlock(ir_context, message_.loop_header_block());
@@ -52,7 +52,7 @@ bool TransformationAddLoopPreheader::IsApplicable(
 
   // If the block only has one predecessor outside of the loop (and thus 2 in
   // total), then no additional fresh ids are necessary.
-  if (ir_context->cfg()->preds(message_.fresh_id()).size() == 2) {
+  if (ir_context->cfg()->preds(message_.loop_header_block()).size() == 2) {
     return true;
   }
 
