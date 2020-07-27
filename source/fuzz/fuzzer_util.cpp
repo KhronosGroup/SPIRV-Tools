@@ -1193,7 +1193,7 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
   UpdateModuleIdBound(ir_context, result_id);
 }
 
-bool TypesArEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
+bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
                           uint32_t type2_id) {
   if (type1_id == type2_id) {
     return true;

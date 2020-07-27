@@ -67,8 +67,8 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
   // constants with different signedness, their use can only be swapped if the
   // instruction is agnostic to the signedness of the operand.
   if (type_id_of_interest != type_id_synonym &&
-      fuzzerutil::TypesArEqualUpToSign(ir_context, type_id_of_interest,
-                                       type_id_synonym) &&
+      fuzzerutil::TypesAreEqualUpToSign(ir_context, type_id_of_interest,
+                                        type_id_synonym) &&
       !IsAgnosticToSignednessOfOperand(
           use_instruction->opcode(),
           message_.id_use_descriptor().in_operand_index())) {

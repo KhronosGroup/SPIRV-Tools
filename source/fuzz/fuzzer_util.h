@@ -357,12 +357,12 @@ uint32_t MaybeGetStructType(opt::IRContext* ir_context,
 //   Every component of the composite constant is looked up by calling this
 //   function with the type id of that component.
 // Returns 0 if no such instruction is present in the module.
-// The returned id either participates in IdIsIrrelevant fact or not,
-// depending on the |is_irrelevant| parameter.
+// The returned id either participates in IdIsIrrelevant fact or not, depending
+// on the |is_irrelevant| parameter.
 uint32_t MaybeGetZeroConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
-    uint32_t scalar_or_composite_type_id, bool is_irrelevant = false);
+    uint32_t scalar_or_composite_type_id, bool is_irrelevant);
 
 // Returns the result id of an OpConstant instruction. |scalar_type_id| must be
 // a result id of a scalar type (i.e. int, float or bool). Returns 0 if no such
@@ -447,8 +447,8 @@ inline uint32_t FloatToWord(float value) {
 // - |type1_id| and |type2_id| are the same id
 // - |type1_id| and |type2_id| refer to integer scalar or vector types, only
 //   differing by their signedness.
-bool TypesArEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
-                          uint32_t type2_id);
+bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
+                           uint32_t type2_id);
 
 }  // namespace fuzzerutil
 
