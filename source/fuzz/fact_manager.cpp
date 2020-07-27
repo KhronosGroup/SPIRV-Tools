@@ -475,10 +475,13 @@ class FactManager::DataSynonymAndIdEquationFacts {
                       const protobufs::DataDescriptor& dd2);
 
   // Returns true if and only if |dd1| and |dd2| are valid data descriptors
-  // whose associated data have the same type (modulo integer signedness).
-  bool DataDescriptorsAreWellFormedAndComparable(
+  // whose associated data have compatible types. Two types are compatible if:
+  // - they are the same
+  // - they both are numerical or vectors of numerical components with the same
+  //   number of bits
+  static bool DataDescriptorsAreWellFormedAndComparable(
       opt::IRContext* context, const protobufs::DataDescriptor& dd1,
-      const protobufs::DataDescriptor& dd2) const;
+      const protobufs::DataDescriptor& dd2);
 
   OperationSet GetEquations(const protobufs::DataDescriptor* lhs) const;
 
@@ -1206,7 +1209,7 @@ void FactManager::DataSynonymAndIdEquationFacts::MakeEquivalent(
 bool FactManager::DataSynonymAndIdEquationFacts::
     DataDescriptorsAreWellFormedAndComparable(
         opt::IRContext* context, const protobufs::DataDescriptor& dd1,
-        const protobufs::DataDescriptor& dd2) const {
+        const protobufs::DataDescriptor& dd2) {
   auto end_type_id_1 = fuzzerutil::WalkCompositeTypeIndices(
       context, context->get_def_use_mgr()->GetDef(dd1.object())->type_id(),
       dd1.index());
@@ -1225,30 +1228,46 @@ bool FactManager::DataSynonymAndIdEquationFacts::
   // vectors that differ only in signedness.
 
   // Get both types.
-  const opt::analysis::Type* type_1 =
-      context->get_type_mgr()->GetType(end_type_id_1);
-  const opt::analysis::Type* type_2 =
-      context->get_type_mgr()->GetType(end_type_id_2);
+  const auto* type_a = context->get_type_mgr()->GetType(end_type_id_1);
+  const auto* type_b = context->get_type_mgr()->GetType(end_type_id_2);
+  assert(type_a && type_b && "Data descriptors have invalid type(s)");
 
-  // If the first type is a vector, check that the second type is a vector of
-  // the same width, and drill down to the vector element types.
-  if (type_1->AsVector()) {
-    if (!type_2->AsVector()) {
-      return false;
-    }
-    if (type_1->AsVector()->element_count() !=
-        type_2->AsVector()->element_count()) {
-      return false;
-    }
-    type_1 = type_1->AsVector()->element_type();
-    type_2 = type_2->AsVector()->element_type();
+  uint32_t element_count_a = 1;
+  uint32_t element_count_b = 1;
+
+  // If both types are numerical or vectors of numerical components, then they
+  // are compatible if they have the same bit count.
+  if (type_a->AsVector() && type_b->AsVector()) {
+    element_count_a = type_a->AsVector()->element_count();
+    element_count_b = type_b->AsVector()->element_count();
+    type_a = type_a->AsVector()->element_type();
+    type_b = type_b->AsVector()->element_type();
   }
-  // Check that type_1 and type_2 are both integer types of the same bit-width
-  // (but with potentially different signedness).
-  auto integer_type_1 = type_1->AsInteger();
-  auto integer_type_2 = type_2->AsInteger();
-  return integer_type_1 && integer_type_2 &&
-         integer_type_1->width() == integer_type_2->width();
+
+  // |type_a| and/or |type_b| might be a scalar or a vector of booleans.
+  // In this case, types are compatible only if they have the same number of
+  // components.
+  if (type_a->AsBool() && type_b->AsBool()) {
+    return element_count_a == element_count_b;
+  }
+
+  auto get_bit_count = [](const opt::analysis::Type& type) -> uint32_t {
+    if (const auto* integer = type.AsInteger()) {
+      return integer->width();
+    } else if (const auto* floating = type.AsFloat()) {
+      return floating->width();
+    } else {
+      assert(false && "|type| must be a numerical type");
+      return 0;
+    }
+  };
+
+  // Checks that both |type_a| and |type_b| are either numerical or vectors of
+  // numerical components and have the same number of bits.
+  return (type_a->AsInteger() || type_a->AsFloat()) &&
+         (type_b->AsInteger() || type_b->AsFloat()) &&
+         (element_count_a * get_bit_count(*type_a) ==
+          element_count_b * get_bit_count(*type_b));
 }
 
 std::vector<const protobufs::DataDescriptor*>
