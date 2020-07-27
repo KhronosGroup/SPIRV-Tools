@@ -786,9 +786,6 @@ TEST(FactManagerTest, RecursiveAdditionOfFacts) {
 TEST(FactManagerTest, CorollaryBitcastFacts) {
   std::string shader = R"(
                OpCapability Shader
-               ; we use these capabilities to increase the variety of types
-               OpCapability Int64
-               OpCapability Float64
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %12 "main"
@@ -798,71 +795,16 @@ TEST(FactManagerTest, CorollaryBitcastFacts) {
           %3 = OpTypeFunction %2
           %4 = OpTypeInt 32 1
           %5 = OpTypeInt 32 0
-          %6 = OpTypeInt 64 1
-          %7 = OpTypeInt 64 0
           %8 = OpTypeFloat 32
-          %9 = OpTypeFloat 64
-         %10 = OpTypeVector %4 4
-         %11 = OpTypeVector %5 4
-         %14 = OpTypeVector %6 2
-         %15 = OpTypeVector %7 2
-         %16 = OpTypeVector %8 4
-         %17 = OpTypeVector %9 2
-         ; groups of synonyms are indented
-         ; int32
-         %18 = OpConstant %4 23
-         %19 = OpConstant %4 23
-         %20 = OpConstant %5 23
-         ; float32
-         %30 = OpConstant %8 23
-         %31 = OpConstant %8 23
-         %32 = OpConstant %8 23
-         ; ivec32
-         %42 = OpConstantComposite %10 %18 %18 %18 %18
-         %43 = OpConstantComposite %10 %19 %19 %19 %19
-         %44 = OpConstantComposite %11 %20 %20 %20 %20
-         ; vec32
-         ; also synonymous to %92
-         %54 = OpConstantComposite %16 %30 %30 %30 %30
-         %55 = OpConstantComposite %16 %31 %31 %31 %31
-         %56 = OpConstantComposite %16 %32 %32 %32 %32
+          %6 = OpConstant %4 23
+          %7 = OpConstant %5 23
          %12 = OpFunction %2 None %3
          %13 = OpLabel
-         ; Connected component #1
-         ; ivec32 -- ivec64
-         %83 = OpBitcast %14 %42 ; synonymous to %84 and %86
-         %84 = OpBitcast %15 %43
-         %85 = OpBitcast %10 %84 ; synonymous to %42
-         %86 = OpBitcast %14 %44
-         ; ivec64 -- vec64
-         %80 = OpBitcast %17 %83 ; synonymous to %81 and %82
-         %81 = OpBitcast %17 %84
-         %82 = OpBitcast %17 %86
-         %87 = OpBitcast %15 %82 ; synonymous to %83
-         ; vec64 -- vec32
-         %88 = OpBitcast %16 %80 ; synonymous to %89 and %90
-         %89 = OpBitcast %16 %81
-         %90 = OpBitcast %16 %82
-         %91 = OpBitcast %17 %89 ; synonymous to %80
-         ; Connected component #2
-         ; vec32 -- ivec32
-         %92 = OpBitcast %11 %88 ; synonymous to %93 and %94
-         %93 = OpBitcast %10 %89
-         %94 = OpBitcast %11 %90
-         %95 = OpBitcast %16 %93 ; synonymous to %88
-        %106 = OpBitcast %11 %93 ; signedness cast - self-loop in the graph
-         ; ivec32 -- vec32
-         %96 = OpBitcast %16 %92 ; synonymous to %97, %98 and %54
-         %97 = OpBitcast %16 %93
-         %98 = OpBitcast %16 %94
-         ; ivec32 -- vec64
-         %99 = OpBitcast %17 %92 ; synonymous to %100 and %101
-        %100 = OpBitcast %17 %93
-        %101 = OpBitcast %17 %94
-         ; vec32 -- vec64
-        %102 = OpBitcast %17 %54 ; synonymous to %99 and %103 and %104
-        %103 = OpBitcast %17 %55
-        %104 = OpBitcast %17 %56
+         %14 = OpBitcast %8 %6
+         %15 = OpBitcast %8 %7
+         %16 = OpBitcast %4 %15
+         %17 = OpBitcast %8 %16
+         %18 = OpBitcast %5 %14
                OpReturn
                OpFunctionEnd
   )";
@@ -874,119 +816,31 @@ TEST(FactManagerTest, CorollaryBitcastFacts) {
 
   FactManager fact_manager;
 
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(18, {}),
-                                  MakeDataDescriptor(19, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(18, {}),
-                                  MakeDataDescriptor(20, {}), context.get());
+  fact_manager.AddFactIdEquation(14, SpvOpBitcast, {6}, context.get());
+  fact_manager.AddFactIdEquation(15, SpvOpBitcast, {7}, context.get());
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(6, {}),
+                                         MakeDataDescriptor(7, {})));
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(14, {}),
+                                         MakeDataDescriptor(15, {})));
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(14, {}),
+                                  MakeDataDescriptor(15, {}), context.get());
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(6, {}),
+                                        MakeDataDescriptor(7, {})));
 
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(30, {}),
-                                  MakeDataDescriptor(31, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(30, {}),
-                                  MakeDataDescriptor(32, {}), context.get());
-
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(42, {}),
-                                  MakeDataDescriptor(43, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(42, {}),
-                                  MakeDataDescriptor(44, {}), context.get());
-
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(54, {}),
-                                  MakeDataDescriptor(55, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(54, {}),
-                                  MakeDataDescriptor(56, {}), context.get());
-
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(83, {}),
-                                         MakeDataDescriptor(84, {})));
-  fact_manager.AddFactIdEquation(83, SpvOpBitcast, {42}, context.get());
-  fact_manager.AddFactIdEquation(84, SpvOpBitcast, {43}, context.get());
-  fact_manager.AddFactIdEquation(86, SpvOpBitcast, {44}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(83, {}),
-                                        MakeDataDescriptor(84, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(83, {}),
-                                        MakeDataDescriptor(86, {})));
-
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(85, {}),
-                                         MakeDataDescriptor(42, {})));
-  fact_manager.AddFactIdEquation(85, SpvOpBitcast, {84}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(85, {}),
-                                        MakeDataDescriptor(42, {})));
-
-  fact_manager.AddFactIdEquation(88, SpvOpBitcast, {80}, context.get());
-  fact_manager.AddFactIdEquation(89, SpvOpBitcast, {81}, context.get());
-  fact_manager.AddFactIdEquation(90, SpvOpBitcast, {82}, context.get());
-  fact_manager.AddFactIdEquation(91, SpvOpBitcast, {89}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(91, {}),
-                                        MakeDataDescriptor(81, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(91, {}),
-                                         MakeDataDescriptor(80, {})));
-
-  fact_manager.AddFactIdEquation(80, SpvOpBitcast, {83}, context.get());
-  fact_manager.AddFactIdEquation(81, SpvOpBitcast, {84}, context.get());
-  fact_manager.AddFactIdEquation(82, SpvOpBitcast, {86}, context.get());
-  fact_manager.AddFactIdEquation(87, SpvOpBitcast, {82}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(80, {}),
-                                        MakeDataDescriptor(81, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(80, {}),
-                                        MakeDataDescriptor(82, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(91, {}),
-                                        MakeDataDescriptor(80, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(88, {}),
-                                        MakeDataDescriptor(89, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(88, {}),
-                                        MakeDataDescriptor(90, {})));
-
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(92, {}),
-                                         MakeDataDescriptor(93, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(92, {}),
-                                         MakeDataDescriptor(94, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(93, {}),
-                                         MakeDataDescriptor(94, {})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(99, {}),
-                                  MakeDataDescriptor(100, {}), context.get());
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(99, {}),
-                                  MakeDataDescriptor(101, {}), context.get());
-  fact_manager.AddFactIdEquation(96, SpvOpBitcast, {92}, context.get());
-  fact_manager.AddFactIdEquation(97, SpvOpBitcast, {93}, context.get());
-  fact_manager.AddFactIdEquation(98, SpvOpBitcast, {94}, context.get());
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(96, {}),
-                                         MakeDataDescriptor(97, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(96, {}),
-                                         MakeDataDescriptor(98, {})));
-  fact_manager.AddFactIdEquation(99, SpvOpBitcast, {92}, context.get());
-  fact_manager.AddFactIdEquation(100, SpvOpBitcast, {93}, context.get());
-  fact_manager.AddFactIdEquation(101, SpvOpBitcast, {94}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(96, {}),
-                                        MakeDataDescriptor(97, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(96, {}),
-                                        MakeDataDescriptor(98, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(92, {}),
-                                        MakeDataDescriptor(93, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(92, {}),
-                                        MakeDataDescriptor(94, {})));
-
-  fact_manager.AddFactIdEquation(102, SpvOpBitcast, {54}, context.get());
-  fact_manager.AddFactIdEquation(103, SpvOpBitcast, {55}, context.get());
-  fact_manager.AddFactIdEquation(104, SpvOpBitcast, {56}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(102, {}),
-                                        MakeDataDescriptor(103, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(102, {}),
-                                        MakeDataDescriptor(104, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(102, {}),
-                                         MakeDataDescriptor(99, {})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(54, {}),
-                                  MakeDataDescriptor(96, {}), context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(102, {}),
-                                        MakeDataDescriptor(99, {})));
-
-  fact_manager.AddFactIdEquation(106, SpvOpBitcast, {93}, context.get());
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(96, {}),
-                                         MakeDataDescriptor(88, {})));
-  fact_manager.AddFactIdEquation(92, SpvOpBitcast, {88}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(96, {}),
-                                        MakeDataDescriptor(88, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(100, {}),
-                                        MakeDataDescriptor(80, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(92, {}),
-                                        MakeDataDescriptor(42, {})));
+  fact_manager.AddFactIdEquation(17, SpvOpBitcast, {16}, context.get());
+  fact_manager.AddFactIdEquation(18, SpvOpBitcast, {14}, context.get());
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
+                                        MakeDataDescriptor(6, {})));
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(17, {}),
+                                         MakeDataDescriptor(14, {})));
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
+                                         MakeDataDescriptor(16, {})));
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(17, {}),
+                                  MakeDataDescriptor(14, {}), context.get());
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
+                                        MakeDataDescriptor(16, {})));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(16, {}),
+                                        MakeDataDescriptor(6, {})));
 }
 
 TEST(FactManagerTest, CorollaryConversionFacts) {

@@ -463,11 +463,10 @@ class FactManager::DataSynonymAndIdEquationFacts {
   void ComputeConversionDataSynonymFacts(const protobufs::DataDescriptor& dd,
                                          opt::IRContext* context);
 
-  // Computes various corollary facts that can be derived from the strongly
-  // connected component |scc|. Take a look at the implementation comments to
-  // learn more about how these facts a computed and why we need a graph
-  // abstraction for that.
-  void ComputeBitcastDataSynonymFacts(const protobufs::DataDescriptor* scc,
+  // Computes various corollary facts from the data descriptor |dd| if members
+  // of its equivalence class participate in equation facts with OpBitcast
+  // opcode. The descriptor should be registered in the equivalence relation.
+  void ComputeBitcastDataSynonymFacts(const protobufs::DataDescriptor& dd,
                                       opt::IRContext* context);
 
   // Recurses into sub-components of the data descriptors, if they are
@@ -481,15 +480,8 @@ class FactManager::DataSynonymAndIdEquationFacts {
   void MakeEquivalent(const protobufs::DataDescriptor& dd1,
                       const protobufs::DataDescriptor& dd2);
 
-  // Merges two connected components, represented by |scc_a| and |scc_b| and
-  // returns a descriptor for the resulting SCC. Both |scc_a| and |scc_b| must
-  // be valid SCCs (i.e. |scc_to_node_.find(scc_[a|b]) != scc_to_node_.end()|).
-  const protobufs::DataDescriptor* MergeConnectedComponents(
-      const protobufs::DataDescriptor* scc_a,
-      const protobufs::DataDescriptor* scc_b);
-
-  // Registers a data descriptor in the equivalence relation and returns its
-  // representative. Additionally, adjusts SCCs to account for a new vertex.
+  // Registers a data descriptor in the equivalence relation if it hasn't been
+  // registered yet, and returns its representative.
   const protobufs::DataDescriptor* RegisterDataDescriptor(
       const protobufs::DataDescriptor& dd);
 
@@ -538,30 +530,6 @@ class FactManager::DataSynonymAndIdEquationFacts {
   // in that relation.
   std::unordered_map<const protobufs::DataDescriptor*, OperationSet>
       id_equations_;
-
-  // Represents a map from a strongly connected component (SCC) in the graph to
-  // the set of vertices of that component. The graph is used to compute
-  // corollary facts from the OpBitcast equation facts (see implementation
-  // comments in the ComputeBitcastDataSynonymFacts method to learn why we need
-  // a graph here). The SCC is represented by one of its vertices (i.e.
-  // |scc_to_node_[K].contains(K) == true| for some |K|). Each data descriptor
-  // is a representative of some equivalence class.
-  std::unordered_map<const protobufs::DataDescriptor*,
-                     std::unordered_set<const protobufs::DataDescriptor*>>
-      scc_to_node_;
-
-  // Represents a map from a vertex in the graph to its strongly connected
-  // component (SCC). The graph is used to compute corollary facts from the
-  // OpBitcast equation facts (see implementation comments in the
-  // ComputeBitcastDataSynonymFacts method to learn why we need a graph here).
-  // The SCC is represented by one of its vertices (i.e. |node_to_scc_[K]| might
-  // be equal to |K| for some |K|). Each data descriptor is a representative of
-  // some equivalence class. Check out the documentation for the
-  // ComputeBitcastDataSynonymFacts method to learn more about why we use a
-  // graph and SCCs here.
-  std::unordered_map<const protobufs::DataDescriptor*,
-                     const protobufs::DataDescriptor*>
-      node_to_scc_;
 };
 
 void FactManager::DataSynonymAndIdEquationFacts::AddFact(
@@ -648,13 +616,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
       ComputeConversionDataSynonymFacts(*rhs_dds[0], context);
       break;
     case SpvOpBitcast:
-      // The equation, that we have just added, might have merged two connected
-      // components, so we need to recompute corollary facts.
-      ComputeBitcastDataSynonymFacts(
-          MergeConnectedComponents(
-              node_to_scc_.at(lhs_dd_representative),
-              node_to_scc_.at(synonymous_.Find(rhs_dds[0]))),
-          context);
+      ComputeBitcastDataSynonymFacts(lhs_dd, context);
+      ComputeBitcastDataSynonymFacts(*rhs_dds[0], context);
       break;
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
@@ -767,20 +730,12 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
   MakeEquivalent(dd1, dd2);
   assert(synonymous_.Find(&dd1) == synonymous_.Find(&dd2) &&
          "|dd1| and |dd2| must have a single representative");
-  assert(node_to_scc_.find(synonymous_.Find(&dd1)) != node_to_scc_.end() &&
-         "|dd1| and |dd2| must belong to the same connected component");
 
   // Compute various corollary facts.
 
-  // |dd1| and |dd2| might have belonged to different connected components.
-  // We have merged those components once we have marked |dd1| and |dd2| as
-  // synonymous, so we need to recompute corollary facts for the resulting
-  // component.
-  ComputeBitcastDataSynonymFacts(node_to_scc_.at(synonymous_.Find(&dd1)),
-                                 context);
-
   // |dd1| and |dd2| belong to the same equivalence class so it doesn't matter
   // which one we use here.
+  ComputeBitcastDataSynonymFacts(dd1, context);
   ComputeConversionDataSynonymFacts(dd1, context);
 
   ComputeCompositeDataSynonymFacts(dd1, dd2, context);
@@ -840,57 +795,31 @@ void FactManager::DataSynonymAndIdEquationFacts::
 }
 
 void FactManager::DataSynonymAndIdEquationFacts::ComputeBitcastDataSynonymFacts(
-    const protobufs::DataDescriptor* scc, opt::IRContext* context) {
-  assert(scc_to_node_.find(scc) != scc_to_node_.end() &&
-         "Connected component is invalid");
+    const protobufs::DataDescriptor& dd, opt::IRContext* context) {
+  assert(synonymous_.Exists(dd) &&
+         "|dd| must've been registered in the equivalence relation");
 
-  // Consider a graph where each vertex is an equivalence class and each edge
-  // is an equation fact with OpBitcast opcode. Concretely, each edge has a form
-  // |%a = OpBitcast %b| where |a| and |b| belong to some equivalence classes
-  // (i.e. vertices). These edges are undirected. From now on, an edge
-  // |%a = OpBitcast %b| will be denoted as |a -- b| where |a| and |b| are the
-  // equivalence classes (i.e. vertices).
-  //
-  // Consider two edges |a -- b|, |a -- c|. This graph can be a result of any of
-  // four cases (since edges are undirected):
-  // 1. |%a = OpBitcast %b| and |%a = OpBitcast %c|
-  // 2. |%a = OpBitcast %b| and |%c = OpBitcast %a|
-  // 3. |%b = OpBitcast %a| and |%a = OpBitcast %c|
-  // 4. |%b = OpBitcast %a| and |%c = OpBitcast %a|
-  // where |a|s on both equations represent synonymous (not necessarily
-  // identical) ids. In all four cases, |b| and |c| are synonymous if they have
-  // compatible types (we allow two instructions to be synonymous even if they
-  // have different types - e.g. signed and unsigned integers. See
-  // DataDescriptorsAreWellFormedAndComparable method for more details).
-  //
-  // We can generalize this example as follows. Consider a graph that consists
-  // of strongly connected components. Each component consists of vertices and
-  // edges as described above. If there exists a path |a -- ... -- b| in some
-  // component s.t. |a| and |b| have compatible types (as determined by the
-  // DataDescriptorsAreWellFormedAndComparable method), then |a| and |b| are
-  // equivalent (remember that |a| and |b| are equivalence classes and when we
-  // say 'they are equivalent' we mean that all their members are synonymous).
-  // This proposition holds since each edge is an OpBitcast instruction and
-  // this instruction does not change the bit pattern of its operands, it only
-  // changes the type of the pattern. Thus, to ensure that we have computed all
-  // corollary facts, we need to make sure that all pairs of vertices in every
-  // SCC have incompatible types.
+  // Compute all descriptors that can participate in not-yet-computed corollary
+  // facts.
+  std::unordered_set<const protobufs::DataDescriptor*> descriptors;
+  for (const auto& fact : id_equations_) {
+    for (const auto& equation : fact.second) {
+      if (equation.opcode == SpvOpBitcast) {
+        if (synonymous_.IsEquivalent(*fact.first, dd)) {
+          descriptors.insert(equation.operands[0]);
+        } else if (synonymous_.IsEquivalent(*equation.operands[0], dd)) {
+          descriptors.insert(fact.first);
+        }
+      }
+    }
+  }
 
-  // We create a copy of the std::unordered_set since a recursive call to the
-  // AddDataSynonymFactRecursive method might invalidate set's iterators.
-  auto nodes = scc_to_node_.at(scc);
-
-  // Time complexity of this procedure (assuming AddDataSynonymFactRecursive
-  // only merges vertices in constant time and calls this method) is O(n^4) in
-  // the worst case scenario (|n| is a number of vertices in the |scc|).
-  for (const auto* node_a : nodes) {
-    for (const auto* node_b : nodes) {
-      // We have to skip the iteration if |node_a| and |node_b| are already
-      // synonymous since we would end up with an infinite recursion otherwise.
-      if (node_a != node_b && !synonymous_.IsEquivalent(*node_a, *node_b) &&
-          DataDescriptorsAreWellFormedAndComparable(context, *node_a,
-                                                    *node_b)) {
-        AddDataSynonymFactRecursive(*node_a, *node_b, context);
+  // Compute various corollary facts.
+  for (const auto* dd_a : descriptors) {
+    for (const auto* dd_b : descriptors) {
+      if (!synonymous_.IsEquivalent(*dd_a, *dd_b) &&
+          DataDescriptorsAreWellFormedAndComparable(context, *dd_a, *dd_b)) {
+        AddDataSynonymFactRecursive(*dd_a, *dd_b, context);
       }
     }
   }
@@ -1325,64 +1254,13 @@ void FactManager::DataSynonymAndIdEquationFacts::MakeEquivalent(
   }
   // Delete the no longer-relevant equations about |no_longer_representative|.
   id_equations_.erase(no_longer_representative);
-
-  // We also adjust strongly connected components to account for the merged
-  // vertices.
-  const auto* scc_a = node_to_scc_.at(no_longer_representative);
-  const auto* scc_b = node_to_scc_.at(still_representative);
-
-  scc_to_node_.at(scc_a).erase(no_longer_representative);
-  node_to_scc_.erase(no_longer_representative);
-
-  MergeConnectedComponents(scc_a, scc_b);
-}
-
-const protobufs::DataDescriptor*
-FactManager::DataSynonymAndIdEquationFacts::MergeConnectedComponents(
-    const protobufs::DataDescriptor* scc_a,
-    const protobufs::DataDescriptor* scc_b) {
-  assert(scc_to_node_.find(scc_a) != scc_to_node_.end() &&
-         scc_to_node_.find(scc_b) != scc_to_node_.end() &&
-         "Connected components are invalid");
-
-  if (scc_a == scc_b) {
-    return scc_a;
-  }
-
-  const auto* less_scc = scc_a;
-  const auto* more_scc = scc_b;
-
-  auto* less_nodes = &scc_to_node_.at(less_scc);
-  auto* more_nodes = &scc_to_node_.at(more_scc);
-
-  if (less_nodes->size() > more_nodes->size()) {
-    std::swap(less_nodes, more_nodes);
-    std::swap(less_scc, more_scc);
-  }
-
-  more_nodes->insert(less_nodes->begin(), less_nodes->end());
-  for (const auto* node : *less_nodes) {
-    node_to_scc_.at(node) = more_scc;
-  }
-
-  scc_to_node_.erase(less_scc);
-  return more_scc;
 }
 
 const protobufs::DataDescriptor*
 FactManager::DataSynonymAndIdEquationFacts::RegisterDataDescriptor(
     const protobufs::DataDescriptor& dd) {
-  if (!synonymous_.Exists(dd)) {
-    const auto* representative = synonymous_.Register(dd);
-    assert(node_to_scc_.find(representative) == node_to_scc_.end() &&
-           scc_to_node_.find(representative) == scc_to_node_.end() &&
-           "The node should not belong to any connected component");
-    node_to_scc_[representative] = representative;
-    scc_to_node_[representative].insert(representative);
-    return representative;
-  }
-
-  return synonymous_.Find(&dd);
+  return synonymous_.Exists(dd) ? synonymous_.Find(&dd)
+                                : synonymous_.Register(dd);
 }
 
 bool FactManager::DataSynonymAndIdEquationFacts::
