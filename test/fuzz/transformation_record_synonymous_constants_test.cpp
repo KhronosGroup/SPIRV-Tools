@@ -90,13 +90,19 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
                                                validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
+#ifndef NDEBUG
   // %3 is not a constant declaration
-  ASSERT_FALSE(TransformationRecordSynonymousConstants(3, 9).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_DEATH(TransformationRecordSynonymousConstants(3, 9).IsApplicable(
+                   context.get(), transformation_context),
+               "The ids must refer to constants.");
+#endif
 
-  // Swapping the ids gives the same result
-  ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 3).IsApplicable(
-      context.get(), transformation_context));
+#ifndef NDEBUG
+  // %3 is not a constant declaration
+  ASSERT_DEATH(TransformationRecordSynonymousConstants(9, 3).IsApplicable(
+                   context.get(), transformation_context),
+               "The ids must refer to constants.");
+#endif
 
   // The two constants must be different
   ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 9).IsApplicable(
@@ -129,14 +135,12 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
   ApplyTransformationAndCheckFactManager(13, 22, context.get(),
                                          &transformation_context);
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3536):
-  // Relax type check for integers. Uncomment this code once the issue is fixed.
-  // // %13 and %20 are equal even if %13 is signed and %20 is unsigned
-  //  ASSERT_TRUE(TransformationRecordSynonymousConstants(13, 20).IsApplicable(
-  //      context.get(), transformation_context));
-  //
-  //  ApplyTransformationAndCheckFactManager(13, 20, context.get(),
-  //                                         &transformation_context);
+  // %13 and %20 are equal even if %13 is signed and %20 is unsigned
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(13, 20).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(13, 20, context.get(),
+                                         &transformation_context);
 
   // %9 and %11 are equivalent (OpConstant with value 0 and OpConstantNull)
   ASSERT_TRUE(TransformationRecordSynonymousConstants(9, 11).IsApplicable(
@@ -678,6 +682,104 @@ TEST(TransformationRecordSynonymousConstantsTest, ArrayCompositeConstants) {
   // components)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(36, 37).IsApplicable(
       context.get(), transformation_context));
+}
+
+TEST(TransformationRecordSynonymousConstantsTest, IntVectors) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %3 Location 0
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeInt 32 0
+          %8 = OpTypeVector %6 4
+          %9 = OpTypeVector %7 4
+         %10 = OpTypePointer Function %8
+         %11 = OpTypePointer Function %8
+         %12 = OpConstant %6 0
+         %13 = OpConstant %7 0
+         %14 = OpConstant %6 1
+         %25 = OpConstant %7 1
+         %15 = OpConstantComposite %8 %12 %12 %12 %12
+         %16 = OpConstantComposite %9 %13 %13 %13 %13
+         %17 = OpConstantComposite %8 %14 %12 %12 %14
+         %18 = OpConstantComposite %9 %25 %13 %13 %25
+         %19 = OpConstantNull %8
+         %20 = OpConstantNull %9
+         %21 = OpTypeFloat 32
+         %22 = OpTypeVector %21 4
+         %23 = OpTypePointer Output %22
+          %3 = OpVariable %23 Output
+          %2 = OpFunction %4 None %5
+         %24 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // %15 and %17 are not equivalent (having non-equivalent components)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(15, 17).IsApplicable(
+      context.get(), transformation_context));
+
+  // %17 and %19 are not equivalent (%19 is null, %17 is non-zero)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(17, 19).IsApplicable(
+      context.get(), transformation_context));
+
+  // %17 and %20 are not equivalent (%19 is null, %20 is non-zero)
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(17, 20).IsApplicable(
+      context.get(), transformation_context));
+
+  // %15 and %16 are equivalent (having pairwise equivalent components)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(15, 16).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(15, 16, context.get(),
+                                         &transformation_context);
+
+  // %17 and %18 are equivalent (having pairwise equivalent components)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(17, 18).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(17, 18, context.get(),
+                                         &transformation_context);
+
+  // %19 and %20 are equivalent (both null vectors with compatible types)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(19, 20).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(19, 20, context.get(),
+                                         &transformation_context);
+
+  // %15 and %19 are equivalent (they have compatible types, %15 is zero-like
+  // and %19 is null)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(15, 19).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(15, 19, context.get(),
+                                         &transformation_context);
+
+  // %15 and %20 are equivalent (they have compatible types, %15 is zero-like
+  // and %20 is null)
+  ASSERT_TRUE(TransformationRecordSynonymousConstants(15, 20).IsApplicable(
+      context.get(), transformation_context));
+
+  ApplyTransformationAndCheckFactManager(15, 20, context.get(),
+                                         &transformation_context);
 }
 
 TEST(TransformationRecordSynonymousConstantsTest, FirstIrrelevantConstant) {
