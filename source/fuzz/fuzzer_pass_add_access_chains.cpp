@@ -154,20 +154,20 @@ void FuzzerPassAddAccessChains::Apply() {
               //   the maximum value for an index
               // - a new pair of fresh ids for the clamping instructions
               FindOrCreateBoolType();
-              FindOrCreateIntegerConstant({bound - 1}, 32, is_signed);
+              FindOrCreateIntegerConstant({bound - 1}, 32, is_signed, false);
               std::pair<uint32_t, uint32_t> fresh_pair_of_ids = {
                   GetFuzzerContext()->GetFreshId(),
                   GetFuzzerContext()->GetFreshId()};
               fresh_ids_for_clamping.emplace_back(fresh_pair_of_ids);
 
-              index_ids.push_back(
-                  FindOrCreateIntegerConstant({index_value}, 32, is_signed));
+              index_ids.push_back(FindOrCreateIntegerConstant(
+                  {index_value}, 32, is_signed, false));
               subobject_type_id = subobject_type->GetSingleWordInOperand(0);
 
             } break;
             case SpvOpTypeStruct:
               index_ids.push_back(FindOrCreateIntegerConstant(
-                  {index_value}, 32, GetFuzzerContext()->ChooseEven()));
+                  {index_value}, 32, GetFuzzerContext()->ChooseEven(), false));
               subobject_type_id =
                   subobject_type->GetSingleWordInOperand(index_value);
               break;
