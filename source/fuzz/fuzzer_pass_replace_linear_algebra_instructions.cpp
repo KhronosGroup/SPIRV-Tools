@@ -41,7 +41,8 @@ void FuzzerPassReplaceLinearAlgebraInstructions::Apply() {
     // Right now we only support certain operations. When this issue is
     // addressed the following conditional can use the function
     // |spvOpcodeIsLinearAlgebra|.
-    if (instruction->opcode() != SpvOpVectorTimesScalar &&
+    if (instruction->opcode() != SpvOpTranspose &&
+        instruction->opcode() != SpvOpVectorTimesScalar &&
         instruction->opcode() != SpvOpMatrixTimesScalar &&
         instruction->opcode() != SpvOpVectorTimesMatrix &&
         instruction->opcode() != SpvOpMatrixTimesVector &&
