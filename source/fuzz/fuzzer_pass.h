@@ -175,8 +175,7 @@ class FuzzerPass {
   // with |words| as its value.  If either the required integer type or the
   // constant do not exist, transformations are applied to add them.
   // The returned id either participates in IdIsIrrelevant fact or not,
-  // depending
-  // on the |is_irrelevant| parameter.
+  // depending on the |is_irrelevant| parameter.
   uint32_t FindOrCreateIntegerConstant(const std::vector<uint32_t>& words,
                                        uint32_t width, bool is_signed,
                                        bool is_irrelevant);
