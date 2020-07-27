@@ -38,15 +38,16 @@ class TransformationReplaceAddSubMulWithCarryingExtended
   //   holding the intermediate result.
   // - |message_.result_id| must refer to an OpIAdd or OpISub or OpIMul
   //   instruction.
+  // - For OpIAdd, OpISub both operands must be unsigned.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow,
-  // OpIMul with OpUMulExtended or OpSMulExtended and stores the result
-  // into a |message_.struct_fresh_id| and extracts the first element of the
-  // result into the original |message_.result_id|. This value is the same as
-  // the result of the original instruction.
+  // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow, OpIMul with
+  // OpUMulExtended or OpSMulExtended and stores the result into a
+  // |message_.struct_fresh_id|. Extracts the first element of the result into
+  // the original |message._result_id|. This value is the same as the result of
+  // the original instruction.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

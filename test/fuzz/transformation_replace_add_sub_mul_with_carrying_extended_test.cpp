@@ -113,15 +113,15 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 
-  // Bad: The transformation cannot be applied to a OpSDiv.
+  // Bad: The transformation cannot be applied to an instruction OpSDiv.
   auto transformation_bad_2 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 15);
 
   ASSERT_FALSE(
       transformation_bad_2.IsApplicable(context.get(), transformation_context));
 
-  // Bad: The transformation cannot be applied to OpIAdd that has signed
-  // variables as operands.
+  // Bad: The transformation cannot be applied to an instruction OpIAdd that has
+  // signed variables as operands.
   auto transformation_bad_3 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 18);
 
@@ -152,6 +152,7 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   transformation_good_3.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
+  // Explicitly create the required struct type for the OpSMulExtended.
   std::vector<uint32_t> operand_type_ids = {6, 6};
   fuzzerutil::AddStructType(context.get(), 54, operand_type_ids);
   auto transformation_good_4 =

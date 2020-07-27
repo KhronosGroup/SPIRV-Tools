@@ -1288,11 +1288,12 @@ message TransformationRecordSynonymousConstants {
 
 message TransformationReplaceAddSubMulWithCarryingExtended {
 
-   // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow,
-   // OpIMul with OpUMulExtended or OpSMulExtended and stores the result
-   // into a |struct_fresh_id| and extracts the first element of the result into
-   // the original |result_id|. This value is the same as the result of
-   // the original instruction.
+   // Replaces OpIAdd (both operands unsigned) with OpIAddCarry, OpISub
+   // (both operands unsigned) with OpISubBorrow, OpIMul with OpUMulExtended
+   // (both operands unsigned) or OpSMulExtended (both operands signed) and
+   // stores the result into a |struct_fresh_id|. Extracts the first element
+   // of the result into the original |result_id|. This value is the same
+   // as the result of the original instruction.
 
    //The fresh id of the new result.
    uint32 struct_fresh_id = 1;

@@ -34,11 +34,15 @@ FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::
 
 void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
   GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
+
+    // Randomly decide whether to apply the transformation.
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()
                 ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
       return;
     }
+
+    // Check if the transformation can be applied (opcode, signedness).
     auto instruction_opcode = instruction->opcode();
     if (instruction_opcode != SpvOpIAdd && instruction_opcode != SpvOpISub &&
         instruction_opcode != SpvOpIMul) {
@@ -73,12 +77,15 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
       default:
         break;
     }
+
+    // Check if the required struct type already exists.
     std::vector<uint32_t> operand_type_ids;
     operand_type_ids.push_back(operand_1_type_id);
     operand_type_ids.push_back(operand_2_type_id);
     uint32_t struct_type_id =
         fuzzerutil::MaybeGetStructType(GetIRContext(), operand_type_ids);
     if (struct_type_id == 0) {
+      // If not, get a fresh id and add the type.
       struct_type_id = GetFuzzerContext()->GetFreshId();
       fuzzerutil::AddStructType(GetIRContext(), struct_type_id,
                                 operand_type_ids);
