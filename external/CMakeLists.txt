@@ -13,6 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Utility functions for pushing & popping variables.
+function(push_variable var val)
+    set("${var}_SAVE_STACK" "${${var}}" "${${var}_SAVE_STACK}" PARENT_SCOPE)
+    set(${var} ${val} PARENT_SCOPE)
+endfunction()
+function(pop_variable var)
+    set(save_stack "${${var}_SAVE_STACK}")
+    list(GET save_stack 0 val)
+    list(REMOVE_AT save_stack 0)
+    set("${var}_SAVE_STACK" "${save_stack}" PARENT_SCOPE)
+    set(${var} ${val} PARENT_SCOPE)
+endfunction()
+
 if (DEFINED SPIRV-Headers_SOURCE_DIR)
   # This allows flexible position of the SPIRV-Headers repo.
   set(SPIRV_HEADER_DIR ${SPIRV-Headers_SOURCE_DIR})
@@ -61,7 +74,11 @@ if (NOT ${SPIRV_SKIP_TESTS})
           "Use shared (DLL) run-time lib even when Google Test is built as static lib."
           ON)
       endif()
+      # gtest requires special defines for building as a shared 
+      # library, simply always build as static.
+      push_variable(BUILD_SHARED_LIBS 0) 
       add_subdirectory(${GMOCK_DIR} EXCLUDE_FROM_ALL)
+      pop_variable(BUILD_SHARED_LIBS) 
     endif()
   endif()
   if (TARGET gmock)
@@ -108,7 +125,9 @@ if (NOT ${SPIRV_SKIP_TESTS})
       if (NOT TARGET effcee)
         set(EFFCEE_BUILD_TESTING OFF CACHE BOOL "Do not build Effcee test suite")
       endif()
+      push_variable(BUILD_SHARED_LIBS 0) # effcee does not export any symbols for building as a DLL. Always build as static.
       add_subdirectory(effcee EXCLUDE_FROM_ALL)
+      pop_variable(BUILD_SHARED_LIBS)
       set_property(TARGET effcee PROPERTY FOLDER Effcee)
       # Turn off warnings for effcee and re2
       set_property(TARGET effcee APPEND PROPERTY COMPILE_OPTIONS -w)
