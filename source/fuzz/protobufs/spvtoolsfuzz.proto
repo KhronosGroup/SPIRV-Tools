@@ -407,6 +407,7 @@ message Transformation {
     TransformationReplaceCopyObjectWithStoreLoad replace_copy_object_with_store_load = 60;
     TransformationReplaceCopyMemoryWithLoadStore replace_copy_memory_with_load_store = 61;
     TransformationReplaceLoadStoreWithCopyMemory replace_load_store_with_copy_memory = 62;
+    TransformationAddLoopPreheader add_loop_preheader = 63;
     // Add additional option using the next available number.
   }
 }
@@ -700,6 +701,32 @@ message TransformationAddLocalVariable {
   // performed in an arbitrary fashion.
   bool value_is_irrelevant = 5;
 
+}
+
+message TransformationAddLoopPreheader {
+
+  // A transformation that adds a loop preheader block before the given loop header.
+
+  // The id of the loop header block
+  uint32 header_id = 1;
+
+  // A fresh id for the preheader block
+  uint32 fresh_id = 2;
+
+  // Fresh ids for splitting the OpPhi instructions in the header.
+  // A new OpPhi instruction in the preheader is needed for each OpPhi instruction in the header.
+  // This allows turning instructions of the form:
+  //
+  //   %header_id = OpLabel
+  //         %id1 = OpPhi %type %pred1_id %val1 %pred2_id %val2 %backedge_block_id %val3
+  //
+  // into:
+  //    %fresh_id = OpLabel
+  //     %phi_id1 = OpPhi %type %pred1_id %val1 %pred2_id %val2
+  //                OpBranch %header_id
+  //   %header_id = OpLabel
+  //         %id1 = OpPhi %type %fresh_id %phi_id1 %backedge_block_id %val3
+  repeated uint32 phi_id = 3;
 }
 
 message TransformationAddNoContractionDecoration {
