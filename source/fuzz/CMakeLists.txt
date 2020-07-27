@@ -107,6 +107,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_global_variable.h
         transformation_add_image_sample_unused_components.h
         transformation_add_local_variable.h
+        transformation_add_loop_preheader.h
         transformation_add_no_contraction_decoration.h
         transformation_add_parameter.h
         transformation_add_relaxed_decoration.h
@@ -235,6 +236,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_global_variable.cpp
         transformation_add_image_sample_unused_components.cpp
         transformation_add_local_variable.cpp
+        transformation_add_loop_preheader.cpp
         transformation_add_no_contraction_decoration.cpp
         transformation_add_parameter.cpp
         transformation_add_relaxed_decoration.cpp

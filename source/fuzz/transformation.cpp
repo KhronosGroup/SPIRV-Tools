@@ -31,6 +31,7 @@
 #include "source/fuzz/transformation_add_global_variable.h"
 #include "source/fuzz/transformation_add_image_sample_unused_components.h"
 #include "source/fuzz/transformation_add_local_variable.h"
+#include "source/fuzz/transformation_add_loop_preheader.h"
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
 #include "source/fuzz/transformation_add_parameter.h"
 #include "source/fuzz/transformation_add_relaxed_decoration.h"
@@ -127,6 +128,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddLocalVariable:
       return MakeUnique<TransformationAddLocalVariable>(
           message.add_local_variable());
+    case protobufs::Transformation::TransformationCase::kAddLoopPreheader:
+      return MakeUnique<TransformationAddLoopPreheader>(
+          message.add_loop_preheader());
     case protobufs::Transformation::TransformationCase::
         kAddNoContractionDecoration:
       return MakeUnique<TransformationAddNoContractionDecoration>(
