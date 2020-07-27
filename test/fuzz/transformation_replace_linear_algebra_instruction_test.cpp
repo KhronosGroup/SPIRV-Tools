@@ -137,6 +137,333 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, IsApplicable) {
       transformation.IsApplicable(context.get(), transformation_context));
 }
 
+TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpTranspose) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %54 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeFloat 32
+          %5 = OpTypeVector %4 2
+          %6 = OpTypeVector %4 3
+          %7 = OpTypeVector %4 4
+          %8 = OpTypeMatrix %5 2
+          %9 = OpTypeMatrix %5 3
+         %10 = OpTypeMatrix %5 4
+         %11 = OpTypeMatrix %6 2
+         %12 = OpTypeMatrix %6 3
+         %13 = OpTypeMatrix %6 4
+         %14 = OpTypeMatrix %7 2
+         %15 = OpTypeMatrix %7 3
+         %16 = OpTypeMatrix %7 4
+
+; Constant scalars
+         %17 = OpConstant %4 1
+         %18 = OpConstant %4 2
+         %19 = OpConstant %4 3
+         %20 = OpConstant %4 4
+         %21 = OpConstant %4 5
+         %22 = OpConstant %4 6
+         %23 = OpConstant %4 7
+         %24 = OpConstant %4 8
+         %25 = OpConstant %4 9
+         %26 = OpConstant %4 10
+         %27 = OpConstant %4 11
+         %28 = OpConstant %4 12
+         %29 = OpConstant %4 13
+         %30 = OpConstant %4 14
+         %31 = OpConstant %4 15
+         %32 = OpConstant %4 16
+
+; Constant vectors
+         %33 = OpConstantComposite %5 %17 %18
+         %34 = OpConstantComposite %5 %19 %20
+         %35 = OpConstantComposite %5 %21 %22
+         %36 = OpConstantComposite %5 %23 %24
+         %37 = OpConstantComposite %6 %17 %18 %19
+         %38 = OpConstantComposite %6 %20 %21 %22
+         %39 = OpConstantComposite %6 %23 %24 %25
+         %40 = OpConstantComposite %6 %26 %27 %28
+         %41 = OpConstantComposite %7 %17 %18 %19 %20
+         %42 = OpConstantComposite %7 %21 %22 %23 %24
+         %43 = OpConstantComposite %7 %25 %26 %27 %28
+         %44 = OpConstantComposite %7 %29 %30 %31 %32
+
+; Constant matrices
+         %45 = OpConstantComposite %8 %33 %34
+         %46 = OpConstantComposite %9 %33 %34 %35
+         %47 = OpConstantComposite %10 %33 %34 %35 %36
+         %48 = OpConstantComposite %11 %37 %38
+         %49 = OpConstantComposite %12 %37 %38 %39
+         %50 = OpConstantComposite %13 %37 %38 %39 %40
+         %51 = OpConstantComposite %14 %41 %42
+         %52 = OpConstantComposite %15 %41 %42 %43
+         %53 = OpConstantComposite %16 %41 %42 %43 %44
+
+; main function
+         %54 = OpFunction %2 None %3
+         %55 = OpLabel
+
+; Transposing a 2x2 matrix
+         %56 = OpTranspose %8 %45
+
+; Transposing a 2x3 matrix
+         %57 = OpTranspose %11 %46
+
+; Transposing a 2x4 matrix
+         %58 = OpTranspose %14 %47
+
+; Transposing a 3x2 matrix
+         %59 = OpTranspose %9 %48
+
+; Transposing a 3x3 matrix
+         %60 = OpTranspose %12 %49
+
+; Transposing a 3x4 matrix
+         %61 = OpTranspose %15 %50
+
+; Transposing a 4x2 matrix
+         %62 = OpTranspose %10 %51
+
+; Transposing a 4x3 matrix
+         %63 = OpTranspose %13 %52
+
+; Transposing a 4x4 matrix
+         %64 = OpTranspose %16 %53
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(56, SpvOpTranspose, 0);
+  auto transformation = TransformationReplaceLinearAlgebraInstruction(
+      {65, 66, 67, 68, 69, 70, 71, 72, 73, 74}, instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(57, SpvOpTranspose, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction(
+      {75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88},
+      instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(58, SpvOpTranspose, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction(
+      {89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105,
+       106},
+      instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(59, SpvOpTranspose, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction(
+      {107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120,
+       121},
+      instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(60, SpvOpTranspose, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction(
+      {122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,
+       133, 134, 135, 136, 137, 138, 139, 140, 141, 142},
+      instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %54 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeFloat 32
+          %5 = OpTypeVector %4 2
+          %6 = OpTypeVector %4 3
+          %7 = OpTypeVector %4 4
+          %8 = OpTypeMatrix %5 2
+          %9 = OpTypeMatrix %5 3
+         %10 = OpTypeMatrix %5 4
+         %11 = OpTypeMatrix %6 2
+         %12 = OpTypeMatrix %6 3
+         %13 = OpTypeMatrix %6 4
+         %14 = OpTypeMatrix %7 2
+         %15 = OpTypeMatrix %7 3
+         %16 = OpTypeMatrix %7 4
+
+; Constant scalars
+         %17 = OpConstant %4 1
+         %18 = OpConstant %4 2
+         %19 = OpConstant %4 3
+         %20 = OpConstant %4 4
+         %21 = OpConstant %4 5
+         %22 = OpConstant %4 6
+         %23 = OpConstant %4 7
+         %24 = OpConstant %4 8
+         %25 = OpConstant %4 9
+         %26 = OpConstant %4 10
+         %27 = OpConstant %4 11
+         %28 = OpConstant %4 12
+         %29 = OpConstant %4 13
+         %30 = OpConstant %4 14
+         %31 = OpConstant %4 15
+         %32 = OpConstant %4 16
+
+; Constant vectors
+         %33 = OpConstantComposite %5 %17 %18
+         %34 = OpConstantComposite %5 %19 %20
+         %35 = OpConstantComposite %5 %21 %22
+         %36 = OpConstantComposite %5 %23 %24
+         %37 = OpConstantComposite %6 %17 %18 %19
+         %38 = OpConstantComposite %6 %20 %21 %22
+         %39 = OpConstantComposite %6 %23 %24 %25
+         %40 = OpConstantComposite %6 %26 %27 %28
+         %41 = OpConstantComposite %7 %17 %18 %19 %20
+         %42 = OpConstantComposite %7 %21 %22 %23 %24
+         %43 = OpConstantComposite %7 %25 %26 %27 %28
+         %44 = OpConstantComposite %7 %29 %30 %31 %32
+
+; Constant matrices
+         %45 = OpConstantComposite %8 %33 %34
+         %46 = OpConstantComposite %9 %33 %34 %35
+         %47 = OpConstantComposite %10 %33 %34 %35 %36
+         %48 = OpConstantComposite %11 %37 %38
+         %49 = OpConstantComposite %12 %37 %38 %39
+         %50 = OpConstantComposite %13 %37 %38 %39 %40
+         %51 = OpConstantComposite %14 %41 %42
+         %52 = OpConstantComposite %15 %41 %42 %43
+         %53 = OpConstantComposite %16 %41 %42 %43 %44
+
+; main function
+         %54 = OpFunction %2 None %3
+         %55 = OpLabel
+
+; Transposing a 2x2 matrix
+         %65 = OpCompositeExtract %5 %45 0
+         %66 = OpCompositeExtract %4 %65 0
+         %67 = OpCompositeExtract %5 %45 1
+         %68 = OpCompositeExtract %4 %67 0
+         %69 = OpCompositeConstruct %5 %66 %68
+         %70 = OpCompositeExtract %5 %45 0
+         %71 = OpCompositeExtract %4 %70 1
+         %72 = OpCompositeExtract %5 %45 1
+         %73 = OpCompositeExtract %4 %72 1
+         %74 = OpCompositeConstruct %5 %71 %73
+         %56 = OpCompositeConstruct %8 %69 %74
+
+; Transposing a 2x3 matrix
+         %75 = OpCompositeExtract %5 %46 0
+         %76 = OpCompositeExtract %4 %75 0
+         %77 = OpCompositeExtract %5 %46 1
+         %78 = OpCompositeExtract %4 %77 0
+         %79 = OpCompositeExtract %5 %46 2
+         %80 = OpCompositeExtract %4 %79 0
+         %81 = OpCompositeConstruct %6 %76 %78 %80
+         %82 = OpCompositeExtract %5 %46 0
+         %83 = OpCompositeExtract %4 %82 1
+         %84 = OpCompositeExtract %5 %46 1
+         %85 = OpCompositeExtract %4 %84 1
+         %86 = OpCompositeExtract %5 %46 2
+         %87 = OpCompositeExtract %4 %86 1
+         %88 = OpCompositeConstruct %6 %83 %85 %87
+         %57 = OpCompositeConstruct %11 %81 %88
+
+; Transposing a 2x4 matrix
+         %89 = OpCompositeExtract %5 %47 0
+         %90 = OpCompositeExtract %4 %89 0
+         %91 = OpCompositeExtract %5 %47 1
+         %92 = OpCompositeExtract %4 %91 0
+         %93 = OpCompositeExtract %5 %47 2
+         %94 = OpCompositeExtract %4 %93 0
+         %95 = OpCompositeExtract %5 %47 3
+         %96 = OpCompositeExtract %4 %95 0
+         %97 = OpCompositeConstruct %7 %90 %92 %94 %96
+         %98 = OpCompositeExtract %5 %47 0
+         %99 = OpCompositeExtract %4 %98 1
+        %100 = OpCompositeExtract %5 %47 1
+        %101 = OpCompositeExtract %4 %100 1
+        %102 = OpCompositeExtract %5 %47 2
+        %103 = OpCompositeExtract %4 %102 1
+        %104 = OpCompositeExtract %5 %47 3
+        %105 = OpCompositeExtract %4 %104 1
+        %106 = OpCompositeConstruct %7 %99 %101 %103 %105
+         %58 = OpCompositeConstruct %14 %97 %106
+
+; Transposing a 3x2 matrix
+        %107 = OpCompositeExtract %6 %48 0
+        %108 = OpCompositeExtract %4 %107 0
+        %109 = OpCompositeExtract %6 %48 1
+        %110 = OpCompositeExtract %4 %109 0
+        %111 = OpCompositeConstruct %5 %108 %110
+        %112 = OpCompositeExtract %6 %48 0
+        %113 = OpCompositeExtract %4 %112 1
+        %114 = OpCompositeExtract %6 %48 1
+        %115 = OpCompositeExtract %4 %114 1
+        %116 = OpCompositeConstruct %5 %113 %115
+        %117 = OpCompositeExtract %6 %48 0
+        %118 = OpCompositeExtract %4 %117 2
+        %119 = OpCompositeExtract %6 %48 1
+        %120 = OpCompositeExtract %4 %119 2
+        %121 = OpCompositeConstruct %5 %118 %120
+         %59 = OpCompositeConstruct %9 %111 %116 %121
+
+; Transposing a 3x3 matrix
+        %122 = OpCompositeExtract %6 %49 0
+        %123 = OpCompositeExtract %4 %122 0
+        %124 = OpCompositeExtract %6 %49 1
+        %125 = OpCompositeExtract %4 %124 0
+        %126 = OpCompositeExtract %6 %49 2
+        %127 = OpCompositeExtract %4 %126 0
+        %128 = OpCompositeConstruct %6 %123 %125 %127
+        %129 = OpCompositeExtract %6 %49 0
+        %130 = OpCompositeExtract %4 %129 1
+        %131 = OpCompositeExtract %6 %49 1
+        %132 = OpCompositeExtract %4 %131 1
+        %133 = OpCompositeExtract %6 %49 2
+        %134 = OpCompositeExtract %4 %133 1
+        %135 = OpCompositeConstruct %6 %130 %132 %134
+        %136 = OpCompositeExtract %6 %49 0
+        %137 = OpCompositeExtract %4 %136 2
+        %138 = OpCompositeExtract %6 %49 1
+        %139 = OpCompositeExtract %4 %138 2
+        %140 = OpCompositeExtract %6 %49 2
+        %141 = OpCompositeExtract %4 %140 2
+        %142 = OpCompositeConstruct %6 %137 %139 %141
+         %60 = OpCompositeConstruct %12 %128 %135 %142
+
+; Transposing a 3x4 matrix
+         %61 = OpTranspose %15 %50
+
+; Transposing a 4x2 matrix
+         %62 = OpTranspose %10 %51
+
+; Transposing a 4x3 matrix
+         %63 = OpTranspose %13 %52
+
+; Transposing a 4x4 matrix
+         %64 = OpTranspose %16 %53
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+}
+
 TEST(TransformationReplaceLinearAlgebraInstructionTest,
      ReplaceOpVectorTimesScalar) {
   std::string reference_shader = R"(
