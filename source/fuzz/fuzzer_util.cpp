@@ -1194,7 +1194,7 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
 }
 
 bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
-                          uint32_t type2_id) {
+                           uint32_t type2_id) {
   if (type1_id == type2_id) {
     return true;
   }
