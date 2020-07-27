@@ -456,6 +456,13 @@ inline uint32_t FloatToWord(float value) {
   return result;
 }
 
+// Returns true if any of the following is true:
+// - |type1_id| and |type2_id| are the same id
+// - |type1_id| and |type2_id| refer to integer scalar or vector types, only
+//   differing by their signedness.
+bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
+                           uint32_t type2_id);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz

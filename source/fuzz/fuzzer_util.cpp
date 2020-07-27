@@ -1241,6 +1241,38 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
   UpdateModuleIdBound(ir_context, result_id);
 }
 
+bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
+                           uint32_t type2_id) {
+  if (type1_id == type2_id) {
+    return true;
+  }
+
+  auto type1 = ir_context->get_type_mgr()->GetType(type1_id);
+  auto type2 = ir_context->get_type_mgr()->GetType(type2_id);
+
+  // Integer scalar types must have the same width
+  if (type1->AsInteger() && type2->AsInteger()) {
+    return type1->AsInteger()->width() == type2->AsInteger()->width();
+  }
+
+  // Integer vector types must have the same number of components and their
+  // component types must be integers with the same width.
+  if (type1->AsVector() && type2->AsVector()) {
+    auto component_type1 = type1->AsVector()->element_type()->AsInteger();
+    auto component_type2 = type2->AsVector()->element_type()->AsInteger();
+
+    // Only check the component count and width if they are integer.
+    if (component_type1 && component_type2) {
+      return type1->AsVector()->element_count() ==
+                 type2->AsVector()->element_count() &&
+             component_type1->width() == component_type2->width();
+    }
+  }
+
+  // In all other cases, the types cannot be considered equal.
+  return false;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
