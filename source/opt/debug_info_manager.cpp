@@ -33,6 +33,7 @@ static const uint32_t kDebugDeclareOperandLocalVariableIndex = 4;
 static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 static const uint32_t kDebugValueOperandLocalVariableIndex = 4;
 static const uint32_t kDebugValueOperandExpressionIndex = 6;
+static const uint32_t kDebugValueOperandIndexesIndex = 7;
 static const uint32_t kDebugOperationOperandOperationIndex = 4;
 static const uint32_t kOpVariableOperandStorageClassIndex = 2;
 static const uint32_t kDebugLocalVariableOperandParentIndex = 9;
@@ -448,45 +449,53 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
   return IsAncestorOfScope(instr_scope_id, decl_scope_id);
 }
 
-void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
-                                     uint32_t variable_id, uint32_t value_id,
-                                     Instruction* insert_pos) {
+Instruction* DebugInfoManager::AddDebugValueWithIndex(
+    uint32_t dbg_local_var_id, uint32_t value_id, uint32_t expr_id,
+    uint32_t index_id, Instruction* insert_before) {
+  uint32_t result_id = context()->TakeNextId();
+  if (!result_id) return nullptr;
+  std::unique_ptr<Instruction> new_dbg_value(new Instruction(
+      context(), SpvOpExtInst, context()->get_type_mgr()->GetVoidTypeId(),
+      result_id,
+      {
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+           {context()
+                ->get_feature_mgr()
+                ->GetExtInstImportId_OpenCL100DebugInfo()}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+           {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {dbg_local_var_id}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {value_id}},
+          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+           {expr_id == 0 ? GetEmptyDebugExpression()->result_id() : expr_id}},
+      }));
+  if (index_id) {
+    new_dbg_value->AddOperand(
+        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {index_id}});
+  }
+
+  Instruction* added_dbg_value =
+      insert_before->InsertBefore(std::move(new_dbg_value));
+  AnalyzeDebugInst(added_dbg_value);
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);
+  if (context()->AreAnalysesValid(
+          IRContext::Analysis::kAnalysisInstrToBlockMapping)) {
+    auto insert_blk = context()->get_instr_block(insert_before);
+    context()->set_instr_block(added_dbg_value, insert_blk);
+  }
+  return added_dbg_value;
+}
+
+void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
+    Instruction* scope_and_line, uint32_t variable_id, uint32_t value_id,
+    Instruction* insert_pos) {
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
 
   uint32_t instr_scope_id = scope_and_line->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
     if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
-
-    uint32_t result_id = context()->TakeNextId();
-    std::unique_ptr<Instruction> new_dbg_value(new Instruction(
-        context(), SpvOpExtInst, context()->get_type_mgr()->GetVoidTypeId(),
-        result_id,
-        {
-            {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-             {context()
-                  ->get_feature_mgr()
-                  ->GetExtInstImportId_OpenCL100DebugInfo()}},
-            {spv_operand_type_t::SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
-             {static_cast<uint32_t>(OpenCLDebugInfo100DebugValue)}},
-            {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-             {dbg_decl_or_val->GetSingleWordOperand(
-                 kDebugValueOperandLocalVariableIndex)}},
-            {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {value_id}},
-            {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-             {GetEmptyDebugExpression()->result_id()}},
-        }));
-
-    if (dbg_decl_or_val->NumOperands() >
-        kDebugValueOperandExpressionIndex + 1) {
-      assert(dbg_decl_or_val->GetOpenCL100DebugOpcode() ==
-             OpenCLDebugInfo100DebugValue);
-      for (uint32_t i = kDebugValueOperandExpressionIndex + 1;
-           i < dbg_decl_or_val->NumOperands(); ++i) {
-        new_dbg_value->AddOperand({spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                                   {dbg_decl_or_val->GetSingleWordOperand(i)}});
-      }
-    }
 
     // Avoid inserting the new DebugValue between OpPhi or OpVariable
     // instructions.
@@ -496,17 +505,18 @@ void DebugInfoManager::AddDebugValue(Instruction* scope_and_line,
       insert_before = insert_before->NextNode();
     }
 
-    Instruction* added_dbg_value =
-        insert_before->InsertBefore(std::move(new_dbg_value));
-    added_dbg_value->UpdateDebugInfo(scope_and_line);
-    AnalyzeDebugInst(added_dbg_value);
-    if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
-      context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_value);
-    if (context()->AreAnalysesValid(
-            IRContext::Analysis::kAnalysisInstrToBlockMapping)) {
-      auto insert_blk = context()->get_instr_block(insert_before);
-      context()->set_instr_block(added_dbg_value, insert_blk);
+    uint32_t index_id = 0;
+    if (dbg_decl_or_val->NumOperands() > kDebugValueOperandIndexesIndex) {
+      index_id =
+          dbg_decl_or_val->GetSingleWordOperand(kDebugValueOperandIndexesIndex);
     }
+
+    Instruction* added_dbg_value =
+        AddDebugValueWithIndex(dbg_decl_or_val->GetSingleWordOperand(
+                                   kDebugValueOperandLocalVariableIndex),
+                               value_id, 0, index_id, insert_before);
+    assert(added_dbg_value != nullptr);
+    added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
   }
 }
 

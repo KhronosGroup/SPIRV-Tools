@@ -142,8 +142,16 @@ class DebugInfoManager {
   // Generates a DebugValue instruction with value |value_id| for every local
   // variable that is in the scope of |scope_and_line| and whose memory is
   // |variable_id| and inserts it after the instruction |insert_pos|.
-  void AddDebugValue(Instruction* scope_and_line, uint32_t variable_id,
-                     uint32_t value_id, Instruction* insert_pos);
+  void AddDebugValueIfVarDeclIsVisible(Instruction* scope_and_line,
+                                       uint32_t variable_id, uint32_t value_id,
+                                       Instruction* insert_pos);
+
+  // Generates a DebugValue instruction with |dbg_local_var_id|, |value_id|,
+  // |expr_id|, |index_id| operands and inserts it before |insert_before|.
+  Instruction* AddDebugValueWithIndex(uint32_t dbg_local_var_id,
+                                      uint32_t value_id, uint32_t expr_id,
+                                      uint32_t index_id,
+                                      Instruction* insert_before);
 
   // Erases |instr| from data structures of this class.
   void ClearDebugInfo(Instruction* instr);
