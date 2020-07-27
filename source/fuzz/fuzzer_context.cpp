@@ -84,6 +84,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyObjectWithStoreLoad =
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingIdWithSynonym = {10, 90};
 const std::pair<uint32_t, uint32_t>
     kChanceOfReplacingLinearAlgebraInstructions = {10, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfReplacingLoadStoreWithCopyMemory =
+    {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithGlobals = {
     30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithStruct = {
@@ -222,6 +224,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfReplacingIdWithSynonym);
   chance_of_replacing_linear_algebra_instructions_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingLinearAlgebraInstructions);
+  chance_of_replacing_load_store_with_copy_memory_ =
+      ChooseBetweenMinAndMax(kChanceOfReplacingLoadStoreWithCopyMemory);
   chance_of_replacing_parameters_with_globals_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingParametersWithGlobals);
   chance_of_replacing_parameters_with_struct_ =

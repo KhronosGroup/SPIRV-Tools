@@ -73,6 +73,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_replace_copy_memory_with_load_store_test.cpp
           transformation_replace_id_with_synonym_test.cpp
           transformation_replace_linear_algebra_instruction_test.cpp
+          transformation_replace_load_store_with_copy_memory_test.cpp
           transformation_replace_params_with_struct_test.cpp
           transformation_set_function_control_test.cpp
           transformation_set_loop_control_test.cpp
