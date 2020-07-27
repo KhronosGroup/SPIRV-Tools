@@ -714,7 +714,8 @@ message TransformationAddLoopPreheader {
   uint32 fresh_id = 2;
 
   // Fresh ids for splitting the OpPhi instructions in the header.
-  // A new OpPhi instruction in the preheader is needed for each OpPhi instruction in the header.
+  // A new OpPhi instruction in the preheader is needed for each OpPhi instruction in the header,
+  // if the header has more than one predecessor outside of the loop.
   // This allows turning instructions of the form:
   //
   //   %loop_header_block = OpLabel
