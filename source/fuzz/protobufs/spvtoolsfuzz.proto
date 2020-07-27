@@ -416,6 +416,13 @@ message TransformationAccessChain {
 
   // Adds an access chain instruction based on a given pointer and indices.
 
+  // When accessing a struct, the corresponding indices must be 32-bit integer constants.
+  // For any other composite, the indices can be any 32-bit integer, and the transformation
+  // adds two instructions for each such index to clamp it to the bound, as follows:
+  //
+  // %t1 = OpULessThanEqual %bool %index %bound_minus_one
+  // %t2 = OpSelect %int_type %t1 %index %bound_minus_one
+
   // Result id for the access chain
   uint32 fresh_id = 1;
 
@@ -428,6 +435,10 @@ message TransformationAccessChain {
   // A descriptor for an instruction in a block before which the new
   // OpAccessChain instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 4;
+
+  // Additional fresh ids, required to clamp index variables. A pair is needed
+  // for each access to a non-struct composite.
+  repeated UInt32Pair fresh_ids_for_clamping = 5;
 
 }
 

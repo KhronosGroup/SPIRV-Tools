@@ -141,6 +141,13 @@ uint32_t GetNumberOfStructMembers(
 uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
                       opt::IRContext* context);
 
+// Returns the bound for indexing into a composite of type
+// |composite_type_inst|, i.e. the number of fields of a struct, the size of an
+// array, the number of components of a vector, or the number of columns of a
+// matrix. |composite_type_inst| must be the type of a composite.
+uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
+                                   opt::IRContext* ir_context);
+
 // Returns true if and only if |context| is valid, according to the validator
 // instantiated with |validator_options|.
 bool IsValid(opt::IRContext* context, spv_validator_options validator_options);
@@ -393,6 +400,14 @@ uint32_t MaybeGetIntegerConstant(
     const TransformationContext& transformation_context,
     const std::vector<uint32_t>& words, uint32_t width, bool is_signed,
     bool is_irrelevant);
+
+// Returns the id of a 32-bit integer constant in the module with type
+// |int_type_id| and value |value|, or 0 if no such constant exists in the
+// module. |int_type_id| must exist in the module and it must correspond to a
+// 32-bit integer type.
+uint32_t MaybeGetIntegerConstantFromValueAndType(opt::IRContext* ir_context,
+                                                 uint32_t value,
+                                                 uint32_t int_type_id);
 
 // Returns the result id of an OpConstant instruction of floating-point type.
 // Returns 0 if no such instruction or type is present in the module.
