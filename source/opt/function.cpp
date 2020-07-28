@@ -227,18 +227,6 @@ BasicBlock* Function::InsertBasicBlockBefore(
   return nullptr;
 }
 
-uint32_t Function::GetReturnValueId() const {
-  auto post_dominator_analysis =
-      blocks_.front()->GetLabel()->context()->GetPostDominatorAnalysis(this);
-  for (auto& block : blocks_) {
-    if (post_dominator_analysis->Dominates(block.get(), entry().get()) &&
-        block->tail()->opcode() == SpvOpReturnValue) {
-      return block->tail()->GetSingleWordOperand(0);
-    }
-  }
-  return 0;
-}
-
 bool Function::HasEarlyReturn() const {
   auto post_dominator_analysis =
       blocks_.front()->GetLabel()->context()->GetPostDominatorAnalysis(this);

@@ -237,7 +237,6 @@ TEST(TransformationInlineFunctionTest, Apply) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  auto function_call_instruction = context.get()->get_def_use_mgr()->GetDef(43);
   auto transformation = TransformationInlineFunction({{22, 44},
                                                       {23, 45},
                                                       {24, 46},
@@ -253,10 +252,10 @@ TEST(TransformationInlineFunctionTest, Apply) {
                                                       {34, 56},
                                                       {35, 57},
                                                       {36, 58},
-                                                      {37, 59}},
+                                                      {37, 59},
+                                                      {38, 60}},
                                                      43);
   transformation.Apply(context.get(), &transformation_context);
-  context.get()->KillInst(function_call_instruction);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -334,7 +333,8 @@ TEST(TransformationInlineFunctionTest, Apply) {
          %57 = OpFMul %2 %55 %56
          %58 = OpFAdd %2 %48 %51
          %59 = OpFAdd %2 %54 %58
-         %43 = OpFAdd %2 %57 %59
+         %60 = OpFAdd %2 %57 %59
+         %43 = OpCopyObject %2 %60
                OpReturn
                OpFunctionEnd
   )";

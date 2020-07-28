@@ -49,6 +49,12 @@ class TransformationInlineFunction : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // Requires that the function contains at most one OpReturnValue instruction.
+  // Returns the id associated with this instruction if present, and 0
+  // otherwise.
+  static uint32_t GetReturnValueId(opt::IRContext* ir_context,
+                                   opt::Function* function);
+
  private:
   protobufs::TransformationInlineFunction message_;
 };

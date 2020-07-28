@@ -63,6 +63,7 @@ bool TransformationInlineFunction::IsApplicable(
 
   // |message_.result_id_map| must have an entry for every result id in the
   // called function.
+  uint32_t return_value_id = GetReturnValueId(ir_context, called_function);
   for (auto& block : *called_function) {
     // Since the entry block label will not be inlined, only the remaining
     // labels must have a corresponding value in the map.
@@ -71,8 +72,10 @@ bool TransformationInlineFunction::IsApplicable(
       return false;
     }
     for (auto& instruction : block) {
+      // If |instruction| has result id and is not the return value instruction,
+      // then it must have a mapped id in |message_.result_id_map|.
       if (instruction.HasResultId() &&
-          instruction.result_id() != called_function->GetReturnValueId() &&
+          instruction.result_id() != return_value_id &&
           !message_.result_id_map().count(instruction.result_id())) {
         return false;
       }
@@ -104,8 +107,9 @@ void TransformationInlineFunction::Apply(
     }
 
     for (auto& instruction : block) {
-      // The function return instruction will not be inlined.
-      if (&instruction == &*called_function->tail()->tail()) {
+      // The return instruction will be changed into an OpBranch to the basic
+      // block that follows the block containing the function call.
+      if (spvOpcodeIsReturn(instruction.opcode())) {
         continue;
       }
 
@@ -143,14 +147,6 @@ void TransformationInlineFunction::Apply(
         fuzzerutil::UpdateModuleIdBound(ir_context, result_id);
       }
 
-      // If the called function return instruction is OpReturnValue and the
-      // |cloned_instruction| result id is the returned value, then sets the
-      // |cloned_instruction| result id to the function call result id.
-      if (cloned_instruction->result_id() ==
-          called_function->GetReturnValueId()) {
-        cloned_instruction->SetResultId(function_call_instruction->result_id());
-      }
-
       if (cloned_instruction->opcode() == SpvOpVariable) {
         // All OpVariable instructions in a function must be in the first block
         // in the function.
@@ -163,13 +159,44 @@ void TransformationInlineFunction::Apply(
     }
   }
 
+  // If the return instruction is an OpReturnValue instruction, then an
+  // OpCopyObject instruction will be inserted to copy the returned value
+  // object.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+  auto returned_value_instruction =
+      ir_context->get_def_use_mgr()->GetDef(message_.result_id_map().at(
+          GetReturnValueId(ir_context, called_function)));
+  if (returned_value_instruction) {
+    auto copy_object_instruction = MakeUnique<opt::Instruction>(
+        ir_context, SpvOpCopyObject, returned_value_instruction->type_id(),
+        function_call_instruction->result_id(),
+        opt::Instruction::OperandList(
+            {{SPV_OPERAND_TYPE_ID,
+              {returned_value_instruction->result_id()}}}));
+    copy_object_instruction->InsertAfter(returned_value_instruction);
+    copy_object_instruction.release();
+  }
+
+  // Removes the function call instruction from the caller function.
+  ir_context->KillInst(function_call_instruction);
 }
 
 protobufs::Transformation TransformationInlineFunction::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_inline_function() = message_;
   return result;
+}
+
+uint32_t TransformationInlineFunction::GetReturnValueId(
+    opt::IRContext* ir_context, opt::Function* function) {
+  auto post_dominator_analysis = ir_context->GetPostDominatorAnalysis(function);
+  for (auto& block : *function) {
+    if (post_dominator_analysis->Dominates(&block, function->entry().get()) &&
+        block.tail()->opcode() == SpvOpReturnValue) {
+      return block.tail()->GetSingleWordOperand(0);
+    }
+  }
+  return 0;
 }
 
 }  // namespace fuzz

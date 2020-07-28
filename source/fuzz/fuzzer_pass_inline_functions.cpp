@@ -31,64 +31,60 @@ FuzzerPassInlineFunctions::FuzzerPassInlineFunctions(
 FuzzerPassInlineFunctions::~FuzzerPassInlineFunctions() = default;
 
 void FuzzerPassInlineFunctions::Apply() {
+  std::vector<opt::Instruction*> function_call_instructions;
+
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
-      auto instruction = block.begin();
-      while (instruction != block.end()) {
+      for (auto& instruction : block) {
         // |instruction| must be OpFunctionCall to consider applying the
         // transformation.
-        if (instruction->opcode() != SpvOpFunctionCall) {
-          ++instruction;
+        if (instruction.opcode() != SpvOpFunctionCall) {
           continue;
         }
 
         // |called_function| must not have an early return.
         auto called_function = fuzzerutil::FindFunction(
-            GetIRContext(), instruction->GetSingleWordInOperand(0));
+            GetIRContext(), instruction.GetSingleWordInOperand(0));
         if (called_function->HasEarlyReturn()) {
-          ++instruction;
           continue;
         }
 
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfInliningFunction())) {
-          ++instruction;
           continue;
         }
 
-        // Mapping the called function instructions.
-        std::map<uint32_t, uint32_t> result_id_map;
-        for (auto& called_function_block : *called_function) {
-          // The called function entry block label will not be inlined.
-          if (&called_function_block != &*called_function->entry()) {
-            result_id_map[called_function_block.GetLabelInst()->result_id()] =
-                GetFuzzerContext()->GetFreshId();
-          }
-
-          for (auto& instruction_to_inline : called_function_block) {
-            // The return value id will not be mapped.
-            if (instruction_to_inline.HasResultId() &&
-                instruction_to_inline.result_id() ==
-                    called_function->GetReturnValueId()) {
-              continue;
-            }
-
-            // The remaining instructions are mapped to fresh ids.
-            if (instruction_to_inline.HasResultId()) {
-              result_id_map[instruction_to_inline.result_id()] =
-                  GetFuzzerContext()->GetFreshId();
-            }
-          }
-        }
-
-        // Applies the inline function transformation.
-        ApplyTransformation(TransformationInlineFunction(
-            result_id_map, instruction->result_id()));
-
+        function_call_instructions.push_back(&instruction);
         // Erases the function call instruction from the caller function.
-        instruction = instruction.Erase();
       }
     }
+  }
+
+  for (auto& instruction : function_call_instructions) {
+    auto called_function = fuzzerutil::FindFunction(
+        GetIRContext(), instruction->GetSingleWordInOperand(0));
+
+    // Mapping the called function instructions.
+    std::map<uint32_t, uint32_t> result_id_map;
+    for (auto& called_function_block : *called_function) {
+      // The called function entry block label will not be inlined.
+      if (&called_function_block != &*called_function->entry()) {
+        result_id_map[called_function_block.GetLabelInst()->result_id()] =
+            GetFuzzerContext()->GetFreshId();
+      }
+
+      for (auto& instruction_to_inline : called_function_block) {
+        // The instructions are mapped to fresh ids.
+        if (instruction_to_inline.HasResultId()) {
+          result_id_map[instruction_to_inline.result_id()] =
+              GetFuzzerContext()->GetFreshId();
+        }
+      }
+    }
+
+    // Applies the inline function transformation.
+    ApplyTransformation(
+        TransformationInlineFunction(result_id_map, instruction->result_id()));
   }
 }
 
