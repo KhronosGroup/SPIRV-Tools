@@ -20,8 +20,6 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 TEST(FuzzerPassAddCompositeInsertsTest, BasicScenarios) {
-  // This is a simple fuzzer pass and this test handles the main cases.
-
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -88,6 +86,59 @@ TEST(FuzzerPassAddCompositeInsertsTest, BasicScenarios) {
       context.get(), &transformation_context, &fuzzer_context,
       &transformation_sequence);
   fuzzer_pass.Apply();
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "m1"
+               OpName %18 "m2"
+               OpName %26 "m3"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 3
+          %8 = OpTypeMatrix %7 3
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %6 1
+         %12 = OpConstantComposite %7 %11 %11 %11
+         %13 = OpConstant %6 2
+         %14 = OpConstantComposite %7 %13 %13 %13
+         %15 = OpConstant %6 3
+         %16 = OpConstantComposite %7 %15 %15 %15
+         %17 = OpConstantComposite %8 %12 %14 %16
+         %19 = OpConstant %6 4
+         %20 = OpConstantComposite %7 %19 %19 %19
+         %21 = OpConstant %6 5
+         %22 = OpConstantComposite %7 %21 %21 %21
+         %23 = OpConstant %6 6
+         %24 = OpConstantComposite %7 %23 %23 %23
+         %25 = OpConstantComposite %8 %20 %22 %24
+         %27 = OpConstant %6 7
+         %28 = OpConstantComposite %7 %27 %27 %27
+         %29 = OpConstant %6 8
+         %30 = OpConstantComposite %7 %29 %29 %29
+         %31 = OpConstant %6 9
+         %32 = OpConstantComposite %7 %31 %31 %31
+         %33 = OpConstantComposite %8 %28 %30 %32
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %10 = OpVariable %9 Function
+         %18 = OpVariable %9 Function
+         %26 = OpVariable %9 Function
+        %100 = OpCompositeInsert %7 %11 %14 2
+               OpStore %10 %17
+               OpStore %18 %25
+        %101 = OpCompositeInsert %8 %20 %17 2
+               OpStore %26 %33
+        %102 = OpCompositeInsert %8 %28 %33 0
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace

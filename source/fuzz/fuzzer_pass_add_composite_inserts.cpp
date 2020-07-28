@@ -42,10 +42,10 @@ void FuzzerPassAddCompositeInserts::Apply() {
 
         // Randomly decide whether to try adding an OpCompositeInsert
         // instruction.
-        /*if (!GetFuzzerContext()->ChoosePercentage(
+        if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfAddingCompositeInsert())) {
           return;
-        }*/
+        }
 
         // It must be valid to insert an OpCompositeInsert instruction
         // before |instruction_iterator|.
@@ -54,7 +54,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
           return;
         }
 
-        // Look for available constants that have type OpCompositeConstant.
+        // Look for available constants that have the type OpCompositeConstant.
         std::vector<opt::Instruction*> available_composite_constants =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
@@ -102,9 +102,11 @@ void FuzzerPassAddCompositeInserts::Apply() {
                 [this, instruction_descriptor, constant_to_replace_type_id](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
+
                   if (instruction->type_id() != constant_to_replace_type_id) {
                     return false;
                   }
+
                   return fuzzerutil::IdIsAvailableBeforeInstruction(
                       ir_context,
                       FindInstruction(instruction_descriptor, ir_context),
@@ -118,9 +120,9 @@ void FuzzerPassAddCompositeInserts::Apply() {
 
         auto new_result_id = GetFuzzerContext()->GetFreshId();
 
-        // Insert an OpCompositeInsert instructions which copies
-        // |available_composite_constant| and in the copy replaces
-        // |constant_to_replace| with |available_constant|.
+        // Insert an OpCompositeInsert instruction which copies
+        // |available_composite_constant| and in the copied composite constant
+        // replaces |constant_to_replace| with |available_constant|.
         FindInstruction(instruction_descriptor, GetIRContext())
             ->InsertBefore(MakeUnique<opt::Instruction>(
                 GetIRContext(), SpvOpCompositeInsert,
