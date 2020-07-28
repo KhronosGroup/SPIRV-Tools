@@ -134,7 +134,7 @@ class DebugInfoManager {
                                     DebugInlinedAtContext* inlined_at_ctx);
 
   // Returns true if |variable_id| has DebugDeclare or DebugVal.
-  bool IsDebugDeclared(uint32_t variable_id);
+  bool IsVariableDebugDeclared(uint32_t variable_id);
 
   // Kills all DebugDeclares for |variable_id|
   void KillDebugDeclares(uint32_t variable_id);
@@ -168,7 +168,7 @@ class DebugInfoManager {
 
   // Returns true if |instr| is a DebugDeclare or a DebugValue with Deref
   // that is used for a declaration.
-  bool IsUsedForDebugDeclare(Instruction* instr);
+  bool IsDebugDeclare(Instruction* instr);
 
  private:
   IRContext* context() { return context_; }

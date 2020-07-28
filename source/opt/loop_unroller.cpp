@@ -609,7 +609,7 @@ void LoopUnrollerUtilsImpl::KillDebugDeclares(BasicBlock* bb) {
   std::vector<Instruction*> to_be_killed;
 
   bb->ForEachInst([&to_be_killed, this](Instruction* inst) {
-    if (context_->get_debug_info_mgr()->IsUsedForDebugDeclare(inst)) {
+    if (context_->get_debug_info_mgr()->IsDebugDeclare(inst)) {
       to_be_killed.push_back(inst);
     }
   });
