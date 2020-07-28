@@ -62,7 +62,6 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_adjust_selection_controls.h
         fuzzer_pass_apply_id_synonyms.h
         fuzzer_pass_construct_composites.h
-        fuzzer_pass_copy_instructions.h
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
         fuzzer_pass_invert_comparison_operators.h
@@ -76,6 +75,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_function_parameters.h
         fuzzer_pass_permute_instructions.h
         fuzzer_pass_permute_phi_operands.h
+        fuzzer_pass_propagate_instructions.h
         fuzzer_pass_push_ids_through_variables.h
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.h
         fuzzer_pass_replace_copy_memories_with_loads_stores.h
@@ -132,7 +132,6 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_extract.h
         transformation_compute_data_synonym_fact_closure.h
         transformation_context.h
-        transformation_copy_instruction.h
         transformation_equation_instruction.h
         transformation_function_call.h
         transformation_invert_comparison_operator.h
@@ -144,6 +143,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_outline_function.h
         transformation_permute_function_parameters.h
         transformation_permute_phi_operands.h
+        transformation_propagate_instruction_up.h
         transformation_push_id_through_variable.h
         transformation_record_synonymous_constants.h
         transformation_replace_add_sub_mul_with_carrying_extended.h
@@ -201,7 +201,6 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_adjust_selection_controls.cpp
         fuzzer_pass_apply_id_synonyms.cpp
         fuzzer_pass_construct_composites.cpp
-        fuzzer_pass_copy_instructions.cpp
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
         fuzzer_pass_invert_comparison_operators.cpp
@@ -215,6 +214,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_permute_function_parameters.cpp
         fuzzer_pass_permute_instructions.cpp
         fuzzer_pass_permute_phi_operands.cpp
+        fuzzer_pass_propagate_instructions.cpp
         fuzzer_pass_push_ids_through_variables.cpp
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.cpp
         fuzzer_pass_replace_copy_memories_with_loads_stores.cpp
@@ -270,7 +270,6 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_extract.cpp
         transformation_compute_data_synonym_fact_closure.cpp
         transformation_context.cpp
-        transformation_copy_instruction.cpp
         transformation_equation_instruction.cpp
         transformation_function_call.cpp
         transformation_invert_comparison_operator.cpp
@@ -282,6 +281,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_outline_function.cpp
         transformation_permute_function_parameters.cpp
         transformation_permute_phi_operands.cpp
+        transformation_propagate_instruction_up.cpp
         transformation_push_id_through_variable.cpp
         transformation_record_synonymous_constants.cpp
         transformation_replace_add_sub_mul_with_carrying_extended.cpp

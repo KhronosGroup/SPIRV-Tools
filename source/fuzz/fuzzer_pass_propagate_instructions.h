@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_COPY_INSTRUCTIONS_H_
-#define SOURCE_FUZZ_FUZZER_PASS_COPY_INSTRUCTIONS_H_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_PROPAGATE_INSTRUCTIONS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_PROPAGATE_INSTRUCTIONS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -21,14 +21,14 @@ namespace spvtools {
 namespace fuzz {
 
 // TODO
-class FuzzerPassCopyInstructions : public FuzzerPass {
+class FuzzerPassPropagateInstructions : public FuzzerPass {
  public:
-  FuzzerPassCopyInstructions(
+  FuzzerPassPropagateInstructions(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassCopyInstructions() override;
+  ~FuzzerPassPropagateInstructions() override;
 
   void Apply() override;
 };
@@ -36,4 +36,4 @@ class FuzzerPassCopyInstructions : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_COPY_INSTRUCTIONS_H_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_PROPAGATE_INSTRUCTIONS_H_

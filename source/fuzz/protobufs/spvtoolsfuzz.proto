@@ -411,7 +411,7 @@ message Transformation {
     TransformationMoveInstructionDown move_instruction_down = 64;
     TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
-    TransformationCopyInstruction copy_instruction = 67;
+    TransformationPropagateInstructionUp propagate_instruction_up = 67;
     // Add additional option using the next available number.
   }
 }
@@ -1032,18 +1032,6 @@ message TransformationComputeDataSynonymFactClosure {
 
 }
 
-message TransformationCopyInstruction {
-
-  // A transformation that tries to copy an instruction into preceding basic blocks.
-
-  // An instruction to copy.
-  InstructionDescriptor instruction_descriptor = 1;
-
-  // Fresh ids that will be used as result ids for |instruction_descriptor|'s copies.
-  repeated uint32 fresh_id = 2;
-
-}
-
 message TransformationEquationInstruction {
 
   // A transformation that adds an instruction to the module that defines an
@@ -1249,6 +1237,22 @@ message TransformationPermutePhiOperands {
   // A sequence of numbers in the range [0, n/2 - 1] where |n| is the number
   // of operands of the OpPhi instruction with |result_id|.
   repeated uint32 permutation = 2;
+
+}
+
+message TransformationPropagateInstructionUp {
+
+  // Propagates the first instruction in the block into the block's predecessors.
+
+  // Id of the block to propagate an instruction from.
+  uint32 block_id = 1;
+
+  // A map from the id of some predecessor of the |block_id| to the fresh id.
+  // The map contains a fresh id for at least every predecessor of the |block_id|.
+  //
+  // While maps are not fully deterministic, the way this map is used does not
+  // exhibit nondeterminism. Change to repeated Uint32Pair if this changes.
+  map<uint32, uint32> predecessor_id_to_fresh_id = 2;
 
 }
 
