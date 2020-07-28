@@ -86,8 +86,12 @@ void FuzzerPassOutlineFunctions::Apply() {
          postdominates_entry_block != nullptr;
          postdominates_entry_block = postdominator_analysis->ImmediateDominator(
              postdominates_entry_block)) {
+      // Consider the block if it is dominated by the entry block, ignore it if
+      // it is a continue target.
       if (dominator_analysis->Dominates(entry_block,
-                                        postdominates_entry_block)) {
+                                        postdominates_entry_block) &&
+          !GetIRContext()->GetStructuredCFGAnalysis()->IsContinueBlock(
+              postdominates_entry_block->id())) {
         candidate_exit_blocks.push_back(postdominates_entry_block);
       }
     }
@@ -96,6 +100,22 @@ void FuzzerPassOutlineFunctions::Apply() {
     }
     auto exit_block = candidate_exit_blocks[GetFuzzerContext()->RandomIndex(
         candidate_exit_blocks)];
+
+    // If the exit block is a merge block, try to split it and make the second
+    // block in the pair become the exit block.
+    if (GetIRContext()->GetStructuredCFGAnalysis()->IsMergeBlock(
+            exit_block->id())) {
+      uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
+
+      if (!MaybeApplyTransformation(TransformationSplitBlock(
+              MakeInstructionDescriptor(exit_block->id(),
+                                        exit_block->begin()->opcode(), 0),
+              new_block_id))) {
+        return;
+      }
+
+      exit_block = &*function->FindBlock(new_block_id);
+    }
 
     auto region_blocks = TransformationOutlineFunction::GetRegionBlocks(
         GetIRContext(), entry_block, exit_block);
