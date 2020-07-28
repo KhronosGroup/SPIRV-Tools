@@ -14,10 +14,6 @@
 
 #include "source/fuzz/transformation_move_instruction_down.h"
 
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 
@@ -51,25 +47,35 @@ bool TransformationMoveInstructionDown::IsApplicable(
          "Global instructions and function parameters are not supported");
 
   auto inst_it = fuzzerutil::GetIteratorForInstruction(inst_block, inst);
+  assert(inst_it != inst_block->end() &&
+         "Can't get an iterator for the instruction");
 
   // |instruction| can't be the last instruction in the block.
-  ++inst_it;
-  if (inst_it == inst_block->end()) {
+  auto successor_it = ++inst_it;
+  if (successor_it == inst_block->end()) {
     return false;
   }
 
-  // Check that |instruction| doesn't dominate the next instruction in the
-  // block.
-  if (ir_context->GetDominatorAnalysis(inst_block->GetParent())
-          ->Dominates(inst, &*inst_it)) {
+  // Check that we can insert |instruction| after |inst_it|.
+  auto successors_successor_it = ++inst_it;
+  if (successors_successor_it == inst_block->end() ||
+      !fuzzerutil::CanInsertOpcodeBeforeInstruction(inst->opcode(),
+                                                    successors_successor_it)) {
     return false;
   }
 
-  // Check that we can insert |instruction| after |inst_it| (note that, at this
-  // point, |inst_it| points to the instruction after |instruction|).
-  ++inst_it;
-  return inst_it != inst_block->end() &&
-         fuzzerutil::CanInsertOpcodeBeforeInstruction(inst->opcode(), inst_it);
+  // Check that |instruction|'s successor doesn't depend on the |instruction|.
+  if (inst->result_id()) {
+    for (uint32_t i = 0; i < successor_it->NumInOperands(); ++i) {
+      const auto& operand = successor_it->GetInOperand(i);
+      if (operand.type == SPV_OPERAND_TYPE_ID &&
+          operand.words[0] == inst->result_id()) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 void TransformationMoveInstructionDown::Apply(
@@ -81,9 +87,10 @@ void TransformationMoveInstructionDown::Apply(
   auto inst_it = fuzzerutil::GetIteratorForInstruction(
       ir_context->get_instr_block(inst), inst);
 
-  // Remove an instruction |inst| from the list and insert it after its previous
-  // successor.
+  // Move the instruction down in the block.
   inst->InsertAfter(&*++inst_it);
+
+  ir_context->InvalidateAnalyses(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationMoveInstructionDown::ToMessage() const {
@@ -93,7 +100,8 @@ protobufs::Transformation TransformationMoveInstructionDown::ToMessage() const {
 }
 
 bool TransformationMoveInstructionDown::IsOpcodeSupported(SpvOp opcode) {
-  // TODO(): we only support "simple" instructions that work with memory.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3605):
+  //  We only support "simple" instructions that work don't with memory.
   //  We should extend this so that we support the ones that modify the memory
   //  too.
   switch (opcode) {

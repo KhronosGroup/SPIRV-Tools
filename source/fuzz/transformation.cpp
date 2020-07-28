@@ -195,9 +195,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
       return MakeUnique<TransformationMergeBlocks>(message.merge_blocks());
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
       return MakeUnique<TransformationMoveBlockDown>(message.move_block_down());
-    case protobufs::Transformation::TransformationCase::kMoveInstruction:
+    case protobufs::Transformation::TransformationCase::kMoveInstructionDown:
       return MakeUnique<TransformationMoveInstructionDown>(
-          message.move_instruction());
+          message.move_instruction_down());
     case protobufs::Transformation::TransformationCase::kOutlineFunction:
       return MakeUnique<TransformationOutlineFunction>(
           message.outline_function());

@@ -40,21 +40,17 @@ void FuzzerPassPermuteInstructions::Apply() {
         instructions.push_back(&instruction);
       }
 
+      // We consider all instructions in reverse to increase the possible number
+      // of applied transformations.
       for (auto it = instructions.rbegin(); it != instructions.rend(); ++it) {
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfPermutingInstructions())) {
           continue;
         }
 
-        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3458):
-        //  Consider moving instructions between different basic blocks.
-        TransformationMoveInstructionDown transformation(
-            MakeInstructionDescriptor(GetIRContext(), *it));
-        while (transformation.IsApplicable(GetIRContext(),
-                                           *GetTransformationContext())) {
-          transformation.Apply(GetIRContext(), GetTransformationContext());
-          transformation = TransformationMoveInstructionDown(
-              MakeInstructionDescriptor(GetIRContext(), *it));
+        while (MaybeApplyTransformation(TransformationMoveInstructionDown(
+            MakeInstructionDescriptor(GetIRContext(), *it)))) {
+          // Apply the transformation as many times as possible.
         }
       }
     }

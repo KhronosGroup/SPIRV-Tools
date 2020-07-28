@@ -31,12 +31,18 @@ class TransformationMoveInstructionDown : public Transformation {
   explicit TransformationMoveInstructionDown(
       const protobufs::InstructionDescriptor& instruction);
 
-  // TODO
+  // - |instruction| should be a descriptor of a valid instruction in the module
+  // - |instruction|'s opcode should be supported by this transformation
+  // - neither |instruction| nor its successor may be the last instruction in
+  //   the block
+  // - |instruction|'s successor may not be dependent on the |instruction|
+  // - it should be possible to insert |instruction|'s opcode after its
+  //   successor
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO
+  // Swaps |instruction| with its successor.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

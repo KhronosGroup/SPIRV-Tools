@@ -20,7 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO
+// Permutes instructions in every block of all while preserving the module's
+// semantics.
 class FuzzerPassPermuteInstructions : public FuzzerPass {
  public:
   FuzzerPassPermuteInstructions(
