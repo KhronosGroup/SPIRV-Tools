@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_FUZZER_UTIL_H_
 #define SOURCE_FUZZ_FUZZER_UTIL_H_
 
+#include <map>
 #include <vector>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
@@ -462,6 +463,16 @@ inline uint32_t FloatToWord(float value) {
 //   differing by their signedness.
 bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
                            uint32_t type2_id);
+
+// Converts repeated field of UInt32Pair to a map. If two or more equal values
+// of |UInt32Pair::first()| are available in |data|, the last value of
+// |UInt32Pair::second()| is used.
+std::map<uint32_t, uint32_t> RepeatedUInt32PairToMap(
+    const google::protobuf::RepeatedPtrField<protobufs::UInt32Pair>& data);
+
+// Converts a map into a repeated field of UInt32Pair.
+google::protobuf::RepeatedPtrField<protobufs::UInt32Pair>
+MapToRepeatedUInt32Pair(const std::map<uint32_t, uint32_t>& data);
 
 }  // namespace fuzzerutil
 
