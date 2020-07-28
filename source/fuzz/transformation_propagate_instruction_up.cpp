@@ -77,7 +77,7 @@ bool TransformationPropagateInstructionUp::IsApplicable(
 
   std::vector<uint32_t> maybe_fresh_ids;
   for (auto id : ir_context->cfg()->preds(message_.block_id())) {
-    // Each predecessor must have a fresh id in the |predecessor_id_to_block_id|
+    // Each predecessor must have a fresh id in the |predecessor_id_to_fresh_id|
     // map.
     if (!message_.predecessor_id_to_fresh_id().contains(id)) {
       return false;
@@ -344,8 +344,8 @@ bool TransformationPropagateInstructionUp::IsApplicableToTheBlock(
     return false;
   }
 
-  // |block_id| can't be the id of the first block in the function.
-  if (block_id == block->GetParent()->begin()->id()) {
+  // Check that |block| has predecessors.
+  if (ir_context->cfg()->preds(block_id).empty()) {
     return false;
   }
 

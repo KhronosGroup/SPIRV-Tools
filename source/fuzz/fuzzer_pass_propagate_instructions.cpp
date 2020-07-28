@@ -48,7 +48,6 @@ void FuzzerPassPropagateInstructions::Apply() {
 
         ApplyTransformation(
             TransformationPropagateInstructionUp(block.id(), fresh_ids));
-        return;
       }
     }
   }
