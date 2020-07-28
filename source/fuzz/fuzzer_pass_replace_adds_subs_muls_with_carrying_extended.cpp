@@ -20,6 +20,10 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+const uint32_t kArithmeticInstructionIndexLeftInOperand = 0;
+}
+
 FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::
     FuzzerPassReplaceAddsSubsMulsWithCarryingExtended(
         opt::IRContext* ir_context,
@@ -42,54 +46,39 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
       return;
     }
 
-    // Check if the transformation can be applied (opcode, signedness).
+    // Check if the transformation can be applied, according to the opcode of
+    // the instruction.
     auto instruction_opcode = instruction->opcode();
-    if (instruction_opcode != SpvOpIAdd && instruction_opcode != SpvOpISub &&
-        instruction_opcode != SpvOpIMul) {
-      return;
-    }
 
-    uint32_t operand_1_type_id =
-        GetIRContext()
-            ->get_def_use_mgr()
-            ->GetDef(instruction->GetSingleWordOperand(2))
-            ->type_id();
-
-    uint32_t operand_2_type_id =
-        GetIRContext()
-            ->get_def_use_mgr()
-            ->GetDef(instruction->GetSingleWordOperand(3))
-            ->type_id();
-
-    uint32_t operand_1_signedness = GetIRContext()
-                                        ->get_def_use_mgr()
-                                        ->GetDef(operand_1_type_id)
-                                        ->GetSingleWordOperand(2);
-    uint32_t operand_2_signedness = GetIRContext()
-                                        ->get_def_use_mgr()
-                                        ->GetDef(operand_2_type_id)
-                                        ->GetSingleWordOperand(2);
     switch (instruction_opcode) {
       case SpvOpIAdd:
       case SpvOpISub:
-        if (operand_1_signedness != 0 || operand_2_signedness != 0) return;
+        if (!TransformationReplaceAddSubMulWithCarryingExtended::
+                IsAddSubInstructionSuitable(GetIRContext(), instruction))
+          return;
         break;
+      case SpvOpIMul:
+        if (!TransformationReplaceAddSubMulWithCarryingExtended::
+                IsMulInstructionSuitable(GetIRContext(), instruction))
+          return;
       default:
-        break;
+        return;
     }
 
-    // Check if the required struct type already exists.
+    // Get the id of the required struct type. We know that the the types of the
+    // operands are the same, so we can use one operand type id twice.
     std::vector<uint32_t> operand_type_ids;
-    operand_type_ids.push_back(operand_1_type_id);
-    operand_type_ids.push_back(operand_2_type_id);
+    uint32_t operand_type_id =
+        GetIRContext()
+            ->get_def_use_mgr()
+            ->GetDef(instruction->GetSingleWordInOperand(
+                kArithmeticInstructionIndexLeftInOperand))
+            ->type_id();
+    operand_type_ids.push_back(operand_type_id);
+    operand_type_ids.push_back(operand_type_id);
     uint32_t struct_type_id =
-        fuzzerutil::MaybeGetStructType(GetIRContext(), operand_type_ids);
-    if (struct_type_id == 0) {
-      // If not, get a fresh id and add the type.
-      struct_type_id = GetFuzzerContext()->GetFreshId();
-      fuzzerutil::AddStructType(GetIRContext(), struct_type_id,
-                                operand_type_ids);
-    }
+        FuzzerPass::FindOrCreateStructType(operand_type_ids);
+
     ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
         GetFuzzerContext()->GetFreshId(), struct_type_id,
         instruction->result_id()));

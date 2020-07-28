@@ -34,24 +34,34 @@ class TransformationReplaceAddSubMulWithCarryingExtended
       uint32_t struct_fresh_id, uint32_t struct_type_id, uint32_t result_id);
 
   // - |message_.struct_fresh_id| must be fresh.
-  // - |message_.struct_type_id| must refer to the proper type of a struct
-  //   holding the intermediate result.
+  // - |message_.struct_type_id| must refer to the type of a struct
+  //   suitable for holding the intermediate result.
   // - |message_.result_id| must refer to an OpIAdd or OpISub or OpIMul
-  //   instruction.
+  //   instruction. In this instruction the result type id and the type ids of
+  //   the operands must be the same.
   // - For OpIAdd, OpISub both operands must be unsigned.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow, OpIMul with
-  // OpUMulExtended or OpSMulExtended and stores the result into a
-  // |message_.struct_fresh_id|. Extracts the first element of the result into
-  // the original |message._result_id|. This value is the same as the result of
-  // the original instruction.
+  // A transformation that replaces instructions OpIAdd, OpISub, OpIMul with
+  // pairs of instructions. The first one (OpIAddCarry, OpISubBorrow,
+  // OpUMulExtended, OpSMulExtended) computes the result into a struct. The
+  // second one extracts the appropriate component from the struct to yield the
+  // original result.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  // Checks if an OpIAdd or an OpISub instruction can be used by the
+  // transformation.
+  bool static IsAddSubInstructionSuitable(opt::IRContext* ir_context,
+                                          const opt::Instruction* instruction);
+
+  // Checks if an OpIMul instruction can be used by the transformation.
+  bool static IsMulInstructionSuitable(opt::IRContext* ir_context,
+                                       const opt::Instruction* instruction);
 
  private:
   protobufs::TransformationReplaceAddSubMulWithCarryingExtended message_;

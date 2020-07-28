@@ -21,8 +21,8 @@ namespace fuzz {
 
 namespace {
 const uint32_t kOpCompositeExtractIndexLowOrderBits = 0;
-const uint32_t kArithmeticInstructionIndexLeftOperand = 2;
-const uint32_t kArithmeticInstructionIndexRightOperand = 3;
+const uint32_t kArithmeticInstructionIndexLeftInOperand = 0;
+const uint32_t kArithmeticInstructionIndexRightInOperand = 1;
 const uint32_t kOpTypeIndexSignedness = 2;
 }  // namespace
 
@@ -48,41 +48,28 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
     return false;
   }
 
-  // |message_.result_id| must refer to an OpIAdd or OpISub or OpIMul
-  // instruction
+  // |message_.result_id| must refer to a suitable OpIAdd, OpISub or OpIMul
+  // instruction.
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   auto instruction_opcode = instruction->opcode();
-  if (instruction_opcode != SpvOpIAdd && instruction_opcode != SpvOpISub &&
-      instruction_opcode != SpvOpIMul)
-    return false;
 
-  // Both operands must be signed or unsigned depending on the instruction.
-  uint32_t operand_1_type_id = ir_context->get_def_use_mgr()
-                                   ->GetDef(instruction->GetSingleWordOperand(
-                                       kArithmeticInstructionIndexLeftOperand))
-                                   ->type_id();
-
-  uint32_t operand_2_type_id = ir_context->get_def_use_mgr()
-                                   ->GetDef(instruction->GetSingleWordOperand(
-                                       kArithmeticInstructionIndexRightOperand))
-                                   ->type_id();
-
-  uint32_t operand_1_signedness =
-      ir_context->get_def_use_mgr()
-          ->GetDef(operand_1_type_id)
-          ->GetSingleWordOperand(kOpTypeIndexSignedness);
-  uint32_t operand_2_signedness =
-      ir_context->get_def_use_mgr()
-          ->GetDef(operand_2_type_id)
-          ->GetSingleWordOperand(kOpTypeIndexSignedness);
   switch (instruction_opcode) {
     case SpvOpIAdd:
     case SpvOpISub:
-      return operand_1_signedness == 0 && operand_2_signedness == 0;
+      if (!TransformationReplaceAddSubMulWithCarryingExtended::
+              IsAddSubInstructionSuitable(ir_context, instruction))
+        return false;
+      break;
+    case SpvOpIMul:
+      if (!TransformationReplaceAddSubMulWithCarryingExtended::
+              IsMulInstructionSuitable(ir_context, instruction))
+        return false;
+      break;
     default:
-      return true;
+      return false;
   }
+  return true;
 }
 
 void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
@@ -91,129 +78,109 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
   assert(fuzzerutil::IsFreshId(ir_context, message_.struct_fresh_id()) &&
          "|message_.struct_fresh_id| must be fresh");
 
-  // |message_.result_id| must refer to an OpIAdd or OpISub or OpIMul
-  // instruction
   auto original_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.result_id());
   auto original_instruction_opcode = original_instruction->opcode();
-  assert((original_instruction_opcode == SpvOpIAdd ||
-          original_instruction_opcode == SpvOpISub ||
-          original_instruction_opcode == SpvOpIMul) &&
-         "The instruction must have the opcode: OpIAdd or OpISub or OpIMul");
-
-  // Both operands must be signed or unsigned depending on the instruction.
-  uint32_t operand_1_type_id =
+  auto operand_type_id = original_instruction->type_id();
+  uint32_t operand_signedness =
       ir_context->get_def_use_mgr()
-          ->GetDef(original_instruction->GetSingleWordOperand(
-              kArithmeticInstructionIndexLeftOperand))
-          ->type_id();
-
-  uint32_t operand_2_type_id =
-      ir_context->get_def_use_mgr()
-          ->GetDef(original_instruction->GetSingleWordOperand(
-              kArithmeticInstructionIndexRightOperand))
-          ->type_id();
-
-  assert(operand_1_type_id == operand_2_type_id &&
-         "The type ids of components must be equal");
-
-  uint32_t operand_1_signedness =
-      ir_context->get_def_use_mgr()
-          ->GetDef(operand_1_type_id)
+          ->GetDef(original_instruction->type_id())
           ->GetSingleWordOperand(kOpTypeIndexSignedness);
-  uint32_t operand_2_signedness =
-      ir_context->get_def_use_mgr()
-          ->GetDef(operand_2_type_id)
-          ->GetSingleWordOperand(kOpTypeIndexSignedness);
-
-  switch (original_instruction_opcode) {
-    case SpvOpIAdd:
-    case SpvOpISub:
-      assert(operand_1_signedness == 0 && operand_2_signedness == 0 &&
-             "Components must be unsigned.");
-      break;
-    default:
-      break;
-  }
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.struct_fresh_id());
 
+  // Determine the opcode of the new instruction that computes the result into a
+  // struct.
+  SpvOp new_instruction_opcode;
+
+  switch (original_instruction_opcode) {
+    case SpvOpIAdd:
+      new_instruction_opcode = SpvOpIAddCarry;
+      break;
+    case SpvOpISub:
+      new_instruction_opcode = SpvOpISubBorrow;
+      break;
+    case SpvOpIMul:
+      if (operand_signedness == 0) {
+        new_instruction_opcode = SpvOpUMulExtended;
+      } else {
+        new_instruction_opcode = SpvOpSMulExtended;
+      }
+      break;
+    default:
+      assert(false);
+      new_instruction_opcode = SpvOpMax;
+      // No uninitialized variables left (to keep compilers happy).
+      break;
+  }
+
   // Insert the OpCompositeExtract. This instruction takes the first component
-  // of the result which represents low-order bits of the operation.
+  // of the struct which represents low-order bits of the operation. This the
+  // original result.
   auto instruction_composite_extract =
       original_instruction->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpCompositeExtract, operand_1_type_id,
+          ir_context, SpvOpCompositeExtract, operand_type_id,
           message_.result_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.struct_fresh_id()}},
                {SPV_OPERAND_TYPE_LITERAL_INTEGER,
                 {kOpCompositeExtractIndexLowOrderBits}}})));
 
-  switch (original_instruction_opcode) {
-    case SpvOpIAdd:
-      // Insert the OpIAddCarry before the OpCompositeExtract.
-      instruction_composite_extract->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpIAddCarry, message_.struct_type_id(),
-          message_.struct_fresh_id(),
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_ID,
-                {original_instruction->GetSingleWordOperand(
-                    kArithmeticInstructionIndexLeftOperand)}},
-               {SPV_OPERAND_TYPE_ID,
-                {original_instruction->GetSingleWordOperand(
-                    kArithmeticInstructionIndexRightOperand)}}})));
-      break;
-    case SpvOpISub:
-      // Insert the OpISubBorrow before the OpCompositeExtract.
-      instruction_composite_extract->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpISubBorrow, message_.struct_type_id(),
-          message_.struct_fresh_id(),
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_ID,
-                {original_instruction->GetSingleWordOperand(
-                    kArithmeticInstructionIndexLeftOperand)}},
-               {SPV_OPERAND_TYPE_ID,
-                {original_instruction->GetSingleWordOperand(
-                    kArithmeticInstructionIndexRightOperand)}}})));
-      break;
-    case SpvOpIMul:
-      if (operand_1_signedness == 0) {
-        // Insert the OpUMulExtended (unsigned operands) before the
-        // OpCompositeExtract.
-        instruction_composite_extract->InsertBefore(
-            MakeUnique<opt::Instruction>(
-                ir_context, SpvOpUMulExtended, message_.struct_type_id(),
-                message_.struct_fresh_id(),
-                opt::Instruction::OperandList(
-                    {{SPV_OPERAND_TYPE_ID,
-                      {original_instruction->GetSingleWordOperand(
-                          kArithmeticInstructionIndexLeftOperand)}},
-                     {SPV_OPERAND_TYPE_ID,
-                      {original_instruction->GetSingleWordOperand(
-                          kArithmeticInstructionIndexRightOperand)}}})));
-      } else {
-        // Insert the OpSMulExtended (signed operands) before the
-        // OpCompositeExtract.
-        instruction_composite_extract->InsertBefore(
-            MakeUnique<opt::Instruction>(
-                ir_context, SpvOpSMulExtended, message_.struct_type_id(),
-                message_.struct_fresh_id(),
-                opt::Instruction::OperandList(
-                    {{SPV_OPERAND_TYPE_ID,
-                      {original_instruction->GetSingleWordOperand(
-                          kArithmeticInstructionIndexLeftOperand)}},
-                     {SPV_OPERAND_TYPE_ID,
-                      {original_instruction->GetSingleWordOperand(
-                          kArithmeticInstructionIndexRightOperand)}}})));
-      }
-      break;
-    default:
-      break;
-  }
+  // Insert the new instruction that computes the result into a struct.
+  instruction_composite_extract->InsertBefore(MakeUnique<opt::Instruction>(
+      ir_context, new_instruction_opcode, message_.struct_type_id(),
+      message_.struct_fresh_id(),
+      opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_ID,
+            {original_instruction->GetSingleWordInOperand(
+                kArithmeticInstructionIndexLeftInOperand)}},
+           {SPV_OPERAND_TYPE_ID,
+            {original_instruction->GetSingleWordInOperand(
+                kArithmeticInstructionIndexRightInOperand)}}})));
+
   // Remove the original instruction.
   ir_context->KillInst(original_instruction);
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+}
+
+bool TransformationReplaceAddSubMulWithCarryingExtended::
+    IsMulInstructionSuitable(opt::IRContext* ir_context,
+                             const opt::Instruction* instruction) {
+  uint32_t operand_1_type_id =
+      ir_context->get_def_use_mgr()
+          ->GetDef(instruction->GetSingleWordInOperand(
+              kArithmeticInstructionIndexLeftInOperand))
+          ->type_id();
+
+  uint32_t operand_2_type_id =
+      ir_context->get_def_use_mgr()
+          ->GetDef(instruction->GetSingleWordInOperand(
+              kArithmeticInstructionIndexRightInOperand))
+          ->type_id();
+  uint32_t result_type_id = instruction->type_id();
+
+  // Both type ids of the operands and the result type ids must be equal.
+  if (operand_1_type_id != operand_2_type_id) {
+    return false;
+  }
+  return operand_2_type_id == result_type_id;
+}
+
+bool TransformationReplaceAddSubMulWithCarryingExtended::
+    IsAddSubInstructionSuitable(opt::IRContext* ir_context,
+                                const opt::Instruction* instruction) {
+  if (!TransformationReplaceAddSubMulWithCarryingExtended::
+          IsMulInstructionSuitable(ir_context, instruction)) {
+    return false;
+  }
+  // Both types of the operands and the result type must be unsigned. We know
+  // that the types are equal since IsMulInstructionSuitable returned true.
+  uint32_t instruction_signedness =
+      ir_context->get_def_use_mgr()
+          ->GetDef(instruction->type_id())
+          ->GetSingleWordOperand(kOpTypeIndexSignedness);
+  return instruction_signedness == 0;
 }
 
 protobufs::Transformation

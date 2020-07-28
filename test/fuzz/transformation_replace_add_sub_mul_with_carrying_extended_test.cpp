@@ -93,6 +93,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
          %36 = OpLoad %6 %8
          %37 = OpIMul %6 %35 %36
                OpStore %12 %37
+         %60 = OpIAdd %19 %16 %26
+         %61 = OpIAdd %6 %26 %27
                OpReturn
                OpFunctionEnd
     )";
@@ -127,6 +129,23 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
 
   ASSERT_FALSE(
       transformation_bad_3.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The transformation cannot be applied to an instruction OpIAdd that has
+  // different signedness of the types of operands.
+  auto transformation_bad_4 =
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 60);
+
+  ASSERT_FALSE(
+      transformation_bad_4.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The transformation cannot be applied to an instruction OpISub that has
+  // different signedness of the result type than the signedness of the types of
+  // the operands.
+  auto transformation_bad_5 =
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 61);
+
+  ASSERT_FALSE(
+      transformation_bad_5.IsApplicable(context.get(), transformation_context));
 
   auto transformation_good_1 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 28);
@@ -235,6 +254,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
          %53 = OpSMulExtended %54 %35 %36
          %37 = OpCompositeExtract %6 %53 0
                OpStore %12 %37
+         %60 = OpIAdd %19 %16 %26
+         %61 = OpIAdd %6 %26 %27
                OpReturn
                OpFunctionEnd
     )";
