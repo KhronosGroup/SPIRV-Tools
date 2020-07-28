@@ -49,24 +49,27 @@ void FuzzerPassOutlineFunctions::Apply() {
     }
     auto entry_block = blocks[GetFuzzerContext()->RandomIndex(blocks)];
 
-    // If the entry block starts with OpPhi, try to split it.
-    if (entry_block->begin()->opcode() == SpvOpPhi) {
-      // Find the first non-OpPhi instruction.
-      opt::Instruction* non_phi_inst = nullptr;
+    // If the entry block starts with OpPhi or OpVariable, try to split it.
+    if (entry_block->begin()->opcode() == SpvOpPhi ||
+        entry_block->begin()->opcode() == SpvOpVariable) {
+      // Find the first non-OpPhi and non-OpVariable instruction.
+      opt::Instruction* non_phi_or_var_inst = nullptr;
       for (auto& instruction : *entry_block) {
-        if (instruction.opcode() != SpvOpPhi) {
-          non_phi_inst = &instruction;
+        if (instruction.opcode() != SpvOpPhi &&
+            instruction.opcode() != SpvOpVariable) {
+          non_phi_or_var_inst = &instruction;
           break;
         }
       }
 
-      assert(non_phi_inst && "|non_phi_inst| must've been initialized");
+      assert(non_phi_or_var_inst &&
+             "|non_phi_or_var_inst| must have been initialized");
 
       // If the split was not applicable, the transformation will not work.
       uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
       if (!MaybeApplyTransformation(TransformationSplitBlock(
-              MakeInstructionDescriptor(non_phi_inst->result_id(),
-                                        non_phi_inst->opcode(), 0),
+              MakeInstructionDescriptor(non_phi_or_var_inst->result_id(),
+                                        non_phi_or_var_inst->opcode(), 0),
               new_block_id))) {
         return;
       }
