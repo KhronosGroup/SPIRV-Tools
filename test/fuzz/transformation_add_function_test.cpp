@@ -2246,7 +2246,7 @@ TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
   ASSERT_TRUE(IsEqual(env, expected, context.get()));
 }
 
-TEST(TransformationAddFunctionTest, InfiniteLoop1) {
+TEST(TransformationAddFunctionTest, InfiniteLoop) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2337,54 +2337,11 @@ TEST(TransformationAddFunctionTest, InfiniteLoop1) {
   loop_limiter_info.set_logical_op_id(105);
   TransformationAddFunction add_livesafe_function(instructions, 100, 32,
                                                   {loop_limiter_info}, 0, {});
-  ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(),
-                                                 transformation_context));
-  add_livesafe_function.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
-  std::string expected = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %8 = OpTypeInt 32 1
-          %9 = OpTypePointer Function %8
-         %11 = OpConstant %8 0
-         %18 = OpConstant %8 10
-         %19 = OpTypeBool
-         %26 = OpConstantTrue %19
-         %27 = OpConstantFalse %19
-         %28 = OpTypeInt 32 0
-         %29 = OpTypePointer Function %28
-         %30 = OpConstant %28 0
-         %31 = OpConstant %28 1
-         %32 = OpConstant %28 5
-         %22 = OpConstant %8 1
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpReturn
-               OpFunctionEnd
-          %6 = OpFunction %2 None %3
-          %7 = OpLabel
-        %100 = OpVariable %29 Function %30
-         %10 = OpVariable %9 Function
-               OpStore %10 %11
-               OpBranch %12
-         %12 = OpLabel
-        %102 = OpLoad %28 %100
-        %103 = OpIAdd %28 %102 %31
-               OpStore %100 %103
-        %104 = OpUGreaterThanEqual %19 %102 %32
-               OpLoopMerge %14 %12 None
-               OpBranchConditional %104 %14 %12
-         %14 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-  ASSERT_TRUE(IsEqual(env, expected, context.get()));
+
+  // To make sure the loop's merge block is reachable, it must be dominated by
+  // the loop header.
+  ASSERT_FALSE(add_livesafe_function.IsApplicable(context.get(),
+                                                  transformation_context));
 }
 
 TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
