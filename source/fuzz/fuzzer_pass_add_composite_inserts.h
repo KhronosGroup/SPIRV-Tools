@@ -20,6 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
+// Fuzzer pass that randomly adds new OpCompositeInsert instructions to
+// available constants that have type OpConstantComposite.
 class FuzzerPassAddCompositeInserts : public FuzzerPass {
  public:
   FuzzerPassAddCompositeInserts(
