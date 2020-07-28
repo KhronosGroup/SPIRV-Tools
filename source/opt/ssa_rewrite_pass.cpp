@@ -308,8 +308,8 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
     bool dbg_value_added =
-        pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(inst, var_id,
-                                                              val_id, inst);
+        pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
+            inst, var_id, val_id, inst);
     if (dbg_value_added)
       var_ids_added_dbg_value_.insert(var_id);
     else
