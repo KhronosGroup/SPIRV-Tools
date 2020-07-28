@@ -186,8 +186,10 @@ TEST(TransformationAddLoopPreheaderTest, OpPhi) {
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_TRUE(TransformationAddLoopPreheader(8, 40, {}).IsApplicable(
-      context.get(), transformation_context));
+  auto transformation1 = TransformationAddLoopPreheader(8, 40, {});
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
 
   // Not enough ids for the OpPhi instructions are given
   ASSERT_FALSE(TransformationAddLoopPreheader(13, 41, {})
@@ -205,8 +207,65 @@ TEST(TransformationAddLoopPreheaderTest, OpPhi) {
   ASSERT_FALSE(TransformationAddLoopPreheader(13, 41, {41, 42})
                    .IsApplicable(context.get(), transformation_context));
 
-  ASSERT_TRUE(TransformationAddLoopPreheader(13, 41, {42, 43})
-                  .IsApplicable(context.get(), transformation_context));
+  auto transformation2 = TransformationAddLoopPreheader(13, 41, {42, 43});
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantFalse %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpCopyObject %6 %7
+               OpBranch %40
+         %40 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+         %31 = OpPhi %6 %20 %40 %21 %9
+               OpLoopMerge %10 %9 None
+               OpBranch %9
+          %9 = OpLabel
+         %21 = OpCopyObject %6 %7
+               OpBranchConditional %7 %8 %10
+         %10 = OpLabel
+               OpSelectionMerge %41 None
+               OpBranchConditional %7 %11 %12
+         %11 = OpLabel
+         %22 = OpCopyObject %6 %7
+               OpBranch %41
+         %12 = OpLabel
+         %23 = OpCopyObject %6 %7
+               OpBranch %41
+         %41 = OpLabel
+         %42 = OpPhi %6 %22 %11 %23 %12
+         %43 = OpPhi %6 %7 %11 %7 %12
+               OpBranch %13
+         %13 = OpLabel
+         %32 = OpPhi %6 %42 %41 %24 %14
+         %33 = OpPhi %6 %43 %41 %24 %14
+               OpLoopMerge %15 %14 None
+               OpBranch %14
+         %14 = OpLabel
+         %24 = OpCopyObject %6 %7
+               OpBranchConditional %7 %13 %15
+         %15 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 }  // namespace
