@@ -1,4 +1,3 @@
-// Copyright (c) 2020 Stefano Milizia
 // Copyright (c) 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_pass_interchange_zero_like_constants.h"
+#include "fuzzer_pass_interchange_integer_operands.h"
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/id_use_descriptor.h"
@@ -22,42 +21,18 @@
 
 namespace spvtools {
 namespace fuzz {
-FuzzerPassInterchangeZeroLikeConstants::FuzzerPassInterchangeZeroLikeConstants(
+
+FuzzerPassInterchangeIntegerOperands::FuzzerPassInterchangeIntegerOperands(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassInterchangeZeroLikeConstants::
-    ~FuzzerPassInterchangeZeroLikeConstants() = default;
+FuzzerPassInterchangeIntegerOperands::~FuzzerPassInterchangeIntegerOperands() =
+    default;
 
-uint32_t FuzzerPassInterchangeZeroLikeConstants::FindOrCreateToggledConstant(
-    opt::Instruction* declaration) {
-  auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
-      declaration->result_id());
-
-  // This pass only toggles zero-like constants
-  if (!constant->IsZero()) {
-    return 0;
-  }
-
-  if (constant->AsScalarConstant()) {
-    return FindOrCreateNullConstant(declaration->type_id());
-  } else if (constant->AsNullConstant()) {
-    // Add declaration of equivalent scalar constant
-    auto kind = constant->type()->kind();
-    if (kind == opt::analysis::Type::kBool ||
-        kind == opt::analysis::Type::kInteger ||
-        kind == opt::analysis::Type::kFloat) {
-      return FindOrCreateZeroConstant(declaration->type_id(), false);
-    }
-  }
-
-  return 0;
-}
-
-void FuzzerPassInterchangeZeroLikeConstants::Apply() {
+void FuzzerPassInterchangeIntegerOperands::Apply() {
   // Make vector keeping track of all the uses we want to replace.
   // This is a vector of pairs, where the first element is an id use descriptor
   // identifying the use of a constant id and the second is the id that should
@@ -71,7 +46,8 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
       continue;
     }
 
-    uint32_t toggled_id = FindOrCreateToggledConstant(constant);
+    uint32_t toggled_id =
+        FindOrCreateToggledIntegerConstant(constant->result_id());
     if (!toggled_id) {
       // Not a zero-like constant
       continue;
@@ -106,5 +82,54 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
         use_to_replace.first, use_to_replace.second));
   }
 }
+
+uint32_t
+FuzzerPassInterchangeIntegerOperands::FindOrCreateToggledIntegerConstant(
+    uint32_t id) {
+  auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(id);
+
+  // This pass only toggles integer constants.
+  if (!constant->AsIntConstant() &&
+      (!constant->AsVectorConstant() ||
+       !constant->AsVectorConstant()->component_type()->AsInteger())) {
+    return 0;
+  }
+
+  if (auto integer = constant->AsIntConstant()) {
+    auto type = integer->type()->AsInteger();
+
+    // Find or create and return the toggled constant.
+    return FindOrCreateIntegerConstant(integer->words(), type->width(),
+                                       !type->IsSigned(), false);
+  }
+
+  // The constant is an integer vector.
+
+  // Find the component type.
+  auto component_type =
+      constant->AsVectorConstant()->component_type()->AsInteger();
+
+  // Find or create the toggled component type.
+  uint32_t toggled_component_type = FindOrCreateIntegerType(
+      component_type->width(), !component_type->IsSigned());
+
+  std::vector<uint32_t> toggled_components;
+
+  // Find or create the toggled components.
+  for (auto component : constant->AsVectorConstant()->GetComponents()) {
+    toggled_components.push_back(
+        FindOrCreateToggledIntegerConstant(FindOrCreateIntegerConstant(
+            component->AsIntConstant()->words(), component_type->width(),
+            !component_type->IsSigned(), false)));
+  }
+
+  // Find or create the required toggled vector type.
+  uint32_t toggled_type = FindOrCreateVectorType(
+      toggled_component_type, (uint32_t)toggled_components.size());
+
+  // Find or create and return the toggled vector constant.
+  return FindOrCreateCompositeConstant(toggled_components, toggled_type, false);
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

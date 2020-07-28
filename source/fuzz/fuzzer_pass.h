@@ -273,6 +273,16 @@ class FuzzerPass {
   uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id,
                                     bool is_irrelevant);
 
+  // Adds a pair {id_use_descriptor, |replacement_id|} to the vector
+  // |uses_to_replace|, where id_use_descriptor is the id use descriptor
+  // representing the usage of an id in the |use_inst| instruction, at operand
+  // index |use_index|, only if the instruction is in a basic block.
+  // If the instruction is not in a basic block, it does nothing.
+  void MaybeAddUseToReplace(
+      opt::Instruction* use_inst, uint32_t use_index, uint32_t replacement_id,
+      std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>*
+      uses_to_replace);
+
  private:
   opt::IRContext* ir_context_;
   TransformationContext* transformation_context_;
