@@ -463,12 +463,6 @@ class FactManager::DataSynonymAndIdEquationFacts {
   void ComputeConversionDataSynonymFacts(const protobufs::DataDescriptor& dd,
                                          opt::IRContext* context);
 
-  // Computes various corollary facts from the data descriptor |dd| if members
-  // of its equivalence class participate in equation facts with OpBitcast
-  // opcode. The descriptor should be registered in the equivalence relation.
-  void ComputeBitcastDataSynonymFacts(const protobufs::DataDescriptor& dd,
-                                      opt::IRContext* context);
-
   // Recurses into sub-components of the data descriptors, if they are
   // composites, to record that their components are pairwise-synonymous.
   void ComputeCompositeDataSynonymFacts(const protobufs::DataDescriptor& dd1,
@@ -615,10 +609,14 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     case SpvOpConvertUToF:
       ComputeConversionDataSynonymFacts(*rhs_dds[0], context);
       break;
-    case SpvOpBitcast:
-      ComputeBitcastDataSynonymFacts(lhs_dd, context);
-      ComputeBitcastDataSynonymFacts(*rhs_dds[0], context);
-      break;
+    case SpvOpBitcast: {
+      assert(DataDescriptorsAreWellFormedAndComparable(context, lhs_dd,
+                                                       *rhs_dds[0]) &&
+             "Operands of OpBitcast equation fact must have compatible types");
+      if (!synonymous_.IsEquivalent(lhs_dd, *rhs_dds[0])) {
+        AddDataSynonymFactRecursive(lhs_dd, *rhs_dds[0], context);
+      }
+    } break;
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
       for (const auto& equation : GetEquations(rhs_dds[0])) {
@@ -735,7 +733,6 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
 
   // |dd1| and |dd2| belong to the same equivalence class so it doesn't matter
   // which one we use here.
-  ComputeBitcastDataSynonymFacts(dd1, context);
   ComputeConversionDataSynonymFacts(dd1, context);
 
   ComputeCompositeDataSynonymFacts(dd1, dd2, context);
@@ -789,37 +786,6 @@ void FactManager::DataSynonymAndIdEquationFacts::
             AddDataSynonymFactRecursive(*synonym_a, *synonym_b, context);
           }
         }
-      }
-    }
-  }
-}
-
-void FactManager::DataSynonymAndIdEquationFacts::ComputeBitcastDataSynonymFacts(
-    const protobufs::DataDescriptor& dd, opt::IRContext* context) {
-  assert(synonymous_.Exists(dd) &&
-         "|dd| must've been registered in the equivalence relation");
-
-  // Compute all descriptors that can participate in not-yet-computed corollary
-  // facts.
-  std::unordered_set<const protobufs::DataDescriptor*> descriptors;
-  for (const auto& fact : id_equations_) {
-    for (const auto& equation : fact.second) {
-      if (equation.opcode == SpvOpBitcast) {
-        if (synonymous_.IsEquivalent(*fact.first, dd)) {
-          descriptors.insert(equation.operands[0]);
-        } else if (synonymous_.IsEquivalent(*equation.operands[0], dd)) {
-          descriptors.insert(fact.first);
-        }
-      }
-    }
-  }
-
-  // Compute various corollary facts.
-  for (const auto* dd_a : descriptors) {
-    for (const auto* dd_b : descriptors) {
-      if (!synonymous_.IsEquivalent(*dd_a, *dd_b) &&
-          DataDescriptorsAreWellFormedAndComparable(context, *dd_a, *dd_b)) {
-        AddDataSynonymFactRecursive(*dd_a, *dd_b, context);
       }
     }
   }

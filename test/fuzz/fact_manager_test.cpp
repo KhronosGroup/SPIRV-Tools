@@ -783,66 +783,6 @@ TEST(FactManagerTest, RecursiveAdditionOfFacts) {
                                         MakeDataDescriptor(11, {2, 3})));
 }
 
-TEST(FactManagerTest, CorollaryBitcastFacts) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %12 "main"
-               OpExecutionMode %12 OriginUpperLeft
-               OpSource ESSL 310
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %4 = OpTypeInt 32 1
-          %5 = OpTypeInt 32 0
-          %8 = OpTypeFloat 32
-          %6 = OpConstant %4 23
-          %7 = OpConstant %5 23
-         %12 = OpFunction %2 None %3
-         %13 = OpLabel
-         %14 = OpBitcast %8 %6
-         %15 = OpBitcast %8 %7
-         %16 = OpBitcast %4 %15
-         %17 = OpBitcast %8 %16
-         %18 = OpBitcast %5 %14
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-
-  fact_manager.AddFactIdEquation(14, SpvOpBitcast, {6}, context.get());
-  fact_manager.AddFactIdEquation(15, SpvOpBitcast, {7}, context.get());
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(6, {}),
-                                         MakeDataDescriptor(7, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(14, {}),
-                                         MakeDataDescriptor(15, {})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(14, {}),
-                                  MakeDataDescriptor(15, {}), context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(6, {}),
-                                        MakeDataDescriptor(7, {})));
-
-  fact_manager.AddFactIdEquation(17, SpvOpBitcast, {16}, context.get());
-  fact_manager.AddFactIdEquation(18, SpvOpBitcast, {14}, context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
-                                        MakeDataDescriptor(6, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(17, {}),
-                                         MakeDataDescriptor(14, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
-                                         MakeDataDescriptor(16, {})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(17, {}),
-                                  MakeDataDescriptor(14, {}), context.get());
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
-                                        MakeDataDescriptor(16, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(16, {}),
-                                        MakeDataDescriptor(6, {})));
-}
-
 TEST(FactManagerTest, CorollaryConversionFacts) {
   std::string shader = R"(
                OpCapability Shader
@@ -1214,6 +1154,63 @@ TEST(FactManagerTest, ConversionEquations) {
   fact_manager.AddFactIdEquation(34, SpvOpConvertSToF, {23}, context.get());
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(32, {}),
                                         MakeDataDescriptor(34, {})));
+}
+
+TEST(FactManagerTest, BitcastEquationFacts) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeInt 32 0
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %4 2
+         %10 = OpTypeVector %5 2
+         %11 = OpTypeVector %8 2
+          %6 = OpConstant %4 23
+          %7 = OpConstant %5 23
+         %19 = OpConstant %8 23
+         %20 = OpConstantComposite %9 %6 %6
+         %21 = OpConstantComposite %10 %7 %7
+         %22 = OpConstantComposite %11 %19 %19
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %30 = OpBitcast %8 %6
+         %31 = OpBitcast %5 %6
+         %32 = OpBitcast %8 %7
+         %33 = OpBitcast %4 %7
+         %34 = OpBitcast %4 %19
+         %35 = OpBitcast %5 %19
+         %36 = OpBitcast %10 %20
+         %37 = OpBitcast %11 %20
+         %38 = OpBitcast %9 %21
+         %39 = OpBitcast %11 %21
+         %40 = OpBitcast %9 %22
+         %41 = OpBitcast %10 %22
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  uint32_t lhs_id = 30;
+  for (uint32_t rhs_id : {6, 6, 7, 7, 19, 19, 20, 20, 21, 21, 22, 22}) {
+    fact_manager.AddFactIdEquation(lhs_id, SpvOpBitcast, {rhs_id},
+                                   context.get());
+    ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(lhs_id, {}),
+                                          MakeDataDescriptor(rhs_id, {})));
+    ++lhs_id;
+  }
 }
 
 TEST(FactManagerTest, EquationAndEquivalenceFacts) {
