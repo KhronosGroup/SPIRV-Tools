@@ -133,10 +133,12 @@ class DebugInfoManager {
   uint32_t BuildDebugInlinedAtChain(uint32_t callee_inlined_at,
                                     DebugInlinedAtContext* inlined_at_ctx);
 
-  // Returns true if |variable_id| has DebugDeclare or DebugVal.
+  // Returns true if there is a debug declaration instruction whose
+  // 'Local Variable' operand is |variable_id|.
   bool IsVariableDebugDeclared(uint32_t variable_id);
 
-  // Kills all DebugDeclares for |variable_id|
+  // Kills all debug declaration instructions with Deref whose 'Local Variable'
+  // operand is |variable_id|.
   void KillDebugDeclares(uint32_t variable_id);
 
   // Generates a DebugValue instruction with value |value_id| for every local
@@ -166,8 +168,7 @@ class DebugInfoManager {
   void ConvertDebugGlobalToLocalVariable(Instruction* dbg_global_var,
                                          Instruction* local_var);
 
-  // Returns true if |instr| is a DebugDeclare or a DebugValue with Deref
-  // that is used for a declaration.
+  // Returns true if |instr| is a debug declaration instruction.
   bool IsDebugDeclare(Instruction* instr);
 
  private:

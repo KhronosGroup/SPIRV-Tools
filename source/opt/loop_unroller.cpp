@@ -286,8 +286,7 @@ class LoopUnrollerUtilsImpl {
   // to be the actual value of the phi at that point.
   void LinkLastPhisToStart(Loop* loop) const;
 
-  // Kill DebugDeclare or DebugValue that is used for the declaration with
-  // Deref from |bb|.
+  // Kill all debug declaration instructions from |bb|.
   void KillDebugDeclares(BasicBlock* bb);
 
   // A pointer to the IRContext. Used to add/remove instructions and for usedef
