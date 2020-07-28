@@ -69,7 +69,7 @@ void FuzzerPassInterchangeIntegerOperands::Apply() {
                                              uint32_t use_index) -> void {
           if (GetFuzzerContext()->ChoosePercentage(
                   GetFuzzerContext()
-                      ->GetChanceOfInterchangingZeroLikeConstants())) {
+                      ->GetChanceOfInterchangingIntegerOperands())) {
             MaybeAddUseToReplace(use_inst, use_index, toggled_id,
                                  &uses_to_replace);
           }
