@@ -27,6 +27,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingAccessChain = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingCompositeInsert = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCopyMemory = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBreak = {5, 80};
@@ -153,6 +154,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingAnotherStructField);
   chance_of_adding_array_or_struct_type_ =
       ChooseBetweenMinAndMax(kChanceOfAddingArrayOrStructType);
+  chance_of_adding_composite_insert_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingCompositeInsert);
   chance_of_adding_copy_memory_ =
       ChooseBetweenMinAndMax(kChanceOfAddingCopyMemory);
   chance_of_adding_dead_block_ =

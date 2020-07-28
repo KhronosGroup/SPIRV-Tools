@@ -38,6 +38,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_context.h
         fuzzer_pass.h
         fuzzer_pass_add_access_chains.h
+        fuzzer_pass_add_composite_inserts.h
         fuzzer_pass_add_composite_types.h
         fuzzer_pass_add_copy_memory.h
         fuzzer_pass_add_dead_blocks.h
@@ -178,6 +179,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_context.cpp
         fuzzer_pass.cpp
         fuzzer_pass_add_access_chains.cpp
+        fuzzer_pass_add_composite_inserts.cpp
         fuzzer_pass_add_composite_types.cpp
         fuzzer_pass_add_copy_memory.cpp
         fuzzer_pass_add_dead_blocks.cpp

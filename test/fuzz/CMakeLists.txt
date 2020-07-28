@@ -21,6 +21,7 @@ if (${SPIRV_BUILD_FUZZER})
           equivalence_relation_test.cpp
           fact_manager_test.cpp
           fuzz_test_util.cpp
+          fuzzer_pass_add_composite_inserts_test.cpp
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           fuzzer_pass_outline_functions_test.cpp
