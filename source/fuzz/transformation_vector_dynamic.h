@@ -43,6 +43,19 @@ class TransformationVectorDynamic : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // Checks |instruction| is defined, is an OpCompositeExtract/Insert
+  // instruction and the composite operand is a vector.
+  static bool IsVectorOperation(opt::IRContext* ir_context,
+                                opt::Instruction* instruction);
+
+  // Returns the result id of an OpConstant instruction of integral type.
+  // First it looks for an unsigned version of the constant, if it doesn't
+  // exist, it looks for a signed version. Returns 0 if no such instruction is
+  // present in the module.
+  static uint32_t MaybeGetConstantForIndex(
+      opt::IRContext* ir_context, const opt::Instruction& instruction,
+      const TransformationContext& transformation_context);
+
  private:
   protobufs::TransformationVectorDynamic message_;
 };

@@ -20,9 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// Looks for OpCompositeExtract and OpCompositeInsert instructions, checks if
-// the composite operand is a vector, creates constants for their literal
-// operands and randomly applies the transformation.
+// Looks for OpCompositeExtract/Insert instructions on vectors, and replaces
+// them with OpVectorExtract/InsertDynamic.
 class FuzzerPassVectorDynamic : public FuzzerPass {
  public:
   FuzzerPassVectorDynamic(opt::IRContext* ir_context,

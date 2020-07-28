@@ -34,36 +34,36 @@ void FuzzerPassVectorDynamic::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       for (auto& instruction : block) {
-        // |instruction| must be an OpCompositeExtract or an OpCompositeInsert
-        // instruction to consider applying the transformation.
-        if (instruction.opcode() != SpvOpCompositeExtract &&
-            instruction.opcode() != SpvOpCompositeInsert) {
-          continue;
-        }
-
-        // The composite must be a vector.
-        auto composite_instruction = GetIRContext()->get_def_use_mgr()->GetDef(
-            instruction.GetSingleWordInOperand(
-                instruction.opcode() == SpvOpCompositeExtract ? 0 : 1));
-        if (!GetIRContext()
-                 ->get_type_mgr()
-                 ->GetType(composite_instruction->type_id())
-                 ->AsVector()) {
-          continue;
-        }
-
         // Randomly decide whether to try applying the transformation.
         if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()->GetChanceOfVectoringDynamic())) {
+                GetFuzzerContext()
+                    ->GetChanceOfMakingVectorOperationDynamic())) {
           continue;
         }
+
+        // |instruction| must be a vector operation.
+        if (!TransformationVectorDynamic::IsVectorOperation(GetIRContext(),
+                                                            &instruction)) {
+          continue;
+        }
+
+        // Make sure |instruction| has only one indexing operand.
+        assert(instruction.NumInOperands() ==
+                   (instruction.opcode() == SpvOpCompositeExtract ? 2 : 3) &&
+               "FuzzerPassVectorDynamic: the composite instruction must have "
+               "only one indexing operand.");
 
         // Make sure the |instruction| literal operand is defined as constant.
         // It will be used as operand of the vector dynamic instruction.
-        FindOrCreateIntegerConstant(
-            {instruction.GetSingleWordInOperand(
-                instruction.opcode() == SpvOpCompositeExtract ? 1 : 2)},
-            32, false, false);
+        // If it is necessary to create the constant, then its signedness is
+        // choosen randomly.
+        if (!TransformationVectorDynamic::MaybeGetConstantForIndex(
+                GetIRContext(), instruction, *GetTransformationContext())) {
+          FindOrCreateIntegerConstant(
+              {instruction.GetSingleWordInOperand(
+                  instruction.opcode() == SpvOpCompositeExtract ? 1 : 2)},
+              32, GetFuzzerContext()->ChooseEven() ? true : false, false);
+        }
 
         // Applies the vector dynamic transformation.
         ApplyTransformation(
