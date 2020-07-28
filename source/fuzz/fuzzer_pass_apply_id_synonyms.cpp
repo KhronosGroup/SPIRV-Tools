@@ -92,7 +92,7 @@ void FuzzerPassApplyIdSynonyms::Apply() {
           continue;
         }
 
-        if (DescriptorsHaveCompatibleTypes(
+        if (DataDescriptorsHaveCompatibleTypes(
                 use_inst->opcode(), use_in_operand_index,
                 descriptor_for_this_id, *data_descriptor)) {
           synonyms_to_try.push_back(data_descriptor);
@@ -167,7 +167,7 @@ void FuzzerPassApplyIdSynonyms::Apply() {
   }
 }
 
-bool FuzzerPassApplyIdSynonyms::DescriptorsHaveCompatibleTypes(
+bool FuzzerPassApplyIdSynonyms::DataDescriptorsHaveCompatibleTypes(
     SpvOp opcode, uint32_t use_in_operand_index,
     const protobufs::DataDescriptor& dd1,
     const protobufs::DataDescriptor& dd2) {

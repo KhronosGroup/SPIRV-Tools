@@ -478,7 +478,7 @@ class FactManager::DataSynonymAndIdEquationFacts {
   // whose associated data have compatible types. Two types are compatible if:
   // - they are the same
   // - they both are numerical or vectors of numerical components with the same
-  //   number of bits
+  //   number of components and the same bit count per component
   static bool DataDescriptorsAreWellFormedAndComparable(
       opt::IRContext* context, const protobufs::DataDescriptor& dd1,
       const protobufs::DataDescriptor& dd2);
@@ -1232,26 +1232,29 @@ bool FactManager::DataSynonymAndIdEquationFacts::
   const auto* type_b = context->get_type_mgr()->GetType(end_type_id_2);
   assert(type_a && type_b && "Data descriptors have invalid type(s)");
 
-  uint32_t element_count_a = 1;
-  uint32_t element_count_b = 1;
-
   // If both types are numerical or vectors of numerical components, then they
-  // are compatible if they have the same bit count.
+  // are compatible if they have the same number of components and the same bit
+  // count per component.
+
   if (type_a->AsVector() && type_b->AsVector()) {
-    element_count_a = type_a->AsVector()->element_count();
-    element_count_b = type_b->AsVector()->element_count();
-    type_a = type_a->AsVector()->element_type();
-    type_b = type_b->AsVector()->element_type();
+    const auto* vector_a = type_a->AsVector();
+    const auto* vector_b = type_b->AsVector();
+
+    if (vector_a->element_count() != vector_b->element_count() ||
+        vector_a->element_type()->AsBool() ||
+        vector_b->element_type()->AsBool()) {
+      // The case where both vectors have boolean elements and the same number
+      // of components is handled by the direct equality check earlier.
+      // You can't have multiple identical boolean vector types.
+      return false;
+    }
+
+    type_a = vector_a->element_type();
+    type_b = vector_b->element_type();
   }
 
-  // |type_a| and/or |type_b| might be a scalar or a vector of booleans.
-  // In this case, types are compatible only if they have the same number of
-  // components.
-  if (type_a->AsBool() && type_b->AsBool()) {
-    return element_count_a == element_count_b;
-  }
-
-  auto get_bit_count = [](const opt::analysis::Type& type) -> uint32_t {
+  auto get_bit_count_for_numeric_type =
+      [](const opt::analysis::Type& type) -> uint32_t {
     if (const auto* integer = type.AsInteger()) {
       return integer->width();
     } else if (const auto* floating = type.AsFloat()) {
@@ -1266,8 +1269,8 @@ bool FactManager::DataSynonymAndIdEquationFacts::
   // numerical components and have the same number of bits.
   return (type_a->AsInteger() || type_a->AsFloat()) &&
          (type_b->AsInteger() || type_b->AsFloat()) &&
-         (element_count_a * get_bit_count(*type_a) ==
-          element_count_b * get_bit_count(*type_b));
+         (get_bit_count_for_numeric_type(*type_a) ==
+          get_bit_count_for_numeric_type(*type_b));
 }
 
 std::vector<const protobufs::DataDescriptor*>
