@@ -284,12 +284,9 @@ class SSARewriter {
   // Set of blocks that have been sealed already.
   std::unordered_set<BasicBlock*> sealed_blocks_;
 
-  // Set of OpVariable ids whose DebugValue have been added for store or
-  // phi instructions.
-  std::unordered_set<uint32_t> var_ids_added_dbg_value_;
-
-  // Set of OpVariable ids that we fail to add DebugValue.
-  std::unordered_set<uint32_t> var_ids_not_added_dbg_value_;
+  // Set of OpVariable ids whose DebugDeclares have been replaced to
+  // DebugValues for store and phi instructions.
+  std::unordered_set<uint32_t> var_ids_debugdeclare_replaced_;
 
   // Memory pass requesting the SSA rewriter.
   MemPass* pass_;

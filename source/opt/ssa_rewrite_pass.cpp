@@ -310,10 +310,7 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
     bool dbg_value_added =
         pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
             inst, var_id, val_id, inst);
-    if (dbg_value_added)
-      var_ids_added_dbg_value_.insert(var_id);
-    else
-      var_ids_not_added_dbg_value_.insert(var_id);
+    if (dbg_value_added) var_ids_debugdeclare_replaced_.insert(var_id);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -501,9 +498,7 @@ bool SSARewriter::ApplyReplacements() {
             &*insert_it, phi_candidate->var_id(), phi_candidate->result_id(),
             &*insert_it);
     if (dbg_value_added)
-      var_ids_added_dbg_value_.insert(phi_candidate->var_id());
-    else
-      var_ids_not_added_dbg_value_.insert(phi_candidate->var_id());
+      var_ids_debugdeclare_replaced_.insert(phi_candidate->var_id());
 
     modified = true;
   }
@@ -597,8 +592,7 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
             << fp->PrettyPrint(0) << "\n\n\n";
 #endif
 
-  var_ids_added_dbg_value_.clear();
-  var_ids_not_added_dbg_value_.clear();
+  var_ids_debugdeclare_replaced_.clear();
 
   // Collect variables that can be converted into SSA IDs.
   pass_->CollectTargetVars(fp);
@@ -629,12 +623,8 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
 #endif
 
   if (modified) {
-    for (auto var_id : var_ids_added_dbg_value_) {
-      // If we do not add DebugValue for a DebugDeclare, we must not remove it.
-      if (var_ids_not_added_dbg_value_.find(var_id) ==
-          var_ids_not_added_dbg_value_.end()) {
-        pass_->context()->get_debug_info_mgr()->KillDebugDeclares(var_id);
-      }
+    for (auto var_id : var_ids_debugdeclare_replaced_) {
+      pass_->context()->get_debug_info_mgr()->KillDebugDeclares(var_id);
     }
   }
 
