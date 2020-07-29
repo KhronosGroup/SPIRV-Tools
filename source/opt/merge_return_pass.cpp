@@ -111,7 +111,7 @@ bool MergeReturnPass::ProcessStructured(
   }
 
   RecordImmediateDominators(function);
-  AddPlaceholderSwitchAroundFunction();
+  AddSingleCaseSwitchAroundFunction();
 
   std::list<BasicBlock*> order;
   cfg()->ComputeStructuredOrder(function, &*function->begin(), &order);
@@ -768,7 +768,7 @@ void MergeReturnPass::InsertAfterElement(BasicBlock* element,
   list->insert(pos, new_element);
 }
 
-void MergeReturnPass::AddPlaceholderSwitchAroundFunction() {
+void MergeReturnPass::AddSingleCaseSwitchAroundFunction() {
   CreateReturnBlock();
   CreateReturn(final_return_block_);
 
@@ -776,7 +776,7 @@ void MergeReturnPass::AddPlaceholderSwitchAroundFunction() {
     cfg()->RegisterBlock(final_return_block_);
   }
 
-  CreatePlaceholderSwitch(final_return_block_);
+  CreateSingleCaseSwitch(final_return_block_);
 }
 
 BasicBlock* MergeReturnPass::CreateContinueTarget(uint32_t header_label_id) {
@@ -811,7 +811,7 @@ BasicBlock* MergeReturnPass::CreateContinueTarget(uint32_t header_label_id) {
   return new_block;
 }
 
-void MergeReturnPass::CreatePlaceholderSwitch(BasicBlock* merge_target) {
+void MergeReturnPass::CreateSingleCaseSwitch(BasicBlock* merge_target) {
   // Insert the switch before any code is run.  We have to split the entry
   // block to make sure the OpVariable instructions remain in the entry block.
   BasicBlock* start_block = &*function_->begin();
