@@ -1343,20 +1343,6 @@ message TransformationReplaceLinearAlgebraInstruction {
   repeated uint32 fresh_ids = 1;
 
   // A descriptor for a linear algebra instruction.
-  // This transformation is only applicable if the described instruction has one of the following opcodes.
-  // Supported:
-  //   OpTranspose
-  //   OpVectorTimesScalar
-  //   OpMatrixTimesScalar
-  //   OpVectorTimesMatrix
-  //   OpMatrixTimesVector
-  //   OpMatrixTimesMatrix
-  //   OpDot
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3354):
-  // Right now we only support certain operations. When this issue is addressed
-  // the supporting comments can be removed.
-  // To be supported in the future:
-  //   OpOuterProduct
   InstructionDescriptor instruction_descriptor = 2;
 
 }

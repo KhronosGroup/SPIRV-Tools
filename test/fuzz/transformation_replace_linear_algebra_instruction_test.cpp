@@ -2062,6 +2062,296 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
+TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpOuterProduct) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %45 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeFloat 32
+          %5 = OpTypeVector %4 2
+          %6 = OpTypeVector %4 3
+          %7 = OpTypeVector %4 4
+          %8 = OpTypeMatrix %5 2
+          %9 = OpTypeMatrix %5 3
+         %10 = OpTypeMatrix %5 4
+         %11 = OpTypeMatrix %6 2
+         %12 = OpTypeMatrix %6 3
+         %13 = OpTypeMatrix %6 4
+         %14 = OpTypeMatrix %7 2
+         %15 = OpTypeMatrix %7 3
+         %16 = OpTypeMatrix %7 4
+
+; Constant scalars
+         %17 = OpConstant %4 1
+         %18 = OpConstant %4 2
+         %19 = OpConstant %4 3
+         %20 = OpConstant %4 4
+         %21 = OpConstant %4 5
+         %22 = OpConstant %4 6
+         %23 = OpConstant %4 7
+         %24 = OpConstant %4 8
+         %25 = OpConstant %4 9
+         %26 = OpConstant %4 10
+         %27 = OpConstant %4 11
+         %28 = OpConstant %4 12
+         %29 = OpConstant %4 13
+         %30 = OpConstant %4 14
+         %31 = OpConstant %4 15
+         %32 = OpConstant %4 16
+
+; Constant vectors
+         %33 = OpConstantComposite %5 %17 %18
+         %34 = OpConstantComposite %5 %19 %20
+         %35 = OpConstantComposite %5 %21 %22
+         %36 = OpConstantComposite %5 %23 %24
+         %37 = OpConstantComposite %6 %17 %18 %19
+         %38 = OpConstantComposite %6 %20 %21 %22
+         %39 = OpConstantComposite %6 %23 %24 %25
+         %40 = OpConstantComposite %6 %26 %27 %28
+         %41 = OpConstantComposite %7 %17 %18 %19 %20
+         %42 = OpConstantComposite %7 %21 %22 %23 %24
+         %43 = OpConstantComposite %7 %25 %26 %27 %28
+         %44 = OpConstantComposite %7 %29 %30 %31 %32
+
+; main function
+         %45 = OpFunction %2 None %3
+         %46 = OpLabel
+
+; Multiplying 2-dimensional vector by 2-dimensional vector
+         %47 = OpOuterProduct %8 %33 %34
+
+; Multiplying 2-dimensional vector by 3-dimensional vector
+         %48 = OpOuterProduct %9 %35 %37
+
+; Multiplying 2-dimensional vector by 4-dimensional vector
+         %49 = OpOuterProduct %10 %36 %41
+
+; Multiplying 3-dimensional vector by 2-dimensional vector
+         %50 = OpOuterProduct %11 %37 %33
+
+; Multiplying 3-dimensional vector by 3-dimensional vector
+         %51 = OpOuterProduct %12 %38 %39
+
+; Multiplying 3-dimensional vector by 4-dimensional vector
+         %52 = OpOuterProduct %13 %40 %41
+
+; Multiplying 4-dimensional vector by 2-dimensional vector
+         %53 = OpOuterProduct %14 %41 %33
+
+; Multiplying 4-dimensional vector by 3-dimensional vector
+         %54 = OpOuterProduct %15 %42 %37
+
+; Multiplying 4-dimensional vector by 4-dimensional vector
+         %55 = OpOuterProduct %16 %43 %44
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto instruction_descriptor =
+      MakeInstructionDescriptor(47, SpvOpOuterProduct, 0);
+  auto transformation = TransformationReplaceLinearAlgebraInstruction(
+      {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67}, instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(48, SpvOpOuterProduct, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction(
+      {68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85},
+      instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(49, SpvOpOuterProduct, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction(
+      {86, 87, 88,  89,  90,  91,  92,  93,  94,  95,  96,  97,
+       98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109},
+      instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  instruction_descriptor = MakeInstructionDescriptor(50, SpvOpOuterProduct, 0);
+  transformation = TransformationReplaceLinearAlgebraInstruction(
+      {110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
+       124, 125},
+      instruction_descriptor);
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %45 "main"
+
+; Types
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeFloat 32
+          %5 = OpTypeVector %4 2
+          %6 = OpTypeVector %4 3
+          %7 = OpTypeVector %4 4
+          %8 = OpTypeMatrix %5 2
+          %9 = OpTypeMatrix %5 3
+         %10 = OpTypeMatrix %5 4
+         %11 = OpTypeMatrix %6 2
+         %12 = OpTypeMatrix %6 3
+         %13 = OpTypeMatrix %6 4
+         %14 = OpTypeMatrix %7 2
+         %15 = OpTypeMatrix %7 3
+         %16 = OpTypeMatrix %7 4
+
+; Constant scalars
+         %17 = OpConstant %4 1
+         %18 = OpConstant %4 2
+         %19 = OpConstant %4 3
+         %20 = OpConstant %4 4
+         %21 = OpConstant %4 5
+         %22 = OpConstant %4 6
+         %23 = OpConstant %4 7
+         %24 = OpConstant %4 8
+         %25 = OpConstant %4 9
+         %26 = OpConstant %4 10
+         %27 = OpConstant %4 11
+         %28 = OpConstant %4 12
+         %29 = OpConstant %4 13
+         %30 = OpConstant %4 14
+         %31 = OpConstant %4 15
+         %32 = OpConstant %4 16
+
+; Constant vectors
+         %33 = OpConstantComposite %5 %17 %18
+         %34 = OpConstantComposite %5 %19 %20
+         %35 = OpConstantComposite %5 %21 %22
+         %36 = OpConstantComposite %5 %23 %24
+         %37 = OpConstantComposite %6 %17 %18 %19
+         %38 = OpConstantComposite %6 %20 %21 %22
+         %39 = OpConstantComposite %6 %23 %24 %25
+         %40 = OpConstantComposite %6 %26 %27 %28
+         %41 = OpConstantComposite %7 %17 %18 %19 %20
+         %42 = OpConstantComposite %7 %21 %22 %23 %24
+         %43 = OpConstantComposite %7 %25 %26 %27 %28
+         %44 = OpConstantComposite %7 %29 %30 %31 %32
+
+; main function
+         %45 = OpFunction %2 None %3
+         %46 = OpLabel
+
+; Multiplying 2-dimensional vector by 2-dimensional vector
+         %56 = OpCompositeExtract %4 %34 0
+         %57 = OpCompositeExtract %4 %33 0
+         %58 = OpFMul %4 %56 %57
+         %59 = OpCompositeExtract %4 %33 1
+         %60 = OpFMul %4 %56 %59
+         %61 = OpCompositeConstruct %5 %58 %60
+         %62 = OpCompositeExtract %4 %34 1
+         %63 = OpCompositeExtract %4 %33 0
+         %64 = OpFMul %4 %62 %63
+         %65 = OpCompositeExtract %4 %33 1
+         %66 = OpFMul %4 %62 %65
+         %67 = OpCompositeConstruct %5 %64 %66
+         %47 = OpCompositeConstruct %8 %61 %67
+
+; Multiplying 2-dimensional vector by 3-dimensional vector
+         %68 = OpCompositeExtract %4 %37 0
+         %69 = OpCompositeExtract %4 %35 0
+         %70 = OpFMul %4 %68 %69
+         %71 = OpCompositeExtract %4 %35 1
+         %72 = OpFMul %4 %68 %71
+         %73 = OpCompositeConstruct %5 %70 %72
+         %74 = OpCompositeExtract %4 %37 1
+         %75 = OpCompositeExtract %4 %35 0
+         %76 = OpFMul %4 %74 %75
+         %77 = OpCompositeExtract %4 %35 1
+         %78 = OpFMul %4 %74 %77
+         %79 = OpCompositeConstruct %5 %76 %78
+         %80 = OpCompositeExtract %4 %37 2
+         %81 = OpCompositeExtract %4 %35 0
+         %82 = OpFMul %4 %80 %81
+         %83 = OpCompositeExtract %4 %35 1
+         %84 = OpFMul %4 %80 %83
+         %85 = OpCompositeConstruct %5 %82 %84
+         %48 = OpCompositeConstruct %9 %73 %79 %85
+
+; Multiplying 2-dimensional vector by 4-dimensional vector
+         %86 = OpCompositeExtract %4 %41 0
+         %87 = OpCompositeExtract %4 %36 0
+         %88 = OpFMul %4 %86 %87
+         %89 = OpCompositeExtract %4 %36 1
+         %90 = OpFMul %4 %86 %89
+         %91 = OpCompositeConstruct %5 %88 %90
+         %92 = OpCompositeExtract %4 %41 1
+         %93 = OpCompositeExtract %4 %36 0
+         %94 = OpFMul %4 %92 %93
+         %95 = OpCompositeExtract %4 %36 1
+         %96 = OpFMul %4 %92 %95
+         %97 = OpCompositeConstruct %5 %94 %96
+         %98 = OpCompositeExtract %4 %41 2
+         %99 = OpCompositeExtract %4 %36 0
+        %100 = OpFMul %4 %98 %99
+        %101 = OpCompositeExtract %4 %36 1
+        %102 = OpFMul %4 %98 %101
+        %103 = OpCompositeConstruct %5 %100 %102
+        %104 = OpCompositeExtract %4 %41 3
+        %105 = OpCompositeExtract %4 %36 0
+        %106 = OpFMul %4 %104 %105
+        %107 = OpCompositeExtract %4 %36 1
+        %108 = OpFMul %4 %104 %107
+        %109 = OpCompositeConstruct %5 %106 %108
+         %49 = OpCompositeConstruct %10 %91 %97 %103 %109
+
+; Multiplying 3-dimensional vector by 2-dimensional vector
+        %110 = OpCompositeExtract %4 %33 0
+        %111 = OpCompositeExtract %4 %37 0
+        %112 = OpFMul %4 %110 %111
+        %113 = OpCompositeExtract %4 %37 1
+        %114 = OpFMul %4 %110 %113
+        %115 = OpCompositeExtract %4 %37 2
+        %116 = OpFMul %4 %110 %115
+        %117 = OpCompositeConstruct %6 %112 %114 %116
+        %118 = OpCompositeExtract %4 %33 1
+        %119 = OpCompositeExtract %4 %37 0
+        %120 = OpFMul %4 %118 %119
+        %121 = OpCompositeExtract %4 %37 1
+        %122 = OpFMul %4 %118 %121
+        %123 = OpCompositeExtract %4 %37 2
+        %124 = OpFMul %4 %118 %123
+        %125 = OpCompositeConstruct %6 %120 %122 %124
+         %50 = OpCompositeConstruct %11 %117 %125
+
+; Multiplying 3-dimensional vector by 3-dimensional vector
+         %51 = OpOuterProduct %12 %38 %39
+
+; Multiplying 3-dimensional vector by 4-dimensional vector
+         %52 = OpOuterProduct %13 %40 %41
+
+; Multiplying 4-dimensional vector by 2-dimensional vector
+         %53 = OpOuterProduct %14 %41 %33
+
+; Multiplying 4-dimensional vector by 3-dimensional vector
+         %54 = OpOuterProduct %15 %42 %37
+
+; Multiplying 4-dimensional vector by 4-dimensional vector
+         %55 = OpOuterProduct %16 %43 %44
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+}
+
 TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpDot) {
   std::string reference_shader = R"(
                OpCapability Shader
