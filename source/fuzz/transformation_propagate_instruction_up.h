@@ -15,7 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_PROPAGATE_INSTRUCTION_UP_H_
 #define SOURCE_FUZZ_TRANSFORMATION_PROPAGATE_INSTRUCTION_UP_H_
 
-#include <unordered_map>
+#include <map>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -32,7 +32,7 @@ class TransformationPropagateInstructionUp : public Transformation {
 
   TransformationPropagateInstructionUp(
       uint32_t block_id,
-      const std::unordered_map<uint32_t, uint32_t>& predecessor_id_to_fresh_id);
+      const std::map<uint32_t, uint32_t>& predecessor_id_to_fresh_id);
 
   // TODO
   bool IsApplicable(

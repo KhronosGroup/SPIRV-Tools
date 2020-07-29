@@ -62,10 +62,10 @@ TransformationPropagateInstructionUp::TransformationPropagateInstructionUp(
 
 TransformationPropagateInstructionUp::TransformationPropagateInstructionUp(
     uint32_t block_id,
-    const std::unordered_map<uint32_t, uint32_t>& predecessor_id_to_fresh_id) {
+    const std::map<uint32_t, uint32_t>& predecessor_id_to_fresh_id) {
   message_.set_block_id(block_id);
-  message_.mutable_predecessor_id_to_fresh_id()->insert(
-      predecessor_id_to_fresh_id.begin(), predecessor_id_to_fresh_id.end());
+  *message_.mutable_predecessor_id_to_fresh_id() =
+      fuzzerutil::MapToRepeatedUInt32Pair(predecessor_id_to_fresh_id);
 }
 
 bool TransformationPropagateInstructionUp::IsApplicable(
@@ -75,15 +75,17 @@ bool TransformationPropagateInstructionUp::IsApplicable(
     return false;
   }
 
+  const auto predecessor_id_to_fresh_id = fuzzerutil::RepeatedUInt32PairToMap(
+      message_.predecessor_id_to_fresh_id());
   std::vector<uint32_t> maybe_fresh_ids;
   for (auto id : ir_context->cfg()->preds(message_.block_id())) {
     // Each predecessor must have a fresh id in the |predecessor_id_to_fresh_id|
     // map.
-    if (!message_.predecessor_id_to_fresh_id().contains(id)) {
+    if (!predecessor_id_to_fresh_id.count(id)) {
       return false;
     }
 
-    maybe_fresh_ids.push_back(message_.predecessor_id_to_fresh_id().at(id));
+    maybe_fresh_ids.push_back(predecessor_id_to_fresh_id.at(id));
   }
 
   // All ids must be unique and fresh.
@@ -104,13 +106,14 @@ void TransformationPropagateInstructionUp::Apply(
   // |op_phi_to_result_id| contains a mapping from the result id of such an
   // OpPhi instruction to the map of its operands
   // (i.e. |op_phi_to_result_id[op_phi_id][label_id] == result_id|).
-  auto op_phi_to_result_id =
+  const auto op_phi_to_result_id =
       ComputeMappingFromOpPhiToResultId(ir_context, inst);
 
   opt::Instruction::OperandList op_phi_operands;
+  const auto predecessor_id_to_fresh_id = fuzzerutil::RepeatedUInt32PairToMap(
+      message_.predecessor_id_to_fresh_id());
   for (auto predecessor_id : ir_context->cfg()->preds(message_.block_id())) {
-    auto new_result_id =
-        message_.predecessor_id_to_fresh_id().at(predecessor_id);
+    auto new_result_id = predecessor_id_to_fresh_id.at(predecessor_id);
 
     // Compute InOperands for the OpPhi instruction to be inserted later.
     op_phi_operands.push_back({SPV_OPERAND_TYPE_ID, {new_result_id}});

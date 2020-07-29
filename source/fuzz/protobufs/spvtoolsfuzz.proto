@@ -1249,10 +1249,7 @@ message TransformationPropagateInstructionUp {
 
   // A map from the id of some predecessor of the |block_id| to the fresh id.
   // The map contains a fresh id for at least every predecessor of the |block_id|.
-  //
-  // While maps are not fully deterministic, the way this map is used does not
-  // exhibit nondeterminism. Change to repeated Uint32Pair if this changes.
-  map<uint32, uint32> predecessor_id_to_fresh_id = 2;
+  repeated UInt32Pair predecessor_id_to_fresh_id = 2;
 
 }
 

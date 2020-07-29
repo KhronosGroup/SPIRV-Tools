@@ -42,7 +42,7 @@ void FuzzerPassPropagateInstructionsUp::Apply() {
 
       if (TransformationPropagateInstructionUp::IsApplicableToTheBlock(
               GetIRContext(), block.id())) {
-        std::unordered_map<uint32_t, uint32_t> fresh_ids;
+        std::map<uint32_t, uint32_t> fresh_ids;
         for (auto id : GetIRContext()->cfg()->preds(block.id())) {
           fresh_ids[id] = GetFuzzerContext()->GetFreshId();
         }
