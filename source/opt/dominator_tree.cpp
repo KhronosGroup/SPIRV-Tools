@@ -22,8 +22,8 @@
 
 // Calculates the dominator or postdominator tree for a given function.
 // 1 - Compute the successors and predecessors for each BasicBlock. We add a
-// placeholder node for the start node or for postdominators the exit. This node will
-// point to all entry or all exit nodes.
+// placeholder node for the start node or for postdominators the exit. This node
+// will point to all entry or all exit nodes.
 // 2 - Using the CFA::DepthFirstTraversal get a depth first postordered list of
 // all BasicBlocks. Using the successors (or for postdominator, predecessors)
 // calculated in step 1 to traverse the tree.
@@ -108,7 +108,8 @@ class BasicBlockSuccessorHelper {
  public:
   // For compliance with the dominance tree computation, entry nodes are
   // connected to a single placeholder node.
-  BasicBlockSuccessorHelper(Function& func, const BasicBlock* placeholder_start_node,
+  BasicBlockSuccessorHelper(Function& func,
+                            const BasicBlock* placeholder_start_node,
                             bool post);
 
   // CFA::CalculateDominators requires std::vector<BasicBlock*>.
@@ -141,9 +142,10 @@ class BasicBlockSuccessorHelper {
   // predecessors and vice versa).
   // For convenience, the start of the graph is |placeholder_start_node|.
   // The dominator tree construction requires a unique entry node, which cannot
-  // be guaranteed for the postdominator graph. The |placeholder_start_node| BB is
-  // here to gather all entry nodes.
-  void CreateSuccessorMap(Function& f, const BasicBlock* placeholder_start_node);
+  // be guaranteed for the postdominator graph. The |placeholder_start_node| BB
+  // is here to gather all entry nodes.
+  void CreateSuccessorMap(Function& f,
+                          const BasicBlock* placeholder_start_node);
 };
 
 template <typename BBType>
@@ -173,11 +175,10 @@ void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
   if (invert_graph_) {
     // For the post dominator tree, we see the inverted graph.
     // successors_ in the inverted graph are the predecessors in the CFG.
-    // The tree construction requires 1 entry point, so we add a placeholder node
-    // that is connected to all function exiting basic blocks.
-    // An exiting basic block is a block with an OpKill, OpUnreachable,
-    // OpReturn, OpReturnValue, or OpTerminateInvocation  as terminator
-    // instruction.
+    // The tree construction requires 1 entry point, so we add a placeholder
+    // node that is connected to all function exiting basic blocks. An exiting
+    // basic block is a block with an OpKill, OpUnreachable, OpReturn,
+    // OpReturnValue, or OpTerminateInvocation  as terminator instruction.
     for (BasicBlock& bb : f) {
       if (bb.hasSuccessor()) {
         BasicBlockListTy& pred_list = predecessors_[&bb];
@@ -193,7 +194,8 @@ void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
             });
       } else {
         successors_[placeholder_start_node].push_back(&bb);
-        predecessors_[&bb].push_back(const_cast<BasicBlock*>(placeholder_start_node));
+        predecessors_[&bb].push_back(
+            const_cast<BasicBlock*>(placeholder_start_node));
       }
     }
   } else {

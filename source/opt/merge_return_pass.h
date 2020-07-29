@@ -48,13 +48,13 @@ namespace opt {
  * is the final return. This block should branch to the new return block (its
  * direct successor). If the current block is within structured control flow,
  * the branch destination should be the innermost construct's merge.  This
- * merge will always exist because a placeholder switch is added around the
+ * merge will always exist because a single case switch is added around the
  * entire function. If the merge block produces any live values it will need to
  * be predicated. While the merge is nested in structured control flow, the
  * predication path should branch to the merge block of the inner-most loop
  * (or switch if no loop) it is contained in. Once structured control flow has
- * been exited, it will be at the merge of the placeholder switch, which will simply
- * return.
+ * been exited, it will be at the merge of the single case switch, which will
+ * simply return.
  *
  * In the final return block, the return value should be loaded and returned.
  * Memory promotion passes should be able to promote the newly introduced
@@ -73,7 +73,7 @@ namespace opt {
  *         ||
  *         \/
  *
- *          0 (placeholder switch header)
+ *          0 (single case switch header)
  *          |
  *          1 (loop header)
  *         / \
@@ -83,7 +83,7 @@ namespace opt {
  *        / \
  *        |  3 (original code in 3)
  *        \ /
- *   (ret) 4 (placeholder switch merge)
+ *   (ret) 4 (single case switch merge)
  *
  * In the above (simple) example, the return originally in |2| is passed through
  * the loop merge. That merge is predicated such that the old body of the block

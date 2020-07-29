@@ -2145,12 +2145,12 @@ TEST_F(MergeReturnPassTest, PhiInSecondMerge) {
 }
 
 TEST_F(MergeReturnPassTest, ReturnsInSwitch) {
-  //  Cannot branch directly to placeholder switch merge block from original switch.
-  //  Must branch to merge block of original switch and then do predicated
-  //  branch to merge block of placeholder switch.
+  //  Cannot branch directly to single case switch merge block from original
+  //  switch. Must branch to merge block of original switch and then do
+  //  predicated branch to merge block of single case switch.
   const std::string text =
       R"(
-; CHECK: OpSelectionMerge [[placeholder_merge_bb:%\w+]]
+; CHECK: OpSelectionMerge [[single_case_switch_merge_bb:%\w+]]
 ; CHECK-NEXT: OpSwitch {{%\w+}} [[def_bb1:%\w+]]
 ; CHECK-NEXT: [[def_bb1]] = OpLabel
 ; CHECK: OpSelectionMerge
@@ -2158,7 +2158,7 @@ TEST_F(MergeReturnPassTest, ReturnsInSwitch) {
 ; CHECK: OpBranch [[inner_merge_bb]]
 ; CHECK: OpBranch [[inner_merge_bb]]
 ; CHECK-NEXT: [[inner_merge_bb]] = OpLabel
-; CHECK: OpBranchConditional {{%\w+}} [[placeholder_merge_bb]] {{%\w+}}
+; CHECK: OpBranchConditional {{%\w+}} [[single_case_switch_merge_bb]] {{%\w+}}
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450

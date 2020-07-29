@@ -406,8 +406,8 @@ class Loop {
   // the iterators.
   bool loop_is_marked_for_removal_;
 
-  // This is only to allow LoopDescriptor::placeholder_top_loop_ to add top level
-  // loops as child.
+  // This is only to allow LoopDescriptor::placeholder_top_loop_ to add top
+  // level loops as child.
   friend class LoopDescriptor;
   friend class LoopUtils;
 };
@@ -483,7 +483,9 @@ class LoopDescriptor {
 
   // Iterators for pre-order depth first traversal of the loops.
   // Inner most loops will be visited first.
-  inline pre_iterator pre_begin() { return ++pre_iterator(&placeholder_top_loop_); }
+  inline pre_iterator pre_begin() {
+    return ++pre_iterator(&placeholder_top_loop_);
+  }
   inline pre_iterator pre_end() { return pre_iterator(); }
   inline const_pre_iterator pre_begin() const { return pre_cbegin(); }
   inline const_pre_iterator pre_end() const { return pre_cend(); }
@@ -524,8 +526,8 @@ class LoopDescriptor {
   void RemoveLoop(Loop* loop);
 
   void SetAsTopLoop(Loop* loop) {
-    assert(std::find(placeholder_top_loop_.begin(), placeholder_top_loop_.end(), loop) ==
-               placeholder_top_loop_.end() &&
+    assert(std::find(placeholder_top_loop_.begin(), placeholder_top_loop_.end(),
+                     loop) == placeholder_top_loop_.end() &&
            "already registered");
     placeholder_top_loop_.nested_loops_.push_back(loop);
   }

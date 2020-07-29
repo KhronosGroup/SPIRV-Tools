@@ -223,7 +223,8 @@ void MergeReturnPass::ProcessStructuredBlock(BasicBlock* block) {
 
   if (tail_opcode == SpvOpReturn || tail_opcode == SpvOpReturnValue ||
       tail_opcode == SpvOpUnreachable) {
-    assert(CurrentState().InBreakable() && "Should be in the placeholder construct.");
+    assert(CurrentState().InBreakable() &&
+           "Should be in the placeholder construct.");
     BranchToBlock(block, CurrentState().BreakMergeId());
     return_blocks_.insert(block->id());
   }
