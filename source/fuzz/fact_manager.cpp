@@ -474,6 +474,11 @@ class FactManager::DataSynonymAndIdEquationFacts {
   void MakeEquivalent(const protobufs::DataDescriptor& dd1,
                       const protobufs::DataDescriptor& dd2);
 
+  // Registers a data descriptor in the equivalence relation if it hasn't been
+  // registered yet, and returns its representative.
+  const protobufs::DataDescriptor* RegisterDataDescriptor(
+      const protobufs::DataDescriptor& dd);
+
   // Returns true if and only if |dd1| and |dd2| are valid data descriptors
   // whose associated data have compatible types. Two types are compatible if:
   // - they are the same
@@ -533,9 +538,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddFact(
   protobufs::DataDescriptor lhs_dd = MakeDataDescriptor(fact.lhs_id(), {});
 
   // Register the LHS in the equivalence relation if needed.
-  if (!synonymous_.Exists(lhs_dd)) {
-    synonymous_.Register(lhs_dd);
-  }
+  RegisterDataDescriptor(lhs_dd);
 
   // Get equivalence class representatives for all ids used on the RHS of the
   // equation.
@@ -543,11 +546,8 @@ void FactManager::DataSynonymAndIdEquationFacts::AddFact(
   for (auto rhs_id : fact.rhs_id()) {
     // Register a data descriptor based on this id in the equivalence relation
     // if needed, and then record the equivalence class representative.
-    protobufs::DataDescriptor rhs_dd = MakeDataDescriptor(rhs_id, {});
-    if (!synonymous_.Exists(rhs_dd)) {
-      synonymous_.Register(rhs_dd);
-    }
-    rhs_dd_ptrs.push_back(synonymous_.Find(&rhs_dd));
+    rhs_dd_ptrs.push_back(
+        RegisterDataDescriptor(MakeDataDescriptor(rhs_id, {})));
   }
 
   // Now add the fact.
@@ -607,6 +607,14 @@ void FactManager::DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
     case SpvOpConvertUToF:
       ComputeConversionDataSynonymFacts(*rhs_dds[0], context);
       break;
+    case SpvOpBitcast: {
+      assert(DataDescriptorsAreWellFormedAndComparable(context, lhs_dd,
+                                                       *rhs_dds[0]) &&
+             "Operands of OpBitcast equation fact must have compatible types");
+      if (!synonymous_.IsEquivalent(lhs_dd, *rhs_dds[0])) {
+        AddDataSynonymFactRecursive(lhs_dd, *rhs_dds[0], context);
+      }
+    } break;
     case SpvOpIAdd: {
       // Equation form: "a = b + c"
       for (const auto& equation : GetEquations(rhs_dds[0])) {
@@ -716,9 +724,15 @@ void FactManager::DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
 
   // Record that the data descriptors provided in the fact are equivalent.
   MakeEquivalent(dd1, dd2);
+  assert(synonymous_.Find(&dd1) == synonymous_.Find(&dd2) &&
+         "|dd1| and |dd2| must have a single representative");
 
   // Compute various corollary facts.
+
+  // |dd1| and |dd2| belong to the same equivalence class so it doesn't matter
+  // which one we use here.
   ComputeConversionDataSynonymFacts(dd1, context);
+
   ComputeCompositeDataSynonymFacts(dd1, dd2, context);
 }
 
@@ -779,7 +793,7 @@ void FactManager::DataSynonymAndIdEquationFacts::
     ComputeCompositeDataSynonymFacts(const protobufs::DataDescriptor& dd1,
                                      const protobufs::DataDescriptor& dd2,
                                      opt::IRContext* context) {
-  // Check whether this is a synonym about composite objects.  If it is,
+  // Check whether this is a synonym about composite objects. If it is,
   // we can recursively add synonym facts about their associated sub-components.
 
   // Get the type of the object referred to by the first data descriptor in the
@@ -1135,11 +1149,8 @@ void FactManager::DataSynonymAndIdEquationFacts::MakeEquivalent(
     const protobufs::DataDescriptor& dd2) {
   // Register the data descriptors if they are not already known to the
   // equivalence relation.
-  for (const auto& dd : {dd1, dd2}) {
-    if (!synonymous_.Exists(dd)) {
-      synonymous_.Register(dd);
-    }
-  }
+  RegisterDataDescriptor(dd1);
+  RegisterDataDescriptor(dd2);
 
   if (synonymous_.IsEquivalent(dd1, dd2)) {
     // The data descriptors are already known to be equivalent, so there is
@@ -1204,6 +1215,13 @@ void FactManager::DataSynonymAndIdEquationFacts::MakeEquivalent(
   }
   // Delete the no longer-relevant equations about |no_longer_representative|.
   id_equations_.erase(no_longer_representative);
+}
+
+const protobufs::DataDescriptor*
+FactManager::DataSynonymAndIdEquationFacts::RegisterDataDescriptor(
+    const protobufs::DataDescriptor& dd) {
+  return synonymous_.Exists(dd) ? synonymous_.Find(&dd)
+                                : synonymous_.Register(dd);
 }
 
 bool FactManager::DataSynonymAndIdEquationFacts::
