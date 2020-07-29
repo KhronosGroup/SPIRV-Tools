@@ -39,7 +39,7 @@ v2020.4 2020-07-22
 
 v2020.3 2020-05-27
  - General
-   - Prevent Effcee install things when building spirv-tools with testing enabled (#3256)
+   - Prevent Effcee from installing things when building spirv-tools with testing enabled (#3256)
    - Update acorn version (#3294)
    - If SPIRV-Headers is in our tree, include it as subproject (#3299)
    - allow cross compiling for Windows Store, UWP, etc. (#3330)
