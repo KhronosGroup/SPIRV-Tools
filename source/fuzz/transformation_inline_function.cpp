@@ -45,12 +45,18 @@ bool TransformationInlineFunction::IsApplicable(
     }
   }
 
-  // |function_call_instruction| must be defined and must be an OpFunctionCall
-  // instruction.
+  // |function_call_instruction| must be defined, must be an OpFunctionCall
+  // instruction, must be the penultimate instruction in its block and its block
+  // termination instruction must be an OpBranch.
   auto function_call_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.function_call_id());
+  auto function_call_instruction_block =
+      ir_context->get_instr_block(function_call_instruction);
   if (function_call_instruction == nullptr ||
-      function_call_instruction->opcode() != SpvOpFunctionCall) {
+      function_call_instruction->opcode() != SpvOpFunctionCall ||
+      function_call_instruction !=
+          &*--function_call_instruction_block->tail() ||
+      function_call_instruction_block->terminator()->opcode() != SpvOpBranch) {
     return false;
   }
 
@@ -107,12 +113,6 @@ void TransformationInlineFunction::Apply(
     }
 
     for (auto& instruction : block) {
-      // The return instruction will be changed into an OpBranch to the basic
-      // block that follows the block containing the function call.
-      if (spvOpcodeIsReturn(instruction.opcode())) {
-        continue;
-      }
-
       // Replaces the operand ids with their mapped result ids.
       auto cloned_instruction = instruction.Clone(ir_context);
       cloned_instruction->ForEachInId(
@@ -147,6 +147,27 @@ void TransformationInlineFunction::Apply(
         fuzzerutil::UpdateModuleIdBound(ir_context, result_id);
       }
 
+      // The return instruction will be changed into an OpBranch to the basic
+      // block that follows the block containing the function call.
+      if (spvOpcodeIsReturn(cloned_instruction->opcode())) {
+        uint32_t following_block_id =
+            ir_context->get_instr_block(function_call_instruction)
+                ->terminator()
+                ->GetSingleWordInOperand(0);
+        switch (cloned_instruction->opcode()) {
+          case SpvOpReturn:
+            cloned_instruction->AddOperand(
+                {SPV_OPERAND_TYPE_ID, {following_block_id}});
+            break;
+          case SpvOpReturnValue:
+            cloned_instruction->SetInOperand(0, {following_block_id});
+            break;
+          default:
+            break;
+        }
+        cloned_instruction->SetOpcode(SpvOpBranch);
+      }
+
       if (cloned_instruction->opcode() == SpvOpVariable) {
         // All OpVariable instructions in a function must be in the first block
         // in the function.
@@ -177,7 +198,10 @@ void TransformationInlineFunction::Apply(
     copy_object_instruction.release();
   }
 
-  // Removes the function call instruction from the caller function.
+  // Removes the function call instruction and its block termination instruction
+  // from the caller function.
+  ir_context->KillInst(
+      ir_context->get_instr_block(function_call_instruction)->terminator());
   ir_context->KillInst(function_call_instruction);
 }
 

@@ -82,6 +82,8 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                OpStore %41 %16
                OpStore %42 %17
          %43 = OpFunctionCall %2 %18 %41 %42 ; dot product function call
+               OpBranch %44
+         %44 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -97,64 +99,64 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                validator_options);
 
   // Tests undefined function call instruction.
-  auto transformation = TransformationInlineFunction({{22, 44},
-                                                      {23, 45},
-                                                      {24, 46},
-                                                      {25, 47},
-                                                      {26, 48},
-                                                      {27, 49},
-                                                      {28, 50},
-                                                      {29, 51},
-                                                      {30, 52},
-                                                      {31, 53},
-                                                      {32, 54},
-                                                      {33, 55},
-                                                      {34, 56},
-                                                      {35, 57},
-                                                      {36, 58},
-                                                      {37, 59}},
-                                                     60);
+  auto transformation = TransformationInlineFunction({{22, 45},
+                                                      {23, 46},
+                                                      {24, 47},
+                                                      {25, 48},
+                                                      {26, 49},
+                                                      {27, 50},
+                                                      {28, 51},
+                                                      {29, 52},
+                                                      {30, 53},
+                                                      {31, 54},
+                                                      {32, 55},
+                                                      {33, 56},
+                                                      {34, 57},
+                                                      {35, 58},
+                                                      {36, 59},
+                                                      {37, 60}},
+                                                     61);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests false function call instruction.
-  transformation = TransformationInlineFunction({{22, 44},
-                                                 {23, 45},
-                                                 {24, 46},
-                                                 {25, 47},
-                                                 {26, 48},
-                                                 {27, 49},
-                                                 {28, 50},
-                                                 {29, 51},
-                                                 {30, 52},
-                                                 {31, 53},
-                                                 {32, 54},
-                                                 {33, 55},
-                                                 {34, 56},
-                                                 {35, 57},
-                                                 {36, 58},
-                                                 {37, 59}},
+  transformation = TransformationInlineFunction({{22, 45},
+                                                 {23, 46},
+                                                 {24, 47},
+                                                 {25, 48},
+                                                 {26, 49},
+                                                 {27, 50},
+                                                 {28, 51},
+                                                 {29, 52},
+                                                 {30, 53},
+                                                 {31, 54},
+                                                 {32, 55},
+                                                 {33, 56},
+                                                 {34, 57},
+                                                 {35, 58},
+                                                 {36, 59},
+                                                 {37, 60}},
                                                 42);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests applicable transformation.
-  transformation = TransformationInlineFunction({{22, 44},
-                                                 {23, 45},
-                                                 {24, 46},
-                                                 {25, 47},
-                                                 {26, 48},
-                                                 {27, 49},
-                                                 {28, 50},
-                                                 {29, 51},
-                                                 {30, 52},
-                                                 {31, 53},
-                                                 {32, 54},
-                                                 {33, 55},
-                                                 {34, 56},
-                                                 {35, 57},
-                                                 {36, 58},
-                                                 {37, 59}},
+  transformation = TransformationInlineFunction({{22, 45},
+                                                 {23, 46},
+                                                 {24, 47},
+                                                 {25, 48},
+                                                 {26, 49},
+                                                 {27, 50},
+                                                 {28, 51},
+                                                 {29, 52},
+                                                 {30, 53},
+                                                 {31, 54},
+                                                 {32, 55},
+                                                 {33, 56},
+                                                 {34, 57},
+                                                 {35, 58},
+                                                 {36, 59},
+                                                 {37, 60}},
                                                 43);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -222,6 +224,8 @@ TEST(TransformationInlineFunctionTest, Apply) {
                OpStore %41 %16
                OpStore %42 %17
          %43 = OpFunctionCall %2 %18 %41 %42 ; dot product function call
+               OpBranch %44
+         %44 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -237,23 +241,23 @@ TEST(TransformationInlineFunctionTest, Apply) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  auto transformation = TransformationInlineFunction({{22, 44},
-                                                      {23, 45},
-                                                      {24, 46},
-                                                      {25, 47},
-                                                      {26, 48},
-                                                      {27, 49},
-                                                      {28, 50},
-                                                      {29, 51},
-                                                      {30, 52},
-                                                      {31, 53},
-                                                      {32, 54},
-                                                      {33, 55},
-                                                      {34, 56},
-                                                      {35, 57},
-                                                      {36, 58},
-                                                      {37, 59},
-                                                      {38, 60}},
+  auto transformation = TransformationInlineFunction({{22, 45},
+                                                      {23, 46},
+                                                      {24, 47},
+                                                      {25, 48},
+                                                      {26, 49},
+                                                      {27, 50},
+                                                      {28, 51},
+                                                      {29, 52},
+                                                      {30, 53},
+                                                      {31, 54},
+                                                      {32, 55},
+                                                      {33, 56},
+                                                      {34, 57},
+                                                      {35, 58},
+                                                      {36, 59},
+                                                      {37, 60},
+                                                      {38, 61}},
                                                      43);
   transformation.Apply(context.get(), &transformation_context);
 
@@ -317,24 +321,26 @@ TEST(TransformationInlineFunctionTest, Apply) {
          %42 = OpVariable %4 Function
                OpStore %41 %16
                OpStore %42 %17
-         %44 = OpLoad %3 %41
-         %45 = OpLoad %3 %42
-         %46 = OpCompositeExtract %2 %44 0
+         %45 = OpLoad %3 %41
+         %46 = OpLoad %3 %42
          %47 = OpCompositeExtract %2 %45 0
-         %48 = OpFMul %2 %46 %47
-         %49 = OpCompositeExtract %2 %44 1
+         %48 = OpCompositeExtract %2 %46 0
+         %49 = OpFMul %2 %47 %48
          %50 = OpCompositeExtract %2 %45 1
-         %51 = OpFMul %2 %49 %50
-         %52 = OpCompositeExtract %2 %44 2
+         %51 = OpCompositeExtract %2 %46 1
+         %52 = OpFMul %2 %50 %51
          %53 = OpCompositeExtract %2 %45 2
-         %54 = OpFMul %2 %52 %53
-         %55 = OpCompositeExtract %2 %44 3
+         %54 = OpCompositeExtract %2 %46 2
+         %55 = OpFMul %2 %53 %54
          %56 = OpCompositeExtract %2 %45 3
-         %57 = OpFMul %2 %55 %56
-         %58 = OpFAdd %2 %48 %51
-         %59 = OpFAdd %2 %54 %58
-         %60 = OpFAdd %2 %57 %59
-         %43 = OpCopyObject %2 %60
+         %57 = OpCompositeExtract %2 %46 3
+         %58 = OpFMul %2 %56 %57
+         %59 = OpFAdd %2 %49 %52
+         %60 = OpFAdd %2 %55 %59
+         %61 = OpFAdd %2 %58 %60
+         %43 = OpCopyObject %2 %61
+               OpBranch %44
+         %44 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
