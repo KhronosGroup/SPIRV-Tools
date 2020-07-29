@@ -56,7 +56,8 @@ static const spv_ext_inst_group_t kGroups_1_0[] = {
     {SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100,
      ARRAY_SIZE(opencl_debuginfo_100_entries), opencl_debuginfo_100_entries},
     {SPV_EXT_INST_TYPE_NONSEMANTIC_CLSPVREFLECTION,
-     ARRAY_SIZE(nonsemantic_clspvreflection_entries), nonsemantic_clspvreflection_entries},
+     ARRAY_SIZE(nonsemantic_clspvreflection_entries),
+     nonsemantic_clspvreflection_entries},
 };
 
 static const spv_ext_inst_table_t kTable_1_0 = {ARRAY_SIZE(kGroups_1_0),

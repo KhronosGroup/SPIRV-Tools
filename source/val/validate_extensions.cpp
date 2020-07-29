@@ -183,18 +183,22 @@ spv_result_t ValidateOperandDebugType(
 
 bool IsUint32Constant(ValidationState_t& _, uint32_t id) {
   auto inst = _.FindDef(id);
-  if (!inst || inst->opcode() != SpvOpConstant)
+  if (!inst || inst->opcode() != SpvOpConstant) {
     return false;
+  }
 
   auto type = _.FindDef(inst->type_id());
-  if (!type || type->opcode() != SpvOpTypeInt)
+  if (!type || type->opcode() != SpvOpTypeInt) {
     return false;
+  }
 
-  if (type->GetOperandAs<uint32_t>(1) != 32)
+  if (type->GetOperandAs<uint32_t>(1) != 32) {
     return false;
+  }
 
-  if (type->GetOperandAs<uint32_t>(2) != 0)
+  if (type->GetOperandAs<uint32_t>(2) != 0) {
     return false;
+  }
 
   return true;
 }
@@ -207,6 +211,19 @@ spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Kernel does not reference a function";
   }
+
+  bool found_kernel = false;
+  for (auto entry_point : _.entry_points()) {
+    if (entry_point == kernel_id) {
+      found_kernel = true;
+      break;
+    }
+  }
+  if (!found_kernel) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Kernel does not reference an entry-point";
+  }
+
   const auto* exec_models = _.GetExecutionModels(kernel_id);
   if (!exec_models || exec_models->empty()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -302,8 +319,8 @@ spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
 }
 
 spv_result_t ValidateArgInfo(ValidationState_t& _, const Instruction* inst,
-                             uint32_t id) {
-  auto info = _.FindDef(inst->GetOperandAs<uint32_t>(id));
+                             uint32_t info_index) {
+  auto info = _.FindDef(inst->GetOperandAs<uint32_t>(info_index));
   if (!info || info->opcode() != SpvOpExtInst) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "ArgInfo must be an ArgumentInfo extended instruction";

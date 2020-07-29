@@ -8166,8 +8166,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_pair("ArgumentUniform", "%int_0 %int_0"),
         std::make_pair("ArgumentPodStorageBuffer",
                        "%int_0 %int_0 %int_0 %int_4"),
-        std::make_pair("ArgumentPodUniform",
-                       "%int_0 %int_0 %int_0 %int_4"),
+        std::make_pair("ArgumentPodUniform", "%int_0 %int_0 %int_0 %int_4"),
         std::make_pair("ArgumentPodPushConstant", "%int_0 %int_4"),
         std::make_pair("ArgumentSampledImage", "%int_0 %int_0"),
         std::make_pair("ArgumentStorageImage", "%int_0 %int_0"),
@@ -8321,8 +8320,9 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ArgInfo must be an ArgumentInfo extended instruction"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ArgInfo must be an ArgumentInfo extended instruction"));
 }
 
 TEST_P(ArgumentBasics, ArgumentInfoFromDifferentImport) {
@@ -8359,7 +8359,8 @@ OpFunctionEnd
       HasSubstr("ArgInfo must be from the same extended instruction import"));
 }
 
-using Uint32Constant = spvtest::ValidateBase<std::pair<std::string, std::string>>;
+using Uint32Constant =
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
 
 INSTANTIATE_TEST_SUITE_P(
     ValidateClspvReflectionUint32Constants, Uint32Constant,
@@ -8603,7 +8604,8 @@ OpExecutionMode %foo LocalSize 1 1 1
 OpReturn
 OpFunctionEnd
 %decl = OpExtInst %void %ext Kernel %foo %foo_name
-%inst = OpExtInst %void %ext )" + ext_inst;
+%inst = OpExtInst %void %ext )" +
+                           ext_inst;
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -8612,7 +8614,8 @@ OpFunctionEnd
       HasSubstr(name + " must be a 32-bit unsigned integer OpConstant"));
 }
 
-using StringOperand = spvtest::ValidateBase<std::pair<std::string, std::string>>;
+using StringOperand =
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
 
 INSTANTIATE_TEST_SUITE_P(
     ValidateClspvReflectionStringOperands, StringOperand,
@@ -8647,7 +8650,8 @@ OpExecutionMode %foo LocalSize 1 1 1
 OpReturn
 OpFunctionEnd
 %decl = OpExtInst %void %ext Kernel %foo %foo_name
-%inst = OpExtInst %void %ext )" + ext_inst;
+%inst = OpExtInst %void %ext )" +
+                           ext_inst;
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
