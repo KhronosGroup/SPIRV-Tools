@@ -1292,7 +1292,7 @@ MapToRepeatedUInt32Pair(const std::map<uint32_t, uint32_t>& data) {
     protobufs::UInt32Pair pair;
     pair.set_first(entry.first);
     pair.set_second(entry.second);
-    result.Add(std::move(pair));
+    *result.Add() = std::move(pair);
   }
 
   return result;
