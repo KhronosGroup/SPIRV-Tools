@@ -1635,7 +1635,7 @@ TEST_F(InlineTest, SingleBlockLoopCallsMultiBlockCalleeHavingSelectionMerge) {
   // the OpSelectionMerge, so inlining must create a new block to contain
   // the callee contents.
   //
-  // Additionally, we have two dummy OpCopyObject instructions to prove that
+  // Additionally, we have two extra OpCopyObject instructions to prove that
   // the OpLoopMerge is moved to the right location.
   //
   // Also ensure that OpPhis within the cloned callee code are valid.
