@@ -117,10 +117,9 @@ FuzzerPassInterchangeIntegerOperands::FindOrCreateToggledIntegerConstant(
 
   // Find or create the toggled components.
   for (auto component : constant->AsVectorConstant()->GetComponents()) {
-    toggled_components.push_back(
-        FindOrCreateToggledIntegerConstant(FindOrCreateIntegerConstant(
-            component->AsIntConstant()->words(), component_type->width(),
-            !component_type->IsSigned(), false)));
+    toggled_components.push_back(FindOrCreateIntegerConstant(
+        component->AsIntConstant()->words(), component_type->width(),
+        !component_type->IsSigned(), false));
   }
 
   // Find or create the required toggled vector type.
