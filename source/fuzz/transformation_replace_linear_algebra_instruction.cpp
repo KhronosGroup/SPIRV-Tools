@@ -234,9 +234,9 @@ uint32_t TransformationReplaceLinearAlgebraInstruction::GetRequiredFreshIdCount(
       // OpCompositeExtract, |vector_1_component_count| OpFMul and 1
       // OpCompositeConstruct instructions will be inserted.
       auto vector_1_instruction = ir_context->get_def_use_mgr()->GetDef(
-          linear_algebra_instruction->GetSingleWordInOperand(0));
+          instruction->GetSingleWordInOperand(0));
       auto vector_2_instruction = ir_context->get_def_use_mgr()->GetDef(
-          linear_algebra_instruction->GetSingleWordInOperand(1));
+          instruction->GetSingleWordInOperand(1));
       uint32_t vector_1_component_count =
           ir_context->get_type_mgr()
               ->GetType(vector_1_instruction->type_id())
