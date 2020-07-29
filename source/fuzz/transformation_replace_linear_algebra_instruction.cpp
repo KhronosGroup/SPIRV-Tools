@@ -42,7 +42,7 @@ bool TransformationReplaceLinearAlgebraInstruction::IsApplicable(
       FindInstruction(message_.instruction_descriptor(), ir_context);
 
   // It must be a linear algebra instruction.
-  if (spvOpcodeIsLinearAlgebra(instruction->opcode())) {
+  if (!spvOpcodeIsLinearAlgebra(instruction->opcode())) {
     return false;
   }
 

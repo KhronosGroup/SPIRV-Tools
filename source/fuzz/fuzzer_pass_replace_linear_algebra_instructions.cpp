@@ -37,7 +37,7 @@ void FuzzerPassReplaceLinearAlgebraInstructions::Apply() {
   // For each instruction, checks whether it is a linear algebra instruction. In
   // this case, the transformation is randomly applied.
   GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
-    if (spvOpcodeIsLinearAlgebra(instruction->opcode())) {
+    if (!spvOpcodeIsLinearAlgebra(instruction->opcode())) {
       return;
     }
 
