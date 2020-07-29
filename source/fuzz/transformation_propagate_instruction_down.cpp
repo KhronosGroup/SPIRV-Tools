@@ -1,0 +1,567 @@
+// Copyright (c) 2020 Vasyl Teliman
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "source/fuzz/transformation_propagate_instruction_down.h"
+
+#include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/instruction_descriptor.h"
+
+namespace spvtools {
+namespace fuzz {
+namespace {
+
+uint32_t GetInOperandIndexForId(const opt::Instruction& inst, uint32_t id) {
+  for (uint32_t i = 0; i < inst.NumInOperands(); ++i) {
+    const auto& operand = inst.GetInOperand(i);
+    if (spvIsInIdType(operand.type) && operand.words[0] == id) {
+      return i;
+    }
+  }
+
+  return inst.NumInOperands();
+}
+
+}  // namespace
+
+TransformationPropagateInstructionDown::TransformationPropagateInstructionDown(
+    const protobufs::TransformationPropagateInstructionDown& message)
+    : message_(message) {}
+
+TransformationPropagateInstructionDown::TransformationPropagateInstructionDown(
+    uint32_t block_id, uint32_t phi_fresh_id,
+    const std::map<uint32_t, uint32_t>& successor_id_to_fresh_id) {
+  message_.set_block_id(block_id);
+  message_.set_phi_fresh_id(phi_fresh_id);
+  *message_.mutable_successor_id_to_fresh_id() =
+      fuzzerutil::MapToRepeatedUInt32Pair(successor_id_to_fresh_id);
+}
+
+bool TransformationPropagateInstructionDown::IsApplicable(
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+  // Check that we can apply this transformation to the |block_id|.
+  if (!IsApplicableToBlock(ir_context, message_.block_id())) {
+    return false;
+  }
+
+  const auto successor_id_to_fresh_id =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.successor_id_to_fresh_id());
+
+  for (auto id : GetAcceptableSuccessors(ir_context, message_.block_id())) {
+    // Each successor must have a fresh id in the |successor_id_to_fresh_id|
+    // map.
+    if (!successor_id_to_fresh_id.count(id)) {
+      return false;
+    }
+  }
+
+  std::vector<uint32_t> maybe_fresh_ids = {message_.phi_fresh_id()};
+  maybe_fresh_ids.reserve(successor_id_to_fresh_id.size());
+  for (const auto& entry : successor_id_to_fresh_id) {
+    maybe_fresh_ids.push_back(entry.second);
+  }
+
+  // All ids must be unique and fresh.
+  return !fuzzerutil::HasDuplicates(maybe_fresh_ids) &&
+         std::all_of(maybe_fresh_ids.begin(), maybe_fresh_ids.end(),
+                     [ir_context](uint32_t id) {
+                       return fuzzerutil::IsFreshId(ir_context, id);
+                     });
+}
+
+void TransformationPropagateInstructionDown::Apply(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  // Get instruction to propagate down. There must be one.
+  auto* inst_to_propagate =
+      GetInstructionToPropagate(ir_context, message_.block_id());
+  assert(inst_to_propagate && "There must be an instruction to propagate");
+
+  const auto successor_id_to_fresh_id =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.successor_id_to_fresh_id());
+  std::vector<uint32_t> created_inst_ids;
+  auto successor_ids = GetAcceptableSuccessors(ir_context, message_.block_id());
+
+  // Clone |inst_to_propagate| into every successor.
+  for (auto successor_id : successor_ids) {
+    std::unique_ptr<opt::Instruction> clone(
+        inst_to_propagate->Clone(ir_context));
+
+    auto new_result_id = successor_id_to_fresh_id.at(successor_id);
+    clone->SetResultId(new_result_id);
+    fuzzerutil::UpdateModuleIdBound(ir_context, new_result_id);
+
+    auto* insert_before_inst = GetFirstInsertBeforeInstruction(
+        ir_context, successor_id, clone->opcode());
+    assert(insert_before_inst && "Can't insert into one of the successors");
+
+    insert_before_inst->InsertBefore(std::move(clone));
+    created_inst_ids.push_back(new_result_id);
+  }
+
+  // Add an OpPhi instruction into the module if possible.
+  if (CanAddOpPhiInstruction(ir_context, message_.block_id(), successor_ids)) {
+    const auto* source_block = ir_context->get_instr_block(inst_to_propagate);
+    assert(source_block &&
+           "Global instructions and function parameters are not propagated");
+    assert(source_block->GetMergeInst() &&
+           "|source_block| must be a header block");
+
+    auto merge_block_id =
+        source_block->GetMergeInst()->GetSingleWordInOperand(0);
+    opt::Instruction::OperandList in_operands;
+    std::unordered_set<uint32_t> visited_predecessors;
+    for (auto predecessor_id : ir_context->cfg()->preds(merge_block_id)) {
+      if (visited_predecessors.count(predecessor_id)) {
+        // Merge block might have multiple identical predecessors.
+        continue;
+      }
+
+      visited_predecessors.insert(predecessor_id);
+
+      const auto* dominator_analysis =
+          ir_context->GetDominatorAnalysis(source_block->GetParent());
+
+      // Find the successor of |source_block| that dominates the predecessor of
+      // the merge block |predecessor_id|.
+      auto it = std::find_if(
+          successor_ids.begin(), successor_ids.end(),
+          [predecessor_id, dominator_analysis](uint32_t successor_id) {
+            return dominator_analysis->Dominates(successor_id, predecessor_id);
+          });
+
+      // OpPhi requires a single operand pair for every predecessor of the
+      // OpPhi's block.
+      assert(it != successor_ids.end() && "Unable to insert OpPhi");
+
+      in_operands.push_back(
+          {SPV_OPERAND_TYPE_ID, {successor_id_to_fresh_id.at(*it)}});
+      in_operands.push_back({SPV_OPERAND_TYPE_ID, {predecessor_id}});
+    }
+
+    ir_context->cfg()
+        ->block(merge_block_id)
+        ->begin()
+        ->InsertBefore(MakeUnique<opt::Instruction>(
+            ir_context, SpvOpPhi, inst_to_propagate->type_id(),
+            message_.phi_fresh_id(), std::move(in_operands)));
+
+    fuzzerutil::UpdateModuleIdBound(ir_context, message_.phi_fresh_id());
+    created_inst_ids.push_back(message_.phi_fresh_id());
+  }
+
+  // Make sure analyses are updated when we adjust users of |inst_to_propagate|.
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
+  // Update every use of the |inst_to_propagate| with a result id of some of the
+  // newly created instructions.
+  ir_context->get_def_use_mgr()->ForEachUse(
+      inst_to_propagate, [ir_context, &created_inst_ids](
+                             opt::Instruction* user, uint32_t operand_index) {
+        if (!ir_context->get_instr_block(user)) {
+          // We need to update global instructions (e.g. OpDecorate since we
+          // will remove |inst_to_propagate| from the module later.
+          //
+          // TODO(review): Should we add similar OpDecorate for every id in
+          //  |created_inst_ids|?
+          user->SetOperand(operand_index, {created_inst_ids.front()});
+          return;
+        }
+
+        auto in_operand_index =
+            fuzzerutil::InOperandIndexFromOperandIndex(*user, operand_index);
+        for (auto id : created_inst_ids) {
+          if (fuzzerutil::IdIsAvailableAtUse(ir_context, user, in_operand_index,
+                                             id)) {
+            user->SetInOperand(in_operand_index, {id});
+            return;
+          }
+        }
+
+        // Every user of |inst_to_propagate| must be updated since we will
+        // remove that instruction from the module.
+        assert(false && "Every user of |inst_to_propagate| must be updated");
+      });
+
+  // Add synonyms about  newly created instructions.
+  assert(inst_to_propagate->HasResultId() &&
+         "Result id is required to add facts");
+  for (auto id : created_inst_ids) {
+    if (transformation_context->GetFactManager()->IdIsIrrelevant(
+            inst_to_propagate->result_id())) {
+      transformation_context->GetFactManager()->AddFactIdIsIrrelevant(id);
+    } else {
+      transformation_context->GetFactManager()->AddFactDataSynonym(
+          MakeDataDescriptor(id, {}),
+          MakeDataDescriptor(created_inst_ids[0], {}), ir_context);
+    }
+  }
+
+  // Remove the propagate instruction from the module.
+  ir_context->KillInst(inst_to_propagate);
+
+  // We've adjusted all users - make sure these changes are analyzed.
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+}
+
+protobufs::Transformation TransformationPropagateInstructionDown::ToMessage()
+    const {
+  protobufs::Transformation result;
+  *result.mutable_propagate_instruction_down() = message_;
+  return result;
+}
+
+bool TransformationPropagateInstructionDown::IsOpcodeSupported(SpvOp opcode) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3605):
+  //  We only support "simple" instructions that don't work with memory.
+  //  We should extend this so that we support the ones that modify the memory
+  //  too.
+  switch (opcode) {
+    case SpvOpUndef:
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpArrayLength:
+    case SpvOpVectorExtractDynamic:
+    case SpvOpVectorInsertDynamic:
+    case SpvOpVectorShuffle:
+    case SpvOpCompositeConstruct:
+    case SpvOpCompositeExtract:
+    case SpvOpCompositeInsert:
+    case SpvOpCopyObject:
+    case SpvOpTranspose:
+    case SpvOpConvertFToU:
+    case SpvOpConvertFToS:
+    case SpvOpConvertSToF:
+    case SpvOpConvertUToF:
+    case SpvOpUConvert:
+    case SpvOpSConvert:
+    case SpvOpFConvert:
+    case SpvOpQuantizeToF16:
+    case SpvOpSatConvertSToU:
+    case SpvOpSatConvertUToS:
+    case SpvOpBitcast:
+    case SpvOpSNegate:
+    case SpvOpFNegate:
+    case SpvOpIAdd:
+    case SpvOpFAdd:
+    case SpvOpISub:
+    case SpvOpFSub:
+    case SpvOpIMul:
+    case SpvOpFMul:
+    case SpvOpUDiv:
+    case SpvOpSDiv:
+    case SpvOpFDiv:
+    case SpvOpUMod:
+    case SpvOpSRem:
+    case SpvOpSMod:
+    case SpvOpFRem:
+    case SpvOpFMod:
+    case SpvOpVectorTimesScalar:
+    case SpvOpMatrixTimesScalar:
+    case SpvOpVectorTimesMatrix:
+    case SpvOpMatrixTimesVector:
+    case SpvOpMatrixTimesMatrix:
+    case SpvOpOuterProduct:
+    case SpvOpDot:
+    case SpvOpIAddCarry:
+    case SpvOpISubBorrow:
+    case SpvOpUMulExtended:
+    case SpvOpSMulExtended:
+    case SpvOpAny:
+    case SpvOpAll:
+    case SpvOpIsNan:
+    case SpvOpIsInf:
+    case SpvOpIsFinite:
+    case SpvOpIsNormal:
+    case SpvOpSignBitSet:
+    case SpvOpLessOrGreater:
+    case SpvOpOrdered:
+    case SpvOpUnordered:
+    case SpvOpLogicalEqual:
+    case SpvOpLogicalNotEqual:
+    case SpvOpLogicalOr:
+    case SpvOpLogicalAnd:
+    case SpvOpLogicalNot:
+    case SpvOpSelect:
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan:
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual:
+    case SpvOpULessThan:
+    case SpvOpSLessThan:
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual:
+    case SpvOpFOrdEqual:
+    case SpvOpFUnordEqual:
+    case SpvOpFOrdNotEqual:
+    case SpvOpFUnordNotEqual:
+    case SpvOpFOrdLessThan:
+    case SpvOpFUnordLessThan:
+    case SpvOpFOrdGreaterThan:
+    case SpvOpFUnordGreaterThan:
+    case SpvOpFOrdLessThanEqual:
+    case SpvOpFUnordLessThanEqual:
+    case SpvOpFOrdGreaterThanEqual:
+    case SpvOpFUnordGreaterThanEqual:
+    case SpvOpShiftRightLogical:
+    case SpvOpShiftRightArithmetic:
+    case SpvOpShiftLeftLogical:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+    case SpvOpNot:
+    case SpvOpBitFieldInsert:
+    case SpvOpBitFieldSExtract:
+    case SpvOpBitFieldUExtract:
+    case SpvOpBitReverse:
+    case SpvOpBitCount:
+    case SpvOpCopyLogical:
+    case SpvOpPtrEqual:
+    case SpvOpPtrNotEqual:
+      return true;
+    default:
+      return false;
+  }
+}
+
+opt::Instruction*
+TransformationPropagateInstructionDown::GetInstructionToPropagate(
+    opt::IRContext* ir_context, uint32_t block_id) {
+  auto* block = ir_context->cfg()->block(block_id);
+  assert(block && "|block_id| is invalid");
+
+  for (auto it = block->rbegin(); it != block->rend(); ++it) {
+    if (!it->result_id() || !it->type_id() ||
+        !IsOpcodeSupported(it->opcode())) {
+      continue;
+    }
+
+    auto all_users_from_different_blocks =
+        ir_context->get_def_use_mgr()->WhileEachUser(
+            &*it, [ir_context, block](opt::Instruction* user) {
+              return ir_context->get_instr_block(user) != block;
+            });
+
+    if (!all_users_from_different_blocks) {
+      // We can't propagate an instruction if it's used in the same block.
+      continue;
+    }
+
+    return &*it;
+  }
+
+  return nullptr;
+}
+
+bool TransformationPropagateInstructionDown::IsApplicableToBlock(
+    opt::IRContext* ir_context, uint32_t block_id) {
+  // Check that |block_id| is valid.
+  const auto* block = fuzzerutil::MaybeFindBlock(ir_context, block_id);
+  if (!block) {
+    return false;
+  }
+
+  // The block must have an instruction to propagate.
+  const auto* inst_to_propagate =
+      GetInstructionToPropagate(ir_context, block_id);
+  if (!inst_to_propagate) {
+    return false;
+  }
+
+  // Check that |block| has successors.
+  auto successor_ids = GetAcceptableSuccessors(ir_context, block_id);
+  if (successor_ids.empty()) {
+    return false;
+  }
+
+  // Check that |successor_block| doesn't have any OpPhi instructions that
+  // use |inst|.
+  for (auto successor_id : successor_ids) {
+    for (const auto& maybe_phi_inst : *ir_context->cfg()->block(successor_id)) {
+      if (maybe_phi_inst.opcode() != SpvOpPhi) {
+        // OpPhis can be intermixed with OpLine and OpNoLine.
+        continue;
+      }
+
+      if (GetInOperandIndexForId(maybe_phi_inst,
+                                 inst_to_propagate->result_id()) !=
+          maybe_phi_inst.NumInOperands()) {
+        return false;
+      }
+    }
+  }
+
+  uint32_t phi_block_id =
+      CanAddOpPhiInstruction(ir_context, block_id, successor_ids)
+          ? block->GetMergeInst()->GetSingleWordInOperand(0)
+          : 0;
+
+  // Make sure we can adjust all users of the propagated instruction.
+  const auto* dominator_analysis =
+      ir_context->GetDominatorAnalysis(block->GetParent());
+  return ir_context->get_def_use_mgr()->WhileEachUser(
+      inst_to_propagate,
+      [ir_context, &successor_ids, dominator_analysis, inst_to_propagate,
+       phi_block_id](opt::Instruction* user) {
+        const auto* user_block = ir_context->get_instr_block(user);
+
+        if (!user_block) {
+          // |user| might be a global instruction (e.g. OpDecorate).
+          return true;
+        }
+
+        // Check that at least one of the ids in |successor_ids| or a
+        // |phi_block_id| dominates |user|'s block (or its predecessor if the
+        // user is an OpPhi).
+        auto block_id_to_dominate = user_block->id();
+        if (user->opcode() == SpvOpPhi) {
+          auto index =
+              GetInOperandIndexForId(*user, inst_to_propagate->result_id());
+          assert(block_id_to_dominate != user->NumInOperands() &&
+                 "|user| doesn't use |inst_to_propagate");
+          block_id_to_dominate = user->GetSingleWordInOperand(index + 1);
+        }
+
+        return (phi_block_id && dominator_analysis->Dominates(
+                                    phi_block_id, block_id_to_dominate)) ||
+               std::any_of(
+                   successor_ids.begin(), successor_ids.end(),
+                   [dominator_analysis, block_id_to_dominate](uint32_t id) {
+                     return dominator_analysis->Dominates(id,
+                                                          block_id_to_dominate);
+                   });
+      });
+}
+
+opt::Instruction*
+TransformationPropagateInstructionDown::GetFirstInsertBeforeInstruction(
+    opt::IRContext* ir_context, uint32_t block_id, SpvOp opcode) {
+  auto* block = ir_context->cfg()->block(block_id);
+
+  auto it = block->begin();
+
+  while (it != block->end() &&
+         !fuzzerutil::CanInsertOpcodeBeforeInstruction(opcode, it)) {
+    ++it;
+  }
+
+  return it == block->end() ? nullptr : &*it;
+}
+
+std::unordered_set<uint32_t>
+TransformationPropagateInstructionDown::GetAcceptableSuccessors(
+    opt::IRContext* ir_context, uint32_t block_id) {
+  const auto* block = ir_context->cfg()->block(block_id);
+  assert(block && "|block_id| is invalid");
+
+  const auto* inst = GetInstructionToPropagate(ir_context, block_id);
+  assert(inst && "The block must have an instruction to propagate");
+
+  std::unordered_set<uint32_t> result;
+  block->ForEachSuccessorLabel([ir_context, &result,
+                                inst](uint32_t successor_id) {
+    if (result.count(successor_id)) {
+      return;
+    }
+
+    auto* successor_block = ir_context->cfg()->block(successor_id);
+
+    // We can't propagate |inst| into |successor_block| if the latter is not
+    // dominated by the |inst|'s dependencies.
+    if (!inst->WhileEachInId([ir_context, successor_block](const uint32_t* id) {
+          return fuzzerutil::IdIsAvailableBeforeInstruction(
+              ir_context, &*successor_block->begin(), *id);
+        })) {
+      return;
+    }
+
+    // We don't propagate any "special" instructions (e.g. OpSelectionMerge
+    // etc), thus, insertion point must always exist if the module is valid.
+    assert(GetFirstInsertBeforeInstruction(ir_context, successor_id,
+                                           inst->opcode()) &&
+           "There must exist an insertion point.");
+
+    result.insert(successor_id);
+  });
+
+  return result;
+}
+
+bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
+    opt::IRContext* ir_context, uint32_t maybe_header_block_id,
+    const std::unordered_set<uint32_t>& successor_ids) {
+  const auto* block = ir_context->cfg()->block(maybe_header_block_id);
+  const auto* dominator_analysis =
+      ir_context->GetDominatorAnalysis(block->GetParent());
+
+  // We must propagate from the header block to be able to insert an OpPhi
+  // instruction.
+  const auto* merge_inst = block->GetMergeInst();
+  if (!merge_inst) {
+    return false;
+  }
+
+  auto merge_block_id = merge_inst->GetSingleWordInOperand(0);
+
+  // Header block always dominates its merge block unless the latter is
+  // unreachable.
+  if (!dominator_analysis->Dominates(maybe_header_block_id, merge_block_id)) {
+    return false;
+  }
+
+  // All predecessors of the merge block must be dominate by at least one
+  // successor of the header block.
+  assert(!ir_context->cfg()->preds(merge_block_id).empty() &&
+         "Merge block must be reachable");
+  for (auto predecessor_id : ir_context->cfg()->preds(merge_block_id)) {
+    if (std::none_of(
+            successor_ids.begin(), successor_ids.end(),
+            [dominator_analysis, predecessor_id](uint32_t successor_id) {
+              return dominator_analysis->Dominates(successor_id,
+                                                   predecessor_id);
+            })) {
+      return false;
+    }
+  }
+
+  // If the merge block is a successor, then it's either an acceptable one or
+  // not.
+  //
+  // In the former case, there is no point in inserting an OpPhi into it.
+  //
+  // In both cases, we would need at least one of the acceptable successors to
+  // dominate the merge block's predecessor - |maybe_header_block_id|. This is
+  // possible if one of the successors is a loop header since the loop header
+  // dominates its back-edge block. But it this case, |maybe_header_block_id| is
+  // not a header.
+  //
+  // Thus, this assertion should always succeed.
+  assert(!block->IsSuccessor(ir_context->cfg()->block(merge_block_id)) &&
+         "Merge can't be a header's successor");
+
+  return true;
+}
+
+std::unordered_set<uint32_t>
+TransformationPropagateInstructionDown::GetFreshIds() const {
+  std::unordered_set<uint32_t> result = {message_.phi_fresh_id()};
+  for (const auto& pair : message_.successor_id_to_fresh_id()) {
+    result.insert(pair.second());
+  }
+  return result;
+}
+
+}  // namespace fuzz
+}  // namespace spvtools
