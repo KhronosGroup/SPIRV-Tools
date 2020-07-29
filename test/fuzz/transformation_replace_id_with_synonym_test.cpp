@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
+
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/id_use_descriptor.h"
 #include "source/fuzz/instruction_descriptor.h"
@@ -1713,6 +1714,70 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationReplaceIdWithSynonymTest, IncompatibleTypes) {
+  const std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeInt 32 0
+          %9 = OpTypeFloat 32
+         %12 = OpConstant %7 1
+         %13 = OpConstant %8 1
+         %10 = OpConstant %9 1
+          %2 = OpFunction %5 None %6
+         %17 = OpLabel
+         %18 = OpIAdd %7 %12 %13
+         %19 = OpFAdd %9 %10 %10
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto* op_i_add = context->get_def_use_mgr()->GetDef(18);
+  ASSERT_TRUE(op_i_add);
+
+  auto* op_f_add = context->get_def_use_mgr()->GetDef(19);
+  ASSERT_TRUE(op_f_add);
+
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(12, {}),
+                                  MakeDataDescriptor(13, {}), context.get());
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(12, {}),
+                                  MakeDataDescriptor(10, {}), context.get());
+
+  // Synonym differs only in signedness for OpIAdd.
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym(
+                  MakeIdUseDescriptorFromUse(context.get(), op_i_add, 0), 13)
+                  .IsApplicable(context.get(), transformation_context));
+
+  // Synonym has wrong type for OpIAdd.
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym(
+                   MakeIdUseDescriptorFromUse(context.get(), op_i_add, 0), 10)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Synonym has wrong type for OpFAdd.
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym(
+                   MakeIdUseDescriptorFromUse(context.get(), op_f_add, 0), 12)
+                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym(
+                   MakeIdUseDescriptorFromUse(context.get(), op_f_add, 0), 13)
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace
