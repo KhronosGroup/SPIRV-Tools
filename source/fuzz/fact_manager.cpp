@@ -538,9 +538,7 @@ void FactManager::DataSynonymAndIdEquationFacts::AddFact(
   protobufs::DataDescriptor lhs_dd = MakeDataDescriptor(fact.lhs_id(), {});
 
   // Register the LHS in the equivalence relation if needed.
-  if (!synonymous_.Exists(lhs_dd)) {
-    RegisterDataDescriptor(lhs_dd);
-  }
+  RegisterDataDescriptor(lhs_dd);
 
   // Get equivalence class representatives for all ids used on the RHS of the
   // equation.
@@ -1151,11 +1149,8 @@ void FactManager::DataSynonymAndIdEquationFacts::MakeEquivalent(
     const protobufs::DataDescriptor& dd2) {
   // Register the data descriptors if they are not already known to the
   // equivalence relation.
-  for (const auto& dd : {dd1, dd2}) {
-    if (!synonymous_.Exists(dd)) {
-      RegisterDataDescriptor(dd);
-    }
-  }
+  RegisterDataDescriptor(dd1);
+  RegisterDataDescriptor(dd2);
 
   if (synonymous_.IsEquivalent(dd1, dd2)) {
     // The data descriptors are already known to be equivalent, so there is
