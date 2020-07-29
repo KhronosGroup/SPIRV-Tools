@@ -1323,7 +1323,7 @@ TEST_F(GraphicsRobustAccessTest,
   // Split the address calculation across two access chains.  Force
   // the transform to walk up the access chains to find the base variable.
   // This time, put the different access chains in different basic blocks.
-  // This sanity checks that we keep the instruction-to-block mapping
+  // This coherence-checks that we keep the instruction-to-block mapping
   // consistent.
   for (auto* ac : AccessChains()) {
     std::ostringstream shaders;
