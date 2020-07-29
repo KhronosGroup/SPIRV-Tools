@@ -66,12 +66,9 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
   // If the id of interest and the synonym are scalar or vector integer
   // constants with different signedness, their use can only be swapped if the
   // instruction is agnostic to the signedness of the operand.
-  if (type_id_of_interest != type_id_synonym &&
-      fuzzerutil::TypesAreEqualUpToSign(ir_context, type_id_of_interest,
-                                        type_id_synonym) &&
-      !IsAgnosticToSignednessOfOperand(
-          use_instruction->opcode(),
-          message_.id_use_descriptor().in_operand_index())) {
+  if (!TypesAreCompatible(ir_context, use_instruction->opcode(),
+                          message_.id_use_descriptor().in_operand_index(),
+                          type_id_of_interest, type_id_synonym)) {
     return false;
   }
 
@@ -239,6 +236,18 @@ bool TransformationReplaceIdWithSynonym::IsAgnosticToSignednessOfOperand(
       // instructions.
       return false;
   }
+}
+
+bool TransformationReplaceIdWithSynonym::TypesAreCompatible(
+    opt::IRContext* ir_context, SpvOp opcode, uint32_t use_in_operand_index,
+    uint32_t type_id_1, uint32_t type_id_2) {
+  assert(ir_context->get_type_mgr()->GetType(type_id_1) &&
+         ir_context->get_type_mgr()->GetType(type_id_2) &&
+         "Type ids are invalid");
+
+  return type_id_1 == type_id_2 ||
+         (IsAgnosticToSignednessOfOperand(opcode, use_in_operand_index) &&
+          fuzzerutil::TypesAreEqualUpToSign(ir_context, type_id_1, type_id_2));
 }
 
 }  // namespace fuzz
