@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_pass_propagate_instructions.h"
+#include "source/fuzz/fuzzer_pass_propagate_instructions_up.h"
 
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
@@ -22,16 +22,17 @@
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPassPropagateInstructions::FuzzerPassPropagateInstructions(
+FuzzerPassPropagateInstructionsUp::FuzzerPassPropagateInstructionsUp(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassPropagateInstructions::~FuzzerPassPropagateInstructions() = default;
+FuzzerPassPropagateInstructionsUp::~FuzzerPassPropagateInstructionsUp() =
+    default;
 
-void FuzzerPassPropagateInstructions::Apply() {
+void FuzzerPassPropagateInstructionsUp::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
     for (const auto& block : function) {
       if (!GetFuzzerContext()->ChoosePercentage(
