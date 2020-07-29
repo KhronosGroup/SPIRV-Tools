@@ -21,8 +21,7 @@ namespace {
 
 TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   // For a simple if-then-else, checks that some dead break scenarios are
-  // possible, and coherence-checks that some illegal scenarios are indeed not
-  // allowed.
+  // possible, and that some invalid scenarios are indeed not allowed.
 
   // The SPIR-V for this test is adapted from the following GLSL, by separating
   // some assignments into their own basic blocks, and adding constants for true
