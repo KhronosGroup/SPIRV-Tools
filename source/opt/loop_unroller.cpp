@@ -674,21 +674,21 @@ void LoopUnrollerUtilsImpl::CopyBody(Loop* loop, bool eliminate_conditions) {
   std::vector<Instruction*> inductions;
   loop->GetInductionVariables(inductions);
   for (size_t index = 0; index < inductions.size(); ++index) {
-    Instruction* master_copy = inductions[index];
+    Instruction* primary_copy = inductions[index];
 
-    assert(master_copy->result_id() != 0);
+    assert(primary_copy->result_id() != 0);
     Instruction* induction_clone =
-        state_.ids_to_new_inst[state_.new_inst[master_copy->result_id()]];
+        state_.ids_to_new_inst[state_.new_inst[primary_copy->result_id()]];
 
     state_.new_phis_.push_back(induction_clone);
     assert(induction_clone->result_id() != 0);
 
     if (!state_.previous_phis_.empty()) {
-      state_.new_inst[master_copy->result_id()] = GetPhiDefID(
+      state_.new_inst[primary_copy->result_id()] = GetPhiDefID(
           state_.previous_phis_[index], state_.previous_latch_block_->id());
     } else {
       // Do not replace the first phi block ids.
-      state_.new_inst[master_copy->result_id()] = master_copy->result_id();
+      state_.new_inst[primary_copy->result_id()] = primary_copy->result_id();
     }
   }
 
