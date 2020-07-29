@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Validates correctness of extension SPIR-V instructions.
+#include <cstdlib>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -2944,10 +2945,15 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
     const std::string name(reinterpret_cast<const char*>(
         import_inst->words().data() + import_inst->operands()[1].offset));
     const std::string reflection = "NonSemantic.ClspvReflection.";
-    size_t idx = 0;
+    char* end_ptr;
     auto version_string = name.substr(reflection.size());
-    uint32_t version = static_cast<uint32_t>(std::stoul(version_string, &idx));
-    if (idx != version_string.size()) {
+    if (version_string.empty()) {
+      return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
+             << "Missing NonSemantic.ClspvReflection import version";
+    }
+    uint32_t version = static_cast<uint32_t>(
+        std::strtoul(version_string.c_str(), &end_ptr, 10));
+    if (end_ptr && *end_ptr != '\0') {
       return _.diag(SPV_ERROR_INVALID_DATA, import_inst)
              << "NonSemantic.ClspvReflection import does not encode the "
                 "version correctly";
