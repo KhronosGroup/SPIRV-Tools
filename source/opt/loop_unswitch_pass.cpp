@@ -595,7 +595,7 @@ bool LoopUnswitchPass::ProcessFunction(Function* f) {
   while (loop_changed) {
     loop_changed = false;
     for (Loop& loop :
-         make_range(++TreeDFIterator<Loop>(loop_descriptor.GetDummyRootLoop()),
+         make_range(++TreeDFIterator<Loop>(loop_descriptor.GetPlaceholderRootLoop()),
                     TreeDFIterator<Loop>())) {
       if (processed_loop.count(&loop)) continue;
       processed_loop.insert(&loop);

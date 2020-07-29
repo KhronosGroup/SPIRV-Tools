@@ -1063,10 +1063,10 @@ std::string GetUnreachableMergeWithComplexBody(SpvCapability cap,
   Block merge("merge", SpvOpUnreachable);
 
   entry.AppendBody(spvIsWebGPUEnv(env)
-                       ? "%dummy   = OpVariable %intptrt Function %two\n"
-                       : "%dummy   = OpVariable %intptrt Function\n");
+                       ? "%placeholder   = OpVariable %intptrt Function %two\n"
+                       : "%placeholder   = OpVariable %intptrt Function\n");
   entry.AppendBody("%cond    = OpSLessThan %boolt %one %two\n");
-  merge.AppendBody("OpStore %dummy %one\n");
+  merge.AppendBody("OpStore %placeholder %one\n");
 
   std::string str = header;
   if (spvIsWebGPUEnv(env)) {
@@ -1120,9 +1120,9 @@ std::string GetUnreachableContinueWithComplexBody(SpvCapability cap,
   target >> branch;
 
   entry.AppendBody(spvIsWebGPUEnv(env)
-                       ? "%dummy   = OpVariable %intptrt Function %two\n"
-                       : "%dummy   = OpVariable %intptrt Function\n");
-  target.AppendBody("OpStore %dummy %one\n");
+                       ? "%placeholder   = OpVariable %intptrt Function %two\n"
+                       : "%placeholder   = OpVariable %intptrt Function\n");
+  target.AppendBody("OpStore %placeholder %one\n");
 
   std::string str = header;
   if (spvIsWebGPUEnv(env)) {
@@ -1279,8 +1279,8 @@ std::string GetUnreachableContinueWithBranchUse(SpvCapability cap,
   target >> branch;
 
   entry.AppendBody(spvIsWebGPUEnv(env)
-                       ? "%dummy   = OpVariable %intptrt Function %two\n"
-                       : "%dummy   = OpVariable %intptrt Function\n");
+                       ? "%placeholder   = OpVariable %intptrt Function %two\n"
+                       : "%placeholder   = OpVariable %intptrt Function\n");
 
   std::string str = header;
   if (spvIsWebGPUEnv(env)) {

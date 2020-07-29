@@ -37,22 +37,22 @@ using Analysis = IRContext::Analysis;
 using ::testing::Each;
 using ::testing::UnorderedElementsAre;
 
-class DummyPassPreservesNothing : public Pass {
+class NoopPassPreservesNothing : public Pass {
  public:
-  DummyPassPreservesNothing(Status s) : Pass(), status_to_return_(s) {}
+  NoopPassPreservesNothing(Status s) : Pass(), status_to_return_(s) {}
 
-  const char* name() const override { return "dummy-pass"; }
+  const char* name() const override { return "noop-pass"; }
   Status Process() override { return status_to_return_; }
 
  private:
   Status status_to_return_;
 };
 
-class DummyPassPreservesAll : public Pass {
+class NoopPassPreservesAll : public Pass {
  public:
-  DummyPassPreservesAll(Status s) : Pass(), status_to_return_(s) {}
+  NoopPassPreservesAll(Status s) : Pass(), status_to_return_(s) {}
 
-  const char* name() const override { return "dummy-pass"; }
+  const char* name() const override { return "noop-pass"; }
   Status Process() override { return status_to_return_; }
 
   Analysis GetPreservedAnalyses() override {
@@ -63,11 +63,11 @@ class DummyPassPreservesAll : public Pass {
   Status status_to_return_;
 };
 
-class DummyPassPreservesFirst : public Pass {
+class NoopPassPreservesFirst : public Pass {
  public:
-  DummyPassPreservesFirst(Status s) : Pass(), status_to_return_(s) {}
+  NoopPassPreservesFirst(Status s) : Pass(), status_to_return_(s) {}
 
-  const char* name() const override { return "dummy-pass"; }
+  const char* name() const override { return "noop-pass"; }
   Status Process() override { return status_to_return_; }
 
   Analysis GetPreservedAnalyses() override { return IRContext::kAnalysisBegin; }
@@ -116,7 +116,7 @@ TEST_F(IRContextTest, AllValidAfterPassNoChange) {
     built_analyses |= i;
   }
 
-  DummyPassPreservesNothing pass(Pass::Status::SuccessWithoutChange);
+  NoopPassPreservesNothing pass(Pass::Status::SuccessWithoutChange);
   Pass::Status s = pass.Run(&localContext);
   EXPECT_EQ(s, Pass::Status::SuccessWithoutChange);
   EXPECT_TRUE(localContext.AreAnalysesValid(built_analyses));
@@ -132,7 +132,7 @@ TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
     localContext.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesNothing pass(Pass::Status::SuccessWithChange);
+  NoopPassPreservesNothing pass(Pass::Status::SuccessWithChange);
   Pass::Status s = pass.Run(&localContext);
   EXPECT_EQ(s, Pass::Status::SuccessWithChange);
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -151,7 +151,7 @@ TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
     localContext.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesAll pass(Pass::Status::SuccessWithChange);
+  NoopPassPreservesAll pass(Pass::Status::SuccessWithChange);
   Pass::Status s = pass.Run(&localContext);
   EXPECT_EQ(s, Pass::Status::SuccessWithChange);
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -170,7 +170,7 @@ TEST_F(IRContextTest, PreserveFirstOnlyAfterPassWithChange) {
     localContext.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesFirst pass(Pass::Status::SuccessWithChange);
+  NoopPassPreservesFirst pass(Pass::Status::SuccessWithChange);
   Pass::Status s = pass.Run(&localContext);
   EXPECT_EQ(s, Pass::Status::SuccessWithChange);
   EXPECT_TRUE(localContext.AreAnalysesValid(IRContext::kAnalysisBegin));
@@ -912,7 +912,7 @@ OpFunctionEnd)";
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ctx->BuildInvalidAnalyses(IRContext::kAnalysisDebugInfo);
-  DummyPassPreservesAll pass(Pass::Status::SuccessWithChange);
+  NoopPassPreservesAll pass(Pass::Status::SuccessWithChange);
   pass.Run(ctx.get());
   EXPECT_TRUE(ctx->AreAnalysesValid(IRContext::kAnalysisDebugInfo));
 
@@ -978,7 +978,7 @@ OpFunctionEnd)";
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ctx->BuildInvalidAnalyses(IRContext::kAnalysisDebugInfo);
-  DummyPassPreservesAll pass(Pass::Status::SuccessWithChange);
+  NoopPassPreservesAll pass(Pass::Status::SuccessWithChange);
   pass.Run(ctx.get());
   EXPECT_TRUE(ctx->AreAnalysesValid(IRContext::kAnalysisDebugInfo));
 
@@ -1055,7 +1055,7 @@ OpFunctionEnd)";
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ctx->BuildInvalidAnalyses(IRContext::kAnalysisDebugInfo);
-  DummyPassPreservesAll pass(Pass::Status::SuccessWithChange);
+  NoopPassPreservesAll pass(Pass::Status::SuccessWithChange);
   pass.Run(ctx.get());
   EXPECT_TRUE(ctx->AreAnalysesValid(IRContext::kAnalysisDebugInfo));
 
