@@ -35,6 +35,9 @@ void FuzzerPassPermuteInstructions::Apply() {
   // We are iterating over all instructions in all basic blocks.
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
+      // We need to collect all instructions in the block into a separate vector
+      // since application of the transformation below might invalidate
+      // iterators.
       std::vector<opt::Instruction*> instructions;
       for (auto& instruction : block) {
         instructions.push_back(&instruction);
