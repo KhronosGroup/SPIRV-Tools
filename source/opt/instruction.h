@@ -461,23 +461,21 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   // Returns true if this instruction is a branch or switch instruction (either
   // conditional or not).
-  bool IsBranch() const { return spvOpcodeIsBranch(opcode()); }
+  bool IsBranch() const { return spvOpcodeIsBranch(opcode_); }
 
   // Returns true if this instruction causes the function to finish execution
   // and return to its caller
-  bool IsReturn() const { return spvOpcodeIsReturn(opcode()); }
+  bool IsReturn() const { return spvOpcodeIsReturn(opcode_); }
 
   // Returns true if this instruction exits this function or aborts execution.
-  bool IsReturnOrAbort() const { return spvOpcodeIsReturnOrAbort(opcode()); }
+  bool IsReturnOrAbort() const { return spvOpcodeIsReturnOrAbort(opcode_); }
 
   // Returns the id for the |element|'th subtype. If the |this| is not a
   // composite type, this function returns 0.
   uint32_t GetTypeComponent(uint32_t element) const;
 
   // Returns true if this instruction is a basic block terminator.
-  bool IsBlockTerminator() const {
-    return spvOpcodeIsBlockTerminator(opcode());
-  }
+  bool IsBlockTerminator() const { return spvOpcodeIsBlockTerminator(opcode_); }
 
   // Returns true if |this| is an instruction that define an opaque type.  Since
   // runtime array have similar characteristics they are included as opaque
@@ -741,29 +739,29 @@ inline void Instruction::ForEachInst(
     const std::function<void(const Instruction*)>& f,
     bool run_on_debug_line_insts) const {
   WhileEachInst(
-      [&f](const Instruction* inst) {
-        f(inst);
+      [&f](const Instruction* instruction) {
+        f(instruction);
         return true;
       },
       run_on_debug_line_insts);
 }
 
 inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
-  for (auto& opnd : operands_)
-    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  for (auto& operand : operands_)
+    if (spvIsIdType(operand.type)) f(&operand.words[0]);
 }
 
 inline void Instruction::ForEachId(
     const std::function<void(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_)
-    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  for (const auto& operand : operands_)
+    if (spvIsIdType(operand.type)) f(&operand.words[0]);
 }
 
 inline bool Instruction::WhileEachInId(
     const std::function<bool(uint32_t*)>& f) {
-  for (auto& opnd : operands_) {
-    if (spvIsInIdType(opnd.type)) {
-      if (!f(&opnd.words[0])) return false;
+  for (auto& operand : operands_) {
+    if (spvIsInIdType(operand.type)) {
+      if (!f(&operand.words[0])) return false;
     }
   }
   return true;
@@ -771,9 +769,9 @@ inline bool Instruction::WhileEachInId(
 
 inline bool Instruction::WhileEachInId(
     const std::function<bool(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_) {
-    if (spvIsInIdType(opnd.type)) {
-      if (!f(&opnd.words[0])) return false;
+  for (const auto& operand : operands_) {
+    if (spvIsInIdType(operand.type)) {
+      if (!f(&operand.words[0])) return false;
     }
   }
   return true;
@@ -796,13 +794,13 @@ inline void Instruction::ForEachInId(
 
 inline bool Instruction::WhileEachInOperand(
     const std::function<bool(uint32_t*)>& f) {
-  for (auto& opnd : operands_) {
-    switch (opnd.type) {
+  for (auto& operand : operands_) {
+    switch (operand.type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
       case SPV_OPERAND_TYPE_TYPE_ID:
         break;
       default:
-        if (!f(&opnd.words[0])) return false;
+        if (!f(&operand.words[0])) return false;
         break;
     }
   }
@@ -811,13 +809,13 @@ inline bool Instruction::WhileEachInOperand(
 
 inline bool Instruction::WhileEachInOperand(
     const std::function<bool(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_) {
-    switch (opnd.type) {
+  for (const auto& operand : operands_) {
+    switch (operand.type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
       case SPV_OPERAND_TYPE_TYPE_ID:
         break;
       default:
-        if (!f(&opnd.words[0])) return false;
+        if (!f(&operand.words[0])) return false;
         break;
     }
   }
@@ -826,16 +824,16 @@ inline bool Instruction::WhileEachInOperand(
 
 inline void Instruction::ForEachInOperand(
     const std::function<void(uint32_t*)>& f) {
-  WhileEachInOperand([&f](uint32_t* op) {
-    f(op);
+  WhileEachInOperand([&f](uint32_t* operand_id) {
+    f(operand_id);
     return true;
   });
 }
 
 inline void Instruction::ForEachInOperand(
     const std::function<void(const uint32_t*)>& f) const {
-  WhileEachInOperand([&f](const uint32_t* op) {
-    f(op);
+  WhileEachInOperand([&f](const uint32_t* operand_id) {
+    f(operand_id);
     return true;
   });
 }
@@ -857,19 +855,19 @@ inline bool Instruction::HasLabels() const {
 }
 
 bool Instruction::IsDecoration() const {
-  return spvOpcodeIsDecoration(opcode());
+  return spvOpcodeIsDecoration(opcode_);
 }
 
-bool Instruction::IsLoad() const { return spvOpcodeIsLoad(opcode()); }
+bool Instruction::IsLoad() const { return spvOpcodeIsLoad(opcode_); }
 
 bool Instruction::IsAtomicWithLoad() const {
-  return spvOpcodeIsAtomicWithLoad(opcode());
+  return spvOpcodeIsAtomicWithLoad(opcode_);
 }
 
-bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
+bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode_); }
 
 bool Instruction::IsConstant() const {
-  return IsCompileTimeConstantInst(opcode());
+  return IsCompileTimeConstantInst(opcode_);
 }
 }  // namespace opt
 }  // namespace spvtools

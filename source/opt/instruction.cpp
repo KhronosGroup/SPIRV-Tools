@@ -171,20 +171,17 @@ uint32_t Instruction::NumInOperandWords() const {
 }
 
 bool Instruction::HasBranchWeights() const {
-  if (opcode_ == SpvOpBranchConditional &&
-      NumOperands() == kOpBranchConditionalWithWeightsNumOperands) {
-    return true;
-  }
-
-  return false;
+  return opcode_ == SpvOpBranchConditional &&
+         NumOperands() == kOpBranchConditionalWithWeightsNumOperands;
 }
 
 void Instruction::ToBinaryWithoutAttachedDebugInsts(
     std::vector<uint32_t>* binary) const {
   const uint32_t num_words = 1 + NumOperandWords();
   binary->push_back((num_words << 16) | static_cast<uint16_t>(opcode_));
-  for (const auto& operand : operands_)
+  for (const auto& operand : operands_) {
     binary->insert(binary->end(), operand.words.begin(), operand.words.end());
+  }
 }
 
 void Instruction::ReplaceOperands(const OperandList& new_operands) {
@@ -283,8 +280,7 @@ bool Instruction::IsVulkanStorageImage() const {
 
   // Check if the image is sampled.  If we do not know for sure that it is,
   // then assume it is a storage image.
-  auto s = base_type->GetSingleWordInOperand(kTypeImageSampledIndex);
-  return s != 1;
+  return base_type->GetSingleWordInOperand(kTypeImageSampledIndex) != 1;
 }
 
 bool Instruction::IsVulkanSampledImage() const {
@@ -318,12 +314,11 @@ bool Instruction::IsVulkanSampledImage() const {
 
   // Check if the image is sampled.  If we know for sure that it is,
   // then return true.
-  auto s = base_type->GetSingleWordInOperand(kTypeImageSampledIndex);
-  return s == 1;
+  return base_type->GetSingleWordInOperand(kTypeImageSampledIndex) == 1;
 }
 
 bool Instruction::IsVulkanStorageTexelBuffer() const {
-  if (opcode() != SpvOpTypePointer) {
+  if (opcode_ != SpvOpTypePointer) {
     return false;
   }
 
@@ -337,13 +332,13 @@ bool Instruction::IsVulkanStorageTexelBuffer() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray ||
-      base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(
+  if (base_type->opcode_ == SpvOpTypeArray ||
+      base_type->opcode_ == SpvOpTypeRuntimeArray) {
+    base_type = context_->get_def_use_mgr()->GetDef(
         base_type->GetSingleWordInOperand(0));
   }
 
-  if (base_type->opcode() != SpvOpTypeImage) {
+  if (base_type->opcode_ != SpvOpTypeImage) {
     return false;
   }
 
@@ -359,7 +354,7 @@ bool Instruction::IsVulkanStorageTexelBuffer() const {
 bool Instruction::IsVulkanStorageBuffer() const {
   // Is there a difference between a "Storage buffer" and a "dynamic storage
   // buffer" in SPIR-V and do we care about the difference?
-  if (opcode() != SpvOpTypePointer) {
+  if (opcode_ != SpvOpTypePointer) {
     return false;
   }
 
@@ -367,13 +362,13 @@ bool Instruction::IsVulkanStorageBuffer() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray ||
-      base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(
+  if (base_type->opcode_ == SpvOpTypeArray ||
+      base_type->opcode_ == SpvOpTypeRuntimeArray) {
+    base_type = context_->get_def_use_mgr()->GetDef(
         base_type->GetSingleWordInOperand(0));
   }
 
-  if (base_type->opcode() != SpvOpTypeStruct) {
+  if (base_type->opcode_ != SpvOpTypeStruct) {
     return false;
   }
 
@@ -381,13 +376,13 @@ bool Instruction::IsVulkanStorageBuffer() const {
       GetSingleWordInOperand(kPointerTypeStorageClassIndex);
   if (storage_class == SpvStorageClassUniform) {
     bool is_buffer_block = false;
-    context()->get_decoration_mgr()->ForEachDecoration(
+    context_->get_decoration_mgr()->ForEachDecoration(
         base_type->result_id(), SpvDecorationBufferBlock,
         [&is_buffer_block](const Instruction&) { is_buffer_block = true; });
     return is_buffer_block;
   } else if (storage_class == SpvStorageClassStorageBuffer) {
     bool is_block = false;
-    context()->get_decoration_mgr()->ForEachDecoration(
+    context_->get_decoration_mgr()->ForEachDecoration(
         base_type->result_id(), SpvDecorationBlock,
         [&is_block](const Instruction&) { is_block = true; });
     return is_block;
@@ -396,7 +391,7 @@ bool Instruction::IsVulkanStorageBuffer() const {
 }
 
 bool Instruction::IsVulkanUniformBuffer() const {
-  if (opcode() != SpvOpTypePointer) {
+  if (opcode_ != SpvOpTypePointer) {
     return false;
   }
 
@@ -410,18 +405,18 @@ bool Instruction::IsVulkanUniformBuffer() const {
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   // Unpack the optional layer of arraying.
-  if (base_type->opcode() == SpvOpTypeArray ||
-      base_type->opcode() == SpvOpTypeRuntimeArray) {
-    base_type = context()->get_def_use_mgr()->GetDef(
+  if (base_type->opcode_ == SpvOpTypeArray ||
+      base_type->opcode_ == SpvOpTypeRuntimeArray) {
+    base_type = context_->get_def_use_mgr()->GetDef(
         base_type->GetSingleWordInOperand(0));
   }
 
-  if (base_type->opcode() != SpvOpTypeStruct) {
+  if (base_type->opcode_ != SpvOpTypeStruct) {
     return false;
   }
 
   bool is_block = false;
-  context()->get_decoration_mgr()->ForEachDecoration(
+  context_->get_decoration_mgr()->ForEachDecoration(
       base_type->result_id(), SpvDecorationBlock,
       [&is_block](const Instruction&) { is_block = true; });
   return is_block;
@@ -432,8 +427,8 @@ bool Instruction::IsReadOnlyPointerShaders() const {
     return false;
   }
 
-  Instruction* type_def = context()->get_def_use_mgr()->GetDef(type_id());
-  if (type_def->opcode() != SpvOpTypePointer) {
+  Instruction* type_def = context_->get_def_use_mgr()->GetDef(type_id());
+  if (type_def->opcode_ != SpvOpTypePointer) {
     return false;
   }
 
@@ -460,7 +455,7 @@ bool Instruction::IsReadOnlyPointerShaders() const {
   }
 
   bool is_nonwritable = false;
-  context()->get_decoration_mgr()->ForEachDecoration(
+  context_->get_decoration_mgr()->ForEachDecoration(
       result_id(), SpvDecorationNonWritable,
       [&is_nonwritable](const Instruction&) { is_nonwritable = true; });
   return is_nonwritable;
@@ -471,8 +466,8 @@ bool Instruction::IsReadOnlyPointerKernel() const {
     return false;
   }
 
-  Instruction* type_def = context()->get_def_use_mgr()->GetDef(type_id());
-  if (type_def->opcode() != SpvOpTypePointer) {
+  Instruction* type_def = context_->get_def_use_mgr()->GetDef(type_id());
+  if (type_def->opcode_ != SpvOpTypePointer) {
     return false;
   }
 
@@ -484,7 +479,7 @@ bool Instruction::IsReadOnlyPointerKernel() const {
 
 uint32_t Instruction::GetTypeComponent(uint32_t element) const {
   uint32_t subtype = 0;
-  switch (opcode()) {
+  switch (opcode_) {
     case SpvOpTypeStruct:
       subtype = GetSingleWordInOperand(element);
       break;
@@ -502,16 +497,17 @@ uint32_t Instruction::GetTypeComponent(uint32_t element) const {
   return subtype;
 }
 
-Instruction* Instruction::InsertBefore(std::unique_ptr<Instruction>&& i) {
-  i.get()->InsertBefore(this);
-  return i.release();
+Instruction* Instruction::InsertBefore(
+    std::unique_ptr<Instruction>&& instruction) {
+  instruction.get()->InsertBefore(this);
+  return instruction.release();
 }
 
 Instruction* Instruction::InsertBefore(
     std::vector<std::unique_ptr<Instruction>>&& list) {
   Instruction* first_node = list.front().get();
-  for (auto& i : list) {
-    i.release()->InsertBefore(this);
+  for (auto& instruction : list) {
+    instruction.release()->InsertBefore(this);
   }
   list.clear();
   return first_node;
@@ -523,18 +519,18 @@ bool Instruction::IsValidBasePointer() const {
     return false;
   }
 
-  Instruction* type = context()->get_def_use_mgr()->GetDef(tid);
-  if (type->opcode() != SpvOpTypePointer) {
+  Instruction* type = context_->get_def_use_mgr()->GetDef(tid);
+  if (type->opcode_ != SpvOpTypePointer) {
     return false;
   }
 
-  auto feature_mgr = context()->get_feature_mgr();
+  auto feature_mgr = context_->get_feature_mgr();
   if (feature_mgr->HasCapability(SpvCapabilityAddresses)) {
     // TODO: The rules here could be more restrictive.
     return true;
   }
 
-  if (opcode() == SpvOpVariable || opcode() == SpvOpFunctionParameter) {
+  if (opcode_ == SpvOpVariable || opcode_ == SpvOpFunctionParameter) {
     return true;
   }
 
@@ -546,7 +542,7 @@ bool Instruction::IsValidBasePointer() const {
        storage_class == SpvStorageClassStorageBuffer) ||
       (feature_mgr->HasCapability(SpvCapabilityVariablePointers) &&
        storage_class == SpvStorageClassWorkgroup)) {
-    switch (opcode()) {
+    switch (opcode_) {
       case SpvOpPhi:
       case SpvOpSelect:
       case SpvOpFunctionCall:
@@ -559,7 +555,7 @@ bool Instruction::IsValidBasePointer() const {
 
   uint32_t pointee_type_id = type->GetSingleWordInOperand(1);
   Instruction* pointee_type_inst =
-      context()->get_def_use_mgr()->GetDef(pointee_type_id);
+      context_->get_def_use_mgr()->GetDef(pointee_type_id);
 
   if (pointee_type_inst->IsOpaqueType()) {
     return true;
@@ -568,13 +564,16 @@ bool Instruction::IsValidBasePointer() const {
 }
 
 OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
-  if (opcode() != SpvOpExtInst) return OpenCLDebugInfo100InstructionsMax;
-
-  if (!context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo())
+  if (opcode_ != SpvOpExtInst) {
     return OpenCLDebugInfo100InstructionsMax;
+  }
+
+  if (!context_->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo()) {
+    return OpenCLDebugInfo100InstructionsMax;
+  }
 
   if (GetSingleWordInOperand(kExtInstSetIdInIdx) !=
-      context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo()) {
+      context_->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo()) {
     return OpenCLDebugInfo100InstructionsMax;
   }
 
@@ -594,36 +593,37 @@ bool Instruction::IsValidBaseImage() const {
 }
 
 bool Instruction::IsOpaqueType() const {
-  if (opcode() == SpvOpTypeStruct) {
+  if (opcode_ == SpvOpTypeStruct) {
     bool is_opaque = false;
     ForEachInOperand([&is_opaque, this](const uint32_t* op_id) {
-      Instruction* type_inst = context()->get_def_use_mgr()->GetDef(*op_id);
+      Instruction* type_inst = context_->get_def_use_mgr()->GetDef(*op_id);
       is_opaque |= type_inst->IsOpaqueType();
     });
     return is_opaque;
-  } else if (opcode() == SpvOpTypeArray) {
+  } else if (opcode_ == SpvOpTypeArray) {
     uint32_t sub_type_id = GetSingleWordInOperand(0);
     Instruction* sub_type_inst =
-        context()->get_def_use_mgr()->GetDef(sub_type_id);
+        context_->get_def_use_mgr()->GetDef(sub_type_id);
     return sub_type_inst->IsOpaqueType();
   } else {
-    return opcode() == SpvOpTypeRuntimeArray ||
+    return opcode_ == SpvOpTypeRuntimeArray ||
            spvOpcodeIsBaseOpaqueType(opcode());
   }
 }
 
 bool Instruction::IsFoldable() const {
   return IsFoldableByFoldScalar() ||
-         context()->get_instruction_folder().HasConstFoldingRule(this);
+         context_->get_instruction_folder().HasConstFoldingRule(this);
 }
 
 bool Instruction::IsFoldableByFoldScalar() const {
-  const InstructionFolder& folder = context()->get_instruction_folder();
-  if (!folder.IsFoldableOpcode(opcode())) {
+  const InstructionFolder& folder = context_->get_instruction_folder();
+  if (!folder.IsFoldableOpcode(opcode_)) {
     return false;
   }
-  Instruction* type = context()->get_def_use_mgr()->GetDef(type_id());
-  if (!folder.IsFoldableType(type)) {
+
+  Instruction* type = context_->get_def_use_mgr()->GetDef(type_id());
+  if (type && !folder.IsFoldableType(type)) {
     return false;
   }
 
@@ -631,9 +631,9 @@ bool Instruction::IsFoldableByFoldScalar() const {
   // foldable (e.g., comparisons of 64bit types).  Check that all operand types
   // are foldable before accepting the instruction.
   return WhileEachInOperand([&folder, this](const uint32_t* op_id) {
-    Instruction* def_inst = context()->get_def_use_mgr()->GetDef(*op_id);
+    Instruction* def_inst = context_->get_def_use_mgr()->GetDef(*op_id);
     Instruction* def_inst_type =
-        context()->get_def_use_mgr()->GetDef(def_inst->type_id());
+        context_->get_def_use_mgr()->GetDef(def_inst->type_id());
     return folder.IsFoldableType(def_inst_type);
   });
 }
@@ -667,7 +667,7 @@ bool Instruction::IsFloatingPointFoldingAllowed() const {
 std::string Instruction::PrettyPrint(uint32_t options) const {
   // Convert the module to binary.
   std::vector<uint32_t> module_binary;
-  context()->module()->ToBinary(&module_binary, /* skip_nop = */ false);
+  context_->module()->ToBinary(&module_binary, /* skip_nop = */ false);
 
   // Convert the instruction to binary. This is used to identify the correct
   // stream of words to output from the module.
@@ -676,7 +676,7 @@ std::string Instruction::PrettyPrint(uint32_t options) const {
 
   // Do not generate a header.
   return spvInstructionBinaryToText(
-      context()->grammar().target_env(), inst_binary.data(), inst_binary.size(),
+      context_->grammar().target_env(), inst_binary.data(), inst_binary.size(),
       module_binary.data(), module_binary.size(),
       options | SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 }
@@ -794,13 +794,13 @@ bool Instruction::IsOpcodeCodeMotionSafe() const {
 }
 
 bool Instruction::IsScalarizable() const {
-  if (spvOpcodeIsScalarizable(opcode())) {
+  if (spvOpcodeIsScalarizable(opcode_)) {
     return true;
   }
 
-  if (opcode() == SpvOpExtInst) {
+  if (opcode_ == SpvOpExtInst) {
     uint32_t instSetId =
-        context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+        context_->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
 
     if (GetSingleWordInOperand(kExtInstSetIdInIdx) == instSetId) {
       switch (GetSingleWordInOperand(kExtInstInstructionInIdx)) {
@@ -868,11 +868,11 @@ bool Instruction::IsScalarizable() const {
 }
 
 bool Instruction::IsOpcodeSafeToDelete() const {
-  if (context()->IsCombinatorInstruction(this)) {
+  if (context_->IsCombinatorInstruction(this)) {
     return true;
   }
 
-  switch (opcode()) {
+  switch (opcode_) {
     case SpvOpDPdx:
     case SpvOpDPdy:
     case SpvOpFwidth:
