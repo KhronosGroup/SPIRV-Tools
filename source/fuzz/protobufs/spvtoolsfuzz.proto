@@ -1389,12 +1389,9 @@ message TransformationReplaceParamsWithStruct {
   uint32 fresh_parameter_id = 3;
 
   // Fresh ids for struct objects containing values of replaced parameters.
-  // This map contains a fresh id for at least every result id of a relevant
+  // This field contains a fresh id for at least every result id of a relevant
   // OpFunctionCall instruction.
-  //
-  // While maps are not fully deterministic, the way this map is used does not
-  // exhibit nondeterminism. Change to repeated Uint32Pair if this changes.
-  map<uint32, uint32> caller_id_to_fresh_composite_id = 4;
+  repeated UInt32Pair caller_id_to_fresh_composite_id = 4;
 
 }
 

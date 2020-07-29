@@ -1273,6 +1273,31 @@ bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
   return false;
 }
 
+std::map<uint32_t, uint32_t> RepeatedUInt32PairToMap(
+    const google::protobuf::RepeatedPtrField<protobufs::UInt32Pair>& data) {
+  std::map<uint32_t, uint32_t> result;
+
+  for (const auto& entry : data) {
+    result[entry.first()] = entry.second();
+  }
+
+  return result;
+}
+
+google::protobuf::RepeatedPtrField<protobufs::UInt32Pair>
+MapToRepeatedUInt32Pair(const std::map<uint32_t, uint32_t>& data) {
+  google::protobuf::RepeatedPtrField<protobufs::UInt32Pair> result;
+
+  for (const auto& entry : data) {
+    protobufs::UInt32Pair pair;
+    pair.set_first(entry.first);
+    pair.set_second(entry.second);
+    *result.Add() = std::move(pair);
+  }
+
+  return result;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
