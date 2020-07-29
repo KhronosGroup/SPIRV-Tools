@@ -123,19 +123,6 @@ void FuzzerPassAddCompositeInserts::Apply() {
         // Insert an OpCompositeInsert instruction which copies
         // |available_composite_constant| and in the copied composite constant
         // replaces |constant_to_replace| with |available_constant|.
-        FindInstruction(instruction_descriptor, GetIRContext())
-            ->InsertBefore(MakeUnique<opt::Instruction>(
-                GetIRContext(), SpvOpCompositeInsert,
-                available_composite_constant->type_id(), new_result_id,
-                opt::Instruction::OperandList(
-                    {{SPV_OPERAND_TYPE_ID, {available_constant->result_id()}},
-                     {SPV_OPERAND_TYPE_ID,
-                      {available_composite_constant->result_id()}},
-                     {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index_to_replace}}})));
-
-        fuzzerutil::UpdateModuleIdBound(GetIRContext(), new_result_id);
-        GetIRContext()->InvalidateAnalysesExceptFor(
-            opt::IRContext::kAnalysisNone);
 
         // Every every element which hasn't been changed in the copy is
         // synonymous to the corresponding element in the original composite

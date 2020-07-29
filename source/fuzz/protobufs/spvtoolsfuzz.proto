@@ -412,6 +412,7 @@ message Transformation {
     TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
     TransformationPropagateInstructionUp propagate_instruction_up = 67;
+    TransformationAddCompositeInsert add_composite_insert = 68;
     // Add additional option using the next available number.
   }
 }
@@ -447,6 +448,28 @@ message TransformationAccessChain {
   repeated UInt32Pair fresh_ids_for_clamping = 5;
 
 }
+
+message TransformationAddCompositeInsert {
+  // Adds instruction OpCompositeInsert to an id that has a composite type.
+
+  // The result_id of this instruction.
+  uint32 fresh_id = 1;
+
+  // The constant to be inserted into an composite value.
+  uint32 available_constant_id = 2;
+
+  // The value of the composite type.
+  uint32 composite_value_id = 3;
+
+  // The index of the composite value where the constant will be replaced.
+  uint32 index_to_replace = 4;
+
+  // The new OpCompositeInsert to be inserted before instruction having this
+  // insruction descriptor.
+  InstructionDescriptor instruction_descriptor_insert_before = 5;
+
+}
+
 
 message TransformationAddConstantBoolean {
 
