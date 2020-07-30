@@ -142,7 +142,7 @@ bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
   // the DebugDeclare.
   uint32_t var_id = var_inst->result_id();
   if (all_rewritten &&
-      context()->get_debug_info_mgr()->IsDebugDeclared(var_id)) {
+      context()->get_debug_info_mgr()->IsVariableDebugDeclared(var_id)) {
     const analysis::Type* var_type =
         context()->get_type_mgr()->GetType(var_inst->type_id());
     const analysis::Type* store_type = var_type->AsPointer()->pointee_type();
