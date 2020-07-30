@@ -52,13 +52,15 @@ void FuzzerPassOutlineFunctions::Apply() {
     // If the entry block starts with OpPhi, try to split it.
     if (entry_block->begin()->opcode() == SpvOpPhi) {
       // Find the first non-OpPhi instruction.
-      opt::Instruction* non_phi_inst;
-      for (auto instruction : *entry_block) {
+      opt::Instruction* non_phi_inst = nullptr;
+      for (auto& instruction : *entry_block) {
         if (instruction.opcode() != SpvOpPhi) {
           non_phi_inst = &instruction;
           break;
         }
       }
+
+      assert(non_phi_inst && "|non_phi_inst| must've been initialized");
 
       // If the split was not applicable, the transformation will not work.
       uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
