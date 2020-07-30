@@ -64,7 +64,7 @@ void FuzzerPassMakeVectorOperationsDynamic::Apply() {
           FindOrCreateIntegerConstant(
               {instruction.GetSingleWordInOperand(
                   instruction.opcode() == SpvOpCompositeExtract ? 1 : 2)},
-              32, GetFuzzerContext()->ChooseEven() ? true : false, false);
+              32, GetFuzzerContext()->ChooseEven(), false);
         }
 
         // Applies the make vector operation dynamic transformation.
