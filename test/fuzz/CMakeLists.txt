@@ -62,6 +62,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_function_call_test.cpp
           transformation_invert_comparison_operator_test.cpp
           transformation_load_test.cpp
+          transformation_make_vector_operation_dynamic_test.cpp
           transformation_merge_blocks_test.cpp
           transformation_move_block_down_test.cpp
           transformation_move_instruction_down_test.cpp
@@ -88,7 +89,6 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_swap_conditional_branch_operands_test.cpp
           transformation_toggle_access_chain_instruction_test.cpp
           transformation_record_synonymous_constants_test.cpp
-          transformation_vector_dynamic_test.cpp
           transformation_vector_shuffle_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
 

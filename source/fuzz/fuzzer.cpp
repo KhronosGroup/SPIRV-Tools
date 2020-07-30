@@ -49,6 +49,7 @@
 #include "source/fuzz/fuzzer_pass_interchange_signedness_of_integer_operands.h"
 #include "source/fuzz/fuzzer_pass_interchange_zero_like_constants.h"
 #include "source/fuzz/fuzzer_pass_invert_comparison_operators.h"
+#include "source/fuzz/fuzzer_pass_make_vector_operations_dynamic.h"
 #include "source/fuzz/fuzzer_pass_merge_blocks.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
@@ -64,7 +65,6 @@
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
-#include "source/fuzz/fuzzer_pass_vector_dynamic.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/transformation_context.h"
@@ -268,6 +268,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassInvertComparisonOperators>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
+    MaybeAddPass<FuzzerPassMakeVectorOperationsDynamic>(
+        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
+        transformation_sequence_out);
     MaybeAddPass<FuzzerPassMergeBlocks>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
@@ -302,9 +305,6 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassSwapBranchConditionalOperands>(
-        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
-        transformation_sequence_out);
-    MaybeAddPass<FuzzerPassVectorDynamic>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
   }

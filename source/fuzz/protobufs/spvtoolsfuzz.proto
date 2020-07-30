@@ -409,7 +409,7 @@ message Transformation {
     TransformationReplaceLoadStoreWithCopyMemory replace_load_store_with_copy_memory = 62;
     TransformationAddLoopPreheader add_loop_preheader = 63;
     TransformationMoveInstructionDown move_instruction_down = 64;
-    TransformationVectorDynamic vector_dynamic = 65;
+    TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     // Add additional option using the next available number.
   }
 }
@@ -1562,7 +1562,7 @@ message TransformationToggleAccessChainInstruction {
 
 }
 
-message TransformationVectorDynamic {
+message TransformationMakeVectorOperationDynamic {
 
   // A transformation that replaces the OpCompositeExtract and OpCompositeInsert
   // instructions with the OpVectorExtractDynamic and OpVectorInsertDynamic instructions.
