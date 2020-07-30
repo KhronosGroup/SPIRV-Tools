@@ -110,8 +110,8 @@ template("spvtools_glsl_tables") {
     core_json_file =
         "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
     glsl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.glsl.std.450.grammar.json"
-    debuginfo_insts_file = "${spirv_headers/include/spirv/unified1/extinst.debuginfo.grammar.json"
-    cldebuginfo100_insts_file = "${spirv_headers/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
+    debuginfo_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.debuginfo.grammar.json"
+    cldebuginfo100_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
 
     glsl_insts_file = "${target_gen_dir}/glsl.std.450.insts.inc"
 
