@@ -60,8 +60,8 @@ bool TransformationCompositeInsert::IsApplicable(
     return false;
   }
 
-  // The type id of the object and the type id of the component of the composite
-  // at index |message_.index| must be the same.
+  // The type id of the object at |message_.object_id| and the type id of the
+  // component of the composite at index |message_.index| must be the same.
   auto component_to_be_replaced_type_id = fuzzerutil::WalkCompositeTypeIndices(
       ir_context, composite->type_id(), message_.index());
   if (component_to_be_replaced_type_id == 0) {
