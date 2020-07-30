@@ -49,7 +49,7 @@ void FuzzerPassInterchangeIntegerOperands::Apply() {
     uint32_t toggled_id =
         FindOrCreateToggledIntegerConstant(constant->result_id());
     if (!toggled_id) {
-      // Not a zero-like constant
+      // Not an integer constant
       continue;
     }
 
@@ -99,8 +99,8 @@ FuzzerPassInterchangeIntegerOperands::FindOrCreateToggledIntegerConstant(
     auto type = integer->type()->AsInteger();
 
     // Find or create and return the toggled constant.
-    return FindOrCreateIntegerConstant(integer->words(), type->width(),
-                                       !type->IsSigned(), false);
+    return FindOrCreateIntegerConstant(std::vector<uint32_t>(integer->words()),
+                                       type->width(), !type->IsSigned(), false);
   }
 
   // The constant is an integer vector.
@@ -113,13 +113,23 @@ FuzzerPassInterchangeIntegerOperands::FindOrCreateToggledIntegerConstant(
   uint32_t toggled_component_type = FindOrCreateIntegerType(
       component_type->width(), !component_type->IsSigned());
 
+  // Get the information about the toggled components. We need to extract this
+  // information now because the analyses might be invalidated, which would make
+  // the constant and component_type variables invalid.
+  std::vector<std::vector<uint32_t>> component_words;
+
+  for (auto component : constant->AsVectorConstant()->GetComponents()) {
+    component_words.push_back(component->AsIntConstant()->words());
+  }
+  uint32_t width = component_type->width();
+  bool is_signed = !component_type->IsSigned();
+
   std::vector<uint32_t> toggled_components;
 
   // Find or create the toggled components.
-  for (auto component : constant->AsVectorConstant()->GetComponents()) {
-    toggled_components.push_back(FindOrCreateIntegerConstant(
-        component->AsIntConstant()->words(), component_type->width(),
-        !component_type->IsSigned(), false));
+  for (auto words : component_words) {
+    toggled_components.push_back(
+        FindOrCreateIntegerConstant(words, width, is_signed, false));
   }
 
   // Find or create the required toggled vector type.
