@@ -165,7 +165,7 @@ void TransformationPropagateInstructionUp::Apply(
 
   // The propagated instruction might have been the only user of some OpPhi
   // instruction from the same basic block. Thus, that OpPhi instruction won't
-  // ahev any users at this point and we can safely remove it.
+  // have any users at this point and we can safely remove it.
   for (const auto& entry : op_phi_to_result_id) {
     auto op_phi_result_id = entry.first;
 
