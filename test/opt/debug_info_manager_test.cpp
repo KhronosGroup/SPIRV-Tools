@@ -484,7 +484,7 @@ void main(float in_var_color : COLOR) {
   auto* dbg_info_mgr = context->get_debug_info_mgr();
   auto* def_use_mgr = context->get_def_use_mgr();
 
-  EXPECT_TRUE(dbg_info_mgr->IsDebugDeclared(100));
+  EXPECT_TRUE(dbg_info_mgr->IsVariableDebugDeclared(100));
   EXPECT_EQ(def_use_mgr->GetDef(36)->GetOpenCL100DebugOpcode(),
             OpenCLDebugInfo100DebugDeclare);
   EXPECT_EQ(def_use_mgr->GetDef(37)->GetOpenCL100DebugOpcode(),
@@ -496,7 +496,7 @@ void main(float in_var_color : COLOR) {
   EXPECT_EQ(def_use_mgr->GetDef(36), nullptr);
   EXPECT_EQ(def_use_mgr->GetDef(37), nullptr);
   EXPECT_EQ(def_use_mgr->GetDef(38), nullptr);
-  EXPECT_FALSE(dbg_info_mgr->IsDebugDeclared(100));
+  EXPECT_FALSE(dbg_info_mgr->IsVariableDebugDeclared(100));
 }
 
 }  // namespace
