@@ -757,6 +757,20 @@ std::vector<opt::Instruction*> GetParameters(opt::IRContext* ir_context,
   return result;
 }
 
+void RemoveParameter(opt::IRContext* ir_context, uint32_t parameter_id) {
+  auto* function = GetFunctionFromParameterId(ir_context, parameter_id);
+  assert(function && "|parameter_id| is invalid");
+  assert(!FunctionIsEntryPoint(ir_context, function->result_id()) &&
+         "Can't remove parameter from an entry point function");
+
+  function->RemoveParameter(parameter_id);
+
+  // We've just removed parameters from the function and cleared their memory.
+  // Make sure analyses have no dangling pointers.
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
+}
+
 std::vector<opt::Instruction*> GetCallers(opt::IRContext* ir_context,
                                           uint32_t function_id) {
   assert(FindFunction(ir_context, function_id) &&

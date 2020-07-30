@@ -53,7 +53,7 @@ void FuzzerPassOutlineFunctions::Apply() {
     if (entry_block->begin()->opcode() == SpvOpPhi) {
       // Find the first non-OpPhi instruction.
       opt::Instruction* non_phi_inst;
-      for (auto instruction : *entry_block) {
+      for (auto& instruction : *entry_block) {
         if (instruction.opcode() != SpvOpPhi) {
           non_phi_inst = &instruction;
           break;

@@ -230,7 +230,7 @@ void TransformationReplaceParamsWithStruct::Apply(
             {SPV_OPERAND_TYPE_ID, {message_.fresh_parameter_id()}},
             {SPV_OPERAND_TYPE_LITERAL_INTEGER, {static_cast<uint32_t>(i)}}}));
 
-    function->RemoveParameter(param_inst->result_id());
+    fuzzerutil::RemoveParameter(ir_context, param_inst->result_id());
   }
 
   // Update function's type.
