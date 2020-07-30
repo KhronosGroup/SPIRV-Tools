@@ -127,6 +127,9 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   if (!strcmp("OpenCL.DebugInfo.100", name)) {
     return SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100;
   }
+  if (!strcmp("SPIRV.debug", name)) {
+    return SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100;
+  }
   if (!strncmp("NonSemantic.ClspvReflection.", name, 28)) {
     return SPV_EXT_INST_TYPE_NONSEMANTIC_CLSPVREFLECTION;
   }
