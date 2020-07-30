@@ -412,7 +412,7 @@ message Transformation {
     TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
     TransformationPropagateInstructionUp propagate_instruction_up = 67;
-    TransformationAddCompositeInsert add_composite_insert = 68;
+    TransformationCompositeInsert composite_insert = 68;
     // Add additional option using the next available number.
   }
 }
@@ -449,24 +449,26 @@ message TransformationAccessChain {
 
 }
 
-message TransformationAddCompositeInsert {
-  // Adds instruction OpCompositeInsert to an id that has a composite type.
+message TransformationCompositeInsert {
 
-  // The result_id of this instruction.
-  uint32 fresh_id = 1;
+  // A transformation that adds a instruction OpCompositeInsert which creates
+  // a new composite from an existing composite, with an element inserted.
 
-  // The constant to be inserted into an composite value.
-  uint32 available_constant_id = 2;
+  // A descriptor for an instruction before which the new the new
+  // OpCompositeInsert should be inserted.
+  InstructionDescriptor instruction_to_insert_before = 1;
 
-  // The value of the composite type.
-  uint32 composite_value_id = 3;
+  // Result id of this instruction.
+  uint32 fresh_id = 2;
 
-  // The index of the composite value where the constant will be replaced.
-  uint32 index_to_replace = 4;
+  // Id of the composite used as the basis for the insertion.
+  uint32 composite_id = 3;
 
-  // The new OpCompositeInsert to be inserted before instruction having this
-  // insruction descriptor.
-  InstructionDescriptor instruction_descriptor_insert_before = 5;
+  // Id of the object to be inserted.
+  uint32 object_id = 4;
+
+  // Indices that indicate which part of the composite should be inserted into.
+  repeated uint32 index = 5;
 
 }
 

@@ -101,7 +101,6 @@ if(SPIRV_BUILD_FUZZER)
         shrinker.h
         transformation.h
         transformation_access_chain.h
-        transformation_add_composite_insert.h
         transformation_add_constant_boolean.h
         transformation_add_constant_composite.h
         transformation_add_constant_null.h
@@ -133,6 +132,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_adjust_branch_weights.h
         transformation_composite_construct.h
         transformation_composite_extract.h
+        transformation_composite_insert.h
         transformation_compute_data_synonym_fact_closure.h
         transformation_context.h
         transformation_equation_instruction.h
@@ -242,7 +242,7 @@ if(SPIRV_BUILD_FUZZER)
         shrinker.cpp
         transformation.cpp
         transformation_access_chain.cpp
-        transformation_add_composite_insert.cpp
+
         transformation_add_constant_boolean.cpp
         transformation_add_constant_composite.cpp
         transformation_add_constant_null.cpp
@@ -274,6 +274,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_adjust_branch_weights.cpp
         transformation_composite_construct.cpp
         transformation_composite_extract.cpp
+        transformation_composite_insert.cpp
         transformation_compute_data_synonym_fact_closure.cpp
         transformation_context.cpp
         transformation_equation_instruction.cpp

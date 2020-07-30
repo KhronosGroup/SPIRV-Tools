@@ -21,7 +21,7 @@ namespace spvtools {
 namespace fuzz {
 
 // Fuzzer pass that randomly adds new OpCompositeInsert instructions to
-// available constants that have the type OpConstantComposite.
+// available values that have the composite type.
 class FuzzerPassAddCompositeInserts : public FuzzerPass {
  public:
   FuzzerPassAddCompositeInserts(
@@ -30,8 +30,10 @@ class FuzzerPassAddCompositeInserts : public FuzzerPass {
       protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassAddCompositeInserts();
-
   void Apply() override;
+
+  static uint32_t GetNumberOfComponents(opt::IRContext* ir_context,
+                                        uint32_t composite_id);
 };
 
 }  // namespace fuzz

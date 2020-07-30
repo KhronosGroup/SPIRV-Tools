@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_TRANSFORMATION_ADD_COMPOSITE_INSERT_H
-#define SPIRV_TOOLS_TRANSFORMATION_ADD_COMPOSITE_INSERT_H
+#ifndef SPIRV_TOOLS_TRANSFORMATION_COMPOSITE_INSERT_H
+#define SPIRV_TOOLS_TRANSFORMATION_COMPOSITE_INSERT_H
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -23,32 +23,39 @@
 namespace spvtools {
 namespace fuzz {
 
-class TransformationAddCompositeInsert : public Transformation {
+class TransformationCompositeInsert : public Transformation {
  public:
-  explicit TransformationAddCompositeInsert(
-      const protobufs::TransformationAddCompositeInsert& message);
+  explicit TransformationCompositeInsert(
+      const protobufs::TransformationCompositeInsert& message);
 
-  TransformationAddCompositeInsert(uint32_t fresh_id,
-                                   uint32_t available_constant_id,
-                                   uint32_t composite_value_id,
-                                   uint32_t index_to_replace,
-                                   const protobufs::InstructionDescriptor&
-                                       instruction_descriptor_insert_before);
+  TransformationCompositeInsert(
+      const protobufs::InstructionDescriptor& instruction_to_insert_before,
+      uint32_t fresh_id, uint32_t composite_id, std::vector<uint32_t>&& index);
 
+  // - |message_.fresh_id| must be fresh.
+  // - |message_.composite_id| must refer to an existing composite value.
+  // - |message_.index| must refer to a valid index in the composite.
+  // - The type id of the object and the type id of the component of the
+  // composite
+  //   at index |message_.index| must be the same.
+  // - |message_.instruction_to_insert_before| must refer to a valid
+  //   instruction.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Adds a instruction OpCompositeInsert which creates a new composite from an
+  // existing composite, with an element inserted.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
 
  private:
-  protobufs::TransformationAddCompositeInsert message_;
+  protobufs::TransformationCompositeInsert message_;
 };
 
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_TRANSFORMATION_ADD_COMPOSITE_INSERT_H
+#endif  // SPIRV_TOOLS_TRANSFORMATION_COMPOSITE_INSERT_H

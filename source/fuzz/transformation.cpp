@@ -18,7 +18,6 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_access_chain.h"
-#include "source/fuzz/transformation_add_composite_insert.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_composite.h"
 #include "source/fuzz/transformation_add_constant_null.h"
@@ -50,6 +49,7 @@
 #include "source/fuzz/transformation_adjust_branch_weights.h"
 #include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_composite_extract.h"
+#include "source/fuzz/transformation_composite_insert.h"
 #include "source/fuzz/transformation_compute_data_synonym_fact_closure.h"
 #include "source/fuzz/transformation_equation_instruction.h"
 #include "source/fuzz/transformation_function_call.h"
@@ -97,9 +97,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
   switch (message.transformation_case()) {
     case protobufs::Transformation::TransformationCase::kAccessChain:
       return MakeUnique<TransformationAccessChain>(message.access_chain());
-    case protobufs::Transformation::TransformationCase::kAddCompositeInsert:
-      return MakeUnique<TransformationAddCompositeInsert>(
-          message.add_composite_insert());
+    case protobufs::Transformation::TransformationCase::kCompositeInsert:
+      return MakeUnique<TransformationCompositeInsert>(
+          message.composite_insert());
     case protobufs::Transformation::TransformationCase::kAddConstantBoolean:
       return MakeUnique<TransformationAddConstantBoolean>(
           message.add_constant_boolean());
