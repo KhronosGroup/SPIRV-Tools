@@ -67,8 +67,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
     {50, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfInterchangingZeroLikeConstants = {
     10, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfInterchangingIntegerOperands = {
-    10, 90};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfInterchangingSignednessOfIntegerOperands = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfInvertingComparisonOperators = {
     20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfMakingDonorLivesafe = {40, 60};
@@ -199,8 +199,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
   chance_of_going_deeper_when_making_access_chain_ =
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperWhenMakingAccessChain);
-  chance_of_interchanging_integer_operands_ =
-      ChooseBetweenMinAndMax(kChanceOfInterchangingIntegerOperands);
+  chance_of_interchanging_signedness_of_integer_operands_ =
+      ChooseBetweenMinAndMax(kChanceOfInterchangingSignednessOfIntegerOperands);
   chance_of_interchanging_zero_like_constants_ =
       ChooseBetweenMinAndMax(kChanceOfInterchangingZeroLikeConstants);
   chance_of_inverting_comparison_operators_ =

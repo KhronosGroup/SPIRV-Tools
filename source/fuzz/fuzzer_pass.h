@@ -273,7 +273,7 @@ class FuzzerPass {
   uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id,
                                     bool is_irrelevant);
 
-  // Adds a pair {id_use_descriptor, |replacement_id|} to the vector
+  // Adds a pair (id_use_descriptor, |replacement_id|) to the vector
   // |uses_to_replace|, where id_use_descriptor is the id use descriptor
   // representing the usage of an id in the |use_inst| instruction, at operand
   // index |use_index|, only if the instruction is in a basic block.

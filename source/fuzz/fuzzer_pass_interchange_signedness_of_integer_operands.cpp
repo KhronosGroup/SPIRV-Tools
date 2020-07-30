@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "fuzzer_pass_interchange_integer_operands.h"
+#include "fuzzer_pass_interchange_signedness_of_integer_operands.h"
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/id_use_descriptor.h"
@@ -22,17 +22,19 @@
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPassInterchangeIntegerOperands::FuzzerPassInterchangeIntegerOperands(
-    opt::IRContext* ir_context, TransformationContext* transformation_context,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations)
+FuzzerPassInterchangeSignednessOfIntegerOperands::
+    FuzzerPassInterchangeSignednessOfIntegerOperands(
+        opt::IRContext* ir_context,
+        TransformationContext* transformation_context,
+        FuzzerContext* fuzzer_context,
+        protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassInterchangeIntegerOperands::~FuzzerPassInterchangeIntegerOperands() =
-    default;
+FuzzerPassInterchangeSignednessOfIntegerOperands::
+    ~FuzzerPassInterchangeSignednessOfIntegerOperands() = default;
 
-void FuzzerPassInterchangeIntegerOperands::Apply() {
+void FuzzerPassInterchangeSignednessOfIntegerOperands::Apply() {
   // Make vector keeping track of all the uses we want to replace.
   // This is a vector of pairs, where the first element is an id use descriptor
   // identifying the use of a constant id and the second is the id that should
@@ -41,6 +43,10 @@ void FuzzerPassInterchangeIntegerOperands::Apply() {
 
   for (auto constant : GetIRContext()->GetConstants()) {
     uint32_t constant_id = constant->result_id();
+
+    // We want to record the synonymity of an integer constant with another
+    // constant with opposite signedness, and this can only be done if they are
+    // not irrelevant.
     if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
             constant_id)) {
       continue;
@@ -69,7 +75,7 @@ void FuzzerPassInterchangeIntegerOperands::Apply() {
                                              uint32_t use_index) -> void {
           if (GetFuzzerContext()->ChoosePercentage(
                   GetFuzzerContext()
-                      ->GetChanceOfInterchangingIntegerOperands())) {
+                      ->GetChanceOfInterchangingSignednessOfIntegerOperands())) {
             MaybeAddUseToReplace(use_inst, use_index, toggled_id,
                                  &uses_to_replace);
           }
@@ -83,9 +89,8 @@ void FuzzerPassInterchangeIntegerOperands::Apply() {
   }
 }
 
-uint32_t
-FuzzerPassInterchangeIntegerOperands::FindOrCreateToggledIntegerConstant(
-    uint32_t id) {
+uint32_t FuzzerPassInterchangeSignednessOfIntegerOperands::
+    FindOrCreateToggledIntegerConstant(uint32_t id) {
   auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(id);
 
   // This pass only toggles integer constants.

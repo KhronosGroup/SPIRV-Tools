@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_INTEGER_OPERANDS_
-#define SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_INTEGER_OPERANDS_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_
+#define SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -21,21 +21,20 @@ namespace spvtools {
 namespace fuzz {
 
 // A pass that:
-// - Finds all the integer constant (scalars or vectors) definitions in the
+// - Finds all the integer constant (scalar and vector) definitions in the
 //   module and adds the definitions of the integer with the same data words but
 //   opposite signedness. If the synonym is already in the module, it does not
 //   add a new one.
 // - For each use of an integer constant where its signedness does not matter,
-//   decides whether to change it to the
-//   id of the toggled constant.
-class FuzzerPassInterchangeIntegerOperands : public FuzzerPass {
+// decides whether to change it to the id of the toggled constant.
+class FuzzerPassInterchangeSignednessOfIntegerOperands : public FuzzerPass {
  public:
-  FuzzerPassInterchangeIntegerOperands(
+  FuzzerPassInterchangeSignednessOfIntegerOperands(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassInterchangeIntegerOperands() override;
+  ~FuzzerPassInterchangeSignednessOfIntegerOperands() override;
 
   void Apply() override;
 
@@ -49,4 +48,4 @@ class FuzzerPassInterchangeIntegerOperands : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_INTEGER_OPERANDS_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_
