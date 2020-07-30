@@ -142,7 +142,7 @@ class DebugInfoManager {
   // Generates a DebugValue instruction with value |value_id| for every local
   // variable that is in the scope of |scope_and_line| and whose memory is
   // |variable_id| and inserts it after the instruction |insert_pos|.
-  bool AddDebugValueIfVarDeclIsVisible(Instruction* scope_and_line,
+  void AddDebugValueIfVarDeclIsVisible(Instruction* scope_and_line,
                                        uint32_t variable_id, uint32_t value_id,
                                        Instruction* insert_pos);
 

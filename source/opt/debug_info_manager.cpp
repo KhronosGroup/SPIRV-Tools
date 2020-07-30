@@ -487,13 +487,12 @@ Instruction* DebugInfoManager::AddDebugValueWithIndex(
   return added_dbg_value;
 }
 
-bool DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
+void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
     Instruction* scope_and_line, uint32_t variable_id, uint32_t value_id,
     Instruction* insert_pos) {
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
-  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return false;
+  if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
 
-  bool added = false;
   uint32_t instr_scope_id = scope_and_line->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
     if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
@@ -518,9 +517,7 @@ bool DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
                                value_id, 0, index_id, insert_before);
     assert(added_dbg_value != nullptr);
     added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
-    added = true;
   }
-  return added;
 }
 
 uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
