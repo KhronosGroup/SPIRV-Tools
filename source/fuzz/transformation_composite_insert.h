@@ -37,7 +37,7 @@ class TransformationCompositeInsert : public Transformation {
   // - |message_.composite_id| must refer to an existing composite value.
   // - |message_.index| must refer to a valid index in the composite.
   // - The type id of the object and the type id of the component of the
-  // composite
+  //   composite.
   //   at index |message_.index| must be the same.
   // - |message_.instruction_to_insert_before| must refer to a valid
   //   instruction.

@@ -176,7 +176,6 @@ class FuzzerContext {
     return chance_of_adjusting_selection_control_;
   }
   uint32_t GetChanceOfCallingFunction() { return chance_of_calling_function_; }
-
   uint32_t GetChanceOfChoosingStructTypeVsArrayType() {
     return chance_of_choosing_struct_type_vs_array_type_;
   }

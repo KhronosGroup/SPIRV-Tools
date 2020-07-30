@@ -242,7 +242,6 @@ if(SPIRV_BUILD_FUZZER)
         shrinker.cpp
         transformation.cpp
         transformation_access_chain.cpp
-
         transformation_add_constant_boolean.cpp
         transformation_add_constant_composite.cpp
         transformation_add_constant_null.cpp
