@@ -21,51 +21,53 @@ namespace fuzz {
 namespace {
 TEST(FuzzerPassAddCompositeInsertsTest, BasicScenarios) {
   std::string shader = R"(
-               OpCapability Shader
+                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %10 "m1"
-               OpName %18 "m2"
-               OpName %26 "m3"
+               OpName %7 "base"
+               OpMemberName %7 0 "a1"
+               OpMemberName %7 1 "a2"
+               OpName %9 "A"
+               OpName %13 "level_1"
+               OpMemberName %13 0 "b1"
+               OpMemberName %13 1 "b2"
+               OpName %15 "B"
+               OpName %19 "level_2"
+               OpMemberName %19 0 "c1"
+               OpMemberName %19 1 "c2"
+               OpName %21 "C"
+               OpMemberDecorate %7 0 RelaxedPrecision
+               OpMemberDecorate %7 1 RelaxedPrecision
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeFloat 32
-          %7 = OpTypeVector %6 3
-          %8 = OpTypeMatrix %7 3
-          %9 = OpTypePointer Function %8
-         %11 = OpConstant %6 1
-         %12 = OpConstantComposite %7 %11 %11 %11
-         %13 = OpConstant %6 2
-         %14 = OpConstantComposite %7 %13 %13 %13
-         %15 = OpConstant %6 3
-         %16 = OpConstantComposite %7 %15 %15 %15
-         %17 = OpConstantComposite %8 %12 %14 %16
-         %19 = OpConstant %6 4
-         %20 = OpConstantComposite %7 %19 %19 %19
-         %21 = OpConstant %6 5
-         %22 = OpConstantComposite %7 %21 %21 %21
-         %23 = OpConstant %6 6
-         %24 = OpConstantComposite %7 %23 %23 %23
-         %25 = OpConstantComposite %8 %20 %22 %24
-         %27 = OpConstant %6 7
-         %28 = OpConstantComposite %7 %27 %27 %27
-         %29 = OpConstant %6 8
-         %30 = OpConstantComposite %7 %29 %29 %29
-         %31 = OpConstant %6 9
-         %32 = OpConstantComposite %7 %31 %31 %31
-         %33 = OpConstantComposite %8 %28 %30 %32
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeStruct %6 %6
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 1
+         %11 = OpConstant %6 2
+         %12 = OpConstantComposite %7 %10 %11
+         %13 = OpTypeStruct %7 %7
+         %14 = OpTypePointer Function %13
+         %19 = OpTypeStruct %13 %13
+         %20 = OpTypePointer Function %19
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %10 = OpVariable %9 Function
-         %18 = OpVariable %9 Function
-         %26 = OpVariable %9 Function
-               OpStore %10 %17
-               OpStore %18 %25
-               OpStore %26 %33
+          %9 = OpVariable %8 Function
+         %15 = OpVariable %14 Function
+         %21 = OpVariable %20 Function
+               OpStore %9 %12
+         %16 = OpLoad %7 %9
+         %17 = OpLoad %7 %9
+         %18 = OpCompositeConstruct %13 %16 %17
+               OpStore %15 %18
+         %22 = OpLoad %13 %15
+         %23 = OpLoad %13 %15
+         %24 = OpCompositeConstruct %19 %22 %23
+               OpStore %21 %24
                OpReturn
                OpFunctionEnd
     )";
@@ -79,66 +81,26 @@ TEST(FuzzerPassAddCompositeInsertsTest, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
-  auto prng = MakeUnique<PseudoRandomGenerator>(12);
+  auto prng = MakeUnique<PseudoRandomGenerator>(9);
   FuzzerContext fuzzer_context(prng.get(), 100);
   protobufs::TransformationSequence transformation_sequence;
   FuzzerPassAddCompositeInserts fuzzer_pass(
       context.get(), &transformation_context, &fuzzer_context,
       &transformation_sequence);
   fuzzer_pass.Apply();
+
+  std::vector<uint32_t> actual_binary;
+  context.get()->module()->ToBinary(&actual_binary, false);
+  SpirvTools t(env);
+  std::string actual_disassembled;
+  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
+  std::cout << actual_disassembled;
+  /*
   std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-               OpName %10 "m1"
-               OpName %18 "m2"
-               OpName %26 "m3"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeFloat 32
-          %7 = OpTypeVector %6 3
-          %8 = OpTypeMatrix %7 3
-          %9 = OpTypePointer Function %8
-         %11 = OpConstant %6 1
-         %12 = OpConstantComposite %7 %11 %11 %11
-         %13 = OpConstant %6 2
-         %14 = OpConstantComposite %7 %13 %13 %13
-         %15 = OpConstant %6 3
-         %16 = OpConstantComposite %7 %15 %15 %15
-         %17 = OpConstantComposite %8 %12 %14 %16
-         %19 = OpConstant %6 4
-         %20 = OpConstantComposite %7 %19 %19 %19
-         %21 = OpConstant %6 5
-         %22 = OpConstantComposite %7 %21 %21 %21
-         %23 = OpConstant %6 6
-         %24 = OpConstantComposite %7 %23 %23 %23
-         %25 = OpConstantComposite %8 %20 %22 %24
-         %27 = OpConstant %6 7
-         %28 = OpConstantComposite %7 %27 %27 %27
-         %29 = OpConstant %6 8
-         %30 = OpConstantComposite %7 %29 %29 %29
-         %31 = OpConstant %6 9
-         %32 = OpConstantComposite %7 %31 %31 %31
-         %33 = OpConstantComposite %8 %28 %30 %32
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-         %10 = OpVariable %9 Function
-         %18 = OpVariable %9 Function
-         %26 = OpVariable %9 Function
-        %100 = OpCompositeInsert %7 %11 %14 2
-               OpStore %10 %17
-               OpStore %18 %25
-        %101 = OpCompositeInsert %8 %20 %17 2
-               OpStore %26 %33
-        %102 = OpCompositeInsert %8 %28 %33 0
-               OpReturn
-               OpFunctionEnd
+
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+   */
 }
 
 }  // namespace

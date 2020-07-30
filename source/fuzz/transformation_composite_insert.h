@@ -30,7 +30,8 @@ class TransformationCompositeInsert : public Transformation {
 
   TransformationCompositeInsert(
       const protobufs::InstructionDescriptor& instruction_to_insert_before,
-      uint32_t fresh_id, uint32_t composite_id, std::vector<uint32_t>&& index);
+      uint32_t fresh_id, uint32_t composite_id, uint32_t object_id,
+      std::vector<uint32_t>&& index);
 
   // - |message_.fresh_id| must be fresh.
   // - |message_.composite_id| must refer to an existing composite value.

@@ -449,29 +449,6 @@ message TransformationAccessChain {
 
 }
 
-message TransformationCompositeInsert {
-
-  // A transformation that adds a instruction OpCompositeInsert which creates
-  // a new composite from an existing composite, with an element inserted.
-
-  // A descriptor for an instruction before which the new the new
-  // OpCompositeInsert should be inserted.
-  InstructionDescriptor instruction_to_insert_before = 1;
-
-  // Result id of this instruction.
-  uint32 fresh_id = 2;
-
-  // Id of the composite used as the basis for the insertion.
-  uint32 composite_id = 3;
-
-  // Id of the object to be inserted.
-  uint32 object_id = 4;
-
-  // Indices that indicate which part of the composite should be inserted into.
-  repeated uint32 index = 5;
-
-}
-
 
 message TransformationAddConstantBoolean {
 
@@ -1043,6 +1020,29 @@ message TransformationCompositeExtract {
 
   // Indices that indicate which part of the composite should be extracted.
   repeated uint32 index = 4;
+
+}
+
+message TransformationCompositeInsert {
+
+  // A transformation that adds a instruction OpCompositeInsert which creates
+  // a new composite from an existing composite, with an element inserted.
+
+  // A descriptor for an instruction before which the new the new
+  // OpCompositeInsert should be inserted.
+  InstructionDescriptor instruction_to_insert_before = 1;
+
+  // Result id of this instruction.
+  uint32 fresh_id = 2;
+
+  // Id of the composite used as the basis for the insertion.
+  uint32 composite_id = 3;
+
+  // Id of the object to be inserted.
+  uint32 object_id = 4;
+
+  // Indices that indicate which part of the composite should be inserted into.
+  repeated uint32 index = 5;
 
 }
 

@@ -32,8 +32,12 @@ class FuzzerPassAddCompositeInserts : public FuzzerPass {
   ~FuzzerPassAddCompositeInserts();
   void Apply() override;
 
+  // Gets number of components in composites (array, matrix, vector or struct).
   static uint32_t GetNumberOfComponents(opt::IRContext* ir_context,
                                         uint32_t composite_id);
+
+  // Checks if any component of a composite has type OpTYpeRuntimeArray.
+  static bool ContainsRuntimeArray(const opt::analysis::Type* type);
 };
 
 }  // namespace fuzz

@@ -17,6 +17,7 @@
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/pseudo_random_generator.h"
+#include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_composite_insert.h"
 
 namespace spvtools {
@@ -56,8 +57,8 @@ void FuzzerPassAddCompositeInserts::Apply() {
           return;
         }
 
-        // Look for available values that have the composite type.
-        std::vector<opt::Instruction*> available_composite_values =
+        // Look for available values that have composite type.
+        std::vector<opt::Instruction*> available_composites =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
                 [this, instruction_descriptor](
@@ -69,45 +70,9 @@ void FuzzerPassAddCompositeInserts::Apply() {
                   if (!fuzzerutil::IsCompositeType(instruction_type)) {
                     return false;
                   }
-
-                  return fuzzerutil::IdIsAvailableBeforeInstruction(
-                      ir_context,
-                      FindInstruction(instruction_descriptor, ir_context),
-                      instruction->result_id());
-                });
-
-        // If there are no available values, then return.
-        if (available_composite_values.empty()) {
-          return;
-        }
-
-        // Choose randomly one available composite value.
-        auto available_composite_value =
-            available_composite_values[GetFuzzerContext()->RandomIndex(
-                available_composite_values)];
-
-        // Take a random component of the chosen composite value.
-        auto num_components = 0;
-        uint32_t index_to_replace =
-            GetFuzzerContext()->GetRandomIndexForAccessChain(num_components);
-        auto component_to_replace_id =
-            available_composite_value->GetSingleWordInOperand(index_to_replace);
-        auto component_to_replace_type_id =
-            GetIRContext()
-                ->get_def_use_mgr()
-                ->GetDef(component_to_replace_id)
-                ->type_id();
-
-        // Look for available values that have the same type id as the
-        // |constant_to_replace|.
-        std::vector<opt::Instruction*> available_values =
-            FindAvailableInstructions(
-                function, block, instruction_iterator,
-                [this, instruction_descriptor, component_to_replace_type_id](
-                    opt::IRContext* ir_context,
-                    opt::Instruction* instruction) -> bool {
-
-                  if (instruction->type_id() != component_to_replace_type_id) {
+                  // No components of the composite can have type
+                  // OpTypeRuntimeArray.
+                  if (ContainsRuntimeArray(instruction_type)) {
                     return false;
                   }
 
@@ -117,77 +82,121 @@ void FuzzerPassAddCompositeInserts::Apply() {
                       instruction->result_id());
                 });
 
-        // Choose randomly one available value.
-        auto available_value =
-            available_values[GetFuzzerContext()->RandomIndex(available_values)];
+        // If there are no available values, then return.
+        if (available_composites.empty()) {
+          return;
+        }
+
+        // Choose randomly one available composite value.
+        auto available_composite =
+            available_composites[GetFuzzerContext()->RandomIndex(
+                available_composites)];
+
+        // Take a random component of the chosen composite value. If the chosen
+        // component is itself a composite, then randomly decide whether to take
+        // its component itself and repeat. Use OpCompositeExtract to get the
+        // component.
+        bool reached_end_node = false;
+        uint32_t current_node_type_id = available_composite->type_id();
+        uint32_t one_selected_index;
+        uint32_t num_of_components;
+        std::vector<uint32_t> index_to_replace;
+        while (!reached_end_node) {
+          num_of_components =
+              GetNumberOfComponents(GetIRContext(), current_node_type_id);
+          one_selected_index = GetFuzzerContext()->GetRandomIndexForAccessChain(
+              num_of_components);
+          /*
+          TransformationCompositeExtract transformation_extract =
+              TransformationCompositeExtract(instruction_descriptor, fresh_id,
+                                             current_node->result_id(),
+                                             {one_selected_index});
+          ApplyTransformation(transformation_extract);
+           */
+          // Construct a final index by appending current index.
+          index_to_replace.push_back(one_selected_index);
+          current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
+              GetIRContext(), current_node_type_id, one_selected_index);
+
+          // If the component is not a composite or if we decide not to go
+          // deeper, then end the iteration.
+          if (!fuzzerutil::IsCompositeType(
+                  GetIRContext()->get_type_mgr()->GetType(
+                      current_node_type_id)) ||
+              !GetFuzzerContext()->ChoosePercentage(
+                  GetFuzzerContext()
+                      ->GetChanceOfGoingDeeperToInsertInComposite())) {
+            reached_end_node = true;
+          }
+        }
+
+        // Look for available objects that have the type id
+        // |component_to_replace_type_id|
+        std::vector<opt::Instruction*> available_objects =
+            FindAvailableInstructions(
+                function, block, instruction_iterator,
+                [this, instruction_descriptor, current_node_type_id](
+                    opt::IRContext* ir_context,
+                    opt::Instruction* instruction) -> bool {
+
+                  if (instruction->type_id() != current_node_type_id) {
+                    return false;
+                  }
+
+                  return fuzzerutil::IdIsAvailableBeforeInstruction(
+                      ir_context,
+                      FindInstruction(instruction_descriptor, ir_context),
+                      instruction->result_id());
+                });
+
+        // If there are no objects of the specific type available, create a zero
+        // constant of this type.
+        uint32_t available_object_id;
+        if (available_objects.empty()) {
+          available_object_id =
+              FindOrCreateZeroConstant(current_node_type_id, false);
+        } else {
+          available_object_id =
+              available_objects[GetFuzzerContext()->RandomIndex(
+                                    available_objects)]
+                  ->result_id();
+        }
 
         auto new_result_id = GetFuzzerContext()->GetFreshId();
 
         // Insert an OpCompositeInsert instruction which copies
-        // |available_composite_value| and in the copied composite constant
-        // replaces |component_to_replace| with |available_value|.
-        TransformationAddCompositeInsert transformation =
-            TransformationAddCompositeInsert(
-                new_result_id, available_value->result_id(),
-                available_composite_value->result_id(), index_to_replace,
-                instruction_descriptor);
+        // |available_composite| and in the copied composite inserts the object
+        // of type |available_object_id| at index |index_to_replace|.
+        TransformationCompositeInsert transformation =
+            TransformationCompositeInsert(instruction_descriptor, new_result_id,
+                                          available_composite->result_id(),
+                                          available_object_id,
+                                          std::move(index_to_replace));
         ApplyTransformation(transformation);
 
+        // MakeDataDescriptor(new_result_id, {1});
         // Every element which hasn't been changed in the copy is
         // synonymous to the corresponding element in the original composite
         // value. The element which has been changed is synonymous to the
         // value |available_value| itself.
-        for (uint32_t i = 0; i < num_components; i++) {
+        /*
+        for (uint32_t i = 0; i < num_of_components; i++) {
           if (i != index_to_replace) {
             GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
                 MakeDataDescriptor(new_result_id, {i}),
-                MakeDataDescriptor(available_composite_value->result_id(), {i}),
+                MakeDataDescriptor(available_composite->result_id(), {i}),
 
                 GetIRContext());
           } else {
             GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
                 MakeDataDescriptor(new_result_id, {index_to_replace}),
-                MakeDataDescriptor(available_composite_value->result_id(), {}),
+                MakeDataDescriptor(available_composite->result_id(), {}),
                 GetIRContext());
           }
-        }
+        }*/
 
       });
 }
-/*
-uint32_t WalkOneCompositeTypeIndex(opt::IRContext* context,
-                                   uint32_t base_object_type_id,
-                                   uint32_t index) {
-  auto should_be_composite_type =
-      context->get_def_use_mgr()->GetDef(base_object_type_id);
-  assert(should_be_composite_type && "The type should exist.");
-  switch (should_be_composite_type->opcode()) {
-    case SpvOpTypeArray: {
-      auto array_length = GetArraySize(*should_be_composite_type, context);
-      if (array_length == 0 || index >= array_length) {
-        return 0;
-      }
-      return should_be_composite_type->GetSingleWordInOperand(0);
-    }
-    case SpvOpTypeMatrix:
-    case SpvOpTypeVector: {
-      auto count = should_be_composite_type->GetSingleWordInOperand(1);
-      if (index >= count) {
-        return 0;
-      }
-      return should_be_composite_type->GetSingleWordInOperand(0);
-    }
-    case SpvOpTypeStruct: {
-      if (index >= GetNumberOfStructMembers(*should_be_composite_type)) {
-        return 0;
-      }
-      return should_be_composite_type->GetSingleWordInOperand(index);
-    }
-    default:
-      return 0;
-  }
-}
-*/
 
 uint32_t FuzzerPassAddCompositeInserts::GetNumberOfComponents(
     opt::IRContext* ir_context, uint32_t composite_type_id) {
@@ -211,6 +220,22 @@ uint32_t FuzzerPassAddCompositeInserts::GetNumberOfComponents(
       break;
   }
   return size;
+}
+
+bool FuzzerPassAddCompositeInserts::ContainsRuntimeArray(
+    const opt::analysis::Type* type) {
+  switch (type->kind()) {
+    case opt::analysis::Type::kRuntimeArray:
+      return true;
+    case opt::analysis::Type::kStruct:
+      return std::any_of(type->AsStruct()->element_types().begin(),
+                         type->AsStruct()->element_types().end(),
+                         [](const opt::analysis::Type* element_type) {
+                           return ContainsRuntimeArray(element_type);
+                         });
+    default:
+      return false;
+  }
 }
 
 }  // namespace fuzz

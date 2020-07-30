@@ -58,8 +58,6 @@ const std::pair<uint32_t, uint32_t> kChanceOfAdjustingMemoryOperandsMask = {20,
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingSelectionControl = {20,
                                                                           90};
 const std::pair<uint32_t, uint32_t> kChanceOfCallingFunction = {1, 10};
-const std::pair<uint32_t, uint32_t> kChanceOfChoosingCompositeComponent = {20,
-                                                                           50};
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
     20, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
@@ -67,6 +65,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperToInsertInComposite = {
+    30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
     {50, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfInterchangingZeroLikeConstants = {
@@ -203,8 +203,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAdjustingSelectionControl);
   chance_of_calling_function_ =
       ChooseBetweenMinAndMax(kChanceOfCallingFunction);
-  chance_of_choosing_composite_component_ =
-      ChooseBetweenMinAndMax(kChanceOfChoosingCompositeComponent);
   chance_of_choosing_struct_type_vs_array_type_ =
       ChooseBetweenMinAndMax(kChanceOfChoosingStructTypeVsArrayType);
   chance_of_choosing_workgroup_storage_class_ =
@@ -214,6 +212,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
+  chance_of_going_deeper_to_insert_in_composite_ =
+      ChooseBetweenMinAndMax(kChanceOfGoingDeeperToInsertInComposite);
   chance_of_going_deeper_when_making_access_chain_ =
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperWhenMakingAccessChain);
   chance_of_interchanging_signedness_of_integer_operands_ =

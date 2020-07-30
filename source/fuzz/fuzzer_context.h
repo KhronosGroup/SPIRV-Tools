@@ -176,9 +176,7 @@ class FuzzerContext {
     return chance_of_adjusting_selection_control_;
   }
   uint32_t GetChanceOfCallingFunction() { return chance_of_calling_function_; }
-  uint32_t GetChanceOfChoosingCompositeComponent() {
-    return chance_of_choosing_composite_component_;
-  }
+
   uint32_t GetChanceOfChoosingStructTypeVsArrayType() {
     return chance_of_choosing_struct_type_vs_array_type_;
   }
@@ -191,6 +189,9 @@ class FuzzerContext {
   uint32_t GetChanceOfCopyingObject() { return chance_of_copying_object_; }
   uint32_t GetChanceOfDonatingAdditionalModule() {
     return chance_of_donating_additional_module_;
+  }
+  uint32_t GetChanceOfGoingDeeperToInsertInComposite() {
+    return chance_of_going_deeper_to_insert_in_composite_;
   }
   uint32_t GetChanceOfGoingDeeperWhenMakingAccessChain() {
     return chance_of_going_deeper_when_making_access_chain_;
@@ -373,12 +374,12 @@ class FuzzerContext {
   uint32_t chance_of_adjusting_memory_operands_mask_;
   uint32_t chance_of_adjusting_selection_control_;
   uint32_t chance_of_calling_function_;
-  uint32_t chance_of_choosing_composite_component_;
   uint32_t chance_of_choosing_struct_type_vs_array_type_;
   uint32_t chance_of_choosing_workgroup_storage_class_;
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
+  uint32_t chance_of_going_deeper_to_insert_in_composite_;
   uint32_t chance_of_going_deeper_when_making_access_chain_;
   uint32_t chance_of_interchanging_signedness_of_integer_operands_;
   uint32_t chance_of_interchanging_zero_like_constants_;

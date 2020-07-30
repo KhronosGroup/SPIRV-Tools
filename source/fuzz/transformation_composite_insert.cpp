@@ -26,11 +26,13 @@ TransformationCompositeInsert::TransformationCompositeInsert(
 
 TransformationCompositeInsert::TransformationCompositeInsert(
     const protobufs::InstructionDescriptor& instruction_to_insert_before,
-    uint32_t fresh_id, uint32_t composite_id, std::vector<uint32_t>&& index) {
+    uint32_t fresh_id, uint32_t composite_id, uint32_t object_id,
+    std::vector<uint32_t>&& index) {
   *message_.mutable_instruction_to_insert_before() =
       instruction_to_insert_before;
   message_.set_fresh_id(fresh_id);
   message_.set_composite_id(composite_id);
+  message_.set_object_id(object_id);
   for (auto an_index : index) {
     message_.add_index(an_index);
   }
