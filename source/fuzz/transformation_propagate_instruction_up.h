@@ -49,7 +49,7 @@ class TransformationPropagateInstructionUp : public Transformation {
   // |block_id|. Concretely, returns true iff:
   // - the block has predecessors
   // - the block contains an instruction that can be propagated
-  static bool IsApplicableToTheBlock(opt::IRContext* ir_context,
+  static bool IsApplicableToBlock(opt::IRContext* ir_context,
                                      uint32_t block_id);
 
  private:

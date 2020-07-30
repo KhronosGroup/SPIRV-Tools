@@ -71,7 +71,7 @@ TransformationPropagateInstructionUp::TransformationPropagateInstructionUp(
 bool TransformationPropagateInstructionUp::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Check that we can apply this transformation to the |block_id|.
-  if (!IsApplicableToTheBlock(ir_context, message_.block_id())) {
+  if (!IsApplicableToBlock(ir_context, message_.block_id())) {
     return false;
   }
 
@@ -103,6 +103,10 @@ void TransformationPropagateInstructionUp::Apply(
          "The block must have at least one supported instruction to propagate");
 
   // |inst| might depend on OpPhi instructions from the same basic block.
+  // That's OK, because by looking at the OpPhi instruction we can tell which of
+  // its operands we should use instead when we propagate the instruction into
+  // each predecessor.
+  //
   // |op_phi_to_result_id| contains a mapping from the result id of such an
   // OpPhi instruction to the map of its operands
   // (i.e. |op_phi_to_result_id[op_phi_id][label_id] == result_id|).
@@ -159,7 +163,9 @@ void TransformationPropagateInstructionUp::Apply(
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
 
-  // Remove unused OpPhi instructions.
+  // The propagated instruction might have been the only user of some OpPhi
+  // instruction from the same basic block. Thus, that OpPhi instruction won't
+  // ahev any users at this point and we can safely remove it.
   for (const auto& entry : op_phi_to_result_id) {
     auto op_phi_result_id = entry.first;
 
@@ -339,7 +345,7 @@ TransformationPropagateInstructionUp::GetInstructionToPropagate(
   return nullptr;
 }
 
-bool TransformationPropagateInstructionUp::IsApplicableToTheBlock(
+bool TransformationPropagateInstructionUp::IsApplicableToBlock(
     opt::IRContext* ir_context, uint32_t block_id) {
   // Check that |block_id| is valid.
   const auto* block = ir_context->cfg()->block(block_id);

@@ -61,7 +61,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
     50, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
-const std::pair<uint32_t, uint32_t> kChanceOfPropagatingInstructions = {20, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfPropagatingInstructionsUp = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
@@ -200,8 +200,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfChoosingWorkgroupStorageClass);
   chance_of_constructing_composite_ =
       ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
-  chance_of_propagating_instructions_ =
-      ChooseBetweenMinAndMax(kChanceOfPropagatingInstructions);
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
@@ -230,6 +228,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfPermutingParameters);
   chance_of_permuting_phi_operands_ =
       ChooseBetweenMinAndMax(kChanceOfPermutingPhiOperands);
+  chance_of_propagating_instructions_up_ =
+      ChooseBetweenMinAndMax(kChanceOfPropagatingInstructionsUp);
   chance_of_pushing_id_through_variable_ =
       ChooseBetweenMinAndMax(kChanceOfPushingIdThroughVariable);
   chance_of_replacing_add_sub_mul_with_carrying_extended_ =

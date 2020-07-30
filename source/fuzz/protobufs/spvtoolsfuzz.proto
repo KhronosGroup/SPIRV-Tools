@@ -1242,13 +1242,20 @@ message TransformationPermutePhiOperands {
 
 message TransformationPropagateInstructionUp {
 
-  // Propagates the first instruction in the block into the block's predecessors.
+  // Propagates an instruction in the block into the block's predecessors.
+  // Concretely, this transformation clones some particular instruction from
+  // the |block_id| into every block's predecessor and replaces the original
+  // instruction with OpPhi. Take a look at the transformation class to learn
+  // more about how we choose what instruction to propagate.
 
   // Id of the block to propagate an instruction from.
   uint32 block_id = 1;
 
   // A map from the id of some predecessor of the |block_id| to the fresh id.
   // The map contains a fresh id for at least every predecessor of the |block_id|.
+  // The instruction is propagated by creating a number of clones - one clone for
+  // each predecessor. Fresh ids from this field are used as result ids of cloned
+  // instructions.
   repeated UInt32Pair predecessor_id_to_fresh_id = 2;
 
 }

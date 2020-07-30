@@ -36,11 +36,11 @@ void FuzzerPassPropagateInstructionsUp::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
     for (const auto& block : function) {
       if (!GetFuzzerContext()->ChoosePercentage(
-              GetFuzzerContext()->GetChanceOfPropagatingInstructions())) {
+              GetFuzzerContext()->GetChanceOfPropagatingInstructionsUp())) {
         continue;
       }
 
-      if (TransformationPropagateInstructionUp::IsApplicableToTheBlock(
+      if (TransformationPropagateInstructionUp::IsApplicableToBlock(
               GetIRContext(), block.id())) {
         std::map<uint32_t, uint32_t> fresh_ids;
         for (auto id : GetIRContext()->cfg()->preds(block.id())) {
