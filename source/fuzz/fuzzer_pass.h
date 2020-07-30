@@ -281,7 +281,7 @@ class FuzzerPass {
   void MaybeAddUseToReplace(
       opt::Instruction* use_inst, uint32_t use_index, uint32_t replacement_id,
       std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>*
-      uses_to_replace);
+          uses_to_replace);
 
  private:
   opt::IRContext* ir_context_;
