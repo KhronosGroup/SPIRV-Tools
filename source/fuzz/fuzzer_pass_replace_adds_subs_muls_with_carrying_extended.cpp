@@ -76,8 +76,7 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
             ->type_id();
     operand_type_ids.push_back(operand_type_id);
     operand_type_ids.push_back(operand_type_id);
-    uint32_t struct_type_id =
-        FuzzerPass::FindOrCreateStructType(operand_type_ids);
+    uint32_t struct_type_id = FindOrCreateStructType(operand_type_ids);
 
     ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
         GetFuzzerContext()->GetFreshId(), struct_type_id,
