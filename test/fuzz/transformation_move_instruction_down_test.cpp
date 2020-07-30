@@ -85,13 +85,6 @@ TEST(TransformationMoveInstructionDownTest, BasicTest) {
                    MakeInstructionDescriptor(14, SpvOpLoad, 0))
                    .IsApplicable(context.get(), transformation_context));
 
-#ifndef NDEBUG
-  ASSERT_DEATH(TransformationMoveInstructionDown(
-                   MakeInstructionDescriptor(20, SpvOpUndef, 0))
-                   .IsApplicable(context.get(), transformation_context),
-               "Global instructions and function parameters are not supported");
-#endif
-
   // Can't move the last instruction in the block.
   ASSERT_FALSE(TransformationMoveInstructionDown(
                    MakeInstructionDescriptor(15, SpvOpBranchConditional, 0))
