@@ -64,7 +64,6 @@ void FuzzerPassAddCompositeInserts::Apply() {
                 [this, instruction_descriptor](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
-
                   auto instruction_type = ir_context->get_type_mgr()->GetType(
                       instruction->type_id());
                   if (!fuzzerutil::IsCompositeType(instruction_type)) {
@@ -75,7 +74,6 @@ void FuzzerPassAddCompositeInserts::Apply() {
                   if (ContainsRuntimeArray(instruction_type)) {
                     return false;
                   }
-
                   return fuzzerutil::IdIsAvailableBeforeInstruction(
                       ir_context,
                       FindInstruction(instruction_descriptor, ir_context),
@@ -94,7 +92,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
 
         // Take a random component of the chosen composite value. If the chosen
         // component is itself a composite, then randomly decide whether to take
-        // its component itself and repeat. Use OpCompositeExtract to get the
+        // its component and repeat. Use OpCompositeExtract to get the
         // component.
         bool reached_end_node = false;
         uint32_t current_node_type_id = available_composite->type_id();
@@ -106,14 +104,8 @@ void FuzzerPassAddCompositeInserts::Apply() {
               GetNumberOfComponents(GetIRContext(), current_node_type_id);
           one_selected_index = GetFuzzerContext()->GetRandomIndexForAccessChain(
               num_of_components);
-          /*
-          TransformationCompositeExtract transformation_extract =
-              TransformationCompositeExtract(instruction_descriptor, fresh_id,
-                                             current_node->result_id(),
-                                             {one_selected_index});
-          ApplyTransformation(transformation_extract);
-           */
-          // Construct a final index by appending current index.
+
+          // Construct a final index by appending the current index.
           index_to_replace.push_back(one_selected_index);
           current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
               GetIRContext(), current_node_type_id, one_selected_index);
@@ -131,18 +123,16 @@ void FuzzerPassAddCompositeInserts::Apply() {
         }
 
         // Look for available objects that have the type id
-        // |component_to_replace_type_id|
+        // |current_node_type_id| and can be inserted.
         std::vector<opt::Instruction*> available_objects =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
                 [this, instruction_descriptor, current_node_type_id](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
-
                   if (instruction->type_id() != current_node_type_id) {
                     return false;
                   }
-
                   return fuzzerutil::IdIsAvailableBeforeInstruction(
                       ir_context,
                       FindInstruction(instruction_descriptor, ir_context),
@@ -165,7 +155,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
         auto new_result_id = GetFuzzerContext()->GetFreshId();
 
         // Insert an OpCompositeInsert instruction which copies
-        // |available_composite| and in the copied composite inserts the object
+        // |available_composite| and in the copy inserts the object
         // of type |available_object_id| at index |index_to_replace|.
         TransformationCompositeInsert transformation =
             TransformationCompositeInsert(instruction_descriptor, new_result_id,
@@ -174,26 +164,48 @@ void FuzzerPassAddCompositeInserts::Apply() {
                                           std::move(index_to_replace));
         ApplyTransformation(transformation);
 
-        // MakeDataDescriptor(new_result_id, {1});
-        // Every element which hasn't been changed in the copy is
-        // synonymous to the corresponding element in the original composite
-        // value. The element which has been changed is synonymous to the
-        // value |available_value| itself.
-        /*
-        for (uint32_t i = 0; i < num_of_components; i++) {
-          if (i != index_to_replace) {
-            GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
-                MakeDataDescriptor(new_result_id, {i}),
-                MakeDataDescriptor(available_composite->result_id(), {i}),
+        // Add facts about synonyms. Every element which hasn't been changed in
+        // the copy is synonymous to the corresponding element in the original
+        // |available_composite|. For every index that is a prefix of
+        // |index_to_replace| the components different from the one that
+        // contains the inserted object are synonymous with corresponding
+        // elements in the |available_composite|.
+        reached_end_node = false;
+        current_node_type_id = available_composite->type_id();
+        uint32_t index_to_skip;
+        std::vector<uint32_t> current_index;
 
-                GetIRContext());
-          } else {
-            GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
-                MakeDataDescriptor(new_result_id, {index_to_replace}),
-                MakeDataDescriptor(available_composite->result_id(), {}),
-                GetIRContext());
+        for (uint32_t current_level = 0;
+             current_level < index_to_replace.size(); current_level++) {
+          index_to_skip = index_to_replace[current_level];
+          num_of_components =
+              GetNumberOfComponents(GetIRContext(), current_node_type_id);
+
+          // Store the prefix of the |index_to_replace|.
+          if (current_level != 0) {
+            current_index.push_back(index_to_replace[current_level - 1]);
           }
-        }*/
+          for (uint32_t i = 0; i < num_of_components; i++) {
+            if (i == index_to_skip) {
+              continue;
+            } else {
+              current_index.push_back(i);
+              GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
+                  MakeDataDescriptor(new_result_id, std::move(current_index)),
+                  MakeDataDescriptor(available_composite->result_id(),
+                                     std::move(current_index)),
+                  GetIRContext());
+              current_index.pop_back();
+            }
+          }
+        }
+
+        // The element which has been changed is synonymous to the found
+        // |available_object| itself.
+        GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
+            MakeDataDescriptor(available_object_id, {}),
+            MakeDataDescriptor(new_result_id, std::move(index_to_replace)),
+            GetIRContext());
 
       });
 }
@@ -228,6 +240,8 @@ bool FuzzerPassAddCompositeInserts::ContainsRuntimeArray(
     case opt::analysis::Type::kRuntimeArray:
       return true;
     case opt::analysis::Type::kStruct:
+      // If any component of a struct is of type OpTypeRuntimeArray, return
+      // true.
       return std::any_of(type->AsStruct()->element_types().begin(),
                          type->AsStruct()->element_types().end(),
                          [](const opt::analysis::Type* element_type) {

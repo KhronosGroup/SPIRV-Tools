@@ -36,7 +36,7 @@ class FuzzerPassAddCompositeInserts : public FuzzerPass {
   static uint32_t GetNumberOfComponents(opt::IRContext* ir_context,
                                         uint32_t composite_id);
 
-  // Checks if any component of a composite has type OpTYpeRuntimeArray.
+  // Checks if any component of a composite has type OpTypeRuntimeArray.
   static bool ContainsRuntimeArray(const opt::analysis::Type* type);
 };
 
