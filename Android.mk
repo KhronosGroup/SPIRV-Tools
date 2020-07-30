@@ -181,11 +181,10 @@ SPVTOOLS_OPT_SRC_FILES := \
 # Locations of grammar files.
 #
 SPV_COREUNIFIED1_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/spirv.core.grammar.json
-SPV_GLSL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.glsl.std.450.grammar.json
-SPV_OPENCL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.opencl.std.100.grammar.json
-# TODO(dneto): I expect the DebugInfo grammar file to eventually migrate to SPIRV-Headers
-SPV_DEBUGINFO_GRAMMAR=$(LOCAL_PATH)/source/extinst.debuginfo.grammar.json
-SPV_CLDEBUGINFO100_GRAMMAR=$(LOCAL_PATH)/source/extinst.opencl.debuginfo.100.grammar.json
+SPV_GLSL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.glsl.std.450.grammar.json
+SPV_OPENCL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.opencl.std.100.grammar.json
+SPV_DEBUGINFO_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.debuginfo.grammar.json
+SPV_CLDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json
 
 define gen_spvtools_grammar_tables
 $(call generate-file-dir,$(1)/core.insts-unified1.inc)
@@ -252,9 +251,9 @@ define gen_spvtools_vendor_tables
 $(call generate-file-dir,$(1)/$(2).insts.inc)
 $(1)/$(2).insts.inc : \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-        $(LOCAL_PATH)/source/extinst.$(2).grammar.json
+        $(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.$(2).grammar.json
 		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-		    --extinst-vendor-grammar=$(LOCAL_PATH)/source/extinst.$(2).grammar.json \
+		    --extinst-vendor-grammar=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.$(2).grammar.json \
 		    --vendor-insts-output=$(1)/$(2).insts.inc \
 		    --vendor-operand-kind-prefix=$(3)
 		@echo "[$(TARGET_ARCH_ABI)] Vendor extended instruction set: $(2) tables <= grammar"
@@ -267,6 +266,7 @@ $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-gcn-shader
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-ballot,""))
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-explicit-vertex-parameter,""))
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-trinary-minmax,""))
+$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),nonsemantic.clspvreflection,""))
 
 define gen_spvtools_enum_string_mapping
 $(call generate-file-dir,$(1)/extension_enum.inc.inc)
