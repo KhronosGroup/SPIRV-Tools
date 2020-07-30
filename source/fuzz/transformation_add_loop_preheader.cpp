@@ -50,9 +50,18 @@ bool TransformationAddLoopPreheader::IsApplicable(
     return false;
   }
 
+  size_t num_predecessors =
+      ir_context->cfg()->preds(message_.loop_header_block()).size();
+
+  // The block must have at least 2 predecessors (the back-edge block and
+  // another predecessor outside of the loop)
+  if (num_predecessors < 2) {
+    return false;
+  }
+
   // If the block only has one predecessor outside of the loop (and thus 2 in
   // total), then no additional fresh ids are necessary.
-  if (ir_context->cfg()->preds(message_.loop_header_block()).size() == 2) {
+  if (num_predecessors == 2) {
     return true;
   }
 
@@ -90,8 +99,7 @@ void TransformationAddLoopPreheader::Apply(
   uint32_t back_edge_block_id = 0;
 
   // Update the branching instructions of the out-of-loop predecessors of the
-  // header. Set |back_edge_block_id| to be the id of the block from which the
-  // back edge starts.
+  // header. Set |back_edge_block_id| to be the id of the back-edge block.
   ir_context->get_def_use_mgr()->ForEachUse(
       loop_header->id(),
       [this, &ir_context, &dominator_analysis, &loop_header,
@@ -102,6 +110,8 @@ void TransformationAddLoopPreheader::Apply(
           // If |use_inst| is a branch instruction dominated by the header, the
           // block containing it is the back-edge block.
           if (use_inst->IsBranch()) {
+            assert(back_edge_block_id == 0 &&
+                   "There should only be one back-edge block");
             back_edge_block_id = ir_context->get_instr_block(use_inst)->id();
           }
           // References to the header inside the loop should not be updated
@@ -120,8 +130,7 @@ void TransformationAddLoopPreheader::Apply(
         use_inst->SetOperand(use_index, {message_.fresh_id()});
       });
 
-  // The back edge block should have been found.
-  assert(back_edge_block_id);
+  assert(back_edge_block_id && "The back-edge block should have been found");
 
   // Make a new block for the preheader.
   std::unique_ptr<opt::BasicBlock> preheader = MakeUnique<opt::BasicBlock>(

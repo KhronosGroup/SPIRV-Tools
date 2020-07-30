@@ -51,6 +51,13 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
                OpBranch %13
          %13 = OpLabel
                OpBranchConditional %7 %14 %12
+         %15 = OpLabel
+               OpLoopMerge %17 %16 None
+               OpBranch %16
+         %16 = OpLabel
+               OpBranchConditional %7 %15 %17
+         %17 = OpLabel
+               OpBranch %14
          %14 = OpLabel
                OpReturn
                OpFunctionEnd
@@ -73,6 +80,11 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
 
   // The id %12 is not fresh
   ASSERT_FALSE(TransformationAddLoopPreheader(10, 12, {})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Loop header %15 is not reachable (the only predecessor is the back-edge
+  // block)
+  ASSERT_FALSE(TransformationAddLoopPreheader(15, 100, {})
                    .IsApplicable(context.get(), transformation_context));
 
   auto transformation1 = TransformationAddLoopPreheader(10, 20, {});
@@ -121,6 +133,13 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
                OpBranch %13
          %13 = OpLabel
                OpBranchConditional %7 %14 %12
+         %15 = OpLabel
+               OpLoopMerge %17 %16 None
+               OpBranch %16
+         %16 = OpLabel
+               OpBranchConditional %7 %15 %17
+         %17 = OpLabel
+               OpBranch %14
          %14 = OpLabel
                OpReturn
                OpFunctionEnd
