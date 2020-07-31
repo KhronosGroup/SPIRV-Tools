@@ -50,45 +50,28 @@ void FuzzerPassOutlineFunctions::Apply() {
     }
     auto entry_block = blocks[GetFuzzerContext()->RandomIndex(blocks)];
 
-    // If the entry block is a loop header, find or add a preheader. We need a
-    // while loop because an existing preheader could itself be a loop header.
-    while (entry_block->IsLoopHeader()) {
+    // If the entry block is the header of a loop with a preheader, make the
+    // preheader the new entry block. We need a while loop because the preheader
+    // may itself be the header of another loop and have a preheader.
+    while (auto preheader = fuzzerutil::MaybeFindLoopPreheader(
+               GetIRContext(), entry_block->GetLabel()->result_id())) {
+      entry_block = preheader;
+    }
+
+    // Check whether the entry block is still a loop header (with no
+    // corresponding preheader).
+    if (entry_block->IsLoopHeader()) {
       auto predecessors =
           GetIRContext()->cfg()->preds(entry_block->GetLabel()->result_id());
+
       if (predecessors.size() < 2) {
-        // The header only has one predecessor (the back-edge block) and thus it
-        // is unreachable.
-        break;
+        // The header only has one predecessor (the back-edge block) and thus
+        // it is unreachable.
+        continue;
       }
 
-      if (predecessors.size() == 2) {
-        // The header only has one out-of-loop predecessor.
-
-        // The preheader could be the predecessor which is not dominated by the
-        // header.
-
-        opt::BasicBlock* maybe_preheader;
-
-        if (GetIRContext()->GetDominatorAnalysis(function)->Dominates(
-                entry_block->GetLabel()->result_id(), predecessors[0])) {
-          // The first predecessor is the back-edge block, because the header
-          // dominates it, so the second one is the preheader.
-          maybe_preheader = &*function->FindBlock(predecessors[1]);
-        } else {
-          // The first predecessor is the preheader.
-          maybe_preheader = &*function->FindBlock(predecessors[0]);
-        }
-
-        // |maybe_preheader| is a preheader if it branches unconditionally to
-        // the header.
-        if (maybe_preheader->terminator()->opcode() == SpvOpBranch) {
-          entry_block = maybe_preheader;
-          continue;
-        }
-      }
-
-      // The preheader does not already exist.
-
+      // The header has more than one out-of-loop predecessor. We need to add a
+      // preheader for the loop.
       // Get a fresh id for the preheader.
       uint32_t preheader_id = GetFuzzerContext()->GetFreshId();
 

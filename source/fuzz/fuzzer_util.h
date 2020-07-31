@@ -45,6 +45,11 @@ void UpdateModuleIdBound(opt::IRContext* context, uint32_t id);
 opt::BasicBlock* MaybeFindBlock(opt::IRContext* context,
                                 uint32_t maybe_block_id);
 
+// Returns the preheader of the loop with header block |loop_header|. If
+// |loop_header| is not the label id of a loop header block, returns nullptr.
+opt::BasicBlock* MaybeFindLoopPreheader(opt::IRContext* context,
+                                        uint32_t loop_header);
+
 // When adding an edge from |bb_from| to |bb_to| (which are assumed to be blocks
 // in the same function), it is important to supply |bb_to| with ids that can be
 // used to augment OpPhi instructions in the case that there is not already such
