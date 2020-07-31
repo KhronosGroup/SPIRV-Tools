@@ -48,8 +48,13 @@ void FuzzerPassAddParameters::Apply() {
       SpvStorageClass storage_class =
           fuzzerutil::GetStorageClassFromPointerType(GetIRContext(),
                                                      type_inst->result_id());
-      if (storage_class == SpvStorageClassPrivate ||
-          storage_class == SpvStorageClassFunction) {
+      // Check if the pointee type is supported.
+      auto pointee_type = GetIRContext()->get_type_mgr()->GetType(
+          fuzzerutil::GetPointeeTypeIdFromPointerType(GetIRContext(),
+                                                      type_inst->result_id()));
+      if (TransformationAddParameter::IsParameterTypeSupported(*pointee_type) &&
+          (storage_class == SpvStorageClassPrivate ||
+           storage_class == SpvStorageClassFunction)) {
         type_candidates.push_back(type_inst->result_id());
       }
     }
