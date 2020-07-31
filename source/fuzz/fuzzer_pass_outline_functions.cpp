@@ -58,7 +58,7 @@ void FuzzerPassOutlineFunctions::Apply() {
       if (predecessors.size() < 2) {
         // The header only has one predecessor (the back-edge block) and thus it
         // is unreachable.
-        return;
+        break;
       }
 
       if (predecessors.size() == 2) {
@@ -130,7 +130,7 @@ void FuzzerPassOutlineFunctions::Apply() {
               MakeInstructionDescriptor(non_phi_or_var_inst->result_id(),
                                         non_phi_or_var_inst->opcode(), 0),
               new_block_id))) {
-        return;
+        continue;
       }
 
       // The new entry block is the newly-created block.
@@ -170,7 +170,7 @@ void FuzzerPassOutlineFunctions::Apply() {
               MakeInstructionDescriptor(exit_block->id(),
                                         exit_block->begin()->opcode(), 0),
               new_block_id))) {
-        return;
+        continue;
       }
 
       exit_block = &*function->FindBlock(new_block_id);
