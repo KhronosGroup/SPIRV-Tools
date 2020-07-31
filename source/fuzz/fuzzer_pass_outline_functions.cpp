@@ -84,9 +84,8 @@ void FuzzerPassOutlineFunctions::Apply() {
           });
 
       // Add the preheader.
-      TransformationAddLoopPreheader(entry_block->GetLabel()->result_id(),
-                                     preheader_id, phi_ids)
-          .Apply(GetIRContext(), GetTransformationContext());
+      ApplyTransformation(TransformationAddLoopPreheader(
+          entry_block->GetLabel()->result_id(), preheader_id, phi_ids));
 
       // Make the newly-created preheader the new entry block.
       entry_block = &*function->FindBlock(preheader_id);
