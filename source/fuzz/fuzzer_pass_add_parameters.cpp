@@ -17,6 +17,8 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/fuzz/transformation_add_global_variable.h"
+#include "source/fuzz/transformation_add_local_variable.h"
 #include "source/fuzz/transformation_add_parameter.h"
 
 namespace spvtools {
@@ -38,8 +40,17 @@ void FuzzerPassAddParameters::Apply() {
     const auto* type =
         GetIRContext()->get_type_mgr()->GetType(type_inst->result_id());
     assert(type && "Type instruction is not registered in the type manager");
+
     if (TransformationAddParameter::IsParameterTypeSupported(*type)) {
       type_candidates.push_back(type_inst->result_id());
+    } else if (type->kind() == opt::analysis::Type::kPointer) {
+      // Pointer types with global scope are allowed.
+      SpvStorageClass storage_class =
+          fuzzerutil::GetStorageClassFromPointerType(GetIRContext(),
+                                                     type_inst->result_id());
+      if (storage_class == SpvStorageClassPrivate) {
+        type_candidates.push_back(type_inst->result_id());
+      }
     }
   }
 
@@ -70,14 +81,35 @@ void FuzzerPassAddParameters::Apply() {
         GetFuzzerContext()->GetRandomNumberOfNewParameters(
             GetNumberOfParameters(function));
     for (uint32_t i = 0; i < num_new_parameters; ++i) {
-      ApplyTransformation(TransformationAddParameter(
-          function.result_id(), GetFuzzerContext()->GetFreshId(),
-          // We mark the constant as irrelevant so that we can replace it with a
-          // more interesting value later.
-          FindOrCreateZeroConstant(
-              type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)],
-              true),
-          GetFuzzerContext()->GetFreshId()));
+      uint32_t current_type_id =
+          type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)];
+      auto current_type =
+          GetIRContext()->get_type_mgr()->GetType(current_type_id);
+      auto current_instr =
+          GetIRContext()->get_def_use_mgr()->GetDef(current_type_id);
+
+      if (current_type->kind() == opt::analysis::Type::kPointer) {
+        // Make sure there exists at least one variable with the current pointer
+        // type.
+        uint32_t initializer_id =
+            FindOrCreateZeroConstant(current_type_id, true);
+        ApplyTransformation(TransformationAddGlobalVariable(
+            GetFuzzerContext()->GetFreshId(), current_instr->type_id(),
+            SpvStorageClassPrivate,
+            FindOrCreateZeroConstant(current_type_id, true), true));
+
+        // Add parameter with the used initializer_id.
+        ApplyTransformation(TransformationAddParameter(
+            function.result_id(), GetFuzzerContext()->GetFreshId(),
+            initializer_id, GetFuzzerContext()->GetFreshId()));
+      } else {
+        ApplyTransformation(TransformationAddParameter(
+            function.result_id(), GetFuzzerContext()->GetFreshId(),
+            // We mark the constant as irrelevant so that we can replace it with
+            // a more interesting value later.
+            FindOrCreateZeroConstant(current_type_id, true),
+            GetFuzzerContext()->GetFreshId()));
+      }
     }
   }
 }
