@@ -69,54 +69,6 @@ opt::BasicBlock* MaybeFindBlock(opt::IRContext* context,
   return context->cfg()->block(maybe_block_id);
 }
 
-opt::BasicBlock* MaybeFindLoopPreheader(opt::IRContext* context,
-                                        uint32_t loop_header) {
-  auto header_block = MaybeFindBlock(context, loop_header);
-
-  if (!header_block || !header_block->IsLoopHeader()) {
-    // No loop header with label id |loop_header| was found in the module.
-    return nullptr;
-  }
-
-  auto predecessors = context->cfg()->preds(loop_header);
-
-  if (predecessors.size() != 2) {
-    // The header either:
-    // - only has one predecessor (the back-edge block)
-    // - has more than one out-of-loop predecessors
-    // In both cases, there is no preheader.
-
-    return nullptr;
-  }
-
-  // The header only has one out-of-loop predecessor.
-
-  // The preheader could be the predecessor which is not dominated by the
-  // header.
-
-  auto function = header_block->GetParent();
-  opt::BasicBlock* maybe_preheader;
-
-  if (context->GetDominatorAnalysis(function)->Dominates(loop_header,
-                                                         predecessors[0])) {
-    // The first predecessor is the back-edge block, because the header
-    // dominates it, so the second one is the preheader.
-    maybe_preheader = &*function->FindBlock(predecessors[1]);
-  } else {
-    // The first predecessor is the preheader.
-    maybe_preheader = &*function->FindBlock(predecessors[0]);
-  }
-
-  // |maybe_preheader| is a preheader if it branches unconditionally to
-  // the header.
-  if (maybe_preheader->terminator()->opcode() == SpvOpBranch) {
-    return maybe_preheader;
-  }
-
-  // The loop has no preheader.
-  return nullptr;
-}
-
 bool PhiIdsOkForNewEdge(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids) {

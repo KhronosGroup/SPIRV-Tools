@@ -18,7 +18,6 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_add_loop_preheader.h"
 #include "source/fuzz/transformation_outline_function.h"
 #include "source/fuzz/transformation_split_block.h"
 
@@ -50,16 +49,8 @@ void FuzzerPassOutlineFunctions::Apply() {
     }
     auto entry_block = blocks[GetFuzzerContext()->RandomIndex(blocks)];
 
-    // If the entry block is the header of a loop with a preheader, make the
-    // preheader the new entry block. We need a while loop because the preheader
-    // may itself be the header of another loop and have a preheader.
-    while (auto preheader = fuzzerutil::MaybeFindLoopPreheader(
-               GetIRContext(), entry_block->GetLabel()->result_id())) {
-      entry_block = preheader;
-    }
-
-    // Check whether the entry block is still a loop header (with no
-    // corresponding preheader).
+    // If the entry block is a loop header, we need to get or create its
+    // preheader and make it the entry block, if possible.
     if (entry_block->IsLoopHeader()) {
       auto predecessors =
           GetIRContext()->cfg()->preds(entry_block->GetLabel()->result_id());
@@ -70,26 +61,13 @@ void FuzzerPassOutlineFunctions::Apply() {
         continue;
       }
 
-      // The header has more than one out-of-loop predecessor. We need to add a
-      // preheader for the loop.
-
-      // Get a fresh id for the preheader.
-      uint32_t preheader_id = GetFuzzerContext()->GetFreshId();
-
-      // Get a fresh id for each OpPhi instruction.
-      std::vector<uint32_t> phi_ids;
-      entry_block->ForEachPhiInst(
-          [this, &phi_ids](opt::Instruction* /* unused */) {
-            phi_ids.push_back(GetFuzzerContext()->GetFreshId());
-          });
-
-      // Add the preheader.
-      ApplyTransformation(TransformationAddLoopPreheader(
-          entry_block->GetLabel()->result_id(), preheader_id, phi_ids));
-
-      // Make the newly-created preheader the new entry block.
-      entry_block = &*function->FindBlock(preheader_id);
+      // Get or create a suitable preheader and make it become the entry block.
+      entry_block =
+          GetOrCreateSimpleLoopPreheader(entry_block->GetLabel()->result_id());
     }
+
+    assert(!entry_block->IsLoopHeader() &&
+           "The entry block cannot be a loop header at this point.");
 
     // If the entry block starts with OpPhi or OpVariable, try to split it.
     if (entry_block->begin()->opcode() == SpvOpPhi ||
