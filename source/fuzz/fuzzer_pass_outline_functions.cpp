@@ -18,6 +18,7 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/fuzz/transformation_add_loop_preheader.h"
 #include "source/fuzz/transformation_outline_function.h"
 #include "source/fuzz/transformation_split_block.h"
 
@@ -48,6 +49,64 @@ void FuzzerPassOutlineFunctions::Apply() {
       blocks.push_back(&block);
     }
     auto entry_block = blocks[GetFuzzerContext()->RandomIndex(blocks)];
+
+    // If the entry block is a loop header, find or add a preheader. We need a
+    // while loop because an existing preheader could itself be a loop header.
+    while (entry_block->IsLoopHeader()) {
+      auto predecessors =
+          GetIRContext()->cfg()->preds(entry_block->GetLabel()->result_id());
+      if (predecessors.size() < 2) {
+        // The header only has one predecessor (the back-edge block) and thus it
+        // is unreachable.
+        return;
+      }
+
+      if (predecessors.size() == 2) {
+        // The header only has one out-of-loop predecessor.
+
+        // The preheader could be the predecessor which is not dominated by the
+        // header.
+
+        opt::BasicBlock* maybe_preheader;
+
+        if (GetIRContext()->GetDominatorAnalysis(function)->Dominates(
+                entry_block->GetLabel()->result_id(), predecessors[0])) {
+          // The first predecessor is the back-edge block, because the header
+          // dominates it, so the second one is the preheader.
+          maybe_preheader = &*function->FindBlock(predecessors[1]);
+        } else {
+          // The first predecessor is the preheader.
+          maybe_preheader = &*function->FindBlock(predecessors[0]);
+        }
+
+        // |maybe_preheader| is a preheader if it branches unconditionally to
+        // the header.
+        if (maybe_preheader->terminator()->opcode() == SpvOpBranch) {
+          entry_block = maybe_preheader;
+          continue;
+        }
+      }
+
+      // The preheader does not already exist.
+
+      // Get a fresh id for the preheader.
+      uint32_t preheader_id = GetFuzzerContext()->GetFreshId();
+
+      // Get a fresh id for each OpPhi instruction.
+      std::vector<uint32_t> phi_ids;
+      entry_block->ForEachPhiInst(
+          [this, &phi_ids](opt::Instruction* /* unused */) {
+            phi_ids.push_back(GetFuzzerContext()->GetFreshId());
+          });
+
+      // Add the preheader.
+      TransformationAddLoopPreheader(entry_block->GetLabel()->result_id(),
+                                     preheader_id, phi_ids)
+          .Apply(GetIRContext(), GetTransformationContext());
+
+      // The entry block is now the preheader.
+      entry_block = &*function->FindBlock(preheader_id);
+    }
 
     // If the entry block starts with OpPhi or OpVariable, try to split it.
     if (entry_block->begin()->opcode() == SpvOpPhi ||
