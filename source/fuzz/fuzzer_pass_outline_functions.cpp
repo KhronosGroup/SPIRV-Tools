@@ -72,6 +72,7 @@ void FuzzerPassOutlineFunctions::Apply() {
 
       // The header has more than one out-of-loop predecessor. We need to add a
       // preheader for the loop.
+
       // Get a fresh id for the preheader.
       uint32_t preheader_id = GetFuzzerContext()->GetFreshId();
 
@@ -87,7 +88,7 @@ void FuzzerPassOutlineFunctions::Apply() {
                                      preheader_id, phi_ids)
           .Apply(GetIRContext(), GetTransformationContext());
 
-      // The entry block is now the preheader.
+      // Make the newly-created preheader the new entry block.
       entry_block = &*function->FindBlock(preheader_id);
     }
 
