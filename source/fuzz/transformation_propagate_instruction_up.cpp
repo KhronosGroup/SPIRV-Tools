@@ -156,8 +156,7 @@ void TransformationPropagateInstructionUp::Apply(
                                    std::move(op_phi_operands)));
 
   // Remove |inst| from the basic block.
-  inst->RemoveFromList();
-  delete inst;  // RemoveFromList doesn't clear the memory.
+  ir_context->KillInst(inst);
 
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(
@@ -174,8 +173,7 @@ void TransformationPropagateInstructionUp::Apply(
           ir_context->get_def_use_mgr()->GetDef(op_phi_result_id);
       assert(unused_op_phi_inst && "|op_phi_result_id| must be valid");
 
-      unused_op_phi_inst->RemoveFromList();
-      delete unused_op_phi_inst;
+      ir_context->KillInst(unused_op_phi_inst);
     }
   }
 
