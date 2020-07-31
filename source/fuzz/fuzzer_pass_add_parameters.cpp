@@ -44,11 +44,12 @@ void FuzzerPassAddParameters::Apply() {
     if (TransformationAddParameter::IsParameterTypeSupported(*type)) {
       type_candidates.push_back(type_inst->result_id());
     } else if (type->kind() == opt::analysis::Type::kPointer) {
-      // Pointer types with global scope are allowed.
+      // Pointer types with storage class Private and Function are allowed.
       SpvStorageClass storage_class =
           fuzzerutil::GetStorageClassFromPointerType(GetIRContext(),
                                                      type_inst->result_id());
-      if (storage_class == SpvStorageClassPrivate) {
+      if (storage_class == SpvStorageClassPrivate ||
+          storage_class == SpvStorageClassFunction) {
         type_candidates.push_back(type_inst->result_id());
       }
     }
@@ -89,7 +90,13 @@ void FuzzerPassAddParameters::Apply() {
           GetIRContext()->get_def_use_mgr()->GetDef(current_type_id);
 
       if (current_type->kind() == opt::analysis::Type::kPointer) {
-        // Look for existing global variables with the given type.
+        auto current_pointee_type_id =
+            fuzzerutil::GetPointeeTypeIdFromPointerType(GetIRContext(),
+                                                        current_type_id);
+        auto storage_class =
+            fuzzerutil::GetStorageClassFromPointerType(current_instr);
+
+        // Look for available variables that have the type |current_type|.
         std::vector<uint32_t> available_variable_ids;
         GetIRContext()->module()->ForEachInst(
             [this, &available_variable_ids,
@@ -103,18 +110,26 @@ void FuzzerPassAddParameters::Apply() {
               available_variable_ids.push_back(instruction->result_id());
             });
         uint32_t initializer_id =
-            FindOrCreateZeroConstant(current_instr->type_id(), true);
+            FindOrCreateZeroConstant(current_pointee_type_id, true);
 
-        // If there are no such variables, then create one.
+        // If there are no such variables, then create one. The value is
+        // irrelevant.
         if (available_variable_ids.empty()) {
-          ApplyTransformation(TransformationAddGlobalVariable(
-              GetFuzzerContext()->GetFreshId(), current_instr->type_id(),
-              SpvStorageClassPrivate, initializer_id, true));
+          if (storage_class == SpvStorageClassPrivate) {
+            ApplyTransformation(TransformationAddGlobalVariable(
+                GetFuzzerContext()->GetFreshId(), current_type_id,
+                SpvStorageClassPrivate, initializer_id, true));
+          } else if (storage_class == SpvStorageClassFunction) {
+            ApplyTransformation(TransformationAddLocalVariable(
+                GetFuzzerContext()->GetFreshId(), current_type_id,
+                function.result_id(), initializer_id, true));
+          }
         }
-        // Add parameter with the used initializer_id.
+        // Add a parameter with the created initializer.
         ApplyTransformation(TransformationAddParameter(
             function.result_id(), GetFuzzerContext()->GetFreshId(),
             initializer_id, GetFuzzerContext()->GetFreshId()));
+
       } else {
         ApplyTransformation(TransformationAddParameter(
             function.result_id(), GetFuzzerContext()->GetFreshId(),
