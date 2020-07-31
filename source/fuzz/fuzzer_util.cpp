@@ -864,8 +864,7 @@ uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
     // true, then |old_function_type| will have no users when this function
     // returns. We might as well remove it.
     if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
-      old_function_type->RemoveFromList();
-      delete old_function_type;
+      ir_context->KillInst(old_function_type);
     }
 
     return type_id;
