@@ -89,15 +89,28 @@ void FuzzerPassAddParameters::Apply() {
           GetIRContext()->get_def_use_mgr()->GetDef(current_type_id);
 
       if (current_type->kind() == opt::analysis::Type::kPointer) {
-        // Make sure there exists at least one variable with the current pointer
-        // type.
+        // Look for existing global variables with the given type.
+        std::vector<uint32_t> available_variable_ids;
+        GetIRContext()->module()->ForEachInst(
+            [this, &available_variable_ids,
+             current_type_id](opt::Instruction* instruction) {
+              if (instruction->opcode() != SpvOpVariable) {
+                return;
+              }
+              if (instruction->type_id() != current_type_id) {
+                return;
+              }
+              available_variable_ids.push_back(instruction->result_id());
+            });
         uint32_t initializer_id =
-            FindOrCreateZeroConstant(current_type_id, true);
-        ApplyTransformation(TransformationAddGlobalVariable(
-            GetFuzzerContext()->GetFreshId(), current_instr->type_id(),
-            SpvStorageClassPrivate,
-            FindOrCreateZeroConstant(current_type_id, true), true));
+            FindOrCreateZeroConstant(current_instr->type_id(), true);
 
+        // If there are no such variables, then create one.
+        if (available_variable_ids.empty()) {
+          ApplyTransformation(TransformationAddGlobalVariable(
+              GetFuzzerContext()->GetFreshId(), current_instr->type_id(),
+              SpvStorageClassPrivate, initializer_id, true));
+        }
         // Add parameter with the used initializer_id.
         ApplyTransformation(TransformationAddParameter(
             function.result_id(), GetFuzzerContext()->GetFreshId(),
@@ -105,8 +118,8 @@ void FuzzerPassAddParameters::Apply() {
       } else {
         ApplyTransformation(TransformationAddParameter(
             function.result_id(), GetFuzzerContext()->GetFreshId(),
-            // We mark the constant as irrelevant so that we can replace it with
-            // a more interesting value later.
+            // We mark the constant as irrelevant so that we can replace it
+            // with a more interesting value later.
             FindOrCreateZeroConstant(current_type_id, true),
             GetFuzzerContext()->GetFreshId()));
       }
