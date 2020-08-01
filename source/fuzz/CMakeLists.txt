@@ -293,8 +293,10 @@ if(SPIRV_BUILD_FUZZER)
         )
 
   if(MSVC)
-    # Enable parallel builds across four cores for this lib
-    add_definitions(/MP4)
+    if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+      # Enable parallel builds across four cores for this lib
+      add_definitions(/MP4)
+    endif()
   endif()
 
   spvtools_pch(SPIRV_TOOLS_FUZZ_SOURCES pch_source_fuzz)

@@ -227,8 +227,10 @@ set(SPIRV_TOOLS_OPT_SOURCES
 )
 
 if(MSVC)
-  # Enable parallel builds across four cores for this lib
-  add_definitions(/MP4)
+  if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    # Enable parallel builds across four cores for this lib
+    add_definitions(/MP4)
+  endif()
 endif()
 
 spvtools_pch(SPIRV_TOOLS_OPT_SOURCES pch_source_opt)
