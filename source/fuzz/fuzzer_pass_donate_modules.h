@@ -133,9 +133,10 @@ class FuzzerPassDonateModules : public FuzzerPass {
   // ready for donation, and |original_id_to_donated_id| maps ids from
   // |donor_ir_context| to their corresponding ids in the recipient module.
   //
-  // Adds a livesafe version of the function, based on |donated_instructions|,
-  // to the recipient module.
-  void AddLivesafeFunction(
+  // Attempts to add a livesafe version of the function, based on
+  // |donated_instructions|, to the recipient module. Returns true if the
+  // donation was successful, false otherwise.
+  bool MaybeAddLivesafeFunction(
       const opt::Function& function_to_donate, opt::IRContext* donor_ir_context,
       const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
       const std::vector<protobufs::Instruction>& donated_instructions);

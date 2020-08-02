@@ -656,12 +656,13 @@ void FuzzerPassDonateModules::HandleFunctions(
           }
         });
 
-    if (make_livesafe) {
-      // Make the function livesafe and then add it.
-      AddLivesafeFunction(*function_to_donate, donor_ir_context,
-                          *original_id_to_donated_id, donated_instructions);
-    } else {
-      // Add the function in a non-livesafe manner.
+    // If |make_livesafe| is true, try to add the function in a livesafe manner.
+    // Otherwise, or if an attempt to make the function livesafe has failed,
+    // add the function in a non-livesafe manner.
+    if (!make_livesafe ||
+        !MaybeAddLivesafeFunction(*function_to_donate, donor_ir_context,
+                                  *original_id_to_donated_id,
+                                  donated_instructions)) {
       ApplyTransformation(TransformationAddFunction(donated_instructions));
     }
   }
@@ -783,6 +784,7 @@ bool FuzzerPassDonateModules::IsBasicType(
     const opt::Instruction& instruction) const {
   switch (instruction.opcode()) {
     case SpvOpTypeArray:
+    case SpvOpTypeBool:
     case SpvOpTypeFloat:
     case SpvOpTypeInt:
     case SpvOpTypeMatrix:
@@ -1017,7 +1019,7 @@ void FuzzerPassDonateModules::PrepareInstructionForDonation(
       input_operands));
 }
 
-void FuzzerPassDonateModules::AddLivesafeFunction(
+bool FuzzerPassDonateModules::MaybeAddLivesafeFunction(
     const opt::Function& function_to_donate, opt::IRContext* donor_ir_context,
     const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
     const std::vector<protobufs::Instruction>& donated_instructions) {
@@ -1054,7 +1056,87 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
       loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
       loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
       loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
-      loop_limiters.emplace_back(loop_limiter);
+
+      // We creating a branch from the back-edge block to the merge block. Thus,
+      // if merge block has any OpPhi instructions, we might need to adjust
+      // them.
+      //
+      // Note that the loop might not have a back-edge block, in which case
+      // we don't need to adjust anything.
+      if (const auto back_edge_block_id =
+              TransformationAddFunction::GetBackEdgeBlockId(
+                  donor_ir_context, block.id())) {
+        auto* back_edge_block =
+            donor_ir_context->cfg()->block(back_edge_block_id);
+        assert(back_edge_block && "|back_edge_block_id| is invalid");
+
+        const auto* merge_block =
+            donor_ir_context->cfg()->block(block.MergeBlockId());
+        assert(merge_block && "Loop header has invalid merge block id");
+
+        // We don't need to adjust anything if there is already a branch from
+        // the back-edge block to the merge block.
+        if (!back_edge_block->IsSuccessor(merge_block)) {
+          for (auto& inst : *merge_block) {
+            // Consider only OpPhi instructions.
+            if (inst.opcode() != SpvOpPhi) {
+              break;
+            }
+
+            // There is no simple way to ensure that a chosen operand for the OpPhi instruction
+            // will never cause any problems (e.g. if we choose an integer id, it might have a zero value when we branch from the back edge block.
+            // This might cause a division by 0 later in the function.). Thus,
+            // we ignore possible problems and proceed as follows:
+            // - if any of the existing OpPhi operands dominates the back-edge
+            //   block - use it
+            // - if OpPhi has a basic type (see IsBasicType method) - create
+            //   a zero constant
+            // - otherwise, we can't add a livesafe function.
+            //
+            // TODO(review): AFAIK, "livesafe" means that the function can be
+            //  called from the reachable code. Thus, the fact that me might
+            //  introduce some erroneous behaviour sounds unsettling. Maybe
+            //  it is better to mark a function livesafe only if we don't need
+            //  to adjust any OpPhis?
+            uint32_t suitable_operand_id = 0;
+            for (uint32_t i = 0; i < inst.NumInOperands(); i += 2) {
+              auto dependency_inst_id = inst.GetSingleWordInOperand(i);
+              auto* dependency_inst =
+                  donor_ir_context->get_def_use_mgr()->GetDef(
+                      dependency_inst_id);
+              assert(dependency_inst && "OpPhi has invalid operand");
+
+              if (!donor_ir_context->get_instr_block(dependency_inst) ||
+                  donor_ir_context
+                      ->GetDominatorAnalysis(block.GetParent())
+                      ->Dominates(dependency_inst,
+                                  back_edge_block->terminator())) {
+                suitable_operand_id =
+                    original_id_to_donated_id.at(dependency_inst_id);
+                break;
+              }
+            }
+
+            if (suitable_operand_id == 0 &&
+                IsBasicType(*donor_ir_context->get_def_use_mgr()->GetDef(
+                    inst.type_id()))) {
+              // We mark this constant as irrelevant so that we can replace it
+              // with more interesting value later.
+              suitable_operand_id =
+                  FindOrCreateZeroConstant(
+                      original_id_to_donated_id.at(inst.type_id()), true);
+            }
+
+            if (suitable_operand_id == 0) {
+              return false;
+            }
+
+            loop_limiter.add_phi_id(suitable_operand_id);
+          }
+        }
+      }
+
+      loop_limiters.emplace_back(std::move(loop_limiter));
     }
   }
 
@@ -1167,6 +1249,7 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
   ApplyTransformation(TransformationAddFunction(
       donated_instructions, loop_limiter_variable_id, loop_limit, loop_limiters,
       kill_unreachable_return_value_id, access_chain_clamping_info));
+  return true;
 }
 
 }  // namespace fuzz
