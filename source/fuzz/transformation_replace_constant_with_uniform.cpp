@@ -90,6 +90,39 @@ TransformationReplaceConstantWithUniform::MakeLoadInstruction(
                                       operands_for_load);
 }
 
+opt::Instruction*
+TransformationReplaceConstantWithUniform::GetInsertBeforeInstruction(
+    opt::IRContext* ir_context) const {
+  auto* result =
+      FindInstructionContainingUse(message_.id_use_descriptor(), ir_context);
+  if (!result) {
+    return nullptr;
+  }
+
+  // OpPhi must be the first instruction in the module. Thus, we can't insert
+  // anything above it.
+  if (result->opcode() == SpvOpPhi) {
+    // Given the predecessor block that is dominated by the replaced id (the id
+    // of such a block is one of the OpPhi's operands), get the last instruction
+    // from that block that we can use to insert OpAccessChain and OpLoad above.
+    return fuzzerutil::GetLastInsertBeforeInstruction(
+        ir_context,
+        result->GetSingleWordInOperand(
+            message_.id_use_descriptor().in_operand_index() + 1),
+        SpvOpLoad);
+  }
+
+  // The only operand that has a scalar value is a condition id.
+  // But OpVariable instructions with Uniform storage class can't store
+  // booleans (see specification for OpTypeBool). Thus, there can't be any
+  // uniform boolean constant to replace the condition id.
+  assert(result->opcode() != SpvOpBranchConditional &&
+         "OpBranchConditional has no operands to replace");
+  assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, result) &&
+         "We should be able to insert OpLoad and OpAccessChain at this point");
+  return result;
+}
+
 bool TransformationReplaceConstantWithUniform::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
@@ -188,6 +221,12 @@ bool TransformationReplaceConstantWithUniform::IsApplicable(
     }
   }
 
+  // Once all checks are completed, we should be able to safely insert
+  // OpAccessChain and OpLoad into the module.
+  assert(GetInsertBeforeInstruction(ir_context) &&
+         "There must exist an instruction that we can use to insert "
+         "OpAccessChain and OpLoad above");
+
   return true;
 }
 
@@ -195,7 +234,7 @@ void TransformationReplaceConstantWithUniform::Apply(
     spvtools::opt::IRContext* ir_context,
     TransformationContext* /*unused*/) const {
   // Get the instruction that contains the id use we wish to replace.
-  auto instruction_containing_constant_use =
+  auto* instruction_containing_constant_use =
       FindInstructionContainingUse(message_.id_use_descriptor(), ir_context);
   assert(instruction_containing_constant_use &&
          "Precondition requires that the id use can be found.");
@@ -210,12 +249,17 @@ void TransformationReplaceConstantWithUniform::Apply(
           ->GetDef(message_.id_use_descriptor().id_of_interest())
           ->type_id();
 
+  // Get an instruction that will be used to insert OpAccessChain and OpLoad.
+  auto* insert_before_inst = GetInsertBeforeInstruction(ir_context);
+  assert(insert_before_inst &&
+         "There must exist an insertion point for OpAccessChain and OpLoad");
+
   // Add an access chain instruction to target the uniform element.
-  instruction_containing_constant_use->InsertBefore(
+  insert_before_inst->InsertBefore(
       MakeAccessChainInstruction(ir_context, constant_type_id));
 
   // Add a load from this access chain.
-  instruction_containing_constant_use->InsertBefore(
+  insert_before_inst->InsertBefore(
       MakeLoadInstruction(ir_context, constant_type_id));
 
   // Adjust the instruction containing the usage of the constant so that this

@@ -1312,6 +1312,21 @@ MapToRepeatedUInt32Pair(const std::map<uint32_t, uint32_t>& data) {
   return result;
 }
 
+opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
+                                                 uint32_t block_id,
+                                                 SpvOp opcode) {
+  auto* block = ir_context->cfg()->block(block_id);
+  assert(block && "|block_id| is invalid");
+
+  auto it = block->rbegin();
+  while (it != block->rend() &&
+         !CanInsertOpcodeBeforeInstruction(opcode, &*it)) {
+    ++it;
+  }
+
+  return it == block->rend() ? nullptr : &*it;
+}
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
