@@ -118,6 +118,7 @@ TransformationReplaceConstantWithUniform::GetInsertBeforeInstruction(
   // uniform boolean constant to replace the condition id.
   assert(result->opcode() != SpvOpBranchConditional &&
          "OpBranchConditional has no operands to replace");
+
   assert(fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, result) &&
          "We should be able to insert OpLoad and OpAccessChain at this point");
   return result;
