@@ -62,6 +62,22 @@ ComputeMappingFromOpPhiToResultId(opt::IRContext* ir_context,
   return result;
 }
 
+// Returns true if |type| is or contains a pointer type.
+bool ContainsPointers(const opt::analysis::Type& type) {
+  switch (type.kind()) {
+    case opt::analysis::Type::kPointer:
+      return true;
+    case opt::analysis::Type::kStruct:
+      return std::any_of(type.AsStruct()->element_types().begin(),
+                         type.AsStruct()->element_types().end(),
+                         [](const opt::analysis::Type* element_type) {
+                           return ContainsPointers(*element_type);
+                         });
+    default:
+      return false;
+  }
+}
+
 }  // namespace
 
 TransformationPropagateInstructionUp::TransformationPropagateInstructionUp(
@@ -109,6 +125,8 @@ void TransformationPropagateInstructionUp::Apply(
   auto* inst = GetInstructionToPropagate(ir_context, message_.block_id());
   assert(inst &&
          "The block must have at least one supported instruction to propagate");
+  assert(inst->result_id() && inst->type_id() &&
+         "|inst| must have a result id and a type id");
 
   // |inst| might depend on OpPhi instructions from the same basic block.
   // That's OK, because by looking at the OpPhi instruction we can tell which of
@@ -169,26 +187,6 @@ void TransformationPropagateInstructionUp::Apply(
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
-
-  // The propagated instruction might have been the only user of some OpPhi
-  // instruction from the same basic block. Thus, that OpPhi instruction won't
-  // have any users at this point and we can safely remove it.
-  for (const auto& entry : op_phi_to_result_id) {
-    auto op_phi_result_id = entry.first;
-
-    if (ir_context->get_def_use_mgr()->NumUsers(op_phi_result_id) == 0) {
-      auto* unused_op_phi_inst =
-          ir_context->get_def_use_mgr()->GetDef(op_phi_result_id);
-      assert(unused_op_phi_inst && "|op_phi_result_id| must be valid");
-
-      ir_context->KillInst(unused_op_phi_inst);
-    }
-  }
-
-  // Make sure our changes are analyzed after we've removed unused OpPhi
-  // instructions.
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationPropagateInstructionUp::ToMessage()
@@ -204,7 +202,6 @@ bool TransformationPropagateInstructionUp::IsOpcodeSupported(SpvOp opcode) {
   //  We should extend this so that we support the ones that modify the memory
   //  too.
   switch (opcode) {
-    case SpvOpNop:
     case SpvOpUndef:
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
@@ -327,7 +324,21 @@ TransformationPropagateInstructionUp::GetInstructionToPropagate(
     // - it must be supported by this transformation
     // - it may depend only on instructions from different basic blocks or on
     //   OpPhi instructions from the same basic block.
-    if (inst.opcode() == SpvOpPhi || !IsOpcodeSupported(inst.opcode())) {
+    if (inst.opcode() == SpvOpPhi || !IsOpcodeSupported(inst.opcode()) ||
+        !inst.type_id() || !inst.result_id()) {
+      continue;
+    }
+
+    const auto* inst_type = ir_context->get_type_mgr()->GetType(inst.type_id());
+    assert(inst_type && "|inst| has invalid type");
+
+    if (!ir_context->module()->HasExplicitCapability(
+            SpvCapabilityVariablePointers) &&
+        !ir_context->module()->HasExplicitCapability(
+            SpvCapabilityVariablePointersStorageBuffer) &&
+        ContainsPointers(*inst_type)) {
+      // OpPhi supports pointer operands only with VariablePointers or
+      // VariablePointersStorageBuffer capabilities.
       continue;
     }
 
@@ -360,8 +371,7 @@ TransformationPropagateInstructionUp::GetInstructionToPropagate(
 bool TransformationPropagateInstructionUp::IsApplicableToBlock(
     opt::IRContext* ir_context, uint32_t block_id) {
   // Check that |block_id| is valid.
-  const auto* block = ir_context->cfg()->block(block_id);
-  if (!block) {
+  if (!ir_context->get_def_use_mgr()->GetDef(block_id)) {
     return false;
   }
 
@@ -396,13 +406,14 @@ opt::Instruction*
 TransformationPropagateInstructionUp::GetLastInsertBeforeInstruction(
     opt::BasicBlock* block, SpvOp opcode) {
   auto it = block->rbegin();
+  assert(it != block->rend() && "Basic block can't be empty");
 
-  while (it != block->rend() &&
-         !fuzzerutil::CanInsertOpcodeBeforeInstruction(opcode, &*it)) {
-    --it;
+  if (block->GetMergeInst()) {
+    ++it;
   }
 
-  return it == block->rend() ? nullptr : &*it;
+  return fuzzerutil::CanInsertOpcodeBeforeInstruction(opcode, &*it) ? &*it
+                                                                    : nullptr;
 }
 
 }  // namespace fuzz
