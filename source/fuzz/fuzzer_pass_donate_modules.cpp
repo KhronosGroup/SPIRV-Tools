@@ -1019,6 +1019,95 @@ void FuzzerPassDonateModules::PrepareInstructionForDonation(
       input_operands));
 }
 
+bool FuzzerPassDonateModules::CreateLoopLimiterInfo(
+    opt::IRContext* donor_ir_context, const opt::BasicBlock& loop_header,
+    const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
+    protobufs::LoopLimiterInfo* out) {
+  assert(loop_header.IsLoopHeader() && "|loop_header| is not a loop header");
+
+  protobufs::LoopLimiterInfo loop_limiter;
+
+  // Grab the loop header's id, mapped to its donated value.
+  loop_limiter.set_loop_header_id(
+      original_id_to_donated_id.at(loop_header.id()));
+  // Get fresh ids that will be used to load the loop limiter, increment
+  // it, compare it with the loop limit, and an id for a new block that
+  // will contain the loop's original terminator.
+  loop_limiter.set_load_id(GetFuzzerContext()->GetFreshId());
+  loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
+  loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
+  loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
+
+  // We creating a branch from the back-edge block to the merge block. Thus,
+  // if merge block has any OpPhi instructions, we might need to adjust
+  // them.
+  //
+  // Note that the loop might not have a back-edge block, in which case
+  // we don't need to adjust anything.
+  if (const auto back_edge_block_id =
+          TransformationAddFunction::GetBackEdgeBlockId(donor_ir_context,
+                                                        loop_header.id())) {
+    auto* back_edge_block = donor_ir_context->cfg()->block(back_edge_block_id);
+    assert(back_edge_block && "|back_edge_block_id| is invalid");
+
+    const auto* merge_block =
+        donor_ir_context->cfg()->block(loop_header.MergeBlockId());
+    assert(merge_block && "Loop header has invalid merge block id");
+
+    // We don't need to adjust anything if there is already a branch from
+    // the back-edge block to the merge block.
+    if (!back_edge_block->IsSuccessor(merge_block)) {
+      for (auto& inst : *merge_block) {
+        // Consider only OpPhi instructions.
+        if (inst.opcode() != SpvOpPhi) {
+          break;
+        }
+
+        // There is no simple way to ensure that a chosen operand for the OpPhi
+        // instruction will never cause any problems (e.g. if we choose an
+        // integer id, it might have a zero value when we branch from the back
+        // edge block. This might cause a division by 0 later in the function.).
+        // Thus, we ignore possible problems and proceed as follows:
+        // - if any of the existing OpPhi operands dominates the back-edge
+        //   block - use it
+        // - if OpPhi has a basic type (see IsBasicType method) - create
+        //   a zero constant
+        // - otherwise, we can't add a livesafe function.
+        uint32_t suitable_operand_id = 0;
+        for (uint32_t i = 0; i < inst.NumInOperands(); i += 2) {
+          auto dependency_inst_id = inst.GetSingleWordInOperand(i);
+
+          if (fuzzerutil::IdIsAvailableBeforeInstruction(
+                  donor_ir_context, back_edge_block->terminator(),
+                  dependency_inst_id)) {
+            suitable_operand_id =
+                original_id_to_donated_id.at(dependency_inst_id);
+            break;
+          }
+        }
+
+        if (suitable_operand_id == 0 &&
+            IsBasicType(
+                *donor_ir_context->get_def_use_mgr()->GetDef(inst.type_id()))) {
+          // We mark this constant as irrelevant so that we can replace it
+          // with more interesting value later.
+          suitable_operand_id = FindOrCreateZeroConstant(
+              original_id_to_donated_id.at(inst.type_id()), true);
+        }
+
+        if (suitable_operand_id == 0) {
+          return false;
+        }
+
+        loop_limiter.add_phi_id(suitable_operand_id);
+      }
+    }
+  }
+
+  *out = std::move(loop_limiter);
+  return true;
+}
+
 bool FuzzerPassDonateModules::MaybeAddLivesafeFunction(
     const opt::Function& function_to_donate, opt::IRContext* donor_ir_context,
     const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
@@ -1047,93 +1136,10 @@ bool FuzzerPassDonateModules::MaybeAddLivesafeFunction(
   for (auto& block : function_to_donate) {
     if (block.IsLoopHeader()) {
       protobufs::LoopLimiterInfo loop_limiter;
-      // Grab the loop header's id, mapped to its donated value.
-      loop_limiter.set_loop_header_id(original_id_to_donated_id.at(block.id()));
-      // Get fresh ids that will be used to load the loop limiter, increment
-      // it, compare it with the loop limit, and an id for a new block that
-      // will contain the loop's original terminator.
-      loop_limiter.set_load_id(GetFuzzerContext()->GetFreshId());
-      loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
-      loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
-      loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
 
-      // We creating a branch from the back-edge block to the merge block. Thus,
-      // if merge block has any OpPhi instructions, we might need to adjust
-      // them.
-      //
-      // Note that the loop might not have a back-edge block, in which case
-      // we don't need to adjust anything.
-      if (const auto back_edge_block_id =
-              TransformationAddFunction::GetBackEdgeBlockId(
-                  donor_ir_context, block.id())) {
-        auto* back_edge_block =
-            donor_ir_context->cfg()->block(back_edge_block_id);
-        assert(back_edge_block && "|back_edge_block_id| is invalid");
-
-        const auto* merge_block =
-            donor_ir_context->cfg()->block(block.MergeBlockId());
-        assert(merge_block && "Loop header has invalid merge block id");
-
-        // We don't need to adjust anything if there is already a branch from
-        // the back-edge block to the merge block.
-        if (!back_edge_block->IsSuccessor(merge_block)) {
-          for (auto& inst : *merge_block) {
-            // Consider only OpPhi instructions.
-            if (inst.opcode() != SpvOpPhi) {
-              break;
-            }
-
-            // There is no simple way to ensure that a chosen operand for the OpPhi instruction
-            // will never cause any problems (e.g. if we choose an integer id, it might have a zero value when we branch from the back edge block.
-            // This might cause a division by 0 later in the function.). Thus,
-            // we ignore possible problems and proceed as follows:
-            // - if any of the existing OpPhi operands dominates the back-edge
-            //   block - use it
-            // - if OpPhi has a basic type (see IsBasicType method) - create
-            //   a zero constant
-            // - otherwise, we can't add a livesafe function.
-            //
-            // TODO(review): AFAIK, "livesafe" means that the function can be
-            //  called from the reachable code. Thus, the fact that me might
-            //  introduce some erroneous behaviour sounds unsettling. Maybe
-            //  it is better to mark a function livesafe only if we don't need
-            //  to adjust any OpPhis?
-            uint32_t suitable_operand_id = 0;
-            for (uint32_t i = 0; i < inst.NumInOperands(); i += 2) {
-              auto dependency_inst_id = inst.GetSingleWordInOperand(i);
-              auto* dependency_inst =
-                  donor_ir_context->get_def_use_mgr()->GetDef(
-                      dependency_inst_id);
-              assert(dependency_inst && "OpPhi has invalid operand");
-
-              if (!donor_ir_context->get_instr_block(dependency_inst) ||
-                  donor_ir_context
-                      ->GetDominatorAnalysis(block.GetParent())
-                      ->Dominates(dependency_inst,
-                                  back_edge_block->terminator())) {
-                suitable_operand_id =
-                    original_id_to_donated_id.at(dependency_inst_id);
-                break;
-              }
-            }
-
-            if (suitable_operand_id == 0 &&
-                IsBasicType(*donor_ir_context->get_def_use_mgr()->GetDef(
-                    inst.type_id()))) {
-              // We mark this constant as irrelevant so that we can replace it
-              // with more interesting value later.
-              suitable_operand_id =
-                  FindOrCreateZeroConstant(
-                      original_id_to_donated_id.at(inst.type_id()), true);
-            }
-
-            if (suitable_operand_id == 0) {
-              return false;
-            }
-
-            loop_limiter.add_phi_id(suitable_operand_id);
-          }
-        }
+      if (!CreateLoopLimiterInfo(donor_ir_context, block,
+                                 original_id_to_donated_id, &loop_limiter)) {
+        return false;
       }
 
       loop_limiters.emplace_back(std::move(loop_limiter));

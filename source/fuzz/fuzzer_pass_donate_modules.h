@@ -128,6 +128,14 @@ class FuzzerPassDonateModules : public FuzzerPass {
       std::map<uint32_t, uint32_t>* original_id_to_donated_id,
       std::vector<protobufs::Instruction>* donated_instructions);
 
+  // Tries to create a protobufs::LoopLimiterInfo given a loop header basic
+  // block. Returns true if successful and outputs loop limiter into the |out|
+  // variable. Otherwise, returns false.
+  bool CreateLoopLimiterInfo(
+      opt::IRContext* donor_ir_context, const opt::BasicBlock& loop_header,
+      const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
+      protobufs::LoopLimiterInfo* out);
+
   // Requires that |donated_instructions| represents a prepared version of the
   // instructions of |function_to_donate| (which comes from |donor_ir_context|)
   // ready for donation, and |original_id_to_donated_id| maps ids from
