@@ -63,6 +63,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_load_test.cpp
           transformation_merge_blocks_test.cpp
           transformation_move_block_down_test.cpp
+          transformation_move_instruction_down_test.cpp
           transformation_outline_function_test.cpp
           transformation_permute_function_parameters_test.cpp
           transformation_permute_phi_operands_test.cpp
