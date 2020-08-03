@@ -20,7 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO
+// Decides whether to propagate instructions from some block into its
+// predecessors.
 class FuzzerPassPropagateInstructionsUp : public FuzzerPass {
  public:
   FuzzerPassPropagateInstructionsUp(

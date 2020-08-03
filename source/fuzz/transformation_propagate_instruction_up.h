@@ -34,12 +34,28 @@ class TransformationPropagateInstructionUp : public Transformation {
       uint32_t block_id,
       const std::map<uint32_t, uint32_t>& predecessor_id_to_fresh_id);
 
-  // TODO
+  // - |block_id| must be a valid result id of some OpLabel instruction.
+  // - |block_id| must have at least one predecessor
+  // - |block_id| must contain an instruction that can be propagated using this
+  //   transformation
+  // - the instruction can be propagated if:
+  //   - it's not an OpPhi
+  //   - it is supported by this transformation
+  //   - it depends only on instructions from different basic blocks or on
+  //     OpPhi instructions from the same basic block
+  // - it should be possible to insert the propagated instruction at the end of
+  //   each |block_id|'s predecessor
+  // - |predecessor_id_to_fresh_id| must have an entry for at least every
+  //   predecessor of |block_id|
+  // - each value in the |predecessor_id_to_fresh_id| map must be a fresh id
+  // - all fresh ids in the |predecessor_id_to_fresh_id| must be unique
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO
+  // Inserts a copy of the propagated instruction into each |block_id|'s
+  // predecessor. Replaces the original instruction with an OpPhi referring
+  // inserted copies.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
@@ -47,8 +63,11 @@ class TransformationPropagateInstructionUp : public Transformation {
 
   // Returns true if this transformation can be applied to the block with id
   // |block_id|. Concretely, returns true iff:
-  // - the block has predecessors
-  // - the block contains an instruction that can be propagated
+  // - |block_id| is a valid id of some block in the module
+  // - |block_id| has predecessors
+  // - |block_id| contains an instruction that can be propagated
+  // - it is possible to insert the propagated instruction into every
+  //   |block_id|'s predecessor
   static bool IsApplicableToBlock(opt::IRContext* ir_context,
                                   uint32_t block_id);
 

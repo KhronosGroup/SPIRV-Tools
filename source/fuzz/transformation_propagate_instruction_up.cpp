@@ -21,6 +21,11 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+// Given an |inst| that depends on some OpPhi instructions from the same basic
+// block, compute a mapping from the result id of those OpPhi instructions to
+// the map of their operands. "The map of their operands" means the mapping from
+// the block id to the result id, given that both the block id and the result id
+// are the operands of an OpPhi instruction.
 std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
 ComputeMappingFromOpPhiToResultId(opt::IRContext* ir_context,
                                   opt::Instruction* inst) {
@@ -28,6 +33,7 @@ ComputeMappingFromOpPhiToResultId(opt::IRContext* ir_context,
 
   const auto* inst_block = ir_context->get_instr_block(inst);
 
+  // Consider all |inst|'s dependencies.
   for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
     const auto& operand = inst->GetInOperand(i);
     if (operand.type != SPV_OPERAND_TYPE_ID) {
@@ -37,6 +43,8 @@ ComputeMappingFromOpPhiToResultId(opt::IRContext* ir_context,
     auto* dependency = ir_context->get_def_use_mgr()->GetDef(operand.words[0]);
     assert(dependency && "|inst| depends on invalid id");
 
+    // If the dependency is an OpPhi from the same block and we haven't computed
+    // the mapping for that dependency yet - do it now.
     if (ir_context->get_instr_block(dependency) == inst_block &&
         dependency->opcode() == SpvOpPhi &&
         !result.count(dependency->result_id())) {
@@ -313,6 +321,12 @@ TransformationPropagateInstructionUp::GetInstructionToPropagate(
   assert(block && "|block_id| is invalid");
 
   for (auto& inst : *block) {
+    // We look for the first instruction in the block that satisfies the
+    // following rules:
+    // - it's not an OpPhi
+    // - it must be supported by this transformation
+    // - it may depend only on instructions from different basic blocks or on
+    //   OpPhi instructions from the same basic block.
     if (inst.opcode() == SpvOpPhi || !IsOpcodeSupported(inst.opcode())) {
       continue;
     }
