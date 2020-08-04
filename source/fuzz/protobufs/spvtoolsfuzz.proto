@@ -49,6 +49,18 @@ message InstructionDescriptor {
 
 }
 
+message InstructionUint32ListPair {
+
+  // Useful to represent a mapping from instructions to a list of ids.
+
+  // An instruction descriptor to identify an instruction.
+  InstructionDescriptor instruction_descriptor = 1;
+
+  // A list of ids.
+  repeated uint32 id = 2;
+
+}
+
 message IdUseDescriptor {
 
   // Describes a use of an id as an input operand to an instruction in some
@@ -1137,6 +1149,20 @@ message TransformationEquationInstruction {
   // A descriptor for an instruction in a block before which the new
   // instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 4;
+
+}
+
+message TransformationFlattenConditionalBranch {
+
+  // A transformation that takes a selection construct with a header
+  // containing an OpBranchConditional instruction and flattens it.
+
+  // The label id of the header block
+  uint32 header_block = 1;
+
+  // A list of pairs mapping instruction descriptors to fresh ids.
+  // Necessary for store, load and function call instructions.
+  InstructionUint32ListPair instructions_to_fresh_ids = 2;
 
 }
 
