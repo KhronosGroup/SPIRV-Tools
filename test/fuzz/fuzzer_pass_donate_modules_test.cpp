@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/fuzzer_pass_donate_modules.h"
+
 #include <algorithm>
 
-#include "source/fuzz/fuzzer_pass_donate_modules.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -1900,6 +1901,131 @@ TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   ASSERT_TRUE(IsValid(env, recipient_context.get()));
+}
+
+TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
+  std::string donor_shader = R"(
+               OpCapability VariablePointersStorageBuffer
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+         %11 = OpConstant %6 23
+          %7 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpBranch %9
+
+          %9 = OpLabel
+         %10 = OpPhi %7 %8 %5
+               OpStore %10 %11
+               OpReturn
+
+               OpFunctionEnd
+  )";
+
+  std::string recipient_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto recipient_context =
+      BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  const auto donor_context =
+      BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, donor_context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  PseudoRandomGenerator rng(0);
+  FuzzerContext fuzzer_context(&rng, 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
+                                      &transformation_context, &fuzzer_context,
+                                      &transformation_sequence, {});
+
+  ASSERT_TRUE(donor_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
+  ASSERT_FALSE(recipient_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // Check that recipient module hasn't changed.
+  ASSERT_TRUE(IsEqual(env, recipient_shader, recipient_context.get()));
+
+  // Add the missing capability.
+  //
+  // We are adding VariablePointers to test the case when donor and recipient
+  // have different OpCapability instructions but the same capabilities. In our
+  // example, VariablePointers implicitly declares
+  // VariablePointersStorageBuffer. Thus, two modules must be compatible.
+  recipient_context->AddCapability(SpvCapabilityVariablePointers);
+
+  ASSERT_TRUE(donor_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
+  ASSERT_TRUE(recipient_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
+
+  fuzzer_pass.DonateSingleModule(donor_context.get(), false);
+
+  // Check that donation was successful.
+  ASSERT_TRUE(IsValid(env, recipient_context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+               OpCapability VariablePointers
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+        %100 = OpTypeFloat 32
+        %101 = OpConstant %100 23
+        %102 = OpTypePointer Function %100
+        %105 = OpConstant %100 0
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %103 = OpFunction %2 None %3
+        %104 = OpLabel
+        %106 = OpVariable %102 Function %105
+               OpBranch %107
+        %107 = OpLabel
+        %108 = OpPhi %102 %106 %104
+               OpStore %108 %101
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, recipient_context.get()));
 }
 
 }  // namespace
