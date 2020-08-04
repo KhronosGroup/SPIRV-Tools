@@ -62,8 +62,7 @@ bool HasValidDependencies(opt::IRContext* ir_context, opt::Instruction* inst) {
       continue;
     }
 
-    auto* dependency =
-        ir_context->get_def_use_mgr()->GetDef(operand.words[0]);
+    auto* dependency = ir_context->get_def_use_mgr()->GetDef(operand.words[0]);
     assert(dependency && "Operand has invalid id");
 
     if (ir_context->get_instr_block(dependency) == inst_block &&
