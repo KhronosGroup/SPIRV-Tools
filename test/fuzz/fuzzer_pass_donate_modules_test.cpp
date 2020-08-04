@@ -1980,9 +1980,9 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
 
   // Add the missing capability.
   //
-  // We are adding VariablePointers to test the case
-  // when donor and recipient have different OpCapability instructions but the
-  // same capabilities. In our example, VariablePointers implicitly declares
+  // We are adding VariablePointers to test the case when donor and recipient
+  // have different OpCapability instructions but the same capabilities. In our
+  // example, VariablePointers implicitly declares
   // VariablePointersStorageBuffer. Thus, two modules must be compatible.
   recipient_context->AddCapability(SpvCapabilityVariablePointers);
 
