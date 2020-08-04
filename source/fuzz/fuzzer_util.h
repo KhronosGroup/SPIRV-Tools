@@ -316,6 +316,10 @@ opt::Function* GetFunctionFromParameterId(opt::IRContext* ir_context,
 // more users, it is removed from the module. Returns the result id of the
 // OpTypeFunction instruction that is used as a type of the function with
 // |function_id|.
+//
+// CAUTION: When the old type of the function is removed from the module, its
+//          memory is deallocated. Be sure not to use any pointers to the old
+//          type when this function returns.
 uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
                             uint32_t new_function_type_result_id,
                             uint32_t return_type_id,
