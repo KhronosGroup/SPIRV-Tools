@@ -231,21 +231,9 @@ bool DeadInsertElimPass::EliminateDeadInsertsOnePass(Function* func) {
       if (liveInserts_.find(id) != liveInserts_.end()) continue;
       const uint32_t replId =
           ii->GetSingleWordInOperand(kInsertCompositeIdInIdx);
-      bool insert_with_debug_user = false;
-      (void)context()->ReplaceAllUsesWithPredicate(
-          id, replId,
-          [&insert_with_debug_user, &modified](Instruction* user, uint32_t) {
-            if (user->IsOpenCL100DebugInstr()) {
-              insert_with_debug_user = true;
-              return false;
-            }
-            modified = true;
-            return true;
-          });
-      if (!insert_with_debug_user) {
-        dead_instructions.push_back(&*ii);
-        modified = true;
-      }
+      (void)context()->ReplaceAllUsesWith(id, replId);
+      dead_instructions.push_back(&*ii);
+      modified = true;
     }
   }
   // DCE dead inserts

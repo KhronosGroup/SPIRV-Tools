@@ -653,8 +653,8 @@ OpDecorate %_ Binding 0
 %28 = OpLoad %float %In1
 %29 = OpFAdd %float %27 %28
 
-; CHECK:      [[dead_insert:%\w+]] = OpCompositeInsert %v2float {{%\w+}} [[repl:%\w+]]
-; CHECK-NEXT: DebugValue {{%\w+}} [[dead_insert]]
+; CHECK-NOT:  OpCompositeInsert
+; CHECK:      DebugValue {{%\w+}} [[repl:%\w+]]
 ; CHECK-NEXT: OpCompositeInsert %v2float %float_0 [[repl]] 0
 %35 = OpCompositeInsert %v2float %29 %26 0
 %value = OpExtInst %void %ext DebugValue %dbg_foo %35 %nullexpr
