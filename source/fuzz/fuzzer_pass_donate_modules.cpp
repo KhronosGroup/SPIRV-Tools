@@ -84,6 +84,16 @@ void FuzzerPassDonateModules::Apply() {
 
 void FuzzerPassDonateModules::DonateSingleModule(
     opt::IRContext* donor_ir_context, bool make_livesafe) {
+  // Check that the donated module has capabilities, supported by the recipient
+  // module.
+  for (const auto& capability_inst : donor_ir_context->capabilities()) {
+    auto capability =
+        static_cast<SpvCapability>(capability_inst.GetSingleWordInOperand(0));
+    if (!GetIRContext()->get_feature_mgr()->HasCapability(capability)) {
+      return;
+    }
+  }
+
   // The ids used by the donor module may very well clash with ids defined in
   // the recipient module.  Furthermore, some instructions defined in the donor
   // module will be equivalent to instructions defined in the recipient module,
