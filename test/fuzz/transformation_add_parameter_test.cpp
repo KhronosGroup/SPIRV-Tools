@@ -32,19 +32,68 @@ TEST(TransformationAddParameterTest, BasicTest) {
           %2 = OpTypeVoid
           %7 = OpTypeBool
          %11 = OpTypeInt 32 1
+         %16 = OpTypeFloat 32
           %3 = OpTypeFunction %2
           %6 = OpTypeFunction %7 %7
           %8 = OpConstant %11 23
          %12 = OpConstantTrue %7
+         %15 = OpTypeFunction %2 %16
+         %24 = OpTypeFunction %2 %16 %7
+         %31 = OpTypeStruct %7 %11
+         %32 = OpConstant %16 23
+         %33 = OpConstantComposite %31 %12 %8
+         %41 = OpTypeStruct %11 %16
+         %42 = OpConstantComposite %41 %8 %32
+         %43 = OpTypeFunction %2 %41
+         %44 = OpTypeFunction %2 %41 %7
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %13 = OpFunctionCall %7 %9 %12
                OpReturn
                OpFunctionEnd
+
+          ; adjust type of the function in-place
           %9 = OpFunction %7 None %6
          %14 = OpFunctionParameter %7
          %10 = OpLabel
                OpReturnValue %12
+               OpFunctionEnd
+
+         ; reuse an existing function type
+         %17 = OpFunction %2 None %15
+         %18 = OpFunctionParameter %16
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %2 None %15
+         %21 = OpFunctionParameter %16
+         %22 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %25 = OpFunction %2 None %24
+         %26 = OpFunctionParameter %16
+         %27 = OpFunctionParameter %7
+         %28 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+         ; create a new function type
+         %29 = OpFunction %2 None %3
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+         ; don't adjust the type of the function if it creates a duplicate
+         %34 = OpFunction %2 None %43
+         %35 = OpFunctionParameter %41
+         %36 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %37 = OpFunction %2 None %44
+         %38 = OpFunctionParameter %41
+         %39 = OpFunctionParameter %7
+         %40 = OpLabel
+               OpReturn
                OpFunctionEnd
   )";
 
@@ -59,38 +108,58 @@ TEST(TransformationAddParameterTest, BasicTest) {
                                                validator_options);
 
   // Can't modify entry point function.
-  ASSERT_FALSE(TransformationAddParameter(4, 15, 12, 16)
+  ASSERT_FALSE(TransformationAddParameter(4, 60, 12, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // There is no function with result id 29.
-  ASSERT_FALSE(TransformationAddParameter(29, 15, 8, 16)
+  ASSERT_FALSE(TransformationAddParameter(60, 60, 8, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter id is not fresh.
-  ASSERT_FALSE(TransformationAddParameter(9, 14, 8, 16)
+  ASSERT_FALSE(TransformationAddParameter(9, 14, 8, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type id is not fresh.
-  ASSERT_FALSE(TransformationAddParameter(9, 15, 8, 14)
+  ASSERT_FALSE(TransformationAddParameter(9, 60, 8, 14)
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type id and parameter type id are equal.
-  ASSERT_FALSE(TransformationAddParameter(9, 15, 8, 15)
+  ASSERT_FALSE(TransformationAddParameter(9, 60, 8, 60)
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter's initializer doesn't exist.
-  ASSERT_FALSE(TransformationAddParameter(9, 15, 15, 16)
+  ASSERT_FALSE(TransformationAddParameter(9, 60, 60, 61)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Correct transformation.
-  TransformationAddParameter correct(9, 15, 8, 16);
-  ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
-  correct.Apply(context.get(), &transformation_context);
-
-  // The module remains valid.
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(15));
+  // Correct transformations.
+  {
+    TransformationAddParameter correct(9, 60, 8, 61);
+    ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
+    correct.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(60));
+  }
+  {
+    TransformationAddParameter correct(17, 62, 12, 63);
+    ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
+    correct.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(62));
+  }
+  {
+    TransformationAddParameter correct(29, 64, 33, 65);
+    ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
+    correct.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(64));
+  }
+  {
+    TransformationAddParameter correct(34, 66, 12, 67);
+    ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
+    correct.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(66));
+  }
 
   std::string expected_shader = R"(
                OpCapability Shader
@@ -103,20 +172,72 @@ TEST(TransformationAddParameterTest, BasicTest) {
           %2 = OpTypeVoid
           %7 = OpTypeBool
          %11 = OpTypeInt 32 1
+         %16 = OpTypeFloat 32
           %3 = OpTypeFunction %2
           %8 = OpConstant %11 23
          %12 = OpConstantTrue %7
+         %15 = OpTypeFunction %2 %16
+         %24 = OpTypeFunction %2 %16 %7
+         %31 = OpTypeStruct %7 %11
+         %32 = OpConstant %16 23
+         %33 = OpConstantComposite %31 %12 %8
+         %41 = OpTypeStruct %11 %16
+         %42 = OpConstantComposite %41 %8 %32
+         %44 = OpTypeFunction %2 %41 %7
           %6 = OpTypeFunction %7 %7 %11
+         %65 = OpTypeFunction %2 %31
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %13 = OpFunctionCall %7 %9 %12 %8
                OpReturn
                OpFunctionEnd
+
+          ; adjust type of the function in-place
           %9 = OpFunction %7 None %6
          %14 = OpFunctionParameter %7
-         %15 = OpFunctionParameter %11
+         %60 = OpFunctionParameter %11
          %10 = OpLabel
                OpReturnValue %12
+               OpFunctionEnd
+
+         ; reuse an existing function type
+         %17 = OpFunction %2 None %24
+         %18 = OpFunctionParameter %16
+         %62 = OpFunctionParameter %7
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %2 None %15
+         %21 = OpFunctionParameter %16
+         %22 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %25 = OpFunction %2 None %24
+         %26 = OpFunctionParameter %16
+         %27 = OpFunctionParameter %7
+         %28 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+         ; create a new function type
+         %29 = OpFunction %2 None %65
+         %64 = OpFunctionParameter %31
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+         ; don't adjust the type of the function if it creates a duplicate
+         %34 = OpFunction %2 None %44
+         %35 = OpFunctionParameter %41
+         %66 = OpFunctionParameter %7
+         %36 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %37 = OpFunction %2 None %44
+         %38 = OpFunctionParameter %41
+         %39 = OpFunctionParameter %7
+         %40 = OpLabel
+               OpReturn
                OpFunctionEnd
   )";
 

@@ -826,6 +826,12 @@ uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
   operand_ids.insert(operand_ids.end(), parameter_type_ids.begin(),
                      parameter_type_ids.end());
 
+  // A trivial case - we change nothing.
+  if (FindFunctionType(ir_context, operand_ids) ==
+      old_function_type->result_id()) {
+    return old_function_type->result_id();
+  }
+
   if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1 &&
       FindFunctionType(ir_context, operand_ids) == 0) {
     // We can change |old_function_type| only if it's used once in the module
@@ -849,17 +855,16 @@ uint32_t UpdateFunctionType(opt::IRContext* ir_context, uint32_t function_id,
     // existing one or create a new one.
     auto type_id = FindOrCreateFunctionType(
         ir_context, new_function_type_result_id, operand_ids);
+    assert(type_id != old_function_type->result_id() &&
+           "We should've handled this case above");
 
-    if (type_id != old_function_type->result_id()) {
-      function->DefInst().SetInOperand(1, {type_id});
+    function->DefInst().SetInOperand(1, {type_id});
 
-      // DefUseManager hasn't been updated yet, so if the following condition is
-      // true, then |old_function_type| will have no users when this function
-      // returns. We might as well remove it.
-      if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
-        old_function_type->RemoveFromList();
-        delete old_function_type;
-      }
+    // DefUseManager hasn't been updated yet, so if the following condition is
+    // true, then |old_function_type| will have no users when this function
+    // returns. We might as well remove it.
+    if (ir_context->get_def_use_mgr()->NumUsers(old_function_type) == 1) {
+      ir_context->KillInst(old_function_type);
     }
 
     return type_id;
