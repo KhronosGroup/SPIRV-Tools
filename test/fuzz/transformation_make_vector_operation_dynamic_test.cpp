@@ -98,47 +98,47 @@ TEST(TransformationMakeVectorOperationDynamicTest, IsApplicable) {
                                                validator_options);
 
   // Tests undefined instruction.
-  auto transformation = TransformationMakeVectorOperationDynamic(50);
+  auto transformation = TransformationMakeVectorOperationDynamic(50, 10);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests non-composite instruction.
-  transformation = TransformationMakeVectorOperationDynamic(23);
+  transformation = TransformationMakeVectorOperationDynamic(23, 11);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests composite being a matrix.
-  transformation = TransformationMakeVectorOperationDynamic(48);
+  transformation = TransformationMakeVectorOperationDynamic(48, 12);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests literal not defined as constant.
-  transformation = TransformationMakeVectorOperationDynamic(34);
+  transformation = TransformationMakeVectorOperationDynamic(34, 51);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests applicable instructions.
-  transformation = TransformationMakeVectorOperationDynamic(24);
+  transformation = TransformationMakeVectorOperationDynamic(24, 10);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationMakeVectorOperationDynamic(25);
+  transformation = TransformationMakeVectorOperationDynamic(25, 11);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationMakeVectorOperationDynamic(26);
+  transformation = TransformationMakeVectorOperationDynamic(26, 10);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationMakeVectorOperationDynamic(37);
+  transformation = TransformationMakeVectorOperationDynamic(37, 10);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationMakeVectorOperationDynamic(38);
+  transformation = TransformationMakeVectorOperationDynamic(38, 11);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationMakeVectorOperationDynamic(39);
+  transformation = TransformationMakeVectorOperationDynamic(39, 10);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 }
@@ -210,58 +210,58 @@ TEST(TransformationMakeVectorOperationDynamicTest, Apply) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  auto transformation = TransformationMakeVectorOperationDynamic(22);
+  auto transformation = TransformationMakeVectorOperationDynamic(22, 9);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(23);
+  transformation = TransformationMakeVectorOperationDynamic(23, 10);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(24);
+  transformation = TransformationMakeVectorOperationDynamic(24, 9);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(25);
+  transformation = TransformationMakeVectorOperationDynamic(25, 10);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(26);
+  transformation = TransformationMakeVectorOperationDynamic(26, 11);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(27);
+  transformation = TransformationMakeVectorOperationDynamic(27, 9);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(28);
+  transformation = TransformationMakeVectorOperationDynamic(28, 10);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(29);
+  transformation = TransformationMakeVectorOperationDynamic(29, 11);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(30);
+  transformation = TransformationMakeVectorOperationDynamic(30, 12);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(31);
+  transformation = TransformationMakeVectorOperationDynamic(31, 9);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(32);
+  transformation = TransformationMakeVectorOperationDynamic(32, 10);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(33);
+  transformation = TransformationMakeVectorOperationDynamic(33, 9);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(34);
+  transformation = TransformationMakeVectorOperationDynamic(34, 10);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(35);
+  transformation = TransformationMakeVectorOperationDynamic(35, 11);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(36);
+  transformation = TransformationMakeVectorOperationDynamic(36, 9);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(37);
+  transformation = TransformationMakeVectorOperationDynamic(37, 10);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(38);
+  transformation = TransformationMakeVectorOperationDynamic(38, 11);
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationMakeVectorOperationDynamic(39);
+  transformation = TransformationMakeVectorOperationDynamic(39, 12);
   transformation.Apply(context.get(), &transformation_context);
 
   std::string variant_shader = R"(

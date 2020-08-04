@@ -1570,6 +1570,9 @@ message TransformationMakeVectorOperationDynamic {
   // The composite instruction result id.
   uint32 instruction_result_id = 1;
 
+  // The constant index instruction result id.
+  uint32 constant_index_id = 2;
+
 }
 
 message TransformationVectorShuffle {

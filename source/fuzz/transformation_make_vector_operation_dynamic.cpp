@@ -27,13 +27,14 @@ TransformationMakeVectorOperationDynamic::
     : message_(message) {}
 
 TransformationMakeVectorOperationDynamic::
-    TransformationMakeVectorOperationDynamic(uint32_t instruction_result_id) {
+    TransformationMakeVectorOperationDynamic(uint32_t instruction_result_id,
+                                             uint32_t constant_index_id) {
   message_.set_instruction_result_id(instruction_result_id);
+  message_.set_constant_index_id(constant_index_id);
 }
 
 bool TransformationMakeVectorOperationDynamic::IsApplicable(
-    opt::IRContext* ir_context,
-    const TransformationContext& transformation_context) const {
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // |instruction| must be a vector operation.
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
@@ -41,9 +42,10 @@ bool TransformationMakeVectorOperationDynamic::IsApplicable(
     return false;
   }
 
-  // The |instruction| literal operand must be defined as constant.
-  if (!MaybeGetConstantForIndex(ir_context, *instruction,
-                                transformation_context)) {
+  // |constant_index| must be defined as an integer constant.
+  auto constant_index = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.constant_index_id());
+  if (!constant_index || !constant_index->AsIntConstant()) {
     return false;
   }
 
@@ -51,8 +53,7 @@ bool TransformationMakeVectorOperationDynamic::IsApplicable(
 }
 
 void TransformationMakeVectorOperationDynamic::Apply(
-    opt::IRContext* ir_context,
-    TransformationContext* transformation_context) const {
+    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
 
@@ -66,8 +67,7 @@ void TransformationMakeVectorOperationDynamic::Apply(
   // Sets the literal operand to the equivalent constant.
   instruction->SetInOperand(
       instruction->opcode() == SpvOpCompositeExtract ? 1 : 2,
-      {MaybeGetConstantForIndex(ir_context, *instruction,
-                                *transformation_context)});
+      {message_.constant_index_id()});
 
   // Sets the |instruction| opcode to the corresponding vector dynamic opcode.
   instruction->SetOpcode(instruction->opcode() == SpvOpCompositeExtract
@@ -102,19 +102,6 @@ bool TransformationMakeVectorOperationDynamic::IsVectorOperation(
   }
 
   return true;
-}
-
-uint32_t TransformationMakeVectorOperationDynamic::MaybeGetConstantForIndex(
-    opt::IRContext* ir_context, const opt::Instruction& instruction,
-    const TransformationContext& transformation_context) {
-  uint32_t literal = instruction.GetSingleWordInOperand(
-      instruction.opcode() == SpvOpCompositeExtract ? 1 : 2);
-  uint32_t integer_constant_id = fuzzerutil::MaybeGetIntegerConstant(
-      ir_context, transformation_context, {literal}, 32, false, false);
-  return integer_constant_id ? integer_constant_id
-                             : fuzzerutil::MaybeGetIntegerConstant(
-                                   ir_context, transformation_context,
-                                   {literal}, 32, true, false);
 }
 
 }  // namespace fuzz

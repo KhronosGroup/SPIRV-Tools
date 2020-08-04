@@ -55,21 +55,13 @@ void FuzzerPassMakeVectorOperationsDynamic::Apply() {
                "instruction must have "
                "only one indexing operand.");
 
-        // Make sure the |instruction| literal operand is defined as constant.
-        // It will be used as operand of the vector dynamic instruction.
-        // If it is necessary to create the constant, then its signedness is
-        // choosen randomly.
-        if (!TransformationMakeVectorOperationDynamic::MaybeGetConstantForIndex(
-                GetIRContext(), instruction, *GetTransformationContext())) {
-          FindOrCreateIntegerConstant(
-              {instruction.GetSingleWordInOperand(
-                  instruction.opcode() == SpvOpCompositeExtract ? 1 : 2)},
-              32, GetFuzzerContext()->ChooseEven(), false);
-        }
-
         // Applies the make vector operation dynamic transformation.
-        ApplyTransformation(
-            TransformationMakeVectorOperationDynamic(instruction.result_id()));
+        ApplyTransformation(TransformationMakeVectorOperationDynamic(
+            instruction.result_id(),
+            FindOrCreateIntegerConstant(
+                {instruction.GetSingleWordInOperand(
+                    instruction.opcode() == SpvOpCompositeExtract ? 1 : 2)},
+                32, GetFuzzerContext()->ChooseEven(), false)));
       }
     }
   }
