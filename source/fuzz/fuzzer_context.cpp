@@ -72,6 +72,8 @@ const std::pair<uint32_t, uint32_t>
 const std::pair<uint32_t, uint32_t> kChanceOfInvertingComparisonOperators = {
     20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfMakingDonorLivesafe = {40, 60};
+const std::pair<uint32_t, uint32_t> kChanceOfMakingVectorOperationDynamic = {
+    20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfMergingBlocks = {20, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
@@ -97,8 +99,6 @@ const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
     {10, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
-    20, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfMakingVectorOperationDynamic = {
     20, 90};
 
 // Default limits for various quantities that are chosen during fuzzing.
@@ -210,6 +210,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfInvertingComparisonOperators);
   chance_of_making_donor_livesafe_ =
       ChooseBetweenMinAndMax(kChanceOfMakingDonorLivesafe);
+  chance_of_making_vector_operation_dynamic_ =
+      ChooseBetweenMinAndMax(kChanceOfMakingVectorOperationDynamic);
   chance_of_merging_blocks_ = ChooseBetweenMinAndMax(kChanceOfMergingBlocks);
   chance_of_moving_block_down_ =
       ChooseBetweenMinAndMax(kChanceOfMovingBlockDown);
@@ -244,8 +246,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_toggling_access_chain_instruction_ =
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
-  chance_of_making_vector_operation_dynamic_ =
-      ChooseBetweenMinAndMax(kChanceOfMakingVectorOperationDynamic);
 }
 
 FuzzerContext::~FuzzerContext() = default;

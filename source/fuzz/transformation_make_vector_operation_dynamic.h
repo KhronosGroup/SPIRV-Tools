@@ -31,8 +31,12 @@ class TransformationMakeVectorOperationDynamic : public Transformation {
   TransformationMakeVectorOperationDynamic(uint32_t instruction_result_id,
                                            uint32_t constant_index_id);
 
-  // - |message_.instruction_result_id| must be an instruction result id of an
-  // OpCompositeExtract or OpCompositeInsert instruction.
+  // - |message_.instruction_result_id| must be the result id of an
+  // OpCompositeExtract/Insert instruction such that the composite operand is a
+  // vector.
+  // - |message_.constant_index_id| must be the result id of an integer
+  // instruction such that its value equals the indexing literal of the
+  // OpCompositeExtract/Insert instruction.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

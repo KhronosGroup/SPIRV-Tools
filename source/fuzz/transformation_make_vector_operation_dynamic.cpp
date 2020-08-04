@@ -42,10 +42,13 @@ bool TransformationMakeVectorOperationDynamic::IsApplicable(
     return false;
   }
 
-  // |constant_index| must be defined as an integer constant.
-  auto constant_index = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.constant_index_id());
-  if (!constant_index || !constant_index->AsIntConstant()) {
+  // |constant_index_instruction| must be defined as an integer instruction.
+  auto constant_index_instruction =
+      ir_context->get_def_use_mgr()->GetDef(message_.constant_index_id());
+  if (!constant_index_instruction ||
+      !ir_context->get_type_mgr()
+           ->GetType(constant_index_instruction->type_id())
+           ->AsInteger()) {
     return false;
   }
 
