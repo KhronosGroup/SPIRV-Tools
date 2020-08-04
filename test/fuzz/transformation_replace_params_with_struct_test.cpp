@@ -333,6 +333,147 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
+TEST(TransformationReplaceParamsWithStructTest, ParametersRemainValid) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %6 = OpTypeInt 32 1
+          %3 = OpTypeFunction %2
+          %8 = OpTypeFloat 32
+         %10 = OpTypeVector %8 2
+         %12 = OpTypeBool
+         %40 = OpTypePointer Function %12
+         %13 = OpTypeStruct %6 %8
+         %45 = OpTypeStruct %6 %8 %13
+         %47 = OpTypeStruct %45 %12 %10
+         %15 = OpTypeFunction %2 %6 %8 %10 %13 %40 %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %2 None %15
+         %16 = OpFunctionParameter %6
+         %17 = OpFunctionParameter %8
+         %18 = OpFunctionParameter %10
+         %19 = OpFunctionParameter %13
+         %42 = OpFunctionParameter %40
+         %43 = OpFunctionParameter %12
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  {
+    // Try to replace parameters in "increasing" order of their declaration.
+    TransformationReplaceParamsWithStruct transformation({16, 17, 19}, 70, 71,
+                                                         {{}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %6 = OpTypeInt 32 1
+          %3 = OpTypeFunction %2
+          %8 = OpTypeFloat 32
+         %10 = OpTypeVector %8 2
+         %12 = OpTypeBool
+         %40 = OpTypePointer Function %12
+         %13 = OpTypeStruct %6 %8
+         %45 = OpTypeStruct %6 %8 %13
+         %47 = OpTypeStruct %45 %12 %10
+         %15 = OpTypeFunction %2 %10 %40 %12 %45
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %2 None %15
+         %18 = OpFunctionParameter %10
+         %42 = OpFunctionParameter %40
+         %43 = OpFunctionParameter %12
+         %71 = OpFunctionParameter %45
+         %21 = OpLabel
+         %19 = OpCompositeExtract %13 %71 2
+         %17 = OpCompositeExtract %8 %71 1
+         %16 = OpCompositeExtract %6 %71 0
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+
+  {
+    // Try to replace parameters in "decreasing" order of their declaration.
+    TransformationReplaceParamsWithStruct transformation({71, 43, 18}, 72, 73,
+                                                         {{}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %6 = OpTypeInt 32 1
+          %3 = OpTypeFunction %2
+          %8 = OpTypeFloat 32
+         %10 = OpTypeVector %8 2
+         %12 = OpTypeBool
+         %40 = OpTypePointer Function %12
+         %13 = OpTypeStruct %6 %8
+         %45 = OpTypeStruct %6 %8 %13
+         %47 = OpTypeStruct %45 %12 %10
+         %15 = OpTypeFunction %2 %40 %47
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %2 None %15
+         %42 = OpFunctionParameter %40
+         %73 = OpFunctionParameter %47
+         %21 = OpLabel
+         %18 = OpCompositeExtract %10 %73 2
+         %43 = OpCompositeExtract %12 %73 1
+         %71 = OpCompositeExtract %45 %73 0
+         %19 = OpCompositeExtract %13 %71 2
+         %17 = OpCompositeExtract %8 %71 1
+         %16 = OpCompositeExtract %6 %71 0
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
