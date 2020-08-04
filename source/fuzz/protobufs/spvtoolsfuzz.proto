@@ -1163,7 +1163,7 @@ message TransformationFlattenConditionalBranch {
 
   // A list of pairs mapping instruction descriptors to fresh ids.
   // Necessary for store, load and function call instructions.
-  InstructionUint32ListPair instructions_to_fresh_ids = 2;
+  repeated InstructionUint32ListPair instruction_to_fresh_ids = 2;
 
 }
 

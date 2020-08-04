@@ -123,5 +123,12 @@ protobufs::InstructionDescriptor MakeInstructionDescriptor(
   return protobufs::InstructionDescriptor();
 }
 
+std::tuple<uint32_t, uint32_t, uint32_t> TupleFromInstructionDescriptor(
+    protobufs::InstructionDescriptor instruction_descriptor) {
+  return {instruction_descriptor.base_instruction_result_id(),
+          instruction_descriptor.target_instruction_opcode(),
+          instruction_descriptor.num_opcodes_to_ignore()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

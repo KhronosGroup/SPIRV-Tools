@@ -30,6 +30,17 @@ class TransformationFlattenConditionalBranch : public Transformation {
       std::map<protobufs::InstructionDescriptor, std::vector<uint32_t>>
           instructions_to_fresh_ids);
 
+  // - |message_.header_block_id| must be the label id of a selection header,
+  //   which ends with an OpBranchConditional instruction.
+  // - The header block and the merge block must describe a single-entry,
+  //   single-exit region.
+  // - The region must not contain atomic or barrier instructions.
+  // - The region must not contain selection or loop constructs.
+  // - |message_.instructions_to_fresh_ids| must contain all of the following
+  //   mappings:
+  //     - from each OpStore instruction to a list of at least 2 fresh ids;
+  //     - from each OpLoad or OpFunctionCall instruction to a list of at least
+  //       5 fresh ids.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
