@@ -1057,7 +1057,7 @@ bool FuzzerPassDonateModules::CreateLoopLimiterInfo(
     // We don't need to adjust anything if there is already a branch from
     // the back-edge block to the merge block.
     if (!back_edge_block->IsSuccessor(merge_block)) {
-      for (auto& inst : *merge_block) {
+      for (const auto& inst : *merge_block) {
         // Consider only OpPhi instructions.
         if (inst.opcode() != SpvOpPhi) {
           break;
