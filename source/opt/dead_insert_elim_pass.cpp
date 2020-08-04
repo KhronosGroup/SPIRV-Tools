@@ -196,6 +196,7 @@ bool DeadInsertElimPass::EliminateDeadInsertsOnePass(Function* func) {
       }
       const uint32_t id = ii->result_id();
       get_def_use_mgr()->ForEachUser(id, [&ii, this](Instruction* user) {
+        if (user->IsOpenCL100DebugInstr()) return;
         switch (user->opcode()) {
           case SpvOpCompositeInsert:
           case SpvOpPhi:
@@ -230,9 +231,21 @@ bool DeadInsertElimPass::EliminateDeadInsertsOnePass(Function* func) {
       if (liveInserts_.find(id) != liveInserts_.end()) continue;
       const uint32_t replId =
           ii->GetSingleWordInOperand(kInsertCompositeIdInIdx);
-      (void)context()->ReplaceAllUsesWith(id, replId);
-      dead_instructions.push_back(&*ii);
-      modified = true;
+      bool insert_with_debug_user = false;
+      (void)context()->ReplaceAllUsesWithPredicate(
+          id, replId,
+          [&insert_with_debug_user, &modified](Instruction* user, uint32_t) {
+            if (user->IsOpenCL100DebugInstr()) {
+              insert_with_debug_user = true;
+              return false;
+            }
+            modified = true;
+            return true;
+          });
+      if (!insert_with_debug_user) {
+        dead_instructions.push_back(&*ii);
+        modified = true;
+      }
     }
   }
   // DCE dead inserts
