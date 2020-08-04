@@ -337,13 +337,14 @@ TransformationPropagateInstructionUp::GetInstructionToPropagate(
     const auto* inst_type = ir_context->get_type_mgr()->GetType(inst.type_id());
     assert(inst_type && "|inst| has invalid type");
 
-    if (!ir_context->module()->HasExplicitCapability(
-            SpvCapabilityVariablePointers) &&
-        !ir_context->module()->HasExplicitCapability(
+    if (!ir_context->get_feature_mgr()->HasCapability(
             SpvCapabilityVariablePointersStorageBuffer) &&
         ContainsPointers(*inst_type)) {
       // OpPhi supports pointer operands only with VariablePointers or
       // VariablePointersStorageBuffer capabilities.
+      //
+      // Note that VariablePointers capability implicitly declares
+      // VariablePointersStorageBuffer capability.
       continue;
     }
 
