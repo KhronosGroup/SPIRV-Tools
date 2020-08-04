@@ -61,7 +61,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
         std::vector<opt::Instruction*> available_composites =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
-                [this, instruction_descriptor](
+                [instruction_descriptor](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
                   auto instruction_type = ir_context->get_type_mgr()->GetType(
@@ -127,7 +127,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
         std::vector<opt::Instruction*> available_objects =
             FindAvailableInstructions(
                 function, block, instruction_iterator,
-                [this, instruction_descriptor, current_node_type_id](
+                [instruction_descriptor, current_node_type_id](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
                   if (instruction->type_id() != current_node_type_id) {
