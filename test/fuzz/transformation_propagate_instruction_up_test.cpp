@@ -81,6 +81,8 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
   // |block_id| is invalid.
   ASSERT_FALSE(TransformationPropagateInstructionUp(40, {{}}).IsApplicable(
       context.get(), transformation_context));
+  ASSERT_FALSE(TransformationPropagateInstructionUp(26, {{}}).IsApplicable(
+      context.get(), transformation_context));
 
   // |block_id| has no predecessors.
   ASSERT_FALSE(TransformationPropagateInstructionUp(5, {{}}).IsApplicable(

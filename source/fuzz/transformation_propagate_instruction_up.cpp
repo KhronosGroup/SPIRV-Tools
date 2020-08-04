@@ -361,7 +361,8 @@ TransformationPropagateInstructionUp::GetInstructionToPropagate(
 bool TransformationPropagateInstructionUp::IsApplicableToBlock(
     opt::IRContext* ir_context, uint32_t block_id) {
   // Check that |block_id| is valid.
-  if (!ir_context->get_def_use_mgr()->GetDef(block_id)) {
+  const auto* label_inst = ir_context->get_def_use_mgr()->GetDef(block_id);
+  if (!label_inst || label_inst->opcode() != SpvOpLabel) {
     return false;
   }
 
