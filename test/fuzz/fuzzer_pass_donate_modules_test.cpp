@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/fuzzer_pass_donate_modules.h"
+
 #include <algorithm>
 
-#include "source/fuzz/fuzzer_pass_donate_modules.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -1967,8 +1968,10 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
                                       &transformation_context, &fuzzer_context,
                                       &transformation_sequence, {});
 
-  ASSERT_TRUE(donor_context->get_feature_mgr()->HasCapability(SpvCapabilityVariablePointersStorageBuffer));
-  ASSERT_FALSE(recipient_context->get_feature_mgr()->HasCapability(SpvCapabilityVariablePointersStorageBuffer));
+  ASSERT_TRUE(donor_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
+  ASSERT_FALSE(recipient_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
@@ -1983,8 +1986,10 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
   // VariablePointersStorageBuffer. Thus, two modules must be compatible.
   recipient_context->AddCapability(SpvCapabilityVariablePointers);
 
-  ASSERT_TRUE(donor_context->get_feature_mgr()->HasCapability(SpvCapabilityVariablePointersStorageBuffer));
-  ASSERT_TRUE(recipient_context->get_feature_mgr()->HasCapability(SpvCapabilityVariablePointersStorageBuffer));
+  ASSERT_TRUE(donor_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
+  ASSERT_TRUE(recipient_context->get_feature_mgr()->HasCapability(
+      SpvCapabilityVariablePointersStorageBuffer));
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
