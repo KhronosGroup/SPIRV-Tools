@@ -49,21 +49,20 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
   }
 
   // |message_.result_id| must refer to a suitable OpIAdd, OpISub or OpIMul
-  // instruction.
+  // instruction. The instruction must be defined.
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.result_id());
+  if (instruction == nullptr) {
+    return false;
+  }
   auto instruction_opcode = instruction->opcode();
 
   switch (instruction_opcode) {
     case SpvOpIAdd:
     case SpvOpISub:
-      if (!TransformationReplaceAddSubMulWithCarryingExtended::
-              IsAddSubInstructionSuitable(ir_context, instruction))
-        return false;
-      break;
     case SpvOpIMul:
       if (!TransformationReplaceAddSubMulWithCarryingExtended::
-              IsMulInstructionSuitable(ir_context, instruction))
+              IsInstructionSuitable(ir_context, instruction))
         return false;
       break;
     default:
@@ -80,8 +79,6 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
 
   auto original_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.result_id());
-  auto original_instruction_opcode = original_instruction->opcode();
-  auto operand_type_id = original_instruction->type_id();
   uint32_t operand_signedness =
       ir_context->get_def_use_mgr()
           ->GetDef(original_instruction->type_id())
@@ -93,7 +90,7 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
   // struct.
   SpvOp new_instruction_opcode;
 
-  switch (original_instruction_opcode) {
+  switch (original_instruction->opcode()) {
     case SpvOpIAdd:
       new_instruction_opcode = SpvOpIAddCarry;
       break;
@@ -109,25 +106,12 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
       break;
     default:
       assert(false);
-      new_instruction_opcode = SpvOpMax;
-      // No uninitialized variables left (to keep compilers happy).
-      break;
+      return;
   }
 
-  // Insert the OpCompositeExtract. This instruction takes the first component
-  // of the struct which represents low-order bits of the operation. This the
-  // original result.
-  auto instruction_composite_extract =
-      original_instruction->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpCompositeExtract, operand_type_id,
-          message_.result_id(),
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_ID, {message_.struct_fresh_id()}},
-               {SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                {kOpCompositeExtractIndexLowOrderBits}}})));
-
-  // Insert the new instruction that computes the result into a struct.
-  instruction_composite_extract->InsertBefore(MakeUnique<opt::Instruction>(
+  // Insert the new instruction that computes the result into a struct before
+  // the  |original_instruction|.
+  original_instruction->InsertBefore(MakeUnique<opt::Instruction>(
       ir_context, new_instruction_opcode, message_.struct_type_id(),
       message_.struct_fresh_id(),
       opt::Instruction::OperandList(
@@ -138,15 +122,36 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
             {original_instruction->GetSingleWordInOperand(
                 kArithmeticInstructionIndexRightInOperand)}}})));
 
+  // Insert the OpCompositeExtract after the added instruction. This instruction
+  // takes the first component of the struct which represents low-order bits of
+  // the operation. This the original result.
+  original_instruction->InsertBefore(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpCompositeExtract, original_instruction->type_id(),
+      message_.result_id(),
+      opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_ID, {message_.struct_fresh_id()}},
+           {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+            {kOpCompositeExtractIndexLowOrderBits}}})));
+
   // Remove the original instruction.
   ir_context->KillInst(original_instruction);
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
-bool TransformationReplaceAddSubMulWithCarryingExtended::
-    IsMulInstructionSuitable(opt::IRContext* ir_context,
-                             const opt::Instruction* instruction) {
+bool TransformationReplaceAddSubMulWithCarryingExtended::IsInstructionSuitable(
+    opt::IRContext* ir_context, const opt::Instruction* instruction) {
+  auto instruction_opcode = instruction->opcode();
+
+  // Only instructions OpIAdd, OpISub, OpIMul are supported.
+  switch (instruction_opcode) {
+    case SpvOpIAdd:
+    case SpvOpISub:
+    case SpvOpIMul:
+      break;
+    default:
+      return false;
+  }
   uint32_t operand_1_type_id =
       ir_context->get_def_use_mgr()
           ->GetDef(instruction->GetSingleWordInOperand(
@@ -164,23 +169,28 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::
   if (operand_1_type_id != operand_2_type_id) {
     return false;
   }
-  return operand_2_type_id == result_type_id;
-}
-
-bool TransformationReplaceAddSubMulWithCarryingExtended::
-    IsAddSubInstructionSuitable(opt::IRContext* ir_context,
-                                const opt::Instruction* instruction) {
-  if (!TransformationReplaceAddSubMulWithCarryingExtended::
-          IsMulInstructionSuitable(ir_context, instruction)) {
+  if (operand_2_type_id != result_type_id) {
     return false;
   }
-  // Both types of the operands and the result type must be unsigned. We know
-  // that the types are equal since IsMulInstructionSuitable returned true.
-  uint32_t instruction_signedness =
-      ir_context->get_def_use_mgr()
-          ->GetDef(instruction->type_id())
-          ->GetSingleWordOperand(kOpTypeIndexSignedness);
-  return instruction_signedness == 0;
+
+  // In case of OpIAdd and OpISub, the type must be unsigned.
+  uint32_t instruction_signedness;
+  switch (instruction_opcode) {
+    case SpvOpIAdd:
+    case SpvOpISub:
+      // Both types of the operands and the result type must be unsigned.
+      instruction_signedness =
+          ir_context->get_def_use_mgr()
+              ->GetDef(instruction->type_id())
+              ->GetSingleWordOperand(kOpTypeIndexSignedness);
+      if (instruction_signedness != 0) {
+        return false;
+      }
+      break;
+    default:
+      break;
+  }
+  return true;
 }
 
 protobufs::Transformation

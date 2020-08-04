@@ -37,51 +37,49 @@ FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::
     ~FuzzerPassReplaceAddsSubsMulsWithCarryingExtended() = default;
 
 void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
-  GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
+  for (auto& function : *GetIRContext()->module()) {
+    for (auto& block : function) {
+      for (auto& instruction : block) {
+        // Randomly decide whether to apply the transformation.
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()
+                    ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
+          continue;
+        }
 
-    // Randomly decide whether to apply the transformation.
-    if (!GetFuzzerContext()->ChoosePercentage(
-            GetFuzzerContext()
-                ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
-      return;
+        // Check if the transformation can be applied, according to the opcode
+        // of the instruction.
+        auto instruction_opcode = instruction.opcode();
+
+        switch (instruction_opcode) {
+          case SpvOpIAdd:
+          case SpvOpISub:
+          case SpvOpIMul:
+            if (!TransformationReplaceAddSubMulWithCarryingExtended::
+                    IsInstructionSuitable(GetIRContext(), &instruction))
+              continue;
+            break;
+          default:
+            continue;
+        }
+
+        // Get the id of the required struct type. We know that the the types of
+        // the operands are the same, so we can use one operand type id twice.
+        uint32_t operand_type_id =
+            GetIRContext()
+                ->get_def_use_mgr()
+                ->GetDef(instruction.GetSingleWordInOperand(
+                    kArithmeticInstructionIndexLeftInOperand))
+                ->type_id();
+        uint32_t struct_type_id =
+            FindOrCreateStructType({operand_type_id, operand_type_id});
+
+        ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
+            GetFuzzerContext()->GetFreshId(), struct_type_id,
+            instruction.result_id()));
+      }
     }
-
-    // Check if the transformation can be applied, according to the opcode of
-    // the instruction.
-    auto instruction_opcode = instruction->opcode();
-
-    switch (instruction_opcode) {
-      case SpvOpIAdd:
-      case SpvOpISub:
-        if (!TransformationReplaceAddSubMulWithCarryingExtended::
-                IsAddSubInstructionSuitable(GetIRContext(), instruction))
-          return;
-        break;
-      case SpvOpIMul:
-        if (!TransformationReplaceAddSubMulWithCarryingExtended::
-                IsMulInstructionSuitable(GetIRContext(), instruction))
-          return;
-      default:
-        return;
-    }
-
-    // Get the id of the required struct type. We know that the the types of the
-    // operands are the same, so we can use one operand type id twice.
-    std::vector<uint32_t> operand_type_ids;
-    uint32_t operand_type_id =
-        GetIRContext()
-            ->get_def_use_mgr()
-            ->GetDef(instruction->GetSingleWordInOperand(
-                kArithmeticInstructionIndexLeftInOperand))
-            ->type_id();
-    operand_type_ids.push_back(operand_type_id);
-    operand_type_ids.push_back(operand_type_id);
-    uint32_t struct_type_id = FindOrCreateStructType(operand_type_ids);
-
-    ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
-        GetFuzzerContext()->GetFreshId(), struct_type_id,
-        instruction->result_id()));
-  });
+  }
 }
 }  // namespace fuzz
 }  // namespace spvtools

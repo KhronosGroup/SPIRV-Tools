@@ -111,14 +111,12 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   // Bad: |struct_fresh_id| must be fresh.
   auto transformation_bad_1 =
       TransformationReplaceAddSubMulWithCarryingExtended(34, 38, 28);
-
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 
   // Bad: The transformation cannot be applied to an instruction OpSDiv.
   auto transformation_bad_2 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 15);
-
   ASSERT_FALSE(
       transformation_bad_2.IsApplicable(context.get(), transformation_context));
 
@@ -126,7 +124,6 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   // signed variables as operands.
   auto transformation_bad_3 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 18);
-
   ASSERT_FALSE(
       transformation_bad_3.IsApplicable(context.get(), transformation_context));
 
@@ -134,7 +131,6 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   // different signedness of the types of operands.
   auto transformation_bad_4 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 60);
-
   ASSERT_FALSE(
       transformation_bad_4.IsApplicable(context.get(), transformation_context));
 
@@ -143,9 +139,14 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   // the operands.
   auto transformation_bad_5 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 61);
-
   ASSERT_FALSE(
       transformation_bad_5.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The instruction with result id 70 doesn't exist.
+  auto transformation_bad_6 =
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 70);
+  ASSERT_FALSE(
+      transformation_bad_6.IsApplicable(context.get(), transformation_context));
 
   auto transformation_good_1 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 28);
@@ -157,7 +158,6 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
 
   auto transformation_good_2 =
       TransformationReplaceAddSubMulWithCarryingExtended(51, 38, 31);
-
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_2.Apply(context.get(), &transformation_context);
@@ -167,7 +167,6 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
       TransformationReplaceAddSubMulWithCarryingExtended(52, 38, 34);
   ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
                                                  transformation_context));
-
   transformation_good_3.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
