@@ -159,6 +159,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.h
         transformation_duplicate_region_with_selection.h
         transformation_equation_instruction.h
+        transformation_flatten_conditional_branch.h
         transformation_function_call.h
         transformation_inline_function.h
         transformation_invert_comparison_operator.h
@@ -321,6 +322,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.cpp
         transformation_duplicate_region_with_selection.cpp
         transformation_equation_instruction.cpp
+        transformation_flatten_conditional_branch.cpp
         transformation_function_call.cpp
         transformation_inline_function.cpp
         transformation_invert_comparison_operator.cpp

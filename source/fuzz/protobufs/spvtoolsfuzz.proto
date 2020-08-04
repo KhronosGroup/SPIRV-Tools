@@ -432,6 +432,7 @@ message Transformation {
     TransformationReplaceOpPhiIdFromDeadPredecessor replace_opphi_id_from_dead_predecessor = 73;
     TransformationReplaceOpSelectWithConditionalBranch replace_opselect_with_conditional_branch = 74;
     TransformationDuplicateRegionWithSelection duplicate_region_with_selection = 75;
+    TransformationFlattenConditionalBranch flatten_conditional_branch = 76;
     // Add additional option using the next available number.
   }
 }
@@ -1158,7 +1159,7 @@ message TransformationFlattenConditionalBranch {
   // containing an OpBranchConditional instruction and flattens it.
 
   // The label id of the header block
-  uint32 header_block = 1;
+  uint32 header_block_id = 1;
 
   // A list of pairs mapping instruction descriptors to fresh ids.
   // Necessary for store, load and function call instructions.
