@@ -114,8 +114,9 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                       {34, 57},
                                                       {35, 58},
                                                       {36, 59},
-                                                      {37, 60}},
-                                                     61);
+                                                      {37, 60},
+                                                      {38, 61}},
+                                                     62);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
@@ -135,7 +136,8 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                  {34, 57},
                                                  {35, 58},
                                                  {36, 59},
-                                                 {37, 60}},
+                                                 {37, 60},
+                                                 {38, 61}},
                                                 42);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -156,7 +158,8 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                  {34, 57},
                                                  {35, 58},
                                                  {36, 59},
-                                                 {37, 60}},
+                                                 {37, 60},
+                                                 {38, 61}},
                                                 43);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));

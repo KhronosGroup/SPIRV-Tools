@@ -69,7 +69,6 @@ bool TransformationInlineFunction::IsApplicable(
 
   // |message_.result_id_map| must have an entry for every result id in the
   // called function.
-  uint32_t return_value_id = GetReturnValueId(ir_context, called_function);
   for (auto& block : *called_function) {
     // Since the entry block label will not be inlined, only the remaining
     // labels must have a corresponding value in the map.
@@ -78,17 +77,25 @@ bool TransformationInlineFunction::IsApplicable(
       return false;
     }
     for (auto& instruction : block) {
-      // If |instruction| has result id and is not the return value instruction,
-      // then it must have a mapped id in |message_.result_id_map|.
+      // If |instruction| has result id then it must have a mapped id in
+      // |message_.result_id_map|.
       if (instruction.HasResultId() &&
-          instruction.result_id() != return_value_id &&
-          !message_.result_id_map().count(instruction.result_id())) {
+          !message_.result_id_map().contains(instruction.result_id())) {
         return false;
       }
     }
   }
 
-  return true;
+  // The id mapping must not contain an entry for any parameter of the
+  // function that is being inlined.
+  bool found_entry_for_parameter = false;
+  called_function->ForEachParam(
+      [this, &found_entry_for_parameter](opt::Instruction* param) {
+        if (message_.result_id_map().contains(param->result_id())) {
+          found_entry_for_parameter = true;
+        }
+      });
+  return !found_entry_for_parameter;
 }
 
 void TransformationInlineFunction::Apply(
@@ -104,6 +111,9 @@ void TransformationInlineFunction::Apply(
     // The called function entry block label will not be inlined.
     if (&block != &*called_function->entry()) {
       auto cloned_label_instruction = block.GetLabelInst()->Clone(ir_context);
+      assert(message_.result_id_map().contains(
+                 cloned_label_instruction->result_id()) &&
+             "Label id must be mapped to a fresh id.");
       uint32_t fresh_id =
           message_.result_id_map().at(cloned_label_instruction->result_id());
       cloned_label_instruction->SetResultId(fresh_id);
@@ -141,6 +151,9 @@ void TransformationInlineFunction::Apply(
       // value.
       if (cloned_instruction->HasResultId() &&
           message_.result_id_map().count(cloned_instruction->result_id())) {
+        assert(message_.result_id_map().contains(
+                   cloned_instruction->result_id()) &&
+               "Result id must be mapped to a fresh id.");
         uint32_t result_id =
             message_.result_id_map().at(cloned_instruction->result_id());
         cloned_instruction->SetResultId(result_id);
@@ -159,9 +172,26 @@ void TransformationInlineFunction::Apply(
             cloned_instruction->AddOperand(
                 {SPV_OPERAND_TYPE_ID, {following_block_id}});
             break;
-          case SpvOpReturnValue:
+          case SpvOpReturnValue: {
+            auto returned_value_id =
+                GetReturnValueId(ir_context, called_function);
+            assert(returned_value_id && "Some value must be returned.");
+            auto returned_value_instruction =
+                ir_context->get_def_use_mgr()->GetDef(returned_value_id);
+            auto copy_object_instruction = MakeUnique<opt::Instruction>(
+                ir_context, SpvOpCopyObject,
+                returned_value_instruction->type_id(),
+                function_call_instruction->result_id(),
+                opt::Instruction::OperandList(
+                    {{SPV_OPERAND_TYPE_ID,
+                      {message_.result_id_map().contains(returned_value_id)
+                           ? message_.result_id_map().at(returned_value_id)
+                           : returned_value_id}}}));
+            function_call_instruction->InsertBefore(
+                std::move(copy_object_instruction));
             cloned_instruction->SetInOperand(0, {following_block_id});
             break;
+          }
           default:
             break;
         }
@@ -178,24 +208,6 @@ void TransformationInlineFunction::Apply(
             std::unique_ptr<opt::Instruction>(cloned_instruction));
       }
     }
-  }
-
-  // If the return instruction is an OpReturnValue instruction, then an
-  // OpCopyObject instruction will be inserted to copy the returned value
-  // object.
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
-  auto returned_value_instruction =
-      ir_context->get_def_use_mgr()->GetDef(message_.result_id_map().at(
-          GetReturnValueId(ir_context, called_function)));
-  if (returned_value_instruction) {
-    auto copy_object_instruction = MakeUnique<opt::Instruction>(
-        ir_context, SpvOpCopyObject, returned_value_instruction->type_id(),
-        function_call_instruction->result_id(),
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID,
-              {returned_value_instruction->result_id()}}}));
-    copy_object_instruction->InsertAfter(returned_value_instruction);
-    copy_object_instruction.release();
   }
 
   // Removes the function call instruction and its block termination instruction
