@@ -657,8 +657,8 @@ void FuzzerPassDonateModules::HandleFunctions(
         });
 
     // If |make_livesafe| is true, try to add the function in a livesafe manner.
-    // Otherwise, or if an attempt to make the function livesafe has failed,
-    // add the function in a non-livesafe manner.
+    // Otherwise (if |make_lifesafe| is false or an attempt to make the function
+    // livesafe has failed), add the function in a non-livesafe manner.
     if (!make_livesafe ||
         !MaybeAddLivesafeFunction(*function_to_donate, donor_ir_context,
                                   *original_id_to_donated_id,
@@ -1038,12 +1038,12 @@ bool FuzzerPassDonateModules::CreateLoopLimiterInfo(
   loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
   loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
 
-  // We creating a branch from the back-edge block to the merge block. Thus,
+  // We are creating a branch from the back-edge block to the merge block. Thus,
   // if merge block has any OpPhi instructions, we might need to adjust
   // them.
   //
-  // Note that the loop might not have a back-edge block, in which case
-  // we don't need to adjust anything.
+  // Note that the loop might have an unreachable back-edge block. This means
+  // that the loop can't iterate, so we don't need to adjust anything.
   if (const auto back_edge_block_id =
           TransformationAddFunction::GetBackEdgeBlockId(donor_ir_context,
                                                         loop_header.id())) {
