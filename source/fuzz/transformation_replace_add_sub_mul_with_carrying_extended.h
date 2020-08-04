@@ -54,9 +54,10 @@ class TransformationReplaceAddSubMulWithCarryingExtended
 
   protobufs::Transformation ToMessage() const override;
 
-  // Checks if an OpIAdd, OpISub or OpIMul instruction can be used by the transformation.
+  // Checks if an OpIAdd, OpISub or OpIMul instruction can be used by the
+  // transformation.
   bool static IsInstructionSuitable(opt::IRContext* ir_context,
-                                       const opt::Instruction* instruction);
+                                    const opt::Instruction* instruction);
 
  private:
   protobufs::TransformationReplaceAddSubMulWithCarryingExtended message_;
