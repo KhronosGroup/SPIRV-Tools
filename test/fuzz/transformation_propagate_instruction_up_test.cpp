@@ -39,26 +39,32 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
          %20 = OpConstant %6 45
          %27 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %26 = OpVariable %27 Function
          %13 = OpFOrdEqual %12 %9 %11
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpFMod %6 %9 %17
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpFAdd %6 %11 %20
                OpBranch %15
+
          %15 = OpLabel
          %21 = OpPhi %6 %18 %14 %22 %19
          %23 = OpFMul %6 %21 %21
          %24 = OpFDiv %6 %21 %23
                OpBranch %25
+
          %25 = OpLabel
          %28 = OpPhi %6 %20 %15
                OpStore %26 %28
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -135,28 +141,34 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
          %20 = OpConstant %6 45
          %27 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %26 = OpVariable %27 Function
          %13 = OpFOrdEqual %12 %9 %11
-         %40 = OpFMod %6 %9 %17
-         %41 = OpFAdd %6 %11 %20
+         %40 = OpFMod %6 %9 %17 ; propagated from %14
+         %41 = OpFAdd %6 %11 %20 ; propagated from %19
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
-         %18 = OpPhi %6 %40 %5
+         %18 = OpPhi %6 %40 %5 ; propagated into %5
                OpBranch %15
+
          %19 = OpLabel
-         %22 = OpPhi %6 %41 %5
+         %22 = OpPhi %6 %41 %5 ; propagated into %5
                OpBranch %15
+
          %15 = OpLabel
          %21 = OpPhi %6 %18 %14 %22 %19
          %23 = OpFMul %6 %21 %21
          %24 = OpFDiv %6 %21 %23
                OpBranch %25
+
          %25 = OpLabel
          %28 = OpPhi %6 %20 %15
                OpStore %26 %28
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -189,6 +201,7 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
          %20 = OpConstant %6 45
          %27 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %26 = OpVariable %27 Function
          %13 = OpFOrdEqual %12 %9 %11
@@ -196,23 +209,28 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
          %41 = OpFAdd %6 %11 %20
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpPhi %6 %40 %5
-         %43 = OpFMul %6 %18 %18
+         %43 = OpFMul %6 %18 %18 ; propagated from %15
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpPhi %6 %41 %5
-         %44 = OpFMul %6 %22 %22
+         %44 = OpFMul %6 %22 %22 ; propagated from %15
                OpBranch %15
+
          %15 = OpLabel
-         %23 = OpPhi %6 %43 %14 %44 %19
+         %23 = OpPhi %6 %43 %14 %44 %19 ; propagated into %14 and %19
          %21 = OpPhi %6 %18 %14 %22 %19
          %24 = OpFDiv %6 %21 %23
                OpBranch %25
+
          %25 = OpLabel
          %28 = OpPhi %6 %20 %15
                OpStore %26 %28
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -245,6 +263,7 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
          %20 = OpConstant %6 45
          %27 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %26 = OpVariable %27 Function
          %13 = OpFOrdEqual %12 %9 %11
@@ -252,25 +271,30 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
          %41 = OpFAdd %6 %11 %20
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpPhi %6 %40 %5
          %43 = OpFMul %6 %18 %18
-         %45 = OpFDiv %6 %18 %43
+         %45 = OpFDiv %6 %18 %43 ; propagated from %15
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpPhi %6 %41 %5
          %44 = OpFMul %6 %22 %22
-         %46 = OpFDiv %6 %22 %44
+         %46 = OpFDiv %6 %22 %44 ; propagated from %15
                OpBranch %15
+
          %15 = OpLabel
-         %24 = OpPhi %6 %45 %14 %46 %19
+         %24 = OpPhi %6 %45 %14 %46 %19 ; propagated into %14 and %19
          %23 = OpPhi %6 %43 %14 %44 %19
          %21 = OpPhi %6 %18 %14 %22 %19
                OpBranch %25
+
          %25 = OpLabel
          %28 = OpPhi %6 %20 %15
                OpStore %26 %28
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -295,27 +319,34 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor1) {
          %17 = OpConstant %6 4
          %20 = OpConstant %6 45
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %13 = OpFOrdEqual %12 %9 %11
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpFMod %6 %9 %17
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpFAdd %6 %11 %20
                OpBranch %15
-         %15 = OpLabel
+
+         %15 = OpLabel ; dominates %26
          %21 = OpPhi %6 %18 %14 %22 %19 %28 %26
          %23 = OpFMul %6 %21 %21
          %24 = OpFDiv %6 %21 %23
                OpLoopMerge %27 %26 None
                OpBranch %26
+
          %26 = OpLabel
          %28 = OpFAdd %6 %24 %23
                OpBranch %15
+
          %27 = OpLabel
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -353,30 +384,37 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor1) {
          %17 = OpConstant %6 4
          %20 = OpConstant %6 45
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %13 = OpFOrdEqual %12 %9 %11
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpFMod %6 %9 %17
-         %40 = OpFMul %6 %18 %18
+         %40 = OpFMul %6 %18 %18 ; propagated from %15
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpFAdd %6 %11 %20
-         %41 = OpFMul %6 %22 %22
+         %41 = OpFMul %6 %22 %22 ; propagated from %15
                OpBranch %15
+
          %15 = OpLabel
-         %23 = OpPhi %6 %40 %14 %41 %19 %42 %26
+         %23 = OpPhi %6 %40 %14 %41 %19 %42 %26 ; propagated into %14, %19, %26
          %21 = OpPhi %6 %18 %14 %22 %19 %28 %26
          %24 = OpFDiv %6 %21 %23
                OpLoopMerge %27 %26 None
                OpBranch %26
+
          %26 = OpLabel
          %28 = OpFAdd %6 %24 %23
-         %42 = OpFMul %6 %28 %28
+         %42 = OpFMul %6 %28 %28 ; propagated from %15
                OpBranch %15
+
          %27 = OpLabel
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -401,26 +439,33 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor2) {
          %17 = OpConstant %6 4
          %20 = OpConstant %6 45
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %13 = OpFOrdEqual %12 %9 %11
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpFMod %6 %9 %17
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpFAdd %6 %11 %20
                OpBranch %15
-         %15 = OpLabel
+
+         %15 = OpLabel ; doesn't dominate %26
          %21 = OpPhi %6 %18 %14 %22 %19 %20 %26
          %23 = OpFMul %6 %21 %21
          %24 = OpFDiv %6 %21 %23
                OpLoopMerge %27 %26 None
                OpBranch %27
+
          %26 = OpLabel
                OpBranch %15
+
          %27 = OpLabel
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -458,29 +503,36 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor2) {
          %17 = OpConstant %6 4
          %20 = OpConstant %6 45
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %13 = OpFOrdEqual %12 %9 %11
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpFMod %6 %9 %17
-         %40 = OpFMul %6 %18 %18
+         %40 = OpFMul %6 %18 %18 ; propagated from %15
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpFAdd %6 %11 %20
-         %41 = OpFMul %6 %22 %22
+         %41 = OpFMul %6 %22 %22 ; propagated from %15
                OpBranch %15
+
          %15 = OpLabel
-         %23 = OpPhi %6 %40 %14 %41 %19 %42 %26
+         %23 = OpPhi %6 %40 %14 %41 %19 %42 %26 ; propagated into %14, %19, %26
          %21 = OpPhi %6 %18 %14 %22 %19 %20 %26
          %24 = OpFDiv %6 %21 %23
                OpLoopMerge %27 %26 None
                OpBranch %27
+
          %26 = OpLabel
-         %42 = OpFMul %6 %20 %20
+         %42 = OpFMul %6 %20 %20 ; propagated from %15
                OpBranch %15
+
          %27 = OpLabel
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -505,24 +557,30 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor3) {
          %17 = OpConstant %6 4
          %20 = OpConstant %6 45
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %13 = OpFOrdEqual %12 %9 %11
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpFMod %6 %9 %17
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpFAdd %6 %11 %20
                OpBranch %15
-         %15 = OpLabel
+
+         %15 = OpLabel ; branches to itself
          %21 = OpPhi %6 %18 %14 %22 %19 %24 %15
          %23 = OpFMul %6 %21 %21
          %24 = OpFDiv %6 %21 %23
                OpLoopMerge %27 %15 None
                OpBranch %15
+
          %27 = OpLabel
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -560,27 +618,33 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor3) {
          %17 = OpConstant %6 4
          %20 = OpConstant %6 45
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
          %13 = OpFOrdEqual %12 %9 %11
                OpSelectionMerge %15 None
                OpBranchConditional %13 %14 %19
+
          %14 = OpLabel
          %18 = OpFMod %6 %9 %17
-         %40 = OpFMul %6 %18 %18
+         %40 = OpFMul %6 %18 %18 ; propagated from %15
                OpBranch %15
+
          %19 = OpLabel
          %22 = OpFAdd %6 %11 %20
-         %41 = OpFMul %6 %22 %22
+         %41 = OpFMul %6 %22 %22 ; propagated from %15
                OpBranch %15
+
          %15 = OpLabel
-         %23 = OpPhi %6 %40 %14 %41 %19 %42 %15
+         %23 = OpPhi %6 %40 %14 %41 %19 %42 %15 ; propagated into %14, %19, %15
          %21 = OpPhi %6 %18 %14 %22 %19 %24 %15
          %24 = OpFDiv %6 %21 %23
-         %42 = OpFMul %6 %24 %24
+         %42 = OpFMul %6 %24 %24 ; propagated from %15
                OpLoopMerge %27 %15 None
                OpBranch %15
+
          %27 = OpLabel
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -602,13 +666,16 @@ TEST(TransformationPropagateInstructionUpTest,
          %11 = OpConstant %6 23
           %7 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
           %8 = OpVariable %7 Function
                OpBranch %9
+
           %9 = OpLabel
          %10 = OpCopyObject %7 %8
                OpStore %10 %11
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -622,7 +689,7 @@ TEST(TransformationPropagateInstructionUpTest,
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // Required capabilities haven't yet been specified
+  // Required capabilities haven't yet been specified.
   TransformationPropagateInstructionUp transformation(9, {{{5, 40}}});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -648,14 +715,17 @@ TEST(TransformationPropagateInstructionUpTest,
          %11 = OpConstant %6 23
           %7 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
           %8 = OpVariable %7 Function
-         %40 = OpCopyObject %7 %8
+         %40 = OpCopyObject %7 %8 ; propagated from %9
                OpBranch %9
+
           %9 = OpLabel
-         %10 = OpPhi %7 %40 %5
+         %10 = OpPhi %7 %40 %5 ; propagated into %5
                OpStore %10 %11
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -677,13 +747,16 @@ TEST(TransformationPropagateInstructionUpTest,
          %11 = OpConstant %6 23
           %7 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
           %8 = OpVariable %7 Function
                OpBranch %9
+
           %9 = OpLabel
          %10 = OpCopyObject %7 %8
                OpStore %10 %11
                OpReturn
+
                OpFunctionEnd
   )";
 
@@ -723,14 +796,17 @@ TEST(TransformationPropagateInstructionUpTest,
          %11 = OpConstant %6 23
           %7 = OpTypePointer Function %6
           %4 = OpFunction %2 None %3
+
           %5 = OpLabel
           %8 = OpVariable %7 Function
-         %40 = OpCopyObject %7 %8
+         %40 = OpCopyObject %7 %8 ; propagated from %9
                OpBranch %9
+
           %9 = OpLabel
-         %10 = OpPhi %7 %40 %5
+         %10 = OpPhi %7 %40 %5 ; propagated into %5
                OpStore %10 %11
                OpReturn
+
                OpFunctionEnd
   )";
 

@@ -21,48 +21,19 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-// Given an |inst| that depends on some OpPhi instructions from the same basic
-// block, compute a mapping from the result id of those OpPhi instructions to
-// the map of their operands. "The map of their operands" means the mapping from
-// the block id to the result id, given that both the block id and the result id
-// are the operands of an OpPhi instruction.
-std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
-ComputeMappingFromOpPhiToResultId(opt::IRContext* ir_context,
-                                  opt::Instruction* inst) {
-  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> result;
+uint32_t GetResultIdFromLabelId(const opt::Instruction& phi_inst,
+                                uint32_t label_id) {
+  assert(phi_inst.opcode() == SpvOpPhi && "|phi_inst| is not an OpPhi");
 
-  const auto* inst_block = ir_context->get_instr_block(inst);
-
-  // Consider all |inst|'s dependencies.
-  for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
-    const auto& operand = inst->GetInOperand(i);
-    if (operand.type != SPV_OPERAND_TYPE_ID) {
-      continue;
-    }
-
-    auto* dependency = ir_context->get_def_use_mgr()->GetDef(operand.words[0]);
-    assert(dependency && "|inst| depends on invalid id");
-
-    // If the dependency is an OpPhi from the same block and we haven't computed
-    // the mapping for that dependency yet - do it now.
-    if (ir_context->get_instr_block(dependency) == inst_block &&
-        dependency->opcode() == SpvOpPhi &&
-        !result.count(dependency->result_id())) {
-      std::unordered_map<uint32_t, uint32_t> label_id_to_result_id;
-
-      for (uint32_t j = 1; j < dependency->NumInOperands(); j += 2) {
-        label_id_to_result_id[dependency->GetSingleWordInOperand(j)] =
-            dependency->GetSingleWordInOperand(j - 1);
-      }
-
-      result[dependency->result_id()] = std::move(label_id_to_result_id);
+  for (uint32_t i = 1; i < phi_inst.NumInOperands(); i += 2) {
+    if (phi_inst.GetSingleWordInOperand(i) == label_id) {
+      return phi_inst.GetSingleWordInOperand(i - 1);
     }
   }
 
-  return result;
+  return 0;
 }
 
-// Returns true if |type| is or contains a pointer type.
 bool ContainsPointers(const opt::analysis::Type& type) {
   switch (type.kind()) {
     case opt::analysis::Type::kPointer:
@@ -76,6 +47,34 @@ bool ContainsPointers(const opt::analysis::Type& type) {
     default:
       return false;
   }
+}
+
+bool HasValidDependencies(opt::IRContext* ir_context, opt::Instruction* inst) {
+  const auto* inst_block = ir_context->get_instr_block(inst);
+  assert(inst_block &&
+         "This function shouldn't be applied to global instructions or function"
+         "parameters");
+
+  for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
+    const auto& operand = inst->GetInOperand(i);
+    if (operand.type != SPV_OPERAND_TYPE_ID) {
+      // Consider only <id> operands.
+      continue;
+    }
+
+    auto* dependency =
+        ir_context->get_def_use_mgr()->GetDef(operand.words[0]);
+    assert(dependency && "Operand has invalid id");
+
+    if (ir_context->get_instr_block(dependency) == inst_block &&
+        dependency->opcode() != SpvOpPhi) {
+      // |dependency| is "valid" if it's an OpPhi from the same basic block or
+      // an instruction from a different basic block.
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace
@@ -128,17 +127,6 @@ void TransformationPropagateInstructionUp::Apply(
   assert(inst->result_id() && inst->type_id() &&
          "|inst| must have a result id and a type id");
 
-  // |inst| might depend on OpPhi instructions from the same basic block.
-  // That's OK, because by looking at the OpPhi instruction we can tell which of
-  // its operands we should use instead when we propagate the instruction into
-  // each predecessor.
-  //
-  // |op_phi_to_result_id| contains a mapping from the result id of such an
-  // OpPhi instruction to the map of its operands
-  // (i.e. |op_phi_to_result_id[op_phi_id][label_id] == result_id|).
-  const auto op_phi_to_result_id =
-      ComputeMappingFromOpPhiToResultId(ir_context, inst);
-
   opt::Instruction::OperandList op_phi_operands;
   const auto predecessor_id_to_fresh_id = fuzzerutil::RepeatedUInt32PairToMap(
       message_.predecessor_id_to_fresh_id());
@@ -159,12 +147,29 @@ void TransformationPropagateInstructionUp::Apply(
     // instructions from the same basic block.
     for (uint32_t i = 0; i < clone->NumInOperands(); ++i) {
       auto& operand = clone->GetInOperand(i);
-
-      if (operand.type == SPV_OPERAND_TYPE_ID &&
-          op_phi_to_result_id.count(operand.words[0])) {
-        operand.words[0] =
-            op_phi_to_result_id.at(operand.words[0]).at(predecessor_id);
+      if (operand.type != SPV_OPERAND_TYPE_ID) {
+        // Consider only ids.
+        continue;
       }
+
+      const auto* dependency_inst =
+          ir_context->get_def_use_mgr()->GetDef(operand.words[0]);
+      assert(dependency_inst && "|clone| depends on an invalid id");
+
+      if (ir_context->get_instr_block(dependency_inst->result_id()) !=
+          ir_context->cfg()->block(message_.block_id())) {
+        // We don't need to adjust anything if |dependency_inst| is from a
+        // different block, a global instruction or a function parameter.
+        continue;
+      }
+
+      assert(dependency_inst->opcode() == SpvOpPhi &&
+             "Propagated instruction can depend only on OpPhis from the same "
+             "basic block or instructions from different basic blocks");
+
+      auto new_id = GetResultIdFromLabelId(*dependency_inst, predecessor_id);
+      assert(new_id && "OpPhi instruction is missing a predecessor");
+      operand.words[0] = new_id;
     }
 
     // Insert cloned instruction into the predecessor.
@@ -184,7 +189,7 @@ void TransformationPropagateInstructionUp::Apply(
   // Remove |inst| from the basic block.
   ir_context->KillInst(inst);
 
-  // Make sure our changes are analyzed
+  // We have changed the module so most analyzes are now invalid.
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
 }
@@ -342,27 +347,11 @@ TransformationPropagateInstructionUp::GetInstructionToPropagate(
       continue;
     }
 
-    auto valid = true;
-    for (uint32_t i = 0; i < inst.NumInOperands(); ++i) {
-      const auto& operand = inst.GetInOperand(i);
-      if (operand.type != SPV_OPERAND_TYPE_ID) {
-        continue;
-      }
-
-      auto* dependency =
-          ir_context->get_def_use_mgr()->GetDef(operand.words[0]);
-      assert(dependency && "Operand has invalid id");
-
-      if (ir_context->get_instr_block(dependency) == block &&
-          dependency->opcode() != SpvOpPhi) {
-        valid = false;
-        break;
-      }
+    if (!HasValidDependencies(ir_context, &inst)) {
+      continue;
     }
 
-    if (valid) {
-      return &inst;
-    }
+    return &inst;
   }
 
   return nullptr;
