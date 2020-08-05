@@ -2697,27 +2697,32 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             if (!component_count->word(3)) {
               invalid = true;
             }
-          } else if (OpenCLDebugInfo100Instructions(component_count->word(4)) ==
-                         OpenCLDebugInfo100DebugLocalVariable ||
-                     OpenCLDebugInfo100Instructions(component_count->word(4)) ==
-                         OpenCLDebugInfo100DebugGlobalVariable) {
+          } else if (component_count->words().size() > 6 &&
+                     (OpenCLDebugInfo100Instructions(component_count->word(
+                          4)) == OpenCLDebugInfo100DebugLocalVariable ||
+                      OpenCLDebugInfo100Instructions(component_count->word(
+                          4)) == OpenCLDebugInfo100DebugGlobalVariable)) {
             auto* component_count_type = _.FindDef(component_count->word(6));
-            if (OpenCLDebugInfo100Instructions(component_count_type->word(4)) !=
-                    OpenCLDebugInfo100DebugTypeBasic ||
-                OpenCLDebugInfo100DebugBaseTypeAttributeEncoding(
-                    component_count_type->word(7)) !=
-                    OpenCLDebugInfo100Unsigned) {
-              invalid = true;
-            } else {
-              // DebugTypeBasic for DebugLocalVariable/DebugGlobalVariable must
-              // have Unsigned encoding and 32 or 64 as its size in bits.
-              Instruction* size_in_bits =
-                  _.FindDef(component_count_type->word(6));
-              if (!_.IsIntScalarType(size_in_bits->type_id()) ||
-                  (size_in_bits->word(3) != 32 &&
-                   size_in_bits->word(3) != 64)) {
+            if (component_count_type->words().size() > 7) {
+              if (OpenCLDebugInfo100Instructions(component_count_type->word(
+                      4)) != OpenCLDebugInfo100DebugTypeBasic ||
+                  OpenCLDebugInfo100DebugBaseTypeAttributeEncoding(
+                      component_count_type->word(7)) !=
+                      OpenCLDebugInfo100Unsigned) {
                 invalid = true;
+              } else {
+                // DebugTypeBasic for DebugLocalVariable/DebugGlobalVariable
+                // must have Unsigned encoding and 32 or 64 as its size in bits.
+                Instruction* size_in_bits =
+                    _.FindDef(component_count_type->word(6));
+                if (!_.IsIntScalarType(size_in_bits->type_id()) ||
+                    (size_in_bits->word(3) != 32 &&
+                     size_in_bits->word(3) != 64)) {
+                  invalid = true;
+                }
               }
+            } else {
+              invalid = true;
             }
           } else {
             invalid = true;
