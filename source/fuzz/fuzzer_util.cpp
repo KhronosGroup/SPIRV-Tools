@@ -1315,16 +1315,26 @@ MapToRepeatedUInt32Pair(const std::map<uint32_t, uint32_t>& data) {
 opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
                                                  uint32_t block_id,
                                                  SpvOp opcode) {
-  auto* block = ir_context->cfg()->block(block_id);
-  assert(block && "|block_id| is invalid");
+  // CFG::block uses std::map::at which throws an exception when |block_id| is
+  // invalid. The error message is unhelpful, though. Thus, we test that
+  // |block_id| is valid here.
+  const auto* label_inst = ir_context->get_def_use_mgr()->GetDef(block_id);
+  (void)label_inst;  // Make compilers happy in release mode.
+  assert(label_inst && label_inst->opcode() == SpvOpLabel &&
+         "|block_id| is invalid");
 
+  auto* block = ir_context->cfg()->block(block_id);
   auto it = block->rbegin();
-  while (it != block->rend() &&
-         !CanInsertOpcodeBeforeInstruction(opcode, &*it)) {
+  assert(it != block->rend() && "Basic block can't be empty");
+
+  if (block->GetMergeInst()) {
     ++it;
+    assert(it != block->rend() &&
+           "|block| must have at least two instructions:"
+           "terminator and a merge instruction");
   }
 
-  return it == block->rend() ? nullptr : &*it;
+  return CanInsertOpcodeBeforeInstruction(opcode, &*it) ? &*it : nullptr;
 }
 
 }  // namespace fuzzerutil
