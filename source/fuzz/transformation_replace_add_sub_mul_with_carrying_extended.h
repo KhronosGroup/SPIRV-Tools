@@ -31,14 +31,14 @@ class TransformationReplaceAddSubMulWithCarryingExtended
           message);
 
   explicit TransformationReplaceAddSubMulWithCarryingExtended(
-      uint32_t struct_fresh_id, uint32_t struct_type_id, uint32_t result_id);
+      uint32_t struct_fresh_id, uint32_t result_id);
 
   // - |message_.struct_fresh_id| must be fresh.
-  // - |message_.struct_type_id| must refer to the type of a struct
-  //   suitable for holding the intermediate result.
   // - |message_.result_id| must refer to an OpIAdd or OpISub or OpIMul
   //   instruction. In this instruction the result type id and the type ids of
   //   the operands must be the same.
+  // - The type of struct holding the intermediate result must exists in the
+  //   module.
   // - For OpIAdd, OpISub both operands must be unsigned.
   bool IsApplicable(
       opt::IRContext* ir_context,
@@ -57,7 +57,7 @@ class TransformationReplaceAddSubMulWithCarryingExtended
   // Checks if an OpIAdd, OpISub or OpIMul instruction can be used by the
   // transformation.
   bool static IsInstructionSuitable(opt::IRContext* ir_context,
-                                    const opt::Instruction* instruction);
+                                    const opt::Instruction& instruction);
 
  private:
   protobufs::TransformationReplaceAddSubMulWithCarryingExtended message_;

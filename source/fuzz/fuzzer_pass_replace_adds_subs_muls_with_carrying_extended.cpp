@@ -22,7 +22,7 @@ namespace fuzz {
 
 namespace {
 const uint32_t kArithmeticInstructionIndexLeftInOperand = 0;
-}
+}  // namespace
 
 FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::
     FuzzerPassReplaceAddsSubsMulsWithCarryingExtended(
@@ -56,8 +56,9 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
           case SpvOpISub:
           case SpvOpIMul:
             if (!TransformationReplaceAddSubMulWithCarryingExtended::
-                    IsInstructionSuitable(GetIRContext(), &instruction))
+                    IsInstructionSuitable(GetIRContext(), instruction)) {
               continue;
+            }
             break;
           default:
             continue;
@@ -71,12 +72,11 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
                 ->GetDef(instruction.GetSingleWordInOperand(
                     kArithmeticInstructionIndexLeftInOperand))
                 ->type_id();
-        uint32_t struct_type_id =
-            FindOrCreateStructType({operand_type_id, operand_type_id});
+
+        FindOrCreateStructType({operand_type_id, operand_type_id});
 
         ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
-            GetFuzzerContext()->GetFreshId(), struct_type_id,
-            instruction.result_id()));
+            GetFuzzerContext()->GetFreshId(), instruction.result_id()));
       }
     }
   }

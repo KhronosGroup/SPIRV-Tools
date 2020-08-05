@@ -226,10 +226,6 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
       return MakeUnique<TransformationReplaceAddSubMulWithCarryingExtended>(
           message.replace_add_sub_mul_with_carrying_extended());
     case protobufs::Transformation::TransformationCase::
-        kReplaceParameterWithGlobal:
-      return MakeUnique<TransformationReplaceParameterWithGlobal>(
-          message.replace_parameter_with_global());
-    case protobufs::Transformation::TransformationCase::
         kReplaceBooleanConstantWithConstantBinary:
       return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(
           message.replace_boolean_constant_with_constant_binary());
@@ -256,6 +252,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kReplaceLoadStoreWithCopyMemory:
       return MakeUnique<TransformationReplaceLoadStoreWithCopyMemory>(
           message.replace_load_store_with_copy_memory());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceParameterWithGlobal:
+      return MakeUnique<TransformationReplaceParameterWithGlobal>(
+          message.replace_parameter_with_global());
     case protobufs::Transformation::TransformationCase::
         kReplaceParamsWithStruct:
       return MakeUnique<TransformationReplaceParamsWithStruct>(

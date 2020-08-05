@@ -34,15 +34,13 @@ TransformationReplaceAddSubMulWithCarryingExtended::
 
 TransformationReplaceAddSubMulWithCarryingExtended::
     TransformationReplaceAddSubMulWithCarryingExtended(uint32_t struct_fresh_id,
-                                                       uint32_t struct_type_id,
                                                        uint32_t result_id) {
   message_.set_struct_fresh_id(struct_fresh_id);
-  message_.set_struct_type_id(struct_type_id);
   message_.set_result_id(result_id);
 }
 
 bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext&) const {
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // |message_.struct_fresh_id| must be fresh.
   if (!fuzzerutil::IsFreshId(ir_context, message_.struct_fresh_id())) {
     return false;
@@ -62,11 +60,25 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
     case SpvOpISub:
     case SpvOpIMul:
       if (!TransformationReplaceAddSubMulWithCarryingExtended::
-              IsInstructionSuitable(ir_context, instruction))
+              IsInstructionSuitable(ir_context, *instruction)) {
         return false;
+      }
       break;
     default:
       return false;
+  }
+
+  // Check if the type of struct holding the intermediate result exists in the
+  // module.
+  uint32_t operand_type_id = ir_context->get_def_use_mgr()
+                                 ->GetDef(instruction->GetSingleWordInOperand(
+                                     kArithmeticInstructionIndexLeftInOperand))
+                                 ->type_id();
+
+  uint32_t struct_type_id = fuzzerutil::MaybeGetStructType(
+      ir_context, {operand_type_id, operand_type_id});
+  if (struct_type_id == 0) {
+    return false;
   }
   return true;
 }
@@ -77,12 +89,21 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
   assert(fuzzerutil::IsFreshId(ir_context, message_.struct_fresh_id()) &&
          "|message_.struct_fresh_id| must be fresh");
 
+  // Get the signedness of an operand if it is an int or the signedness of a
+  // component if it is a vector.
+  auto type_id =
+      ir_context->get_def_use_mgr()->GetDef(message_.result_id())->type_id();
+  auto type = ir_context->get_type_mgr()->GetType(type_id);
+  bool operand_is_signed;
+  if (type->kind() == opt::analysis::Type::kVector) {
+    auto operand_type = type->AsVector()->element_type();
+    operand_is_signed = operand_type->AsInteger()->IsSigned();
+  } else {
+    operand_is_signed = type->AsInteger()->IsSigned();
+  }
+
   auto original_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.result_id());
-  uint32_t operand_signedness =
-      ir_context->get_def_use_mgr()
-          ->GetDef(original_instruction->type_id())
-          ->GetSingleWordOperand(kOpTypeIndexSignedness);
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.struct_fresh_id());
 
@@ -98,21 +119,31 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
       new_instruction_opcode = SpvOpISubBorrow;
       break;
     case SpvOpIMul:
-      if (operand_signedness == 0) {
+      if (!operand_is_signed) {
         new_instruction_opcode = SpvOpUMulExtended;
       } else {
         new_instruction_opcode = SpvOpSMulExtended;
       }
       break;
     default:
-      assert(false);
+      assert(false && "The instruction has an unsupported opcode.");
       return;
   }
+  // Get the type of struct holding the intermediate result exists in the
+  // module.
+  uint32_t operand_type_id =
+      ir_context->get_def_use_mgr()
+          ->GetDef(original_instruction->GetSingleWordInOperand(
+              kArithmeticInstructionIndexLeftInOperand))
+          ->type_id();
+
+  uint32_t struct_type_id = fuzzerutil::MaybeGetStructType(
+      ir_context, {operand_type_id, operand_type_id});
 
   // Insert the new instruction that computes the result into a struct before
   // the  |original_instruction|.
   original_instruction->InsertBefore(MakeUnique<opt::Instruction>(
-      ir_context, new_instruction_opcode, message_.struct_type_id(),
+      ir_context, new_instruction_opcode, struct_type_id,
       message_.struct_fresh_id(),
       opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID,
@@ -124,7 +155,7 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
 
   // Insert the OpCompositeExtract after the added instruction. This instruction
   // takes the first component of the struct which represents low-order bits of
-  // the operation. This the original result.
+  // the operation. This is the original result.
   original_instruction->InsertBefore(MakeUnique<opt::Instruction>(
       ir_context, SpvOpCompositeExtract, original_instruction->type_id(),
       message_.result_id(),
@@ -136,12 +167,13 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
   // Remove the original instruction.
   ir_context->KillInst(original_instruction);
 
+  // We have modified the module so most analyzes are now invalid.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 bool TransformationReplaceAddSubMulWithCarryingExtended::IsInstructionSuitable(
-    opt::IRContext* ir_context, const opt::Instruction* instruction) {
-  auto instruction_opcode = instruction->opcode();
+    opt::IRContext* ir_context, const opt::Instruction& instruction) {
+  auto instruction_opcode = instruction.opcode();
 
   // Only instructions OpIAdd, OpISub, OpIMul are supported.
   switch (instruction_opcode) {
@@ -154,16 +186,16 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsInstructionSuitable(
   }
   uint32_t operand_1_type_id =
       ir_context->get_def_use_mgr()
-          ->GetDef(instruction->GetSingleWordInOperand(
+          ->GetDef(instruction.GetSingleWordInOperand(
               kArithmeticInstructionIndexLeftInOperand))
           ->type_id();
 
   uint32_t operand_2_type_id =
       ir_context->get_def_use_mgr()
-          ->GetDef(instruction->GetSingleWordInOperand(
+          ->GetDef(instruction.GetSingleWordInOperand(
               kArithmeticInstructionIndexRightInOperand))
           ->type_id();
-  uint32_t result_type_id = instruction->type_id();
+  uint32_t result_type_id = instruction.type_id();
 
   // Both type ids of the operands and the result type ids must be equal.
   if (operand_1_type_id != operand_2_type_id) {
@@ -174,19 +206,25 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsInstructionSuitable(
   }
 
   // In case of OpIAdd and OpISub, the type must be unsigned.
-  uint32_t instruction_signedness;
+  auto type = ir_context->get_type_mgr()->GetType(instruction.type_id());
+
   switch (instruction_opcode) {
     case SpvOpIAdd:
-    case SpvOpISub:
-      // Both types of the operands and the result type must be unsigned.
-      instruction_signedness =
-          ir_context->get_def_use_mgr()
-              ->GetDef(instruction->type_id())
-              ->GetSingleWordOperand(kOpTypeIndexSignedness);
-      if (instruction_signedness != 0) {
+    case SpvOpISub: {
+      // In case of OpIAdd and OpISub if the operand is a vector, the component
+      // type must be unsigned. Otherwise (if the operand is an int), the
+      // operand must be unsigned.
+      bool operand_is_signed;
+      if (type->kind() == opt::analysis::Type::kVector) {
+        auto operand_type = type->AsVector()->element_type();
+        operand_is_signed = operand_type->AsInteger()->IsSigned();
+      } else {
+        operand_is_signed = type->AsInteger()->IsSigned();
+      }
+      if (operand_is_signed) {
         return false;
       }
-      break;
+    } break;
     default:
       break;
   }

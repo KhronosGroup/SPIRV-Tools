@@ -1299,11 +1299,8 @@ message TransformationReplaceAddSubMulWithCarryingExtended {
    // The fresh id of the intermediate result.
    uint32 struct_fresh_id = 1;
 
-   // The id for the type of the intermediate result.
-   uint32 struct_type_id = 2;
-
    // The result id of the original instruction.
-   uint32 result_id = 3;
+   uint32 result_id = 2;
 
 }
 

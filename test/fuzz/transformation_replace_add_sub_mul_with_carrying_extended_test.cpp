@@ -110,27 +110,27 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
 
   // Bad: |struct_fresh_id| must be fresh.
   auto transformation_bad_1 =
-      TransformationReplaceAddSubMulWithCarryingExtended(34, 38, 28);
+      TransformationReplaceAddSubMulWithCarryingExtended(34, 28);
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 
   // Bad: The transformation cannot be applied to an instruction OpSDiv.
   auto transformation_bad_2 =
-      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 15);
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 15);
   ASSERT_FALSE(
       transformation_bad_2.IsApplicable(context.get(), transformation_context));
 
   // Bad: The transformation cannot be applied to an instruction OpIAdd that has
   // signed variables as operands.
   auto transformation_bad_3 =
-      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 18);
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 18);
   ASSERT_FALSE(
       transformation_bad_3.IsApplicable(context.get(), transformation_context));
 
   // Bad: The transformation cannot be applied to an instruction OpIAdd that has
   // different signedness of the types of operands.
   auto transformation_bad_4 =
-      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 60);
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 60);
   ASSERT_FALSE(
       transformation_bad_4.IsApplicable(context.get(), transformation_context));
 
@@ -138,18 +138,18 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   // different signedness of the result type than the signedness of the types of
   // the operands.
   auto transformation_bad_5 =
-      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 61);
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 61);
   ASSERT_FALSE(
       transformation_bad_5.IsApplicable(context.get(), transformation_context));
 
   // Bad: The instruction with result id 70 doesn't exist.
   auto transformation_bad_6 =
-      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 70);
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 70);
   ASSERT_FALSE(
       transformation_bad_6.IsApplicable(context.get(), transformation_context));
 
   auto transformation_good_1 =
-      TransformationReplaceAddSubMulWithCarryingExtended(50, 38, 28);
+      TransformationReplaceAddSubMulWithCarryingExtended(50, 28);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
 
@@ -157,14 +157,14 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_2 =
-      TransformationReplaceAddSubMulWithCarryingExtended(51, 38, 31);
+      TransformationReplaceAddSubMulWithCarryingExtended(51, 31);
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_2.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_3 =
-      TransformationReplaceAddSubMulWithCarryingExtended(52, 38, 34);
+      TransformationReplaceAddSubMulWithCarryingExtended(52, 34);
   ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_3.Apply(context.get(), &transformation_context);
@@ -173,8 +173,10 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
   // Explicitly create the required struct type for the OpSMulExtended.
   std::vector<uint32_t> operand_type_ids = {6, 6};
   fuzzerutil::AddStructType(context.get(), 54, operand_type_ids);
+  context.get()->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
   auto transformation_good_4 =
-      TransformationReplaceAddSubMulWithCarryingExtended(53, 54, 37);
+      TransformationReplaceAddSubMulWithCarryingExtended(53, 37);
   ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
                                                  transformation_context));
 
