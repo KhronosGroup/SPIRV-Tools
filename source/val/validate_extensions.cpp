@@ -636,6 +636,14 @@ spv_result_t ValidateClspvReflectionInstruction(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+bool IsConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
+                                        Instruction* instr) {
+  if (instr->opcode() != SpvOpConstant) return false;
+  if (!_.IsIntScalarType(instr->type_id())) return false;
+  uint32_t size_in_bits = _.GetBitWidth(instr->type_id());
+  return size_in_bits == 32 || size_in_bits == 64;
+}
+
 }  // anonymous namespace
 
 spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
@@ -2684,9 +2692,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         for (uint32_t i = 6; i < num_words; ++i) {
           bool invalid = false;
           auto* component_count = _.FindDef(inst->word(i));
-          if (component_count->opcode() == SpvOpConstant) {
-            if (!_.IsIntScalarType(component_count->type_id()) ||
-                !component_count->word(3)) {
+          if (IsConstIntScalarTypeWith32Or64Bits(_, component_count)) {
+            // TODO: We need a spec discussion for the bindless array.
+            if (!component_count->word(3)) {
               invalid = true;
             }
           } else if (OpenCLDebugInfo100Instructions(component_count->word(4)) ==
@@ -2696,13 +2704,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             auto* component_count_type = _.FindDef(component_count->word(6));
             if (OpenCLDebugInfo100Instructions(component_count_type->word(4)) !=
                     OpenCLDebugInfo100DebugTypeBasic ||
-                (OpenCLDebugInfo100DebugBaseTypeAttributeEncoding(
-                     component_count_type->word(7)) !=
-                     OpenCLDebugInfo100Signed &&
-                 OpenCLDebugInfo100DebugBaseTypeAttributeEncoding(
-                     component_count_type->word(7)) !=
-                     OpenCLDebugInfo100Unsigned)) {
+                OpenCLDebugInfo100DebugBaseTypeAttributeEncoding(
+                    component_count_type->word(7)) !=
+                    OpenCLDebugInfo100Unsigned) {
               invalid = true;
+            } else {
+              // DebugTypeBasic for DebugLocalVariable/DebugGlobalVariable must
+              // have Unsigned encoding and 32 or 64 as its size in bits.
+              Instruction* size_in_bits =
+                  _.FindDef(component_count_type->word(6));
+              if (!_.IsIntScalarType(size_in_bits->type_id()) ||
+                  (size_in_bits->word(3) != 32 &&
+                   size_in_bits->word(3) != 64)) {
+                invalid = true;
+              }
             }
           } else {
             invalid = true;
@@ -2710,8 +2725,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (invalid) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": Component Count must be "
-                   << "OpConstant, DebugGlobalVariable, or "
-                   << "DebugLocalVariable with an integer scalar type";
+                   << "OpConstant with a 32 or 64-bits integer scalar type or "
+                   << "DebugGlobalVariable or DebugLocalVariable with a 32 or "
+                   << "64-bits unsigned integer scalar type";
           }
         }
         break;

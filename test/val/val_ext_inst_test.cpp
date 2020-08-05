@@ -1362,10 +1362,10 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayWithVariableSize) {
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
-%int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %int_32 Signed
+%uint_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %int_32 Unsigned
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
 %main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
-%foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %int_info %dbg_src 1 1 %main_info FlagIsLocal
+%foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %uint_info %dbg_src 1 1 %main_info FlagIsLocal
 %float_arr_info = OpExtInst %void %DbgExt DebugTypeArray %float_info %foo_info
 )";
 
@@ -1434,8 +1434,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCount) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant, "
-                        "DebugGlobalVariable, or DebugLocalVariable with an "
+              HasSubstr("Component Count must be OpConstant with a 32 or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32 or 64-bits unsigned "
                         "integer scalar type"));
 }
 
@@ -1465,8 +1466,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant, "
-                        "DebugGlobalVariable, or DebugLocalVariable with an "
+              HasSubstr("Component Count must be OpConstant with a 32 or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32 or 64-bits unsigned "
                         "integer scalar type"));
 }
 
@@ -1496,8 +1498,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountZero) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant, "
-                        "DebugGlobalVariable, or DebugLocalVariable with an "
+              HasSubstr("Component Count must be OpConstant with a 32 or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32 or 64-bits unsigned "
                         "integer scalar type"));
 }
 
@@ -1532,8 +1535,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant, "
-                        "DebugGlobalVariable, or DebugLocalVariable with an "
+              HasSubstr("Component Count must be OpConstant with a 32 or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32 or 64-bits unsigned "
                         "integer scalar type"));
 }
 
