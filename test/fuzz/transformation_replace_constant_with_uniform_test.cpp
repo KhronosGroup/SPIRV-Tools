@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
+
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -1546,6 +1547,111 @@ TEST(TransformationReplaceConstantWithUniformTest,
                        50, MakeInstructionDescriptor(8, SpvOpVariable, 0), 1),
                    blockname_a, 100, 101)
                    .IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationReplaceConstantWithUniformTest, ReplaceOpPhiOperand) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpDecorate %32 DescriptorSet 0
+               OpDecorate %32 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 2
+         %13 = OpConstant %6 4
+         %21 = OpConstant %6 1
+         %34 = OpConstant %6 0
+         %10 = OpTypeBool
+         %30 = OpTypeStruct %6
+         %31 = OpTypePointer Uniform %30
+         %32 = OpVariable %31 Uniform
+         %33 = OpTypePointer Uniform %6
+          %4 = OpFunction %2 None %3
+         %11 = OpLabel
+               OpBranch %5
+          %5 = OpLabel
+         %23 = OpPhi %6 %7 %11 %20 %15
+          %9 = OpSLessThan %10 %23 %13
+               OpLoopMerge %8 %15 None
+               OpBranchConditional %9 %15 %8
+         %15 = OpLabel
+         %20 = OpIAdd %6 %23 %21
+               OpBranch %5
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto int_descriptor = MakeUniformBufferElementDescriptor(0, 0, {0});
+
+  ASSERT_TRUE(
+      AddFactHelper(&transformation_context, context.get(), 2, int_descriptor));
+
+  {
+    TransformationReplaceConstantWithUniform transformation(
+        MakeIdUseDescriptor(7, MakeInstructionDescriptor(23, SpvOpPhi, 0), 0),
+        int_descriptor, 50, 51);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpDecorate %32 DescriptorSet 0
+               OpDecorate %32 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 2
+         %13 = OpConstant %6 4
+         %21 = OpConstant %6 1
+         %34 = OpConstant %6 0
+         %10 = OpTypeBool
+         %30 = OpTypeStruct %6
+         %31 = OpTypePointer Uniform %30
+         %32 = OpVariable %31 Uniform
+         %33 = OpTypePointer Uniform %6
+          %4 = OpFunction %2 None %3
+         %11 = OpLabel
+         %50 = OpAccessChain %33 %32 %34
+         %51 = OpLoad %6 %50
+               OpBranch %5
+          %5 = OpLabel
+         %23 = OpPhi %6 %51 %11 %20 %15
+          %9 = OpSLessThan %10 %23 %13
+               OpLoopMerge %8 %15 None
+               OpBranchConditional %9 %15 %8
+         %15 = OpLabel
+         %20 = OpIAdd %6 %23 %21
+               OpBranch %5
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace
