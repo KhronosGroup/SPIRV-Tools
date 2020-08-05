@@ -99,12 +99,12 @@ TransformationReplaceConstantWithUniform::GetInsertBeforeInstruction(
     return nullptr;
   }
 
-  // OpPhi must be the first instruction in the module. Thus, we can't insert
-  // anything above it.
+  // The use might be in an OpPhi instruction.
   if (result->opcode() == SpvOpPhi) {
-    // Given the predecessor block that is dominated by the replaced id (the id
-    // of such a block is one of the OpPhi's operands), get the last instruction
-    // from that block that we can use to insert OpAccessChain and OpLoad above.
+    // OpPhi instructions must be the first instructions in a block. Thus, we
+    // can't insert above the OpPhi instruction. Given the predecessor block
+    // that corresponds to the id use, get the last instruction in that block
+    // above which we can insert OpAccessChain and OpLoad.
     return fuzzerutil::GetLastInsertBeforeInstruction(
         ir_context,
         result->GetSingleWordInOperand(
@@ -112,10 +112,10 @@ TransformationReplaceConstantWithUniform::GetInsertBeforeInstruction(
         SpvOpLoad);
   }
 
-  // The only operand that has a scalar value is a condition id.
-  // But OpVariable instructions with Uniform storage class can't store
-  // booleans (see specification for OpTypeBool). Thus, there can't be any
-  // uniform boolean constant to replace the condition id.
+  // The only operand that we could've replaced in the OpBranchConditional is
+  // the condition id. But that operand has a boolean type and uniform variables
+  // can't store booleans (see the spec on OpTypeBool). Thus, |result| can't be
+  // an OpBranchConditional.
   assert(result->opcode() != SpvOpBranchConditional &&
          "OpBranchConditional has no operands to replace");
 

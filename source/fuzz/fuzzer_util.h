@@ -483,9 +483,8 @@ std::map<uint32_t, uint32_t> RepeatedUInt32PairToMap(
 google::protobuf::RepeatedPtrField<protobufs::UInt32Pair>
 MapToRepeatedUInt32Pair(const std::map<uint32_t, uint32_t>& data);
 
-// Get the last instruction in the |block_id| that can be used to insert
-// |opcode| above itself. Returns nullptr if no such an instruction is present
-// in the block.
+// Returns the last instruction in |block_id| before which an instruction with
+// opcode |opcode| can be inserted, or nullptr if there is no such instruction.
 opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
                                                  uint32_t block_id,
                                                  SpvOp opcode);
