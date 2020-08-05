@@ -47,55 +47,13 @@ void FuzzerPassOutlineFunctions::Apply() {
     for (auto& block : *function) {
       blocks.push_back(&block);
     }
-    auto entry_block = blocks[GetFuzzerContext()->RandomIndex(blocks)];
+    auto entry_block = MaybeGetEntryBlockSuitableForOutlining(
+        blocks[GetFuzzerContext()->RandomIndex(blocks)]);
 
-    // If the entry block is a loop header, we need to get or create its
-    // preheader and make it the entry block, if possible.
-    if (entry_block->IsLoopHeader()) {
-      auto predecessors =
-          GetIRContext()->cfg()->preds(entry_block->GetLabel()->result_id());
-
-      if (predecessors.size() < 2) {
-        // The header only has one predecessor (the back-edge block) and thus
-        // it is unreachable.
-        continue;
-      }
-
-      // Get or create a suitable preheader and make it become the entry block.
-      entry_block =
-          GetOrCreateSimpleLoopPreheader(entry_block->GetLabel()->result_id());
-    }
-
-    assert(!entry_block->IsLoopHeader() &&
-           "The entry block cannot be a loop header at this point.");
-
-    // If the entry block starts with OpPhi or OpVariable, try to split it.
-    if (entry_block->begin()->opcode() == SpvOpPhi ||
-        entry_block->begin()->opcode() == SpvOpVariable) {
-      // Find the first non-OpPhi and non-OpVariable instruction.
-      opt::Instruction* non_phi_or_var_inst = nullptr;
-      for (auto& instruction : *entry_block) {
-        if (instruction.opcode() != SpvOpPhi &&
-            instruction.opcode() != SpvOpVariable) {
-          non_phi_or_var_inst = &instruction;
-          break;
-        }
-      }
-
-      assert(non_phi_or_var_inst &&
-             "|non_phi_or_var_inst| must have been initialized");
-
-      // If the split was not applicable, the transformation will not work.
-      uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
-      if (!MaybeApplyTransformation(TransformationSplitBlock(
-              MakeInstructionDescriptor(non_phi_or_var_inst->result_id(),
-                                        non_phi_or_var_inst->opcode(), 0),
-              new_block_id))) {
-        continue;
-      }
-
-      // The new entry block is the newly-created block.
-      entry_block = &*function->FindBlock(new_block_id);
+    if (!entry_block) {
+      // The chosen block is not suitable to be the entry block of a region that
+      // will be outlined.
+      continue;
     }
 
     auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(function);
@@ -118,23 +76,13 @@ void FuzzerPassOutlineFunctions::Apply() {
     if (candidate_exit_blocks.empty()) {
       continue;
     }
-    auto exit_block = candidate_exit_blocks[GetFuzzerContext()->RandomIndex(
-        candidate_exit_blocks)];
+    auto exit_block = MaybeGetExitBlockSuitableForOutlining(
+        candidate_exit_blocks[GetFuzzerContext()->RandomIndex(
+            candidate_exit_blocks)]);
 
-    // If the exit block is a merge block, try to split it and make the second
-    // block in the pair become the exit block.
-    if (GetIRContext()->GetStructuredCFGAnalysis()->IsMergeBlock(
-            exit_block->id())) {
-      uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
-
-      if (!MaybeApplyTransformation(TransformationSplitBlock(
-              MakeInstructionDescriptor(exit_block->id(),
-                                        exit_block->begin()->opcode(), 0),
-              new_block_id))) {
-        continue;
-      }
-
-      exit_block = &*function->FindBlock(new_block_id);
+    if (!exit_block) {
+      // The block chosen is not suitable
+      continue;
     }
 
     auto region_blocks = TransformationOutlineFunction::GetRegionBlocks(
@@ -163,6 +111,88 @@ void FuzzerPassOutlineFunctions::Apply() {
         /*output_id_to_fresh_id*/ std::move(output_id_to_fresh_id));
     MaybeApplyTransformation(transformation);
   }
+}
+
+opt::BasicBlock*
+FuzzerPassOutlineFunctions::MaybeGetEntryBlockSuitableForOutlining(
+    opt::BasicBlock* entry_block) {
+  // If the entry block is a loop header, we need to get or create its
+  // preheader and make it the entry block, if possible.
+  if (entry_block->IsLoopHeader()) {
+    auto predecessors =
+        GetIRContext()->cfg()->preds(entry_block->GetLabel()->result_id());
+
+    if (predecessors.size() < 2) {
+      // The header only has one predecessor (the back-edge block) and thus
+      // it is unreachable. The block cannot be adjusted to be suitable for
+      // outlining.
+      return nullptr;
+    }
+
+    // Get or create a suitable preheader and make it become the entry block.
+    entry_block =
+        GetOrCreateSimpleLoopPreheader(entry_block->GetLabel()->result_id());
+  }
+
+  assert(!entry_block->IsLoopHeader() &&
+         "The entry block cannot be a loop header at this point.");
+
+  // If the entry block starts with OpPhi or OpVariable, try to split it.
+  if (entry_block->begin()->opcode() == SpvOpPhi ||
+      entry_block->begin()->opcode() == SpvOpVariable) {
+    // Find the first non-OpPhi and non-OpVariable instruction.
+    opt::Instruction* non_phi_or_var_inst = nullptr;
+    for (auto& instruction : *entry_block) {
+      if (instruction.opcode() != SpvOpPhi &&
+          instruction.opcode() != SpvOpVariable) {
+        non_phi_or_var_inst = &instruction;
+        break;
+      }
+    }
+
+    assert(non_phi_or_var_inst &&
+           "|non_phi_or_var_inst| must have been initialized");
+
+    // If the split was not applicable, the transformation will not work.
+    uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
+    if (!MaybeApplyTransformation(TransformationSplitBlock(
+            MakeInstructionDescriptor(non_phi_or_var_inst->result_id(),
+                                      non_phi_or_var_inst->opcode(), 0),
+            new_block_id))) {
+      return nullptr;
+    }
+
+    // The new entry block is the newly-created block.
+    entry_block = &*entry_block->GetParent()->FindBlock(new_block_id);
+  }
+
+  return entry_block;
+}
+
+opt::BasicBlock*
+FuzzerPassOutlineFunctions::MaybeGetExitBlockSuitableForOutlining(
+    opt::BasicBlock* exit_block) {
+  // The exit block must not be a continue target.
+  assert(!GetIRContext()->GetStructuredCFGAnalysis()->IsContinueBlock(
+      exit_block->id()));
+
+  // If the exit block is a merge block, try to split it and return the second
+  // block in the pair as the exit block.
+  if (GetIRContext()->GetStructuredCFGAnalysis()->IsMergeBlock(
+          exit_block->id())) {
+    uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
+
+    if (!MaybeApplyTransformation(TransformationSplitBlock(
+            MakeInstructionDescriptor(exit_block->id(),
+                                      exit_block->begin()->opcode(), 0),
+            new_block_id))) {
+      return nullptr;
+    }
+
+    return &*exit_block->GetParent()->FindBlock(new_block_id);
+  }
+
+  return exit_block;
 }
 
 }  // namespace fuzz

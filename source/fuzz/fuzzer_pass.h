@@ -283,8 +283,8 @@ class FuzzerPass {
       std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>*
           uses_to_replace);
 
-  // Returns the pointer to the preheader of the loop with header |header_id|,
-  // which satisfies all of the following conditions:
+  // Returns the preheader of the loop with header |header_id|, which satisfies
+  // all of the following conditions:
   // - It is the only out-of-loop predecessor of the header
   // - It unconditionally branches to the header
   // - It is not a loop header itself

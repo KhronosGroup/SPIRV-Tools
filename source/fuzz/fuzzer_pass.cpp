@@ -566,7 +566,8 @@ opt::BasicBlock* FuzzerPass::GetOrCreateSimpleLoopPreheader(
 
     // |maybe_preheader| is a preheader if it branches unconditionally to
     // the header. We also require it not to be a loop header.
-    if (maybe_preheader->terminator()->opcode() == SpvOpBranch) {
+    if (maybe_preheader->terminator()->opcode() == SpvOpBranch &&
+        !maybe_preheader->IsLoopHeader()) {
       return maybe_preheader;
     }
   }
