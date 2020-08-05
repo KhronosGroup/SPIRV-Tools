@@ -277,6 +277,9 @@ TEST(FuzzerPassOutlineFunctionsTest, EntryHasOpVariable) {
                OpReturn
                OpFunctionEnd
 )";
+
+  ASSERT_TRUE(IsEqual(env, after_adjustment, context.get()));
+
 }
 
 TEST(FuzzerPassOutlineFunctionsTest, EntryBlockIsHeader) {
