@@ -141,25 +141,17 @@ FuzzerPassOutlineFunctions::MaybeGetEntryBlockSuitableForOutlining(
   if (entry_block->begin()->opcode() == SpvOpPhi ||
       entry_block->begin()->opcode() == SpvOpVariable) {
     // Find the first non-OpPhi and non-OpVariable instruction.
-    opt::Instruction* non_phi_or_var_inst = nullptr;
-    for (auto& instruction : *entry_block) {
-      if (instruction.opcode() != SpvOpPhi &&
-          instruction.opcode() != SpvOpVariable) {
-        non_phi_or_var_inst = &instruction;
-        break;
-      }
+    auto non_phi_or_var_inst = &*entry_block->begin();
+    while (non_phi_or_var_inst->opcode() == SpvOpPhi ||
+           non_phi_or_var_inst->opcode() == SpvOpVariable) {
+      non_phi_or_var_inst = non_phi_or_var_inst->NextNode();
     }
 
-    assert(non_phi_or_var_inst &&
-           "|non_phi_or_var_inst| must have been initialized");
-
-    // If the split was not applicable, the transformation will not work.
+    // Split the block.
     uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
-    if (!MaybeApplyTransformation(TransformationSplitBlock(
-            MakeInstructionDescriptor(GetIRContext(), non_phi_or_var_inst),
-            new_block_id))) {
-      return nullptr;
-    }
+    ApplyTransformation(TransformationSplitBlock(
+        MakeInstructionDescriptor(GetIRContext(), non_phi_or_var_inst),
+        new_block_id));
 
     // The new entry block is the newly-created block.
     entry_block = &*entry_block->GetParent()->FindBlock(new_block_id);
@@ -182,8 +174,14 @@ FuzzerPassOutlineFunctions::MaybeGetExitBlockSuitableForOutlining(
           exit_block->id())) {
     uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
 
+    // Find the first non-OpPhi instruction, after which to split.
+    auto split_before = &*exit_block->begin();
+    while (split_before->opcode() == SpvOpPhi) {
+      split_before = split_before->NextNode();
+    }
+
     if (!MaybeApplyTransformation(TransformationSplitBlock(
-            MakeInstructionDescriptor(GetIRContext(), &*exit_block->begin()),
+            MakeInstructionDescriptor(GetIRContext(), split_before),
             new_block_id))) {
       return nullptr;
     }
