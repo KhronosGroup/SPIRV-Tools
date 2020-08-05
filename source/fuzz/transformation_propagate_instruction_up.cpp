@@ -171,12 +171,11 @@ void TransformationPropagateInstructionUp::Apply(
       operand.words[0] = new_id;
     }
 
-    // Insert cloned instruction into the predecessor.
-    auto* predecessor = ir_context->cfg()->block(predecessor_id);
-    assert(predecessor && "|predecessor_id| is invalid");
+    auto* insert_before_inst = fuzzerutil::GetLastInsertBeforeInstruction(
+        ir_context, predecessor_id, clone->opcode());
+    assert(insert_before_inst && "Can't insert |clone| into |predecessor_id");
 
-    GetLastInsertBeforeInstruction(predecessor, clone->opcode())
-        ->InsertBefore(std::move(clone));
+    insert_before_inst->InsertBefore(std::move(clone));
   }
 
   // Insert an OpPhi instruction into the basic block of |inst|.
@@ -366,7 +365,8 @@ bool TransformationPropagateInstructionUp::IsApplicableToBlock(
   }
 
   // Check that |block| has predecessors.
-  if (ir_context->cfg()->preds(block_id).empty()) {
+  const auto& predecessors = ir_context->cfg()->preds(block_id);
+  if (predecessors.empty()) {
     return false;
   }
 
@@ -379,31 +379,12 @@ bool TransformationPropagateInstructionUp::IsApplicableToBlock(
 
   // We should be able to insert |inst_to_propagate| into every predecessor of
   // |block|.
-  for (auto id : ir_context->cfg()->preds(block_id)) {
-    auto* predecessor = ir_context->cfg()->block(id);
-    assert(predecessor && "Predecessor id is invalid");
-
-    if (!GetLastInsertBeforeInstruction(predecessor,
-                                        inst_to_propagate->opcode())) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-opt::Instruction*
-TransformationPropagateInstructionUp::GetLastInsertBeforeInstruction(
-    opt::BasicBlock* block, SpvOp opcode) {
-  auto it = block->rbegin();
-  assert(it != block->rend() && "Basic block can't be empty");
-
-  if (block->GetMergeInst()) {
-    ++it;
-  }
-
-  return fuzzerutil::CanInsertOpcodeBeforeInstruction(opcode, &*it) ? &*it
-                                                                    : nullptr;
+  return std::all_of(predecessors.begin(), predecessors.end(),
+                     [ir_context, inst_to_propagate](uint32_t predecessor_id) {
+                       return fuzzerutil::GetLastInsertBeforeInstruction(
+                                  ir_context, predecessor_id,
+                                  inst_to_propagate->opcode()) != nullptr;
+                     });
 }
 
 }  // namespace fuzz

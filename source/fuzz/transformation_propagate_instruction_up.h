@@ -80,11 +80,6 @@ class TransformationPropagateInstructionUp : public Transformation {
   // Returns true if |opcode| is supported by this transformation.
   static bool IsOpcodeSupported(SpvOp opcode);
 
-  // Returns the last instruction in the |block| that allows us to insert
-  // |opcode| above itself. Returns nullptr is no such instruction exists.
-  static opt::Instruction* GetLastInsertBeforeInstruction(
-      opt::BasicBlock* block, SpvOp opcode);
-
   protobufs::TransformationPropagateInstructionUp message_;
 };
 
