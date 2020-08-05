@@ -51,17 +51,14 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
         // of the instruction.
         auto instruction_opcode = instruction.opcode();
 
-        switch (instruction_opcode) {
-          case SpvOpIAdd:
-          case SpvOpISub:
-          case SpvOpIMul:
-            if (!TransformationReplaceAddSubMulWithCarryingExtended::
-                    IsInstructionSuitable(GetIRContext(), instruction)) {
-              continue;
-            }
-            break;
-          default:
-            continue;
+        if (instruction_opcode != SpvOpIAdd &&
+            instruction_opcode != SpvOpISub &&
+            instruction_opcode != SpvOpIMul) {
+          continue;
+        }
+        if (!TransformationReplaceAddSubMulWithCarryingExtended::
+                IsInstructionSuitable(GetIRContext(), instruction)) {
+          continue;
         }
 
         // Get the id of the required struct type. We know that the the types of

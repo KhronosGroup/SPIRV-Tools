@@ -23,7 +23,6 @@ namespace {
 const uint32_t kOpCompositeExtractIndexLowOrderBits = 0;
 const uint32_t kArithmeticInstructionIndexLeftInOperand = 0;
 const uint32_t kArithmeticInstructionIndexRightInOperand = 1;
-const uint32_t kOpTypeIndexSignedness = 2;
 }  // namespace
 
 TransformationReplaceAddSubMulWithCarryingExtended::
@@ -54,18 +53,13 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
     return false;
   }
   auto instruction_opcode = instruction->opcode();
-
-  switch (instruction_opcode) {
-    case SpvOpIAdd:
-    case SpvOpISub:
-    case SpvOpIMul:
-      if (!TransformationReplaceAddSubMulWithCarryingExtended::
-              IsInstructionSuitable(ir_context, *instruction)) {
-        return false;
-      }
-      break;
-    default:
-      return false;
+  if (instruction_opcode != SpvOpIAdd && instruction_opcode != SpvOpISub &&
+      instruction_opcode != SpvOpIMul) {
+    return false;
+  }
+  if (!TransformationReplaceAddSubMulWithCarryingExtended::
+          IsInstructionSuitable(ir_context, *instruction)) {
+    return false;
   }
 
   // Check if the type of struct holding the intermediate result exists in the
