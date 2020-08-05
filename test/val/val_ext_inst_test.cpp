@@ -1344,6 +1344,40 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArray) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayWithVariableSize) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+%int_name = OpString "int"
+%main_name = OpString "main"
+%foo_name = OpString "foo"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%uint_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %int_32 Unsigned
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
+%foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %uint_info %dbg_src 1 1 %main_info FlagIsLocal
+%float_arr_info = OpExtInst %void %DbgExt DebugTypeArray %float_info %foo_info
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailBaseType) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -1400,8 +1434,10 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCount) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Component Count must be a result id "
-                        "of OpConstant"));
+              HasSubstr("Component Count must be OpConstant with a 32- or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
+                        "integer scalar type"));
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
@@ -1430,7 +1466,10 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be positive integer"));
+              HasSubstr("Component Count must be OpConstant with a 32- or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
+                        "integer scalar type"));
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountZero) {
@@ -1459,7 +1498,47 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountZero) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be positive integer"));
+              HasSubstr("Component Count must be OpConstant with a 32- or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
+                        "integer scalar type"));
+}
+
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+%main_name = OpString "main"
+%foo_name = OpString "foo"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
+%foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %float_info %dbg_src 1 1 %main_info FlagIsLocal
+%float_arr_info = OpExtInst %void %DbgExt DebugTypeArray %float_info %foo_info
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component Count must be OpConstant with a 32- or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
+                        "integer scalar type"));
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVector) {
