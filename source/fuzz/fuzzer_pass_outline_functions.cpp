@@ -156,8 +156,7 @@ FuzzerPassOutlineFunctions::MaybeGetEntryBlockSuitableForOutlining(
     // If the split was not applicable, the transformation will not work.
     uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
     if (!MaybeApplyTransformation(TransformationSplitBlock(
-            MakeInstructionDescriptor(non_phi_or_var_inst->result_id(),
-                                      non_phi_or_var_inst->opcode(), 0),
+            MakeInstructionDescriptor(GetIRContext(), non_phi_or_var_inst),
             new_block_id))) {
       return nullptr;
     }
@@ -174,7 +173,8 @@ FuzzerPassOutlineFunctions::MaybeGetExitBlockSuitableForOutlining(
     opt::BasicBlock* exit_block) {
   // The exit block must not be a continue target.
   assert(!GetIRContext()->GetStructuredCFGAnalysis()->IsContinueBlock(
-      exit_block->id()));
+             exit_block->id()) &&
+         "A candidate exit block cannot be a continue target.");
 
   // If the exit block is a merge block, try to split it and return the second
   // block in the pair as the exit block.

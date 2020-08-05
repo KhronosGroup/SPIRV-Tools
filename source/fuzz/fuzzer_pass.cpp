@@ -577,12 +577,15 @@ opt::BasicBlock* FuzzerPass::GetOrCreateSimpleLoopPreheader(
   // Get a fresh id for the preheader.
   uint32_t preheader_id = GetFuzzerContext()->GetFreshId();
 
-  // Get a fresh id for each OpPhi instruction.
+  // Get a fresh id for each OpPhi instruction, if there is more than one
+  // out-of-loop predecessor.
   std::vector<uint32_t> phi_ids;
-  header_block->ForEachPhiInst(
-      [this, &phi_ids](opt::Instruction* /* unused */) {
-        phi_ids.push_back(GetFuzzerContext()->GetFreshId());
-      });
+  if (predecessors.size() > 2) {
+    header_block->ForEachPhiInst(
+        [this, &phi_ids](opt::Instruction* /* unused */) {
+          phi_ids.push_back(GetFuzzerContext()->GetFreshId());
+        });
+  }
 
   // Add the preheader.
   ApplyTransformation(
