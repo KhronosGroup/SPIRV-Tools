@@ -130,7 +130,8 @@ class FuzzerPassDonateModules : public FuzzerPass {
 
   // Tries to create a protobufs::LoopLimiterInfo given a loop header basic
   // block. Returns true if successful and outputs loop limiter into the |out|
-  // variable. Otherwise, returns false.
+  // variable. Otherwise, returns false. |out| contains an undefined value when
+  // this function returns false.
   bool CreateLoopLimiterInfo(
       opt::IRContext* donor_ir_context, const opt::BasicBlock& loop_header,
       const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
