@@ -2730,8 +2730,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (invalid) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": Component Count must be "
-                   << "OpConstant with a 32 or 64-bits integer scalar type or "
-                   << "DebugGlobalVariable or DebugLocalVariable with a 32 or "
+                   << "OpConstant with a 32- or 64-bits integer scalar type or "
+                   << "DebugGlobalVariable or DebugLocalVariable with a 32- or "
                    << "64-bits unsigned integer scalar type";
           }
         }

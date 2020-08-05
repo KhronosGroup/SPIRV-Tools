@@ -1434,9 +1434,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCount) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant with a 32 or "
+              HasSubstr("Component Count must be OpConstant with a 32- or "
                         "64-bits integer scalar type or DebugGlobalVariable or "
-                        "DebugLocalVariable with a 32 or 64-bits unsigned "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
                         "integer scalar type"));
 }
 
@@ -1466,9 +1466,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant with a 32 or "
+              HasSubstr("Component Count must be OpConstant with a 32- or "
                         "64-bits integer scalar type or DebugGlobalVariable or "
-                        "DebugLocalVariable with a 32 or 64-bits unsigned "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
                         "integer scalar type"));
 }
 
@@ -1498,9 +1498,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountZero) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant with a 32 or "
+              HasSubstr("Component Count must be OpConstant with a 32- or "
                         "64-bits integer scalar type or DebugGlobalVariable or "
-                        "DebugLocalVariable with a 32 or 64-bits unsigned "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
                         "integer scalar type"));
 }
 
@@ -1535,9 +1535,9 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
       src, size_const, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant with a 32 or "
+              HasSubstr("Component Count must be OpConstant with a 32- or "
                         "64-bits integer scalar type or DebugGlobalVariable or "
-                        "DebugLocalVariable with a 32 or 64-bits unsigned "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
                         "integer scalar type"));
 }
 
