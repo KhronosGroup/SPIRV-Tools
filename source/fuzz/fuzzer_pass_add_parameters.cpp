@@ -17,8 +17,6 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_add_global_variable.h"
-#include "source/fuzz/transformation_add_local_variable.h"
 #include "source/fuzz/transformation_add_parameter.h"
 
 namespace spvtools {
@@ -40,23 +38,8 @@ void FuzzerPassAddParameters::Apply() {
     const auto* type =
         GetIRContext()->get_type_mgr()->GetType(type_inst->result_id());
     assert(type && "Type instruction is not registered in the type manager");
-
     if (TransformationAddParameter::IsParameterTypeSupported(*type)) {
       type_candidates.push_back(type_inst->result_id());
-    } else if (type->kind() == opt::analysis::Type::kPointer) {
-      // Pointer types with storage class Private and Function are allowed.
-      SpvStorageClass storage_class =
-          fuzzerutil::GetStorageClassFromPointerType(GetIRContext(),
-                                                     type_inst->result_id());
-      // Check if the pointee type is supported.
-      auto pointee_type = GetIRContext()->get_type_mgr()->GetType(
-          fuzzerutil::GetPointeeTypeIdFromPointerType(GetIRContext(),
-                                                      type_inst->result_id()));
-      if (TransformationAddParameter::IsParameterTypeSupported(*pointee_type) &&
-          (storage_class == SpvStorageClassPrivate ||
-           storage_class == SpvStorageClassFunction)) {
-        type_candidates.push_back(type_inst->result_id());
-      }
     }
   }
 
@@ -87,62 +70,14 @@ void FuzzerPassAddParameters::Apply() {
         GetFuzzerContext()->GetRandomNumberOfNewParameters(
             GetNumberOfParameters(function));
     for (uint32_t i = 0; i < num_new_parameters; ++i) {
-      uint32_t current_type_id =
-          type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)];
-      auto current_type =
-          GetIRContext()->get_type_mgr()->GetType(current_type_id);
-      auto current_instr =
-          GetIRContext()->get_def_use_mgr()->GetDef(current_type_id);
-
-      if (current_type->kind() == opt::analysis::Type::kPointer) {
-        auto current_pointee_type_id =
-            fuzzerutil::GetPointeeTypeIdFromPointerType(GetIRContext(),
-                                                        current_type_id);
-        auto storage_class =
-            fuzzerutil::GetStorageClassFromPointerType(current_instr);
-
-        // Look for available variables that have the type |current_type|.
-        std::vector<uint32_t> available_variable_ids;
-        GetIRContext()->module()->ForEachInst(
-            [this, &available_variable_ids,
-             current_type_id](opt::Instruction* instruction) {
-              if (instruction->opcode() != SpvOpVariable) {
-                return;
-              }
-              if (instruction->type_id() != current_type_id) {
-                return;
-              }
-              available_variable_ids.push_back(instruction->result_id());
-            });
-        uint32_t initializer_id =
-            FindOrCreateZeroConstant(current_pointee_type_id, true);
-
-        // If there are no such variables, then create one. The value is
-        // irrelevant.
-        if (available_variable_ids.empty()) {
-          if (storage_class == SpvStorageClassPrivate) {
-            ApplyTransformation(TransformationAddGlobalVariable(
-                GetFuzzerContext()->GetFreshId(), current_type_id,
-                SpvStorageClassPrivate, initializer_id, true));
-          } else if (storage_class == SpvStorageClassFunction) {
-            ApplyTransformation(TransformationAddLocalVariable(
-                GetFuzzerContext()->GetFreshId(), current_type_id,
-                function.result_id(), initializer_id, true));
-          }
-        }
-        // Add a parameter with the created initializer.
-        ApplyTransformation(TransformationAddParameter(
-            function.result_id(), GetFuzzerContext()->GetFreshId(),
-            initializer_id, GetFuzzerContext()->GetFreshId()));
-
-      } else {
-        ApplyTransformation(TransformationAddParameter(
-            function.result_id(), GetFuzzerContext()->GetFreshId(),
-            // We mark the constant as irrelevant so that we can replace it
-            // with a more interesting value later.
-            FindOrCreateZeroConstant(current_type_id, true),
-            GetFuzzerContext()->GetFreshId()));
-      }
+      ApplyTransformation(TransformationAddParameter(
+          function.result_id(), GetFuzzerContext()->GetFreshId(),
+          // We mark the constant as irrelevant so that we can replace it with a
+          // more interesting value later.
+          FindOrCreateZeroConstant(
+              type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)],
+              true),
+          GetFuzzerContext()->GetFreshId()));
     }
   }
 }
