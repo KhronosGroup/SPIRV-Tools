@@ -749,21 +749,21 @@ inline void Instruction::ForEachInst(
 }
 
 inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
-  for (auto& opnd : operands_)
-    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  for (auto& operand : operands_)
+    if (spvIsIdType(operand.type)) f(&operand.words[0]);
 }
 
 inline void Instruction::ForEachId(
     const std::function<void(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_)
-    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  for (const auto& operand : operands_)
+    if (spvIsIdType(operand.type)) f(&operand.words[0]);
 }
 
 inline bool Instruction::WhileEachInId(
     const std::function<bool(uint32_t*)>& f) {
-  for (auto& opnd : operands_) {
-    if (spvIsInIdType(opnd.type)) {
-      if (!f(&opnd.words[0])) return false;
+  for (auto& operand : operands_) {
+    if (spvIsInIdType(operand.type) && !f(&operand.words[0])) {
+      return false;
     }
   }
   return true;
@@ -771,9 +771,9 @@ inline bool Instruction::WhileEachInId(
 
 inline bool Instruction::WhileEachInId(
     const std::function<bool(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_) {
-    if (spvIsInIdType(opnd.type)) {
-      if (!f(&opnd.words[0])) return false;
+  for (const auto& operand : operands_) {
+    if (spvIsInIdType(operand.type) && !f(&operand.words[0])) {
+      return false;
     }
   }
   return true;
@@ -796,13 +796,13 @@ inline void Instruction::ForEachInId(
 
 inline bool Instruction::WhileEachInOperand(
     const std::function<bool(uint32_t*)>& f) {
-  for (auto& opnd : operands_) {
-    switch (opnd.type) {
+  for (auto& operand : operands_) {
+    switch (operand.type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
       case SPV_OPERAND_TYPE_TYPE_ID:
         break;
       default:
-        if (!f(&opnd.words[0])) return false;
+        if (!f(&operand.words[0])) return false;
         break;
     }
   }
@@ -811,13 +811,13 @@ inline bool Instruction::WhileEachInOperand(
 
 inline bool Instruction::WhileEachInOperand(
     const std::function<bool(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_) {
-    switch (opnd.type) {
+  for (const auto& operand : operands_) {
+    switch (operand.type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
       case SPV_OPERAND_TYPE_TYPE_ID:
         break;
       default:
-        if (!f(&opnd.words[0])) return false;
+        if (!f(&operand.words[0])) return false;
         break;
     }
   }
@@ -826,16 +826,16 @@ inline bool Instruction::WhileEachInOperand(
 
 inline void Instruction::ForEachInOperand(
     const std::function<void(uint32_t*)>& f) {
-  WhileEachInOperand([&f](uint32_t* op) {
-    f(op);
+  WhileEachInOperand([&f](uint32_t* operand) {
+    f(operand);
     return true;
   });
 }
 
 inline void Instruction::ForEachInOperand(
     const std::function<void(const uint32_t*)>& f) const {
-  WhileEachInOperand([&f](const uint32_t* op) {
-    f(op);
+  WhileEachInOperand([&f](const uint32_t* operand) {
+    f(operand);
     return true;
   });
 }
