@@ -183,8 +183,7 @@ FuzzerPassOutlineFunctions::MaybeGetExitBlockSuitableForOutlining(
     uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
 
     if (!MaybeApplyTransformation(TransformationSplitBlock(
-            MakeInstructionDescriptor(exit_block->id(),
-                                      exit_block->begin()->opcode(), 0),
+            MakeInstructionDescriptor(GetIRContext(), &*exit_block->begin()),
             new_block_id))) {
       return nullptr;
     }
