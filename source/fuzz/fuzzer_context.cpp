@@ -63,8 +63,6 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
-const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
-    {50, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfInterchangingZeroLikeConstants = {
     10, 90};
 const std::pair<uint32_t, uint32_t>
@@ -125,8 +123,10 @@ const std::function<bool(uint32_t, RandomGenerator*)>
 }  // namespace
 
 FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
+                             DecisionMaker* decision_maker,
                              uint32_t min_fresh_id)
     : random_generator_(random_generator),
+      decision_maker_(decision_maker),
       next_fresh_id_(min_fresh_id),
       max_equivalence_class_size_for_data_synonym_fact_closure_(
           kDefaultMaxEquivalenceClassSizeForDataSynonymFactClosure),
@@ -140,8 +140,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
           kGetDefaultMaxNumberOfParametersReplacedWithStruct),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
-  chance_of_adding_access_chain_ =
-      ChooseBetweenMinAndMax(kChanceOfAddingAccessChain);
   chance_of_adding_another_struct_field_ =
       ChooseBetweenMinAndMax(kChanceOfAddingAnotherStructField);
   chance_of_adding_array_or_struct_type_ =
@@ -198,8 +196,6 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
-  chance_of_going_deeper_when_making_access_chain_ =
-      ChooseBetweenMinAndMax(kChanceOfGoingDeeperWhenMakingAccessChain);
   chance_of_interchanging_signedness_of_integer_operands_ =
       ChooseBetweenMinAndMax(kChanceOfInterchangingSignednessOfIntegerOperands);
   chance_of_interchanging_zero_like_constants_ =
@@ -245,6 +241,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
 }
 
 FuzzerContext::~FuzzerContext() = default;
+
+DecisionMaker* FuzzerContext::GetDecisionMaker() { return decision_maker_; }
 
 uint32_t FuzzerContext::GetFreshId() { return next_fresh_id_++; }
 

@@ -186,6 +186,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // Make a PRNG from the seed passed to the fuzzer on creation.
   PseudoRandomGenerator random_generator(impl_->seed);
 
+  // Create a decision maker (to eventually replace the RNG) from the seed.
+  DecisionMaker decisionMaker = DecisionMaker::CreateInstance(impl_->seed);
+
   // The fuzzer will introduce new ids into the module.  The module's id bound
   // gives the smallest id that can be used for this purpose.  We add an offset
   // to this so that there is a sizeable gap between the ids used in the
@@ -194,7 +197,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider the
   //  case where the maximum id bound is reached.
   auto minimum_fresh_id = ir_context->module()->id_bound() + kIdBoundGap;
-  FuzzerContext fuzzer_context(&random_generator, minimum_fresh_id);
+  FuzzerContext fuzzer_context(&random_generator, &decisionMaker,
+                               minimum_fresh_id);
 
   FactManager fact_manager;
   fact_manager.AddFacts(impl_->consumer, initial_facts, ir_context.get());

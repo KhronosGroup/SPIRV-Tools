@@ -48,8 +48,7 @@ void FuzzerPassAddAccessChains::Apply() {
         }
 
         // Randomly decide whether to try inserting a load here.
-        if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()->GetChanceOfAddingAccessChain())) {
+        if (!GetDecisionMaker()->FuzzerPassAddAccessChainsShouldAddLoad()) {
           return;
         }
 
@@ -89,8 +88,10 @@ void FuzzerPassAddAccessChains::Apply() {
         }
 
         auto chosen_pointer =
-            relevant_pointer_instructions[GetFuzzerContext()->RandomIndex(
-                relevant_pointer_instructions)];
+            GetDecisionMaker()
+                ->FuzzerPassAddAccessChainsChoosePointerInstruction(
+                    relevant_pointer_instructions);
+
         std::vector<uint32_t> index_ids;
 
         // Each index accessing a non-struct composite will be clamped, thus
@@ -106,9 +107,7 @@ void FuzzerPassAddAccessChains::Apply() {
           if (!spvOpcodeIsComposite(subobject_type->opcode())) {
             break;
           }
-          if (!GetFuzzerContext()->ChoosePercentage(
-                  GetFuzzerContext()
-                      ->GetChanceOfGoingDeeperWhenMakingAccessChain())) {
+          if (!GetDecisionMaker()->FuzzerPassAddAccessChainsShouldGoDeeper()) {
             break;
           }
           uint32_t bound;
@@ -138,7 +137,8 @@ void FuzzerPassAddAccessChains::Apply() {
           }
 
           uint32_t index_value =
-              GetFuzzerContext()->GetRandomIndexForAccessChain(bound);
+              GetDecisionMaker()
+                  ->FuzzerPassAddAccessChainsChooseIndexForAccessChain(bound);
 
           switch (subobject_type->opcode()) {
             case SpvOpTypeArray:
@@ -146,7 +146,8 @@ void FuzzerPassAddAccessChains::Apply() {
             case SpvOpTypeVector: {
               // The index will be clamped
 
-              bool is_signed = GetFuzzerContext()->ChooseEven();
+              const bool is_signed =
+                  GetDecisionMaker()->FuzzerPassAddAccessChainsChooseIsSigned();
 
               // Make the constant ready for clamping. We need:
               // - an OpTypeBool to be present in the module
@@ -165,12 +166,15 @@ void FuzzerPassAddAccessChains::Apply() {
               subobject_type_id = subobject_type->GetSingleWordInOperand(0);
 
             } break;
-            case SpvOpTypeStruct:
+            case SpvOpTypeStruct: {
+              const bool is_signed =
+                  GetDecisionMaker()->FuzzerPassAddAccessChainsChooseIsSigned();
+
               index_ids.push_back(FindOrCreateIntegerConstant(
-                  {index_value}, 32, GetFuzzerContext()->ChooseEven(), false));
+                  {index_value}, 32, is_signed, false));
               subobject_type_id =
                   subobject_type->GetSingleWordInOperand(index_value);
-              break;
+            } break;
             default:
               assert(false && "Not a composite type opcode.");
           }

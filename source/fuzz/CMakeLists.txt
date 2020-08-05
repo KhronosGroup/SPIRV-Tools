@@ -31,6 +31,7 @@ if(SPIRV_BUILD_FUZZER)
   set(SPIRV_TOOLS_FUZZ_SOURCES
         call_graph.h
         data_descriptor.h
+        decision_maker.h
         equivalence_relation.h
         fact_manager.h
         force_render_red.h
@@ -165,6 +166,7 @@ if(SPIRV_BUILD_FUZZER)
 
         call_graph.cpp
         data_descriptor.cpp
+        decision_maker.cpp
         fact_manager.cpp
         force_render_red.cpp
         fuzzer.cpp

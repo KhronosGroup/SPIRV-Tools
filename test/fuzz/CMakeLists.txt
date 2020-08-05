@@ -15,9 +15,11 @@
 if (${SPIRV_BUILD_FUZZER})
 
   set(SOURCES
+          decision_maker_mock.h
           fuzz_test_util.h
 
           data_synonym_transformation_test.cpp
+          decision_maker_mock.cpp
           equivalence_relation_test.cpp
           fact_manager_test.cpp
           fuzz_test_util.cpp

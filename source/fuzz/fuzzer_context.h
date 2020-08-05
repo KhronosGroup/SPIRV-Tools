@@ -18,6 +18,7 @@
 #include <functional>
 #include <utility>
 
+#include "source/fuzz/decision_maker.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/random_generator.h"
 #include "source/opt/function.h"
@@ -32,9 +33,13 @@ class FuzzerContext {
  public:
   // Constructs a fuzzer context with a given random generator and the minimum
   // value that can be used for fresh ids.
-  FuzzerContext(RandomGenerator* random_generator, uint32_t min_fresh_id);
+  FuzzerContext(RandomGenerator* random_generator,
+                DecisionMaker* decision_maker, uint32_t min_fresh_id);
 
   ~FuzzerContext();
+
+  // Returns the DecisionMaker for making random decisions.
+  DecisionMaker* GetDecisionMaker();
 
   // Returns a random boolean.
   bool ChooseEven();
@@ -106,9 +111,6 @@ class FuzzerContext {
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
-  uint32_t GetChanceOfAddingAccessChain() {
-    return chance_of_adding_access_chain_;
-  }
   uint32_t GetChanceOfAddingAnotherStructField() {
     return chance_of_adding_another_struct_field_;
   }
@@ -182,9 +184,6 @@ class FuzzerContext {
   uint32_t GetChanceOfCopyingObject() { return chance_of_copying_object_; }
   uint32_t GetChanceOfDonatingAdditionalModule() {
     return chance_of_donating_additional_module_;
-  }
-  uint32_t GetChanceOfGoingDeeperWhenMakingAccessChain() {
-    return chance_of_going_deeper_when_making_access_chain_;
   }
   uint32_t GetChanceOfInterchangingSignednessOfIntegerOperands() {
     return chance_of_interchanging_signedness_of_integer_operands_;
@@ -322,12 +321,14 @@ class FuzzerContext {
  private:
   // The source of randomness.
   RandomGenerator* random_generator_;
+  // The decision maker. I.e. the new source of randomness.
+  DecisionMaker* decision_maker_;
   // The next fresh id to be issued.
   uint32_t next_fresh_id_;
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
-  uint32_t chance_of_adding_access_chain_;
+
   uint32_t chance_of_adding_another_struct_field_;
   uint32_t chance_of_adding_array_or_struct_type_;
   uint32_t chance_of_adding_copy_memory_;
@@ -358,7 +359,7 @@ class FuzzerContext {
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
-  uint32_t chance_of_going_deeper_when_making_access_chain_;
+
   uint32_t chance_of_interchanging_signedness_of_integer_operands_;
   uint32_t chance_of_interchanging_zero_like_constants_;
   uint32_t chance_of_inverting_comparison_operators_;
