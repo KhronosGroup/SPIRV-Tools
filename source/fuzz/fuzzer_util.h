@@ -487,6 +487,12 @@ std::map<uint32_t, uint32_t> RepeatedUInt32PairToMap(
 google::protobuf::RepeatedPtrField<protobufs::UInt32Pair>
 MapToRepeatedUInt32Pair(const std::map<uint32_t, uint32_t>& data);
 
+// Returns the last instruction in |block_id| before which an instruction with
+// opcode |opcode| can be inserted, or nullptr if there is no such instruction.
+opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
+                                                 uint32_t block_id,
+                                                 SpvOp opcode);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
