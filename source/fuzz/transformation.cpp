@@ -54,6 +54,7 @@
 #include "source/fuzz/transformation_function_call.h"
 #include "source/fuzz/transformation_invert_comparison_operator.h"
 #include "source/fuzz/transformation_load.h"
+#include "source/fuzz/transformation_make_vector_operation_dynamic.h"
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_move_instruction_down.h"
@@ -191,6 +192,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.invert_comparison_operator());
     case protobufs::Transformation::TransformationCase::kLoad:
       return MakeUnique<TransformationLoad>(message.load());
+    case protobufs::Transformation::TransformationCase::
+        kMakeVectorOperationDynamic:
+      return MakeUnique<TransformationMakeVectorOperationDynamic>(
+          message.make_vector_operation_dynamic());
     case protobufs::Transformation::TransformationCase::kMergeBlocks:
       return MakeUnique<TransformationMergeBlocks>(message.merge_blocks());
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
