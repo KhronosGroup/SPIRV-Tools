@@ -14,6 +14,7 @@
 
 #include "transformation_composite_insert.h"
 
+#include "source/fuzz/fuzzer_pass_add_composite_inserts.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 
@@ -27,7 +28,7 @@ TransformationCompositeInsert::TransformationCompositeInsert(
 TransformationCompositeInsert::TransformationCompositeInsert(
     const protobufs::InstructionDescriptor& instruction_to_insert_before,
     uint32_t fresh_id, uint32_t composite_id, uint32_t object_id,
-    std::vector<uint32_t>&& index) {
+    const std::vector<uint32_t>& index) {
   *message_.mutable_instruction_to_insert_before() =
       instruction_to_insert_before;
   message_.set_fresh_id(fresh_id);
@@ -48,29 +49,29 @@ bool TransformationCompositeInsert::IsApplicable(
   // |message_.composite_id| must refer to an existing composite value.
   auto composite =
       ir_context->get_def_use_mgr()->GetDef(message_.composite_id());
-  auto composite_type =
-      ir_context->get_type_mgr()->GetType(composite->type_id());
-  if (!fuzzerutil::IsCompositeType(composite_type)) {
+
+  if (!IsCompositeInstruction(ir_context, composite)) {
     return false;
   }
-
-  // |message_.index| must refer to a valid index.
-  if (fuzzerutil::WalkCompositeTypeIndices(ir_context, composite->type_id(),
-                                           message_.index()) == 0) {
-    return false;
-  }
-
-  // The type id of the object at |message_.object_id| and the type id of the
-  // component of the composite at index |message_.index| must be the same.
+  // |message_.index| must refer to a valid index. The type id of the object at
+  // |message_.object_id| and the type id of the component of the composite at
+  // index |message_.index| must be the same.
   auto component_to_be_replaced_type_id = fuzzerutil::WalkCompositeTypeIndices(
       ir_context, composite->type_id(), message_.index());
   if (component_to_be_replaced_type_id == 0) {
     return false;
   }
-  auto object_type_id =
-      ir_context->get_def_use_mgr()->GetDef(message_.object_id())->type_id();
-
-  if (component_to_be_replaced_type_id != object_type_id) {
+  auto object_instruction =
+      ir_context->get_def_use_mgr()->GetDef(message_.object_id());
+  if (object_instruction == nullptr) {
+    return false;
+  }
+  // We ignore pointers for now. Consider adding support for pointer types.
+  auto object_instruction_type =
+      ir_context->get_type_mgr()->GetType(object_instruction->type_id());
+  assert(object_instruction_type->kind() != opt::analysis::Type::kPointer &&
+         "The object to be inserted cannot be a pointer.");
+  if (component_to_be_replaced_type_id != object_instruction->type_id()) {
     return false;
   }
 
@@ -79,37 +80,119 @@ bool TransformationCompositeInsert::IsApplicable(
   auto instruction_to_insert_before =
       FindInstruction(message_.instruction_to_insert_before(), ir_context);
 
-  return instruction_to_insert_before != nullptr;
+  if (instruction_to_insert_before == nullptr) {
+    return false;
+  }
+
+  // Check whether it is legitimate to insert an OpCompositeInsert before this
+  // instruction.
+  return fuzzerutil::CanInsertOpcodeBeforeInstruction(
+      SpvOpCompositeInsert, instruction_to_insert_before);
 }
 
 void TransformationCompositeInsert::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
   // |message_.struct_fresh_id| must be fresh.
   assert(fuzzerutil::IsFreshId(ir_context, message_.fresh_id()) &&
          "|message_.fresh_id| must be fresh");
 
+  std::vector<uint32_t> index =
+      fuzzerutil::RepeatedFieldToVector(message_.index());
   opt::Instruction::OperandList in_operands;
   in_operands.push_back({SPV_OPERAND_TYPE_ID, {message_.object_id()}});
   in_operands.push_back({SPV_OPERAND_TYPE_ID, {message_.composite_id()}});
-  for (auto an_index : message_.index()) {
-    in_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {an_index}});
+  for (uint32_t i = 0; i < index.size(); i++) {
+    in_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {index[i]}});
   }
-  auto composite =
-      ir_context->get_def_use_mgr()->GetDef(message_.composite_id());
+  auto composite_type_id =
+      fuzzerutil::GetTypeId(ir_context, message_.composite_id());
 
   FindInstruction(message_.instruction_to_insert_before(), ir_context)
       ->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpCompositeInsert, composite->type_id(),
-          message_.fresh_id(), in_operands));
+          ir_context, SpvOpCompositeInsert, composite_type_id,
+          message_.fresh_id(), std::move(in_operands)));
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
+
+  // We have modified the module so most analyzes are now invalid.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
+  // Add facts about synonyms. Every element which hasn't been changed in
+  // the copy is synonymous to the corresponding element in the original
+  // |available_composite|. For every index that is a prefix of
+  // |index_to_replace| the components different from the one that
+  // contains the inserted object are synonymous with corresponding
+  // elements in the |available_composite|.
+
+  // If |composite_id| or |object_id| is irrelevant don't add any synonyms.
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.composite_id()) ||
+      transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.object_id())) {
+    return;
+  }
+  uint32_t current_node_type_id = composite_type_id;
+  uint32_t index_to_skip, num_of_components;
+  std::vector<uint32_t> current_index;
+
+  for (uint32_t current_level = 0; current_level < index.size();
+       current_level++) {
+    index_to_skip = index[current_level];
+    num_of_components = FuzzerPassAddCompositeInserts::GetNumberOfComponents(
+        ir_context, current_node_type_id);
+
+    // Store the prefix of the |index_to_replace|.
+    if (current_level != 0) {
+      current_index.push_back(index[current_level - 1]);
+    }
+    for (uint32_t i = 0; i < num_of_components; i++) {
+      if (i == index_to_skip) {
+        continue;
+      } else {
+        current_index.push_back(i);
+        // TODO: Google C++ guide restricts the use of r-value refrences.
+        //       https://google.github.io/styleguide/cppguide.html#Rvalue_references
+        //       Consider changing the signature of AddFactDataSynonym()
+        transformation_context->GetFactManager()->AddFactDataSynonym(
+            MakeDataDescriptor(message_.fresh_id(),
+                               std::vector<uint32_t>(current_index)),
+            MakeDataDescriptor(message_.composite_id(),
+                               std::vector<uint32_t>(current_index)),
+            ir_context);
+        current_index.pop_back();
+      }
+    }
+  }
+
+  // The element which has been changed is synonymous to the found
+  // |available_object| itself.
+  transformation_context->GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(message_.object_id(), {}),
+      MakeDataDescriptor(message_.fresh_id(), std::vector<uint32_t>(index)),
+      ir_context);
 }
 
 protobufs::Transformation TransformationCompositeInsert::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_composite_insert() = message_;
   return result;
+}
+
+bool TransformationCompositeInsert::IsCompositeInstruction(
+    opt::IRContext* ir_context, opt::Instruction* instruction) {
+  if (instruction == nullptr) {
+    return false;
+  }
+  if (instruction->result_id() == 0 || instruction->type_id() == 0) {
+    return false;
+  }
+  auto composite_type =
+      ir_context->get_type_mgr()->GetType(instruction->type_id());
+  if (!fuzzerutil::IsCompositeType(composite_type)) {
+    return false;
+  }
+  return true;
 }
 
 }  // namespace fuzz

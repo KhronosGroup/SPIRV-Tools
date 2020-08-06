@@ -1027,11 +1027,11 @@ message TransformationCompositeInsert {
   // A transformation that adds a instruction OpCompositeInsert which creates
   // a new composite from an existing composite, with an element inserted.
 
-  // A descriptor for an instruction before which the new the new
+  // A descriptor for an instruction before which the new instruction
   // OpCompositeInsert should be inserted.
   InstructionDescriptor instruction_to_insert_before = 1;
 
-  // Result id of this instruction.
+  // Result id of the inserted OpComposite instruction.
   uint32 fresh_id = 2;
 
   // Id of the composite used as the basis for the insertion.

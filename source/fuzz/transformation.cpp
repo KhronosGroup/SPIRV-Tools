@@ -97,9 +97,6 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
   switch (message.transformation_case()) {
     case protobufs::Transformation::TransformationCase::kAccessChain:
       return MakeUnique<TransformationAccessChain>(message.access_chain());
-    case protobufs::Transformation::TransformationCase::kCompositeInsert:
-      return MakeUnique<TransformationCompositeInsert>(
-          message.composite_insert());
     case protobufs::Transformation::TransformationCase::kAddConstantBoolean:
       return MakeUnique<TransformationAddConstantBoolean>(
           message.add_constant_boolean());
@@ -183,6 +180,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kCompositeExtract:
       return MakeUnique<TransformationCompositeExtract>(
           message.composite_extract());
+    case protobufs::Transformation::TransformationCase::kCompositeInsert:
+      return MakeUnique<TransformationCompositeInsert>(
+          message.composite_insert());
     case protobufs::Transformation::TransformationCase::
         kComputeDataSynonymFactClosure:
       return MakeUnique<TransformationComputeDataSynonymFactClosure>(
