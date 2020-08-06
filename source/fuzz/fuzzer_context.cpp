@@ -61,8 +61,6 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
     50, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
-const std::pair<uint32_t, uint32_t> kChanceOfPropagatingInstructionsUp = {20,
-                                                                          70};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
@@ -83,6 +81,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfOutliningFunction = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingInstructions = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingParameters = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingPhiOperands = {30, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfPropagatingInstructionsUp = {20,
+                                                                          70};
 const std::pair<uint32_t, uint32_t> kChanceOfPushingIdThroughVariable = {5, 50};
 const std::pair<uint32_t, uint32_t>
     kChanceOfReplacingAddSubMulWithCarryingExtended = {20, 90};
