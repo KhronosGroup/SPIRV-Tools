@@ -52,11 +52,6 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
   if (instruction == nullptr) {
     return false;
   }
-  auto instruction_opcode = instruction->opcode();
-  if (instruction_opcode != SpvOpIAdd && instruction_opcode != SpvOpISub &&
-      instruction_opcode != SpvOpIMul) {
-    return false;
-  }
   if (!TransformationReplaceAddSubMulWithCarryingExtended::
           IsInstructionSuitable(ir_context, *instruction)) {
     return false;
@@ -208,13 +203,10 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsInstructionSuitable(
       // In case of OpIAdd and OpISub if the operand is a vector, the component
       // type must be unsigned. Otherwise (if the operand is an int), the
       // operand must be unsigned.
-      bool operand_is_signed;
-      if (type->kind() == opt::analysis::Type::kVector) {
-        auto operand_type = type->AsVector()->element_type();
-        operand_is_signed = operand_type->AsInteger()->IsSigned();
-      } else {
-        operand_is_signed = type->AsInteger()->IsSigned();
-      }
+      bool operand_is_signed =
+          type->AsVector()
+              ? type->AsVector()->element_type()->AsInteger()->IsSigned()
+              : type->AsInteger()->IsSigned();
       if (operand_is_signed) {
         return false;
       }

@@ -47,15 +47,7 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
           continue;
         }
 
-        // Check if the transformation can be applied, according to the opcode
-        // of the instruction.
-        auto instruction_opcode = instruction.opcode();
-
-        if (instruction_opcode != SpvOpIAdd &&
-            instruction_opcode != SpvOpISub &&
-            instruction_opcode != SpvOpIMul) {
-          continue;
-        }
+        // Check if the transformation can be applied to this instruction.
         if (!TransformationReplaceAddSubMulWithCarryingExtended::
                 IsInstructionSuitable(GetIRContext(), instruction)) {
           continue;
