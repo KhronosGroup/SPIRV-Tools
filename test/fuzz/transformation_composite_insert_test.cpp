@@ -157,9 +157,11 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
   index = {1, 0, 0};
   auto transformation_bad_5 = TransformationCompositeInsert(
       instruction_to_insert_before, fresh_id, composite_id, object_id, index);
+#ifndef NDEBUG
   ASSERT_DEATH(
       transformation_bad_5.IsApplicable(context.get(), transformation_context),
       "The |object_id| cannot refer to a pointer.");
+#endif
 
   // Bad: |index| is not a valid index.
   instruction_to_insert_before = MakeInstructionDescriptor(29, SpvOpStore, 0);
@@ -210,7 +212,6 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
       transformation_bad_9.IsApplicable(context.get(), transformation_context));
 
   // Bad: The composite with |composite_id| cannot be empty.
-
   instruction_to_insert_before = MakeInstructionDescriptor(29, SpvOpStore, 0);
   fresh_id = 50;
   composite_id = 61;
