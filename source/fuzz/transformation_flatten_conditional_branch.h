@@ -27,8 +27,10 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
   TransformationFlattenConditionalBranch(
       uint32_t header_block_id,
-      std::map<protobufs::InstructionDescriptor, std::vector<uint32_t>>
-          instructions_to_fresh_ids);
+      std::vector<
+          std::pair<protobufs::InstructionDescriptor, std::vector<uint32_t>>>
+          instruction_to_fresh_ids = {},
+      std::vector<uint32_t> overflow_ids = {});
 
   // - |message_.header_block_id| must be the label id of a selection header,
   //   which ends with an OpBranchConditional instruction.

@@ -1165,6 +1165,9 @@ message TransformationFlattenConditionalBranch {
   // Necessary for store, load and function call instructions.
   repeated InstructionUint32ListPair instruction_to_fresh_ids = 2;
 
+  // A list of fresh ids to be used for instructions that need them, if
+  // they are not in instruction_to_fresh_ids.
+  repeated uint32 overflow_id = 3;
 }
 
 message TransformationFunctionCall {

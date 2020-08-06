@@ -47,11 +47,6 @@ protobufs::InstructionDescriptor MakeInstructionDescriptor(
 protobufs::InstructionDescriptor MakeInstructionDescriptor(
     opt::IRContext* context, opt::Instruction* inst);
 
-// Returns a tuple (base_instruction_result_id, target_instruction_opcode,
-// num_opcodes_to_ignore) that corresponds to the given instruction descriptor.
-std::tuple<uint32_t, uint32_t, uint32_t> TupleFromInstructionDescriptor(
-    protobufs::InstructionDescriptor instruction_descriptor);
-
 }  // namespace fuzz
 }  // namespace spvtools
 

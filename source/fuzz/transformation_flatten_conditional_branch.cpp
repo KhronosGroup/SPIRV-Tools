@@ -25,8 +25,10 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
 
 TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
     uint32_t header_block_id,
-    std::map<protobufs::InstructionDescriptor, std::vector<uint32_t>>
-        instructions_to_fresh_ids) {
+    std::vector<
+        std::pair<protobufs::InstructionDescriptor, std::vector<uint32_t>>>
+        instructions_to_fresh_ids,
+    std::vector<uint32_t> overflow_ids) {
   message_.set_header_block_id(header_block_id);
   for (auto const& pair : instructions_to_fresh_ids) {
     protobufs::InstructionUint32ListPair mapping;
@@ -35,6 +37,9 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
       mapping.add_id(id);
     }
     *message_.add_instruction_to_fresh_ids() = mapping;
+    for (auto id : overflow_ids) {
+      message_.add_overflow_id(id);
+    }
   }
 }
 
@@ -47,13 +52,17 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     return false;
   }
 
+  // |header_block| must be a selection header.
+  uint32_t merge_block_id = header_block->MergeBlockIdIfAny();
+  if (!merge_block_id ||
+      header_block->GetMergeInst()->opcode() != SpvOpSelectionMerge) {
+    return false;
+  }
+
   // The header block must end with an OpBranchConditional instruction.
   if (header_block->terminator()->opcode() != SpvOpBranchConditional) {
     return false;
   }
-
-  // Find the merge block.
-  uint32_t merge_block_id = header_block->GetLabel()->GetSingleWordInOperand(0);
 
   // Find the first block where flow converges (it is not necessarily the merge
   // block).
@@ -83,11 +92,33 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   auto postdominator_analysis =
       ir_context->GetPostDominatorAnalysis(enclosing_function);
 
+  // Get the mapping from instructions to the fresh ids available for them.
+  std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
+      instructions_to_fresh_ids;
+  for (auto pair : message_.instruction_to_fresh_ids()) {
+    std::vector<uint32_t> fresh_ids;
+    for (uint32_t id : pair.id()) {
+      fresh_ids.push_back(id);
+    }
+
+    auto instruction =
+        FindInstruction(pair.instruction_descriptor(), ir_context);
+    if (instruction) {
+      instructions_to_fresh_ids.emplace(instruction, fresh_ids);
+    }
+  }
+  // Keep track of the fresh ids used.
+  std::set<uint32_t> used_fresh_ids;
+
+  // Keep track of the number of overflow ids used.
+  uint32_t overflow_ids_used = 0;
+
   // Perform a BST to find and check all the blocks that can be reached by the
   // header before reaching the convergence block.
   std::list<uint32_t> to_check;
   header_block->ForEachSuccessorLabel(
       [&to_check](uint32_t label) { to_check.push_back(label); });
+
   while (!to_check.empty()) {
     uint32_t block_id = to_check.front();
     to_check.pop_front();
@@ -107,37 +138,16 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
 
     auto block = ir_context->cfg()->block(block_id);
 
-    // The block must end with OpBranch, because inner constructs are not
-    // allowed.
-    if (block->terminator()->opcode() != SpvOpBranch) {
-      return false;
-    }
-
-    // The block must not have a merge instruction.
+    // The block must not have a merge instruction, because inner constructs are
+    // not allowed.
     if (block->GetMergeInst()) {
       return false;
     }
 
-    // Get the mapping from instruction descriptors to the fresh ids available
-    // for it.
-    std::map<std::tuple<uint32_t, uint32_t, uint32_t>, std::vector<uint32_t>>
-        instructions_to_num_fresh_ids;
-    for (auto pair : message_.instruction_to_fresh_ids()) {
-      std::vector<uint32_t> fresh_ids;
-      for (uint32_t id : pair.id()) {
-        fresh_ids.push_back(id);
-      }
-      instructions_to_num_fresh_ids.emplace(
-          TupleFromInstructionDescriptor(pair.instruction_descriptor()),
-          fresh_ids);
-    }
-    // Keep track of the fresh ids used.
-    std::set<uint32_t> used_fresh_ids;
-
     // Check the instructions in the block
-    bool all_instructions_compatible =
-        block->WhileEachInst([&ir_context, &instructions_to_num_fresh_ids,
-                              &used_fresh_ids](opt::Instruction* instruction) {
+    bool all_instructions_compatible = block->WhileEachInst(
+        [this, &ir_context, &instructions_to_fresh_ids, &used_fresh_ids,
+         &overflow_ids_used](opt::Instruction* instruction) {
           // The instruction cannot be an atomic or barrier instruction
           if (instruction->IsAtomicOp() ||
               instruction->opcode() == SpvOpControlBarrier ||
@@ -154,20 +164,48 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
           if (instruction->opcode() == SpvOpLoad ||
               instruction->opcode() == SpvOpStore ||
               instruction->opcode() == SpvOpFunctionCall) {
-            auto instruction_descriptor =
-                MakeInstructionDescriptor(ir_context, instruction);
+            // Keep a vector of the fresh ids needed by this instruction.
+            std::vector<uint32_t> fresh_ids;
+            uint32_t overflow_ids_needed;
 
-            std::tuple<uint32_t, uint32_t, uint32_t> inst_desc_tuple =
-                TupleFromInstructionDescriptor(instruction_descriptor);
+            // Initialise overflow_ids_needed to the total number of ids needed.
+            switch (instruction->opcode()) {
+              case SpvOpStore:
+                overflow_ids_needed = 2;
+                break;
+              case SpvOpLoad:
+              case SpvOpFunctionCall:
+                overflow_ids_needed = 5;
+                break;
+              default:
+                assert(false && "This statement should not be reachable.");
+                return false;
+            }
 
-            if (instructions_to_num_fresh_ids.count(inst_desc_tuple) == 0) {
-              // There is no mapping from this instruction to a list of fresh
+            if (instructions_to_fresh_ids.count(instruction) != 0) {
+              // There is a mapping from this instruction to a list of fresh
               // ids.
+
+              fresh_ids = instructions_to_fresh_ids[instruction];
+              // We can deduct the number of fresh ids specific to this
+              // instruction from the number of overflow ids needed.
+              overflow_ids_needed =
+                  fresh_ids.size() > overflow_ids_needed
+                      ? 0
+                      : overflow_ids_needed - (uint32_t)fresh_ids.size();
+            }
+
+            // We need |overflow_ids_needed| overflow ids
+            if (overflow_ids_used + overflow_ids_needed >
+                (uint32_t)message_.overflow_id_size()) {
               return false;
             }
 
-            std::vector<uint32_t> fresh_ids =
-                instructions_to_num_fresh_ids[inst_desc_tuple];
+            // Add the overflow ids needed to fresh_ids
+            for (; overflow_ids_needed > 0; overflow_ids_needed--) {
+              fresh_ids.push_back(message_.overflow_id(overflow_ids_used));
+              overflow_ids_used++;
+            }
 
             // The ids must all be distinct and unused.
             for (uint32_t fresh_id : fresh_ids) {
@@ -175,20 +213,6 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
                       fresh_id, ir_context, &used_fresh_ids)) {
                 return false;
               }
-            }
-
-            // If the instruction is OpStore, there must be at least 2 fresh
-            // ids.
-            if (instruction->opcode() == SpvOpStore && fresh_ids.size() < 2) {
-              return false;
-            }
-
-            // If the instruction is OpLoad or OpFunctionCall, there must be at
-            // least 5 fresh ids.
-            if ((instruction->opcode() == SpvOpLoad ||
-                 instruction->opcode() == SpvOpFunctionCall) &&
-                fresh_ids.size() < 5) {
-              return false;
             }
           }
 
