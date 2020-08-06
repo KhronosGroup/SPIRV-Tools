@@ -53,6 +53,7 @@ bool TransformationCompositeInsert::IsApplicable(
   if (!IsCompositeInstructionSupported(ir_context, composite)) {
     return false;
   }
+
   // |message_.index| must refer to a valid index. The type id of the object at
   // |message_.object_id| and the type id of the component of the composite at
   // index |message_.index| must be the same.
@@ -66,9 +67,12 @@ bool TransformationCompositeInsert::IsApplicable(
   if (object_instruction == nullptr) {
     return false;
   }
+
   // We ignore pointers for now. Consider adding support for pointer types.
   auto object_instruction_type =
       ir_context->get_type_mgr()->GetType(object_instruction->type_id());
+  // No unused variables in release mode (to keep compilers happy).
+  (void)object_instruction_type;
   assert(object_instruction_type->kind() != opt::analysis::Type::kPointer &&
          "The object to be inserted cannot be a pointer.");
   if (component_to_be_replaced_type_id != object_instruction->type_id()) {
