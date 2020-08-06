@@ -133,7 +133,7 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
   assert(struct_type_id && "The struct type must exist in the module.");
 
   // Insert the new instruction that computes the result into a struct before
-  // the  |original_instruction|.
+  // the |original_instruction|.
   original_instruction->InsertBefore(MakeUnique<opt::Instruction>(
       ir_context, new_instruction_opcode, struct_type_id,
       message_.struct_fresh_id(),
@@ -187,6 +187,7 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsInstructionSuitable(
           ->GetDef(instruction.GetSingleWordInOperand(
               kArithmeticInstructionIndexRightInOperand))
           ->type_id();
+
   uint32_t result_type_id = instruction.type_id();
 
   // Both type ids of the operands and the result type ids must be equal.
