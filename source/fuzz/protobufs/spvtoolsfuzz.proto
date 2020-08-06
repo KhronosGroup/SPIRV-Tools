@@ -409,6 +409,7 @@ message Transformation {
     TransformationReplaceLoadStoreWithCopyMemory replace_load_store_with_copy_memory = 62;
     TransformationAddLoopPreheader add_loop_preheader = 63;
     TransformationMoveInstructionDown move_instruction_down = 64;
+    TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     // Add additional option using the next available number.
   }
 }
@@ -1103,6 +1104,21 @@ message TransformationLoad {
   // A descriptor for an instruction in a block before which the new OpLoad
   // instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 3;
+
+}
+
+message TransformationMakeVectorOperationDynamic {
+
+  // A transformation that replaces the OpCompositeExtract and OpCompositeInsert
+  // instructions with the OpVectorExtractDynamic and OpVectorInsertDynamic instructions.
+
+  // The composite instruction result id.
+  uint32 instruction_result_id = 1;
+
+  // The OpCompositeExtract/Insert instructions accept integer literals as indices to the composite object.
+  // However, the OpVectorInsert/ExtractDynamic instructions require its single index to be an integer instruction.
+  // This is the result id of the integer instruction.
+  uint32 constant_index_id = 2;
 
 }
 
