@@ -22,7 +22,63 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
+TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
+     NotApplicableBasicChecks) {
+  // Here we check first conditions in IsApplicable()
+  std::string shader = R"(
+            OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i1"
+               OpName %10 "i2"
+               OpName %12 "i3"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %12 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %13 = OpLoad %6 %10
+         %14 = OpLoad %6 %8
+         %15 = OpSDiv %6 %13 %14
+               OpStore %12 %15
+               OpReturn
+               OpFunctionEnd
+    )";
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Bad: |struct_fresh_id| must be fresh.
+  auto transformation_bad_1 =
+      TransformationReplaceAddSubMulWithCarryingExtended(14, 15);
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The transformation cannot be applied to an instruction OpSDiv.
+  auto transformation_bad_2 =
+      TransformationReplaceAddSubMulWithCarryingExtended(20, 15);
+  ASSERT_FALSE(
+      transformation_bad_2.IsApplicable(context.get(), transformation_context));
+}
+
+/*TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicChecks) {
   // This is a simple transformation and this test handles the main cases.
 
   std::string shader = R"(
@@ -308,6 +364,7 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest, BasicScenarios) {
            )";
   ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
+*/
 
 }  // namespace
 }  // namespace fuzz
