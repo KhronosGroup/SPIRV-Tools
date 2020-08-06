@@ -211,57 +211,93 @@ TEST(TransformationMakeVectorOperationDynamicTest, Apply) {
                                                validator_options);
 
   auto transformation = TransformationMakeVectorOperationDynamic(22, 9);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(23, 10);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(24, 9);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(25, 10);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(26, 11);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(27, 9);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(28, 10);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(29, 11);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(30, 12);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(31, 9);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(32, 10);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(33, 9);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(34, 10);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(35, 11);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(36, 9);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(37, 10);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(38, 11);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   transformation = TransformationMakeVectorOperationDynamic(39, 12);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   std::string variant_shader = R"(
