@@ -198,6 +198,9 @@ class FuzzerContext {
   uint32_t ChanceOfMakingDonorLivesafe() {
     return chance_of_making_donor_livesafe_;
   }
+  uint32_t GetChanceOfMakingVectorOperationDynamic() {
+    return chance_of_making_vector_operation_dynamic_;
+  }
   uint32_t GetChanceOfMergingBlocks() { return chance_of_merging_blocks_; }
   uint32_t GetChanceOfMovingBlockDown() { return chance_of_moving_block_down_; }
   uint32_t GetChanceOfObfuscatingConstant() {
@@ -363,6 +366,7 @@ class FuzzerContext {
   uint32_t chance_of_interchanging_zero_like_constants_;
   uint32_t chance_of_inverting_comparison_operators_;
   uint32_t chance_of_making_donor_livesafe_;
+  uint32_t chance_of_making_vector_operation_dynamic_;
   uint32_t chance_of_merging_blocks_;
   uint32_t chance_of_moving_block_down_;
   uint32_t chance_of_obfuscating_constant_;
