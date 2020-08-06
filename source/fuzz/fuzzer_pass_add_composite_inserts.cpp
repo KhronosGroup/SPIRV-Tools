@@ -202,6 +202,7 @@ uint32_t FuzzerPassAddCompositeInserts::GetNumberOfComponents(
       assert(false &&
              "|composite_type_id| must be a result id of a composite "
              "type.");
+      return 0;
   }
 }
 
