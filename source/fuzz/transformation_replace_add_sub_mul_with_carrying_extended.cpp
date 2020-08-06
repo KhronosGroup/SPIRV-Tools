@@ -57,8 +57,8 @@ bool TransformationReplaceAddSubMulWithCarryingExtended::IsApplicable(
     return false;
   }
 
-  // Check if the type of struct holding the intermediate result exists in the
-  // module.
+  // The struct type for holding the intermediate result must exist in the
+  // module. The struct type is based on the operand type.
   uint32_t operand_type_id = ir_context->get_def_use_mgr()
                                  ->GetDef(instruction->GetSingleWordInOperand(
                                      kArithmeticInstructionIndexLeftInOperand))
@@ -118,8 +118,8 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
       assert(false && "The instruction has an unsupported opcode.");
       return;
   }
-  // Get the type of struct holding the intermediate result exists in the
-  // module.
+  // Get the type of struct type id holding the intermediate result based on the
+  // operand type.
   uint32_t operand_type_id =
       ir_context->get_def_use_mgr()
           ->GetDef(original_instruction->GetSingleWordInOperand(
@@ -128,6 +128,9 @@ void TransformationReplaceAddSubMulWithCarryingExtended::Apply(
 
   uint32_t struct_type_id = fuzzerutil::MaybeGetStructType(
       ir_context, {operand_type_id, operand_type_id});
+  // Avoid unused variables in release mode.
+  (void)struct_type_id;
+  assert(struct_type_id && "The struct type must exist in the module.");
 
   // Insert the new instruction that computes the result into a struct before
   // the  |original_instruction|.

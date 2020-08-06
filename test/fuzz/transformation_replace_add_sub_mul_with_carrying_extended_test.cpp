@@ -14,9 +14,8 @@
 
 #include "source/fuzz/transformation_replace_add_sub_mul_with_carrying_extended.h"
 
-#include <source/fuzz/fuzzer_util.h>
+#include "source/fuzz/fuzzer_util.h"
 
-#include "source/fuzz/fuzzer_pass.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {

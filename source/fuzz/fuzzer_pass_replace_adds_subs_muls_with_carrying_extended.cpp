@@ -53,8 +53,8 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
           continue;
         }
 
-        // Get the id of the required struct type. We know that the the types of
-        // the operands are the same, so we can use one operand type id twice.
+        // Get the operand type id. We know that both operands have the same
+        // type.
         uint32_t operand_type_id =
             GetIRContext()
                 ->get_def_use_mgr()
@@ -62,6 +62,8 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
                     kArithmeticInstructionIndexLeftInOperand))
                 ->type_id();
 
+        // Ensure the required struct type exists. The struct type is based on
+        // the operand type.
         FindOrCreateStructType({operand_type_id, operand_type_id});
 
         ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
