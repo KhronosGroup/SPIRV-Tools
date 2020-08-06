@@ -109,38 +109,210 @@ TEST(TransformationFlattenConditionalBranchTest, Inapplicable) {
                                                validator_options);
 
   // Block %15 does not end with OpBranchConditional.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(15, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(15).IsApplicable(
       context.get(), transformation_context));
 
   // Block %17 is not a selection header.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(17, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(17).IsApplicable(
       context.get(), transformation_context));
 
   // Block %16 is a loop header, not a selection header.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(16, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(16).IsApplicable(
       context.get(), transformation_context));
 
   // Block %19 and the corresponding merge block do not describe a single-entry,
   // single-exit region.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(19, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(19).IsApplicable(
       context.get(), transformation_context));
 
   // Block %20 is the header of a construct containing an inner selection
   // construct.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(20, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(20).IsApplicable(
       context.get(), transformation_context));
 
   // Block %22 is the header of a construct containing an inner loop.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(22, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(22).IsApplicable(
       context.get(), transformation_context));
 
   // Block %26 is the header of a construct containing atomic instructions.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(26, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(26).IsApplicable(
       context.get(), transformation_context));
 
   // Block %30 is the header of a construct containing a barrier instruction.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(30, {}).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(30).IsApplicable(
       context.get(), transformation_context));
+
+  // %33 is not a block.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(33).IsApplicable(
+      context.get(), transformation_context));
+}
+
+TEST(TransformationFlattenConditionalBranchTest, Simple) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+          %3 = OpTypeBool
+          %4 = OpConstantTrue %3
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %2 = OpFunction %5 None %6
+          %7 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %4 %9 %10
+          %9 = OpLabel
+         %11 = OpCopyObject %3 %4
+               OpBranch %8
+         %10 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+         %12 = OpCopyObject %3 %4
+               OpBranch %13
+         %13 = OpLabel
+         %14 = OpCopyObject %3 %4
+               OpSelectionMerge %15 None
+               OpBranchConditional %4 %16 %17
+         %16 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+               OpBranch %19
+         %17 = OpLabel
+         %20 = OpCopyObject %3 %4
+               OpBranch %19
+         %19 = OpLabel
+         %21 = OpCopyObject %3 %4
+               OpBranch %15
+         %15 = OpLabel
+         %22 = OpCopyObject %3 %4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  ASSERT_TRUE(TransformationFlattenConditionalBranch(7).IsApplicable(
+      context.get(), transformation_context));
+
+  ASSERT_TRUE(TransformationFlattenConditionalBranch(13).IsApplicable(
+      context.get(), transformation_context));
+}
+
+TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+               OpName %3 "func("
+               OpName %4 "a"
+               OpName %5 "b"
+               OpDecorate %3 RelaxedPrecision
+               OpDecorate %4 RelaxedPrecision
+               OpDecorate %6 RelaxedPrecision
+               OpDecorate %7 RelaxedPrecision
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %5 RelaxedPrecision
+          %9 = OpTypeVoid
+         %10 = OpTypeFunction %9
+         %11 = OpTypeInt 32 1
+         %12 = OpTypeFunction %11
+         %13 = OpConstant %11 1
+         %14 = OpTypeBool
+         %15 = OpConstantTrue %14
+         %16 = OpTypePointer Function %11
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 2
+         %19 = OpTypeArray %11 %18
+         %20 = OpTypePointer Function %19
+          %2 = OpFunction %9 None %10
+         %21 = OpLabel
+          %4 = OpVariable %16 Function
+          %5 = OpVariable %20 Function
+               OpSelectionMerge %22 None
+               OpBranchConditional %15 %23 %22
+         %23 = OpLabel
+          %6 = OpLoad %11 %4
+          %7 = OpIAdd %11 %6 %13
+               OpStore %4 %7
+               OpBranch %22
+         %22 = OpLabel
+               OpSelectionMerge %24 None
+               OpBranchConditional %15 %25 %26
+         %25 = OpLabel
+          %8 = OpFunctionCall %11 %3
+               OpStore %4 %8
+               OpBranch %27
+         %26 = OpLabel
+         %28 = OpAccessChain %16 %5 %13
+               OpStore %28 %13
+               OpBranch %27
+         %27 = OpLabel
+               OpStore %4 %13
+               OpBranch %24
+         %24 = OpLabel
+               OpStore %4 %13
+               OpReturn
+               OpFunctionEnd
+          %3 = OpFunction %11 None %12
+         %29 = OpLabel
+               OpReturnValue %13
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // The selection construct with header block %21 contains an OpLoad and an
+  // OpStore, requiring some fresh ids.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(21).IsApplicable(
+      context.get(), transformation_context));
+
+  // Not all of the instructions are given in the map and there are not enough
+  // overflow ids.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   21, {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+                         {100, 101, 102, 103, 104}}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  auto transformation1 = TransformationFlattenConditionalBranch(
+      21,
+      {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {100, 101, 102, 103, 104}},
+       {MakeInstructionDescriptor(6, SpvOpStore, 0), {105, 106, 107}}});
+
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+
+  auto transformation2 = TransformationFlattenConditionalBranch(
+      22,
+      {{MakeInstructionDescriptor(8, SpvOpFunctionCall, 0),
+        {108, 109, 110, 111, 112}},
+       {MakeInstructionDescriptor(8, SpvOpStore, 0), {113, 114}}},
+      {115, 116});
+
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
 }
 }  // namespace
 }  // namespace fuzz

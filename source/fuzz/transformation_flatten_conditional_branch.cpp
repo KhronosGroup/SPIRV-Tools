@@ -45,12 +45,18 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
 
 bool TransformationFlattenConditionalBranch::IsApplicable(
     opt::IRContext* ir_context,
-    const TransformationContext& /* transformation_context */) const {
-  // |message_.header_block_id| must refer to a block label.
-  auto header_block = ir_context->cfg()->block(message_.header_block_id());
-  if (!header_block) {
-    return false;
+    const TransformationContext& /* unused */) const {
+  uint32_t header_block_id = message_.header_block_id();
+
+  // |header_block_id| must refer to a block label.
+  {
+    auto label = ir_context->get_def_use_mgr()->GetDef(header_block_id);
+    if (label->opcode() != SpvOpLabel) {
+      return false;
+    }
   }
+
+  auto header_block = ir_context->cfg()->block(header_block_id);
 
   // |header_block| must be a selection header.
   uint32_t merge_block_id = header_block->MergeBlockIdIfAny();
@@ -68,7 +74,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   // block).
   uint32_t convergence_block_id = merge_block_id;
   while (ir_context->cfg()->preds(convergence_block_id).size() == 1) {
-    if (convergence_block_id == message_.header_block_id()) {
+    if (convergence_block_id == header_block_id) {
       // There is a chain of blocks with one predecessors from the header block
       // to the merge block. This means that the region is not single-entry,
       // single-exit (because the merge block is only reached by one of the two
@@ -131,7 +137,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
 
     // If the block is not dominated by the header or it is not postdominated by
     // the convergence_block, this is not a single-entry, single-exit region.
-    if (!dominator_analysis->Dominates(message_.header_block_id(), block_id) ||
+    if (!dominator_analysis->Dominates(header_block_id, block_id) ||
         !postdominator_analysis->Dominates(convergence_block_id, block_id)) {
       return false;
     }
