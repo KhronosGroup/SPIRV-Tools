@@ -160,7 +160,7 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
 #ifndef NDEBUG
   ASSERT_DEATH(
       transformation_bad_5.IsApplicable(context.get(), transformation_context),
-      "The |object_id| cannot refer to a pointer.");
+      "The object_id cannot refer to a pointer.");
 #endif
 
   // Bad: |index| is not a valid index.
