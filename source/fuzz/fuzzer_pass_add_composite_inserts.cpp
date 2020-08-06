@@ -65,19 +65,15 @@ void FuzzerPassAddCompositeInserts::Apply() {
                     opt::Instruction* instruction) -> bool {
                   // |instruction| must be a valid instruction of composite
                   // type.
-                  if (!TransformationCompositeInsert::IsCompositeInstruction(
-                          ir_context, instruction)) {
+                  if (!TransformationCompositeInsert::
+                          IsCompositeInstructionSupported(ir_context,
+                                                          instruction)) {
                     return false;
                   }
                   // The instruction must be of composite type.
                   auto instruction_type = ir_context->get_type_mgr()->GetType(
                       instruction->type_id());
 
-                  // Empty composites are not valid for OpCompositeInsert.
-                  if (GetNumberOfComponents(ir_context,
-                                            instruction->type_id()) == 0) {
-                    return false;
-                  }
                   // No components of the composite can have type
                   // OpTypeRuntimeArray.
                   if (ContainsRuntimeArray(*instruction_type)) {
@@ -160,7 +156,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
         // TODO: structs can have components of pointer type.
         //       FindOrCreateZeroConstant cannot be called on a pointer. We
         //       ignore pointers for now. Consider adding support for pointer
-        //       types.
+        //       types. https://github.com/KhronosGroup/SPIRV-Tools/issues/3658
         uint32_t available_object_id;
         if (available_objects.empty()) {
           auto current_node_type =
@@ -176,7 +172,6 @@ void FuzzerPassAddCompositeInserts::Apply() {
                                     available_objects)]
                   ->result_id();
         }
-
         auto new_result_id = GetFuzzerContext()->GetFreshId();
 
         // Insert an OpCompositeInsert instruction which copies

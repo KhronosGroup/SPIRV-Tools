@@ -50,7 +50,7 @@ bool TransformationCompositeInsert::IsApplicable(
   auto composite =
       ir_context->get_def_use_mgr()->GetDef(message_.composite_id());
 
-  if (!IsCompositeInstruction(ir_context, composite)) {
+  if (!IsCompositeInstructionSupported(ir_context, composite)) {
     return false;
   }
   // |message_.index| must refer to a valid index. The type id of the object at
@@ -151,9 +151,10 @@ void TransformationCompositeInsert::Apply(
         continue;
       } else {
         current_index.push_back(i);
-        // TODO: Google C++ guide restricts the use of r-value refrences.
+        // TODO: Google C++ guide restricts the use of r-value references.
         //       https://google.github.io/styleguide/cppguide.html#Rvalue_references
-        //       Consider changing the signature of AddFactDataSynonym()
+        //       Consider changing the signature of MakeDataDescriptor()
+        //       https://github.com/KhronosGroup/SPIRV-Tools/issues/3659
         transformation_context->GetFactManager()->AddFactDataSynonym(
             MakeDataDescriptor(message_.fresh_id(),
                                std::vector<uint32_t>(current_index)),
@@ -179,7 +180,7 @@ protobufs::Transformation TransformationCompositeInsert::ToMessage() const {
   return result;
 }
 
-bool TransformationCompositeInsert::IsCompositeInstruction(
+bool TransformationCompositeInsert::IsCompositeInstructionSupported(
     opt::IRContext* ir_context, opt::Instruction* instruction) {
   if (instruction == nullptr) {
     return false;
@@ -190,6 +191,11 @@ bool TransformationCompositeInsert::IsCompositeInstruction(
   auto composite_type =
       ir_context->get_type_mgr()->GetType(instruction->type_id());
   if (!fuzzerutil::IsCompositeType(composite_type)) {
+    return false;
+  }
+  // Empty composites are not supported.
+  if (FuzzerPassAddCompositeInserts::GetNumberOfComponents(
+          ir_context, instruction->type_id()) == 0) {
     return false;
   }
   return true;

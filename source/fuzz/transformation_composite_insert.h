@@ -58,8 +58,8 @@ class TransformationCompositeInsert : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
   // Checks if |instruction| is a valid instruction of a composite type.
-  static bool IsCompositeInstruction(opt::IRContext* ir_context,
-                                     opt::Instruction* instruction);
+  static bool IsCompositeInstructionSupported(opt::IRContext* ir_context,
+                                              opt::Instruction* instruction);
 
  private:
   protobufs::TransformationCompositeInsert message_;
