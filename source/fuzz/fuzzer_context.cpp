@@ -82,6 +82,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfPermutingInstructions = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingParameters = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingPhiOperands = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPushingIdThroughVariable = {5, 50};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfReplacingAddSubMulWithCarryingExtended = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyMemoryWithLoadStore =
     {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyObjectWithStoreLoad =
@@ -227,6 +229,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfPermutingPhiOperands);
   chance_of_pushing_id_through_variable_ =
       ChooseBetweenMinAndMax(kChanceOfPushingIdThroughVariable);
+  chance_of_replacing_add_sub_mul_with_carrying_extended_ =
+      ChooseBetweenMinAndMax(kChanceOfReplacingAddSubMulWithCarryingExtended);
   chance_of_replacing_copy_memory_with_load_store_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingCopyMemoryWithLoadStore);
   chance_of_replacing_copyobject_with_store_load_ =
