@@ -82,7 +82,6 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
          %27 = OpLoad %18 %20
          %28 = OpLoad %18 %20
          %29 = OpCompositeConstruct %24 %27 %28
-
                OpStore %26 %29
                OpSelectionMerge %33 None
                OpBranchConditional %31 %32 %33
