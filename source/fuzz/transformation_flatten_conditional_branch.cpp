@@ -254,7 +254,7 @@ void TransformationFlattenConditionalBranch::Apply(
       block_id = block->terminator()->GetSingleWordInOperand(0);
 
       // Find all the problematic instructions in the block (OpStore, OpLoad,
-      // OpFunctionCall)
+      // OpFunctionCall).
       std::vector<opt::Instruction*> problematic_instructions;
 
       block->ForEachInst(
@@ -297,7 +297,7 @@ void TransformationFlattenConditionalBranch::Apply(
         // will be).
         block = EncloseInstructionInConditional(
             ir_context, transformation_context, block, instruction, fresh_ids,
-            condition_id, true);
+            condition_id, branch == 1);
       }
     }
   }
