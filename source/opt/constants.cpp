@@ -305,17 +305,14 @@ const Constant* ConstantManager::GetConstantFromInst(const Instruction* inst) {
     // OpConstant{True|False} have the value embedded in the opcode. So they
     // are not handled by the for-loop above. Here we add the value explicitly.
     case SpvOp::SpvOpConstantTrue:
-    case SpvOp::SpvOpSpecConstantTrue:
       literal_words_or_ids.push_back(true);
       break;
     case SpvOp::SpvOpConstantFalse:
-    case SpvOp::SpvOpSpecConstantFalse:
       literal_words_or_ids.push_back(false);
       break;
+    case SpvOp::SpvOpConstantNull:
     case SpvOp::SpvOpConstant:
     case SpvOp::SpvOpConstantComposite:
-    case SpvOp::SpvOpConstantNull:
-    case SpvOp::SpvOpSpecConstant:
     case SpvOp::SpvOpSpecConstantComposite:
       break;
     default:

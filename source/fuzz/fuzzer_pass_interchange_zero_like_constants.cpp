@@ -34,6 +34,12 @@ FuzzerPassInterchangeZeroLikeConstants::
 
 uint32_t FuzzerPassInterchangeZeroLikeConstants::FindOrCreateToggledConstant(
     opt::Instruction* declaration) {
+  // |declaration| must be a non-specialization constant because the constant
+  // manager does not declare specialization constants.
+  if (!declaration->IsConstant()) {
+    return 0;
+  }
+
   auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
       declaration->result_id());
 
