@@ -38,11 +38,10 @@ class TransformationFlattenConditionalBranch : public Transformation {
   //   single-exit region.
   // - The region must not contain atomic or barrier instructions.
   // - The region must not contain selection or loop constructs.
-  // - |message_.instructions_to_fresh_ids| must contain all of the following
-  //   mappings:
-  //     - from each OpStore instruction to a list of at least 2 fresh ids;
-  //     - from each OpLoad or OpFunctionCall instruction to a list of at least
-  //       5 fresh ids.
+  // - For each instruction that requires additional fresh ids, there must be
+  //   enough fresh ids, which can either be found in the corresponding pair in
+  //   |message_.instruction_to_fresh ids|, or in |message_.overflow_id| if
+  //   there is no mapping or not enough ids are specified in the mapping.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -54,6 +53,30 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
  private:
   protobufs::TransformationFlattenConditionalBranch message_;
+
+  // Returns an unordered_map mapping instructions to lists of fresh ids. It
+  // gets the information from |message_.instruction_to_fresh_ids|.
+  std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
+  GetInstructionsToFreshIdsMapping(opt::IRContext* ir_context) const;
+
+  // Returns the number of fresh ids needed to enclose the instruction with the
+  // given opcode in a conditional. This can only be called on OpStore, OpLoad
+  // and OpFunctionCall.
+  uint32_t NumOfFreshIdsNeededByOpcode(SpvOp opcode) const;
+
+  // Splits the given block, adding a new selection construct so that the given
+  // instruction is only executed if the boolean value of |condition_id| matches
+  // the value of |exec_if_cond_true|.
+  // The instruction must be one of OpStore, OpLoad and OpFunctionCall.
+  // Assumes that all parameters are valid and consistent.
+  // 2 fresh ids are required if the instruction does not have a result id, 5
+  // otherwise.
+  // Returns the merge block created.
+  opt::BasicBlock* EncloseInstructionInConditional(
+      opt::IRContext* ir_context, TransformationContext* transformation_context,
+      opt::BasicBlock* block, opt::Instruction* instruction,
+      std::vector<uint32_t> fresh_ids, uint32_t condition_id,
+      bool exec_if_cond_true) const;
 };
 
 }  // namespace fuzz

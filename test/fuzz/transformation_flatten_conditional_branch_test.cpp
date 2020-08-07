@@ -251,6 +251,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpStore %4 %7
                OpBranch %22
          %22 = OpLabel
+         %30 = OpPhi %11 %13 %23 %13 %21
                OpSelectionMerge %24 None
                OpBranchConditional %15 %25 %26
          %25 = OpLabel
@@ -304,6 +305,8 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
 
+  transformation1.Apply(context.get(), &transformation_context);
+
   auto transformation2 = TransformationFlattenConditionalBranch(
       22,
       {{MakeInstructionDescriptor(8, SpvOpFunctionCall, 0),
@@ -313,6 +316,12 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
 
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
+
+  transformation2.Apply(context.get(), &transformation_context);
+
+  std::cout << ToString(env, context.get()) << "\n\n";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
 }
 }  // namespace
 }  // namespace fuzz
