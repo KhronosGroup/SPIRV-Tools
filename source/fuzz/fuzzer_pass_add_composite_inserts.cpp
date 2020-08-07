@@ -79,10 +79,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
                   if (ContainsRuntimeArray(*instruction_type)) {
                     return false;
                   }
-                  return fuzzerutil::IdIsAvailableBeforeInstruction(
-                      ir_context,
-                      FindInstruction(instruction_descriptor, ir_context),
-                      instruction->result_id());
+                  return true;
                 });
 
         // If there are no available values, then return.
@@ -115,14 +112,18 @@ void FuzzerPassAddCompositeInserts::Apply() {
           current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
               GetIRContext(), current_node_type_id, one_selected_index);
 
-          // If the component is not a composite or if we decide not to go
-          // deeper, then end the iteration.
+          // If the component is not a composite or if the composite is empty or
+          // if we decide not to go deeper, then end the iteration.
           if (!fuzzerutil::IsCompositeType(
                   GetIRContext()->get_type_mgr()->GetType(
-                      current_node_type_id)) ||
-              !GetFuzzerContext()->ChoosePercentage(
-                  GetFuzzerContext()
-                      ->GetChanceOfGoingDeeperToInsertInComposite())) {
+                      current_node_type_id))) {
+            reached_end_node = true;
+          } else if (GetNumberOfComponents(GetIRContext(),
+                                           current_node_type_id) == 0) {
+            reached_end_node = true;
+          } else if (!GetFuzzerContext()->ChoosePercentage(
+                         GetFuzzerContext()
+                             ->GetChanceOfGoingDeeperToInsertInComposite())) {
             reached_end_node = true;
           }
         }
@@ -133,7 +134,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
             FindAvailableInstructions(
                 function, block, instruction_iterator,
                 [instruction_descriptor, current_node_type_id](
-                    opt::IRContext* ir_context,
+                    opt::IRContext* /*unused*/,
                     opt::Instruction* instruction) -> bool {
                   if (instruction == nullptr) {
                     return false;
@@ -145,18 +146,16 @@ void FuzzerPassAddCompositeInserts::Apply() {
                   if (instruction->type_id() != current_node_type_id) {
                     return false;
                   }
-                  return fuzzerutil::IdIsAvailableBeforeInstruction(
-                      ir_context,
-                      FindInstruction(instruction_descriptor, ir_context),
-                      instruction->result_id());
+                  return true;
                 });
 
         // If there are no objects of the specific type available, create a zero
         // constant of this type, which is not a pointer.
-        // TODO: structs can have components of pointer type.
+        // TODO: (https://github.com/KhronosGroup/SPIRV-Tools/issues/3658)
+        //       Structs can have components of pointer type.
         //       FindOrCreateZeroConstant cannot be called on a pointer. We
         //       ignore pointers for now. Consider adding support for pointer
-        //       types. https://github.com/KhronosGroup/SPIRV-Tools/issues/3658
+        //       types.
         uint32_t available_object_id;
         if (available_objects.empty()) {
           auto current_node_type =
@@ -180,8 +179,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
         ApplyTransformation(TransformationCompositeInsert(
             instruction_descriptor, new_result_id,
             available_composite->result_id(), available_object_id,
-            std::vector<uint32_t>(path_to_replaced)));
-
+            path_to_replaced));
       });
 }
 

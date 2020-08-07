@@ -46,7 +46,6 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
                OpMemberName %24 0 "c1"
                OpMemberName %24 1 "c2"
                OpName %26 "l2"
-         %60 = OpTypeStruct
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
@@ -61,7 +60,6 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
          %25 = OpTypePointer Function %24
          %30 = OpTypeBool
          %31 = OpConstantTrue %30
-         %61 = OpConstantComposite %60
           %4 = OpFunction %2 None %3
           %5 = OpLabel
           %8 = OpVariable %7 Function
@@ -149,7 +147,7 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
   ASSERT_FALSE(
       transformation_bad_4.IsApplicable(context.get(), transformation_context));
 
-  // Bad: |object_id| cannot refer to a pointer. We assert it in IsApplicable()
+  // Bad: |object_id| cannot refer to a pointer.
   instruction_to_insert_before = MakeInstructionDescriptor(29, SpvOpStore, 0);
   fresh_id = 50;
   composite_id = 29;
@@ -157,11 +155,8 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
   index = {1, 0, 0};
   auto transformation_bad_5 = TransformationCompositeInsert(
       instruction_to_insert_before, fresh_id, composite_id, object_id, index);
-#ifndef NDEBUG
-  ASSERT_DEATH(
-      transformation_bad_5.IsApplicable(context.get(), transformation_context),
-      "The object_id cannot refer to a pointer.");
-#endif
+  ASSERT_FALSE(
+      transformation_bad_5.IsApplicable(context.get(), transformation_context));
 
   // Bad: |index| is not a valid index.
   instruction_to_insert_before = MakeInstructionDescriptor(29, SpvOpStore, 0);
@@ -210,17 +205,135 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
       instruction_to_insert_before, fresh_id, composite_id, object_id, index);
   ASSERT_FALSE(
       transformation_bad_9.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationCompositeInsertTest, EmptyCompositeScenarios) {
+  // This test handles cases where either the composite is empty or the
+  // composite contains an empty composite.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i1"
+               OpName %10 "i2"
+               OpName %12 "base"
+               OpMemberName %12 0 "a1"
+               OpMemberName %12 1 "a2"
+               OpName %14 "b"
+          %2 = OpTypeVoid
+         %60 = OpTypeStruct
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %11 = OpConstant %6 2
+         %61 = OpConstantComposite %60
+         %62 = OpConstantComposite %60
+         %12 = OpTypeStruct %6 %6
+         %63 = OpTypeStruct %6 %60
+         %13 = OpTypePointer Function %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %14 = OpVariable %13 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %15 = OpLoad %6 %8
+         %16 = OpLoad %6 %10
+         %17 = OpCompositeConstruct %12 %15 %16
+         %64 = OpCompositeConstruct %63 %15 %61
+               OpStore %14 %17
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  protobufs::InstructionDescriptor instruction_to_insert_before;
+  uint32_t fresh_id, composite_id, object_id;
+  std::vector<uint32_t> index;
 
   // Bad: The composite with |composite_id| cannot be empty.
-  instruction_to_insert_before = MakeInstructionDescriptor(29, SpvOpStore, 0);
+  instruction_to_insert_before = MakeInstructionDescriptor(64, SpvOpStore, 0);
   fresh_id = 50;
   composite_id = 61;
-  object_id = 11;
-  index = {1, 0, 0};
-  auto transformation_bad_10 = TransformationCompositeInsert(
+  object_id = 62;
+  index = {1};
+  auto transformation_bad_1 = TransformationCompositeInsert(
       instruction_to_insert_before, fresh_id, composite_id, object_id, index);
-  ASSERT_FALSE(transformation_bad_10.IsApplicable(context.get(),
-                                                  transformation_context));
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
+
+  // Good: It is possible to insert into a composite an element which is an
+  // empty composite.
+  instruction_to_insert_before = MakeInstructionDescriptor(64, SpvOpStore, 0);
+  fresh_id = 50;
+  composite_id = 64;
+  object_id = 62;
+  index = {1};
+  auto transformation_good_1 = TransformationCompositeInsert(
+      instruction_to_insert_before, fresh_id, composite_id, object_id, index);
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i1"
+               OpName %10 "i2"
+               OpName %12 "base"
+               OpMemberName %12 0 "a1"
+               OpMemberName %12 1 "a2"
+               OpName %14 "b"
+          %2 = OpTypeVoid
+         %60 = OpTypeStruct
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %11 = OpConstant %6 2
+         %61 = OpConstantComposite %60
+         %62 = OpConstantComposite %60
+         %12 = OpTypeStruct %6 %6
+         %63 = OpTypeStruct %6 %60
+         %13 = OpTypePointer Function %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %14 = OpVariable %13 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %15 = OpLoad %6 %8
+         %16 = OpLoad %6 %10
+         %17 = OpCompositeConstruct %12 %15 %16
+         %64 = OpCompositeConstruct %63 %15 %61
+         %50 = OpCompositeInsert %63 %62 %64 1
+               OpStore %14 %17
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationCompositeInsertTest, IrrelevantNoSynonyms) {
@@ -497,7 +610,7 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {0, 1, 1}),
                                          MakeDataDescriptor(51, {0, 1, 1})));
 
-  std::string after_transformation = R"(
+  std::string after_transformations = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -564,7 +677,137 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
                OpReturn
                OpFunctionEnd
   )";
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
+}
+
+TEST(TransformationCompositeInsertTest, IdNotAvailableScenarios) {
+  // This test handles cases where either the composite or the object is not
+  // available before the |instruction_to_insert_before|.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i1"
+               OpName %10 "i2"
+               OpName %12 "base"
+               OpMemberName %12 0 "a1"
+               OpMemberName %12 1 "a2"
+               OpName %14 "b1"
+               OpName %18 "b2"
+               OpName %22 "lvl1"
+               OpMemberName %22 0 "b1"
+               OpMemberName %22 1 "b2"
+               OpName %24 "l1"
+               OpName %28 "i3"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %11 = OpConstant %6 2
+         %12 = OpTypeStruct %6 %6
+         %13 = OpTypePointer Function %12
+         %22 = OpTypeStruct %12 %12
+         %23 = OpTypePointer Function %22
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %14 = OpVariable %13 Function
+         %18 = OpVariable %13 Function
+         %24 = OpVariable %23 Function
+         %28 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %15 = OpLoad %6 %8
+         %16 = OpLoad %6 %10
+         %17 = OpCompositeConstruct %12 %15 %16
+               OpStore %14 %17
+         %19 = OpLoad %6 %10
+         %20 = OpLoad %6 %8
+         %21 = OpCompositeConstruct %12 %19 %20
+               OpStore %18 %21
+         %25 = OpLoad %12 %14
+         %26 = OpLoad %12 %18
+         %27 = OpCompositeConstruct %22 %25 %26
+               OpStore %24 %27
+         %29 = OpLoad %6 %8
+         %30 = OpLoad %6 %10
+         %31 = OpIMul %6 %29 %30
+               OpStore %28 %31
+         %60 = OpCompositeConstruct %12 %20 %19
+         %61 = OpCompositeConstruct %22 %26 %25
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  protobufs::InstructionDescriptor instruction_to_insert_before;
+  uint32_t fresh_id, composite_id, object_id;
+  std::vector<uint32_t> index;
+
+  // Bad: The object with |object_id| is not available at
+  // |instruction_to_insert_before|.
+  instruction_to_insert_before = MakeInstructionDescriptor(31, SpvOpIMul, 0);
+  fresh_id = 50;
+  composite_id = 27;
+  object_id = 60;
+  index = {1};
+  auto transformation_bad_1 = TransformationCompositeInsert(
+      instruction_to_insert_before, fresh_id, composite_id, object_id, index);
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The composite with |composite_id| is not available at
+  // |instruction_to_insert_before|.
+  instruction_to_insert_before = MakeInstructionDescriptor(31, SpvOpIMul, 0);
+  fresh_id = 50;
+  composite_id = 61;
+  object_id = 21;
+  index = {1};
+  auto transformation_bad_2 = TransformationCompositeInsert(
+      instruction_to_insert_before, fresh_id, composite_id, object_id, index);
+  ASSERT_FALSE(
+      transformation_bad_2.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The |instruction_to_insert_before| is the composite itself and is not
+  // available.
+  instruction_to_insert_before =
+      MakeInstructionDescriptor(61, SpvOpCompositeConstruct, 0);
+  fresh_id = 50;
+  composite_id = 61;
+  object_id = 21;
+  index = {1};
+  auto transformation_bad_3 = TransformationCompositeInsert(
+      instruction_to_insert_before, fresh_id, composite_id, object_id, index);
+  ASSERT_FALSE(
+      transformation_bad_3.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The |instruction_to_insert_before| is the object itself and is not
+  // available.
+  instruction_to_insert_before =
+      MakeInstructionDescriptor(60, SpvOpCompositeConstruct, 0);
+  fresh_id = 50;
+  composite_id = 27;
+  object_id = 60;
+  index = {1};
+  auto transformation_bad_4 = TransformationCompositeInsert(
+      instruction_to_insert_before, fresh_id, composite_id, object_id, index);
+  ASSERT_FALSE(
+      transformation_bad_4.IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace

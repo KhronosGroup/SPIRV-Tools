@@ -54,17 +54,19 @@ bool TransformationCompositeInsert::IsApplicable(
     return false;
   }
 
-  // |message_.index| must refer to a valid index. The type id of the object at
-  // |message_.object_id| and the type id of the component of the composite at
-  // index |message_.index| must be the same.
+  // |message_.index| must refer to a valid index.
   auto component_to_be_replaced_type_id = fuzzerutil::WalkCompositeTypeIndices(
       ir_context, composite->type_id(), message_.index());
   if (component_to_be_replaced_type_id == 0) {
     return false;
   }
+  // The instruction having the id of |message_.object_id| must be valid.
   auto object_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.object_id());
   if (object_instruction == nullptr) {
+    return false;
+  }
+  if (object_instruction->type_id() == 0) {
     return false;
   }
 
@@ -73,8 +75,12 @@ bool TransformationCompositeInsert::IsApplicable(
       ir_context->get_type_mgr()->GetType(object_instruction->type_id());
   // No unused variables in release mode (to keep compilers happy).
   (void)object_instruction_type;
-  assert(object_instruction_type->kind() != opt::analysis::Type::kPointer &&
-         "The object to be inserted cannot be a pointer.");
+  if (object_instruction_type->AsPointer() != nullptr) {
+    return false;
+  }
+
+  // The type id of the object having |message_.object_id| and the type id of
+  // the component of the composite at index |message_.index| must be the same.
   if (component_to_be_replaced_type_id != object_instruction->type_id()) {
     return false;
   }
@@ -83,8 +89,18 @@ bool TransformationCompositeInsert::IsApplicable(
   // instruction.
   auto instruction_to_insert_before =
       FindInstruction(message_.instruction_to_insert_before(), ir_context);
-
   if (instruction_to_insert_before == nullptr) {
+    return false;
+  }
+
+  // |message_.composite_id| and |message_.object_id| must be available before
+  // the |message_.instruction_to_insert_before|.
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+          ir_context, instruction_to_insert_before, message_.composite_id())) {
+    return false;
+  }
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+          ir_context, instruction_to_insert_before, message_.object_id())) {
     return false;
   }
 
@@ -124,12 +140,12 @@ void TransformationCompositeInsert::Apply(
 
   // Add facts about synonyms. Every element which hasn't been changed in
   // the copy is synonymous to the corresponding element in the original
-  // |available_composite|. For every index that is a prefix of
-  // |index_to_replace| the components different from the one that
+  // composite which has id |message_.composite_id|. For every index that is a
+  // prefix of |index|, the components different from the one that
   // contains the inserted object are synonymous with corresponding
-  // elements in the |available_composite|.
+  // elements in the original composite.
 
-  // If |composite_id| or |object_id| is irrelevant don't add any synonyms.
+  // If |composite_id| or |object_id| is irrelevant then don't add any synonyms.
   if (transformation_context->GetFactManager()->IdIsIrrelevant(
           message_.composite_id()) ||
       transformation_context->GetFactManager()->IdIsIrrelevant(
@@ -146,7 +162,7 @@ void TransformationCompositeInsert::Apply(
     num_of_components = FuzzerPassAddCompositeInserts::GetNumberOfComponents(
         ir_context, current_node_type_id);
 
-    // Store the prefix of the |index_to_replace|.
+    // Store the prefix of the |index|.
     if (current_level != 0) {
       current_index.push_back(index[current_level - 1]);
     }
@@ -155,10 +171,10 @@ void TransformationCompositeInsert::Apply(
         continue;
       } else {
         current_index.push_back(i);
-        // TODO: Google C++ guide restricts the use of r-value references.
+        // TODO: (https://github.com/KhronosGroup/SPIRV-Tools/issues/3659)
+        //       Google C++ guide restricts the use of r-value references.
         //       https://google.github.io/styleguide/cppguide.html#Rvalue_references
         //       Consider changing the signature of MakeDataDescriptor()
-        //       https://github.com/KhronosGroup/SPIRV-Tools/issues/3659
         transformation_context->GetFactManager()->AddFactDataSynonym(
             MakeDataDescriptor(message_.fresh_id(),
                                std::vector<uint32_t>(current_index)),
@@ -170,8 +186,8 @@ void TransformationCompositeInsert::Apply(
     }
   }
 
-  // The element which has been changed is synonymous to the found
-  // |available_object| itself.
+  // The element which has been changed is synonymous to the found object
+  // itself.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.object_id(), {}),
       MakeDataDescriptor(message_.fresh_id(), std::vector<uint32_t>(index)),
