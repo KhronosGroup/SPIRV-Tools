@@ -46,6 +46,10 @@ class TransformationFlattenConditionalBranch : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Flattens the selection construct with header |message_.header_block_id|,
+  // changing any OpPhi in the block where the flow converges to OpSelect and
+  // enclosing any OpStore, OpLoad and OpFunctionCall in conditionals so that
+  // they are only executed when they should.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

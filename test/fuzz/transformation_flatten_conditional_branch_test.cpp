@@ -164,13 +164,14 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
           %7 = OpLabel
                OpSelectionMerge %8 None
                OpBranchConditional %4 %9 %10
+         %10 = OpLabel
+               OpBranch %8
           %9 = OpLabel
          %11 = OpCopyObject %3 %4
                OpBranch %8
-         %10 = OpLabel
-               OpBranch %8
           %8 = OpLabel
-         %12 = OpCopyObject %3 %4
+         %12 = OpPhi %3 %11 %9 %4 %10
+         %23 = OpPhi %3 %4 %9 %4 %10
                OpBranch %13
          %13 = OpLabel
          %14 = OpCopyObject %3 %4
@@ -184,10 +185,9 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
          %20 = OpCopyObject %3 %4
                OpBranch %19
          %19 = OpLabel
-         %21 = OpCopyObject %3 %4
+         %21 = OpPhi %3 %4 %18 %20 %17
                OpBranch %15
          %15 = OpLabel
-         %22 = OpCopyObject %3 %4
                OpReturn
                OpFunctionEnd
 )";
@@ -202,11 +202,61 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  ASSERT_TRUE(TransformationFlattenConditionalBranch(7).IsApplicable(
-      context.get(), transformation_context));
+  auto transformation1 = TransformationFlattenConditionalBranch(7);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
 
-  ASSERT_TRUE(TransformationFlattenConditionalBranch(13).IsApplicable(
-      context.get(), transformation_context));
+  auto transformation2 = TransformationFlattenConditionalBranch(13);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+          %3 = OpTypeBool
+          %4 = OpConstantTrue %3
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %2 = OpFunction %5 None %6
+          %7 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+         %11 = OpCopyObject %3 %4
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+         %12 = OpSelect %3 %4 %11 %4
+         %23 = OpSelect %3 %4 %4 %4
+               OpBranch %13
+         %13 = OpLabel
+         %14 = OpCopyObject %3 %4
+               OpBranch %16
+         %16 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+         %20 = OpCopyObject %3 %4
+               OpBranch %19
+         %19 = OpLabel
+         %21 = OpSelect %3 %4 %4 %20
+               OpBranch %15
+         %15 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
@@ -244,7 +294,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
           %4 = OpVariable %16 Function
           %5 = OpVariable %20 Function
                OpSelectionMerge %22 None
-               OpBranchConditional %15 %23 %22
+               OpBranchConditional %15 %22 %23
          %23 = OpLabel
           %6 = OpLoad %11 %4
           %7 = OpIAdd %11 %6 %13
@@ -253,7 +303,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
          %22 = OpLabel
          %30 = OpPhi %11 %13 %23 %13 %21
                OpSelectionMerge %24 None
-               OpBranchConditional %15 %25 %26
+               OpBranchConditional %15 %26 %25
          %25 = OpLabel
           %8 = OpFunctionCall %11 %3
                OpStore %4 %8
@@ -319,9 +369,105 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
 
   transformation2.Apply(context.get(), &transformation_context);
 
-  std::cout << ToString(env, context.get()) << "\n\n";
-
   ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+               OpName %3 "func("
+               OpName %4 "a"
+               OpName %5 "b"
+               OpDecorate %3 RelaxedPrecision
+               OpDecorate %4 RelaxedPrecision
+               OpDecorate %6 RelaxedPrecision
+               OpDecorate %7 RelaxedPrecision
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %5 RelaxedPrecision
+          %9 = OpTypeVoid
+         %10 = OpTypeFunction %9
+         %11 = OpTypeInt 32 1
+         %12 = OpTypeFunction %11
+         %13 = OpConstant %11 1
+         %14 = OpTypeBool
+         %15 = OpConstantTrue %14
+         %16 = OpTypePointer Function %11
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 2
+         %19 = OpTypeArray %11 %18
+         %20 = OpTypePointer Function %19
+          %2 = OpFunction %9 None %10
+         %21 = OpLabel
+          %4 = OpVariable %16 Function
+          %5 = OpVariable %20 Function
+               OpBranch %23
+         %23 = OpLabel
+               OpSelectionMerge %101 None
+               OpBranchConditional %15 %102 %100
+        %100 = OpLabel
+        %103 = OpLoad %11 %4
+               OpBranch %101
+        %102 = OpLabel
+        %104 = OpUndef %11
+               OpBranch %101
+        %101 = OpLabel
+          %6 = OpPhi %11 %103 %100 %104 %102
+          %7 = OpIAdd %11 %6 %13
+               OpSelectionMerge %106 None
+               OpBranchConditional %15 %106 %105
+        %105 = OpLabel
+               OpStore %4 %7
+               OpBranch %106
+        %106 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+         %30 = OpSelect %11 %15 %13 %13
+               OpBranch %26
+         %26 = OpLabel
+         %28 = OpAccessChain %16 %5 %13
+               OpSelectionMerge %116 None
+               OpBranchConditional %15 %115 %116
+        %115 = OpLabel
+               OpStore %28 %13
+               OpBranch %116
+        %116 = OpLabel
+               OpBranch %25
+         %25 = OpLabel
+               OpSelectionMerge %109 None
+               OpBranchConditional %15 %110 %108
+        %108 = OpLabel
+        %111 = OpFunctionCall %11 %3
+               OpBranch %109
+        %110 = OpLabel
+        %112 = OpUndef %11
+               OpBranch %109
+        %109 = OpLabel
+          %8 = OpPhi %11 %111 %108 %112 %110
+               OpSelectionMerge %114 None
+               OpBranchConditional %15 %114 %113
+        %113 = OpLabel
+               OpStore %4 %8
+               OpBranch %114
+        %114 = OpLabel
+               OpBranch %27
+         %27 = OpLabel
+               OpStore %4 %13
+               OpBranch %24
+         %24 = OpLabel
+               OpStore %4 %13
+               OpReturn
+               OpFunctionEnd
+          %3 = OpFunction %11 None %12
+         %29 = OpLabel
+               OpReturnValue %13
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 }  // namespace
 }  // namespace fuzz

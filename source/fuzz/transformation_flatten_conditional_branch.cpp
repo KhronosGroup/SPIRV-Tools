@@ -239,18 +239,26 @@ void TransformationFlattenConditionalBranch::Apply(
 
   auto branch_instruction = header_block->terminator();
 
-  // Adjust the conditional branches by enclosing problematic instructions are
-  // enclosed by conditionals.
-  for (int branch = 1; branch <= 2; branch++) {
-    // branch = 1 corresponds to the true branch, branch = 2 corresponds to the
-    // false branch.
+  opt::BasicBlock* last_true_block = nullptr;
 
+  // Adjust the conditional branches by enclosing problematic instructions are
+  // enclosed by conditionals and get references to the last block in each
+  // branch.
+  for (int branch = 2; branch >= 1; branch--) {
+    // branch = 1 corresponds to the true branch, branch = 2 corresponds to the
+    // false branch. Consider the false branch first so that the true branch is
+    // laid out right after the false branch.
+
+    auto block = header_block;
     // Get the id of the first block in this branch.
     uint32_t block_id = branch_instruction->GetSingleWordInOperand(branch);
 
     // Consider all blocks in the branch until the convergence block is reached.
     while (block_id != convergence_block_id) {
-      auto block = ir_context->cfg()->block(block_id);
+      // Move the block to right after the previous one.
+      block->GetParent()->MoveBasicBlockToAfter(block_id, block);
+
+      block = ir_context->cfg()->block(block_id);
       block_id = block->terminator()->GetSingleWordInOperand(0);
 
       // Find all the problematic instructions in the block (OpStore, OpLoad,
@@ -299,8 +307,62 @@ void TransformationFlattenConditionalBranch::Apply(
             ir_context, transformation_context, block, instruction, fresh_ids,
             condition_id, branch == 1);
       }
+
+      // If the next block is the convergence block and this is the true branch,
+      // record this as the last block in the true branch.
+      if (block_id == convergence_block_id && branch == 1) {
+        last_true_block = block;
+      }
     }
   }
+
+  // Get the condition operand and the ids of the first blocks of the true and
+  // false branches.
+  auto condition_operand = branch_instruction->GetInOperand(0);
+  uint32_t first_true_block_id = branch_instruction->GetSingleWordInOperand(1);
+  uint32_t first_false_block_id = branch_instruction->GetSingleWordInOperand(2);
+
+  // The current header should unconditionally branch to the first block in the
+  // true branch, if there exists a true branch, and to the first block in the
+  // false branch if there is no true branch.
+  uint32_t after_header = first_true_block_id != convergence_block_id
+                              ? first_true_block_id
+                              : first_false_block_id;
+
+  // Kill the merge instruction and the branch instruction in the current
+  // header.
+  auto merge_inst = header_block->GetMergeInst();
+  ir_context->KillInst(branch_instruction);
+  ir_context->KillInst(merge_inst);
+
+  // Add a new, unconditional, branch instruction from the current header to
+  // |after_header|.
+  header_block->AddInstruction(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpBranch, 0, 0,
+      std::initializer_list<opt::Operand>{opt::Operand(
+          spv_operand_type_t::SPV_OPERAND_TYPE_ID, {after_header})}));
+
+  // If there is a true branch, change the branch instruction so that the last
+  // block in the true branch unconditionally branches to the first block in the
+  // false branch (or the convergence block if there is no false branch).
+  if (last_true_block) {
+    last_true_block->terminator()->SetInOperand(0, {first_false_block_id});
+  }
+
+  // Replace all of the current OpPhi instructions in the convergence block with
+  // OpSelect.
+  ir_context->get_instr_block(convergence_block_id)
+      ->ForEachPhiInst([&condition_operand](opt::Instruction* phi_inst) {
+        phi_inst->SetOpcode(SpvOpSelect);
+        std::vector<opt::Operand> operands;
+        operands.emplace_back(condition_operand);
+        // Only consider the operands referring to the instructions ids, as the
+        // block labels are not necessary anymore.
+        for (uint32_t i = 0; i < phi_inst->NumInOperands(); i += 2) {
+          operands.emplace_back(phi_inst->GetInOperand(i));
+        }
+        phi_inst->SetInOperands(std::move(operands));
+      });
 
   // Invalidate all analyses
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
