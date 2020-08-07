@@ -18,6 +18,7 @@
 #include <functional>
 #include <vector>
 
+#include "source/fuzz/decision_maker.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -51,6 +52,10 @@ class FuzzerPass {
   }
 
   FuzzerContext* GetFuzzerContext() const { return fuzzer_context_; }
+
+  DecisionMaker* GetDecisionMaker() const {
+    return GetFuzzerContext()->GetDecisionMaker();
+  }
 
   protobufs::TransformationSequence* GetTransformations() const {
     return transformations_;
