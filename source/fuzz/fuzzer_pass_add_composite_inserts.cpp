@@ -96,14 +96,19 @@ void FuzzerPassAddCompositeInserts::Apply() {
         // component is itself a composite, then randomly decide whether to take
         // its component and repeat. Use OpCompositeExtract to get the
         // component.
-        bool reached_end_node = false;
         uint32_t current_node_type_id = available_composite->type_id();
         uint32_t one_selected_index;
         uint32_t num_of_components;
         std::vector<uint32_t> path_to_replaced;
-        while (!reached_end_node) {
+        while (true) {
           num_of_components =
               GetNumberOfComponents(GetIRContext(), current_node_type_id);
+
+          // If the composite is empty, then end the iteration.
+          if (GetNumberOfComponents(GetIRContext(), current_node_type_id) ==
+              0) {
+            break;
+          }
           one_selected_index =
               GetFuzzerContext()->GetRandomIndexForComposite(num_of_components);
 
@@ -112,19 +117,16 @@ void FuzzerPassAddCompositeInserts::Apply() {
           current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
               GetIRContext(), current_node_type_id, one_selected_index);
 
-          // If the component is not a composite or if the composite is empty or
-          // if we decide not to go deeper, then end the iteration.
+          // If the component is not a composite or if we decide not to go
+          // deeper, then end the iteration.
           if (!fuzzerutil::IsCompositeType(
                   GetIRContext()->get_type_mgr()->GetType(
                       current_node_type_id))) {
-            reached_end_node = true;
-          } else if (GetNumberOfComponents(GetIRContext(),
-                                           current_node_type_id) == 0) {
-            reached_end_node = true;
+            break;
           } else if (!GetFuzzerContext()->ChoosePercentage(
                          GetFuzzerContext()
                              ->GetChanceOfGoingDeeperToInsertInComposite())) {
-            reached_end_node = true;
+            break;
           }
         }
 
