@@ -43,11 +43,14 @@ bool TransformationAddTypeFloat::IsApplicable(
 
 void TransformationAddTypeFloat::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  // If the float type width is 16 or 64, then the corresponding Float16 and
-  // Float64 capabilities must be added.
-  if (message_.width() == 16) {
+  // If the float type width is 16 or 64 and the corresponding Float16 or
+  // Float64 capability is not present, then add it.
+  if (message_.width() == 16 &&
+      !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat16)) {
     ir_context->AddCapability(SpvCapabilityFloat16);
-  } else if (message_.width() == 64) {
+  } else if (message_.width() == 64 &&
+             !ir_context->get_feature_mgr()->HasCapability(
+                 SpvCapabilityFloat64)) {
     ir_context->AddCapability(SpvCapabilityFloat64);
   }
 
