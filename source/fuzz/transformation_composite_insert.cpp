@@ -117,8 +117,8 @@ void TransformationCompositeInsert::Apply(
   opt::Instruction::OperandList in_operands;
   in_operands.push_back({SPV_OPERAND_TYPE_ID, {message_.object_id()}});
   in_operands.push_back({SPV_OPERAND_TYPE_ID, {message_.composite_id()}});
-  for (uint32_t i = 0; i < index.size(); i++) {
-    in_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {index[i]}});
+  for (auto i : index) {
+    in_operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {i}});
   }
   auto composite_type_id =
       fuzzerutil::GetTypeId(ir_context, message_.composite_id());
