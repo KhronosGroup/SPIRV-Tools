@@ -66,7 +66,15 @@ void FuzzerPassReplaceCopyObjectsWithStoresLoads::Apply() {
                                       ? SpvStorageClassPrivate
                                       : SpvStorageClassFunction;
 
-    // Find or create a constant to initialize the variable from.
+    // Find or create a constant to initialize the variable from. The type of
+    // |instruction| must be scalar or composite.
+    auto instruction_type =
+        GetIRContext()->get_type_mgr()->GetType(instruction->type_id());
+    if (!instruction_type->AsBool() && !instruction_type->AsInteger() &&
+        !instruction_type->AsFloat() &&
+        !fuzzerutil::IsCompositeType(instruction_type)) {
+      return;
+    }
     auto variable_initializer_id =
         FindOrCreateZeroConstant(instruction->type_id(), false);
 

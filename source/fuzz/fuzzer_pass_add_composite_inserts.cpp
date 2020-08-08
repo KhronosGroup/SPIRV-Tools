@@ -105,8 +105,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
               GetNumberOfComponents(GetIRContext(), current_node_type_id);
 
           // If the composite is empty, then end the iteration.
-          if (GetNumberOfComponents(GetIRContext(), current_node_type_id) ==
-              0) {
+          if (num_of_components == 0) {
             break;
           }
           one_selected_index =

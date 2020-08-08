@@ -37,40 +37,39 @@ FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::
     ~FuzzerPassReplaceAddsSubsMulsWithCarryingExtended() = default;
 
 void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
-  for (auto& function : *GetIRContext()->module()) {
-    for (auto& block : function) {
-      for (auto& instruction : block) {
-        // Randomly decide whether to apply the transformation.
-        if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()
-                    ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
-          continue;
-        }
-
-        // Check if the transformation can be applied to this instruction.
-        if (!TransformationReplaceAddSubMulWithCarryingExtended::
-                IsInstructionSuitable(GetIRContext(), instruction)) {
-          continue;
-        }
-
-        // Get the operand type id. We know that both operands have the same
-        // type.
-        uint32_t operand_type_id =
-            GetIRContext()
-                ->get_def_use_mgr()
-                ->GetDef(instruction.GetSingleWordInOperand(
-                    kArithmeticInstructionIndexLeftInOperand))
-                ->type_id();
-
-        // Ensure the required struct type exists. The struct type is based on
-        // the operand type.
-        FindOrCreateStructType({operand_type_id, operand_type_id});
-
-        ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
-            GetFuzzerContext()->GetFreshId(), instruction.result_id()));
-      }
+  GetIRContext()->module()->ForEachInst([this](opt::Instruction* instruction) {
+    // Randomly decide whether to apply the transformation.
+    if (!GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()
+                ->GetChanceOfReplacingAddSubMulWithCarryingExtended())) {
+      return;
     }
-  }
+
+    // Check if the transformation can be applied to this instruction.
+    if (!instruction) {
+      return;
+    }
+    if (!TransformationReplaceAddSubMulWithCarryingExtended::
+            IsInstructionSuitable(GetIRContext(), *instruction)) {
+      return;
+    }
+
+    // Get the operand type id. We know that both operands have the same
+    // type.
+    uint32_t operand_type_id =
+        GetIRContext()
+            ->get_def_use_mgr()
+            ->GetDef(instruction->GetSingleWordInOperand(
+                kArithmeticInstructionIndexLeftInOperand))
+            ->type_id();
+
+    // Ensure the required struct type exists. The struct type is based on
+    // the operand type.
+    FindOrCreateStructType({operand_type_id, operand_type_id});
+
+    ApplyTransformation(TransformationReplaceAddSubMulWithCarryingExtended(
+        GetFuzzerContext()->GetFreshId(), instruction->result_id()));
+  });
 }
 }  // namespace fuzz
 }  // namespace spvtools

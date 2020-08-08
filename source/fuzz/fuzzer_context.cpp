@@ -89,7 +89,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfPropagatingInstructionsUp = {20,
                                                                           70};
 const std::pair<uint32_t, uint32_t> kChanceOfPushingIdThroughVariable = {5, 50};
 const std::pair<uint32_t, uint32_t>
-    kChanceOfReplacingAddSubMulWithCarryingExtended = {20, 90};
+    kChanceOfReplacingAddSubMulWithCarryingExtended = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyMemoryWithLoadStore =
     {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyObjectWithStoreLoad =

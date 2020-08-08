@@ -63,18 +63,13 @@ bool TransformationCompositeInsert::IsApplicable(
   // The instruction having the id of |message_.object_id| must be valid.
   auto object_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.object_id());
-  if (object_instruction == nullptr) {
-    return false;
-  }
-  if (object_instruction->type_id() == 0) {
+  if (object_instruction == nullptr || object_instruction->type_id() == 0) {
     return false;
   }
 
   // We ignore pointers for now. Consider adding support for pointer types.
   auto object_instruction_type =
       ir_context->get_type_mgr()->GetType(object_instruction->type_id());
-  // No unused variables in release mode (to keep compilers happy).
-  (void)object_instruction_type;
   if (object_instruction_type->AsPointer() != nullptr) {
     return false;
   }
@@ -153,11 +148,11 @@ void TransformationCompositeInsert::Apply(
     return;
   }
   uint32_t current_node_type_id = composite_type_id;
-  uint32_t index_to_skip, num_of_components;
   std::vector<uint32_t> current_index;
 
   for (uint32_t current_level = 0; current_level < index.size();
        current_level++) {
+    uint32_t index_to_skip, num_of_components;
     index_to_skip = index[current_level];
     num_of_components = FuzzerPassAddCompositeInserts::GetNumberOfComponents(
         ir_context, current_node_type_id);
@@ -166,6 +161,11 @@ void TransformationCompositeInsert::Apply(
     if (current_level != 0) {
       current_index.push_back(index[current_level - 1]);
     }
+
+    // Update the current_node_type_id.
+    current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
+        ir_context, current_node_type_id, index_to_skip);
+
     for (uint32_t i = 0; i < num_of_components; i++) {
       if (i == index_to_skip) {
         continue;
