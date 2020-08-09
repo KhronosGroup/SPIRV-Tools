@@ -252,6 +252,9 @@ class FuzzerContext {
   uint32_t GetChanceOfOutliningFunction() {
     return chance_of_outlining_function_;
   }
+  uint32_t GetChanceOfOutliningSelectionConstruct() {
+    return chance_of_outlining_selection_construct_;
+  }
   uint32_t GetChanceOfPermutingInstructions() {
     return chance_of_permuting_instructions_;
   }
@@ -453,6 +456,7 @@ class FuzzerContext {
   uint32_t chance_of_mutating_pointer_;
   uint32_t chance_of_obfuscating_constant_;
   uint32_t chance_of_outlining_function_;
+  uint32_t chance_of_outlining_selection_construct_;
   uint32_t chance_of_permuting_instructions_;
   uint32_t chance_of_permuting_parameters_;
   uint32_t chance_of_permuting_phi_operands_;

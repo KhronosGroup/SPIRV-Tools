@@ -103,6 +103,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfMutatingPointer = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfOutliningFunction = {10, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfOutliningSelectionConstruct = {10,
+                                                                            90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingInstructions = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingParameters = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingPhiOperands = {30, 90};
@@ -283,6 +285,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfObfuscatingConstant);
   chance_of_outlining_function_ =
       ChooseBetweenMinAndMax(kChanceOfOutliningFunction);
+  chance_of_outlining_selection_construct_ =
+      ChooseBetweenMinAndMax(kChanceOfOutliningSelectionConstruct);
   chance_of_permuting_instructions_ =
       ChooseBetweenMinAndMax(kChanceOfPermutingInstructions);
   chance_of_permuting_parameters_ =

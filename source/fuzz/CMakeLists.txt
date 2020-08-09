@@ -94,6 +94,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_mutate_pointers.h
         fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_outline_functions.h
+        fuzzer_pass_outline_selection_construct.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_permute_function_parameters.h
         fuzzer_pass_permute_instructions.h
@@ -183,6 +184,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_move_instruction_down.h
         transformation_mutate_pointer.h
         transformation_outline_function.h
+        transformation_outline_selection_construct.h
         transformation_permute_function_parameters.h
         transformation_permute_phi_operands.h
         transformation_propagate_instruction_up.h
@@ -270,6 +272,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_mutate_pointers.cpp
         fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_outline_functions.cpp
+        fuzzer_pass_outline_selection_construct.cpp
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_permute_function_parameters.cpp
         fuzzer_pass_permute_instructions.cpp
@@ -357,6 +360,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_move_instruction_down.cpp
         transformation_mutate_pointer.cpp
         transformation_outline_function.cpp
+        transformation_outline_selection_construct.cpp
         transformation_permute_function_parameters.cpp
         transformation_permute_phi_operands.cpp
         transformation_propagate_instruction_up.cpp

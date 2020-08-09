@@ -67,6 +67,7 @@
 #include "source/fuzz/transformation_move_instruction_down.h"
 #include "source/fuzz/transformation_mutate_pointer.h"
 #include "source/fuzz/transformation_outline_function.h"
+#include "source/fuzz/transformation_outline_selection_construct.h"
 #include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
 #include "source/fuzz/transformation_propagate_instruction_up.h"
@@ -246,6 +247,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kOutlineFunction:
       return MakeUnique<TransformationOutlineFunction>(
           message.outline_function());
+    case protobufs::Transformation::TransformationCase::
+        kOutlineSelectionConstruct:
+      return MakeUnique<TransformationOutlineSelectionConstruct>(
+          message.outline_selection_construct());
     case protobufs::Transformation::TransformationCase::
         kPermuteFunctionParameters:
       return MakeUnique<TransformationPermuteFunctionParameters>(

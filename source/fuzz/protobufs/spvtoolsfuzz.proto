@@ -498,6 +498,7 @@ message Transformation {
     TransformationFlattenConditionalBranch flatten_conditional_branch = 76;
     TransformationAddBitInstructionSynonym add_bit_instruction_synonym = 77;
     TransformationAddLoopToCreateIntConstantSynonym add_loop_to_create_int_constant_synonym = 78;
+    TransformationOutlineSelectionConstruct outline_selection_construct = 79;
     // Add additional option using the next available number.
   }
 }
@@ -1566,6 +1567,21 @@ message TransformationOutlineFunction {
   // by the caller.  This is a mapping from original ids to corresponding fresh
   // ids.
   repeated UInt32Pair output_id_to_fresh_id = 10;
+
+}
+
+message TransformationOutlineSelectionConstruct {
+
+  // Creates a new selection construct with a header in |new_header_block_id|
+  // and a merge block in |new_merge_block_id|.
+
+  // Result id of the OpLabel instruction. The instruction belongs to the block
+  // that will be converted to the header block of a new selection construct.
+  uint32 new_header_block_id = 1;
+
+  // Result id of the OpLabel instruction. The instruction belongs to the block
+  // that will be a merge block of a new selection construct.
+  uint32 new_merge_block_id = 2;
 
 }
 
