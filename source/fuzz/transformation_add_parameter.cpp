@@ -58,6 +58,38 @@ bool TransformationAddParameter::IsApplicable(
     return false;
   }
 
+  bool is_valid = true;
+  if (initializer_type->kind() == opt::analysis::Type::kPointer) {
+    auto storage_class = fuzzerutil::GetStorageClassFromPointerType(
+        ir_context, initializer_inst->type_id());
+    switch (storage_class) {
+      case SpvStorageClassFunction:
+        for (auto* instr :
+             fuzzerutil::GetCallers(ir_context, message_.function_id())) {
+          auto block = ir_context->get_instr_block(instr);
+          auto function_id = block->GetParent()->result_id();
+          if (fuzzerutil::MaybeGetLocalVariable(
+                  ir_context, initializer_inst->type_id(), function_id) == 0) {
+            is_valid = false;
+            break;
+          }
+        }
+        break;
+      case SpvStorageClassPrivate:
+      case SpvStorageClassWorkgroup:
+        if (fuzzerutil::MaybeGetGlobalVariable(
+                ir_context, initializer_inst->type_id(), storage_class) == 0) {
+          is_valid = false;
+        }
+        break;
+      default:
+        break;
+    }
+    if (!is_valid) {
+      return false;
+    }
+  }
+
   return fuzzerutil::IsFreshId(ir_context, message_.parameter_fresh_id()) &&
          fuzzerutil::IsFreshId(ir_context, message_.function_type_fresh_id()) &&
          message_.parameter_fresh_id() != message_.function_type_fresh_id();
@@ -145,6 +177,19 @@ bool TransformationAddParameter::IsParameterTypeSupported(
                          [](const opt::analysis::Type* element_type) {
                            return IsParameterTypeSupported(*element_type);
                          });
+    case opt::analysis::Type::kPointer: {
+      auto storage_class = type.AsPointer()->storage_class();
+      switch (storage_class) {
+        case SpvStorageClassPrivate:
+        case SpvStorageClassFunction:
+        case SpvStorageClassWorkgroup: {
+          auto pointee_type = type.AsPointer()->pointee_type();
+          return IsParameterTypeSupported(*pointee_type);
+        }
+        default:
+          return false;
+      }
+    }
     default:
       return false;
   }

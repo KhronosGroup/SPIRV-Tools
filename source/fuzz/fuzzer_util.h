@@ -493,6 +493,17 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
                                                  uint32_t block_id,
                                                  SpvOp opcode);
 
+// Returns the id of an available local variable that has the type |type_id| and
+// is declared in the function that has the id |function_id|. If no such
+// variable is available, returns 0.
+uint32_t MaybeGetLocalVariable(opt::IRContext* ir_context, uint32_t type_id,
+                               uint32_t function_id);
+
+// Returns the id of an available global variable that has the type |type_id|.
+// If no such variable is available, returns 0.
+uint32_t MaybeGetGlobalVariable(opt::IRContext* ir_context, uint32_t type_id,
+                                SpvStorageClass storage_class);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
