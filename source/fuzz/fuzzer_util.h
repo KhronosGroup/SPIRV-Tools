@@ -162,7 +162,7 @@ std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context);
 bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id);
 
 // Returns true if and only if |block_id| is a merge block
-bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
+bool IsMergeBlock(opt::IRContext* ir_context, uint32_t block_id);
 
 // Returns true if and only if |block_id| is a merge block or continue target
 bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
@@ -526,6 +526,11 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
 // BuiltIn decoration.
 bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
                                   uint32_t struct_type_id);
+
+// Returns true iff splitting block |block_to_split| just before the instruction
+// |split_before| would separate an OpSampledImage instruction from its usage.
+bool SplitBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+    opt::BasicBlock* block_to_split, opt::Instruction* split_before);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz

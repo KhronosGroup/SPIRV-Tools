@@ -34,7 +34,7 @@ class TransformationReplaceOpSelectWithConditionalBranch
   // - The block containing the instruction can be split at the position
   //   corresponding to the instruction.
   // - |message_.new_block_id| contains at least 2 fresh ids if the block
-  // containing the instruction is not a merge block, at least 3 otherwise.
+  //   containing the instruction is not a merge block, at least 3 otherwise.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

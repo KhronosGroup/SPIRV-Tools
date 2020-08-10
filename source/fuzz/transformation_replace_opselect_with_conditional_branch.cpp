@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_replace_opselect_with_conditional_branch.h"
 
+#include "source/fuzz/fuzzer_util.h"
+
 namespace spvtools {
 namespace fuzz {
 TransformationReplaceOpSelectWithConditionalBranch::
@@ -32,8 +34,35 @@ TransformationReplaceOpSelectWithConditionalBranch::
 }
 bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
     opt::IRContext* ir_context,
-    const TransformationContext& /* transformation_context */) const {
-  return false;
+    const TransformationContext& /* unused */) const {
+  auto instruction =
+      ir_context->get_def_use_mgr()->GetDef(message_.select_id());
+
+  // The instruction must exist and it must be an OpSelect instruction.
+  if (!instruction || instruction->opcode() != SpvOpSelect) {
+    return false;
+  }
+
+  auto block = ir_context->get_instr_block(instruction);
+
+  // If the block containing the instruction is a merge block, at least 3 fresh
+  // ids are needed.
+  if (fuzzerutil::IsMergeBlock(ir_context, block->id()) &&
+      message_.new_block_id_size() < 3) {
+    return false;
+  }
+
+  // In all cases, at least 2 fresh ids are needed.
+  if (message_.new_block_id_size() < 2) {
+    return true;
+  }
+
+  // The block must be split around the OpSelect instruction. This means that
+  // there cannot be an OpSampledImage instruction before OpSelect that is used
+  // after it, because they are required to be in the same basic block.
+  return !fuzzerutil::
+      SplitBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+          block, instruction);
 }
 
 void TransformationReplaceOpSelectWithConditionalBranch::Apply(
