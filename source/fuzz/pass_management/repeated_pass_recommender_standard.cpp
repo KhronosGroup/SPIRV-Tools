@@ -235,7 +235,7 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     return RandomOrderAndNonNull({pass_instances_->GetAddFunctionCalls(),
                                   pass_instances_->GetInlineFunctions()});
   }
-  if (&pass == pass_instances_->GetOutlineSelectionConstruct()) {
+  if (&pass == pass_instances_->GetOutlineSelectionConstructs()) {
     // - This pass uses an irrelevant boolean constant - we can replace it with
     //   something more interesting.
     // - We can obfuscate that very constant as well.

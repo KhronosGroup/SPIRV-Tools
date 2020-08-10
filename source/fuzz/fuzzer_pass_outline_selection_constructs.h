@@ -22,14 +22,14 @@ namespace fuzz {
 
 // Randomly outlines a set of blocks in every function into a selection
 // construct.
-class FuzzerPassOutlineSelectionConstruct : public FuzzerPass {
+class FuzzerPassOutlineSelectionConstructs : public FuzzerPass {
  public:
-  FuzzerPassOutlineSelectionConstruct(
+  FuzzerPassOutlineSelectionConstructs(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassOutlineSelectionConstruct() override;
+  ~FuzzerPassOutlineSelectionConstructs() override;
 
   void Apply() override;
 

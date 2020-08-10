@@ -63,7 +63,7 @@
 #include "source/fuzz/fuzzer_pass_mutate_pointers.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
-#include "source/fuzz/fuzzer_pass_outline_selection_construct.h"
+#include "source/fuzz/fuzzer_pass_outline_selection_constructs.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
 #include "source/fuzz/fuzzer_pass_permute_instructions.h"
@@ -265,7 +265,7 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     MaybeAddRepeatedPass<FuzzerPassMutatePointers>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassOutlineFunctions>(&pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassOutlineSelectionConstruct>(&pass_instances);
+    MaybeAddRepeatedPass<FuzzerPassOutlineSelectionConstructs>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteInstructions>(&pass_instances);

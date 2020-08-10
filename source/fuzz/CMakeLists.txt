@@ -94,7 +94,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_mutate_pointers.h
         fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_outline_functions.h
-        fuzzer_pass_outline_selection_construct.h
+        fuzzer_pass_outline_selection_constructs.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_permute_function_parameters.h
         fuzzer_pass_permute_instructions.h
@@ -272,7 +272,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_mutate_pointers.cpp
         fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_outline_functions.cpp
-        fuzzer_pass_outline_selection_construct.cpp
+        fuzzer_pass_outline_selection_constructs.cpp
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_permute_function_parameters.cpp
         fuzzer_pass_permute_instructions.cpp

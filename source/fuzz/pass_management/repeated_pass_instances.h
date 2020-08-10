@@ -50,7 +50,7 @@
 #include "source/fuzz/fuzzer_pass_mutate_pointers.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
-#include "source/fuzz/fuzzer_pass_outline_selection_construct.h"
+#include "source/fuzz/fuzzer_pass_outline_selection_constructs.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
 #include "source/fuzz/fuzzer_pass_permute_instructions.h"
@@ -140,7 +140,7 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(MutatePointers);
   REPEATED_PASS_INSTANCE(ObfuscateConstants);
   REPEATED_PASS_INSTANCE(OutlineFunctions);
-  REPEATED_PASS_INSTANCE(OutlineSelectionConstruct);
+  REPEATED_PASS_INSTANCE(OutlineSelectionConstructs);
   REPEATED_PASS_INSTANCE(PermuteBlocks);
   REPEATED_PASS_INSTANCE(PermuteFunctionParameters);
   REPEATED_PASS_INSTANCE(PermuteInstructions);

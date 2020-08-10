@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_pass_outline_selection_construct.h"
+#include "source/fuzz/fuzzer_pass_outline_selection_constructs.h"
 
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/instruction_descriptor.h"
@@ -22,17 +22,17 @@
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPassOutlineSelectionConstruct::FuzzerPassOutlineSelectionConstruct(
+FuzzerPassOutlineSelectionConstructs::FuzzerPassOutlineSelectionConstructs(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassOutlineSelectionConstruct::~FuzzerPassOutlineSelectionConstruct() =
+FuzzerPassOutlineSelectionConstructs::~FuzzerPassOutlineSelectionConstructs() =
     default;
 
-void FuzzerPassOutlineSelectionConstruct::Apply() {
+void FuzzerPassOutlineSelectionConstructs::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfOutliningSelectionConstruct())) {
@@ -100,10 +100,10 @@ void FuzzerPassOutlineSelectionConstruct::Apply() {
 }
 
 opt::BasicBlock*
-FuzzerPassOutlineSelectionConstruct::MaybeGetHeaderBlockCandidate(
+FuzzerPassOutlineSelectionConstructs::MaybeGetHeaderBlockCandidate(
     opt::BasicBlock* header_block_candidate) {
   // Try to create a preheader if |header_block_candidate| is a loop header.
-  if (header_block_candidate->GetLoopMergeInst()) {
+  if (header_block_candidate->IsLoopHeader()) {
     // GetOrCreateSimpleLoopPreheader only supports reachable blocks.
     return GetIRContext()->cfg()->preds(header_block_candidate->id()).size() ==
                    1
@@ -128,7 +128,7 @@ FuzzerPassOutlineSelectionConstruct::MaybeGetHeaderBlockCandidate(
 }
 
 opt::BasicBlock*
-FuzzerPassOutlineSelectionConstruct::MaybeGetMergeBlockCandidate(
+FuzzerPassOutlineSelectionConstructs::MaybeGetMergeBlockCandidate(
     opt::BasicBlock* merge_block_candidate) {
   // If |merge_block_candidate| is a merge block of some construct, try to split
   // it and return a newly created block.
