@@ -1358,7 +1358,7 @@ uint32_t MaybeGetLocalVariable(opt::IRContext* ir_context, uint32_t type_id,
       continue;
     }
     auto storage_class = GetStorageClassFromPointerType(ir_context, type_id);
-    if (storage_class == SpvStorageClassFunction) {
+    if (storage_class != SpvStorageClassFunction) {
       continue;
     }
     // We have found the matching variable declaration.
@@ -1371,34 +1371,25 @@ uint32_t MaybeGetLocalVariable(opt::IRContext* ir_context, uint32_t type_id,
 uint32_t MaybeGetGlobalVariable(opt::IRContext* ir_context, uint32_t type_id,
                                 SpvStorageClass storage_class) {
   uint32_t return_id = 0;
-
   // A global variable can be declared in any point of the module.
-  for (auto& function : *ir_context->module()) {
-    for (auto& block : function) {
-      for (auto& instruction : block) {
-        if (instruction.opcode() != SpvOpVariable) {
-          continue;
+  ir_context->module()->ForEachInst(
+      [storage_class, ir_context, type_id,
+       &return_id](opt::Instruction* instruction) {
+        if (instruction->opcode() != SpvOpVariable) {
+          return;
         }
-        auto instruction_type_id =
-            GetTypeId(ir_context, instruction.result_id());
-        if (instruction_type_id != type_id) {
-          continue;
+        if (instruction->type_id() != type_id) {
+          return;
         }
         auto instruction_storage_class =
             GetStorageClassFromPointerType(ir_context, type_id);
         if (instruction_storage_class != storage_class) {
-          continue;
+          return;
         }
-        // We have found a matching variable declaration.
-        return_id = instruction.result_id();
-        break;
-      }
-    }
-  }
+        return_id = instruction->result_id();
+      });
   return return_id;
 }
-
 }  // namespace fuzzerutil
-
 }  // namespace fuzz
 }  // namespace spvtools

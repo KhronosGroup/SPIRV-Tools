@@ -13,13 +13,16 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_parameter.h"
-
 #include "test/fuzz/fuzz_test_util.h"
+
+#include "source/fuzz/fuzzer_pass_add_parameters.h"
+#include "source/fuzz/pseudo_random_generator.h"
+#include "source/fuzz/transformation_add_global_variable.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
-
+/*
 TEST(TransformationAddParameterTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
@@ -242,6 +245,123 @@ TEST(TransformationAddParameterTest, BasicTest) {
   )";
 
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}*/
+
+TEST(TransformationAddParameterTest, PointerTypeTest) {
+  std::string shader = R"(
+  OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "nothing("
+               OpName %12 "add(i1;"
+               OpName %11 "a"
+               OpName %21 "i1"
+               OpName %24 "f1"
+               OpName %28 "u1"
+               OpName %30 "i2"
+               OpName %31 "param"
+               OpDecorate %12 RelaxedPrecision
+               OpDecorate %11 RelaxedPrecision
+               OpDecorate %15 RelaxedPrecision
+               OpDecorate %17 RelaxedPrecision
+               OpDecorate %21 RelaxedPrecision
+               OpDecorate %28 RelaxedPrecision
+               OpDecorate %30 RelaxedPrecision
+               OpDecorate %32 RelaxedPrecision
+               OpDecorate %33 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeFunction %8 %9
+         %16 = OpConstant %8 2
+         %22 = OpTypeFloat 32
+         %23 = OpTypePointer Function %22
+         %25 = OpConstant %22 3
+         %26 = OpTypeInt 32 0
+         %27 = OpTypePointer Function %26
+         %29 = OpConstant %26 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %21 = OpVariable %9 Function
+         %24 = OpVariable %23 Function
+         %28 = OpVariable %27 Function
+         %30 = OpVariable %9 Function
+         %31 = OpVariable %9 Function
+         %20 = OpFunctionCall %2 %6
+               OpStore %21 %16
+               OpStore %24 %25
+               OpStore %28 %29
+         %32 = OpLoad %8 %21
+               OpStore %31 %32
+         %33 = OpFunctionCall %8 %12 %31
+               OpStore %30 %33
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %8 None %10
+         %11 = OpFunctionParameter %9
+         %13 = OpLabel
+         %15 = OpLoad %8 %11
+         %17 = OpIAdd %8 %15 %16
+               OpReturnValue %17
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto prng = MakeUnique<PseudoRandomGenerator>(0);
+  FuzzerContext fuzzer_context(prng.get(), 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  FuzzerPassAddParameters fuzzer_pass(context.get(), &transformation_context,
+                                      &fuzzer_context,
+                                      &transformation_sequence);
+
+  for (int i = 0; i < 10; i++) {
+    fuzzer_pass.Apply();
+  }
+
+  std::vector<uint32_t> actual_binary;
+  context.get()->module()->ToBinary(&actual_binary, false);
+  SpirvTools t(env);
+  std::string actual_disassembled;
+  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
+  std::cout << actual_disassembled;
+
+  /*
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  TransformationAddGlobalVariable add_global_variable(
+      60, 22, SpvStorageClassPrivate, 13, true);
+  add_global_variable.Apply(context.get(), &transformation_context);
+
+  TransformationAddParameter correct(10, 50, 22, 51);
+  correct.Apply(context.get(), &transformation_context);
+  std::vector<uint32_t> actual_binary;
+  context.get()->module()->ToBinary(&actual_binary, false);
+  SpirvTools t(env);
+  std::string actual_disassembled;
+  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
+  std::cout << actual_disassembled;
+   */
 }
 
 }  // namespace
