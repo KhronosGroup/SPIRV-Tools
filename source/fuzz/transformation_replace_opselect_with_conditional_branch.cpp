@@ -54,7 +54,16 @@ bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
 
   // In all cases, at least 2 fresh ids are needed.
   if (message_.new_block_id_size() < 2) {
-    return true;
+    return false;
+  }
+
+  // Check that the new block ids are fresh and distinct.
+  std::set<uint32_t> used_ids;
+  for (uint32_t id : message_.new_block_id()) {
+    if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                      &used_ids)) {
+      return false;
+    }
   }
 
   // The block must be split around the OpSelect instruction. This means that
