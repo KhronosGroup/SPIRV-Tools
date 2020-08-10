@@ -272,8 +272,6 @@ Pass::Status LocalAccessChainConvertPass::ConvertLocalAccessChains(
           ++ii;
           ii = ii.InsertBefore(std::move(newInsts));
           for (size_t i = 0; i < num_of_instructions_to_skip; ++i) {
-            std::cerr << "Skipping over instruction " << ii->PrettyPrint()
-                      << "\n";
             ++ii;
           }
           modified = true;
