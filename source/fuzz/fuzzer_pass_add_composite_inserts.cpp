@@ -97,10 +97,10 @@ void FuzzerPassAddCompositeInserts::Apply() {
         // its component and repeat. Use OpCompositeExtract to get the
         // component.
         uint32_t current_node_type_id = available_composite->type_id();
-        uint32_t one_selected_index;
-        uint32_t num_of_components;
         std::vector<uint32_t> path_to_replaced;
         while (true) {
+          uint32_t one_selected_index;
+          uint32_t num_of_components;
           num_of_components =
               GetNumberOfComponents(GetIRContext(), current_node_type_id);
 
@@ -109,7 +109,8 @@ void FuzzerPassAddCompositeInserts::Apply() {
             break;
           }
           one_selected_index =
-              GetFuzzerContext()->GetRandomIndexForComposite(num_of_components);
+              GetFuzzerContext()->GetRandomIndexForCompositeInsert(
+                  num_of_components);
 
           // Construct a final index by appending the current index.
           path_to_replaced.push_back(one_selected_index);

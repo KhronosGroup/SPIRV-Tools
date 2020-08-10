@@ -302,7 +302,7 @@ class FuzzerContext {
   uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
     return random_generator_->RandomUint32(composite_size_bound);
   }
-  uint32_t GetRandomIndexForComposite(uint32_t number_of_components) {
+  uint32_t GetRandomIndexForCompositeInsert(uint32_t number_of_components) {
     return random_generator_->RandomUint32(number_of_components);
   }
   uint32_t GetRandomLoopControlPartialCount() {

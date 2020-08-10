@@ -46,7 +46,7 @@ void FuzzerPassReplaceAddsSubsMulsWithCarryingExtended::Apply() {
     }
 
     // Check if the transformation can be applied to this instruction.
-    if (!instruction) {
+    if (!instruction || !instruction->result_id() || !instruction->type_id()) {
       return;
     }
     if (!TransformationReplaceAddSubMulWithCarryingExtended::
