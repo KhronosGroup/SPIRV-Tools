@@ -161,6 +161,9 @@ std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context);
 // type.
 bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id);
 
+// Returns true if and only if |block_id| is a merge block
+bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
+
 // Returns true if and only if |block_id| is a merge block or continue target
 bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
 

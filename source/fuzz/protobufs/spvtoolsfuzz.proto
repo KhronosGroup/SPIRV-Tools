@@ -418,6 +418,7 @@ message Transformation {
     TransformationMutatePointer mutate_pointer = 71;
     TransformationReplaceIrrelevantId replace_irrelevant_id = 72;
     TransformationReplaceOpPhiIdFromDeadPredecessor replace_opphi_id_from_dead_predecessor = 73;
+    TransformationReplaceOpSelectWithConditionalBranch replace_opselect_with_conditional_branch = 74;
     // Add additional option using the next available number.
   }
 }
@@ -1561,6 +1562,19 @@ message TransformationReplaceOpPhiIdFromDeadPredecessor {
   // The id that, after the transformation, will be associated with
   // the given predecessor.
   uint32 replacement_id = 3;
+
+}
+
+message TransformationReplaceOpSelectWithConditionalBranch {
+
+  // A transformation that takes an OpSelect instruction and replaces
+  // it with a conditional branch and an OpPhi instruction.
+
+  // The result id of the OpSelect instruction
+  uint32 select_id = 1;
+
+  // Fresh ids for the new blocks
+  repeated uint32 new_block_id = 2;
 
 }
 

@@ -419,6 +419,29 @@ bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id) {
   return type && !type->AsFunction();
 }
 
+bool IsMergeBlock(opt::IRContext* ir_context, uint32_t block_id) {
+  bool result = false;
+  ir_context->get_def_use_mgr()->WhileEachUse(
+      block_id,
+      [&result](const opt::Instruction* use_instruction,
+                uint32_t index) -> bool {
+        switch (use_instruction->opcode()) {
+          case SpvOpLoopMerge:
+            if (index == 0) {
+              result = true;
+              return false;
+            }
+            return true;
+          case SpvOpSelectionMerge:
+            result = true;
+            return false;
+          default:
+            return true;
+        }
+      });
+  return result;
+}
+
 bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id) {
   bool result = false;
   ir_context->get_def_use_mgr()->WhileEachUse(
