@@ -339,6 +339,8 @@ TEST(TransformationCompositeInsertTest, EmptyCompositeScenarios) {
 TEST(TransformationCompositeInsertTest, IrrelevantNoSynonyms) {
   // This test handles cases where either |composite| or |object| is irrelevant.
   // The transformation shouldn't create any synonyms.
+  // The member composite has a different number of elements than the parent
+  // composite.
 
   std::string shader = R"(
                OpCapability Shader
@@ -357,11 +359,12 @@ TEST(TransformationCompositeInsertTest, IrrelevantNoSynonyms) {
                OpName %18 "level_1"
                OpMemberName %18 0 "b1"
                OpMemberName %18 1 "b2"
+               OpMemberName %18 2 "b3"
                OpName %20 "l1"
-               OpName %24 "level_2"
-               OpMemberName %24 0 "c1"
-               OpMemberName %24 1 "c2"
-               OpName %26 "l2"
+               OpName %25 "level_2"
+               OpMemberName %25 0 "c1"
+               OpMemberName %25 1 "c2"
+               OpName %27 "l2"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
@@ -370,19 +373,19 @@ TEST(TransformationCompositeInsertTest, IrrelevantNoSynonyms) {
          %11 = OpConstant %6 2
          %12 = OpTypeStruct %6 %6
          %13 = OpTypePointer Function %12
-         %18 = OpTypeStruct %12 %12
+         %18 = OpTypeStruct %12 %12 %12
          %19 = OpTypePointer Function %18
-         %24 = OpTypeStruct %18 %18
-         %25 = OpTypePointer Function %24
-         %30 = OpTypeBool
-         %31 = OpConstantTrue %30
+         %25 = OpTypeStruct %18 %18
+         %26 = OpTypePointer Function %25
+         %31 = OpTypeBool
+         %32 = OpConstantTrue %31
           %4 = OpFunction %2 None %3
           %5 = OpLabel
           %8 = OpVariable %7 Function
          %10 = OpVariable %7 Function
          %14 = OpVariable %13 Function
          %20 = OpVariable %19 Function
-         %26 = OpVariable %25 Function
+         %27 = OpVariable %26 Function
                OpStore %8 %9
                OpStore %10 %11
          %15 = OpLoad %6 %8
@@ -391,17 +394,18 @@ TEST(TransformationCompositeInsertTest, IrrelevantNoSynonyms) {
                OpStore %14 %17
          %21 = OpLoad %12 %14
          %22 = OpLoad %12 %14
-         %23 = OpCompositeConstruct %18 %21 %22
-               OpStore %20 %23
-         %27 = OpLoad %18 %20
+         %23 = OpLoad %12 %14
+         %24 = OpCompositeConstruct %18 %21 %22 %23
+               OpStore %20 %24
          %28 = OpLoad %18 %20
-         %29 = OpCompositeConstruct %24 %27 %28
-               OpStore %26 %29
-               OpSelectionMerge %33 None
-               OpBranchConditional %31 %32 %33
-         %32 = OpLabel
-               OpBranch %33
+         %29 = OpLoad %18 %20
+         %30 = OpCompositeConstruct %25 %28 %29
+               OpStore %27 %30
+               OpSelectionMerge %34 None
+               OpBranchConditional %32 %33 %34
          %33 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
                OpReturn
                OpFunctionEnd
     )";
@@ -419,11 +423,11 @@ TEST(TransformationCompositeInsertTest, IrrelevantNoSynonyms) {
   std::vector<uint32_t> index;
 
   // Add fact that the composite is irrelevant.
-  fact_manager.AddFactIdIsIrrelevant(29);
+  fact_manager.AddFactIdIsIrrelevant(30);
 
-  instruction_to_insert_before = MakeInstructionDescriptor(29, SpvOpStore, 0);
+  instruction_to_insert_before = MakeInstructionDescriptor(30, SpvOpStore, 0);
   fresh_id = 50;
-  composite_id = 29;
+  composite_id = 30;
   object_id = 11;
   index = {1, 0, 0};
   auto transformation_good_1 = TransformationCompositeInsert(
@@ -434,11 +438,11 @@ TEST(TransformationCompositeInsertTest, IrrelevantNoSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // No synonyms should have been added.
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(29, {0}),
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {0}),
                                          MakeDataDescriptor(50, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(29, {1, 1}),
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 1}),
                                          MakeDataDescriptor(50, {1, 1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(29, {1, 0, 1}),
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 0, 1}),
                                          MakeDataDescriptor(50, {1, 0, 1})));
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {1, 0, 0}),
                                          MakeDataDescriptor(11, {})));
