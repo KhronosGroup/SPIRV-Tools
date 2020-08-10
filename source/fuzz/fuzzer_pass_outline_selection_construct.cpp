@@ -61,10 +61,11 @@ void FuzzerPassOutlineSelectionConstruct::Apply() {
 
     std::vector<opt::BasicBlock*> merge_block_candidates;
     for (auto& block : function) {
-      if (GetIRContext()->GetDominatorAnalysis(&function)->Dominates(
+      if (GetIRContext()->GetDominatorAnalysis(&function)->StrictlyDominates(
               header_block_candidate, &block) &&
-          GetIRContext()->GetPostDominatorAnalysis(&function)->Dominates(
-              &block, header_block_candidate)) {
+          GetIRContext()
+              ->GetPostDominatorAnalysis(&function)
+              ->StrictlyDominates(&block, header_block_candidate)) {
         merge_block_candidates.push_back(&block);
       }
     }

@@ -235,6 +235,16 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     return RandomOrderAndNonNull({pass_instances_->GetAddFunctionCalls(),
                                   pass_instances_->GetInlineFunctions()});
   }
+  if (&pass == pass_instances_->GetOutlineSelectionConstruct()) {
+    // - This pass uses an irrelevant boolean constant - we can replace it with
+    //   something more interesting.
+    // - We can obfuscate that very constant as well.
+    // - We can flatten created selection construct.
+    return RandomOrderAndNonNull({
+        pass_instances_->GetObfuscateConstants(),
+        pass_instances_->GetReplaceIrrelevantIds(),
+        pass_instances_->GetFlattenConditionalBranches()});
+  }
   if (&pass == pass_instances_->GetPermuteBlocks()) {
     // No obvious follow-on passes
     return {};
