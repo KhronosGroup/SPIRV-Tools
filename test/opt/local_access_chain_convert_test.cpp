@@ -927,6 +927,37 @@ TEST_F(LocalAccessChainConvertTest, IdOverflowReplacingStore2) {
   EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
 }
 
+TEST_F(LocalAccessChainConvertTest, AccessChainWithNoIndex) {
+  const std::string before =
+      R"(
+; CHECK: OpFunction
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: OpStore [[var]] %true
+; CHECK: OpLoad %bool [[var]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+%_ptr_Function_bool = OpTypePointer Function %bool
+          %2 = OpFunction %void None %4
+          %8 = OpLabel
+          %9 = OpVariable %_ptr_Function_bool Function
+         %10 = OpAccessChain %_ptr_Function_bool %9
+               OpStore %10 %true
+         %11 = OpLoad %bool %10
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<LocalAccessChainConvertPass>(before, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Assorted vector and matrix types
