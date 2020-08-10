@@ -280,48 +280,79 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
           %9 = OpTypeVoid
          %10 = OpTypeFunction %9
          %11 = OpTypeInt 32 1
-         %12 = OpTypeFunction %11
-         %13 = OpConstant %11 1
-         %14 = OpTypeBool
-         %15 = OpConstantTrue %14
-         %16 = OpTypePointer Function %11
-         %17 = OpTypeInt 32 0
-         %18 = OpConstant %17 2
-         %19 = OpTypeArray %11 %18
-         %20 = OpTypePointer Function %19
+         %12 = OpTypeVector %11 4
+         %13 = OpTypeFunction %11
+         %14 = OpConstant %11 1
+         %15 = OpTypeFloat 32
+         %16 = OpTypeVector %15 2
+         %17 = OpConstant %15 1
+         %18 = OpConstantComposite %16 %17 %17
+         %19 = OpTypeBool
+         %20 = OpConstantTrue %19
+         %21 = OpTypePointer Function %11
+         %22 = OpTypeSampler
+         %23 = OpTypeImage %9 2D 2 0 0 1 Unknown
+         %24 = OpTypeSampledImage %23
+         %25 = OpTypePointer Function %23
+         %26 = OpTypePointer Function %22
+         %27 = OpTypeInt 32 0
+         %28 = OpConstant %27 2
+         %29 = OpTypeArray %11 %28
+         %30 = OpTypePointer Function %29
           %2 = OpFunction %9 None %10
-         %21 = OpLabel
-          %4 = OpVariable %16 Function
-          %5 = OpVariable %20 Function
-               OpSelectionMerge %22 None
-               OpBranchConditional %15 %22 %23
-         %23 = OpLabel
+         %31 = OpLabel
+          %4 = OpVariable %21 Function
+          %5 = OpVariable %30 Function
+         %32 = OpVariable %25 Function
+         %33 = OpVariable %26 Function
+         %34 = OpLoad %23 %32
+         %35 = OpLoad %22 %33
+               OpSelectionMerge %36 None
+               OpBranchConditional %20 %37 %36
+         %37 = OpLabel
+         %38 = OpSampledImage %24 %34 %35
+         %39 = OpImageSampleImplicitLod %12 %38 %18
           %6 = OpLoad %11 %4
-          %7 = OpIAdd %11 %6 %13
+         %40 = OpSampledImage %24 %34 %35
+         %41 = OpImageSampleImplicitLod %12 %40 %18
+          %7 = OpIAdd %11 %6 %14
                OpStore %4 %7
-               OpBranch %22
-         %22 = OpLabel
-         %30 = OpPhi %11 %13 %23 %13 %21
-               OpSelectionMerge %24 None
-               OpBranchConditional %15 %26 %25
-         %25 = OpLabel
+               OpBranch %36
+         %36 = OpLabel
+         %42 = OpPhi %11 %14 %37 %14 %31
+               OpSelectionMerge %43 None
+               OpBranchConditional %20 %44 %45
+         %44 = OpLabel
           %8 = OpFunctionCall %11 %3
                OpStore %4 %8
-               OpBranch %27
-         %26 = OpLabel
-         %28 = OpAccessChain %16 %5 %13
-               OpStore %28 %13
-               OpBranch %27
-         %27 = OpLabel
-               OpStore %4 %13
-               OpBranch %24
-         %24 = OpLabel
-               OpStore %4 %13
+               OpBranch %46
+         %45 = OpLabel
+         %47 = OpAccessChain %21 %5 %14
+               OpStore %47 %14
+               OpBranch %46
+         %46 = OpLabel
+               OpStore %4 %14
+               OpBranch %43
+         %43 = OpLabel
+               OpStore %4 %14
+               OpSelectionMerge %48 None
+               OpBranchConditional %20 %49 %48
+         %49 = OpLabel
+               OpBranch %48
+         %48 = OpLabel
+               OpSelectionMerge %50 None
+               OpBranchConditional %20 %51 %50
+         %51 = OpLabel
+         %52 = OpSampledImage %24 %34 %35
+         %53 = OpLoad %11 %4
+         %54 = OpImageSampleImplicitLod %12 %52 %18
+               OpBranch %50
+         %50 = OpLabel
                OpReturn
                OpFunctionEnd
-          %3 = OpFunction %11 None %12
-         %29 = OpLabel
-               OpReturnValue %13
+          %3 = OpFunction %11 None %13
+         %55 = OpLabel
+               OpReturnValue %14
                OpFunctionEnd
 )";
 
@@ -335,20 +366,28 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // The selection construct with header block %21 contains an OpLoad and an
+  // The selection construct with header block %31 contains an OpLoad and an
   // OpStore, requiring some fresh ids.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(21).IsApplicable(
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(31).IsApplicable(
       context.get(), transformation_context));
 
   // Not all of the instructions are given in the map and there are not enough
   // overflow ids.
   ASSERT_FALSE(TransformationFlattenConditionalBranch(
-                   21, {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+                   31, {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+                         {100, 101, 102, 103, 104}}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // %48 heads a construct where an OpSampledImage instruction is separated from
+  // its use by an OpLoad instruction, so the block cannot be split around the
+  // OpLoad and, thus, the transformation is not applicable.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   48, {{MakeInstructionDescriptor(53, SpvOpLoad, 0),
                          {100, 101, 102, 103, 104}}})
                    .IsApplicable(context.get(), transformation_context));
 
   auto transformation1 = TransformationFlattenConditionalBranch(
-      21,
+      31,
       {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {100, 101, 102, 103, 104}},
        {MakeInstructionDescriptor(6, SpvOpStore, 0), {105, 106, 107}}});
 
@@ -358,7 +397,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   transformation1.Apply(context.get(), &transformation_context);
 
   auto transformation2 = TransformationFlattenConditionalBranch(
-      22,
+      36,
       {{MakeInstructionDescriptor(8, SpvOpFunctionCall, 0),
         {108, 109, 110, 111, 112}},
        {MakeInstructionDescriptor(8, SpvOpStore, 0), {113, 114}}},
@@ -391,23 +430,39 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
           %9 = OpTypeVoid
          %10 = OpTypeFunction %9
          %11 = OpTypeInt 32 1
-         %12 = OpTypeFunction %11
-         %13 = OpConstant %11 1
-         %14 = OpTypeBool
-         %15 = OpConstantTrue %14
-         %16 = OpTypePointer Function %11
-         %17 = OpTypeInt 32 0
-         %18 = OpConstant %17 2
-         %19 = OpTypeArray %11 %18
-         %20 = OpTypePointer Function %19
+         %12 = OpTypeVector %11 4
+         %13 = OpTypeFunction %11
+         %14 = OpConstant %11 1
+         %15 = OpTypeFloat 32
+         %16 = OpTypeVector %15 2
+         %17 = OpConstant %15 1
+         %18 = OpConstantComposite %16 %17 %17
+         %19 = OpTypeBool
+         %20 = OpConstantTrue %19
+         %21 = OpTypePointer Function %11
+         %22 = OpTypeSampler
+         %23 = OpTypeImage %9 2D 2 0 0 1 Unknown
+         %24 = OpTypeSampledImage %23
+         %25 = OpTypePointer Function %23
+         %26 = OpTypePointer Function %22
+         %27 = OpTypeInt 32 0
+         %28 = OpConstant %27 2
+         %29 = OpTypeArray %11 %28
+         %30 = OpTypePointer Function %29
           %2 = OpFunction %9 None %10
-         %21 = OpLabel
-          %4 = OpVariable %16 Function
-          %5 = OpVariable %20 Function
-               OpBranch %23
-         %23 = OpLabel
+         %31 = OpLabel
+          %4 = OpVariable %21 Function
+          %5 = OpVariable %30 Function
+         %32 = OpVariable %25 Function
+         %33 = OpVariable %26 Function
+         %34 = OpLoad %23 %32
+         %35 = OpLoad %22 %33
+               OpBranch %37
+         %37 = OpLabel
+         %38 = OpSampledImage %24 %34 %35
+         %39 = OpImageSampleImplicitLod %12 %38 %18
                OpSelectionMerge %101 None
-               OpBranchConditional %15 %102 %100
+               OpBranchConditional %20 %100 %102
         %100 = OpLabel
         %103 = OpLoad %11 %4
                OpBranch %101
@@ -416,29 +471,22 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpBranch %101
         %101 = OpLabel
           %6 = OpPhi %11 %103 %100 %104 %102
-          %7 = OpIAdd %11 %6 %13
+         %40 = OpSampledImage %24 %34 %35
+         %41 = OpImageSampleImplicitLod %12 %40 %18
+          %7 = OpIAdd %11 %6 %14
                OpSelectionMerge %106 None
-               OpBranchConditional %15 %106 %105
+               OpBranchConditional %20 %105 %106
         %105 = OpLabel
                OpStore %4 %7
                OpBranch %106
         %106 = OpLabel
-               OpBranch %22
-         %22 = OpLabel
-         %30 = OpSelect %11 %15 %13 %13
-               OpBranch %26
-         %26 = OpLabel
-         %28 = OpAccessChain %16 %5 %13
-               OpSelectionMerge %116 None
-               OpBranchConditional %15 %115 %116
-        %115 = OpLabel
-               OpStore %28 %13
-               OpBranch %116
-        %116 = OpLabel
-               OpBranch %25
-         %25 = OpLabel
+               OpBranch %36
+         %36 = OpLabel
+         %42 = OpSelect %11 %20 %14 %14
+               OpBranch %44
+         %44 = OpLabel
                OpSelectionMerge %109 None
-               OpBranchConditional %15 %110 %108
+               OpBranchConditional %20 %108 %110
         %108 = OpLabel
         %111 = OpFunctionCall %11 %3
                OpBranch %109
@@ -448,22 +496,44 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
         %109 = OpLabel
           %8 = OpPhi %11 %111 %108 %112 %110
                OpSelectionMerge %114 None
-               OpBranchConditional %15 %114 %113
+               OpBranchConditional %20 %113 %114
         %113 = OpLabel
                OpStore %4 %8
                OpBranch %114
         %114 = OpLabel
-               OpBranch %27
-         %27 = OpLabel
-               OpStore %4 %13
-               OpBranch %24
-         %24 = OpLabel
-               OpStore %4 %13
+               OpBranch %45
+         %45 = OpLabel
+         %47 = OpAccessChain %21 %5 %14
+               OpSelectionMerge %116 None
+               OpBranchConditional %20 %116 %115
+        %115 = OpLabel
+               OpStore %47 %14
+               OpBranch %116
+        %116 = OpLabel
+               OpBranch %46
+         %46 = OpLabel
+               OpStore %4 %14
+               OpBranch %43
+         %43 = OpLabel
+               OpStore %4 %14
+               OpSelectionMerge %48 None
+               OpBranchConditional %20 %49 %48
+         %49 = OpLabel
+               OpBranch %48
+         %48 = OpLabel
+               OpSelectionMerge %50 None
+               OpBranchConditional %20 %51 %50
+         %51 = OpLabel
+         %52 = OpSampledImage %24 %34 %35
+         %53 = OpLoad %11 %4
+         %54 = OpImageSampleImplicitLod %12 %52 %18
+               OpBranch %50
+         %50 = OpLabel
                OpReturn
                OpFunctionEnd
-          %3 = OpFunction %11 None %12
-         %29 = OpLabel
-               OpReturnValue %13
+          %3 = OpFunction %11 None %13
+         %55 = OpLabel
+               OpReturnValue %14
                OpFunctionEnd
 )";
 

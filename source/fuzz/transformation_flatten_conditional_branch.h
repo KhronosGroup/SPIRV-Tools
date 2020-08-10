@@ -42,6 +42,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
   //   enough fresh ids, which can either be found in the corresponding pair in
   //   |message_.instruction_to_fresh ids|, or in |message_.overflow_id| if
   //   there is no mapping or not enough ids are specified in the mapping.
+  //   It must also be valid to split the block that these instructions are in
+  //   at the position corresponding to the instruction.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

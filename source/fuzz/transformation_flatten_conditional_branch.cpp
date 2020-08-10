@@ -139,10 +139,22 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
       return false;
     }
 
+    // We need to make sure that OpSampledImage instructions will not be
+    // separated from their use, as they need to be in the same block.
+
+    // All result ids of an OpSampledImage instruction occurring before the last
+    // point where the block will need to be split.
+    std::set<uint32_t> sampled_image_result_ids_before_split;
+
+    // All result ids of an OpSampledImage instruction occurring after the last
+    // point where the block will need to be split. They can still be used.
+    std::set<uint32_t> sampled_image_result_ids_after_split;
+
     // Check all of the instructions in the block.
     bool all_instructions_compatible = block->WhileEachInst(
         [this, &ir_context, &instructions_to_fresh_ids, &used_fresh_ids,
-         &overflow_ids_used](opt::Instruction* instruction) {
+         &overflow_ids_used, &sampled_image_result_ids_before_split,
+         &sampled_image_result_ids_after_split](opt::Instruction* instruction) {
           // The instruction cannot be an atomic or barrier instruction
           if (instruction->IsAtomicOp() ||
               instruction->opcode() == SpvOpControlBarrier ||
@@ -153,9 +165,27 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
             return false;
           }
 
-          // If the instruction is a load, store or function call, there must be
-          // a mapping from the corresponding instruction descriptor to a list
-          // of fresh ids or there must be enough overflow ids.
+          // If the instruction is OpSampledImage, add the result id to
+          // |sampled_image_result_ids_after_split|.
+          if (instruction->opcode() == SpvOpSampledImage) {
+            sampled_image_result_ids_after_split.emplace(
+                instruction->result_id());
+          }
+
+          // If the instruction uses an OpSampledImage that appeared before a
+          // point where we need to split the block (before a load, store or
+          // function call), then the transformation is not applicable.
+          if (!instruction->WhileEachInId(
+                  [&sampled_image_result_ids_before_split](
+                      uint32_t* id) -> bool {
+                    return !sampled_image_result_ids_before_split.count(*id);
+                  })) {
+            return false;
+          }
+
+          // If the instruction is a load, store or function call, there must
+          // be a mapping from the corresponding instruction descriptor to a
+          // list of fresh ids or there must be enough overflow ids.
           if (instruction->opcode() == SpvOpLoad ||
               instruction->opcode() == SpvOpStore ||
               instruction->opcode() == SpvOpFunctionCall) {
@@ -163,7 +193,8 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
             std::vector<uint32_t> fresh_ids;
             uint32_t overflow_ids_needed;
 
-            // Initialise overflow_ids_needed to the total number of ids needed.
+            // Initialise overflow_ids_needed to the total number of ids
+            // needed.
             overflow_ids_needed =
                 NumOfFreshIdsNeededByOpcode(instruction->opcode());
 
@@ -199,6 +230,16 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
                 return false;
               }
             }
+
+            // All OpSampledImage ids defined before these point should not be
+            // used anymore. We need to move all ids in
+            // |sampled_image_result_ids_after_split| to
+            // |sampled_image_result_ids_before_split| so that this can be
+            // checked for the following instructions.
+            for (auto id : sampled_image_result_ids_after_split) {
+              sampled_image_result_ids_before_split.emplace(id);
+            }
+            sampled_image_result_ids_after_split.clear();
           }
 
           return true;
