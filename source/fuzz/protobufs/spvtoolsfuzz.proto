@@ -411,6 +411,7 @@ message Transformation {
     TransformationMoveInstructionDown move_instruction_down = 64;
     TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
+    TransformationPropagateInstructionUp propagate_instruction_up = 67;
     // Add additional option using the next available number.
   }
 }
@@ -1236,6 +1237,26 @@ message TransformationPermutePhiOperands {
   // A sequence of numbers in the range [0, n/2 - 1] where |n| is the number
   // of operands of the OpPhi instruction with |result_id|.
   repeated uint32 permutation = 2;
+
+}
+
+message TransformationPropagateInstructionUp {
+
+  // Propagates an instruction in the block into the block's predecessors.
+  // Concretely, this transformation clones some particular instruction from
+  // the |block_id| into every block's predecessor and replaces the original
+  // instruction with OpPhi. Take a look at the transformation class to learn
+  // more about how we choose what instruction to propagate.
+
+  // Id of the block to propagate an instruction from.
+  uint32 block_id = 1;
+
+  // A map from the id of some predecessor of the |block_id| to the fresh id.
+  // The map contains a fresh id for at least every predecessor of the |block_id|.
+  // The instruction is propagated by creating a number of clones - one clone for
+  // each predecessor. Fresh ids from this field are used as result ids of cloned
+  // instructions.
+  repeated UInt32Pair predecessor_id_to_fresh_id = 2;
 
 }
 
