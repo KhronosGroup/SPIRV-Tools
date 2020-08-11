@@ -58,6 +58,12 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
          %27 = OpSampledImage %12 %22 %23
          %28 = OpSelect %5 %9 %6 %24
          %29 = OpImageSampleImplicitLod %7 %27 %18
+               OpBranch %30
+         %30 = OpLabel
+         %31 = OpSelect %5 %9 %6 %24
+               OpLoopMerge %32 %30 None
+               OpBranchConditional %9 %30 %32
+         %32 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -80,6 +86,11 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
   // separate an OpSampledImage instruction from its use.
   ASSERT_FALSE(
       TransformationReplaceOpSelectWithConditionalBranch(28, {100, 101})
+          .IsApplicable(context.get(), transformation_context));
+
+  // The block containing %31 cannot be split because it is a loop header.
+  ASSERT_FALSE(
+      TransformationReplaceOpSelectWithConditionalBranch(31, {100, 101})
           .IsApplicable(context.get(), transformation_context));
 }
 

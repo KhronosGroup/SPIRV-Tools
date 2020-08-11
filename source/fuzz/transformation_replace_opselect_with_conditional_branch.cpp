@@ -57,6 +57,12 @@ bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
     }
   }
 
+  // The block cannot be a loop header, since splitting it would make back edges
+  // invalid.
+  if (block->IsLoopHeader()) {
+    return false;
+  }
+
   // The block must be split around the OpSelect instruction. This means that
   // there cannot be an OpSampledImage instruction before OpSelect that is used
   // after it, because they are required to be in the same basic block.
