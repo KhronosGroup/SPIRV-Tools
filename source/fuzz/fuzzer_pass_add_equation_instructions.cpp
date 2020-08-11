@@ -112,20 +112,8 @@ void FuzzerPassAddEquationInstructions::Apply() {
               return;
             }
             case SpvOpBitcast: {
-              std::vector<const opt::Instruction*> candidate_instructions;
-              for (const auto* inst : available_instructions) {
-                const auto* type =
-                    GetIRContext()->get_type_mgr()->GetType(inst->type_id());
-                assert(type && "Instruction has invalid type");
-                if ((type->AsVector() &&
-                     (type->AsVector()->element_type()->AsInteger() ||
-                      type->AsVector()->element_type()->AsFloat())) ||
-                    type->AsInteger() || type->AsFloat()) {
-                  // We support OpBitcast for only scalars or vectors of
-                  // numerical type.
-                  candidate_instructions.push_back(inst);
-                }
-              }
+              const auto candidate_instructions =
+                  GetNumericalInstructions(available_instructions);
 
               if (!candidate_instructions.empty()) {
                 const auto* operand_inst =
@@ -353,6 +341,56 @@ FuzzerPassAddEquationInstructions::RestrictToElementBitWidth(
       result.push_back(inst);
     }
   }
+  return result;
+}
+
+std::vector<opt::Instruction*>
+FuzzerPassAddEquationInstructions::GetNumericalInstructions(
+    const std::vector<opt::Instruction*>& instructions) const {
+  std::vector<opt::Instruction*> result;
+
+  for (auto* inst : instructions) {
+    const auto* type = GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+    assert(type && "Instruction has invalid type");
+
+    if (const auto* vector_type = type->AsVector()) {
+      type = vector_type->element_type();
+    }
+
+    if (!type->AsInteger() && !type->AsFloat()) {
+      // Only numerical scalars or vectors of numerical components are
+      // supported.
+      continue;
+    }
+
+    switch (type->AsInteger() ? type->AsInteger()->width()
+                              : type->AsFloat()->width()) {
+      case 32:
+        break;
+      case 64:
+        if (!GetIRContext()->get_feature_mgr()->HasCapability(
+                SpvCapabilityFloat64) ||
+            !GetIRContext()->get_feature_mgr()->HasCapability(
+                SpvCapabilityInt64)) {
+          continue;
+        }
+        break;
+      case 16:
+        if (!GetIRContext()->get_feature_mgr()->HasCapability(
+                SpvCapabilityFloat16) ||
+            !GetIRContext()->get_feature_mgr()->HasCapability(
+                SpvCapabilityInt16)) {
+          continue;
+        }
+        break;
+      default:
+        // |element_width| is not supported.
+        continue;
+    }
+
+    result.push_back(inst);
+  }
+
   return result;
 }
 
