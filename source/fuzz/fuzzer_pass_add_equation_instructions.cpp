@@ -76,8 +76,39 @@ void FuzzerPassAddEquationInstructions::Apply() {
           switch (opcode) {
             case SpvOpConvertSToF:
             case SpvOpConvertUToF: {
-              auto candidate_instructions =
-                  GetIntegerInstructions(available_instructions);
+              std::vector<const opt::Instruction*> candidate_instructions;
+              for (const auto* inst :
+                   GetIntegerInstructions(available_instructions)) {
+                const auto* type =
+                    GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+                assert(type && "|inst| has invalid type");
+
+                if (const auto* vector_type = type->AsVector()) {
+                  type = vector_type->element_type();
+                }
+
+                switch (type->AsInteger()->width()) {
+                  case 16:
+                    if (!GetIRContext()->get_feature_mgr()->HasCapability(
+                            SpvCapabilityFloat16)) {
+                      continue;
+                    }
+                    break;
+                  case 32:
+                    break;
+                  case 64:
+                    if (!GetIRContext()->get_feature_mgr()->HasCapability(
+                            SpvCapabilityFloat64)) {
+                      continue;
+                    }
+                    break;
+                  default:
+                    // Width is not supported.
+                    continue;
+                }
+
+                candidate_instructions.push_back(inst);
+              }
 
               if (candidate_instructions.empty()) {
                 break;
