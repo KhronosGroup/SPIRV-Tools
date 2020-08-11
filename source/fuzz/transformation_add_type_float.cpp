@@ -36,6 +36,16 @@ bool TransformationAddTypeFloat::IsApplicable(
     return false;
   }
 
+  // If the float type width is 16 or 64, then the corresponding Float16 or
+  // Float64 capability must be present.
+  if (message_.width() == 16) {
+    assert(ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat16) &&
+           "Missing Float16 capability.");
+  } else if (message_.width() == 64) {
+    assert(ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat64) &&
+           "Missing Float64 capability.");
+  }
+
   // Applicable if there is no float type with this width already declared in
   // the module.
   return fuzzerutil::MaybeGetFloatType(ir_context, message_.width()) == 0;
@@ -43,17 +53,6 @@ bool TransformationAddTypeFloat::IsApplicable(
 
 void TransformationAddTypeFloat::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  // If the float type width is 16 or 64 and the corresponding Float16 or
-  // Float64 capability is not present, then add it.
-  if (message_.width() == 16 &&
-      !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat16)) {
-    ir_context->AddCapability(SpvCapabilityFloat16);
-  } else if (message_.width() == 64 &&
-             !ir_context->get_feature_mgr()->HasCapability(
-                 SpvCapabilityFloat64)) {
-    ir_context->AddCapability(SpvCapabilityFloat64);
-  }
-
   fuzzerutil::AddFloatType(ir_context, message_.fresh_id(), message_.width());
   // We have added an instruction to the module, so need to be careful about the
   // validity of existing analyses.
