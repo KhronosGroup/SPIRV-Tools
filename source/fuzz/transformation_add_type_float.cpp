@@ -38,12 +38,11 @@ bool TransformationAddTypeFloat::IsApplicable(
 
   // If the float type width is 16 or 64, then the corresponding Float16 or
   // Float64 capability must be present.
-  if (message_.width() == 16) {
-    assert(ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat16) &&
-           "Missing Float16 capability.");
-  } else if (message_.width() == 64) {
-    assert(ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat64) &&
-           "Missing Float64 capability.");
+  if ((message_.width() == 16 &&
+       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat16)) ||
+      (message_.width() == 64 &&
+       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat64))) {
+    return false;
   }
 
   // Applicable if there is no float type with this width already declared in
