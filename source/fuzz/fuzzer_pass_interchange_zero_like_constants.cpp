@@ -36,7 +36,7 @@ uint32_t FuzzerPassInterchangeZeroLikeConstants::FindOrCreateToggledConstant(
     opt::Instruction* declaration) {
   // |declaration| must be a non-specialization constant because the constant
   // manager does not declare specialization constants.
-  if (IsSpecConstantInst(declaration->opcode())) {
+  if (opt::IsSpecConstantInst(declaration->opcode())) {
     return 0;
   }
 

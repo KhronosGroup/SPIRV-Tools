@@ -93,7 +93,7 @@ uint32_t FuzzerPassInterchangeSignednessOfIntegerOperands::
     FindOrCreateToggledIntegerConstant(uint32_t id) {
   // |id| must represent a non-specialization constant because the constant
   // manager does not declare specialization constants.
-  if (IsSpecConstantInst(
+  if (opt::IsSpecConstantInst(
           GetIRContext()->get_def_use_mgr()->GetDef(id)->opcode())) {
     return 0;
   }
