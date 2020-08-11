@@ -130,7 +130,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   // pool, as we go through the instructions.
   int remaining_overflow_ids = message_.overflow_id_size();
 
-  // Perform a BST to find and check all the blocks that can be reached by the
+  // Perform a BFS to find and check all the blocks that can be reached by the
   // header before reaching the convergence block.
   std::list<uint32_t> to_check;
   header_block->ForEachSuccessorLabel(
