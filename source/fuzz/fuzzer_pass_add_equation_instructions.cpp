@@ -21,6 +21,26 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace {
+
+bool IsBitWidthSupported(opt::IRContext* ir_context, uint32_t bit_width) {
+  switch (bit_width) {
+    case 32:
+      return true;
+    case 64:
+      return ir_context->get_feature_mgr()->HasCapability(
+                 SpvCapabilityFloat64) &&
+             ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt64);
+    case 16:
+      return ir_context->get_feature_mgr()->HasCapability(
+                 SpvCapabilityFloat16) &&
+             ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt16);
+    default:
+      return false;
+  }
+}
+
+}  // namespace
 
 FuzzerPassAddEquationInstructions::FuzzerPassAddEquationInstructions(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
@@ -87,27 +107,10 @@ void FuzzerPassAddEquationInstructions::Apply() {
                   type = vector_type->element_type();
                 }
 
-                switch (type->AsInteger()->width()) {
-                  case 16:
-                    if (!GetIRContext()->get_feature_mgr()->HasCapability(
-                            SpvCapabilityFloat16)) {
-                      continue;
-                    }
-                    break;
-                  case 32:
-                    break;
-                  case 64:
-                    if (!GetIRContext()->get_feature_mgr()->HasCapability(
-                            SpvCapabilityFloat64)) {
-                      continue;
-                    }
-                    break;
-                  default:
-                    // Width is not supported.
-                    continue;
+                if (IsBitWidthSupported(GetIRContext(),
+                                        type->AsInteger()->width())) {
+                  candidate_instructions.push_back(inst);
                 }
-
-                candidate_instructions.push_back(inst);
               }
 
               if (candidate_instructions.empty()) {
@@ -394,29 +397,10 @@ FuzzerPassAddEquationInstructions::GetNumericalInstructions(
       continue;
     }
 
-    switch (type->AsInteger() ? type->AsInteger()->width()
-                              : type->AsFloat()->width()) {
-      case 32:
-        break;
-      case 64:
-        if (!GetIRContext()->get_feature_mgr()->HasCapability(
-                SpvCapabilityFloat64) ||
-            !GetIRContext()->get_feature_mgr()->HasCapability(
-                SpvCapabilityInt64)) {
-          continue;
-        }
-        break;
-      case 16:
-        if (!GetIRContext()->get_feature_mgr()->HasCapability(
-                SpvCapabilityFloat16) ||
-            !GetIRContext()->get_feature_mgr()->HasCapability(
-                SpvCapabilityInt16)) {
-          continue;
-        }
-        break;
-      default:
-        // |element_width| is not supported.
-        continue;
+    if (!IsBitWidthSupported(GetIRContext(), type->AsInteger()
+                                                 ? type->AsInteger()->width()
+                                                 : type->AsFloat()->width())) {
+      continue;
     }
 
     result.push_back(inst);
