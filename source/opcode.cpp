@@ -719,3 +719,14 @@ std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
       return {};
   }
 }
+
+bool spvOpcodeIsAccessChain(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpPtrAccessChain:
+      return true;
+    default:
+      return false;
+  }
+}
