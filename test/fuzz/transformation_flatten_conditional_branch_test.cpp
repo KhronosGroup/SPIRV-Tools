@@ -188,6 +188,14 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
          %21 = OpPhi %3 %4 %18 %20 %17
                OpBranch %15
          %15 = OpLabel
+               OpSelectionMerge %22 None
+               OpBranchConditional %4 %22 %22
+         %22 = OpLabel
+               OpSelectionMerge %25 None
+               OpBranchConditional %4 %24 %24
+         %24 = OpLabel
+               OpBranch %25
+         %25 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -211,6 +219,16 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
   transformation2.Apply(context.get(), &transformation_context);
+
+  auto transformation3 = TransformationFlattenConditionalBranch(15);
+  ASSERT_TRUE(
+      transformation3.IsApplicable(context.get(), transformation_context));
+  transformation3.Apply(context.get(), &transformation_context);
+
+  auto transformation4 = TransformationFlattenConditionalBranch(22);
+  ASSERT_TRUE(
+      transformation4.IsApplicable(context.get(), transformation_context));
+  transformation4.Apply(context.get(), &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -252,6 +270,12 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
          %21 = OpSelect %3 %4 %4 %20
                OpBranch %15
          %15 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpBranch %25
+         %25 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -377,6 +401,22 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                    31, {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
                          {100, 101, 102, 103, 104}}})
                    .IsApplicable(context.get(), transformation_context));
+
+  // The map maps from an instruction to a list with not enough fresh ids.
+  ASSERT_FALSE(
+      TransformationFlattenConditionalBranch(
+          31,
+          {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {100, 101, 102, 103}}},
+          {105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115})
+          .IsApplicable(context.get(), transformation_context));
+
+  // Not all fresh ids given are distinct.
+  ASSERT_FALSE(
+      TransformationFlattenConditionalBranch(
+          31,
+          {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {100, 101, 102, 103}}},
+          {103, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115})
+          .IsApplicable(context.get(), transformation_context));
 
   // %48 heads a construct where an OpSampledImage instruction is separated from
   // its use by an OpLoad instruction, so the block cannot be split around the

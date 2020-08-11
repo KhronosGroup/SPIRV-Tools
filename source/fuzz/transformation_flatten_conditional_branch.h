@@ -38,12 +38,12 @@ class TransformationFlattenConditionalBranch : public Transformation {
   //   single-exit region.
   // - The region must not contain atomic or barrier instructions.
   // - The region must not contain selection or loop constructs.
-  // - For each instruction that requires additional fresh ids, there must be
-  //   enough fresh ids, which can either be found in the corresponding pair in
-  //   |message_.instruction_to_fresh ids|, or in |message_.overflow_id| if
-  //   there is no mapping or not enough ids are specified in the mapping.
-  //   It must also be valid to split the block that these instructions are in
-  //   at the position corresponding to the instruction.
+  // - For each instruction that requires additional fresh ids, then:
+  //   - if the instruction is mapped to a list of fresh ids by
+  //     |message_.instruction_to_fresh ids|, there must be enough fresh ids in
+  //     this list;
+  //   - if there is no such mapping, there must be enough fresh ids in
+  //     |message_.overflow_id|
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -81,7 +81,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
   opt::BasicBlock* EncloseInstructionInConditional(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       opt::BasicBlock* block, opt::Instruction* instruction,
-      std::vector<uint32_t> fresh_ids, uint32_t condition_id,
+      const std::vector<uint32_t>& fresh_ids, uint32_t condition_id,
       bool exec_if_cond_true) const;
 };
 

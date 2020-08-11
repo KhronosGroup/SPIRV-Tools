@@ -38,9 +38,9 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
       mapping.add_id(id);
     }
     *message_.add_instruction_to_fresh_ids() = mapping;
-    for (auto id : overflow_ids) {
-      message_.add_overflow_id(id);
-    }
+  }
+  for (auto id : overflow_ids) {
+    message_.add_overflow_id(id);
   }
 }
 
@@ -52,7 +52,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   // |header_block_id| must refer to a block label.
   {
     auto label = ir_context->get_def_use_mgr()->GetDef(header_block_id);
-    if (label->opcode() != SpvOpLabel) {
+    if (!label || label->opcode() != SpvOpLabel) {
       return false;
     }
   }
@@ -76,7 +76,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   uint32_t convergence_block_id = merge_block_id;
   while (ir_context->cfg()->preds(convergence_block_id).size() == 1) {
     if (convergence_block_id == header_block_id) {
-      // There is a chain of blocks with one predecessors from the header block
+      // There is a chain of blocks with one predecessor from the header block
       // to the merge block. This means that the region is not single-entry,
       // single-exit (because the merge block is only reached by one of the two
       // branches).
@@ -102,11 +102,33 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   // Get the mapping from instructions to the fresh ids available for them.
   auto instructions_to_fresh_ids = GetInstructionsToFreshIdsMapping(ir_context);
 
-  // Keep track of the fresh ids used.
-  std::set<uint32_t> used_fresh_ids;
+  {
+    // Check that all the ids given are fresh and distinct.
 
-  // Keep track of the number of overflow ids used.
-  uint32_t overflow_ids_used = 0;
+    std::set<uint32_t> used_fresh_ids;
+
+    // Check the overflow ids.
+    for (uint32_t id : message_.overflow_id()) {
+      if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                        &used_fresh_ids)) {
+        return false;
+      }
+    }
+
+    // Check the ids in the map.
+    for (auto pair : instructions_to_fresh_ids) {
+      for (uint32_t id : pair.second) {
+        if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                          &used_fresh_ids)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  // Keep track of the number of overflow ids still available in the overflow
+  // pool, as we go through the instructions.
+  int remaining_overflow_ids = message_.overflow_id_size();
 
   // Perform a BST to find and check all the blocks that can be reached by the
   // header before reaching the convergence block.
@@ -152,8 +174,8 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
 
     // Check all of the instructions in the block.
     bool all_instructions_compatible = block->WhileEachInst(
-        [this, &ir_context, &instructions_to_fresh_ids, &used_fresh_ids,
-         &overflow_ids_used, &sampled_image_result_ids_before_split,
+        [this, &instructions_to_fresh_ids, &remaining_overflow_ids,
+         &sampled_image_result_ids_before_split,
          &sampled_image_result_ids_after_split](opt::Instruction* instruction) {
           // The instruction cannot be an atomic or barrier instruction
           if (instruction->IsAtomicOp() ||
@@ -189,49 +211,30 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
           if (instruction->opcode() == SpvOpLoad ||
               instruction->opcode() == SpvOpStore ||
               instruction->opcode() == SpvOpFunctionCall) {
-            // Keep a vector of the fresh ids needed by this instruction.
-            std::vector<uint32_t> fresh_ids;
-            uint32_t overflow_ids_needed;
-
-            // Initialise overflow_ids_needed to the total number of ids
-            // needed.
-            overflow_ids_needed =
+            // The number of ids needed depends on the id of the instruction.
+            uint32_t ids_needed_by_this_instruction =
                 NumOfFreshIdsNeededByOpcode(instruction->opcode());
 
             if (instructions_to_fresh_ids.count(instruction) != 0) {
-              // There is a mapping from this instruction to a list of fresh
-              // ids.
+              // If there is a mapping from this instruction to a list of fresh
+              // ids, the list must have enough ids.
 
-              fresh_ids = instructions_to_fresh_ids[instruction];
-              // We can deduct the number of fresh ids specific to this
-              // instruction from the number of overflow ids needed.
-              overflow_ids_needed =
-                  fresh_ids.size() > overflow_ids_needed
-                      ? 0
-                      : overflow_ids_needed - (uint32_t)fresh_ids.size();
-            }
+              if (instructions_to_fresh_ids[instruction].size() <
+                  ids_needed_by_this_instruction) {
+                return false;
+              }
+            } else {
+              // If there is no mapping, we need to rely on the pool of
+              // overflow ids, where there must be enough remaining ids.
 
-            // We need |overflow_ids_needed| overflow ids
-            if (overflow_ids_used + overflow_ids_needed >
-                (uint32_t)message_.overflow_id_size()) {
-              return false;
-            }
+              remaining_overflow_ids -= ids_needed_by_this_instruction;
 
-            // Add the overflow ids needed to fresh_ids
-            for (; overflow_ids_needed > 0; overflow_ids_needed--) {
-              fresh_ids.push_back(message_.overflow_id(overflow_ids_used));
-              overflow_ids_used++;
-            }
-
-            // The ids must all be distinct and unused.
-            for (uint32_t fresh_id : fresh_ids) {
-              if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-                      fresh_id, ir_context, &used_fresh_ids)) {
+              if (remaining_overflow_ids < 0) {
                 return false;
               }
             }
 
-            // All OpSampledImage ids defined before these point should not be
+            // All OpSampledImage ids defined before this point should not be
             // used anymore. We need to move all ids in
             // |sampled_image_result_ids_after_split| to
             // |sampled_image_result_ids_before_split| so that this can be
@@ -282,9 +285,8 @@ void TransformationFlattenConditionalBranch::Apply(
 
   opt::BasicBlock* last_true_block = nullptr;
 
-  // Adjust the conditional branches by enclosing problematic instructions are
-  // enclosed by conditionals and get references to the last block in each
-  // branch.
+  // Adjust the conditional branches by enclosing problematic instructions
+  // within conditionals and get references to the last block in each branch.
   for (int branch = 2; branch >= 1; branch--) {
     // branch = 1 corresponds to the true branch, branch = 2 corresponds to the
     // false branch. Consider the false branch first so that the true branch is
@@ -380,8 +382,7 @@ void TransformationFlattenConditionalBranch::Apply(
   // |after_header|.
   header_block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpBranch, 0, 0,
-      std::initializer_list<opt::Operand>{opt::Operand(
-          spv_operand_type_t::SPV_OPERAND_TYPE_ID, {after_header})}));
+      opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {after_header}}}));
 
   // If there is a true branch, change the branch instruction so that the last
   // block in the true branch unconditionally branches to the first block in the
@@ -423,7 +424,7 @@ TransformationFlattenConditionalBranch::GetInstructionsToFreshIdsMapping(
     auto instruction =
         FindInstruction(pair.instruction_descriptor(), ir_context);
     if (instruction) {
-      instructions_to_fresh_ids.emplace(instruction, fresh_ids);
+      instructions_to_fresh_ids.emplace(instruction, std::move(fresh_ids));
     }
   }
 
@@ -434,9 +435,16 @@ uint32_t TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByOpcode(
     SpvOp opcode) const {
   switch (opcode) {
     case SpvOpStore:
+      // 2 ids are needed for two new blocks, which will be used to enclose the
+      // instruction within a conditional.
       return 2;
     case SpvOpLoad:
     case SpvOpFunctionCall:
+      // These instructions return a result, so we need 3 fresh ids for new
+      // blocks (the true block, the false block and the merge block), one for
+      // the instruction itself and one for an instruction returning a dummy
+      // value. The original result id of the instruction will be used for a new
+      // OpPhi instruction.
       return 5;
     default:
       assert(false && "This line should never be reached");
@@ -448,7 +456,7 @@ opt::BasicBlock*
 TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     opt::BasicBlock* block, opt::Instruction* instruction,
-    std::vector<uint32_t> fresh_ids, uint32_t condition_id,
+    const std::vector<uint32_t>& fresh_ids, uint32_t condition_id,
     bool exec_if_cond_true) const {
   assert((instruction->opcode() == SpvOpStore ||
           instruction->opcode() == SpvOpLoad ||
@@ -495,8 +503,8 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
   // Add an unconditional branch from |execute_block| to |merge_block|.
   execute_block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpBranch, 0, 0,
-      std::initializer_list<opt::Operand>{opt::Operand(
-          spv_operand_type_t::SPV_OPERAND_TYPE_ID, {merge_block->id()})}));
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
 
   // If the instruction has a result id, we need to:
   // - add an additional block where a dummy result is obtained by using the
@@ -512,7 +520,7 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
     // Create a new block using a fresh id for its label.
     auto alternative_block_temp = MakeUnique<opt::BasicBlock>(
         MakeUnique<opt::Instruction>(ir_context, SpvOpLabel, 0, fresh_ids[2],
-                                     std::initializer_list<opt::Operand>{}));
+                                     opt::Instruction::OperandList{}));
 
     // Keep the original result id of the instruction in a variable.
     uint32_t original_result_id = instruction->result_id();
@@ -524,13 +532,13 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
     // instruction and a fresh id, to the new block.
     alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
         ir_context, SpvOpUndef, instruction->type_id(), fresh_ids[4],
-        std::initializer_list<opt::Operand>{}));
+        opt::Instruction::OperandList{}));
 
     // Add an unconditional branch from the new block to the merge block.
     alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
         ir_context, SpvOpBranch, 0, 0,
-        std::initializer_list<opt::Operand>{opt::Operand(
-            spv_operand_type_t::SPV_OPERAND_TYPE_ID, {merge_block->id()})}));
+        opt::Instruction::OperandList{
+            {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
 
     // Insert the block before the merge block.
     alternative_block = block->GetParent()->InsertBasicBlockBefore(
@@ -541,15 +549,11 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
     // instruction or the dummy value defined in the alternative block.
     merge_block->begin().InsertBefore(MakeUnique<opt::Instruction>(
         ir_context, SpvOpPhi, instruction->type_id(), original_result_id,
-        std::initializer_list<opt::Operand>{
-            opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                         {instruction->result_id()}),
-            opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                         {execute_block->id()}),
-            opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                         {fresh_ids[4]}),
-            opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                         {alternative_block->id()})}));
+        opt::Instruction::OperandList{
+            {SPV_OPERAND_TYPE_ID, {instruction->result_id()}},
+            {SPV_OPERAND_TYPE_ID, {execute_block->id()}},
+            {SPV_OPERAND_TYPE_ID, {fresh_ids[4]}},
+            {SPV_OPERAND_TYPE_ID, {alternative_block->id()}}}));
 
     // Propagate the fact that the block is dead to the new block.
     if (transformation_context->GetFactManager()->BlockIsDead(block->id())) {
@@ -570,22 +574,18 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
   // Add an OpSelectionMerge instruction to the block.
   block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpSelectionMerge, 0, 0,
-      std::initializer_list<opt::Operand>{
-          opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                       {merge_block->id()}),
-          opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_SELECTION_CONTROL,
-                       {0})}));
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {merge_block->id()}},
+          {SPV_OPERAND_TYPE_SELECTION_CONTROL, {0}}}));
 
   // Add an OpBranchConditional, to the block, using |condition_id| as the
   // condition and branching to |if_block_id| if the condition is true and to
   // |else_block_id| if the condition is false.
   block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpBranchConditional, 0, 0,
-      std::initializer_list<opt::Operand>{
-          opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {condition_id}),
-          opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {if_block_id}),
-          opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                       {else_block_id})}));
+      opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {condition_id}},
+                                    {SPV_OPERAND_TYPE_ID, {if_block_id}},
+                                    {SPV_OPERAND_TYPE_ID, {else_block_id}}}));
 
   return merge_block;
 }
