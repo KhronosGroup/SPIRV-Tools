@@ -653,6 +653,7 @@ OpDecorate %_ Binding 0
 %28 = OpLoad %float %In1
 %29 = OpFAdd %float %27 %28
 
+; CHECK:      [[repl:%\w+]] = OpLoad %v2float %In2
 ; CHECK-NOT:  OpCompositeInsert
 ; CHECK:      DebugValue {{%\w+}} [[repl:%\w+]]
 ; CHECK-NEXT: OpCompositeInsert %v2float %float_0 [[repl]] 0
