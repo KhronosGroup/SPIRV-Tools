@@ -26,12 +26,14 @@ TransformationReplaceOpSelectWithConditionalBranch::
 
 TransformationReplaceOpSelectWithConditionalBranch::
     TransformationReplaceOpSelectWithConditionalBranch(
-        uint32_t select_id, std::vector<uint32_t> new_block_ids) {
+        uint32_t select_id, std::pair<uint32_t, uint32_t> new_block_ids) {
   message_.set_select_id(select_id);
-  for (auto id : new_block_ids) {
-    message_.add_new_block_id(id);
-  }
+  protobufs::UInt32Pair pair;
+  pair.set_first(new_block_ids.first);
+  pair.set_second(new_block_ids.second);
+  *message_.mutable_new_block_ids() = pair;
 }
+
 bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& /* unused */) const {
@@ -45,21 +47,10 @@ bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
 
   auto block = ir_context->get_instr_block(instruction);
 
-  // If the block containing the instruction is a merge block, at least 3 fresh
-  // ids are needed.
-  if (fuzzerutil::IsMergeBlock(ir_context, block->id()) &&
-      message_.new_block_id_size() < 3) {
-    return false;
-  }
-
-  // In all cases, at least 2 fresh ids are needed.
-  if (message_.new_block_id_size() < 2) {
-    return false;
-  }
-
   // Check that the new block ids are fresh and distinct.
   std::set<uint32_t> used_ids;
-  for (uint32_t id : message_.new_block_id()) {
+  for (uint32_t id :
+       {message_.new_block_ids().first(), message_.new_block_ids().second()}) {
     if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
                                                       &used_ids)) {
       return false;
@@ -75,8 +66,68 @@ bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
 }
 
 void TransformationReplaceOpSelectWithConditionalBranch::Apply(
-    opt::IRContext* /* ir_context */,
-    TransformationContext* /* transformation_context */) const {}
+    opt::IRContext* ir_context, TransformationContext* /* unused */) const {
+  auto instruction =
+      ir_context->get_def_use_mgr()->GetDef(message_.select_id());
+
+  auto block = ir_context->get_instr_block(instruction);
+
+  // Update the module id bound with the new ids being used.
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.new_block_ids().first());
+  fuzzerutil::UpdateModuleIdBound(ir_context,
+                                  message_.new_block_ids().second());
+
+  // Split the block before the OpSelect instruction to get what will be the
+  // merge block.
+  auto merge_block = block->SplitBasicBlock(
+      ir_context, message_.new_block_ids().second(),
+      fuzzerutil::GetIteratorForInstruction(block, instruction));
+
+  // Create a new empty block.
+  auto new_block = MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpLabel, 0, message_.new_block_ids().first(),
+      opt::Instruction::OperandList{}));
+
+  // Add an unconditional branch from the new block to the merge block.
+  new_block->AddInstruction(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpBranch, 0, 0,
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
+
+  // Add an OpSelectionMerge instruction to the original block.
+  block->AddInstruction(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpSelectionMerge, 0, 0,
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {merge_block->id()}},
+          {SPV_OPERAND_TYPE_SELECTION_CONTROL, {0}}}));
+
+  // Add a conditional branching instruction to the original block, using the
+  // same conditional as OpSelect and branching to the new block if the
+  // condition is true, to the merge block otherwise.
+  block->AddInstruction(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpBranchConditional, 0, 0,
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {instruction->GetSingleWordInOperand(0)}},
+          {SPV_OPERAND_TYPE_ID, {new_block->id()}},
+          {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
+
+  // Replace the OpSelect instruction in the merge block with an OpPhi.
+  // This:          OpSelect %type %cond %if %else
+  // will become:   OpPhi %type %if %new_block_id %else %block_id
+  instruction->SetOpcode(SpvOpPhi);
+  std::vector<opt::Operand> operands;
+
+  operands.emplace_back(instruction->GetInOperand(1));
+  operands.emplace_back(opt::Operand{SPV_OPERAND_TYPE_ID, {new_block->id()}});
+
+  operands.emplace_back(instruction->GetInOperand(2));
+  operands.emplace_back(opt::Operand{SPV_OPERAND_TYPE_ID, {block->id()}});
+
+  instruction->SetInOperands(std::move(operands));
+
+  // Insert the new block before the merge block.
+  block->GetParent()->InsertBasicBlockBefore(std::move(new_block), merge_block);
+}
 
 protobufs::Transformation
 TransformationReplaceOpSelectWithConditionalBranch::ToMessage() const {

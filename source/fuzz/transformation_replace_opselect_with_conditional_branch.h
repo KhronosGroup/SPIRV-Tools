@@ -28,18 +28,18 @@ class TransformationReplaceOpSelectWithConditionalBranch
           message);
 
   TransformationReplaceOpSelectWithConditionalBranch(
-      uint32_t select_id, std::vector<uint32_t> new_block_ids);
+      uint32_t select_id, std::pair<uint32_t, uint32_t> new_block_ids);
 
   // - |message_.select_id| is the result id of an OpSelect instruction.
   // - The block containing the instruction can be split at the position
   //   corresponding to the instruction.
-  // - |message_.new_block_id| contains at least 2 fresh and distinct ids if the
-  //   block containing the instruction is not a merge block, at least 3
-  //   otherwise.
+  // - The pair |message_.new_block_ids| contains 2 fresh and distinct ids
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Replaces the OpSelect instruction with id |message_.select_id| with a
+  // conditional branch and an OpPhi instruction.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

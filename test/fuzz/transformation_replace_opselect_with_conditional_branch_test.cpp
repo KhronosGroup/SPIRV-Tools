@@ -117,10 +117,6 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // 2 fresh ids are required.
-  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, {100})
-                   .IsApplicable(context.get(), transformation_context));
-
   // One of the ids are not fresh.
   ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, {100, 11})
                    .IsApplicable(context.get(), transformation_context));
@@ -130,74 +126,14 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
       TransformationReplaceOpSelectWithConditionalBranch(11, {100, 100})
           .IsApplicable(context.get(), transformation_context));
 
-  ASSERT_TRUE(TransformationReplaceOpSelectWithConditionalBranch(11, {100, 101})
-                  .IsApplicable(context.get(), transformation_context));
-}
+  auto transformation =
+      TransformationReplaceOpSelectWithConditionalBranch(11, {100, 101});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
 
-TEST(TransformationReplaceOpSelectWithConditionalBranchTest, InsideMergeBlock) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main"
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %2 "main"
-          %3 = OpTypeVoid
-          %4 = OpTypeFunction %3
-          %5 = OpTypeBool
-          %6 = OpConstantTrue %5
-          %7 = OpTypeInt 32 1
-          %8 = OpConstant %7 1
-          %2 = OpFunction %3 None %4
-          %9 = OpLabel
-               OpBranch %10
-         %10 = OpLabel
-               OpLoopMerge %11 %10 None
-               OpBranchConditional %6 %10 %11
-         %11 = OpLabel
-         %12 = OpSelect %7 %6 %8 %8
-               OpBranch %13
-         %13 = OpLabel
-               OpSelectionMerge %14 None
-               OpBranchConditional %6 %15 %14
-         %15 = OpLabel
-               OpBranch %14
-         %14 = OpLabel
-         %16 = OpSelect %7 %6 %8 %8
-               OpReturn
-               OpFunctionEnd
-)";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_5;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  std::cout << ToString(env, context.get());
   ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  // 3 fresh ids are required because %12 is in a merge block.
-  ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(12, {100, 101})
-          .IsApplicable(context.get(), transformation_context));
-
-  // 3 fresh ids are required because %16 is in a merge block.
-  ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(16, {100, 101})
-          .IsApplicable(context.get(), transformation_context));
-
-  auto transformation1 =
-      TransformationReplaceOpSelectWithConditionalBranch(12, {100, 101, 102});
-  ASSERT_TRUE(
-      transformation1.IsApplicable(context.get(), transformation_context));
-
-  auto transformation2 =
-      TransformationReplaceOpSelectWithConditionalBranch(16, {103, 104, 105});
-  ASSERT_TRUE(
-      transformation2.IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace
