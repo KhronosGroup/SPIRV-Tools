@@ -57,6 +57,18 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
+  // Returns true if the conditional headed by |header| can be flattened,
+  // according to the conditions of the IsApplicable method, assuming that
+  // enough fresh ids are given. In this case, it fills the
+  // |instructions_that_need_ids| set with all the instructions that would
+  // require fresh ids.
+  // Returns false otherwise.
+  // Assumes that |header| is the header of a conditional, so its last two
+  // instructions are OpSelectionMerge and OpBranchConditional.
+  static bool ConditionalCanBeFlattened(
+      opt::IRContext* ir_context, opt::BasicBlock* header,
+      std::set<opt::Instruction*>* instructions_that_need_ids);
+
  private:
   protobufs::TransformationFlattenConditionalBranch message_;
 
@@ -74,7 +86,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // instruction is only executed if the boolean value of |condition_id| matches
   // the value of |exec_if_cond_true|.
   // The instruction must be one of OpStore, OpLoad and OpFunctionCall.
-  // Assumes that all parameters are valid and consistent.
+  // Assumes that all parameters are consistent.
   // 2 fresh ids are required if the instruction does not have a result id, 5
   // otherwise.
   // Returns the merge block created.

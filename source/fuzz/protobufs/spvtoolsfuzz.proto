@@ -1163,10 +1163,15 @@ message TransformationFlattenConditionalBranch {
 
   // A list of pairs mapping instruction descriptors to fresh ids.
   // Necessary for store, load and function call instructions.
+  // This helps preserve the stability of the transformation, so
+  // that, after shrinking, the same fresh ids are used for the
+  // same instructions.
   repeated InstructionUint32ListPair instruction_to_fresh_ids = 2;
 
   // A list of fresh ids to be used for instructions that need them, if
-  // they are not in instruction_to_fresh_ids.
+  // they are not in instruction_to_fresh_ids. This allows the
+  // transformation to be applicable even if shrinking causes some
+  // unexpected instructions to appear in the module.
   repeated uint32 overflow_id = 3;
 }
 

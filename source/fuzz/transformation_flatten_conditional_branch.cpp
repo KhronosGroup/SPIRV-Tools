@@ -60,8 +60,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   auto header_block = ir_context->cfg()->block(header_block_id);
 
   // |header_block| must be a selection header.
-  uint32_t merge_block_id = header_block->MergeBlockIdIfAny();
-  if (!merge_block_id ||
+  if (!header_block->MergeBlockIdIfAny() ||
       header_block->GetMergeInst()->opcode() != SpvOpSelectionMerge) {
     return false;
   }
@@ -71,33 +70,14 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     return false;
   }
 
-  // Find the first block where flow converges (it is not necessarily the merge
-  // block).
-  uint32_t convergence_block_id = merge_block_id;
-  while (ir_context->cfg()->preds(convergence_block_id).size() == 1) {
-    if (convergence_block_id == header_block_id) {
-      // There is a chain of blocks with one predecessor from the header block
-      // to the merge block. This means that the region is not single-entry,
-      // single-exit (because the merge block is only reached by one of the two
-      // branches).
-      return false;
-    }
-    convergence_block_id = ir_context->cfg()->preds(convergence_block_id)[0];
-  }
+  // Use a set to keep track of the instructions that require fresh ids.
+  std::set<opt::Instruction*> instructions_that_need_ids;
 
-  // Get all the blocks reachable by the header block before reaching the
-  // convergence block and check that, for each of these blocks, that:
-  //  - the header dominates it and the convergence block postdominates it (so
-  //    that the header and merge block form a single-entry, single-exit
-  //    region)
-  //  - it does not contain merge instructions
-  //  - it branches unconditionally to another block
-  //  - it does not contain atomic or barrier instructions
-  auto enclosing_function = header_block->GetParent();
-  auto dominator_analysis =
-      ir_context->GetDominatorAnalysis(enclosing_function);
-  auto postdominator_analysis =
-      ir_context->GetPostDominatorAnalysis(enclosing_function);
+  // Check that, if there are enough ids, the conditional can be flattened.
+  if (!ConditionalCanBeFlattened(ir_context, header_block,
+                                 &instructions_that_need_ids)) {
+    return false;
+  }
 
   // Get the mapping from instructions to the fresh ids available for them.
   auto instructions_to_fresh_ids = GetInstructionsToFreshIdsMapping(ir_context);
@@ -130,135 +110,31 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   // pool, as we go through the instructions.
   int remaining_overflow_ids = message_.overflow_id_size();
 
-  // Perform a BFS to find and check all the blocks that can be reached by the
-  // header before reaching the convergence block.
-  std::list<uint32_t> to_check;
-  header_block->ForEachSuccessorLabel(
-      [&to_check](uint32_t label) { to_check.push_back(label); });
+  for (auto instruction : instructions_that_need_ids) {
+    // The number of ids needed depends on the id of the instruction.
+    uint32_t ids_needed_by_this_instruction =
+        NumOfFreshIdsNeededByOpcode(instruction->opcode());
+    if (instructions_to_fresh_ids.count(instruction) != 0) {
+      // If there is a mapping from this instruction to a list of fresh
+      // ids, the list must have enough ids.
 
-  while (!to_check.empty()) {
-    uint32_t block_id = to_check.front();
-    to_check.pop_front();
+      if (instructions_to_fresh_ids[instruction].size() <
+          ids_needed_by_this_instruction) {
+        return false;
+      }
+    } else {
+      // If there is no mapping, we need to rely on the pool of
+      // overflow ids, where there must be enough remaining ids.
 
-    if (block_id == convergence_block_id) {
-      // We have reached the convergence block, we don't need to consider its
-      // successors.
-      continue;
+      remaining_overflow_ids -= ids_needed_by_this_instruction;
+
+      if (remaining_overflow_ids < 0) {
+        return false;
+      }
     }
-
-    // If the block is not dominated by the header or it is not postdominated by
-    // the convergence_block, this is not a single-entry, single-exit region.
-    if (!dominator_analysis->Dominates(header_block_id, block_id) ||
-        !postdominator_analysis->Dominates(convergence_block_id, block_id)) {
-      return false;
-    }
-
-    auto block = ir_context->cfg()->block(block_id);
-
-    // The block must not have a merge instruction, because inner constructs are
-    // not allowed.
-    if (block->GetMergeInst()) {
-      return false;
-    }
-
-    // We need to make sure that OpSampledImage instructions will not be
-    // separated from their use, as they need to be in the same block.
-
-    // All result ids of an OpSampledImage instruction occurring before the last
-    // point where the block will need to be split.
-    std::set<uint32_t> sampled_image_result_ids_before_split;
-
-    // All result ids of an OpSampledImage instruction occurring after the last
-    // point where the block will need to be split. They can still be used.
-    std::set<uint32_t> sampled_image_result_ids_after_split;
-
-    // Check all of the instructions in the block.
-    bool all_instructions_compatible = block->WhileEachInst(
-        [this, &instructions_to_fresh_ids, &remaining_overflow_ids,
-         &sampled_image_result_ids_before_split,
-         &sampled_image_result_ids_after_split](opt::Instruction* instruction) {
-          // The instruction cannot be an atomic or barrier instruction
-          if (instruction->IsAtomicOp() ||
-              instruction->opcode() == SpvOpControlBarrier ||
-              instruction->opcode() == SpvOpMemoryBarrier ||
-              instruction->opcode() == SpvOpNamedBarrierInitialize ||
-              instruction->opcode() == SpvOpMemoryNamedBarrier ||
-              instruction->opcode() == SpvOpTypeNamedBarrier) {
-            return false;
-          }
-
-          // If the instruction is OpSampledImage, add the result id to
-          // |sampled_image_result_ids_after_split|.
-          if (instruction->opcode() == SpvOpSampledImage) {
-            sampled_image_result_ids_after_split.emplace(
-                instruction->result_id());
-          }
-
-          // If the instruction uses an OpSampledImage that appeared before a
-          // point where we need to split the block (before a load, store or
-          // function call), then the transformation is not applicable.
-          if (!instruction->WhileEachInId(
-                  [&sampled_image_result_ids_before_split](
-                      uint32_t* id) -> bool {
-                    return !sampled_image_result_ids_before_split.count(*id);
-                  })) {
-            return false;
-          }
-
-          // If the instruction is a load, store or function call, there must
-          // be a mapping from the corresponding instruction descriptor to a
-          // list of fresh ids or there must be enough overflow ids.
-          if (instruction->opcode() == SpvOpLoad ||
-              instruction->opcode() == SpvOpStore ||
-              instruction->opcode() == SpvOpFunctionCall) {
-            // The number of ids needed depends on the id of the instruction.
-            uint32_t ids_needed_by_this_instruction =
-                NumOfFreshIdsNeededByOpcode(instruction->opcode());
-
-            if (instructions_to_fresh_ids.count(instruction) != 0) {
-              // If there is a mapping from this instruction to a list of fresh
-              // ids, the list must have enough ids.
-
-              if (instructions_to_fresh_ids[instruction].size() <
-                  ids_needed_by_this_instruction) {
-                return false;
-              }
-            } else {
-              // If there is no mapping, we need to rely on the pool of
-              // overflow ids, where there must be enough remaining ids.
-
-              remaining_overflow_ids -= ids_needed_by_this_instruction;
-
-              if (remaining_overflow_ids < 0) {
-                return false;
-              }
-            }
-
-            // All OpSampledImage ids defined before this point should not be
-            // used anymore. We need to move all ids in
-            // |sampled_image_result_ids_after_split| to
-            // |sampled_image_result_ids_before_split| so that this can be
-            // checked for the following instructions.
-            for (auto id : sampled_image_result_ids_after_split) {
-              sampled_image_result_ids_before_split.emplace(id);
-            }
-            sampled_image_result_ids_after_split.clear();
-          }
-
-          return true;
-        });
-
-    if (!all_instructions_compatible) {
-      return false;
-    }
-
-    // Add the successor of this block to the list of blocks that need to be
-    // checked.
-    to_check.push_back(block->terminator()->GetSingleWordInOperand(0));
   }
 
-  // All the blocks are compatible with the transformation and this is indeed a
-  // single-entry, single-exit region.
+  // All checks were passed.
   return true;
 }
 
@@ -408,6 +284,152 @@ void TransformationFlattenConditionalBranch::Apply(
 
   // Invalidate all analyses
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+}
+
+bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
+    opt::IRContext* ir_context, opt::BasicBlock* header,
+    std::set<opt::Instruction*>* instructions_that_need_ids) {
+  uint32_t merge_block_id = header->MergeBlockIdIfAny();
+  assert(merge_block_id &&
+         header->GetMergeInst()->opcode() == SpvOpSelectionMerge &&
+         header->terminator()->opcode() == SpvOpBranchConditional &&
+         "|header| must be the header of a conditional.");
+
+  // Find the first block where flow converges (it is not necessarily the merge
+  // block).
+  uint32_t convergence_block_id = merge_block_id;
+  while (ir_context->cfg()->preds(convergence_block_id).size() == 1) {
+    if (convergence_block_id == header->id()) {
+      // There is a chain of blocks with one predecessor from the header block
+      // to the merge block. This means that the region is not single-entry,
+      // single-exit (because the merge block is only reached by one of the two
+      // branches).
+      return false;
+    }
+    convergence_block_id = ir_context->cfg()->preds(convergence_block_id)[0];
+  }
+
+  // Get all the blocks reachable by the header block before reaching the
+  // convergence block and check that, for each of these blocks:
+  //  - the header dominates it and the convergence block postdominates it (so
+  //    that the header and merge block form a single-entry, single-exit
+  //    region)
+  //  - it does not contain merge instructions
+  //  - it branches unconditionally to another block
+  //  - it does not contain atomic or barrier instructions
+  auto enclosing_function = header->GetParent();
+  auto dominator_analysis =
+      ir_context->GetDominatorAnalysis(enclosing_function);
+  auto postdominator_analysis =
+      ir_context->GetPostDominatorAnalysis(enclosing_function);
+
+  // Traverse the CFG starting from the header and check all the blocks that can
+  // be reached by the header before reaching the convergence block.
+  std::list<uint32_t> to_check;
+  header->ForEachSuccessorLabel(
+      [&to_check](uint32_t label) { to_check.push_back(label); });
+
+  while (!to_check.empty()) {
+    uint32_t block_id = to_check.front();
+    to_check.pop_front();
+
+    if (block_id == convergence_block_id) {
+      // We have reached the convergence block, we don't need to consider its
+      // successors.
+      continue;
+    }
+
+    // If the block is not dominated by the header or it is not postdominated by
+    // the convergence_block, this is not a single-entry, single-exit region.
+    if (!dominator_analysis->Dominates(header->id(), block_id) ||
+        !postdominator_analysis->Dominates(convergence_block_id, block_id)) {
+      return false;
+    }
+
+    auto block = ir_context->cfg()->block(block_id);
+
+    // The block must not have a merge instruction, because inner constructs are
+    // not allowed.
+    if (block->GetMergeInst()) {
+      return false;
+    }
+
+    // We need to make sure that OpSampledImage instructions will not be
+    // separated from their use, as they need to be in the same block.
+
+    // All result ids of an OpSampledImage instruction occurring before the last
+    // point where the block will need to be split.
+    std::set<uint32_t> sampled_image_result_ids_before_split;
+
+    // All result ids of an OpSampledImage instruction occurring after the last
+    // point where the block will need to be split. They can still be used.
+    std::set<uint32_t> sampled_image_result_ids_after_split;
+
+    // Check all of the instructions in the block.
+    bool all_instructions_compatible = block->WhileEachInst(
+        [instructions_that_need_ids, &sampled_image_result_ids_before_split,
+         &sampled_image_result_ids_after_split](opt::Instruction* instruction) {
+          // The instruction cannot be an atomic or barrier instruction
+          if (instruction->IsAtomicOp() ||
+              instruction->opcode() == SpvOpControlBarrier ||
+              instruction->opcode() == SpvOpMemoryBarrier ||
+              instruction->opcode() == SpvOpNamedBarrierInitialize ||
+              instruction->opcode() == SpvOpMemoryNamedBarrier ||
+              instruction->opcode() == SpvOpTypeNamedBarrier) {
+            return false;
+          }
+
+          // If the instruction is OpSampledImage, add the result id to
+          // |sampled_image_result_ids_after_split|.
+          if (instruction->opcode() == SpvOpSampledImage) {
+            sampled_image_result_ids_after_split.emplace(
+                instruction->result_id());
+          }
+
+          // If the instruction uses an OpSampledImage that appeared before a
+          // point where we need to split the block (before a load, store or
+          // function call), then the transformation is not applicable.
+          if (!instruction->WhileEachInId(
+                  [&sampled_image_result_ids_before_split](
+                      uint32_t* id) -> bool {
+                    return !sampled_image_result_ids_before_split.count(*id);
+                  })) {
+            return false;
+          }
+
+          // If the instruction is a load, store or function call, add it to the
+          // |instructions_that_need_ids| set.
+          if (instruction->opcode() == SpvOpLoad ||
+              instruction->opcode() == SpvOpStore ||
+              instruction->opcode() == SpvOpFunctionCall) {
+            instructions_that_need_ids->emplace(instruction);
+
+            // All OpSampledImage ids defined before this point should not be
+            // used anymore. We need to move all ids in
+            // |sampled_image_result_ids_after_split| to
+            // |sampled_image_result_ids_before_split| so that this can be
+            // checked for the following instructions.
+            for (auto id : sampled_image_result_ids_after_split) {
+              sampled_image_result_ids_before_split.emplace(id);
+            }
+            sampled_image_result_ids_after_split.clear();
+          }
+
+          return true;
+        });
+
+    if (!all_instructions_compatible) {
+      return false;
+    }
+
+    // Add the successor of this block to the list of blocks that need to be
+    // checked.
+    to_check.push_back(block->terminator()->GetSingleWordInOperand(0));
+  }
+
+  // All the blocks are compatible with the transformation and this is indeed a
+  // single-entry, single-exit region.
+  return true;
 }
 
 std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
