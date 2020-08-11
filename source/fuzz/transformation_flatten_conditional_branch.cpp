@@ -338,7 +338,7 @@ void TransformationFlattenConditionalBranch::Apply(
         }
 
         // Get the ones still needed from the overflow ids.
-        for (int still_needed = ids_needed - (int)fresh_ids.size();
+        for (int still_needed = ids_needed - static_cast<int>(fresh_ids.size());
              still_needed > 0; still_needed--) {
           fresh_ids.push_back(message_.overflow_id(overflow_ids_used++));
         }
