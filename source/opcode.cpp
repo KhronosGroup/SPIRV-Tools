@@ -725,6 +725,7 @@ bool spvOpcodeIsAccessChain(SpvOp opcode) {
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
     case SpvOpPtrAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
       return true;
     default:
       return false;
