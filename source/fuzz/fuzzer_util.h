@@ -501,8 +501,7 @@ uint32_t MaybeGetLocalVariable(opt::IRContext* ir_context, uint32_t type_id,
 
 // Returns the id of an available global variable that has the type |type_id|.
 // If no such variable is available, returns 0.
-uint32_t MaybeGetGlobalVariable(opt::IRContext* ir_context, uint32_t type_id,
-                                SpvStorageClass storage_class);
+uint32_t MaybeGetGlobalVariable(opt::IRContext* ir_context, uint32_t type_id);
 
 }  // namespace fuzzerutil
 

@@ -24,17 +24,19 @@ TransformationAddParameter::TransformationAddParameter(
     : message_(message) {}
 
 TransformationAddParameter::TransformationAddParameter(
-    uint32_t function_id, uint32_t parameter_fresh_id, uint32_t initializer_id,
+    uint32_t function_id, uint32_t parameter_fresh_id,
+    uint32_t initializer_id_or_pointer_type_id,
     uint32_t function_type_fresh_id) {
   message_.set_function_id(function_id);
   message_.set_parameter_fresh_id(parameter_fresh_id);
-  message_.set_initializer_id(initializer_id);
+  message_.set_initializer_id_or_pointer_type_id(
+      initializer_id_or_pointer_type_id);
   message_.set_function_type_fresh_id(function_type_fresh_id);
 }
 
 bool TransformationAddParameter::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  // Check that function exists
+  // Check that function exists.
   const auto* function =
       fuzzerutil::FindFunction(ir_context, message_.function_id());
   if (!function ||
@@ -43,14 +45,15 @@ bool TransformationAddParameter::IsApplicable(
   }
 
   // Check that |initializer_id| is valid. Consider also the case where
-  // |initalizer_id| is an type id of a pointer.
-  const auto* initializer_inst =
-      ir_context->get_def_use_mgr()->GetDef(message_.initializer_id());
+  // |initalizer_id| is a type id of a pointer.
+  const auto* initializer_inst = ir_context->get_def_use_mgr()->GetDef(
+      message_.initializer_id_or_pointer_type_id());
   opt::analysis::Type* initializer_type;
   if (!initializer_inst) {
     return false;
   }
-  auto type = ir_context->get_type_mgr()->GetType(message_.initializer_id());
+  auto type = ir_context->get_type_mgr()->GetType(
+      message_.initializer_id_or_pointer_type_id());
   if (type && !type->AsPointer()) {
     return false;
   }
@@ -66,9 +69,10 @@ bool TransformationAddParameter::IsApplicable(
     return false;
   }
 
+  // Consider pointer types separately.
   bool is_valid = true;
   if (initializer_type->kind() == opt::analysis::Type::kPointer) {
-    uint32_t pointer_type_id = message_.initializer_id();
+    uint32_t pointer_type_id = message_.initializer_id_or_pointer_type_id();
     auto storage_class =
         fuzzerutil::GetStorageClassFromPointerType(ir_context, pointer_type_id);
     switch (storage_class) {
@@ -90,8 +94,7 @@ bool TransformationAddParameter::IsApplicable(
       case SpvStorageClassWorkgroup:
         // If there is no available global variable, the transformation is
         // invalid.
-        if (!fuzzerutil::MaybeGetGlobalVariable(ir_context, pointer_type_id,
-                                                storage_class)) {
+        if (!fuzzerutil::MaybeGetGlobalVariable(ir_context, pointer_type_id)) {
           is_valid = false;
         }
         break;
@@ -111,23 +114,24 @@ bool TransformationAddParameter::IsApplicable(
 void TransformationAddParameter::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  // Find the function that will be transformed
+  // Find the function that will be transformed.
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function && "Can't find the function");
 
   uint32_t new_parameter_type_id;
 
-  // If the |message_.initializer_id| is a type id of a pointer then it is the
-  // same as |new_parameter_type_id| since in this case, we don't pass an
-  // actual initializer id.
-  auto type = ir_context->get_type_mgr()->GetType(message_.initializer_id());
+  // If the |message_.initializer_id_or_pointer_type_id| is a type id of a
+  // pointer then it is the same as |new_parameter_type_id| since in this case,
+  // we don't pass an actual initializer id.
+  auto type = ir_context->get_type_mgr()->GetType(
+      message_.initializer_id_or_pointer_type_id());
   if (type && type->AsPointer()) {
-    new_parameter_type_id = message_.initializer_id();
+    new_parameter_type_id = message_.initializer_id_or_pointer_type_id();
   } else {
-    new_parameter_type_id =
-        fuzzerutil::GetTypeId(ir_context, message_.initializer_id());
-    assert(new_parameter_type_id != 0 && "Initializer has invalid type");
+    new_parameter_type_id = fuzzerutil::GetTypeId(
+        ir_context, message_.initializer_id_or_pointer_type_id());
   }
+  assert(new_parameter_type_id != 0 && "Initializer has invalid type");
 
   // Add new parameters to the function.
   function->AddParameter(MakeUnique<opt::Instruction>(
@@ -140,7 +144,7 @@ void TransformationAddParameter::Apply(
       ir_context->get_type_mgr()->GetType(new_parameter_type_id);
 
   if (new_parameter_type->kind() == opt::analysis::Type::kPointer) {
-    // Add an PointeeValueIsIrrelevant fact if the parameter is a pointer.
+    // Add a PointeeValueIsIrrelevant fact if the parameter is a pointer.
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
         message_.parameter_fresh_id());
 
@@ -149,10 +153,10 @@ void TransformationAddParameter::Apply(
     uint32_t available_variable_id = 0;
     switch (storage_class) {
       case SpvStorageClassFunction:
+        // Fix all OpFunctionCall instructions. In each function use the
+        // available local variable.
         for (auto* inst :
              fuzzerutil::GetCallers(ir_context, function->result_id())) {
-          // Fix all OpFunctionCall instructions. In each function use an
-          // available local variable.
           auto block = ir_context->get_instr_block(inst);
           auto function_id = block->GetParent()->result_id();
           available_variable_id = fuzzerutil::MaybeGetLocalVariable(
@@ -165,13 +169,13 @@ void TransformationAddParameter::Apply(
         break;
       case SpvStorageClassPrivate:
       case SpvStorageClassWorkgroup:
+        // Fix all OpFunctionCall instructions. In each function use the
+        // available global variable.
         available_variable_id = fuzzerutil::MaybeGetGlobalVariable(
-            ir_context, new_parameter_type_id, storage_class);
+            ir_context, new_parameter_type_id);
         assert(available_variable_id != 0 &&
                "A global variable must be available for the pointer of storage "
                "class Workgroup or Private.");
-        // Fix all OpFunctionCall instructions. In each function use the
-        // available global variable.
         for (auto* inst :
              fuzzerutil::GetCallers(ir_context, function->result_id())) {
           inst->AddOperand({SPV_OPERAND_TYPE_ID, {available_variable_id}});
@@ -184,7 +188,8 @@ void TransformationAddParameter::Apply(
     // Fix all OpFunctionCall instructions.
     for (auto* inst :
          fuzzerutil::GetCallers(ir_context, function->result_id())) {
-      inst->AddOperand({SPV_OPERAND_TYPE_ID, {message_.initializer_id()}});
+      inst->AddOperand({SPV_OPERAND_TYPE_ID,
+                        {message_.initializer_id_or_pointer_type_id()}});
     }
   }
 

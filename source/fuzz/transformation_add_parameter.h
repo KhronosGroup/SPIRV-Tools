@@ -29,14 +29,18 @@ class TransformationAddParameter : public Transformation {
       const protobufs::TransformationAddParameter& message);
 
   TransformationAddParameter(uint32_t function_id, uint32_t parameter_fresh_id,
-                             uint32_t initializer_id,
+                             uint32_t initializer_id_or_pointer_type_id,
                              uint32_t function_type_fresh_id);
 
   // - |function_id| must be a valid result id of some non-entry-point function
   //   in the module.
-  // - |initializer_id| must be a valid result id of some instruction in the
-  //   module. Instruction's type must be supported by this transformation
+  // - In the case of non-pointer type, |initializer_id_or_pointer_type_id| must
+  //   be a valid result id of some instruction in the module.
+  //   Instruction's type must be supported by this transformation
   //   as specified by IsParameterTypeSupported function.
+  // - In the case of pointer type, |initializer_id_or_pointer_type_id| must be
+  //   a valid type id of a pointer type. The required variables in the storage
+  //   class of this type id must be available.
   // - |parameter_fresh_id| and |function_type_fresh_id| are fresh ids and are
   //   not equal.
   bool IsApplicable(

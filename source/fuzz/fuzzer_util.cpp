@@ -1368,26 +1368,19 @@ uint32_t MaybeGetLocalVariable(opt::IRContext* ir_context, uint32_t type_id,
   return return_id;
 }
 
-uint32_t MaybeGetGlobalVariable(opt::IRContext* ir_context, uint32_t type_id,
-                                SpvStorageClass storage_class) {
+uint32_t MaybeGetGlobalVariable(opt::IRContext* ir_context, uint32_t type_id) {
   uint32_t return_id = 0;
-  // A global variable can be declared in any point of the module.
-  ir_context->module()->ForEachInst(
-      [storage_class, ir_context, type_id,
-       &return_id](opt::Instruction* instruction) {
-        if (instruction->opcode() != SpvOpVariable) {
-          return;
-        }
-        if (instruction->type_id() != type_id) {
-          return;
-        }
-        auto instruction_storage_class =
-            GetStorageClassFromPointerType(ir_context, type_id);
-        if (instruction_storage_class != storage_class) {
-          return;
-        }
-        return_id = instruction->result_id();
-      });
+  for (auto& instruction : ir_context->module()->types_values()) {
+    if (instruction.opcode() != SpvOpVariable) {
+      continue;
+    }
+    if (instruction.type_id() != type_id) {
+      continue;
+    }
+    // We have found the matching variable declaration.
+    return_id = instruction.result_id();
+    break;
+  }
   return return_id;
 }
 }  // namespace fuzzerutil

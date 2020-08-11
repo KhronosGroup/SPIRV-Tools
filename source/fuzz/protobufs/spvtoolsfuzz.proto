@@ -756,8 +756,9 @@ message TransformationAddParameter {
 
   // Result id of the instruction, used to initializer new parameter
   // in function calls. Type id of that instruction is the type id of the parameter.
-  // It may not be OpTypeVoid.
-  uint32 initializer_id = 3;
+  // It may not be OpTypeVoid. In case of new parameter being a pointer, this is the type id
+  // of the pointer type. Initializer id and pointer type id are mutually exclusive.
+  uint32 initializer_id_or_pointer_type_id = 3;
 
   // A fresh id for a new function type. This might not be used
   // if a required function type already exists or if we can change

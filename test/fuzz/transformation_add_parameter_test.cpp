@@ -15,14 +15,10 @@
 #include "source/fuzz/transformation_add_parameter.h"
 #include "test/fuzz/fuzz_test_util.h"
 
-#include "source/fuzz/fuzzer_pass_add_parameters.h"
-#include "source/fuzz/pseudo_random_generator.h"
-#include "source/fuzz/transformation_add_global_variable.h"
-
 namespace spvtools {
 namespace fuzz {
 namespace {
-/*
+
 TEST(TransformationAddParameterTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
@@ -245,61 +241,46 @@ TEST(TransformationAddParameterTest, BasicTest) {
   )";
 
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
-}*/
+}
 
-TEST(TransformationAddParameterTest, PointerTypeTest) {
+TEST(TransformationAddParameterTest, PointerTypeNotApplicableTest) {
+  // This types handles case of adding a new parameter of a pointer type where
+  // the transformation is not applicable.
   std::string shader = R"(
-  OpCapability Shader
+               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %6 "nothing("
-               OpName %12 "add(i1;"
+               OpName %6 "fun1("
+               OpName %12 "fun2(i1;"
                OpName %11 "a"
                OpName %21 "i1"
-               OpName %24 "f1"
-               OpName %28 "u1"
-               OpName %30 "i2"
-               OpName %31 "param"
-               OpDecorate %12 RelaxedPrecision
-               OpDecorate %11 RelaxedPrecision
-               OpDecorate %15 RelaxedPrecision
-               OpDecorate %17 RelaxedPrecision
-               OpDecorate %21 RelaxedPrecision
-               OpDecorate %28 RelaxedPrecision
-               OpDecorate %30 RelaxedPrecision
-               OpDecorate %32 RelaxedPrecision
-               OpDecorate %33 RelaxedPrecision
+               OpName %22 "i2"
+               OpName %23 "param"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %8 = OpTypeInt 32 1
           %9 = OpTypePointer Function %8
+         %40 = OpTypeFloat 32
+         %41 = OpTypePointer Function %40
+         %42 = OpTypePointer Private %40
+         %43 = OpTypePointer Workgroup %40
          %10 = OpTypeFunction %8 %9
          %16 = OpConstant %8 2
-         %22 = OpTypeFloat 32
-         %23 = OpTypePointer Function %22
-         %25 = OpConstant %22 3
-         %26 = OpTypeInt 32 0
-         %27 = OpTypePointer Function %26
-         %29 = OpConstant %26 2
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %21 = OpVariable %9 Function
-         %24 = OpVariable %23 Function
-         %28 = OpVariable %27 Function
-         %30 = OpVariable %9 Function
-         %31 = OpVariable %9 Function
+         %22 = OpVariable %9 Function
+         %23 = OpVariable %9 Function
          %20 = OpFunctionCall %2 %6
                OpStore %21 %16
-               OpStore %24 %25
-               OpStore %28 %29
-         %32 = OpLoad %8 %21
-               OpStore %31 %32
-         %33 = OpFunctionCall %8 %12 %31
-               OpStore %30 %33
+         %24 = OpLoad %8 %21
+               OpStore %23 %24
+         %25 = OpFunctionCall %8 %12 %23
+               OpStore %22 %25
                OpReturn
                OpFunctionEnd
           %6 = OpFunction %2 None %3
@@ -324,44 +305,240 @@ TEST(TransformationAddParameterTest, PointerTypeTest) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
+  uint32_t function_id;
+  uint32_t parameter_fresh_id;
+  uint32_t pointer_type_id;
+  uint32_t function_type_fresh_id;
 
-  auto prng = MakeUnique<PseudoRandomGenerator>(0);
-  FuzzerContext fuzzer_context(prng.get(), 100);
-  protobufs::TransformationSequence transformation_sequence;
+  // Bad: There is no local variable in the caller function (main).
+  function_id = 12;
+  parameter_fresh_id = 50;
+  pointer_type_id = 41;
+  function_type_fresh_id = 51;
 
-  FuzzerPassAddParameters fuzzer_pass(context.get(), &transformation_context,
-                                      &fuzzer_context,
-                                      &transformation_sequence);
+  TransformationAddParameter transformation_bad_1(
+      function_id, parameter_fresh_id, pointer_type_id, function_type_fresh_id);
 
-  for (int i = 0; i < 10; i++) {
-    fuzzer_pass.Apply();
-  }
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
 
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled;
+  // Bad: There is no variable of type float and storage class Private.
+  function_id = 12;
+  parameter_fresh_id = 50;
+  pointer_type_id = 42;
+  function_type_fresh_id = 51;
 
-  /*
+  TransformationAddParameter transformation_bad_2(
+      function_id, parameter_fresh_id, pointer_type_id, function_type_fresh_id);
+
+  ASSERT_FALSE(
+      transformation_bad_2.IsApplicable(context.get(), transformation_context));
+
+  // Bad: There is no variable of type float and storage class Workgroup.
+  function_id = 12;
+  parameter_fresh_id = 50;
+  pointer_type_id = 43;
+  function_type_fresh_id = 51;
+
+  TransformationAddParameter transformation_bad_3(
+      function_id, parameter_fresh_id, pointer_type_id, function_type_fresh_id);
+
+  ASSERT_FALSE(
+      transformation_bad_3.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddParameterTest, PointerTypeApplicableTest) {
+  // This types handles case of adding a new parameter of a pointer type where
+  // the transformation is applied.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun1("
+               OpName %12 "fun2(i1;"
+               OpName %11 "a"
+               OpName %22 "f1"
+               OpName %25 "f2"
+               OpName %28 "i1"
+               OpName %29 "i2"
+               OpName %30 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeFunction %8 %9
+         %16 = OpConstant %8 2
+         %20 = OpTypeFloat 32
+         %21 = OpTypePointer Private %20
+         %22 = OpVariable %21 Private
+         %23 = OpConstant %20 1
+         %24 = OpTypePointer Function %20
+         %26 = OpConstant %20 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %25 = OpVariable %24 Function
+         %28 = OpVariable %9 Function
+         %29 = OpVariable %9 Function
+         %30 = OpVariable %9 Function
+               OpStore %22 %23
+               OpStore %25 %26
+         %27 = OpFunctionCall %2 %6
+               OpStore %28 %16
+         %31 = OpLoad %8 %28
+               OpStore %30 %31
+         %32 = OpFunctionCall %8 %12 %30
+               OpStore %29 %32
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %8 None %10
+         %11 = OpFunctionParameter %9
+         %13 = OpLabel
+         %15 = OpLoad %8 %11
+         %17 = OpIAdd %8 %15 %16
+               OpReturnValue %17
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
   FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
-  TransformationAddGlobalVariable add_global_variable(
-      60, 22, SpvStorageClassPrivate, 13, true);
-  add_global_variable.Apply(context.get(), &transformation_context);
+  uint32_t function_id;
+  uint32_t parameter_fresh_id;
+  uint32_t pointer_type_id;
+  uint32_t function_type_fresh_id;
 
-  TransformationAddParameter correct(10, 50, 22, 51);
-  correct.Apply(context.get(), &transformation_context);
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled;
-   */
+  // Good: In every caller of the function there is a local variable.
+  function_id = 6;
+  parameter_fresh_id = 50;
+  pointer_type_id = 24;
+  function_type_fresh_id = 51;
+
+  TransformationAddParameter transformation_good_1(
+      function_id, parameter_fresh_id, pointer_type_id, function_type_fresh_id);
+
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Good: In every caller of the function there is a local variable.
+  function_id = 12;
+  parameter_fresh_id = 52;
+  pointer_type_id = 24;
+  function_type_fresh_id = 53;
+
+  TransformationAddParameter transformation_good_2(
+      function_id, parameter_fresh_id, pointer_type_id, function_type_fresh_id);
+
+  ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Good: There is a global variable available.
+  function_id = 6;
+  parameter_fresh_id = 54;
+  pointer_type_id = 21;
+  function_type_fresh_id = 55;
+
+  TransformationAddParameter transformation_good_3(
+      function_id, parameter_fresh_id, pointer_type_id, function_type_fresh_id);
+
+  ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_3.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Good: There is a global variable available.
+  function_id = 12;
+  parameter_fresh_id = 56;
+  pointer_type_id = 21;
+  function_type_fresh_id = 57;
+
+  TransformationAddParameter transformation_good_4(
+      function_id, parameter_fresh_id, pointer_type_id, function_type_fresh_id);
+
+  ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_4.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun1("
+               OpName %12 "fun2(i1;"
+               OpName %11 "a"
+               OpName %22 "f1"
+               OpName %25 "f2"
+               OpName %28 "i1"
+               OpName %29 "i2"
+               OpName %30 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %16 = OpConstant %8 2
+         %20 = OpTypeFloat 32
+         %21 = OpTypePointer Private %20
+         %22 = OpVariable %21 Private
+         %23 = OpConstant %20 1
+         %24 = OpTypePointer Function %20
+         %26 = OpConstant %20 2
+         %51 = OpTypeFunction %2 %24 %21
+         %10 = OpTypeFunction %8 %9 %24 %21
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %25 = OpVariable %24 Function
+         %28 = OpVariable %9 Function
+         %29 = OpVariable %9 Function
+         %30 = OpVariable %9 Function
+               OpStore %22 %23
+               OpStore %25 %26
+         %27 = OpFunctionCall %2 %6 %25 %22
+               OpStore %28 %16
+         %31 = OpLoad %8 %28
+               OpStore %30 %31
+         %32 = OpFunctionCall %8 %12 %30 %25 %22
+               OpStore %29 %32
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %51
+         %50 = OpFunctionParameter %24
+         %54 = OpFunctionParameter %21
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %8 None %10
+         %11 = OpFunctionParameter %9
+         %52 = OpFunctionParameter %24
+         %56 = OpFunctionParameter %21
+         %13 = OpLabel
+         %15 = OpLoad %8 %11
+         %17 = OpIAdd %8 %15 %16
+               OpReturnValue %17
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 }  // namespace

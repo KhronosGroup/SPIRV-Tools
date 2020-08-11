@@ -76,12 +76,9 @@ void FuzzerPassAddParameters::Apply() {
           type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)];
       auto current_type =
           GetIRContext()->get_type_mgr()->GetType(current_type_id);
-      if (current_type->kind() == opt::analysis::Type::kPointer) {
-        // Make sure that there is at least one variable of the required type to
-        // pass it as initializer_id. Transformation handles pointer types
-        // differently and initializer_id is used only as an expression of the
-        // pointer type.
 
+      // Consider pointer types separately.
+      if (current_type->kind() == opt::analysis::Type::kPointer) {
         auto storage_class = fuzzerutil::GetStorageClassFromPointerType(
             GetIRContext(), current_type_id);
         uint32_t pointee_type_id =
@@ -96,7 +93,9 @@ void FuzzerPassAddParameters::Apply() {
                  fuzzerutil::GetCallers(GetIRContext(), function.result_id())) {
               auto block = GetIRContext()->get_instr_block(instr);
               auto function_id = block->GetParent()->result_id();
-              // If there is no available local variable, then create one.
+              // If there is no available local variable, then create one. The
+              // available local variable must be marked with the fact
+              // PointeeValueIsIrrelevant.
               variable_id = fuzzerutil::MaybeGetLocalVariable(
                   GetIRContext(), current_type_id, function_id);
               if (!variable_id ||
@@ -112,8 +111,11 @@ void FuzzerPassAddParameters::Apply() {
           } break;
           case SpvStorageClassPrivate:
           case SpvStorageClassWorkgroup: {
-            variable_id = fuzzerutil::MaybeGetGlobalVariable(
-                GetIRContext(), current_type_id, storage_class);
+            // If there is no available global variable, then create one. The
+            // available global variable must be marked with the fact
+            // PointeeValueIsIrrelevant.
+            variable_id = fuzzerutil::MaybeGetGlobalVariable(GetIRContext(),
+                                                             current_type_id);
             if (!variable_id || !GetTransformationContext()
                                      ->GetFactManager()
                                      ->PointeeValueIsIrrelevant(variable_id)) {
@@ -131,7 +133,8 @@ void FuzzerPassAddParameters::Apply() {
             function.result_id(), GetFuzzerContext()->GetFreshId(),
             current_type_id, GetFuzzerContext()->GetFreshId()));
 
-      } else {
+      } else  // Consider non-pointer parameters.
+      {
         ApplyTransformation(TransformationAddParameter(
             function.result_id(), GetFuzzerContext()->GetFreshId(),
             // We mark the constant as irrelevant so that we can replace it with
