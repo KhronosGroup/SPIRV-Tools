@@ -110,7 +110,7 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
 
   // Invalid: initializer_id=15 is invalid.
   auto transformation_invalid_5 = TransformationReplaceCopyObjectWithStoreLoad(
-      27, 30, SpvStorageClassPrivate, 15);
+      27, 30, SpvStorageClassFunction, 15);
   ASSERT_FALSE(transformation_invalid_5.IsApplicable(context.get(),
                                                      transformation_context));
 

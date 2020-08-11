@@ -76,6 +76,9 @@ TEST(TransformationAddRelaxedDecorationTest, BasicScenarios) {
   // Invalid: 200 is not an id.
   ASSERT_FALSE(TransformationAddRelaxedDecoration(200).IsApplicable(
       context.get(), transformation_context));
+  // Invalid: 1 is not in a block.
+  ASSERT_FALSE(TransformationAddRelaxedDecoration(1).IsApplicable(
+      context.get(), transformation_context));
   // Invalid: 27 is not in a dead block.
   ASSERT_FALSE(TransformationAddRelaxedDecoration(27).IsApplicable(
       context.get(), transformation_context));

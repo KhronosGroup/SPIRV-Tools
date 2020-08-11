@@ -27,49 +27,77 @@ TEST(TransformationReplaceLoadStoreWithCopyMemoryTest, BasicScenarios) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
+               OpEntryPoint Fragment %4 "main" %34 %35
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "a"
-               OpName %10 "b"
-               OpName %12 "c"
-               OpName %14 "d"
-               OpName %18 "e"
-               OpName %20 "f"
+               OpName %6 "fun1("
+               OpName %10 "a"
+               OpName %12 "b"
+               OpName %15 "a"
+               OpName %17 "b"
+               OpName %19 "c"
+               OpName %21 "d"
+               OpName %25 "e"
+               OpName %27 "f"
+               OpName %34 "i1"
+               OpName %35 "i2"
+               OpDecorate %34 Location 0
+               OpDecorate %35 Location 1
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-          %7 = OpTypePointer Function %6
-          %9 = OpConstant %6 2
-         %11 = OpConstant %6 3
-         %13 = OpConstant %6 4
-         %15 = OpConstant %6 5
-         %16 = OpTypeFloat 32
-         %17 = OpTypePointer Function %16
-         %19 = OpConstant %16 2
-         %21 = OpConstant %16 3
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 1
+         %16 = OpConstant %8 2
+         %18 = OpConstant %8 3
+         %20 = OpConstant %8 4
+         %22 = OpConstant %8 5
+         %23 = OpTypeFloat 32
+         %24 = OpTypePointer Function %23
+         %26 = OpConstant %23 2
+         %28 = OpConstant %23 3
+         %33 = OpTypePointer Output %8
+         %34 = OpVariable %33 Output
+         %35 = OpVariable %33 Output
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %8 = OpVariable %7 Function
-         %10 = OpVariable %7 Function
-         %12 = OpVariable %7 Function
-         %14 = OpVariable %7 Function
-         %18 = OpVariable %17 Function
-         %20 = OpVariable %17 Function
-               OpStore %8 %9
+         %15 = OpVariable %9 Function
+         %17 = OpVariable %9 Function
+         %19 = OpVariable %9 Function
+         %21 = OpVariable %9 Function
+         %25 = OpVariable %24 Function
+         %27 = OpVariable %24 Function
+               OpStore %15 %16
+               OpStore %17 %18
+               OpStore %19 %20
+               OpStore %21 %22
+               OpStore %25 %26
+               OpStore %27 %28
+         %29 = OpLoad %8 %15
+               OpCopyMemory %17 %15
+               OpStore %17 %29
+         %30 = OpLoad %8 %19
+               OpStore %21 %30
+         %31 = OpLoad %23 %25
+               OpStore %27 %31
+         %32 = OpFunctionCall %2 %6
+               OpStore %34 %13
+               OpStore %35 %13
+         %36 = OpLoad %8 %34
+               OpMemoryBarrier %11 %11
+               OpStore %35 %36
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+         %12 = OpVariable %9 Function
                OpStore %10 %11
                OpStore %12 %13
-               OpStore %14 %15
-               OpStore %18 %19
-               OpStore %20 %21
-         %22 = OpLoad %6 %8
-               OpCopyMemory %10 %8
-               OpStore %10 %22
-         %23 = OpLoad %6 %12
-               OpStore %14 %23
-         %24 = OpLoad %16 %18
-               OpStore %20 %24
+         %14 = OpLoad %8 %10
+               OpStore %12 %14
                OpReturn
                OpFunctionEnd
     )";
@@ -85,20 +113,25 @@ TEST(TransformationReplaceLoadStoreWithCopyMemoryTest, BasicScenarios) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto bad_instruction_descriptor_1 =
-      MakeInstructionDescriptor(5, SpvOpVariable, 0);
+      MakeInstructionDescriptor(11, SpvOpConstant, 0);
 
   auto load_instruction_descriptor_1 =
-      MakeInstructionDescriptor(5, SpvOpLoad, 0);
+      MakeInstructionDescriptor(29, SpvOpLoad, 0);
   auto load_instruction_descriptor_2 =
-      MakeInstructionDescriptor(5, SpvOpLoad, 1);
+      MakeInstructionDescriptor(30, SpvOpLoad, 0);
   auto load_instruction_descriptor_3 =
-      MakeInstructionDescriptor(5, SpvOpLoad, 2);
+      MakeInstructionDescriptor(31, SpvOpLoad, 0);
+  auto load_instruction_descriptor_unsafe =
+      MakeInstructionDescriptor(36, SpvOpLoad, 0);
+
   auto store_instruction_descriptor_1 =
-      MakeInstructionDescriptor(22, SpvOpStore, 0);
+      MakeInstructionDescriptor(29, SpvOpStore, 0);
   auto store_instruction_descriptor_2 =
-      MakeInstructionDescriptor(23, SpvOpStore, 0);
+      MakeInstructionDescriptor(30, SpvOpStore, 0);
   auto store_instruction_descriptor_3 =
-      MakeInstructionDescriptor(24, SpvOpStore, 0);
+      MakeInstructionDescriptor(31, SpvOpStore, 0);
+  auto store_instruction_descriptor_unsafe =
+      MakeInstructionDescriptor(36, SpvOpStore, 0);
 
   // Bad: |load_instruction_descriptor| is incorrect.
   auto transformation_bad_1 = TransformationReplaceLoadStoreWithCopyMemory(
@@ -118,12 +151,19 @@ TEST(TransformationReplaceLoadStoreWithCopyMemoryTest, BasicScenarios) {
   ASSERT_FALSE(
       transformation_bad_3.IsApplicable(context.get(), transformation_context));
 
-  // Bad: There is a interfering OpCopyMemory instruction between the OpLoad and
-  // the OpStore.
+  // Bad: There is an interfering OpCopyMemory instruction between the OpLoad
+  // and the OpStore.
   auto transformation_bad_4 = TransformationReplaceLoadStoreWithCopyMemory(
       load_instruction_descriptor_1, store_instruction_descriptor_1);
   ASSERT_FALSE(
       transformation_bad_4.IsApplicable(context.get(), transformation_context));
+
+  // Bad: There is an interfering OpMemoryBarrier instruction between the OpLoad
+  // and the OpStore.
+  auto transformation_bad_5 = TransformationReplaceLoadStoreWithCopyMemory(
+      load_instruction_descriptor_unsafe, store_instruction_descriptor_unsafe);
+  ASSERT_FALSE(
+      transformation_bad_5.IsApplicable(context.get(), transformation_context));
 
   auto transformation_good_1 = TransformationReplaceLoadStoreWithCopyMemory(
       load_instruction_descriptor_2, store_instruction_descriptor_2);
@@ -143,52 +183,80 @@ TEST(TransformationReplaceLoadStoreWithCopyMemoryTest, BasicScenarios) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
+               OpEntryPoint Fragment %4 "main" %34 %35
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "a"
-               OpName %10 "b"
-               OpName %12 "c"
-               OpName %14 "d"
-               OpName %18 "e"
-               OpName %20 "f"
+               OpName %6 "fun1("
+               OpName %10 "a"
+               OpName %12 "b"
+               OpName %15 "a"
+               OpName %17 "b"
+               OpName %19 "c"
+               OpName %21 "d"
+               OpName %25 "e"
+               OpName %27 "f"
+               OpName %34 "i1"
+               OpName %35 "i2"
+               OpDecorate %34 Location 0
+               OpDecorate %35 Location 1
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-          %7 = OpTypePointer Function %6
-          %9 = OpConstant %6 2
-         %11 = OpConstant %6 3
-         %13 = OpConstant %6 4
-         %15 = OpConstant %6 5
-         %16 = OpTypeFloat 32
-         %17 = OpTypePointer Function %16
-         %19 = OpConstant %16 2
-         %21 = OpConstant %16 3
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 1
+         %16 = OpConstant %8 2
+         %18 = OpConstant %8 3
+         %20 = OpConstant %8 4
+         %22 = OpConstant %8 5
+         %23 = OpTypeFloat 32
+         %24 = OpTypePointer Function %23
+         %26 = OpConstant %23 2
+         %28 = OpConstant %23 3
+         %33 = OpTypePointer Output %8
+         %34 = OpVariable %33 Output
+         %35 = OpVariable %33 Output
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %8 = OpVariable %7 Function
-         %10 = OpVariable %7 Function
-         %12 = OpVariable %7 Function
-         %14 = OpVariable %7 Function
-         %18 = OpVariable %17 Function
-         %20 = OpVariable %17 Function
-               OpStore %8 %9
-               OpStore %10 %11
-               OpStore %12 %13
-               OpStore %14 %15
-               OpStore %18 %19
-               OpStore %20 %21
-         %22 = OpLoad %6 %8
-               OpCopyMemory %10 %8
-               OpStore %10 %22
-         %23 = OpLoad %6 %12
-               OpCopyMemory %14 %12
-         %24 = OpLoad %16 %18
-               OpCopyMemory %20 %18
+         %15 = OpVariable %9 Function
+         %17 = OpVariable %9 Function
+         %19 = OpVariable %9 Function
+         %21 = OpVariable %9 Function
+         %25 = OpVariable %24 Function
+         %27 = OpVariable %24 Function
+               OpStore %15 %16
+               OpStore %17 %18
+               OpStore %19 %20
+               OpStore %21 %22
+               OpStore %25 %26
+               OpStore %27 %28
+         %29 = OpLoad %8 %15
+               OpCopyMemory %17 %15
+               OpStore %17 %29
+         %30 = OpLoad %8 %19
+               OpCopyMemory %21 %19
+         %31 = OpLoad %23 %25
+               OpCopyMemory %27 %25
+         %32 = OpFunctionCall %2 %6
+               OpStore %34 %13
+               OpStore %35 %13
+         %36 = OpLoad %8 %34
+               OpMemoryBarrier %11 %11
+               OpStore %35 %36
                OpReturn
                OpFunctionEnd
-  )";
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+         %12 = OpVariable %9 Function
+               OpStore %10 %11
+               OpStore %12 %13
+         %14 = OpLoad %8 %10
+               OpStore %12 %14
+               OpReturn
+               OpFunctionEnd
+    )";
   ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
