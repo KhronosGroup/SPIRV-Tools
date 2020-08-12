@@ -38,6 +38,17 @@ bool TransformationAddTypeInt::IsApplicable(
     return false;
   }
 
+  // If the integer type width is 8, 16 or 64, then the corresponding Int8,
+  // Int16 or Int64 capability must be present.
+  if ((message_.width() == 8 &&
+       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt8)) ||
+      (message_.width() == 16 &&
+       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt16)) ||
+      (message_.width() == 64 &&
+       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt64))) {
+    return false;
+  }
+
   // Applicable if there is no int type with this width and signedness already
   // declared in the module.
   return fuzzerutil::MaybeGetIntegerType(ir_context, message_.width(),

@@ -19,26 +19,30 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationAddTypeIntTest, BasicTest) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpReturn
-               OpFunctionEnd
+TEST(TransformationAddTypeIntTest, IsApplicable) {
+  std::string reference_shader = R"(
+         OpCapability Shader
+         OpCapability Int8
+    %1 = OpExtInstImport "GLSL.std.450"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %5 "main"
+
+; Types
+    %2 = OpTypeInt 8 1
+    %3 = OpTypeVoid
+    %4 = OpTypeFunction %3
+
+; main function
+    %5 = OpFunction %3 None %4
+    %6 = OpLabel
+         OpReturn
+         OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
@@ -46,50 +50,136 @@ TEST(TransformationAddTypeIntTest, BasicTest) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // Not applicable because id 1 is already in use.
-  ASSERT_FALSE(TransformationAddTypeInt(1, 32, false)
-                   .IsApplicable(context.get(), transformation_context));
+  // Tests non-fresh id.
+  auto transformation = TransformationAddTypeInt(1, 32, false);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  auto add_type_signed_int_32 = TransformationAddTypeInt(100, 32, true);
-  auto add_type_unsigned_int_32 = TransformationAddTypeInt(101, 32, false);
-  auto add_type_signed_int_32_again = TransformationAddTypeInt(102, 32, true);
-  auto add_type_unsigned_int_32_again =
-      TransformationAddTypeInt(103, 32, false);
+  // Tests missing Int16 capability.
+  transformation = TransformationAddTypeInt(7, 16, false);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  ASSERT_TRUE(add_type_signed_int_32.IsApplicable(context.get(),
-                                                  transformation_context));
-  add_type_signed_int_32.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  // Tests missing Int64 capability.
+  transformation = TransformationAddTypeInt(7, 64, false);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  ASSERT_TRUE(add_type_unsigned_int_32.IsApplicable(context.get(),
-                                                    transformation_context));
-  add_type_unsigned_int_32.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  // Tests existing signed 8-bit integer type.
+  transformation = TransformationAddTypeInt(7, 8, true);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  // Not applicable as we already have these types now.
-  ASSERT_FALSE(add_type_signed_int_32_again.IsApplicable(
-      context.get(), transformation_context));
-  ASSERT_FALSE(add_type_unsigned_int_32_again.IsApplicable(
-      context.get(), transformation_context));
+  // Tests adding unsigned 8-bit integer type.
+  transformation = TransformationAddTypeInt(7, 8, false);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-        %100 = OpTypeInt 32 1
-        %101 = OpTypeInt 32 0
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpReturn
-               OpFunctionEnd
+  // Tests adding unsigned 32-bit integer type.
+  transformation = TransformationAddTypeInt(7, 32, false);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests adding signed 32-bit integer type.
+  transformation = TransformationAddTypeInt(7, 32, true);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddTypeIntTest, Apply) {
+  std::string reference_shader = R"(
+         OpCapability Shader
+         OpCapability Int8
+         OpCapability Int16
+         OpCapability Int64
+    %1 = OpExtInstImport "GLSL.std.450"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %4 "main"
+
+; Types
+    %2 = OpTypeVoid
+    %3 = OpTypeFunction %2
+
+; main function
+    %4 = OpFunction %2 None %3
+    %5 = OpLabel
+         OpReturn
+         OpFunctionEnd
   )";
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Adds signed 8-bit integer type.
+  auto transformation = TransformationAddTypeInt(6, 8, true);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds signed 16-bit integer type.
+  transformation = TransformationAddTypeInt(7, 16, true);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds signed 32-bit integer type.
+  transformation = TransformationAddTypeInt(8, 32, true);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds signed 64-bit integer type.
+  transformation = TransformationAddTypeInt(9, 64, true);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds unsigned 8-bit integer type.
+  transformation = TransformationAddTypeInt(10, 8, false);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds unsigned 16-bit integer type.
+  transformation = TransformationAddTypeInt(11, 16, false);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds unsigned 32-bit integer type.
+  transformation = TransformationAddTypeInt(12, 32, false);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds unsigned 64-bit integer type.
+  transformation = TransformationAddTypeInt(13, 64, false);
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string variant_shader = R"(
+         OpCapability Shader
+         OpCapability Int8
+         OpCapability Int16
+         OpCapability Int64
+    %1 = OpExtInstImport "GLSL.std.450"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %4 "main"
+
+; Types
+    %2 = OpTypeVoid
+    %3 = OpTypeFunction %2
+    %6 = OpTypeInt 8 1
+    %7 = OpTypeInt 16 1
+    %8 = OpTypeInt 32 1
+    %9 = OpTypeInt 64 1
+   %10 = OpTypeInt 8 0
+   %11 = OpTypeInt 16 0
+   %12 = OpTypeInt 32 0
+   %13 = OpTypeInt 64 0
+
+; main function
+    %4 = OpFunction %2 None %3
+    %5 = OpLabel
+         OpReturn
+         OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
 }  // namespace
