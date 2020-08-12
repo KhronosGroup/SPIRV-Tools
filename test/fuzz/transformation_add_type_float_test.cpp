@@ -19,26 +19,30 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationAddTypeFloatTest, BasicTest) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpReturn
-               OpFunctionEnd
+TEST(TransformationAddTypeFloatTest, IsApplicable) {
+  std::string reference_shader = R"(
+         OpCapability Shader
+         OpCapability Float16
+    %1 = OpExtInstImport "GLSL.std.450"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %5 "main"
+
+; Types
+    %2 = OpTypeFloat 16
+    %3 = OpTypeVoid
+    %4 = OpTypeFunction %3
+
+; main function
+    %5 = OpFunction %3 None %4
+    %6 = OpLabel
+         OpReturn
+         OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
@@ -46,37 +50,94 @@ TEST(TransformationAddTypeFloatTest, BasicTest) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // Not applicable because id 1 is already in use.
-  ASSERT_FALSE(TransformationAddTypeFloat(1, 32).IsApplicable(
-      context.get(), transformation_context));
+  // Tests non-fresh id.
+  auto transformation = TransformationAddTypeFloat(1, 32);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  auto add_type_float_32 = TransformationAddTypeFloat(100, 32);
+  // Tests missing Float64 capability.
+  transformation = TransformationAddTypeFloat(7, 64);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests existing 16-bit float type.
+  transformation = TransformationAddTypeFloat(7, 16);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests adding 32-bit float type.
+  transformation = TransformationAddTypeFloat(7, 32);
   ASSERT_TRUE(
-      add_type_float_32.IsApplicable(context.get(), transformation_context));
-  add_type_float_32.Apply(context.get(), &transformation_context);
+      transformation.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddTypeFloatTest, Apply) {
+  std::string reference_shader = R"(
+         OpCapability Shader
+         OpCapability Float16
+         OpCapability Float64
+    %1 = OpExtInstImport "GLSL.std.450"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %4 "main"
+
+; Types
+    %2 = OpTypeVoid
+    %3 = OpTypeFunction %2
+
+; main function
+    %4 = OpFunction %2 None %3
+    %5 = OpLabel
+         OpReturn
+         OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Not applicable as we already have this type now.
-  ASSERT_FALSE(TransformationAddTypeFloat(101, 32).IsApplicable(
-      context.get(), transformation_context));
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
 
-  std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-        %100 = OpTypeFloat 32
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpReturn
-               OpFunctionEnd
+  // Adds 16-bit float type.
+  auto transformation = TransformationAddTypeFloat(6, 16);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds 32-bit float type.
+  transformation = TransformationAddTypeFloat(7, 32);
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Adds 64-bit float type.
+  transformation = TransformationAddTypeFloat(8, 64);
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string variant_shader = R"(
+         OpCapability Shader
+         OpCapability Float16
+         OpCapability Float64
+    %1 = OpExtInstImport "GLSL.std.450"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %4 "main"
+
+; Types
+    %2 = OpTypeVoid
+    %3 = OpTypeFunction %2
+    %6 = OpTypeFloat 16
+    %7 = OpTypeFloat 32
+    %8 = OpTypeFloat 64
+
+; main function
+    %4 = OpFunction %2 None %3
+    %5 = OpLabel
+         OpReturn
+         OpFunctionEnd
   )";
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
 }  // namespace
