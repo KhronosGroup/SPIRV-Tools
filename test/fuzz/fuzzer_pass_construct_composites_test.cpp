@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_construct_composites.h"
+#include "source/fuzz/fuzzer_pass_replace_opselects_with_conditional_branches.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "test/fuzz/fuzz_test_util.h"
 
