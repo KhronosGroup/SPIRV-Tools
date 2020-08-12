@@ -35,10 +35,10 @@ class TransformationCompositeInsert : public Transformation {
 
   // - |message_.fresh_id| must be fresh.
   // - |message_.composite_id| must refer to an existing composite value.
-  // - |message_.index| must refer to a valid index in the composite.
+  // - |message_.index| must refer to a correct index in the composite.
   // - The type id of the object and the type id of the component of the
   //   composite at index |message_.index| must be the same.
-  // - |message_.instruction_to_insert_before| must refer to a valid
+  // - |message_.instruction_to_insert_before| must refer to a defined
   //   instruction.
   // - It must be possible to insert OpCompositeInsert before
   //   |instruction_to_insert_before|.
@@ -57,7 +57,8 @@ class TransformationCompositeInsert : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
-  // Checks if |instruction| is a valid instruction of a composite type.
+  // Checks if |instruction| is a instruction of a composite type supported by
+  // this transformation.
   static bool IsCompositeInstructionSupported(opt::IRContext* ir_context,
                                               opt::Instruction* instruction);
 

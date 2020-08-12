@@ -49,7 +49,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
           return;
         }
 
-        // It must be valid to insert an OpCompositeInsert instruction
+        // It must be possible to insert an OpCompositeInsert instruction
         // before |instruction_iterator|.
         if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
                 SpvOpCompositeInsert, instruction_iterator)) {
@@ -63,14 +63,14 @@ void FuzzerPassAddCompositeInserts::Apply() {
                 [instruction_descriptor](
                     opt::IRContext* ir_context,
                     opt::Instruction* instruction) -> bool {
-                  // |instruction| must be a valid instruction of composite
+                  // |instruction| must be a supported instruction of composite
                   // type.
                   if (!TransformationCompositeInsert::
                           IsCompositeInstructionSupported(ir_context,
                                                           instruction)) {
                     return false;
                   }
-                  // The instruction must be of composite type.
+
                   auto instruction_type = ir_context->get_type_mgr()->GetType(
                       instruction->type_id());
 
@@ -101,8 +101,10 @@ void FuzzerPassAddCompositeInserts::Apply() {
         while (true) {
           uint32_t one_selected_index;
           uint32_t num_of_components;
-          num_of_components =
-              GetNumberOfComponents(GetIRContext(), current_node_type_id);
+          auto current_node_type_inst =
+              GetIRContext()->get_def_use_mgr()->GetDef(current_node_type_id);
+          num_of_components = fuzzerutil::GetBoundForCompositeIndex(
+              *current_node_type_inst, GetIRContext());
 
           // If the composite is empty, then end the iteration.
           if (num_of_components == 0) {
@@ -117,15 +119,18 @@ void FuzzerPassAddCompositeInserts::Apply() {
           current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
               GetIRContext(), current_node_type_id, one_selected_index);
 
-          // If the component is not a composite or if we decide not to go
-          // deeper, then end the iteration.
+          // If the component is not a composite then end the iteration.
           if (!fuzzerutil::IsCompositeType(
                   GetIRContext()->get_type_mgr()->GetType(
                       current_node_type_id))) {
             break;
-          } else if (!GetFuzzerContext()->ChoosePercentage(
-                         GetFuzzerContext()
-                             ->GetChanceOfGoingDeeperToInsertInComposite())) {
+          }
+
+          // If the component is a composite, but we decide not to go deeper,
+          // then end the iteration.
+          if (!GetFuzzerContext()->ChoosePercentage(
+                  GetFuzzerContext()
+                      ->GetChanceOfGoingDeeperToInsertInComposite())) {
             break;
           }
         }
@@ -183,27 +188,6 @@ void FuzzerPassAddCompositeInserts::Apply() {
             available_composite->result_id(), available_object_id,
             path_to_replaced));
       });
-}
-
-uint32_t FuzzerPassAddCompositeInserts::GetNumberOfComponents(
-    opt::IRContext* ir_context, uint32_t composite_type_id) {
-  auto composite_type =
-      ir_context->get_def_use_mgr()->GetDef(composite_type_id);
-  assert(composite_type && "The composite type should exist.");
-  switch (composite_type->opcode()) {
-    case SpvOpTypeArray:
-      return fuzzerutil::GetArraySize(*composite_type, ir_context);
-    case SpvOpTypeMatrix:
-    case SpvOpTypeVector:
-      return composite_type->GetSingleWordInOperand(1);
-    case SpvOpTypeStruct:
-      return fuzzerutil::GetNumberOfStructMembers(*composite_type);
-    default:
-      assert(false &&
-             "|composite_type_id| must be a result id of a composite "
-             "type.");
-      return 0;
-  }
 }
 
 bool FuzzerPassAddCompositeInserts::ContainsRuntimeArray(
