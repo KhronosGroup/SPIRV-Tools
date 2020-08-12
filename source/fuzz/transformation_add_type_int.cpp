@@ -38,15 +38,32 @@ bool TransformationAddTypeInt::IsApplicable(
     return false;
   }
 
-  // If the integer type width is 8, 16 or 64, then the corresponding Int8,
-  // Int16 or Int64 capability must be present.
-  if ((message_.width() == 8 &&
-       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt8)) ||
-      (message_.width() == 16 &&
-       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt16)) ||
-      (message_.width() == 64 &&
-       !ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt64))) {
-    return false;
+  // Checks integer type width capabilities.
+  switch (message_.width()) {
+    case 8:
+      // The Int8 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt8)) {
+        return false;
+      }
+      break;
+    case 16:
+      // The Int16 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt16)) {
+        return false;
+      }
+      break;
+    case 32:
+      // No capabilities needed.
+      break;
+    case 64:
+      // The Int64 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt64)) {
+        return false;
+      }
+      break;
+    default:
+      assert(false && "Unexpected integer type width");
+      return false;
   }
 
   // Applicable if there is no int type with this width and signedness already
