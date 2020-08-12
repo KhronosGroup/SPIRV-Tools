@@ -32,7 +32,7 @@ FuzzerPassAddLoopPreheaders::~FuzzerPassAddLoopPreheaders() = default;
 void FuzzerPassAddLoopPreheaders::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     // Keep track of all the loop headers we want to add a preheader to.
-    std::vector<uint32_t> loop_headers_to_consider;
+    std::vector<uint32_t> loop_header_ids_to_consider;
     for (auto& block : function) {
       // We only care about loop headers.
       if (!block.IsLoopHeader()) {
@@ -51,10 +51,10 @@ void FuzzerPassAddLoopPreheaders::Apply() {
         continue;
       }
 
-      loop_headers_to_consider.push_back(block.id());
+      loop_header_ids_to_consider.push_back(block.id());
     }
 
-    for (uint32_t header_id : loop_headers_to_consider) {
+    for (uint32_t header_id : loop_header_ids_to_consider) {
       // If not already present, add a preheader which is not also a loop
       // header.
       GetOrCreateSimpleLoopPreheader(header_id);
