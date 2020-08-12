@@ -99,15 +99,18 @@ bool TransformationPropagateInstructionUp::IsApplicable(
 
   const auto predecessor_id_to_fresh_id = fuzzerutil::RepeatedUInt32PairToMap(
       message_.predecessor_id_to_fresh_id());
-  std::vector<uint32_t> maybe_fresh_ids;
   for (auto id : ir_context->cfg()->preds(message_.block_id())) {
     // Each predecessor must have a fresh id in the |predecessor_id_to_fresh_id|
     // map.
     if (!predecessor_id_to_fresh_id.count(id)) {
       return false;
     }
+  }
 
-    maybe_fresh_ids.push_back(predecessor_id_to_fresh_id.at(id));
+  std::vector<uint32_t> maybe_fresh_ids;
+  maybe_fresh_ids.reserve(predecessor_id_to_fresh_id.size());
+  for (const auto& entry : predecessor_id_to_fresh_id) {
+    maybe_fresh_ids.push_back(entry.second);
   }
 
   // All ids must be unique and fresh.
@@ -129,7 +132,15 @@ void TransformationPropagateInstructionUp::Apply(
   opt::Instruction::OperandList op_phi_operands;
   const auto predecessor_id_to_fresh_id = fuzzerutil::RepeatedUInt32PairToMap(
       message_.predecessor_id_to_fresh_id());
+  std::unordered_set<uint32_t> visited_predecessors;
   for (auto predecessor_id : ir_context->cfg()->preds(message_.block_id())) {
+    // A block can have multiple identical predecessors.
+    if (visited_predecessors.count(predecessor_id)) {
+      continue;
+    }
+
+    visited_predecessors.insert(predecessor_id);
+
     auto new_result_id = predecessor_id_to_fresh_id.at(predecessor_id);
 
     // Compute InOperands for the OpPhi instruction to be inserted later.
