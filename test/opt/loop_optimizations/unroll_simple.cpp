@@ -3252,6 +3252,155 @@ TEST_F(PassClassTest, UnreachableMerge) {
   SinglePassRunAndMatch<opt::LoopUnroller>(text, true, kFullyUnroll,
                                            kUnrollFactor);
 }
+
+TEST_F(PassClassTest, InitValueIsConstantNull) {
+  const std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstantNull %6
+         %13 = OpConstant %6 1
+         %21 = OpConstant %6 1
+         %10 = OpTypeBool
+         %17 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+         %11 = OpLabel
+               OpBranch %5
+          %5 = OpLabel
+         %23 = OpPhi %6 %7 %11 %20 %15
+               OpLoopMerge %8 %15 Unroll
+               OpBranch %14
+         %14 = OpLabel
+          %9 = OpSLessThan %10 %23 %13
+               OpBranchConditional %9 %15 %8
+         %15 = OpLabel
+         %20 = OpIAdd %6 %23 %21
+               OpBranch %5
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const std::string output = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main"
+OpExecutionMode %2 OriginUpperLeft
+OpSource ESSL 320
+%3 = OpTypeVoid
+%4 = OpTypeFunction %3
+%5 = OpTypeInt 32 1
+%6 = OpConstantNull %5
+%7 = OpConstant %5 1
+%8 = OpConstant %5 1
+%9 = OpTypeBool
+%10 = OpTypePointer Function %5
+%2 = OpFunction %3 None %4
+%11 = OpLabel
+OpBranch %12
+%12 = OpLabel
+OpBranch %17
+%17 = OpLabel
+%18 = OpSLessThan %9 %6 %7
+OpBranch %15
+%15 = OpLabel
+%14 = OpIAdd %5 %6 %8
+OpBranch %16
+%16 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  auto context = BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, shader,
+                             SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << shader << std::endl;
+
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopUnroller>(shader, output, false);
+}
+
+TEST_F(PassClassTest, ConditionValueIsConstantNull) {
+  const std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstantNull %6
+         %13 = OpConstant %6 1
+         %21 = OpConstant %6 1
+         %10 = OpTypeBool
+         %17 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+         %11 = OpLabel
+               OpBranch %5
+          %5 = OpLabel
+         %23 = OpPhi %6 %13 %11 %20 %15
+               OpLoopMerge %8 %15 Unroll
+               OpBranch %14
+         %14 = OpLabel
+          %9 = OpSGreaterThan %10 %23 %7
+               OpBranchConditional %9 %15 %8
+         %15 = OpLabel
+         %20 = OpISub %6 %23 %21
+               OpBranch %5
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const std::string output = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main"
+OpExecutionMode %2 OriginUpperLeft
+OpSource ESSL 320
+%3 = OpTypeVoid
+%4 = OpTypeFunction %3
+%5 = OpTypeInt 32 1
+%6 = OpConstantNull %5
+%7 = OpConstant %5 1
+%8 = OpConstant %5 1
+%9 = OpTypeBool
+%10 = OpTypePointer Function %5
+%2 = OpFunction %3 None %4
+%11 = OpLabel
+OpBranch %12
+%12 = OpLabel
+OpBranch %17
+%17 = OpLabel
+%18 = OpSGreaterThan %9 %7 %6
+OpBranch %15
+%15 = OpLabel
+%14 = OpISub %5 %7 %8
+OpBranch %16
+%16 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  auto context = BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, shader,
+                             SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << shader << std::endl;
+
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopUnroller>(shader, output, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
