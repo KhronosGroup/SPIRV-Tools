@@ -432,6 +432,27 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
   return true;
 }
 
+uint32_t TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByOpcode(
+    SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpStore:
+      // 2 ids are needed for two new blocks, which will be used to enclose the
+      // instruction within a conditional.
+      return 2;
+    case SpvOpLoad:
+    case SpvOpFunctionCall:
+      // These instructions return a result, so we need 3 fresh ids for new
+      // blocks (the true block, the false block and the merge block), one for
+      // the instruction itself and one for an instruction returning a dummy
+      // value. The original result id of the instruction will be used for a new
+      // OpPhi instruction.
+      return 5;
+    default:
+      assert(false && "This line should never be reached");
+      return 0;
+  }
+}
+
 std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
 TransformationFlattenConditionalBranch::GetInstructionsToFreshIdsMapping(
     opt::IRContext* ir_context) const {
@@ -451,27 +472,6 @@ TransformationFlattenConditionalBranch::GetInstructionsToFreshIdsMapping(
   }
 
   return instructions_to_fresh_ids;
-}
-
-uint32_t TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByOpcode(
-    SpvOp opcode) const {
-  switch (opcode) {
-    case SpvOpStore:
-      // 2 ids are needed for two new blocks, which will be used to enclose the
-      // instruction within a conditional.
-      return 2;
-    case SpvOpLoad:
-    case SpvOpFunctionCall:
-      // These instructions return a result, so we need 3 fresh ids for new
-      // blocks (the true block, the false block and the merge block), one for
-      // the instruction itself and one for an instruction returning a dummy
-      // value. The original result id of the instruction will be used for a new
-      // OpPhi instruction.
-      return 5;
-    default:
-      assert(false && "This line should never be reached");
-      return 0;
-  }
 }
 
 opt::BasicBlock*

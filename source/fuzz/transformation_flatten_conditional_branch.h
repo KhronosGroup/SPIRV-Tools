@@ -29,7 +29,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
       uint32_t header_block_id,
       std::vector<
           std::pair<protobufs::InstructionDescriptor, std::vector<uint32_t>>>
-          instruction_to_fresh_ids = {},
+          instructions_to_fresh_ids = {},
       std::vector<uint32_t> overflow_ids = {});
 
   // - |message_.header_block_id| must be the label id of a selection header,
@@ -69,6 +69,11 @@ class TransformationFlattenConditionalBranch : public Transformation {
       opt::IRContext* ir_context, opt::BasicBlock* header,
       std::set<opt::Instruction*>* instructions_that_need_ids);
 
+  // Returns the number of fresh ids needed to enclose the instruction with the
+  // given opcode in a conditional. This can only be called on OpStore, OpLoad
+  // and OpFunctionCall.
+  static uint32_t NumOfFreshIdsNeededByOpcode(SpvOp opcode);
+
  private:
   protobufs::TransformationFlattenConditionalBranch message_;
 
@@ -76,11 +81,6 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // gets the information from |message_.instruction_to_fresh_ids|.
   std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
   GetInstructionsToFreshIdsMapping(opt::IRContext* ir_context) const;
-
-  // Returns the number of fresh ids needed to enclose the instruction with the
-  // given opcode in a conditional. This can only be called on OpStore, OpLoad
-  // and OpFunctionCall.
-  uint32_t NumOfFreshIdsNeededByOpcode(SpvOp opcode) const;
 
   // Splits the given block, adding a new selection construct so that the given
   // instruction is only executed if the boolean value of |condition_id| matches
