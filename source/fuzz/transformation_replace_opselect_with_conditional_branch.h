@@ -20,14 +20,14 @@
 namespace spvtools {
 namespace fuzz {
 
-class TransformationReplaceOpSelectWithConditionalBranch
+class TransformationReplaceOpselectWithConditionalBranch
     : public Transformation {
  public:
-  explicit TransformationReplaceOpSelectWithConditionalBranch(
-      const protobufs::TransformationReplaceOpSelectWithConditionalBranch&
+  explicit TransformationReplaceOpselectWithConditionalBranch(
+      const protobufs::TransformationReplaceOpselectWithConditionalBranch&
           message);
 
-  TransformationReplaceOpSelectWithConditionalBranch(
+  TransformationReplaceOpselectWithConditionalBranch(
       uint32_t select_id, std::pair<uint32_t, uint32_t> new_block_ids);
 
   // - |message_.select_id| is the result id of an OpSelect instruction.
@@ -46,7 +46,7 @@ class TransformationReplaceOpSelectWithConditionalBranch
   protobufs::Transformation ToMessage() const override;
 
  private:
-  protobufs::TransformationReplaceOpSelectWithConditionalBranch message_;
+  protobufs::TransformationReplaceOpselectWithConditionalBranch message_;
 };
 }  // namespace fuzz
 }  // namespace spvtools

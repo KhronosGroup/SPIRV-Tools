@@ -79,18 +79,18 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
 
   // %24 is not an OpSelect instruction.
   ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(24, {100, 101})
+      TransformationReplaceOpselectWithConditionalBranch(24, {100, 101})
           .IsApplicable(context.get(), transformation_context));
 
   // The block containing %28 cannot be split before %28 because this would
   // separate an OpSampledImage instruction from its use.
   ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(28, {100, 101})
+      TransformationReplaceOpselectWithConditionalBranch(28, {100, 101})
           .IsApplicable(context.get(), transformation_context));
 
   // The block containing %31 cannot be split because it is a loop header.
   ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(31, {100, 101})
+      TransformationReplaceOpselectWithConditionalBranch(31, {100, 101})
           .IsApplicable(context.get(), transformation_context));
 }
 
@@ -129,16 +129,16 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
                                                validator_options);
 
   // One of the ids are not fresh.
-  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, {100, 11})
+  ASSERT_FALSE(TransformationReplaceOpselectWithConditionalBranch(11, {100, 11})
                    .IsApplicable(context.get(), transformation_context));
 
   // The ids are repeated.
   ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(11, {100, 100})
+      TransformationReplaceOpselectWithConditionalBranch(11, {100, 100})
           .IsApplicable(context.get(), transformation_context));
 
   auto transformation =
-      TransformationReplaceOpSelectWithConditionalBranch(11, {100, 101});
+      TransformationReplaceOpselectWithConditionalBranch(11, {100, 101});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
