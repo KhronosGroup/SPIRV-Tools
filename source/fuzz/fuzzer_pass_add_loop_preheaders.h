@@ -20,11 +20,11 @@
 namespace spvtools {
 namespace fuzz {
 
-// A fuzzer pass that randomly adds loop preheaders to headers that do not have
-// one that satisfies all of the following conditions:
-// - it is the only out-of-loop predecessor of the header
-// - it branches unconditionally to the header
-// - it is not a loop header itself
+// A fuzzer pass that randomly adds simple loop preheaders to loops that do not
+// have one. A simple loop preheader is a block that:
+// - is the only out-of-loop predecessor of the header
+// - branches unconditionally to the header
+// - is not a loop header itself
 class FuzzerPassAddLoopPreheaders : public FuzzerPass {
  public:
   FuzzerPassAddLoopPreheaders(
