@@ -807,7 +807,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
                OpStore %53 %32
          %56 = OpAccessChain %23 %50 %17 %21 %21 %55
                OpStore %56 %54
-         %58 = OpAccessChain %26 %50 %57 %21 %17
+         %58 = OpInBoundsAccessChain %26 %50 %57 %21 %17
                OpStore %58 %45
                OpReturn
                OpFunctionEnd
@@ -1032,12 +1032,12 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_FALSE(
       replacement17.IsApplicable(context.get(), transformation_context));
 
-  // %58 = OpAccessChain %26 %50 %57 *%21* %17
+  // %58 = OpInBoundsAccessChain %26 %50 %57 *%21* %17
   // Corresponds to i[3].*g*.c
   // The index %24 used for g cannot be replaced
   auto replacement18 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(
-          21, MakeInstructionDescriptor(58, SpvOpAccessChain, 0), 2),
+          21, MakeInstructionDescriptor(58, SpvOpInBoundsAccessChain, 0), 2),
       101);
   ASSERT_FALSE(
       replacement18.IsApplicable(context.get(), transformation_context));
@@ -1088,24 +1088,24 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   replacement22.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // %58 = OpAccessChain %26 %50 %57 %21 %17
+  // %58 = OpInBoundsAccessChain %26 %50 %57 %21 %17
   // Corresponds to i[3].g.*c*
   // The index %17 used for c cannot be replaced
   auto replacement23 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(
-          17, MakeInstructionDescriptor(58, SpvOpAccessChain, 0), 3),
+          17, MakeInstructionDescriptor(58, SpvOpInBoundsAccessChain, 0), 3),
       102);
   ASSERT_FALSE(
       replacement23.IsApplicable(context.get(), transformation_context));
 
   // Replacements of the form %57 -> %103
 
-  // %58 = OpAccessChain %26 %50 *%57* %21 %17
+  // %58 = OpInBoundsAccessChain %26 %50 *%57* %21 %17
   // Corresponds to i[*3*].g.c
   // The index %57 used for 3 *can* be replaced
   auto replacement24 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(
-          57, MakeInstructionDescriptor(58, SpvOpAccessChain, 0), 1),
+          57, MakeInstructionDescriptor(58, SpvOpInBoundsAccessChain, 0), 1),
       103);
   ASSERT_TRUE(
       replacement24.IsApplicable(context.get(), transformation_context));
@@ -1269,7 +1269,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
                OpStore %53 %32
          %56 = OpAccessChain %23 %50 %102 %21 %21 %108
                OpStore %56 %54
-         %58 = OpAccessChain %26 %50 %103 %21 %17
+         %58 = OpInBoundsAccessChain %26 %50 %103 %21 %17
                OpStore %58 %45
                OpReturn
                OpFunctionEnd
