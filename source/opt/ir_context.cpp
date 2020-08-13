@@ -213,6 +213,21 @@ Instruction* IRContext::KillInst(Instruction* inst) {
   return next_instruction;
 }
 
+void IRContext::KillNonSemanticInfo(Instruction* inst) {
+  if (!inst->HasResultId()) return;
+  get_def_use_mgr()->ForEachUser(inst, [this](Instruction* user) {
+    if (user->opcode() == SpvOpExtInst) {
+      auto import_inst =
+          get_def_use_mgr()->GetDef(user->GetSingleWordInOperand(0));
+      std::string import_name = import_inst->GetInOperand(0).AsString();
+      if (import_name.find("NonSemantic.") == 0) {
+        KillNonSemanticInfo(user);
+        KillInst(user);
+      }
+    }
+  });
+}
+
 bool IRContext::KillDef(uint32_t id) {
   Instruction* def = get_def_use_mgr()->GetDef(id);
   if (def != nullptr) {
