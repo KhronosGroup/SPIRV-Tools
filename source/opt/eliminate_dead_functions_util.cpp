@@ -32,7 +32,10 @@ Module::iterator EliminateFunction(IRContext* context,
             // Move non-semantic instructions to the previous function or
             // global values if this is the first function.
             if (seen_func_end && inst->opcode() == SpvOpExtInst) {
+              assert(inst->IsNonSemanticInstruction());
               std::unique_ptr<Instruction> clone(inst->Clone(context));
+              context->ForgetUses(inst);
+              context->AnalyzeDefUse(clone.get());
               if (first_func) {
                 context->AddGlobalValue(std::move(clone));
               } else {

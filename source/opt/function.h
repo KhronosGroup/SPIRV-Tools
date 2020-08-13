@@ -80,6 +80,7 @@ class Function {
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
 
   // Add a non-semantic instruction that succeeds this function in the module.
+  // These instructions are maintained in the order they are added.
   inline void AddNonSemanticInstruction(
       std::unique_ptr<Instruction> non_semantic);
 
@@ -120,7 +121,7 @@ class Function {
 
   // Runs the given function |f| on instructions in this function, in order,
   // and optionally on debug line instructions that might precede them and
-  // non-semantic instructions that succceed them.
+  // non-semantic instructions that succceed the function.
   void ForEachInst(const std::function<void(Instruction*)>& f,
                    bool run_on_debug_line_insts = false,
                    bool run_on_non_semantic_insts = false);
@@ -129,8 +130,8 @@ class Function {
                    bool run_on_non_semantic_insts = false) const;
   // Runs the given function |f| on instructions in this function, in order,
   // and optionally on debug line instructions that might precede them and
-  // non-semantic instructions that succeed them.  If |f| returns false,
-  // iteration is terminated and this function returns false.
+  // non-semantic instructions that succeed the function.  If |f| returns
+  // false, iteration is terminated and this function returns false.
   bool WhileEachInst(const std::function<bool(Instruction*)>& f,
                      bool run_on_debug_line_insts = false,
                      bool run_on_non_semantic_insts = false);
@@ -181,7 +182,7 @@ class Function {
   std::vector<std::unique_ptr<BasicBlock>> blocks_;
   // The OpFunctionEnd instruction.
   std::unique_ptr<Instruction> end_inst_;
-  // Non-semantic instructions preceded by this function.
+  // Non-semantic instructions succeeded by this function.
   std::vector<std::unique_ptr<Instruction>> non_semantic_;
 };
 
