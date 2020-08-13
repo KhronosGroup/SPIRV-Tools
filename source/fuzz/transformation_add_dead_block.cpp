@@ -78,6 +78,16 @@ bool TransformationAddDeadBlock::IsApplicable(
     return false;
   }
 
+  // If |successor_block_id| is reachable, then it must be strictly dominated by
+  // |existing_block|.
+  opt::DominatorAnalysis* dominator_analysis =
+      ir_context->GetDominatorAnalysis(existing_block->GetParent());
+  if (dominator_analysis->IsReachable(successor_block_id) &&
+      !dominator_analysis->StrictlyDominates(existing_block->id(),
+                                             successor_block_id)) {
+    return false;
+  }
+
   return true;
 }
 
