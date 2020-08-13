@@ -54,7 +54,8 @@ bool TransformationCompositeInsert::IsApplicable(
     return false;
   }
 
-  // |message_.index| must refer to a correct index.
+  // The indices in |message_.index| must be suitable for indexing into
+  // |composite->type_id()|.
   auto component_to_be_replaced_type_id = fuzzerutil::WalkCompositeTypeIndices(
       ir_context, composite->type_id(), message_.index());
   if (component_to_be_replaced_type_id == 0) {
@@ -130,7 +131,7 @@ void TransformationCompositeInsert::Apply(
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 
-  // Make sure our changes are analyzed.
+  // We have modified the module so most analyzes are now invalid.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
   // Add facts about synonyms. Every element which hasn't been changed in
@@ -163,20 +164,19 @@ void TransformationCompositeInsert::Apply(
     for (uint32_t i = 0; i < num_of_components; i++) {
       if (i == index_to_skip) {
         continue;
-      } else {
-        current_index.push_back(i);
-        // TODO: (https://github.com/KhronosGroup/SPIRV-Tools/issues/3659)
-        //       Google C++ guide restricts the use of r-value references.
-        //       https://google.github.io/styleguide/cppguide.html#Rvalue_references
-        //       Consider changing the signature of MakeDataDescriptor()
-        transformation_context->GetFactManager()->AddFactDataSynonym(
-            MakeDataDescriptor(message_.fresh_id(),
-                               std::vector<uint32_t>(current_index)),
-            MakeDataDescriptor(message_.composite_id(),
-                               std::vector<uint32_t>(current_index)),
-            ir_context);
-        current_index.pop_back();
       }
+      current_index.push_back(i);
+      // TODO: (https://github.com/KhronosGroup/SPIRV-Tools/issues/3659)
+      //       Google C++ guide restricts the use of r-value references.
+      //       https://google.github.io/styleguide/cppguide.html#Rvalue_references
+      //       Consider changing the signature of MakeDataDescriptor()
+      transformation_context->GetFactManager()->AddFactDataSynonym(
+          MakeDataDescriptor(message_.fresh_id(),
+                             std::vector<uint32_t>(current_index)),
+          MakeDataDescriptor(message_.composite_id(),
+                             std::vector<uint32_t>(current_index)),
+          ir_context);
+      current_index.pop_back();
     }
     // Store the prefix of the |index|.
     current_index.push_back(index[current_level]);

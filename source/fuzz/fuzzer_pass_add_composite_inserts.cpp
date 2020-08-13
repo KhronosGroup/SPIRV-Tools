@@ -99,18 +99,16 @@ void FuzzerPassAddCompositeInserts::Apply() {
         uint32_t current_node_type_id = available_composite->type_id();
         std::vector<uint32_t> path_to_replaced;
         while (true) {
-          uint32_t one_selected_index;
-          uint32_t num_of_components;
           auto current_node_type_inst =
               GetIRContext()->get_def_use_mgr()->GetDef(current_node_type_id);
-          num_of_components = fuzzerutil::GetBoundForCompositeIndex(
+          uint32_t num_of_components = fuzzerutil::GetBoundForCompositeIndex(
               *current_node_type_inst, GetIRContext());
 
           // If the composite is empty, then end the iteration.
           if (num_of_components == 0) {
             break;
           }
-          one_selected_index =
+          uint32_t one_selected_index =
               GetFuzzerContext()->GetRandomIndexForCompositeInsert(
                   num_of_components);
 
@@ -143,9 +141,6 @@ void FuzzerPassAddCompositeInserts::Apply() {
                 [instruction_descriptor, current_node_type_id](
                     opt::IRContext* /*unused*/,
                     opt::Instruction* instruction) -> bool {
-                  if (instruction == nullptr) {
-                    return false;
-                  }
                   if (instruction->result_id() == 0 ||
                       instruction->type_id() == 0) {
                     return false;
