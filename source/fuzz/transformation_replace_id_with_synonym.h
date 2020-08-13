@@ -53,17 +53,6 @@ class TransformationReplaceIdWithSynonym : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
-  // Checks whether various conditions hold related to the acceptability of
-  // replacing the id use at |use_in_operand_index| of |use_instruction| with
-  // a synonym.  In particular, this checks that:
-  // - the id use is not an index into a struct field in an OpAccessChain - such
-  //   indices must be constants, so it is dangerous to replace them.
-  // - the id use is not a pointer function call argument, on which there are
-  //   restrictions that make replacement problematic.
-  static bool UseCanBeReplacedWithSynonym(opt::IRContext* ir_context,
-                                          opt::Instruction* use_instruction,
-                                          uint32_t use_in_operand_index);
-
   // Returns true if |type_id_1| and |type_id_2| represent compatible types
   // given the context of the instruction with |opcode| (i.e. we can replace
   // an operand of |opcode| of the first type with an id of the second type
