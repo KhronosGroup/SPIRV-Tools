@@ -515,9 +515,10 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
 
   auto merge_block_id = merge_inst->GetSingleWordInOperand(0);
 
-  // Header block always dominates its merge block unless the latter is
+  // Header block always strictly dominates its merge block unless the latter is
   // unreachable.
-  if (!dominator_analysis->Dominates(maybe_header_block_id, merge_block_id)) {
+  if (!dominator_analysis->StrictlyDominates(maybe_header_block_id,
+                                             merge_block_id)) {
     return false;
   }
 
