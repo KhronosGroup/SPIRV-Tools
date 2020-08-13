@@ -65,8 +65,21 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
 }
 
 void TransformationReplaceIrrelevantId::Apply(
-    opt::IRContext* /* ir_context */,
-    TransformationContext* /* transformation_context */) const {}
+    opt::IRContext* ir_context,
+    TransformationContext* /* transformation_context */) const {
+  // Find the instruction.
+  auto instruction_to_change =
+      FindInstructionContainingUse(message_.id_use_descriptor(), ir_context);
+
+  // Replace the instruction.
+  instruction_to_change->SetInOperand(
+      message_.id_use_descriptor().in_operand_index(),
+      {message_.replacement_id()});
+
+  // Invalidate the analyses, since the usage of ids has been changed.
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
+}
 
 protobufs::Transformation TransformationReplaceIrrelevantId::ToMessage() const {
   protobufs::Transformation result;

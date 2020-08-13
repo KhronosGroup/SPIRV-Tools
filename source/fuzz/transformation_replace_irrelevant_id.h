@@ -28,7 +28,8 @@ class TransformationReplaceIrrelevantId : public Transformation {
   TransformationReplaceIrrelevantId(
       protobufs::IdUseDescriptor id_use_descriptor, uint32_t replacement_id);
 
-  // - |message_.id_use_descriptor| is irrelevant according to the fact manager.
+  // - The id of interest in |message_.id_use_descriptor| is irrelevant
+  //   according to the fact manager.
   // - The types of the original id and of the replacement ids are the same.
   // - |message_.replacement_id| is available to use at the enclosing
   //   instruction of |message_.id_use_descriptor|.
@@ -45,6 +46,9 @@ class TransformationReplaceIrrelevantId : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Replaces the use of an irrelevant id identified by
+  // |message_.id_use_descriptor| with the id |message_.replacement_id|, which
+  // has the same type as the id of interest.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
