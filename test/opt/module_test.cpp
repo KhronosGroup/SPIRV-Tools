@@ -322,7 +322,13 @@ OpFunctionEnd
 
   std::unique_ptr<IRContext> context = BuildModule(text);
   std::unordered_set<uint32_t> non_semantic_ids;
-  context->module()->ForEachInst([&non_semantic_ids](const Instruction* inst) { if (inst->opcode() == SpvOpExtInst) { non_semantic_ids.insert(inst->result_id()); } }, false);
+  context->module()->ForEachInst(
+      [&non_semantic_ids](const Instruction* inst) {
+        if (inst->opcode() == SpvOpExtInst) {
+          non_semantic_ids.insert(inst->result_id());
+        }
+      },
+      false);
 
   EXPECT_EQ(1, non_semantic_ids.count(4));
   EXPECT_EQ(1, non_semantic_ids.count(7));

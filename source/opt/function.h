@@ -80,7 +80,8 @@ class Function {
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
 
   // Add a non-semantic instruction that succeeds this function in the module.
-  inline void AddNonSemanticInstruction(std::unique_ptr<Instruction> non_semantic);
+  inline void AddNonSemanticInstruction(
+      std::unique_ptr<Instruction> non_semantic);
 
   // Returns the given function end instruction.
   inline Instruction* EndInst() { return end_inst_.get(); }
