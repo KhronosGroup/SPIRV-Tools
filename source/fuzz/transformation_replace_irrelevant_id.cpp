@@ -58,10 +58,23 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
     return false;
   }
 
+  // The id must not have pointer type.
+  if (ir_context->get_type_mgr()->GetType(type_id_of_interest)->AsPointer()) {
+    return false;
+  }
+
   // The id use must be replaceable with any other id of the same type.
-  return fuzzerutil::IdUseCanBeReplaced(
+  if (!fuzzerutil::IdUseCanBeReplaced(
+          ir_context, use_instruction,
+          message_.id_use_descriptor().in_operand_index())) {
+    return false;
+  }
+
+  // The id must be available to use at the use point.
+  return fuzzerutil::IdIsAvailableAtUse(
       ir_context, use_instruction,
-      message_.id_use_descriptor().in_operand_index());
+      message_.id_use_descriptor().in_operand_index(),
+      message_.replacement_id());
 }
 
 void TransformationReplaceIrrelevantId::Apply(

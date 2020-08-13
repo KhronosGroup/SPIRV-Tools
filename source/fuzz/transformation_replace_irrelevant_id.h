@@ -30,16 +30,14 @@ class TransformationReplaceIrrelevantId : public Transformation {
 
   // - The id of interest in |message_.id_use_descriptor| is irrelevant
   //   according to the fact manager.
+  // - The id to be replaced does not refer to a pointer.
   // - The types of the original id and of the replacement ids are the same.
   // - |message_.replacement_id| is available to use at the enclosing
   //   instruction of |message_.id_use_descriptor|.
-  // - The types of the original id and of the replacement ids are the same.
   // - The original id is in principle replaceable with any other id of the same
   //   type. In particular:
   //    - it is not used to index a struct in an access chain (such ids must be
   //      constants).
-  //    - it is not used as a pointer argument to a function call (such ids must
-  //      correspond to memory object declarations).
   //    - it is not used as the Sample parameter of an OpImageTexelPointer
   //      instruction (this parameter must satisfy particular requirements).
   bool IsApplicable(
