@@ -892,6 +892,16 @@ bool Instruction::IsOpcodeSafeToDelete() const {
   }
 }
 
+bool Instruction::IsNonSemanticInstruction() const {
+  if (!HasResultId()) return false;
+  if (opcode() != SpvOpExtInst) return false;
+
+  auto import_inst =
+      context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(0));
+  std::string import_name = import_inst->GetInOperand(0).AsString();
+  return import_name.find("NonSemantic.") == 0;
+}
+
 void DebugScope::ToBinary(uint32_t type_id, uint32_t result_id,
                           uint32_t ext_set,
                           std::vector<uint32_t>* binary) const {

@@ -549,6 +549,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return GetOpenCL100DebugOpcode() != OpenCLDebugInfo100InstructionsMax;
   }
 
+  // Returns true if this instructions a non-semantic instruction.
+  bool IsNonSemanticInstruction() const;
+
   // Dump this instruction on stderr.  Useful when running interactive
   // debuggers.
   void Dump() const;
