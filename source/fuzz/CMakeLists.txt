@@ -91,6 +91,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.h
         fuzzer_pass_replace_copy_memories_with_loads_stores.h
         fuzzer_pass_replace_copy_objects_with_stores_loads.h
+        fuzzer_pass_replace_irrelevant_ids.h
         fuzzer_pass_replace_linear_algebra_instructions.h
         fuzzer_pass_replace_loads_stores_with_copy_memories.h
         fuzzer_pass_replace_parameter_with_global.h
@@ -247,6 +248,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.cpp
         fuzzer_pass_replace_copy_memories_with_loads_stores.cpp
         fuzzer_pass_replace_copy_objects_with_stores_loads.cpp
+        fuzzer_pass_replace_irrelevant_ids.cpp
         fuzzer_pass_replace_linear_algebra_instructions.cpp
         fuzzer_pass_replace_loads_stores_with_copy_memories.cpp
         fuzzer_pass_replace_parameter_with_global.cpp
