@@ -252,6 +252,9 @@ class FuzzerContext {
   uint32_t GetChanceOfReplacingIdWithSynonym() {
     return chance_of_replacing_id_with_synonym_;
   }
+  uint32_t GetChanceOfReplacingIrrelevantId() {
+    return chance_of_replacing_irrelevant_id_;
+  }
   uint32_t GetChanceOfReplacingLinearAlgebraInstructions() {
     return chance_of_replacing_linear_algebra_instructions_;
   }
@@ -411,6 +414,7 @@ class FuzzerContext {
   uint32_t chance_of_replacing_copy_memory_with_load_store_;
   uint32_t chance_of_replacing_copyobject_with_store_load_;
   uint32_t chance_of_replacing_id_with_synonym_;
+  uint32_t chance_of_replacing_irrelevant_id_;
   uint32_t chance_of_replacing_linear_algebra_instructions_;
   uint32_t chance_of_replacing_load_store_with_copy_memory_;
   uint32_t chance_of_replacing_parameters_with_globals_;

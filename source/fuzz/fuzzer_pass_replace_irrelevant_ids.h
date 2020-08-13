@@ -20,6 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
+// A fuzzer pass that, for every use of an irrelevant id, checks if it is
+// possible to replace it with other ids of the same type and randomly decides
+// whether to do it.
 class FuzzerPassReplaceIrrelevantIds : public FuzzerPass {
  public:
   FuzzerPassReplaceIrrelevantIds(

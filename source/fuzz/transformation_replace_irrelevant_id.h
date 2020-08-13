@@ -30,7 +30,6 @@ class TransformationReplaceIrrelevantId : public Transformation {
 
   // - The id of interest in |message_.id_use_descriptor| is irrelevant
   //   according to the fact manager.
-  // - The id to be replaced does not refer to a pointer.
   // - The types of the original id and of the replacement ids are the same.
   // - |message_.replacement_id| is available to use at the enclosing
   //   instruction of |message_.id_use_descriptor|.

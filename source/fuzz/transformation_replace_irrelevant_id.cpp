@@ -58,10 +58,10 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
     return false;
   }
 
-  // The id must not have pointer type.
-  if (ir_context->get_type_mgr()->GetType(type_id_of_interest)->AsPointer()) {
-    return false;
-  }
+  // Consistency check: an irrelevant id cannot be a pointer.
+  assert(
+      !ir_context->get_type_mgr()->GetType(type_id_of_interest)->AsPointer() &&
+      "An irrelevant id cannot be a pointer");
 
   // The id use must be replaceable with any other id of the same type.
   if (!fuzzerutil::IdUseCanBeReplaced(

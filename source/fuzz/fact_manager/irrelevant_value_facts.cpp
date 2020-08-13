@@ -46,6 +46,10 @@ bool IrrelevantValueFacts::IdIsIrrelevant(uint32_t pointer_id) const {
   return irrelevant_ids_.count(pointer_id) != 0;
 }
 
+std::unordered_set<uint32_t> IrrelevantValueFacts::GetIrrelevantIds() const {
+  return irrelevant_ids_;
+}
+
 }  // namespace fact_manager
 }  // namespace fuzz
 }  // namespace spvtools
