@@ -74,6 +74,7 @@
 #include "source/fuzz/transformation_replace_copy_memory_with_load_store.h"
 #include "source/fuzz/transformation_replace_copy_object_with_store_load.h"
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
+#include "source/fuzz/transformation_replace_irrelevant_id.h"
 #include "source/fuzz/transformation_replace_linear_algebra_instruction.h"
 #include "source/fuzz/transformation_replace_load_store_with_copy_memory.h"
 #include "source/fuzz/transformation_replace_parameter_with_global.h"
@@ -263,6 +264,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kReplaceIdWithSynonym:
       return MakeUnique<TransformationReplaceIdWithSynonym>(
           message.replace_id_with_synonym());
+    case protobufs::Transformation::TransformationCase::kReplaceIrrelevantId:
+      return MakeUnique<TransformationReplaceIrrelevantId>(
+          message.replace_irrelevant_id());
     case protobufs::Transformation::TransformationCase::
         kReplaceLinearAlgebraInstruction:
       return MakeUnique<TransformationReplaceLinearAlgebraInstruction>(

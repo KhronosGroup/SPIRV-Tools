@@ -168,6 +168,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_copy_memory_with_load_store.h
         transformation_replace_copy_object_with_store_load.h
         transformation_replace_id_with_synonym.h
+        transformation_replace_irrelevant_id.h
         transformation_replace_linear_algebra_instruction.h
         transformation_replace_load_store_with_copy_memory.h
         transformation_replace_parameter_with_global.h
@@ -322,6 +323,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_copy_memory_with_load_store.cpp
         transformation_replace_copy_object_with_store_load.cpp
         transformation_replace_id_with_synonym.cpp
+        transformation_replace_irrelevant_id.cpp
         transformation_replace_linear_algebra_instruction.cpp
         transformation_replace_load_store_with_copy_memory.cpp
         transformation_replace_parameter_with_global.cpp
