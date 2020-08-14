@@ -28,10 +28,23 @@ class TransformationAddOpPhiSynonym : public Transformation {
                                 std::map<uint32_t, uint32_t>& preds_to_ids,
                                 uint32_t fresh_id);
 
+  // - |message_.block_id| is the label of a block with at least one
+  //   predecessor.
+  // - |message_.pred_to_id| contains a mapping from each of the predecessors of
+  //   the block to an id that is available at the end of the predecessor.
+  // - All the ids in |message_.pred_to_id| have been recorded as synonymous and
+  //   all have the same type.
+  // - |message_.fresh_id| is a fresh id.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Given a block with n predecessors, with n >= 1, and n corresponding
+  // synonymous ids of the same type, each available to use at the end of the
+  // corresponding predecessor, adds an OpPhi instruction at the beginning of
+  // the block of the form:
+  //   %fresh_id = OpPhi %type %id_1 %pred_1 %id_2 %pred_2 ... %id_n %pred_n
+  // This instruction is then marked as synonymous with the ids.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

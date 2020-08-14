@@ -32,14 +32,113 @@ TransformationAddOpPhiSynonym::TransformationAddOpPhiSynonym(
 }
 
 bool TransformationAddOpPhiSynonym::IsApplicable(
-    opt::IRContext* /* ir_context */,
-    const TransformationContext& /* transformation_context */) const {
-  return false;
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
+  // Check that |message_.block_id| is a block label id.
+  auto block = ir_context->get_instr_block(message_.block_id());
+  if (!block) {
+    return false;
+  }
+
+  // Check that |message_.fresh_id| is actually fresh.
+  if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
+    return false;
+  }
+
+  // Check that |message_.pred_to_id| contains a mapping for all of the block's
+  // predecessors.
+  std::vector<uint32_t> predecessors = ir_context->cfg()->preds(block->id());
+  std::map<uint32_t, uint32_t> preds_to_ids =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.pred_to_id());
+
+  // There must be at least one predecessor.
+  if (predecessors.size() == 0) {
+    return false;
+  }
+
+  // There must be exactly a mapping for each predecessor.
+  if (predecessors.size() != preds_to_ids.size()) {
+    return false;
+  }
+
+  // Check that each predecessor has a corresponding mapping.
+  for (uint32_t pred : predecessors) {
+    if (preds_to_ids.count(pred) == 0) {
+      return false;
+    }
+  }
+
+  // Check that all the ids are synonymous, they all have the same type and they
+  // are available to use at the end of the corresponding predecessor block.
+  uint32_t first_id = preds_to_ids.begin()->second;
+  uint32_t type_id = ir_context->get_def_use_mgr()->GetDef(first_id)->type_id();
+  for (auto& pair : preds_to_ids) {
+    // Check that the id is synonymous with the others by checking that it is
+    // synonymous with the first one.
+    if (!transformation_context.GetFactManager()->IsSynonymous(
+            MakeDataDescriptor(pair.second, {}),
+            MakeDataDescriptor(first_id, {}))) {
+      return false;
+    }
+
+    // Check that the id has the same type as the other ones.
+    if (ir_context->get_def_use_mgr()->GetDef(pair.second)->type_id() !=
+        type_id) {
+      return false;
+    }
+
+    // Check that the id is available at the end of the corresponding
+    // predecessor block.
+
+    auto pred_block = ir_context->get_instr_block(pair.first);
+    // We should always be able to find the predecessor block, since it is in
+    // the predecessors list of |block|.
+    assert(pred_block && "Could not find one of the predecessor blocks.");
+
+    if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+            ir_context, pred_block->terminator(), pair.second)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void TransformationAddOpPhiSynonym::Apply(
-    opt::IRContext* /* ir_context */,
-    TransformationContext* /* transformation_context */) const {}
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  // Get the type id from one of the ids.
+  uint32_t first_id = message_.pred_to_id(0).second();
+  uint32_t type_id = ir_context->get_def_use_mgr()->GetDef(first_id)->type_id();
+
+  // Define the operand list.
+  opt::Instruction::OperandList operand_list;
+
+  // For each predecessor, add the corresponding operands.
+  for (auto pair : message_.pred_to_id()) {
+    operand_list.emplace_back(
+        opt::Operand{SPV_OPERAND_TYPE_ID, {pair.second()}});
+    operand_list.emplace_back(
+        opt::Operand{SPV_OPERAND_TYPE_ID, {pair.first()}});
+  }
+
+  // Add a new OpPhi instructions at the beginning of the block.
+  ir_context->get_instr_block(message_.block_id())
+      ->begin()
+      .InsertBefore(MakeUnique<opt::Instruction>(ir_context, SpvOpPhi, type_id,
+                                                 message_.fresh_id(),
+                                                 std::move(operand_list)));
+
+  // Record the fact that the new id is synonym with the other ones by declaring
+  // that it is a synonym of the first one.
+  transformation_context->GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(message_.fresh_id(), {}),
+      MakeDataDescriptor(first_id, {}), ir_context);
+
+  // Invalidate all analyses, since we added an instruction to the module.
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
+}
 
 protobufs::Transformation TransformationAddOpPhiSynonym::ToMessage() const {
   protobufs::Transformation result;
