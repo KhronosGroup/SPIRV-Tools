@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fact_manager.h"
+#include "source/fuzz/fact_manager/fact_manager.h"
 
 #include <limits>
 

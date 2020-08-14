@@ -16,21 +16,10 @@
 
 #include <utility>
 
-#include "source/fuzz/fact_manager.h"
+#include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
-#include "source/fuzz/transformation_add_constant_boolean.h"
-#include "source/fuzz/transformation_add_constant_scalar.h"
-#include "source/fuzz/transformation_add_dead_break.h"
-#include "source/fuzz/transformation_add_type_boolean.h"
-#include "source/fuzz/transformation_add_type_float.h"
-#include "source/fuzz/transformation_add_type_int.h"
-#include "source/fuzz/transformation_add_type_pointer.h"
 #include "source/fuzz/transformation_context.h"
-#include "source/fuzz/transformation_move_block_down.h"
-#include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
-#include "source/fuzz/transformation_replace_constant_with_uniform.h"
-#include "source/fuzz/transformation_split_block.h"
 #include "source/opt/build_module.h"
 #include "source/util/make_unique.h"
 

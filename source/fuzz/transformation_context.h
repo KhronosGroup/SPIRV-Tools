@@ -15,7 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_CONTEXT_H_
 #define SOURCE_FUZZ_TRANSFORMATION_CONTEXT_H_
 
-#include "source/fuzz/fact_manager.h"
+#include "source/fuzz/fact_manager/fact_manager.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
