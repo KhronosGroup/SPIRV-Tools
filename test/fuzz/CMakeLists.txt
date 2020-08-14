@@ -42,6 +42,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_local_variable_test.cpp
           transformation_add_loop_preheader_test.cpp
           transformation_add_no_contraction_decoration_test.cpp
+          transformation_add_opphi_synonym_test.cpp
           transformation_add_parameter_test.cpp
           transformation_add_relaxed_decoration_test.cpp
           transformation_add_synonym_test.cpp

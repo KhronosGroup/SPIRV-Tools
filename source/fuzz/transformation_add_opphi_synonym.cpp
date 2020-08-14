@@ -23,7 +23,7 @@ TransformationAddOpPhiSynonym::TransformationAddOpPhiSynonym(
     : message_(message) {}
 
 TransformationAddOpPhiSynonym::TransformationAddOpPhiSynonym(
-    uint32_t block_id, std::map<uint32_t, uint32_t>& preds_to_ids,
+    uint32_t block_id, std::map<uint32_t, uint32_t>&& preds_to_ids,
     uint32_t fresh_id) {
   message_.set_block_id(block_id);
   *message_.mutable_pred_to_id() =
@@ -52,18 +52,26 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
       fuzzerutil::RepeatedUInt32PairToMap(message_.pred_to_id());
 
   // There must be at least one predecessor.
-  if (predecessors.size() == 0) {
+  if (predecessors.empty()) {
     return false;
   }
 
   // There must be exactly a mapping for each predecessor.
-  if (predecessors.size() != preds_to_ids.size()) {
+  if (predecessors.size() != static_cast<size_t>(message_.pred_to_id_size()) ||
+      predecessors.size() != preds_to_ids.size()) {
     return false;
   }
 
   // Check that each predecessor has a corresponding mapping.
   for (uint32_t pred : predecessors) {
     if (preds_to_ids.count(pred) == 0) {
+      return false;
+    }
+  }
+
+  // Check that all the ids exist in the module.
+  for (auto& pair : message_.pred_to_id()) {
+    if (!ir_context->get_def_use_mgr()->GetDef(pair.second())) {
       return false;
     }
   }
@@ -129,15 +137,19 @@ void TransformationAddOpPhiSynonym::Apply(
                                                  message_.fresh_id(),
                                                  std::move(operand_list)));
 
+  // Update the module id bound.
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
+
+  // Invalidate all analyses, since we added an instruction to the module.
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
+
   // Record the fact that the new id is synonym with the other ones by declaring
   // that it is a synonym of the first one.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.fresh_id(), {}),
       MakeDataDescriptor(first_id, {}), ir_context);
 
-  // Invalidate all analyses, since we added an instruction to the module.
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationAddOpPhiSynonym::ToMessage() const {
