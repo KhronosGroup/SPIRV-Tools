@@ -18,14 +18,14 @@
 
 namespace spvtools {
 namespace fuzz {
-TransformationReplaceOpselectWithConditionalBranch::
-    TransformationReplaceOpselectWithConditionalBranch(
+TransformationReplaceOpSelectWithConditionalBranch::
+    TransformationReplaceOpSelectWithConditionalBranch(
         const spvtools::fuzz::protobufs::
-            TransformationReplaceOpselectWithConditionalBranch& message)
+            TransformationReplaceOpSelectWithConditionalBranch& message)
     : message_(message) {}
 
-TransformationReplaceOpselectWithConditionalBranch::
-    TransformationReplaceOpselectWithConditionalBranch(
+TransformationReplaceOpSelectWithConditionalBranch::
+    TransformationReplaceOpSelectWithConditionalBranch(
         uint32_t select_id, std::pair<uint32_t, uint32_t> new_block_ids) {
   message_.set_select_id(select_id);
   protobufs::UInt32Pair pair;
@@ -34,7 +34,7 @@ TransformationReplaceOpselectWithConditionalBranch::
   *message_.mutable_new_block_ids() = pair;
 }
 
-bool TransformationReplaceOpselectWithConditionalBranch::IsApplicable(
+bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& /* unused */) const {
   auto instruction =
@@ -71,7 +71,7 @@ bool TransformationReplaceOpselectWithConditionalBranch::IsApplicable(
           block, instruction);
 }
 
-void TransformationReplaceOpselectWithConditionalBranch::Apply(
+void TransformationReplaceOpSelectWithConditionalBranch::Apply(
     opt::IRContext* ir_context, TransformationContext* /* unused */) const {
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.select_id());
@@ -136,7 +136,7 @@ void TransformationReplaceOpselectWithConditionalBranch::Apply(
 }
 
 protobufs::Transformation
-TransformationReplaceOpselectWithConditionalBranch::ToMessage() const {
+TransformationReplaceOpSelectWithConditionalBranch::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_replace_opselect_with_conditional_branch() = message_;
   return result;

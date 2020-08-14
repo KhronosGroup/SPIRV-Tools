@@ -79,18 +79,18 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
 
   // %24 is not an OpSelect instruction.
   ASSERT_FALSE(
-      TransformationReplaceOpselectWithConditionalBranch(24, {100, 101})
+      TransformationReplaceOpSelectWithConditionalBranch(24, {100, 101})
           .IsApplicable(context.get(), transformation_context));
 
   // The block containing %28 cannot be split before %28 because this would
   // separate an OpSampledImage instruction from its use.
   ASSERT_FALSE(
-      TransformationReplaceOpselectWithConditionalBranch(28, {100, 101})
+      TransformationReplaceOpSelectWithConditionalBranch(28, {100, 101})
           .IsApplicable(context.get(), transformation_context));
 
   // The block containing %31 cannot be split because it is a loop header.
   ASSERT_FALSE(
-      TransformationReplaceOpselectWithConditionalBranch(31, {100, 101})
+      TransformationReplaceOpSelectWithConditionalBranch(31, {100, 101})
           .IsApplicable(context.get(), transformation_context));
 }
 
@@ -129,22 +129,51 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
                                                validator_options);
 
   // One of the ids are not fresh.
-  ASSERT_FALSE(TransformationReplaceOpselectWithConditionalBranch(11, {100, 11})
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, {100, 11})
                    .IsApplicable(context.get(), transformation_context));
 
   // The ids are repeated.
   ASSERT_FALSE(
-      TransformationReplaceOpselectWithConditionalBranch(11, {100, 100})
+      TransformationReplaceOpSelectWithConditionalBranch(11, {100, 100})
           .IsApplicable(context.get(), transformation_context));
 
   auto transformation =
-      TransformationReplaceOpselectWithConditionalBranch(11, {100, 101});
+      TransformationReplaceOpSelectWithConditionalBranch(11, {100, 101});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
-  std::cout << ToString(env, context.get());
   ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 1
+          %2 = OpFunction %3 None %4
+          %9 = OpLabel
+         %10 = OpCopyObject %7 %8
+               OpSelectionMerge %101 None
+               OpBranchConditional %6 %100 %101
+        %100 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+         %11 = OpPhi %7 %10 %100 %8 %9
+         %12 = OpCopyObject %7 %10
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace

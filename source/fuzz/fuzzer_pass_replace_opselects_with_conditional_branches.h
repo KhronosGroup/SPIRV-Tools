@@ -20,14 +20,14 @@
 namespace spvtools {
 namespace fuzz {
 
-class FuzzerPassReplaceOpselectsWithConditionalBranches : public FuzzerPass {
+class FuzzerPassReplaceOpSelectsWithConditionalBranches : public FuzzerPass {
  public:
-  FuzzerPassReplaceOpselectsWithConditionalBranches(
+  FuzzerPassReplaceOpSelectsWithConditionalBranches(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassReplaceOpselectsWithConditionalBranches() override;
+  ~FuzzerPassReplaceOpSelectsWithConditionalBranches() override;
 
   void Apply() override;
 };

@@ -326,7 +326,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassReplaceLinearAlgebraInstructions>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
-    MaybeAddPass<FuzzerPassReplaceOpselectsWithConditionalBranches>(
+    MaybeAddPass<FuzzerPassReplaceOpSelectsWithConditionalBranches>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassReplaceParamsWithStruct>(

@@ -20,8 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPassReplaceOpselectsWithConditionalBranches::
-    FuzzerPassReplaceOpselectsWithConditionalBranches(
+FuzzerPassReplaceOpSelectsWithConditionalBranches::
+    FuzzerPassReplaceOpSelectsWithConditionalBranches(
         opt::IRContext* ir_context,
         TransformationContext* transformation_context,
         FuzzerContext* fuzzer_context,
@@ -29,10 +29,10 @@ FuzzerPassReplaceOpselectsWithConditionalBranches::
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassReplaceOpselectsWithConditionalBranches::
-    ~FuzzerPassReplaceOpselectsWithConditionalBranches() = default;
+FuzzerPassReplaceOpSelectsWithConditionalBranches::
+    ~FuzzerPassReplaceOpSelectsWithConditionalBranches() = default;
 
-void FuzzerPassReplaceOpselectsWithConditionalBranches::Apply() {
+void FuzzerPassReplaceOpSelectsWithConditionalBranches::Apply() {
   // Keep track of the instructions that we want to replace. We need to collect
   // them in a vector, since it's not safe to modify the module while iterating
   // over it.
@@ -77,7 +77,7 @@ void FuzzerPassReplaceOpselectsWithConditionalBranches::Apply() {
 
   // Apply the transformations.
   for (uint32_t instruction_id : replaceable_opselect_instruction_ids) {
-    ApplyTransformation(TransformationReplaceOpselectWithConditionalBranch(
+    ApplyTransformation(TransformationReplaceOpSelectWithConditionalBranch(
         instruction_id,
         {GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId()}));
   }

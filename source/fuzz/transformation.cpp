@@ -279,7 +279,7 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.replace_load_store_with_copy_memory());
     case protobufs::Transformation::TransformationCase::
         kReplaceOpselectWithConditionalBranch:
-      return MakeUnique<TransformationReplaceOpselectWithConditionalBranch>(
+      return MakeUnique<TransformationReplaceOpSelectWithConditionalBranch>(
           message.replace_opselect_with_conditional_branch());
     case protobufs::Transformation::TransformationCase::
         kReplaceParameterWithGlobal:
