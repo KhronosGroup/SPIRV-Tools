@@ -33,6 +33,7 @@
 #include "source/fuzz/transformation_add_local_variable.h"
 #include "source/fuzz/transformation_add_loop_preheader.h"
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
+#include "source/fuzz/transformation_add_opphi_synonym.h"
 #include "source/fuzz/transformation_add_parameter.h"
 #include "source/fuzz/transformation_add_relaxed_decoration.h"
 #include "source/fuzz/transformation_add_spec_constant_op.h"
@@ -141,6 +142,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kAddNoContractionDecoration:
       return MakeUnique<TransformationAddNoContractionDecoration>(
           message.add_no_contraction_decoration());
+    case protobufs::Transformation::TransformationCase::kAddOpphiSynonym:
+      return MakeUnique<TransformationAddOpPhiSynonym>(
+          message.add_opphi_synonym());
     case protobufs::Transformation::TransformationCase::kAddParameter:
       return MakeUnique<TransformationAddParameter>(message.add_parameter());
     case protobufs::Transformation::TransformationCase::kAddRelaxedDecoration:

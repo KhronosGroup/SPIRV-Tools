@@ -124,6 +124,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_local_variable.h
         transformation_add_loop_preheader.h
         transformation_add_no_contraction_decoration.h
+        transformation_add_opphi_synonym.h
         transformation_add_parameter.h
         transformation_add_relaxed_decoration.h
         transformation_add_spec_constant_op.h
@@ -274,6 +275,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_local_variable.cpp
         transformation_add_loop_preheader.cpp
         transformation_add_no_contraction_decoration.cpp
+        transformation_add_opphi_synonym.cpp
         transformation_add_parameter.cpp
         transformation_add_relaxed_decoration.cpp
         transformation_add_spec_constant_op.cpp
