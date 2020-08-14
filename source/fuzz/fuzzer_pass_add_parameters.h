@@ -40,18 +40,21 @@ class FuzzerPassAddParameters : public FuzzerPass {
   // Returns number of parameters of |function|.
   uint32_t GetNumberOfParameters(const opt::Function& function) const;
 
-  // Returns the id of an available local variable with the  fact
+  // Returns the id of an available local variable with the fact
   // PointeeValueIsIrrelevant. If there is no such variable, it creates one in
-  // the |function| adding a zero initializer constant that is irrelevant. It
-  // returns the id of the created variable.
+  // the |function| adding a zero initializer constant that is irrelevant. The
+  // variable may be irrelevant itself according to
+  // |pointee_value_is_irrelevant|. The function returns the id of the created
+  // variable.
   uint32_t FindOrCreateLocalVariable(uint32_t pointer_type_id,
                                      uint32_t function_id,
                                      bool pointee_value_is_irrelevant);
 
   // Returns the id of an available global variable with the fact
   // PointeeValueIsIrrelevant. If there is no such variable, it creates one in
-  // the |function| adding a zero intializer constant that is irrelevant. It
-  // returns the id of the created varaiable.
+  // adding a zero initializer constant that is irrelevant. The variable may be
+  // irrelevant itself according to |pointee_value_is_irrelevant|. The function
+  // returns the id of the created variable.
   uint32_t FindOrCreateGlobalVariable(uint32_t pointer_type_id,
                                       bool pointee_value_is_irrelevant);
 };

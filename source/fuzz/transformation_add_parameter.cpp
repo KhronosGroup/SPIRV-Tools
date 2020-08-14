@@ -41,7 +41,6 @@ bool TransformationAddParameter::IsApplicable(
       fuzzerutil::FindFunction(ir_context, message_.function_id());
   if (!function ||
       fuzzerutil::FunctionIsEntryPoint(ir_context, function->result_id())) {
-    assert(false && "1");
     return false;
   }
   std::map<uint32_t, uint32_t> call_parameter_id_map =
@@ -76,7 +75,6 @@ bool TransformationAddParameter::IsApplicable(
     }
 
     // Type of every value of the map must be the same for all callers.
-
     if (!new_parameter_type_id) {
       new_parameter_type_id = value_type_id;
     } else {
@@ -86,14 +84,14 @@ bool TransformationAddParameter::IsApplicable(
     }
   }
 
-  // If there is no callers, check for key 0 to get |new_parameter_type_id|.
+  // If there are no callers, check for key 0 to get |new_parameter_type_id|.
   // There are no OpFunctionCallInstruction, however the new parameter will be
   // created and |new_parameter_type_id| must be defined.
   if (!new_parameter_type_id) {
     if (call_parameter_id_map.find(0) != call_parameter_id_map.end()) {
-      uint32_t value_id = call_parameter_id_map[0];
-      uint32_t value_type_id = fuzzerutil::GetTypeId(ir_context, value_id);
-      if (!value_type_id) {
+      uint32_t value_type_id = call_parameter_id_map[0];
+      auto value_type = ir_context->get_type_mgr()->GetType(value_type_id);
+      if (!value_type) {
         return false;
       }
       new_parameter_type_id = value_type_id;
@@ -104,7 +102,6 @@ bool TransformationAddParameter::IsApplicable(
   // This type must be supported.
   if (!IsParameterTypeSupported(
           *ir_context->get_type_mgr()->GetType(new_parameter_type_id))) {
-    assert(false && "9");
     return false;
   }
 
@@ -116,15 +113,20 @@ bool TransformationAddParameter::IsApplicable(
 void TransformationAddParameter::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  // Find the function that will be transformed
+  // Find the function that will be transformed.
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function && "Can't find the function");
 
   std::map<uint32_t, uint32_t> call_parameter_id_map =
       fuzzerutil::RepeatedUInt32PairToMap(message_.call_parameter_id());
 
-  const auto new_parameter_type_id =
-      fuzzerutil::GetTypeId(ir_context, call_parameter_id_map.begin()->second);
+  uint32_t new_parameter_type_id;
+  if (call_parameter_id_map.begin()->first != 0) {
+    new_parameter_type_id = fuzzerutil::GetTypeId(
+        ir_context, call_parameter_id_map.begin()->second);
+  } else {
+    new_parameter_type_id = call_parameter_id_map.begin()->second;
+  }
   assert(new_parameter_type_id != 0 && "New parameter has invalid type");
 
   // Add new parameters to the function.
@@ -134,13 +136,11 @@ void TransformationAddParameter::Apply(
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.parameter_fresh_id());
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
-  //  Add an PointeeValueIsIrrelevant fact if the parameter is a pointer.
-
-  // If it does not have a pointer type, mark new parameter as irrelevant so
-  // that we can replace its use with some other id. If it has a pointer type,
-  // we cannot mark it, because this pointer might be replaced by a pointer from
-  // original shader, which would change the semantics of the module.
+  // If the |new_parameter_type_id| is not a pointer type, mark new parameter as
+  // irrelevant so that we can replace its use with some other id. If the
+  // |new_parameter_type_id| is not a pointer type, we cannot mark it, because
+  // this pointer might be replaced by a pointer from original shader. This
+  // would change the semantics of the module.
   auto new_parameter_type =
       ir_context->get_type_mgr()->GetType(new_parameter_type_id);
   if (new_parameter_type->kind() != opt::analysis::Type::kPointer) {
@@ -205,7 +205,7 @@ bool TransformationAddParameter::IsParameterTypeSupported(
                          [](const opt::analysis::Type* element_type) {
                            return IsParameterTypeSupported(*element_type);
                          });
-    /*case opt::analysis::Type::kPointer: {
+    case opt::analysis::Type::kPointer: {
       auto storage_class = type.AsPointer()->storage_class();
       switch (storage_class) {
         case SpvStorageClassPrivate:
@@ -217,7 +217,7 @@ bool TransformationAddParameter::IsParameterTypeSupported(
         default:
           return false;
       }
-    }*/
+    }
     default:
       return false;
   }

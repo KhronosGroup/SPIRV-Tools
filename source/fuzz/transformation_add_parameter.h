@@ -37,8 +37,8 @@ class TransformationAddParameter : public Transformation {
   // - |call_parameter_id| must map from every id of an OpFunctionCall
   //   instruction of this function to the id of the available OpVariable
   //   instruction (pointer type) or the available value (non-pointer type) in
-  //   that caller. The type id of this id must match the type id of the
-  //   parameter type in the function signature. The type must be supported by
+  //   that caller. If there are no callers, there is only one key - 0, which
+  //   maps to the type id of the new parameter. The type must be supported by
   //   this transformation as specified by IsParameterTypeSupported function.
   // - |parameter_fresh_id| and |function_type_fresh_id| are fresh ids and are
   //   not equal.
@@ -49,8 +49,8 @@ class TransformationAddParameter : public Transformation {
   // - Creates a new OpFunctionParameter instruction with result id
   //   |parameter_fresh_id| for the function with |function_id|.
   // - Adjusts function's type to include a new parameter.
-  // - Adds |initializer_id| as a new operand to every OpFunctionCall
-  //   instruction that calls the function.
+  // - There could be no callers. Otherwise, for every caller adds the value of
+  //   the map |call_parameter_id| as a new operand to every caller.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

@@ -13,17 +13,12 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_parameter.h"
-
 #include "test/fuzz/fuzz_test_util.h"
-
-#include "source/fuzz/fuzzer_pass_add_parameters.h"
-#include "source/fuzz/fuzzer_pass_propagate_instructions_up.h"
-#include "source/fuzz/pseudo_random_generator.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
-/*
+
 TEST(TransformationAddParameterTest, NonPointerBasicTest) {
   std::string shader = R"(
                OpCapability Shader
@@ -112,11 +107,11 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
                                                validator_options);
 
   // Can't modify entry point function.
-  ASSERT_FALSE(TransformationAddParameter(4, 60, {{0, 12}}, 61)
+  ASSERT_FALSE(TransformationAddParameter(4, 60, {{0, 7}}, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // There is no function with result id 29.
-  ASSERT_FALSE(TransformationAddParameter(60, 60, {{0, 8}}, 61)
+  ASSERT_FALSE(TransformationAddParameter(60, 60, {{0, 11}}, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter id is not fresh.
@@ -144,21 +139,21 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
     ASSERT_TRUE(fact_manager.IdIsIrrelevant(60));
   }
   {
-    TransformationAddParameter correct(17, 62, {{0, 12}}, 63);
+    TransformationAddParameter correct(17, 62, {{0, 7}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(fact_manager.IdIsIrrelevant(62));
   }
   {
-    TransformationAddParameter correct(29, 64, {{0, 33}}, 65);
+    TransformationAddParameter correct(29, 64, {{0, 31}}, 65);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(fact_manager.IdIsIrrelevant(64));
   }
   {
-    TransformationAddParameter correct(34, 66, {{0, 12}}, 67);
+    TransformationAddParameter correct(34, 66, {{0, 7}}, 67);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
@@ -331,7 +326,7 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // Bad: Id 17 is not available in the caller that has id 25.
+  // Bad: Id 19 is not available in the caller that has id 25.
   TransformationAddParameter transformation_bad_1(12, 50, {{34, 19}, {38, 19}},
                                                   51);
 
@@ -351,21 +346,21 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
   ASSERT_FALSE(
       transformation_bad_3.IsApplicable(context.get(), transformation_context));
 
-  // Bad: Function with id 14 does not have any callers. Id 8 does not have a
-  // type.
-  TransformationAddParameter transformation_bad_4(14, 50, {{0, 8}}, 51);
+  // Function with id 14 does not have any callers.
+  // Bad: Id 18 is not a vaild type.
+  TransformationAddParameter transformation_bad_4(14, 50, {{0, 18}}, 51);
   ASSERT_FALSE(
       transformation_bad_4.IsApplicable(context.get(), transformation_context));
 
-  // Bad: Function with id 14 does not have any callers. There is no value
-  // required for the new parameter.
+  // Function with id 14 does not have any callers.
+  // Bad:  There is no type_id required for the new parameter.
   TransformationAddParameter transformation_bad_5(14, 50, {}, 51);
   ASSERT_FALSE(
       transformation_bad_5.IsApplicable(context.get(), transformation_context));
 
-  // Bad: Function with id 14 does not have any callers. Type of id 3 is
-  // OpTypeVoid, which is not supported.
-  TransformationAddParameter transformation_bad_6(14, 50, {{0, 6}}, 51);
+  // Function with id 14 does not have any callers.
+  // Bad:  Id 3 refers to OpTypeVoid, which is not supported.
+  TransformationAddParameter transformation_bad_6(14, 50, {{0, 3}}, 51);
   ASSERT_FALSE(
       transformation_bad_6.IsApplicable(context.get(), transformation_context));
 }
@@ -492,7 +487,7 @@ TEST(TransformationAddParameterTest, PointerTypeTest) {
   transformation_good_3.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // Good: This adds another pointer parameter to the function 6
+  // Good: This adds another pointer parameter to the function of id 6.
   TransformationAddParameter transformation_good_4(6, 56, {{33, 31}}, 57);
   ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
                                                  transformation_context));
@@ -586,125 +581,6 @@ TEST(TransformationAddParameterTest, PointerTypeTest) {
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
-}
-*/
-TEST(TransformationAddParameterTest, PassTest) {
-  // This types handles case of adding a new parameter of a pointer type.
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-               OpName %6 "fun1("
-               OpName %12 "fun2(i1;"
-               OpName %11 "a"
-               OpName %14 "fun3("
-               OpName %17 "s"
-               OpName %24 "s"
-               OpName %28 "f1"
-               OpName %31 "f2"
-               OpName %34 "i1"
-               OpName %35 "i2"
-               OpName %36 "param"
-               OpName %39 "i3"
-               OpName %40 "param"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %8 = OpTypeInt 32 1
-          %9 = OpTypePointer Function %8
-         %10 = OpTypeFunction %8 %9
-         %20 = OpConstant %8 2
-         %25 = OpConstant %8 0
-         %26 = OpTypeFloat 32
-         %27 = OpTypePointer Private %26
-         %28 = OpVariable %27 Private
-         %60 = OpTypePointer Output %26
-         %61 = OpVariable %60 Output
-         %29 = OpConstant %26 1
-         %30 = OpTypePointer Function %26
-         %32 = OpConstant %26 2
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-         %31 = OpVariable %30 Function
-         %34 = OpVariable %9 Function
-         %35 = OpVariable %9 Function
-         %36 = OpVariable %9 Function
-         %39 = OpVariable %9 Function
-         %40 = OpVariable %9 Function
-               OpStore %28 %29
-               OpStore %31 %32
-         %33 = OpFunctionCall %2 %6
-               OpStore %34 %20
-         %37 = OpLoad %8 %34
-               OpStore %36 %37
-         %38 = OpFunctionCall %8 %12 %36
-               OpStore %35 %38
-         %41 = OpLoad %8 %35
-               OpStore %40 %41
-         %42 = OpFunctionCall %8 %12 %40
-               OpStore %39 %42
-         %43 = OpFunctionCall %2 %14
-               OpReturn
-               OpFunctionEnd
-          %6 = OpFunction %2 None %3
-          %7 = OpLabel
-               OpReturn
-               OpFunctionEnd
-         %12 = OpFunction %8 None %10
-         %11 = OpFunctionParameter %9
-         %13 = OpLabel
-         %17 = OpVariable %9 Function
-         %18 = OpLoad %8 %11
-               OpStore %17 %18
-         %19 = OpLoad %8 %17
-         %21 = OpIAdd %8 %19 %20
-               OpReturnValue %21
-               OpFunctionEnd
-         %14 = OpFunction %2 None %3
-         %15 = OpLabel
-         %24 = OpVariable %9 Function
-               OpStore %24 %25
-               OpReturn
-               OpFunctionEnd
-    )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-  auto prng = MakeUnique<PseudoRandomGenerator>(0);
-  FuzzerContext fuzzer_context(prng.get(), 100);
-  protobufs::TransformationSequence transformation_sequence;
-
-  FuzzerPassAddParameters fuzzer_pass(context.get(), &transformation_context,
-                                      &fuzzer_context,
-                                      &transformation_sequence);
-  FuzzerPassPropagateInstructionsUp fuzzer_pass2(
-      context.get(), &transformation_context, &fuzzer_context,
-      &transformation_sequence);
-
-  for (int i = 0; i < 10; i++) {
-    fuzzer_pass.Apply();
-    fuzzer_pass2.Apply();
-  }
-
-  // We just check that the result is valid.
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled;
 }
 
 }  // namespace
