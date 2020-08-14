@@ -352,6 +352,377 @@ TEST(TransformationInlineFunctionTest, Apply) {
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
+TEST(TransformationInlineFunctionTest, Misc1) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %15 "main"
+
+; Types
+          %2 = OpTypeInt 32 1
+          %3 = OpTypeBool
+          %4 = OpTypePointer Private %2
+          %5 = OpTypePointer Function %2
+          %6 = OpTypeVoid
+          %7 = OpTypeFunction %6
+          %8 = OpTypeFunction %2 %5
+          %9 = OpTypeFunction %2 %2
+
+; Constants
+         %10 = OpConstant %2 0
+         %11 = OpConstant %2 1
+         %12 = OpConstant %2 2
+         %13 = OpConstant %2 3
+
+; Global variable
+         %14 = OpVariable %4 Private
+
+; main function
+         %15 = OpFunction %6 None %7
+         %16 = OpLabel
+         %17 = OpVariable %5 Function
+         %18 = OpVariable %5 Function
+         %19 = OpVariable %5 Function
+               OpStore %17 %13
+         %20 = OpLoad %2 %17
+               OpStore %18 %20
+         %21 = OpFunctionCall %2 %36 %18
+               OpBranch %22
+         %22 = OpLabel
+         %23 = OpFunctionCall %2 %36 %18
+               OpStore %17 %21
+         %24 = OpLoad %2 %17
+         %25 = OpFunctionCall %2 %54 %24
+               OpBranch %26
+         %26 = OpLabel
+         %27 = OpFunctionCall %2 %54 %24
+         %28 = OpLoad %2 %17
+         %29 = OpIAdd %2 %28 %25
+               OpStore %17 %29
+         %30 = OpFunctionCall %6 %67
+               OpBranch %31
+         %31 = OpLabel
+         %32 = OpFunctionCall %6 %67
+         %33 = OpLoad %2 %14
+         %34 = OpLoad %2 %17
+         %35 = OpIAdd %2 %34 %33
+               OpStore %17 %35
+               OpReturn
+               OpFunctionEnd
+
+; Function %36
+         %36 = OpFunction %2 None %8
+         %37 = OpFunctionParameter %5
+         %38 = OpLabel
+         %39 = OpVariable %5 Function
+         %40 = OpVariable %5 Function
+               OpStore %39 %10
+               OpBranch %41
+         %41 = OpLabel
+               OpLoopMerge %52 %49 None
+               OpBranch %42
+         %42 = OpLabel
+         %43 = OpLoad %2 %39
+         %44 = OpLoad %2 %37
+         %45 = OpSLessThan %3 %43 %44
+               OpBranchConditional %45 %46 %52
+         %46 = OpLabel
+         %47 = OpLoad %2 %40
+         %48 = OpIAdd %2 %47 %11
+               OpStore %40 %48
+               OpBranch %49
+         %49 = OpLabel
+         %50 = OpLoad %2 %39
+         %51 = OpIAdd %2 %50 %12
+               OpStore %39 %51
+               OpBranch %41
+         %52 = OpLabel
+         %53 = OpLoad %2 %40
+               OpReturnValue %53
+               OpFunctionEnd
+
+; Function %54
+         %54 = OpFunction %2 None %9
+         %55 = OpFunctionParameter %2
+         %56 = OpLabel
+         %57 = OpVariable %5 Function
+               OpStore %57 %10
+         %58 = OpSGreaterThan %3 %55 %10
+               OpSelectionMerge %62 None
+               OpBranchConditional %58 %64 %59
+         %59 = OpLabel
+         %60 = OpLoad %2 %57
+         %61 = OpISub %2 %60 %12
+               OpStore %57 %61
+               OpBranch %62
+         %62 = OpLabel
+         %63 = OpLoad %2 %57
+               OpReturnValue %63
+         %64 = OpLabel
+         %65 = OpLoad %2 %57
+         %66 = OpIAdd %2 %65 %11
+               OpStore %57 %66
+               OpBranch %62
+               OpFunctionEnd
+
+; Function %67
+         %67 = OpFunction %6 None %7
+         %68 = OpLabel
+               OpStore %14 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto transformation = TransformationInlineFunction({}, 30);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+
+  // Tests a parameter included in the id map.
+  transformation = TransformationInlineFunction({{55, 69},
+                                                 {56, 70},
+                                                 {57, 71},
+                                                 {58, 72},
+                                                 {59, 73},
+                                                 {60, 74},
+                                                 {61, 75},
+                                                 {62, 76},
+                                                 {63, 77},
+                                                 {64, 78},
+                                                 {65, 79},
+                                                 {66, 80}},
+                                                25);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests the id of the returned value not included in the id map.
+  transformation = TransformationInlineFunction({{56, 69},
+                                                 {57, 70},
+                                                 {58, 71},
+                                                 {59, 72},
+                                                 {60, 73},
+                                                 {61, 74},
+                                                 {62, 75},
+                                                 {64, 76},
+                                                 {65, 77},
+                                                 {66, 78}},
+                                                25);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  transformation = TransformationInlineFunction({{57, 69},
+                                                 {58, 70},
+                                                 {59, 71},
+                                                 {60, 72},
+                                                 {61, 73},
+                                                 {62, 74},
+                                                 {63, 75},
+                                                 {64, 76},
+                                                 {65, 77},
+                                                 {66, 78}},
+                                                25);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+
+  transformation = TransformationInlineFunction({{39, 79},
+                                                 {40, 80},
+                                                 {41, 81},
+                                                 {42, 82},
+                                                 {43, 83},
+                                                 {44, 84},
+                                                 {45, 85},
+                                                 {46, 86},
+                                                 {47, 87},
+                                                 {48, 88},
+                                                 {49, 89},
+                                                 {50, 90},
+                                                 {51, 91},
+                                                 {52, 92},
+                                                 {53, 93}},
+                                                21);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %15 "main"
+
+; Types
+          %2 = OpTypeInt 32 1
+          %3 = OpTypeBool
+          %4 = OpTypePointer Private %2
+          %5 = OpTypePointer Function %2
+          %6 = OpTypeVoid
+          %7 = OpTypeFunction %6
+          %8 = OpTypeFunction %2 %5
+          %9 = OpTypeFunction %2 %2
+
+; Constants
+         %10 = OpConstant %2 0
+         %11 = OpConstant %2 1
+         %12 = OpConstant %2 2
+         %13 = OpConstant %2 3
+
+; Global variable
+         %14 = OpVariable %4 Private
+
+; main function
+         %15 = OpFunction %6 None %7
+         %16 = OpLabel
+         %80 = OpVariable %5 Function
+         %79 = OpVariable %5 Function
+         %69 = OpVariable %5 Function
+         %17 = OpVariable %5 Function
+         %18 = OpVariable %5 Function
+         %19 = OpVariable %5 Function
+               OpStore %17 %13
+         %20 = OpLoad %2 %17
+               OpStore %18 %20
+               OpStore %79 %10
+               OpBranch %81
+         %81 = OpLabel
+               OpLoopMerge %92 %89 None
+               OpBranch %82
+         %82 = OpLabel
+         %83 = OpLoad %2 %79
+         %84 = OpLoad %2 %18
+         %85 = OpSLessThan %3 %83 %84
+               OpBranchConditional %85 %86 %92
+         %86 = OpLabel
+         %87 = OpLoad %2 %80
+         %88 = OpIAdd %2 %87 %11
+               OpStore %80 %88
+               OpBranch %89
+         %89 = OpLabel
+         %90 = OpLoad %2 %79
+         %91 = OpIAdd %2 %90 %12
+               OpStore %79 %91
+               OpBranch %81
+         %92 = OpLabel
+         %93 = OpLoad %2 %80
+         %21 = OpCopyObject %2 %93
+               OpBranch %22
+         %22 = OpLabel
+         %23 = OpFunctionCall %2 %36 %18
+               OpStore %17 %21
+         %24 = OpLoad %2 %17
+               OpStore %69 %10
+         %70 = OpSGreaterThan %3 %24 %10
+               OpSelectionMerge %74 None
+               OpBranchConditional %70 %76 %71
+         %71 = OpLabel
+         %72 = OpLoad %2 %69
+         %73 = OpISub %2 %72 %12
+               OpStore %69 %73
+               OpBranch %74
+         %74 = OpLabel
+         %75 = OpLoad %2 %69
+         %25 = OpCopyObject %2 %75
+               OpBranch %26
+         %76 = OpLabel
+         %77 = OpLoad %2 %69
+         %78 = OpIAdd %2 %77 %11
+               OpStore %69 %78
+               OpBranch %74
+         %26 = OpLabel
+         %27 = OpFunctionCall %2 %54 %24
+         %28 = OpLoad %2 %17
+         %29 = OpIAdd %2 %28 %25
+               OpStore %17 %29
+               OpStore %14 %12
+               OpBranch %31
+         %31 = OpLabel
+         %32 = OpFunctionCall %6 %67
+         %33 = OpLoad %2 %14
+         %34 = OpLoad %2 %17
+         %35 = OpIAdd %2 %34 %33
+               OpStore %17 %35
+               OpReturn
+               OpFunctionEnd
+
+; Function %36
+         %36 = OpFunction %2 None %8
+         %37 = OpFunctionParameter %5
+         %38 = OpLabel
+         %39 = OpVariable %5 Function
+         %40 = OpVariable %5 Function
+               OpStore %39 %10
+               OpBranch %41
+         %41 = OpLabel
+               OpLoopMerge %52 %49 None
+               OpBranch %42
+         %42 = OpLabel
+         %43 = OpLoad %2 %39
+         %44 = OpLoad %2 %37
+         %45 = OpSLessThan %3 %43 %44
+               OpBranchConditional %45 %46 %52
+         %46 = OpLabel
+         %47 = OpLoad %2 %40
+         %48 = OpIAdd %2 %47 %11
+               OpStore %40 %48
+               OpBranch %49
+         %49 = OpLabel
+         %50 = OpLoad %2 %39
+         %51 = OpIAdd %2 %50 %12
+               OpStore %39 %51
+               OpBranch %41
+         %52 = OpLabel
+         %53 = OpLoad %2 %40
+               OpReturnValue %53
+               OpFunctionEnd
+
+; Function %54
+         %54 = OpFunction %2 None %9
+         %55 = OpFunctionParameter %2
+         %56 = OpLabel
+         %57 = OpVariable %5 Function
+               OpStore %57 %10
+         %58 = OpSGreaterThan %3 %55 %10
+               OpSelectionMerge %62 None
+               OpBranchConditional %58 %64 %59
+         %59 = OpLabel
+         %60 = OpLoad %2 %57
+         %61 = OpISub %2 %60 %12
+               OpStore %57 %61
+               OpBranch %62
+         %62 = OpLabel
+         %63 = OpLoad %2 %57
+               OpReturnValue %63
+         %64 = OpLabel
+         %65 = OpLoad %2 %57
+         %66 = OpIAdd %2 %65 %11
+               OpStore %57 %66
+               OpBranch %62
+               OpFunctionEnd
+
+; Function %67
+         %67 = OpFunction %6 None %7
+         %68 = OpLabel
+               OpStore %14 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
