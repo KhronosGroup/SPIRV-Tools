@@ -25,7 +25,8 @@ TransformationReplaceIrrelevantId::TransformationReplaceIrrelevantId(
     : message_(message) {}
 
 TransformationReplaceIrrelevantId::TransformationReplaceIrrelevantId(
-    protobufs::IdUseDescriptor id_use_descriptor, uint32_t replacement_id) {
+    const protobufs::IdUseDescriptor& id_use_descriptor,
+    uint32_t replacement_id) {
   *message_.mutable_id_use_descriptor() = id_use_descriptor;
   message_.set_replacement_id(replacement_id);
 }
@@ -48,12 +49,17 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
     return false;
   }
 
+  // Check that the replacement id exists and retrieve its definition.
+  auto replacement_id_def =
+      ir_context->get_def_use_mgr()->GetDef(message_.replacement_id());
+  if (!replacement_id_def) {
+    return false;
+  }
+
   // The type of the id of interest and of the replacement id must be the same.
   uint32_t type_id_of_interest =
       ir_context->get_def_use_mgr()->GetDef(id_of_interest)->type_id();
-  uint32_t type_replacement_id = ir_context->get_def_use_mgr()
-                                     ->GetDef(message_.replacement_id())
-                                     ->type_id();
+  uint32_t type_replacement_id = replacement_id_def->type_id();
   if (type_id_of_interest != type_replacement_id) {
     return false;
   }

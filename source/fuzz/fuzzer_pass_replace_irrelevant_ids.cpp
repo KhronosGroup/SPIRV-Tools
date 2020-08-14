@@ -22,8 +22,8 @@ namespace spvtools {
 namespace fuzz {
 
 // A fuzzer pass that, for every use of an id that has been recorded as
-// irrelevant, randomly decides whether to replace it with another id of the same
-// type.
+// irrelevant, randomly decides whether to replace it with another id of the
+// same type.
 FuzzerPassReplaceIrrelevantIds::FuzzerPassReplaceIrrelevantIds(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
@@ -90,8 +90,7 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
                         &transformations_to_apply](opt::Instruction* use_inst,
                                                    uint32_t use_index) {
           // The id must be used as an input operand.
-          if (use_index <
-              use_inst->NumOperands() - use_inst->NumInOperands()) {
+          if (use_index < use_inst->NumOperands() - use_inst->NumInOperands()) {
             // The id is used as an output operand, so we cannot replace this
             // usage.
             return;
@@ -152,7 +151,7 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
   }
 
   // Apply all the transformations.
-  for (auto transformation : transformations_to_apply) {
+  for (const auto& transformation : transformations_to_apply) {
     ApplyTransformation(transformation);
   }
 }

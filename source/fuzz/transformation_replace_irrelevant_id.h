@@ -26,7 +26,8 @@ class TransformationReplaceIrrelevantId : public Transformation {
       const protobufs::TransformationReplaceIrrelevantId& message);
 
   TransformationReplaceIrrelevantId(
-      protobufs::IdUseDescriptor id_use_descriptor, uint32_t replacement_id);
+      const protobufs::IdUseDescriptor& id_use_descriptor,
+      uint32_t replacement_id);
 
   // - The id of interest in |message_.id_use_descriptor| is irrelevant
   //   according to the fact manager.

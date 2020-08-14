@@ -90,6 +90,16 @@ TEST(TransformationReplaceIrrelevantIdTest, Inapplicable) {
                    MakeIdUseDescriptor(20, instruction_24_descriptor, 0), 23)
                    .IsApplicable(context.get(), transformation_context));
 
+  // %22 is not used in %24.
+  ASSERT_FALSE(TransformationReplaceIrrelevantId(
+                   MakeIdUseDescriptor(22, instruction_24_descriptor, 1), 20)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Replacement id %50 does not exist.
+  ASSERT_FALSE(TransformationReplaceIrrelevantId(
+                   MakeIdUseDescriptor(23, instruction_24_descriptor, 1), 50)
+                   .IsApplicable(context.get(), transformation_context));
+
   // %25 is not available to use at %24.
   ASSERT_FALSE(TransformationReplaceIrrelevantId(
                    MakeIdUseDescriptor(23, instruction_24_descriptor, 1), 25)
