@@ -44,7 +44,13 @@ void FuzzerPassPropagateInstructionsUp::Apply() {
               GetIRContext(), block.id())) {
         std::map<uint32_t, uint32_t> fresh_ids;
         for (auto id : GetIRContext()->cfg()->preds(block.id())) {
-          fresh_ids[id] = GetFuzzerContext()->GetFreshId();
+          auto& fresh_id = fresh_ids[id];
+
+          if (!fresh_id) {
+            // Create a fresh id if it hasn't been created yet. |fresh_id| will
+            // be default-initialized to 0 in this case.
+            fresh_id = GetFuzzerContext()->GetFreshId();
+          }
         }
 
         ApplyTransformation(
