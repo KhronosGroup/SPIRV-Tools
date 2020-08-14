@@ -38,6 +38,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingImageSampleUnusedComponents =
     {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingLoad = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingLocalVariable = {20, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingLoopPreheader = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
@@ -165,6 +166,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_adding_global_variable_ =
       ChooseBetweenMinAndMax(kChanceOfAddingGlobalVariable);
   chance_of_adding_load_ = ChooseBetweenMinAndMax(kChanceOfAddingLoad);
+  chance_of_adding_loop_preheader_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingLoopPreheader);
   chance_of_adding_image_sample_unused_components_ =
       ChooseBetweenMinAndMax(kChanceOfAddingImageSampleUnusedComponents);
   chance_of_adding_local_variable_ =
