@@ -300,8 +300,8 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
     return true;
   }
 
-  // |a| and |b| are result ids of some pointers in the module. Returns true if
-  // |a| and |b| point to the same memory region and their pointees are
+  // |id1| and |id2| are result ids of some pointers in the module. Returns true
+  // if |id1| and |id2| point to the same memory region and their pointees are
   // irrelevant.
   //
   // TODO(): Currently, there is no way to determine whether two pointers point
@@ -310,13 +310,16 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   //  we have two identical (except for their result ids) OpAccessChain
   //  instructions, they might not be synonymous but still point to the same
   //  memory.
-  auto memory_targets_compatible = [&transformation_context](uint32_t a,
-                                                             uint32_t b) {
+  auto memory_targets_compatible = [&transformation_context](uint32_t id1,
+                                                             uint32_t id2) {
     const auto* fact_manager = transformation_context.GetFactManager();
-    return (a == b || fact_manager->IsSynonymous(MakeDataDescriptor(a, {}),
-                                                 MakeDataDescriptor(b, {}))) &&
-           (fact_manager->PointeeValueIsIrrelevant(a) ||
-            fact_manager->PointeeValueIsIrrelevant(b));
+    auto point_to_same_memory =
+        id1 == id2 || fact_manager->IsSynonymous(MakeDataDescriptor(id1, {}),
+                                                 MakeDataDescriptor(id2, {}));
+    auto memory_value_is_irrelevant =
+        fact_manager->PointeeValueIsIrrelevant(id1) ||
+        fact_manager->PointeeValueIsIrrelevant(id2);
+    return point_to_same_memory && memory_value_is_irrelevant;
   };
 
   // At least one of parameters is a memory read instruction.
