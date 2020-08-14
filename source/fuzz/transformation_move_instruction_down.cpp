@@ -319,7 +319,7 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
             fact_manager->PointeeValueIsIrrelevant(b));
   };
 
-  // At least one of instructions writes to memory.
+  // At least one of parameters is a memory read instruction.
 
   // From now on we will denote an instruction that:
   // - only reads from memory - R
