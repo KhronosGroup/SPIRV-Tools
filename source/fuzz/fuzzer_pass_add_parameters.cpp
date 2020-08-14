@@ -17,8 +17,6 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_add_global_variable.h"
-#include "source/fuzz/transformation_add_local_variable.h"
 #include "source/fuzz/transformation_add_parameter.h"
 
 namespace spvtools {
@@ -72,76 +70,14 @@ void FuzzerPassAddParameters::Apply() {
         GetFuzzerContext()->GetRandomNumberOfNewParameters(
             GetNumberOfParameters(function));
     for (uint32_t i = 0; i < num_new_parameters; ++i) {
-      auto current_type_id =
-          type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)];
-      auto current_type =
-          GetIRContext()->get_type_mgr()->GetType(current_type_id);
-
-      // Consider pointer types separately.
-      if (current_type->kind() == opt::analysis::Type::kPointer) {
-        auto storage_class = fuzzerutil::GetStorageClassFromPointerType(
-            GetIRContext(), current_type_id);
-        uint32_t pointee_type_id =
-            (GetIRContext()->get_def_use_mgr()->GetDef(current_type_id))
-                ->GetSingleWordInOperand(1);
-        uint32_t variable_id = 0;
-
-        // Make the transformation applicable.
-        switch (storage_class) {
-          case SpvStorageClassFunction: {
-            for (auto* instr :
-                 fuzzerutil::GetCallers(GetIRContext(), function.result_id())) {
-              auto block = GetIRContext()->get_instr_block(instr);
-              auto function_id = block->GetParent()->result_id();
-              // If there is no available local variable, then create one. The
-              // available local variable must be marked with the fact
-              // PointeeValueIsIrrelevant.
-              variable_id = fuzzerutil::MaybeGetLocalVariable(
-                  GetIRContext(), current_type_id, function_id);
-              if (!variable_id ||
-                  !GetTransformationContext()
-                       ->GetFactManager()
-                       ->PointeeValueIsIrrelevant(variable_id)) {
-                ApplyTransformation(TransformationAddLocalVariable(
-                    GetFuzzerContext()->GetFreshId(), current_type_id,
-                    function_id,
-                    FindOrCreateZeroConstant(pointee_type_id, true), true));
-              }
-            }
-          } break;
-          case SpvStorageClassPrivate:
-          case SpvStorageClassWorkgroup: {
-            // If there is no available global variable, then create one. The
-            // available global variable must be marked with the fact
-            // PointeeValueIsIrrelevant.
-            variable_id = fuzzerutil::MaybeGetGlobalVariable(GetIRContext(),
-                                                             current_type_id);
-            if (!variable_id || !GetTransformationContext()
-                                     ->GetFactManager()
-                                     ->PointeeValueIsIrrelevant(variable_id)) {
-              ApplyTransformation(TransformationAddGlobalVariable(
-                  GetFuzzerContext()->GetFreshId(), current_type_id,
-                  storage_class,
-                  FindOrCreateZeroConstant(pointee_type_id, true), true));
-            }
-          } break;
-          default:
-            break;
-        }
-
-        ApplyTransformation(TransformationAddParameter(
-            function.result_id(), GetFuzzerContext()->GetFreshId(),
-            current_type_id, GetFuzzerContext()->GetFreshId()));
-
-      } else  // Consider non-pointer parameters.
-      {
-        ApplyTransformation(TransformationAddParameter(
-            function.result_id(), GetFuzzerContext()->GetFreshId(),
-            // We mark the constant as irrelevant so that we can replace it with
-            // a more interesting value later.
-            FindOrCreateZeroConstant(current_type_id, true),
-            GetFuzzerContext()->GetFreshId()));
-      }
+      ApplyTransformation(TransformationAddParameter(
+          function.result_id(), GetFuzzerContext()->GetFreshId(),
+          // We mark the constant as irrelevant so that we can replace it with a
+          // more interesting value later.
+          FindOrCreateZeroConstant(
+              type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)],
+              true),
+          GetFuzzerContext()->GetFreshId()));
     }
   }
 }

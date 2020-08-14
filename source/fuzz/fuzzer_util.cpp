@@ -1342,47 +1342,7 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
   return CanInsertOpcodeBeforeInstruction(opcode, &*it) ? &*it : nullptr;
 }
 
-uint32_t MaybeGetLocalVariable(opt::IRContext* ir_context, uint32_t type_id,
-                               uint32_t function_id) {
-  uint32_t return_id = 0;
-  auto function = FindFunction(ir_context, function_id);
-
-  // All of the local variable declarations are located in the first block
-  auto block = function->begin();
-  for (auto& instruction : *block) {
-    if (instruction.opcode() != SpvOpVariable) {
-      continue;
-    }
-    auto instruction_type_id = GetTypeId(ir_context, instruction.result_id());
-    if (instruction_type_id != type_id) {
-      continue;
-    }
-    auto storage_class = GetStorageClassFromPointerType(ir_context, type_id);
-    if (storage_class != SpvStorageClassFunction) {
-      continue;
-    }
-    // We have found the matching variable declaration.
-    return_id = instruction.result_id();
-    break;
-  }
-  return return_id;
-}
-
-uint32_t MaybeGetGlobalVariable(opt::IRContext* ir_context, uint32_t type_id) {
-  uint32_t return_id = 0;
-  for (auto& instruction : ir_context->module()->types_values()) {
-    if (instruction.opcode() != SpvOpVariable) {
-      continue;
-    }
-    if (instruction.type_id() != type_id) {
-      continue;
-    }
-    // We have found the matching variable declaration.
-    return_id = instruction.result_id();
-    break;
-  }
-  return return_id;
-}
 }  // namespace fuzzerutil
+
 }  // namespace fuzz
 }  // namespace spvtools
