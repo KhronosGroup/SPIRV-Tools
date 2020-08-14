@@ -29,14 +29,17 @@ class TransformationAddParameter : public Transformation {
       const protobufs::TransformationAddParameter& message);
 
   TransformationAddParameter(uint32_t function_id, uint32_t parameter_fresh_id,
-                             uint32_t initializer_id,
+                             std::map<uint32_t, uint32_t>&& call_parameter_id,
                              uint32_t function_type_fresh_id);
 
   // - |function_id| must be a valid result id of some non-entry-point function
   //   in the module.
-  // - |initializer_id| must be a valid result id of some instruction in the
-  //   module. Instruction's type must be supported by this transformation
-  //   as specified by IsParameterTypeSupported function.
+  // - |call_parameter_id| must map from every id of an OpFunctionCall
+  //   instruction of this function to the id of the available OpVariable
+  //   instruction (pointer type) or the available value (non-pointer type) in
+  //   that caller. The type id of this id must match the type id of the
+  //   parameter type in the function signature. The type must be supported by
+  //   this transformation as specified by IsParameterTypeSupported function.
   // - |parameter_fresh_id| and |function_type_fresh_id| are fresh ids and are
   //   not equal.
   bool IsApplicable(

@@ -24,37 +24,87 @@ TransformationAddParameter::TransformationAddParameter(
     : message_(message) {}
 
 TransformationAddParameter::TransformationAddParameter(
-    uint32_t function_id, uint32_t parameter_fresh_id, uint32_t initializer_id,
+    uint32_t function_id, uint32_t parameter_fresh_id,
+    std::map<uint32_t, uint32_t>&& call_parameter_id,
     uint32_t function_type_fresh_id) {
   message_.set_function_id(function_id);
   message_.set_parameter_fresh_id(parameter_fresh_id);
-  message_.set_initializer_id(initializer_id);
+  *message_.mutable_call_parameter_id() =
+      fuzzerutil::MapToRepeatedUInt32Pair(call_parameter_id);
   message_.set_function_type_fresh_id(function_type_fresh_id);
 }
 
 bool TransformationAddParameter::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  // Check that function exists
+  // Check that function exists.
   const auto* function =
       fuzzerutil::FindFunction(ir_context, message_.function_id());
   if (!function ||
       fuzzerutil::FunctionIsEntryPoint(ir_context, function->result_id())) {
+    assert(false && "1");
     return false;
   }
+  std::map<uint32_t, uint32_t> call_parameter_id_map =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.call_parameter_id());
+  uint32_t new_parameter_type_id = 0;
+  // Iterate over all callers.
+  for (auto* instr :
+       fuzzerutil::GetCallers(ir_context, message_.function_id())) {
+    uint32_t caller_id = instr->result_id();
 
-  // Check that |initializer_id| is valid.
-  const auto* initializer_inst =
-      ir_context->get_def_use_mgr()->GetDef(message_.initializer_id());
+    // If there is no entry for this caller, return false.
+    if (call_parameter_id_map.find(caller_id) == call_parameter_id_map.end()) {
+      return false;
+    }
+    uint32_t value_id = call_parameter_id_map[caller_id];
 
-  if (!initializer_inst) {
-    return false;
+    auto value_instr = ir_context->get_def_use_mgr()->GetDef(value_id);
+    if (!value_instr) {
+      return false;
+    }
+    // If the id of the value of the map is not available before the caller,
+    // return false.
+    if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, instr,
+                                                    value_id)) {
+      return false;
+    }
+
+    // The type of the value must be defined.
+    uint32_t value_type_id = fuzzerutil::GetTypeId(ir_context, value_id);
+    if (!value_type_id) {
+      return false;
+    }
+
+    // Type of every value of the map must be the same for all callers.
+
+    if (!new_parameter_type_id) {
+      new_parameter_type_id = value_type_id;
+    } else {
+      if (new_parameter_type_id != value_type_id) {
+        return false;
+      }
+    }
   }
 
-  // Check that initializer's type is valid.
-  const auto* initializer_type =
-      ir_context->get_type_mgr()->GetType(initializer_inst->type_id());
-
-  if (!initializer_type || !IsParameterTypeSupported(*initializer_type)) {
+  // If there is no callers, check for key 0 to get |new_parameter_type_id|.
+  // There are no OpFunctionCallInstruction, however the new parameter will be
+  // created and |new_parameter_type_id| must be defined.
+  if (!new_parameter_type_id) {
+    if (call_parameter_id_map.find(0) != call_parameter_id_map.end()) {
+      uint32_t value_id = call_parameter_id_map[0];
+      uint32_t value_type_id = fuzzerutil::GetTypeId(ir_context, value_id);
+      if (!value_type_id) {
+        return false;
+      }
+      new_parameter_type_id = value_type_id;
+    } else {
+      return false;
+    }
+  }
+  // This type must be supported.
+  if (!IsParameterTypeSupported(
+          *ir_context->get_type_mgr()->GetType(new_parameter_type_id))) {
+    assert(false && "9");
     return false;
   }
 
@@ -70,9 +120,12 @@ void TransformationAddParameter::Apply(
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function && "Can't find the function");
 
+  std::map<uint32_t, uint32_t> call_parameter_id_map =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.call_parameter_id());
+
   const auto new_parameter_type_id =
-      fuzzerutil::GetTypeId(ir_context, message_.initializer_id());
-  assert(new_parameter_type_id != 0 && "Initializer has invalid type");
+      fuzzerutil::GetTypeId(ir_context, call_parameter_id_map.begin()->second);
+  assert(new_parameter_type_id != 0 && "New parameter has invalid type");
 
   // Add new parameters to the function.
   function->AddParameter(MakeUnique<opt::Instruction>(
@@ -84,14 +137,21 @@ void TransformationAddParameter::Apply(
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
   //  Add an PointeeValueIsIrrelevant fact if the parameter is a pointer.
 
-  // Mark new parameter as irrelevant so that we can replace its use with some
-  // other id.
-  transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
-      message_.parameter_fresh_id());
+  // If it does not have a pointer type, mark new parameter as irrelevant so
+  // that we can replace its use with some other id. If it has a pointer type,
+  // we cannot mark it, because this pointer might be replaced by a pointer from
+  // original shader, which would change the semantics of the module.
+  auto new_parameter_type =
+      ir_context->get_type_mgr()->GetType(new_parameter_type_id);
+  if (new_parameter_type->kind() != opt::analysis::Type::kPointer) {
+    transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
+        message_.parameter_fresh_id());
+  }
 
   // Fix all OpFunctionCall instructions.
   for (auto* inst : fuzzerutil::GetCallers(ir_context, function->result_id())) {
-    inst->AddOperand({SPV_OPERAND_TYPE_ID, {message_.initializer_id()}});
+    inst->AddOperand(
+        {SPV_OPERAND_TYPE_ID, {call_parameter_id_map[inst->result_id()]}});
   }
 
   // Update function's type.
@@ -145,6 +205,19 @@ bool TransformationAddParameter::IsParameterTypeSupported(
                          [](const opt::analysis::Type* element_type) {
                            return IsParameterTypeSupported(*element_type);
                          });
+    /*case opt::analysis::Type::kPointer: {
+      auto storage_class = type.AsPointer()->storage_class();
+      switch (storage_class) {
+        case SpvStorageClassPrivate:
+        case SpvStorageClassFunction:
+        case SpvStorageClassWorkgroup: {
+          auto pointee_type = type.AsPointer()->pointee_type();
+          return IsParameterTypeSupported(*pointee_type);
+        }
+        default:
+          return false;
+      }
+    }*/
     default:
       return false;
   }
