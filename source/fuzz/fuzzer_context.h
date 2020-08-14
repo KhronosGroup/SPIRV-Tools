@@ -136,6 +136,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingLocalVariable() {
     return chance_of_adding_local_variable_;
   }
+  uint32_t GetChanceOfAddingLoopPreheader() {
+    return chance_of_adding_loop_preheader_;
+  }
   uint32_t GetChanceOfAddingMatrixType() {
     return chance_of_adding_matrix_type_;
   }
@@ -348,6 +351,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_image_sample_unused_components_;
   uint32_t chance_of_adding_load_;
   uint32_t chance_of_adding_local_variable_;
+  uint32_t chance_of_adding_loop_preheader_;
   uint32_t chance_of_adding_matrix_type_;
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_parameters;
