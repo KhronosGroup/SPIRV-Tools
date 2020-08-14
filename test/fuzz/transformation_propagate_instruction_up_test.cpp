@@ -815,6 +815,81 @@ TEST(TransformationPropagateInstructionUpTest,
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationPropagateInstructionUpTest, MultipleIdenticalPredecessors) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+         %11 = OpConstant %6 23
+         %12 = OpTypeBool
+         %13 = OpConstantTrue %12
+          %4 = OpFunction %2 None %3
+
+          %5 = OpLabel
+               OpSelectionMerge %9 None
+               OpBranchConditional %13 %9 %9
+
+          %9 = OpLabel
+         %14 = OpPhi %6 %11 %5
+         %10 = OpCopyObject %6 %14
+               OpReturn
+
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  TransformationPropagateInstructionUp transformation(9, {{{5, 40}}});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+         %11 = OpConstant %6 23
+         %12 = OpTypeBool
+         %13 = OpConstantTrue %12
+          %4 = OpFunction %2 None %3
+
+          %5 = OpLabel
+         %40 = OpCopyObject %6 %11
+               OpSelectionMerge %9 None
+               OpBranchConditional %13 %9 %9
+
+          %9 = OpLabel
+         %10 = OpPhi %6 %40 %5
+         %14 = OpPhi %6 %11 %5
+               OpReturn
+
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
