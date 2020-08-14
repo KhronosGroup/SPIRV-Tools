@@ -53,6 +53,33 @@ class TransformationMoveInstructionDown : public Transformation {
   // we can move an instruction with this opcode).
   static bool IsOpcodeSupported(SpvOp opcode);
 
+  // Returns true if |opcode| represents a "simple" instruction. That is, it
+  // neither reads from nor writes to the memory and is not a barrier.
+  static bool IsSimpleOpcode(SpvOp opcode);
+
+  // Returns true if |opcode| represents an instruction that reads from memory.
+  static bool IsMemoryReadOpcode(SpvOp opcode);
+
+  // Returns id of the pointer, |inst| reads memory from.
+  static uint32_t GetMemoryReadTarget(const opt::Instruction& inst);
+
+  // Returns true if |opcode| represents an instruction that writes to the
+  // memory.
+  static bool IsMemoryWriteOpcode(SpvOp opcode);
+
+  // Returns id of the pointer, |inst| writes memory into.
+  static uint32_t GetMemoryWriteTarget(const opt::Instruction& inst);
+
+  // Returns true if |opcode| represents an a barrier instruction.
+  static bool IsBarrierOpcode(SpvOp opcode);
+
+  // Returns true if it is possible to swap |a| and |b| without invalidating
+  // the module's semantics. |a| and |b| might not be memory instructions.
+  // Opcodes of both parameters must be supported.
+  static bool CanSwapMaybeSimpleInstructions(
+      const opt::Instruction& a, const opt::Instruction& b,
+      const TransformationContext& transformation_context);
+
   protobufs::TransformationMoveInstructionDown message_;
 };
 

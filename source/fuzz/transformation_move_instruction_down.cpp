@@ -30,7 +30,8 @@ TransformationMoveInstructionDown::TransformationMoveInstructionDown(
 }
 
 bool TransformationMoveInstructionDown::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // |instruction| must be valid.
   auto* inst = FindInstruction(message_.instruction(), ir_context);
   if (!inst) {
@@ -53,6 +54,20 @@ bool TransformationMoveInstructionDown::IsApplicable(
   // |instruction| can't be the last instruction in the block.
   auto successor_it = ++inst_it;
   if (successor_it == inst_block->end()) {
+    return false;
+  }
+
+  // We don't risk swapping a memory instruction with an unsupported one.
+  if (!IsSimpleOpcode(inst->opcode()) &&
+      !IsOpcodeSupported(successor_it->opcode())) {
+    return false;
+  }
+
+  // We should be able to swap memory instructions without changing semantics of
+  // the module.
+  if (IsOpcodeSupported(successor_it->opcode()) &&
+      !CanSwapMaybeSimpleInstructions(*inst, *successor_it,
+                                      transformation_context)) {
     return false;
   }
 
@@ -104,12 +119,19 @@ bool TransformationMoveInstructionDown::IsOpcodeSupported(SpvOp opcode) {
   //  We only support "simple" instructions that work don't with memory.
   //  We should extend this so that we support the ones that modify the memory
   //  too.
+  return IsSimpleOpcode(opcode) || IsMemoryReadOpcode(opcode) ||
+         IsMemoryWriteOpcode(opcode) || IsBarrierOpcode(opcode);
+}
+
+bool TransformationMoveInstructionDown::IsSimpleOpcode(SpvOp opcode) {
   switch (opcode) {
     case SpvOpNop:
     case SpvOpUndef:
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
-    case SpvOpArrayLength:
+      // OpAccessChain and OpInBoundsAccessChain are considered simple
+      // instructions since they result in a pointer to the object in memory,
+      // not the object itself.
     case SpvOpVectorExtractDynamic:
     case SpvOpVectorInsertDynamic:
     case SpvOpVectorShuffle:
@@ -207,12 +229,128 @@ bool TransformationMoveInstructionDown::IsOpcodeSupported(SpvOp opcode) {
     case SpvOpBitReverse:
     case SpvOpBitCount:
     case SpvOpCopyLogical:
-    case SpvOpPtrEqual:
-    case SpvOpPtrNotEqual:
       return true;
     default:
       return false;
   }
+}
+
+bool TransformationMoveInstructionDown::IsMemoryReadOpcode(SpvOp opcode) {
+  return opcode == SpvOpLoad || opcode == SpvOpCopyMemory;
+}
+
+uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
+    const opt::Instruction& inst) {
+  switch (inst.opcode()) {
+    case SpvOpLoad:
+      return inst.GetSingleWordInOperand(0);
+    case SpvOpCopyMemory:
+      return inst.GetSingleWordInOperand(1);
+    default:
+      assert(!IsMemoryReadOpcode(inst.opcode()) &&
+             "Not all memory read instructions are handled");
+      return 0;
+  }
+}
+
+bool TransformationMoveInstructionDown::IsMemoryWriteOpcode(SpvOp opcode) {
+  return opcode == SpvOpStore || opcode == SpvOpCopyMemory;
+}
+
+uint32_t TransformationMoveInstructionDown::GetMemoryWriteTarget(
+    const opt::Instruction& inst) {
+  switch (inst.opcode()) {
+    case SpvOpStore:
+    case SpvOpCopyMemory:
+      return inst.GetSingleWordInOperand(0);
+    default:
+      assert(!IsMemoryWriteOpcode(inst.opcode()) &&
+             "Not all memory write instructions are handled");
+      return 0;
+  }
+}
+
+bool TransformationMoveInstructionDown::IsBarrierOpcode(SpvOp opcode) {
+  return opcode == SpvOpMemoryBarrier || opcode == SpvOpControlBarrier ||
+         opcode == SpvOpMemoryNamedBarrier;
+}
+
+bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
+    const opt::Instruction& a, const opt::Instruction& b,
+    const TransformationContext& transformation_context) {
+  assert(IsOpcodeSupported(a.opcode()) && IsOpcodeSupported(b.opcode()) &&
+         "Both opcodes must be supported");
+
+  // One of opcodes is simple - we can swap them without any side-effects.
+  if (IsSimpleOpcode(a.opcode()) || IsSimpleOpcode(b.opcode())) {
+    return true;
+  }
+
+  // Both parameters are either memory instruction or barriers.
+
+  // One of the opcodes is a barrier - can't swap them.
+  if (IsBarrierOpcode(a.opcode()) || IsBarrierOpcode(b.opcode())) {
+    return false;
+  }
+
+  // Both parameters are memory instructions.
+
+  // Both parameters only read from memory - it's OK to swap them.
+  if (!IsMemoryWriteOpcode(a.opcode()) && !IsMemoryWriteOpcode(b.opcode())) {
+    return true;
+  }
+
+  // |a| and |b| are result ids of some pointers in the module. Returns true if
+  // |a| and |b| point to the same memory region and their pointees are
+  // irrelevant.
+  //
+  // TODO(): Currently, there is no way to determine whether two pointers point
+  //  to different regions. That being said, if two pointers are not synonymous,
+  //  they do not necessarily point to different memory regions. For example, if
+  //  we have two identical (except for their result ids) OpAccessChain
+  //  instructions, they might not be synonymous but still point to the same
+  //  memory.
+  auto memory_targets_compatible = [&transformation_context](uint32_t a,
+                                                             uint32_t b) {
+    const auto* fact_manager = transformation_context.GetFactManager();
+    return (a == b || fact_manager->IsSynonymous(MakeDataDescriptor(a, {}),
+                                                 MakeDataDescriptor(b, {}))) &&
+           (fact_manager->PointeeValueIsIrrelevant(a) ||
+            fact_manager->PointeeValueIsIrrelevant(b));
+  };
+
+  // At least one of instructions writes to memory.
+
+  // From now on we will denote an instruction that:
+  // - only reads from memory - R
+  // - only writes into memory - W
+  // - reads and writes - RW
+
+  // |a| is R or RW and |b| is W or RW - the read target of |a| and write target
+  // of |b| must be compatible.
+  if (IsMemoryReadOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
+      !memory_targets_compatible(GetMemoryReadTarget(a),
+                                 GetMemoryWriteTarget(b))) {
+    return false;
+  }
+
+  // |a| is W or RW and |b| is R or RW - the write target of |a| and read target
+  // of |b| must be compatible.
+  if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryReadOpcode(b.opcode()) &&
+      !memory_targets_compatible(GetMemoryWriteTarget(a),
+                                 GetMemoryReadTarget(b))) {
+    return false;
+  }
+
+  // |a| is W or RW and |b| is W or RW - the write target of |a| and write
+  // target of |b| must be compatible.
+  if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
+      !memory_targets_compatible(GetMemoryWriteTarget(a),
+                                 GetMemoryWriteTarget(b))) {
+    return false;
+  }
+
+  return true;
 }
 
 }  // namespace fuzz
