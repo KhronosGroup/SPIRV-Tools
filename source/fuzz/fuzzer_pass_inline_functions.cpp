@@ -36,6 +36,11 @@ void FuzzerPassInlineFunctions::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
       for (auto& instruction : block) {
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfInliningFunction())) {
+          continue;
+        }
+
         // |instruction| must be OpFunctionCall to consider applying the
         // transformation.
         if (instruction.opcode() != SpvOpFunctionCall) {
@@ -49,13 +54,25 @@ void FuzzerPassInlineFunctions::Apply() {
           continue;
         }
 
-        if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()->GetChanceOfInliningFunction())) {
+        // Checks if some block in |called_function| has OpKill or OpUnreachable
+        // as its termination instruction.
+        bool hasKillOrUnreachableInstruction = false;
+        for (auto& called_function_block : *called_function) {
+          if (called_function_block.terminator()->opcode() == SpvOpKill ||
+              called_function_block.terminator()->opcode() ==
+                  SpvOpUnreachable) {
+            hasKillOrUnreachableInstruction = true;
+            break;
+          }
+        }
+
+        // |called_function| must not have a block with OpKill or OpUnreachable
+        // as its termination instruction.
+        if (hasKillOrUnreachableInstruction) {
           continue;
         }
 
         function_call_instructions.push_back(&instruction);
-        // Erases the function call instruction from the caller function.
       }
     }
   }
@@ -84,7 +101,7 @@ void FuzzerPassInlineFunctions::Apply() {
 
     // Applies the inline function transformation.
     ApplyTransformation(
-        TransformationInlineFunction(result_id_map, instruction->result_id()));
+        TransformationInlineFunction(instruction->result_id(), result_id_map));
   }
 }
 

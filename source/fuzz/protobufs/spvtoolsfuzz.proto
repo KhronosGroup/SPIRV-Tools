@@ -1111,7 +1111,7 @@ message TransformationInlineFunction {
   // For each result id defined by the called function,
   // this map provides an associated fresh id that can
   // be used in the inlined version of the function call.
-  map<uint32, uint32> result_id_map = 1;
+  repeated UInt32Pair result_id_map = 1;
 
   // Result id of the function call instruction.
   uint32 function_call_id = 2;

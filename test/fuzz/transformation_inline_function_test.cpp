@@ -99,68 +99,65 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                validator_options);
 
   // Tests undefined function call instruction.
-  auto transformation = TransformationInlineFunction({{22, 45},
-                                                      {23, 46},
-                                                      {24, 47},
-                                                      {25, 48},
-                                                      {26, 49},
-                                                      {27, 50},
-                                                      {28, 51},
-                                                      {29, 52},
-                                                      {30, 53},
-                                                      {31, 54},
-                                                      {32, 55},
-                                                      {33, 56},
-                                                      {34, 57},
-                                                      {35, 58},
-                                                      {36, 59},
-                                                      {37, 60},
-                                                      {38, 61}},
-                                                     62);
+  auto transformation = TransformationInlineFunction(62, {{22, 45},
+                                                          {23, 46},
+                                                          {24, 47},
+                                                          {25, 48},
+                                                          {26, 49},
+                                                          {27, 50},
+                                                          {28, 51},
+                                                          {29, 52},
+                                                          {30, 53},
+                                                          {31, 54},
+                                                          {32, 55},
+                                                          {33, 56},
+                                                          {34, 57},
+                                                          {35, 58},
+                                                          {36, 59},
+                                                          {37, 60},
+                                                          {38, 61}});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests false function call instruction.
-  transformation = TransformationInlineFunction({{22, 45},
-                                                 {23, 46},
-                                                 {24, 47},
-                                                 {25, 48},
-                                                 {26, 49},
-                                                 {27, 50},
-                                                 {28, 51},
-                                                 {29, 52},
-                                                 {30, 53},
-                                                 {31, 54},
-                                                 {32, 55},
-                                                 {33, 56},
-                                                 {34, 57},
-                                                 {35, 58},
-                                                 {36, 59},
-                                                 {37, 60},
-                                                 {38, 61}},
-                                                42);
+  transformation = TransformationInlineFunction(42, {{22, 45},
+                                                     {23, 46},
+                                                     {24, 47},
+                                                     {25, 48},
+                                                     {26, 49},
+                                                     {27, 50},
+                                                     {28, 51},
+                                                     {29, 52},
+                                                     {30, 53},
+                                                     {31, 54},
+                                                     {32, 55},
+                                                     {33, 56},
+                                                     {34, 57},
+                                                     {35, 58},
+                                                     {36, 59},
+                                                     {37, 60},
+                                                     {38, 61}});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests applicable transformation.
-  transformation = TransformationInlineFunction({{22, 45},
-                                                 {23, 46},
-                                                 {24, 47},
-                                                 {25, 48},
-                                                 {26, 49},
-                                                 {27, 50},
-                                                 {28, 51},
-                                                 {29, 52},
-                                                 {30, 53},
-                                                 {31, 54},
-                                                 {32, 55},
-                                                 {33, 56},
-                                                 {34, 57},
-                                                 {35, 58},
-                                                 {36, 59},
-                                                 {37, 60},
-                                                 {38, 61}},
-                                                43);
+  transformation = TransformationInlineFunction(43, {{22, 45},
+                                                     {23, 46},
+                                                     {24, 47},
+                                                     {25, 48},
+                                                     {26, 49},
+                                                     {27, 50},
+                                                     {28, 51},
+                                                     {29, 52},
+                                                     {30, 53},
+                                                     {31, 54},
+                                                     {32, 55},
+                                                     {33, 56},
+                                                     {34, 57},
+                                                     {35, 58},
+                                                     {36, 59},
+                                                     {37, 60},
+                                                     {38, 61}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 }
@@ -244,24 +241,23 @@ TEST(TransformationInlineFunctionTest, Apply) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  auto transformation = TransformationInlineFunction({{22, 45},
-                                                      {23, 46},
-                                                      {24, 47},
-                                                      {25, 48},
-                                                      {26, 49},
-                                                      {27, 50},
-                                                      {28, 51},
-                                                      {29, 52},
-                                                      {30, 53},
-                                                      {31, 54},
-                                                      {32, 55},
-                                                      {33, 56},
-                                                      {34, 57},
-                                                      {35, 58},
-                                                      {36, 59},
-                                                      {37, 60},
-                                                      {38, 61}},
-                                                     43);
+  auto transformation = TransformationInlineFunction(43, {{22, 45},
+                                                          {23, 46},
+                                                          {24, 47},
+                                                          {25, 48},
+                                                          {26, 49},
+                                                          {27, 50},
+                                                          {28, 51},
+                                                          {29, 52},
+                                                          {30, 53},
+                                                          {31, 54},
+                                                          {32, 55},
+                                                          {33, 56},
+                                                          {34, 57},
+                                                          {35, 58},
+                                                          {36, 59},
+                                                          {37, 60},
+                                                          {38, 61}});
   transformation.Apply(context.get(), &transformation_context);
 
   std::string variant_shader = R"(
@@ -485,74 +481,70 @@ TEST(TransformationInlineFunctionTest, Misc1) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  auto transformation = TransformationInlineFunction({}, 30);
+  auto transformation = TransformationInlineFunction(30, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
   // Tests a parameter included in the id map.
-  transformation = TransformationInlineFunction({{55, 69},
-                                                 {56, 70},
-                                                 {57, 71},
-                                                 {58, 72},
-                                                 {59, 73},
-                                                 {60, 74},
-                                                 {61, 75},
-                                                 {62, 76},
-                                                 {63, 77},
-                                                 {64, 78},
-                                                 {65, 79},
-                                                 {66, 80}},
-                                                25);
+  transformation = TransformationInlineFunction(25, {{55, 69},
+                                                     {56, 70},
+                                                     {57, 71},
+                                                     {58, 72},
+                                                     {59, 73},
+                                                     {60, 74},
+                                                     {61, 75},
+                                                     {62, 76},
+                                                     {63, 77},
+                                                     {64, 78},
+                                                     {65, 79},
+                                                     {66, 80}});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests the id of the returned value not included in the id map.
-  transformation = TransformationInlineFunction({{56, 69},
-                                                 {57, 70},
-                                                 {58, 71},
-                                                 {59, 72},
-                                                 {60, 73},
-                                                 {61, 74},
-                                                 {62, 75},
-                                                 {64, 76},
-                                                 {65, 77},
-                                                 {66, 78}},
-                                                25);
+  transformation = TransformationInlineFunction(25, {{56, 69},
+                                                     {57, 70},
+                                                     {58, 71},
+                                                     {59, 72},
+                                                     {60, 73},
+                                                     {61, 74},
+                                                     {62, 75},
+                                                     {64, 76},
+                                                     {65, 77},
+                                                     {66, 78}});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationInlineFunction({{57, 69},
-                                                 {58, 70},
-                                                 {59, 71},
-                                                 {60, 72},
-                                                 {61, 73},
-                                                 {62, 74},
-                                                 {63, 75},
-                                                 {64, 76},
-                                                 {65, 77},
-                                                 {66, 78}},
-                                                25);
+  transformation = TransformationInlineFunction(25, {{57, 69},
+                                                     {58, 70},
+                                                     {59, 71},
+                                                     {60, 72},
+                                                     {61, 73},
+                                                     {62, 74},
+                                                     {63, 75},
+                                                     {64, 76},
+                                                     {65, 77},
+                                                     {66, 78}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
-  transformation = TransformationInlineFunction({{39, 79},
-                                                 {40, 80},
-                                                 {41, 81},
-                                                 {42, 82},
-                                                 {43, 83},
-                                                 {44, 84},
-                                                 {45, 85},
-                                                 {46, 86},
-                                                 {47, 87},
-                                                 {48, 88},
-                                                 {49, 89},
-                                                 {50, 90},
-                                                 {51, 91},
-                                                 {52, 92},
-                                                 {53, 93}},
-                                                21);
+  transformation = TransformationInlineFunction(21, {{39, 79},
+                                                     {40, 80},
+                                                     {41, 81},
+                                                     {42, 82},
+                                                     {43, 83},
+                                                     {44, 84},
+                                                     {45, 85},
+                                                     {46, 86},
+                                                     {47, 87},
+                                                     {48, 88},
+                                                     {49, 89},
+                                                     {50, 90},
+                                                     {51, 91},
+                                                     {52, 92},
+                                                     {53, 93}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);

@@ -29,8 +29,8 @@ class TransformationInlineFunction : public Transformation {
       const protobufs::TransformationInlineFunction& message);
 
   TransformationInlineFunction(
-      const std::map<uint32_t, uint32_t>& result_id_map,
-      uint32_t function_call_id);
+      uint32_t function_call_id,
+      const std::map<uint32_t, uint32_t>& result_id_map);
 
   // - |message_.result_id_map| must map the instructions of the called function
   // to fresh ids.
@@ -48,12 +48,6 @@ class TransformationInlineFunction : public Transformation {
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
-
-  // Requires that the function contains at most one OpReturnValue instruction.
-  // Returns the id associated with this instruction if present, and 0
-  // otherwise.
-  static uint32_t GetReturnValueId(opt::IRContext* ir_context,
-                                   opt::Function* function);
 
  private:
   protobufs::TransformationInlineFunction message_;
