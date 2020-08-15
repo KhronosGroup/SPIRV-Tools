@@ -1234,23 +1234,30 @@ bool FuzzerPassDonateModules::MaybeAddLivesafeFunction(
     }
   }
 
-  // If the function contains OpKill or OpUnreachable instructions, and has
-  // non-void return type, then we need a value %v to use in order to turn
+  // If |function_to_donate| contains OpKill or OpUnreachable instructions, and
+  // has non-void return type, then we need a value %v to use in order to turn
   // these into instructions of the form OpReturn %v.
-  uint32_t kill_unreachable_return_value_id;
-  auto function_return_type_inst =
-      donor_ir_context->get_def_use_mgr()->GetDef(function_to_donate.type_id());
-  if (function_return_type_inst->opcode() == SpvOpTypeVoid) {
-    // The return type is void, so we don't need a return value.
-    kill_unreachable_return_value_id = 0;
-  } else {
-    // We do need a return value; we use zero.
-    assert(function_return_type_inst->opcode() != SpvOpTypePointer &&
-           "Function return type must not be a pointer.");
-    kill_unreachable_return_value_id = FindOrCreateZeroConstant(
-        original_id_to_donated_id.at(function_return_type_inst->result_id()),
-        false);
+  uint32_t kill_unreachable_return_value_id = 0;
+  for (auto& block : function_to_donate) {
+    if (block.terminator()->opcode() != SpvOpKill &&
+        block.terminator()->opcode() != SpvOpUnreachable) {
+      continue;
+    }
+
+    auto function_return_type_inst =
+        donor_ir_context->get_def_use_mgr()->GetDef(
+            function_to_donate.type_id());
+    if (function_return_type_inst->opcode() != SpvOpTypeVoid) {
+      // We do need a return value; we use zero.
+      assert(function_return_type_inst->opcode() != SpvOpTypePointer &&
+             "Function return type must not be a pointer.");
+      kill_unreachable_return_value_id = FindOrCreateZeroConstant(
+          original_id_to_donated_id.at(function_return_type_inst->result_id()),
+          false);
+      break;
+    }
   }
+
   // Add the function in a livesafe manner.
   ApplyTransformation(TransformationAddFunction(
       donated_instructions, loop_limiter_variable_id, loop_limit, loop_limiters,
