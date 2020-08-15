@@ -140,7 +140,9 @@ void TransformationInlineFunction::Apply(
     for (auto& instruction : block) {
       // Replaces the operand ids with their mapped result ids.
       auto cloned_instruction = instruction.Clone(ir_context);
-      cloned_instruction->ForEachInId([called_function, function_call_instruction, &result_id_map](uint32_t* id) {
+      cloned_instruction->ForEachInId([called_function,
+                                       function_call_instruction,
+                                       &result_id_map](uint32_t* id) {
         // If |id| is mapped, then set it to its mapped value.
         if (result_id_map.count(*id)) {
           *id = result_id_map.at(*id);
