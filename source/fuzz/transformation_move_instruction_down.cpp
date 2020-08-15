@@ -314,7 +314,7 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   // the write target (the memory is written into):
   // - point to different memory regions
   // - point to the same region with irrelevant value
-  // - point to the same region and the region is not used in the block anymore.
+  // - point to the same region and the region is not used anymore.
   //
   // However, we can't currently determine if two pointers point to two
   // different memory regions. That being said, if two pointers are not
