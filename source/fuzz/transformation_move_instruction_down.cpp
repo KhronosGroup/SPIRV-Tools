@@ -66,8 +66,8 @@ bool TransformationMoveInstructionDown::IsApplicable(
   // We should be able to swap memory instructions without changing semantics of
   // the module.
   if (IsOpcodeSupported(successor_it->opcode()) &&
-      !CanSwapMaybeSimpleInstructions(*inst, *successor_it,
-                                      transformation_context)) {
+      !CanSwapMaybeSimpleInstructions(
+          *inst, *successor_it, *transformation_context.GetFactManager())) {
     return false;
   }
 
@@ -284,7 +284,7 @@ bool TransformationMoveInstructionDown::IsBarrierOpcode(SpvOp opcode) {
 
 bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
     const opt::Instruction& a, const opt::Instruction& b,
-    const TransformationContext& transformation_context) {
+    const FactManager& fact_manager) {
   assert(IsOpcodeSupported(a.opcode()) && IsOpcodeSupported(b.opcode()) &&
          "Both opcodes must be supported");
 
@@ -306,8 +306,6 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   if (!IsMemoryWriteOpcode(a.opcode()) && !IsMemoryWriteOpcode(b.opcode())) {
     return true;
   }
-
-  const auto* fact_manager = transformation_context.GetFactManager();
 
   // At least one of parameters is a memory read instruction.
 
@@ -362,27 +360,27 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   // of R, W and RW according to the tables above.
 
   if (IsMemoryReadOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
-      !fact_manager->PointeeValueIsIrrelevant(GetMemoryReadTarget(a)) &&
-      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
+      !fact_manager.PointeeValueIsIrrelevant(GetMemoryReadTarget(a)) &&
+      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
     return false;
   }
 
   if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryReadOpcode(b.opcode()) &&
-      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
-      !fact_manager->PointeeValueIsIrrelevant(GetMemoryReadTarget(b))) {
+      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
+      !fact_manager.PointeeValueIsIrrelevant(GetMemoryReadTarget(b))) {
     return false;
   }
 
   if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
-      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
-      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
+      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
+      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
     auto read_target_a = GetMemoryReadTarget(a);
     auto read_target_b = GetMemoryReadTarget(b);
 
     // |read_target_a| and |read_target_b| might have different types.
     return read_target_a == read_target_b ||
-           fact_manager->IsSynonymous(MakeDataDescriptor(read_target_a, {}),
-                                      MakeDataDescriptor(read_target_b, {}));
+           fact_manager.IsSynonymous(MakeDataDescriptor(read_target_a, {}),
+                                     MakeDataDescriptor(read_target_b, {}));
   }
 
   return true;

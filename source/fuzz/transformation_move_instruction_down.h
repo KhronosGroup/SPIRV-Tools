@@ -82,9 +82,9 @@ class TransformationMoveInstructionDown : public Transformation {
   // Returns true if it is possible to swap |a| and |b| without invalidating
   // the module's semantics. |a| and |b| might not be memory instructions.
   // Opcodes of both parameters must be supported.
-  static bool CanSwapMaybeSimpleInstructions(
-      const opt::Instruction& a, const opt::Instruction& b,
-      const TransformationContext& transformation_context);
+  static bool CanSwapMaybeSimpleInstructions(const opt::Instruction& a,
+                                             const opt::Instruction& b,
+                                             const FactManager& fact_manager);
 
   protobufs::TransformationMoveInstructionDown message_;
 };
