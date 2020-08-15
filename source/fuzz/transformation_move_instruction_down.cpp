@@ -119,8 +119,8 @@ bool TransformationMoveInstructionDown::IsOpcodeSupported(SpvOp opcode) {
   //  We only support "simple" instructions that work don't with memory.
   //  We should extend this so that we support the ones that modify the memory
   //  too.
-  return IsSimpleOpcode(opcode) || IsMemoryReadOpcode(opcode) ||
-         IsMemoryWriteOpcode(opcode) || IsBarrierOpcode(opcode);
+  return IsSimpleOpcode(opcode) || IsMemoryOpcode(opcode) ||
+         IsBarrierOpcode(opcode);
 }
 
 bool TransformationMoveInstructionDown::IsSimpleOpcode(SpvOp opcode) {
@@ -244,11 +244,12 @@ uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
   switch (inst.opcode()) {
     case SpvOpLoad:
       return inst.GetSingleWordInOperand(0);
+    case SpvOpStore:
     case SpvOpCopyMemory:
       return inst.GetSingleWordInOperand(1);
     default:
-      assert(!IsMemoryReadOpcode(inst.opcode()) &&
-             "Not all memory read instructions are handled");
+      assert(!IsMemoryOpcode(inst.opcode()) &&
+             "Not all memory opcodes are handled");
       return 0;
   }
 }
@@ -260,14 +261,20 @@ bool TransformationMoveInstructionDown::IsMemoryWriteOpcode(SpvOp opcode) {
 uint32_t TransformationMoveInstructionDown::GetMemoryWriteTarget(
     const opt::Instruction& inst) {
   switch (inst.opcode()) {
+    case SpvOpLoad:
+      return inst.result_id();
     case SpvOpStore:
     case SpvOpCopyMemory:
       return inst.GetSingleWordInOperand(0);
     default:
-      assert(!IsMemoryWriteOpcode(inst.opcode()) &&
-             "Not all memory write instructions are handled");
+      assert(!IsMemoryOpcode(inst.opcode()) &&
+             "Not all memory opcodes are handled");
       return 0;
   }
+}
+
+bool TransformationMoveInstructionDown::IsMemoryOpcode(SpvOp opcode) {
+  return IsMemoryReadOpcode(opcode) || IsMemoryWriteOpcode(opcode);
 }
 
 bool TransformationMoveInstructionDown::IsBarrierOpcode(SpvOp opcode) {
@@ -300,57 +307,82 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
     return true;
   }
 
-  // |id1| and |id2| are result ids of some pointers in the module. Returns true
-  // if |id1| and |id2| point to the same memory region and their pointees are
-  // irrelevant.
-  //
-  // TODO(): Currently, there is no way to determine whether two pointers point
-  //  to different regions. That being said, if two pointers are not synonymous,
-  //  they do not necessarily point to different memory regions. For example, if
-  //  we have two identical (except for their result ids) OpAccessChain
-  //  instructions, they might not be synonymous but still point to the same
-  //  memory.
-  auto memory_targets_compatible = [&transformation_context](uint32_t id1,
-                                                             uint32_t id2) {
-    const auto* fact_manager = transformation_context.GetFactManager();
-    auto point_to_same_memory =
-        id1 == id2 || fact_manager->IsSynonymous(MakeDataDescriptor(id1, {}),
-                                                 MakeDataDescriptor(id2, {}));
-    auto memory_value_is_irrelevant =
-        fact_manager->PointeeValueIsIrrelevant(id1) ||
-        fact_manager->PointeeValueIsIrrelevant(id2);
-    return point_to_same_memory && memory_value_is_irrelevant;
-  };
+  const auto* fact_manager = transformation_context.GetFactManager();
 
   // At least one of parameters is a memory read instruction.
+
+  // In theory, we can swap two memory instructions, one of which reads
+  // from the memory, if read target (the pointer the memory is read from) and
+  // the write target (the memory is written into):
+  // - point to different memory regions
+  // - point to the same region with irrelevant value
+  // - point to the same region and the region is not used in the block anymore.
+  //
+  // However, we can't currently determine if two pointers point to two
+  // different memory regions. That being said, if two pointers are not
+  // synonymous, they still might point to the same memory region. For example:
+  //   %1 = OpVariable ...
+  //   %2 = OpAccessChain %1 0
+  //   %3 = OpAccessChain %1 0
+  // In this pseudo-code, %2 and %3 are not synonymous but point to the same
+  // memory location. This implies that we can't determine if some memory
+  // location is not used in the block.
+  //
+  // With this in mind, consider two cases (we will build a table for each one):
+  // - one instruction only reads from memory, the other one only writes to it.
+  //   A - both point to the same memory region.
+  //   B - both point to different memory regions.
+  //   0, 1, 2 - neither, one of or both of the memory regions are irrelevant.
+  //   |-| - can't swap; |+| - can swap.
+  //     | 0 | 1 | 2 |
+  //   A : -   +   +
+  //   B : +   +   +
+  // - both instructions write to memory. Notation is the same.
+  //     | 0 | 1 | 2 |
+  //   A : *   +   +
+  //   B : +   +   +
+  //   * - we can swap two instructions that write into the same non-irrelevant
+  //   memory region if the written value is the same.
+  //
+  // Note that we can't always distinguish between A and B. Also note that
+  // in case of A, if one of the instructions is marked with
+  // PointeeValueIsIrrelevant, then the pointee of the other one is irrelevant
+  // as well even if the instruction is not marked with that fact.
+  //
+  // TODO(): This procedure can be improved when we can determine if two
+  //  pointers point to different memory regions.
 
   // From now on we will denote an instruction that:
   // - only reads from memory - R
   // - only writes into memory - W
   // - reads and writes - RW
+  //
+  // Both |a| and |b| can be either W or RW at this point. Additionally, at most
+  // one of them can be R. The procedure below checks all possible combinations
+  // of R, W and RW according to the tables above.
 
-  // |a| is R or RW and |b| is W or RW - the read target of |a| and write target
-  // of |b| must be compatible.
   if (IsMemoryReadOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
-      !memory_targets_compatible(GetMemoryReadTarget(a),
-                                 GetMemoryWriteTarget(b))) {
+      !fact_manager->PointeeValueIsIrrelevant(GetMemoryReadTarget(a)) &&
+      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
     return false;
   }
 
-  // |a| is W or RW and |b| is R or RW - the write target of |a| and read target
-  // of |b| must be compatible.
   if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryReadOpcode(b.opcode()) &&
-      !memory_targets_compatible(GetMemoryWriteTarget(a),
-                                 GetMemoryReadTarget(b))) {
+      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
+      !fact_manager->PointeeValueIsIrrelevant(GetMemoryReadTarget(b))) {
     return false;
   }
 
-  // |a| is W or RW and |b| is W or RW - the write target of |a| and write
-  // target of |b| must be compatible.
   if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
-      !memory_targets_compatible(GetMemoryWriteTarget(a),
-                                 GetMemoryWriteTarget(b))) {
-    return false;
+      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
+      !fact_manager->PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
+    auto read_target_a = GetMemoryReadTarget(a);
+    auto read_target_b = GetMemoryReadTarget(b);
+
+    // |read_target_a| and |read_target_b| might have different types.
+    return read_target_a == read_target_b ||
+           fact_manager->IsSynonymous(MakeDataDescriptor(read_target_a, {}),
+                                      MakeDataDescriptor(read_target_b, {}));
   }
 
   return true;

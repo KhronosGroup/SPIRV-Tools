@@ -60,15 +60,21 @@ class TransformationMoveInstructionDown : public Transformation {
   // Returns true if |opcode| represents an instruction that reads from memory.
   static bool IsMemoryReadOpcode(SpvOp opcode);
 
-  // Returns id of the pointer, |inst| reads memory from.
+  // Returns id being used by |inst| to read from. The id is guaranteed to have
+  // pointer type if |IsMemoryReadOpcode(inst.opcode())| is true.
   static uint32_t GetMemoryReadTarget(const opt::Instruction& inst);
 
   // Returns true if |opcode| represents an instruction that writes to the
   // memory.
   static bool IsMemoryWriteOpcode(SpvOp opcode);
 
-  // Returns id of the pointer, |inst| writes memory into.
+  // Returns id being used by |inst| to write into. The id is guaranteed to have
+  // pointer type if |IsMemoryWriteOpcode(inst.opcode())| is true.
   static uint32_t GetMemoryWriteTarget(const opt::Instruction& inst);
+
+  // Returns true if |opcode| is either a memory-write opcode or a memory-read
+  // opcode (see IsMemoryWriteOpcode and IsMemoryReadOpcode accordingly).
+  static bool IsMemoryOpcode(SpvOp opcode);
 
   // Returns true if |opcode| represents an a barrier instruction.
   static bool IsBarrierOpcode(SpvOp opcode);
