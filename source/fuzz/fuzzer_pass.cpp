@@ -606,8 +606,8 @@ uint32_t FuzzerPass::FindOrCreateLocalVariable(
   assert(pointer_type && pointer_type->AsPointer() &&
          pointer_type->AsPointer()->storage_class() ==
              SpvStorageClassFunction &&
-         "The pointer_type_id must refer to a pointer type with storage class "
-         "Function");
+         "The pointer_type_id must refer to a defined pointer type with "
+         "storage class Function");
   auto function = fuzzerutil::FindFunction(GetIRContext(), function_id);
   assert(function && "The function must be defined.");
 
@@ -646,8 +646,13 @@ uint32_t FuzzerPass::FindOrCreateGlobalVariable(
   auto pointer_type = GetIRContext()->get_type_mgr()->GetType(pointer_type_id);
   // No unused variables in release mode.
   (void)pointer_type;
-  assert(pointer_type->AsPointer() &&
-         "The pointer_type_id must refer to a pointer type");
+  assert(
+      pointer_type && pointer_type->AsPointer() &&
+      (pointer_type->AsPointer()->storage_class() == SpvStorageClassPrivate ||
+       pointer_type->AsPointer()->storage_class() ==
+           SpvStorageClassWorkgroup) &&
+      "The pointer_type_id must refer to a defined pointer type with storage "
+      "class Private or Workgroup");
   for (auto& instruction : GetIRContext()->module()->types_values()) {
     if (instruction.opcode() != SpvOpVariable) {
       continue;
@@ -670,9 +675,6 @@ uint32_t FuzzerPass::FindOrCreateGlobalVariable(
       GetIRContext(), pointer_type_id);
   auto storage_class = fuzzerutil::GetStorageClassFromPointerType(
       GetIRContext(), pointer_type_id);
-  assert((storage_class == SpvStorageClassPrivate ||
-          storage_class == SpvStorageClassWorkgroup) &&
-         "The storage class must be Private or Workgroup");
   uint32_t result_id = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(TransformationAddGlobalVariable(
       result_id, pointer_type_id, storage_class,
