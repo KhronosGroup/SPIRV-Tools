@@ -29,17 +29,19 @@ class TransformationAddParameter : public Transformation {
       const protobufs::TransformationAddParameter& message);
 
   TransformationAddParameter(uint32_t function_id, uint32_t parameter_fresh_id,
-                             std::map<uint32_t, uint32_t>&& call_parameter_id,
+                             uint32_t parameter_type_id,
+                             std::map<uint32_t, uint32_t> call_parameter_ids,
                              uint32_t function_type_fresh_id);
 
   // - |function_id| must be a valid result id of some non-entry-point function
   //   in the module.
+  // - |parameter_type_id| is a type id of the new parameter. The type must be
+  //   supported by this transformation as specified by IsParameterTypeSupported
+  //   function.
   // - |call_parameter_id| must map from every id of an OpFunctionCall
-  //   instruction of this function to the id of the available OpVariable
-  //   instruction (pointer type) or the available value (non-pointer type) in
-  //   that caller. If there are no callers, there is only one key - 0, which
-  //   maps to the type id of the new parameter. The type must be supported by
-  //   this transformation as specified by IsParameterTypeSupported function.
+  //   instruction of this function to the id that will be passed as the new
+  //   parameter at that call site. There could be no callers, therefore this
+  //   map can be empty.
   // - |parameter_fresh_id| and |function_type_fresh_id| are fresh ids and are
   //   not equal.
   bool IsApplicable(
@@ -49,8 +51,9 @@ class TransformationAddParameter : public Transformation {
   // - Creates a new OpFunctionParameter instruction with result id
   //   |parameter_fresh_id| for the function with |function_id|.
   // - Adjusts function's type to include a new parameter.
-  // - There could be no callers. Otherwise, for every caller adds the value of
-  //   the map |call_parameter_id| as a new operand to every caller.
+  // - There could be no callers. Otherwise, for every caller adds as a new
+  //   operand to every caller the value of the map |call_parameter_id| for the
+  //   key of the id of this caller.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

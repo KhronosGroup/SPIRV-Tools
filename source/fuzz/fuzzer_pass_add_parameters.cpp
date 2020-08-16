@@ -19,9 +19,6 @@
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_add_parameter.h"
 
-#include "source/fuzz/transformation_add_global_variable.h"
-#include "source/fuzz/transformation_add_local_variable.h"
-
 namespace spvtools {
 namespace fuzz {
 
@@ -78,7 +75,7 @@ void FuzzerPassAddParameters::Apply() {
           type_candidates[GetFuzzerContext()->RandomIndex(type_candidates)];
       auto current_type =
           GetIRContext()->get_type_mgr()->GetType(current_type_id);
-      std::map<uint32_t, uint32_t> call_parameter_id;
+      std::map<uint32_t, uint32_t> call_parameter_ids;
 
       // Consider the case when a pointer type was selected.
       if (current_type->kind() == opt::analysis::Type::kPointer) {
@@ -86,7 +83,7 @@ void FuzzerPassAddParameters::Apply() {
             GetIRContext(), current_type_id);
         switch (storage_class) {
           case SpvStorageClassFunction: {
-            // In every caller find or create a local variable with that has the
+            // In every caller find or create a local variable that has the
             // selected type.
             for (auto* instr :
                  fuzzerutil::GetCallers(GetIRContext(), function.result_id())) {
@@ -94,7 +91,7 @@ void FuzzerPassAddParameters::Apply() {
               auto function_id = block->GetParent()->result_id();
               uint32_t variable_id =
                   FindOrCreateLocalVariable(current_type_id, function_id, true);
-              call_parameter_id[instr->result_id()] = variable_id;
+              call_parameter_ids[instr->result_id()] = variable_id;
             }
           } break;
           case SpvStorageClassPrivate:
@@ -107,7 +104,7 @@ void FuzzerPassAddParameters::Apply() {
               uint32_t variable_id =
                   FindOrCreateGlobalVariable(current_type_id, true);
               for (auto* instr : callers) {
-                call_parameter_id[instr->result_id()] = variable_id;
+                call_parameter_ids[instr->result_id()] = variable_id;
               }
             }
           } break;
@@ -116,7 +113,7 @@ void FuzzerPassAddParameters::Apply() {
         }
       } else {
         // If there exists at least one caller, find or create a zero constant
-        // with that has the selected type.
+        // that has the selected type.
         std::vector<opt::Instruction*> callers =
             fuzzerutil::GetCallers(GetIRContext(), function.result_id());
         if (!callers.empty()) {
@@ -124,20 +121,15 @@ void FuzzerPassAddParameters::Apply() {
               FindOrCreateZeroConstant(current_type_id, true);
           for (auto* instr :
                fuzzerutil::GetCallers(GetIRContext(), function.result_id())) {
-            call_parameter_id[instr->result_id()] = constant_id;
+            call_parameter_ids[instr->result_id()] = constant_id;
           }
         }
       }
 
-      // If the function has no callers, and a selected type to the key 0. It is
-      // necessary to pass information of the new type to the transformation.
-      // Since there are no callers, we pass the type id, not the value id.
-      if (call_parameter_id.empty()) {
-        call_parameter_id[0] = current_type_id;
-      }
       ApplyTransformation(TransformationAddParameter(
           function.result_id(), GetFuzzerContext()->GetFreshId(),
-          std::move(call_parameter_id), GetFuzzerContext()->GetFreshId()));
+          current_type_id, std::move(call_parameter_ids),
+          GetFuzzerContext()->GetFreshId()));
     }
   }
 }
@@ -151,91 +143,5 @@ uint32_t FuzzerPassAddParameters::GetNumberOfParameters(
   return static_cast<uint32_t>(type->AsFunction()->param_types().size());
 }
 
-uint32_t FuzzerPassAddParameters::FindOrCreateLocalVariable(
-    uint32_t pointer_type_id, uint32_t function_id,
-    bool pointee_value_is_irrelevant) {
-  uint32_t result_id = 0;
-  auto pointer_type = GetIRContext()->get_type_mgr()->GetType(pointer_type_id);
-  // No unused variables in release mode.
-  (void)pointer_type;
-  assert(pointer_type->AsPointer() &&
-         "The pointer_type_id must refer to a pointer type");
-  auto function = fuzzerutil::FindFunction(GetIRContext(), function_id);
-  assert(function && "The function must be defined.");
-
-  // All of the local variable declarations are located in the first block.
-  auto block = function->begin();
-  for (auto& instruction : *block) {
-    if (instruction.opcode() != SpvOpVariable) {
-      continue;
-    }
-    if (!instruction.type_id() || instruction.type_id() != pointer_type_id) {
-      continue;
-    }
-
-    // Check if the found variable is marked with PointeeValueIsIrrelevant.
-    if (!GetTransformationContext()->GetFactManager()->PointeeValueIsIrrelevant(
-            instruction.result_id())) {
-      continue;
-    }
-    result_id = instruction.result_id();
-    break;
-  }
-
-  // No such variable was found. Apply a transformation to get one.
-  if (!result_id) {
-    uint32_t pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
-        GetIRContext(), pointer_type_id);
-    result_id = GetFuzzerContext()->GetFreshId();
-    ApplyTransformation(TransformationAddLocalVariable(
-        result_id, pointer_type_id, function_id,
-        FindOrCreateZeroConstant(pointee_type_id, true),
-        pointee_value_is_irrelevant));
-  }
-  return result_id;
-}
-
-uint32_t FuzzerPassAddParameters::FindOrCreateGlobalVariable(
-    uint32_t pointer_type_id, bool pointee_value_is_irrelevant) {
-  uint32_t result_id = 0;
-  auto pointer_type = GetIRContext()->get_type_mgr()->GetType(pointer_type_id);
-  // No unused variables in release mode.
-  (void)pointer_type;
-  assert(pointer_type->AsPointer() &&
-         "The pointer_type_id must refer to a pointer type");
-  for (auto& instruction : GetIRContext()->module()->types_values()) {
-    if (instruction.opcode() != SpvOpVariable) {
-      continue;
-    }
-    if (!instruction.type_id() || instruction.type_id() != pointer_type_id) {
-      continue;
-    }
-
-    // Check if the found variable is marked with PointeeValueIsIrrelevant.
-    if (!GetTransformationContext()->GetFactManager()->PointeeValueIsIrrelevant(
-            instruction.result_id())) {
-      continue;
-    }
-    result_id = instruction.result_id();
-    break;
-  }
-
-  // No such variable was found. Apply a transformation to get one.
-  if (!result_id) {
-    uint32_t pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
-        GetIRContext(), pointer_type_id);
-    auto storage_class = fuzzerutil::GetStorageClassFromPointerType(
-        GetIRContext(), pointer_type_id);
-    assert((storage_class == SpvStorageClassPrivate ||
-            storage_class == SpvStorageClassWorkgroup) &&
-           "The storage class must be Private or Workgroup");
-    result_id = GetFuzzerContext()->GetFreshId();
-    ApplyTransformation(TransformationAddGlobalVariable(
-        result_id, pointer_type_id, storage_class,
-        FindOrCreateZeroConstant(pointee_type_id, true),
-        pointee_value_is_irrelevant));
-  }
-  return result_id;
-}
 }  // namespace fuzz
 }  // namespace spvtools

@@ -24,6 +24,8 @@
 #include "source/fuzz/transformation_add_constant_null.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"
 #include "source/fuzz/transformation_add_global_undef.h"
+#include "source/fuzz/transformation_add_global_variable.h"
+#include "source/fuzz/transformation_add_local_variable.h"
 #include "source/fuzz/transformation_add_loop_preheader.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
 #include "source/fuzz/transformation_add_type_float.h"
@@ -593,6 +595,90 @@ opt::BasicBlock* FuzzerPass::GetOrCreateSimpleLoopPreheader(
 
   // Make the newly-created preheader the new entry block.
   return &*function->FindBlock(preheader_id);
+}
+
+uint32_t FuzzerPass::FindOrCreateLocalVariable(
+    uint32_t pointer_type_id, uint32_t function_id,
+    bool pointee_value_is_irrelevant) {
+  auto pointer_type = GetIRContext()->get_type_mgr()->GetType(pointer_type_id);
+  // No unused variables in release mode.
+  (void)pointer_type;
+  assert(pointer_type && pointer_type->AsPointer() &&
+         pointer_type->AsPointer()->storage_class() ==
+             SpvStorageClassFunction &&
+         "The pointer_type_id must refer to a pointer type with storage class "
+         "Function");
+  auto function = fuzzerutil::FindFunction(GetIRContext(), function_id);
+  assert(function && "The function must be defined.");
+
+  // All of the local variable declarations are located in the first block.
+  auto block = function->begin();
+  for (auto& instruction : *block) {
+    if (instruction.opcode() != SpvOpVariable) {
+      continue;
+    }
+    // Every OpVariable has its type id defined.
+    if (instruction.type_id() != pointer_type_id) {
+      continue;
+    }
+    // Check if the found variable is marked with PointeeValueIsIrrelevant
+    // according to |pointee_value_is_irrelevant|.
+    if (GetTransformationContext()->GetFactManager()->PointeeValueIsIrrelevant(
+            instruction.result_id()) != pointee_value_is_irrelevant) {
+      continue;
+    }
+    return instruction.result_id();
+  }
+
+  // No such variable was found. Apply a transformation to get one.
+  uint32_t pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
+      GetIRContext(), pointer_type_id);
+  uint32_t result_id = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationAddLocalVariable(
+      result_id, pointer_type_id, function_id,
+      FindOrCreateZeroConstant(pointee_type_id, true),
+      pointee_value_is_irrelevant));
+  return result_id;
+}
+
+uint32_t FuzzerPass::FindOrCreateGlobalVariable(
+    uint32_t pointer_type_id, bool pointee_value_is_irrelevant) {
+  auto pointer_type = GetIRContext()->get_type_mgr()->GetType(pointer_type_id);
+  // No unused variables in release mode.
+  (void)pointer_type;
+  assert(pointer_type->AsPointer() &&
+         "The pointer_type_id must refer to a pointer type");
+  for (auto& instruction : GetIRContext()->module()->types_values()) {
+    if (instruction.opcode() != SpvOpVariable) {
+      continue;
+    }
+    // Every OpVariable has its type id defined.
+    if (instruction.type_id() != pointer_type_id) {
+      continue;
+    }
+    // Check if the found variable is marked with PointeeValueIsIrrelevant
+    // according to |pointee_value_is_irrelevant|.
+    if (GetTransformationContext()->GetFactManager()->PointeeValueIsIrrelevant(
+            instruction.result_id()) != pointee_value_is_irrelevant) {
+      continue;
+    }
+    return instruction.result_id();
+  }
+
+  // No such variable was found. Apply a transformation to get one.
+  uint32_t pointee_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
+      GetIRContext(), pointer_type_id);
+  auto storage_class = fuzzerutil::GetStorageClassFromPointerType(
+      GetIRContext(), pointer_type_id);
+  assert((storage_class == SpvStorageClassPrivate ||
+          storage_class == SpvStorageClassWorkgroup) &&
+         "The storage class must be Private or Workgroup");
+  uint32_t result_id = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationAddGlobalVariable(
+      result_id, pointer_type_id, storage_class,
+      FindOrCreateZeroConstant(pointee_type_id, true),
+      pointee_value_is_irrelevant));
+  return result_id;
 }
 
 }  // namespace fuzz

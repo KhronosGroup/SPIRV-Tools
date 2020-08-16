@@ -25,12 +25,13 @@ TransformationAddParameter::TransformationAddParameter(
 
 TransformationAddParameter::TransformationAddParameter(
     uint32_t function_id, uint32_t parameter_fresh_id,
-    std::map<uint32_t, uint32_t>&& call_parameter_id,
+    uint32_t parameter_type_id, std::map<uint32_t, uint32_t> call_parameter_ids,
     uint32_t function_type_fresh_id) {
   message_.set_function_id(function_id);
   message_.set_parameter_fresh_id(parameter_fresh_id);
-  *message_.mutable_call_parameter_id() =
-      fuzzerutil::MapToRepeatedUInt32Pair(call_parameter_id);
+  message_.set_parameter_type_id(parameter_type_id);
+  *message_.mutable_call_parameter_ids() =
+      fuzzerutil::MapToRepeatedUInt32Pair(call_parameter_ids);
   message_.set_function_type_fresh_id(function_type_fresh_id);
 }
 
@@ -43,19 +44,31 @@ bool TransformationAddParameter::IsApplicable(
       fuzzerutil::FunctionIsEntryPoint(ir_context, function->result_id())) {
     return false;
   }
-  std::map<uint32_t, uint32_t> call_parameter_id_map =
-      fuzzerutil::RepeatedUInt32PairToMap(message_.call_parameter_id());
-  uint32_t new_parameter_type_id = 0;
+
+  // The type must be supported.
+  uint32_t new_parameter_type_id = message_.parameter_type_id();
+  auto new_parameter_type =
+      ir_context->get_type_mgr()->GetType(new_parameter_type_id);
+  if (!new_parameter_type) {
+    return false;
+  }
+  if (!IsParameterTypeSupported(*new_parameter_type)) {
+    return false;
+  }
+
   // Iterate over all callers.
+  std::map<uint32_t, uint32_t> call_parameter_ids_map =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.call_parameter_ids());
   for (auto* instr :
        fuzzerutil::GetCallers(ir_context, message_.function_id())) {
     uint32_t caller_id = instr->result_id();
 
     // If there is no entry for this caller, return false.
-    if (call_parameter_id_map.find(caller_id) == call_parameter_id_map.end()) {
+    if (call_parameter_ids_map.find(caller_id) ==
+        call_parameter_ids_map.end()) {
       return false;
     }
-    uint32_t value_id = call_parameter_id_map[caller_id];
+    uint32_t value_id = call_parameter_ids_map[caller_id];
 
     auto value_instr = ir_context->get_def_use_mgr()->GetDef(value_id);
     if (!value_instr) {
@@ -75,36 +88,10 @@ bool TransformationAddParameter::IsApplicable(
     }
 
     // Type of every value of the map must be the same for all callers.
-    if (!new_parameter_type_id) {
-      new_parameter_type_id = value_type_id;
-    } else {
-      if (new_parameter_type_id != value_type_id) {
-        return false;
-      }
-    }
-  }
-
-  // If there are no callers, check for key 0 to get |new_parameter_type_id|.
-  // There are no OpFunctionCallInstruction, however the new parameter will be
-  // created and |new_parameter_type_id| must be defined.
-  if (!new_parameter_type_id) {
-    if (call_parameter_id_map.find(0) != call_parameter_id_map.end()) {
-      uint32_t value_type_id = call_parameter_id_map[0];
-      auto value_type = ir_context->get_type_mgr()->GetType(value_type_id);
-      if (!value_type) {
-        return false;
-      }
-      new_parameter_type_id = value_type_id;
-    } else {
+    if (new_parameter_type_id != value_type_id) {
       return false;
     }
   }
-  // This type must be supported.
-  if (!IsParameterTypeSupported(
-          *ir_context->get_type_mgr()->GetType(new_parameter_type_id))) {
-    return false;
-  }
-
   return fuzzerutil::IsFreshId(ir_context, message_.parameter_fresh_id()) &&
          fuzzerutil::IsFreshId(ir_context, message_.function_type_fresh_id()) &&
          message_.parameter_fresh_id() != message_.function_type_fresh_id();
@@ -117,17 +104,13 @@ void TransformationAddParameter::Apply(
   auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
   assert(function && "Can't find the function");
 
-  std::map<uint32_t, uint32_t> call_parameter_id_map =
-      fuzzerutil::RepeatedUInt32PairToMap(message_.call_parameter_id());
+  std::map<uint32_t, uint32_t> call_parameter_ids_map =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.call_parameter_ids());
 
-  uint32_t new_parameter_type_id;
-  if (call_parameter_id_map.begin()->first != 0) {
-    new_parameter_type_id = fuzzerutil::GetTypeId(
-        ir_context, call_parameter_id_map.begin()->second);
-  } else {
-    new_parameter_type_id = call_parameter_id_map.begin()->second;
-  }
-  assert(new_parameter_type_id != 0 && "New parameter has invalid type");
+  uint32_t new_parameter_type_id = message_.parameter_type_id();
+  auto new_parameter_type =
+      ir_context->get_type_mgr()->GetType(new_parameter_type_id);
+  assert(new_parameter_type && "New parameter has invalid type.");
 
   // Add new parameters to the function.
   function->AddParameter(MakeUnique<opt::Instruction>(
@@ -136,22 +119,24 @@ void TransformationAddParameter::Apply(
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.parameter_fresh_id());
 
-  // If the |new_parameter_type_id| is not a pointer type, mark new parameter as
+  // If the |new_parameter_type_id| is not a pointer type, mark id as
   // irrelevant so that we can replace its use with some other id. If the
-  // |new_parameter_type_id| is not a pointer type, we cannot mark it, because
-  // this pointer might be replaced by a pointer from original shader. This
-  // would change the semantics of the module.
-  auto new_parameter_type =
-      ir_context->get_type_mgr()->GetType(new_parameter_type_id);
+  // |new_parameter_type_id| is a pointer type, we cannot mark it with
+  // IdIsIrrelevant, because this pointer might be replaced by a pointer from
+  // original shader. This would change the semantics of the module. In the case
+  // of a pointer type we mark it with PointeeValueIsIrrelevant.
   if (new_parameter_type->kind() != opt::analysis::Type::kPointer) {
     transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
+        message_.parameter_fresh_id());
+  } else {
+    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
         message_.parameter_fresh_id());
   }
 
   // Fix all OpFunctionCall instructions.
   for (auto* inst : fuzzerutil::GetCallers(ir_context, function->result_id())) {
     inst->AddOperand(
-        {SPV_OPERAND_TYPE_ID, {call_parameter_id_map[inst->result_id()]}});
+        {SPV_OPERAND_TYPE_ID, {call_parameter_ids_map[inst->result_id()]}});
   }
 
   // Update function's type.

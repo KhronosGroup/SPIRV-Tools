@@ -107,53 +107,53 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
                                                validator_options);
 
   // Can't modify entry point function.
-  ASSERT_FALSE(TransformationAddParameter(4, 60, {{0, 7}}, 61)
+  ASSERT_FALSE(TransformationAddParameter(4, 60, 7, {{}}, 61)
                    .IsApplicable(context.get(), transformation_context));
 
-  // There is no function with result id 29.
-  ASSERT_FALSE(TransformationAddParameter(60, 60, {{0, 11}}, 61)
+  // There is no function with result id 60.
+  ASSERT_FALSE(TransformationAddParameter(60, 60, 11, {{}}, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter id is not fresh.
-  ASSERT_FALSE(TransformationAddParameter(9, 14, {{13, 8}}, 61)
+  ASSERT_FALSE(TransformationAddParameter(9, 14, 11, {{{13, 8}}}, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type id is not fresh.
-  ASSERT_FALSE(TransformationAddParameter(9, 60, {{13, 8}}, 14)
+  ASSERT_FALSE(TransformationAddParameter(9, 60, 11, {{{13, 8}}}, 14)
                    .IsApplicable(context.get(), transformation_context));
 
   // Function type id and parameter type id are equal.
-  ASSERT_FALSE(TransformationAddParameter(9, 60, {{13, 8}}, 60)
+  ASSERT_FALSE(TransformationAddParameter(9, 60, 11, {{{13, 8}}}, 60)
                    .IsApplicable(context.get(), transformation_context));
 
   // Parameter's initializer doesn't exist.
-  ASSERT_FALSE(TransformationAddParameter(9, 60, {{13, 60}}, 61)
+  ASSERT_FALSE(TransformationAddParameter(9, 60, 11, {{{13, 60}}}, 61)
                    .IsApplicable(context.get(), transformation_context));
 
   // Correct transformations.
   {
-    TransformationAddParameter correct(9, 60, {{13, 8}}, 61);
+    TransformationAddParameter correct(9, 60, 11, {{{13, 8}}}, 61);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(fact_manager.IdIsIrrelevant(60));
   }
   {
-    TransformationAddParameter correct(17, 62, {{0, 7}}, 63);
+    TransformationAddParameter correct(17, 62, 7, {{}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(fact_manager.IdIsIrrelevant(62));
   }
   {
-    TransformationAddParameter correct(29, 64, {{0, 31}}, 65);
+    TransformationAddParameter correct(29, 64, 31, {{}}, 65);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(fact_manager.IdIsIrrelevant(64));
   }
   {
-    TransformationAddParameter correct(34, 66, {{0, 7}}, 67);
+    TransformationAddParameter correct(34, 66, 7, {{}}, 67);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
@@ -327,40 +327,34 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
                                                validator_options);
 
   // Bad: Id 19 is not available in the caller that has id 25.
-  TransformationAddParameter transformation_bad_1(12, 50, {{34, 19}, {38, 19}},
-                                                  51);
+  TransformationAddParameter transformation_bad_1(12, 50, 8,
+                                                  {{{34, 19}, {38, 19}}}, 51);
 
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 
   // Bad: Id 8 does not have a type.
-  TransformationAddParameter transformation_bad_2(12, 50, {{34, 8}, {38, 8}},
-                                                  51);
+  TransformationAddParameter transformation_bad_2(12, 50, 8,
+                                                  {{{34, 8}, {38, 8}}}, 51);
 
   ASSERT_FALSE(
       transformation_bad_2.IsApplicable(context.get(), transformation_context));
 
   // Bad: Types of id 25 and id 18 are different.
-  TransformationAddParameter transformation_bad_3(12, 50, {{34, 25}, {38, 18}},
-                                                  51);
+  TransformationAddParameter transformation_bad_3(12, 50, 22,
+                                                  {{{34, 25}, {38, 18}}}, 51);
   ASSERT_FALSE(
       transformation_bad_3.IsApplicable(context.get(), transformation_context));
 
   // Function with id 14 does not have any callers.
   // Bad: Id 18 is not a vaild type.
-  TransformationAddParameter transformation_bad_4(14, 50, {{0, 18}}, 51);
+  TransformationAddParameter transformation_bad_4(14, 50, 18, {{}}, 51);
   ASSERT_FALSE(
       transformation_bad_4.IsApplicable(context.get(), transformation_context));
 
   // Function with id 14 does not have any callers.
-  // Bad:  There is no type_id required for the new parameter.
-  TransformationAddParameter transformation_bad_5(14, 50, {}, 51);
-  ASSERT_FALSE(
-      transformation_bad_5.IsApplicable(context.get(), transformation_context));
-
-  // Function with id 14 does not have any callers.
   // Bad:  Id 3 refers to OpTypeVoid, which is not supported.
-  TransformationAddParameter transformation_bad_6(14, 50, {{0, 3}}, 51);
+  TransformationAddParameter transformation_bad_6(14, 50, 3, {{}}, 51);
   ASSERT_FALSE(
       transformation_bad_6.IsApplicable(context.get(), transformation_context));
 }
@@ -459,36 +453,36 @@ TEST(TransformationAddParameterTest, PointerTypeTest) {
                                                validator_options);
 
   // Bad: Pointer of id 61 has storage class Output, which is not supported.
-  TransformationAddParameter transformation_bad_1(12, 50, {{38, 61}, {42, 61}},
-                                                  51);
+  TransformationAddParameter transformation_bad_1(12, 50, 60,
+                                                  {{{38, 61}, {42, 61}}}, 51);
 
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 
   // Good: Local variable of id 31 is defined in the caller (main).
-  TransformationAddParameter transformation_good_1(12, 50, {{38, 31}, {42, 31}},
-                                                   51);
+  TransformationAddParameter transformation_good_1(12, 50, 30,
+                                                   {{{38, 31}, {42, 31}}}, 51);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_1.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Local variable of id 34 is defined in the caller (main).
-  TransformationAddParameter transformation_good_2(14, 52, {{43, 34}}, 53);
+  TransformationAddParameter transformation_good_2(14, 52, 9, {{{43, 34}}}, 53);
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_2.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Local variable of id 39 is defined in the caller (main).
-  TransformationAddParameter transformation_good_3(6, 54, {{33, 39}}, 55);
+  TransformationAddParameter transformation_good_3(6, 54, 9, {{{33, 39}}}, 55);
   ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_3.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: This adds another pointer parameter to the function of id 6.
-  TransformationAddParameter transformation_good_4(6, 56, {{33, 31}}, 57);
+  TransformationAddParameter transformation_good_4(6, 56, 30, {{{33, 31}}}, 57);
   ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_4.Apply(context.get(), &transformation_context);
@@ -582,7 +576,6 @@ TEST(TransformationAddParameterTest, PointerTypeTest) {
   )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
-
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
