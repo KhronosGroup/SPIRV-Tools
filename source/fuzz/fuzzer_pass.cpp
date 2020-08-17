@@ -676,10 +676,18 @@ uint32_t FuzzerPass::FindOrCreateGlobalVariable(
   auto storage_class = fuzzerutil::GetStorageClassFromPointerType(
       GetIRContext(), pointer_type_id);
   uint32_t result_id = GetFuzzerContext()->GetFreshId();
-  ApplyTransformation(TransformationAddGlobalVariable(
-      result_id, pointer_type_id, storage_class,
-      FindOrCreateZeroConstant(pointee_type_id, true),
-      pointee_value_is_irrelevant));
+
+  // A variable with storage class Workgroup shouldn't have an initializer.
+  if (storage_class == SpvStorageClassWorkgroup) {
+    ApplyTransformation(TransformationAddGlobalVariable(
+        result_id, pointer_type_id, SpvStorageClassWorkgroup, 0,
+        pointee_value_is_irrelevant));
+  } else {
+    ApplyTransformation(TransformationAddGlobalVariable(
+        result_id, pointer_type_id, SpvStorageClassPrivate,
+        FindOrCreateZeroConstant(pointee_type_id, true),
+        pointee_value_is_irrelevant));
+  }
   return result_id;
 }
 
