@@ -81,15 +81,6 @@ class AggressiveDCEPass : public MemPass {
     if (!live_insts_.Set(inst->unique_id())) {
       worklist_.push(inst);
     }
-    if (inst->GetDebugScope().GetLexicalScope() != kNoDebugScope) {
-      auto* scope =
-          get_def_use_mgr()->GetDef(inst->GetDebugScope().GetLexicalScope());
-      AddToWorklist(scope);
-    }
-    if (inst->GetDebugInlinedAt() != kNoInlinedAt) {
-      auto* inlined_at = get_def_use_mgr()->GetDef(inst->GetDebugInlinedAt());
-      AddToWorklist(inlined_at);
-    }
   }
 
   // Add all store instruction which use |ptrId|, directly or indirectly,
