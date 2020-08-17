@@ -2718,6 +2718,43 @@ main() {}
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeTemplateUsedForVariableType) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "OpaqueType foo;
+main() {}
+"
+%float_name = OpString "float"
+%ty_name = OpString "Texture"
+%t_name = OpString "T"
+%foo_name = OpString "foo"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+%int_128 = OpConstant %u32 128
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_none = OpExtInst %void %DbgExt DebugInfoNone
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%opaque = OpExtInst %void %DbgExt DebugTypeComposite %ty_name Class %dbg_src 1 1 %comp_unit %ty_name %dbg_none FlagIsPublic
+%param = OpExtInst %void %DbgExt DebugTypeTemplateParameter %t_name %float_info %dbg_none %dbg_src 0 0
+%temp = OpExtInst %void %DbgExt DebugTypeTemplate %opaque %param
+%foo = OpExtInst %void %DbgExt DebugGlobalVariable %foo_name %temp %dbg_src 0 0 %comp_unit %foo_name %f32_input FlagIsProtected|FlagIsPrivate
+)";
+
+  const std::string extension = R"(
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeTemplateFunction) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
