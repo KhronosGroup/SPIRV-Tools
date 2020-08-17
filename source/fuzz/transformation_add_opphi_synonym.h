@@ -24,9 +24,9 @@ class TransformationAddOpPhiSynonym : public Transformation {
   explicit TransformationAddOpPhiSynonym(
       const protobufs::TransformationAddOpPhiSynonym& message);
 
-  TransformationAddOpPhiSynonym(uint32_t block_id,
-                                std::map<uint32_t, uint32_t>&& preds_to_ids,
-                                uint32_t fresh_id);
+  TransformationAddOpPhiSynonym(
+      uint32_t block_id, const std::map<uint32_t, uint32_t>& preds_to_ids,
+      uint32_t fresh_id);
 
   // - |message_.block_id| is the label of a block with at least one
   //   predecessor.

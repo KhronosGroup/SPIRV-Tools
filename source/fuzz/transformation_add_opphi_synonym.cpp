@@ -23,7 +23,7 @@ TransformationAddOpPhiSynonym::TransformationAddOpPhiSynonym(
     : message_(message) {}
 
 TransformationAddOpPhiSynonym::TransformationAddOpPhiSynonym(
-    uint32_t block_id, std::map<uint32_t, uint32_t>&& preds_to_ids,
+    uint32_t block_id, const std::map<uint32_t, uint32_t>& preds_to_ids,
     uint32_t fresh_id) {
   message_.set_block_id(block_id);
   *message_.mutable_pred_to_id() =
@@ -35,7 +35,7 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
   // Check that |message_.block_id| is a block label id.
-  auto block = ir_context->get_instr_block(message_.block_id());
+  auto block = fuzzerutil::MaybeFindBlock(ir_context, message_.block_id());
   if (!block) {
     return false;
   }
@@ -48,17 +48,17 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
   // Check that |message_.pred_to_id| contains a mapping for all of the block's
   // predecessors.
   std::vector<uint32_t> predecessors = ir_context->cfg()->preds(block->id());
-  std::map<uint32_t, uint32_t> preds_to_ids =
-      fuzzerutil::RepeatedUInt32PairToMap(message_.pred_to_id());
 
   // There must be at least one predecessor.
   if (predecessors.empty()) {
     return false;
   }
 
-  // There must be exactly a mapping for each predecessor.
-  if (predecessors.size() != static_cast<size_t>(message_.pred_to_id_size()) ||
-      predecessors.size() != preds_to_ids.size()) {
+  std::map<uint32_t, uint32_t> preds_to_ids =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.pred_to_id());
+
+  // There must not be repeated key values in |message_.pred_to_id|.
+  if (preds_to_ids.size() != static_cast<size_t>(message_.pred_to_id_size())) {
     return false;
   }
 
@@ -123,7 +123,7 @@ void TransformationAddOpPhiSynonym::Apply(
   opt::Instruction::OperandList operand_list;
 
   // For each predecessor, add the corresponding operands.
-  for (auto pair : message_.pred_to_id()) {
+  for (auto& pair : message_.pred_to_id()) {
     operand_list.emplace_back(
         opt::Operand{SPV_OPERAND_TYPE_ID, {pair.second()}});
     operand_list.emplace_back(
@@ -149,7 +149,6 @@ void TransformationAddOpPhiSynonym::Apply(
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.fresh_id(), {}),
       MakeDataDescriptor(first_id, {}), ir_context);
-
 }
 
 protobufs::Transformation TransformationAddOpPhiSynonym::ToMessage() const {

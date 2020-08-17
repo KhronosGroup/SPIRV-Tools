@@ -90,47 +90,47 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
   SetUpIdSynonyms(&fact_manager, context.get());
 
   // %13 is not a block label.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // Block %12 does not have a predecessor.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(12, {}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(12, {{}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // Not all predecessors of %16 (%17 and %18) are considered in the map.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{17, 19}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 19}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %30 does not exist in the module.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{30, 19}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{30, 19}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %20 is not a block label.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{20, 19}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{20, 19}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %15 is not the id of one of the predecessors of the block.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{15, 19}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{15, 19}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %30 does not exist in the module.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{17, 30}, {18, 13}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 30}, {18, 13}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %19 and %10 are not synonymous.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{17, 19}, {18, 10}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 19}, {18, 10}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %19 and %14 do not have the same type.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{17, 19}, {18, 14}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 19}, {18, 14}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %19 is not available at the end of %18.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{17, 9}, {18, 19}}, 100)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 9}, {18, 19}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // %21 is not a fresh id.
-  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{17, 9}, {18, 9}}, 21)
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 9}, {18, 9}}}, 21)
                    .IsApplicable(context.get(), transformation_context));
 }
 
@@ -187,6 +187,9 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
          %24 = OpLabel
                OpBranch %22
          %23 = OpLabel
+               OpSelectionMerge %31 None
+               OpBranchConditional %6 %31 %31
+         %31 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -207,7 +210,7 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
   fact_manager.AddFact(MakeSynonymFact(28, 9), context.get());
   fact_manager.AddFact(MakeSynonymFact(30, 9), context.get());
 
-  auto transformation1 = TransformationAddOpPhiSynonym(17, {{15, 13}}, 100);
+  auto transformation1 = TransformationAddOpPhiSynonym(17, {{{15, 13}}}, 100);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
   transformation1.Apply(context.get(), &transformation_context);
@@ -215,7 +218,7 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
                                         MakeDataDescriptor(9, {})));
 
   auto transformation2 =
-      TransformationAddOpPhiSynonym(16, {{17, 19}, {18, 13}}, 101);
+      TransformationAddOpPhiSynonym(16, {{{17, 19}, {18, 13}}}, 101);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
   transformation2.Apply(context.get(), &transformation_context);
@@ -223,11 +226,18 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
                                         MakeDataDescriptor(9, {})));
 
   auto transformation3 =
-      TransformationAddOpPhiSynonym(23, {{22, 13}, {27, 28}, {29, 30}}, 102);
+      TransformationAddOpPhiSynonym(23, {{{22, 13}, {27, 28}, {29, 30}}}, 102);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
   transformation3.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(102, {}),
+                                        MakeDataDescriptor(9, {})));
+
+  auto transformation4 = TransformationAddOpPhiSynonym(31, {{{23, 13}}}, 103);
+  ASSERT_TRUE(
+      transformation4.IsApplicable(context.get(), transformation_context));
+  transformation4.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(103, {}),
                                         MakeDataDescriptor(9, {})));
 
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -287,6 +297,10 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
                OpBranch %22
          %23 = OpLabel
         %102 = OpPhi %7 %13 %22 %28 %27 %30 %29
+               OpSelectionMerge %31 None
+               OpBranchConditional %6 %31 %31
+         %31 = OpLabel
+        %103 = OpPhi %7 %13 %23
                OpReturn
                OpFunctionEnd
 )";
