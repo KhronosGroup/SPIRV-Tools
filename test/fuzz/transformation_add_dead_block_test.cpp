@@ -20,29 +20,45 @@ namespace fuzz {
 namespace {
 
 TEST(TransformationAddDeadBlockTest, BasicTest) {
-  std::string shader = R"(
+  std::string reference_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeBool
-          %7 = OpConstantTrue %6
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpBranch %8
+               OpEntryPoint Fragment %6 "main"
+               OpExecutionMode %6 OriginUpperLeft
+
+; Types
+          %2 = OpTypeBool
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+
+; Constants
+          %5 = OpConstantTrue %2
+
+; main function
+          %6 = OpFunction %3 None %4
+          %7 = OpLabel
+               OpSelectionMerge %11 None
+               OpBranchConditional %5 %8 %9
           %8 = OpLabel
+               OpBranch %10
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpBranch %13
+         %12 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   FactManager fact_manager;
@@ -51,44 +67,77 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
                                                validator_options);
 
   // Id 4 is already in use
-  ASSERT_FALSE(TransformationAddDeadBlock(4, 5, true)
-                   .IsApplicable(context.get(), transformation_context));
+  auto transformation = TransformationAddDeadBlock(4, 11, true);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  // Id 7 is not a block
-  ASSERT_FALSE(TransformationAddDeadBlock(100, 7, true)
-                   .IsApplicable(context.get(), transformation_context));
+  // Id 5 is not a block
+  transformation = TransformationAddDeadBlock(14, 5, true);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
-  TransformationAddDeadBlock transformation(100, 5, true);
+  // Tests existing block not dominating its successor block.
+  transformation = TransformationAddDeadBlock(14, 8, true);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  transformation = TransformationAddDeadBlock(14, 9, true);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests existing block being an unreachable block.
+  transformation = TransformationAddDeadBlock(14, 12, true);
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests applicable case.
+  transformation = TransformationAddDeadBlock(14, 11, true);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(100));
+  ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(14));
 
-  std::string after_transformation = R"(
+  std::string variant_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeBool
-          %7 = OpConstantTrue %6
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpSelectionMerge %8 None
-               OpBranchConditional %7 %8 %100
-        %100 = OpLabel
-               OpBranch %8
+               OpEntryPoint Fragment %6 "main"
+               OpExecutionMode %6 OriginUpperLeft
+
+; Types
+          %2 = OpTypeBool
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+
+; Constants
+          %5 = OpConstantTrue %2
+
+; main function
+          %6 = OpFunction %3 None %4
+          %7 = OpLabel
+               OpSelectionMerge %11 None
+               OpBranchConditional %5 %8 %9
           %8 = OpLabel
+               OpBranch %10
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %5 %13 %14
+         %14 = OpLabel
+               OpBranch %13
+         %12 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
 TEST(TransformationAddDeadBlockTest, TargetBlockMustNotBeSelectionMerge) {
@@ -136,27 +185,31 @@ TEST(TransformationAddDeadBlockTest, TargetBlockMustNotBeLoopMergeOrContinue) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeBool
-          %7 = OpConstantTrue %6
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
+               OpEntryPoint Fragment %6 "main"
+               OpExecutionMode %6 OriginUpperLeft
+
+; Types
+          %2 = OpTypeBool
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+
+; Constants
+          %5 = OpConstantTrue %2
+
+; main function
+          %6 = OpFunction %3 None %4
+          %7 = OpLabel
                OpBranch %8
           %8 = OpLabel
-               OpLoopMerge %11 %12 None
-               OpBranchConditional %7 %9 %10
+               OpLoopMerge %12 %11 None
+               OpBranchConditional %5 %9 %10
           %9 = OpLabel
-               OpBranch %12
-         %10 = OpLabel
                OpBranch %11
-         %12 = OpLabel
-               OpBranch %8
+         %10 = OpLabel
+               OpBranch %12
          %11 = OpLabel
+               OpBranch %8
+         %12 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
