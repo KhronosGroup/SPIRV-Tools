@@ -20,6 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
+// A fuzzer pass that randomly selects conditional branches to flatten and
+// flattens them, if possible.
 FuzzerPassFlattenConditionalBranches::FuzzerPassFlattenConditionalBranches(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
@@ -44,7 +46,7 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
       }
 
       // Only consider this block if it is the header of a conditional.
-      if (block.MergeBlockIdIfAny() &&
+      if (block.GetMergeInst() &&
           block.GetMergeInst()->opcode() == SpvOpSelectionMerge &&
           block.terminator()->opcode() == SpvOpBranchConditional) {
         selection_headers.emplace_back(&block);

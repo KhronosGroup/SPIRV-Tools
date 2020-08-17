@@ -60,7 +60,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   auto header_block = ir_context->cfg()->block(header_block_id);
 
   // |header_block| must be a selection header.
-  if (!header_block->MergeBlockIdIfAny() ||
+  if (!header_block->GetMergeInst() ||
       header_block->GetMergeInst()->opcode() != SpvOpSelectionMerge) {
     return false;
   }
@@ -317,11 +317,22 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
   //  - it does not contain merge instructions
   //  - it branches unconditionally to another block
   //  - it does not contain atomic or barrier instructions
+  //  - any of the side-effecting instructions (e.g. loads, stores and function
+  //    calls) contained in it, which require the enclosing block to be split,
+  //    do not separate an OpSampledImage instruction from its use
   auto enclosing_function = header->GetParent();
   auto dominator_analysis =
       ir_context->GetDominatorAnalysis(enclosing_function);
   auto postdominator_analysis =
       ir_context->GetPostDominatorAnalysis(enclosing_function);
+
+  // Check that this is a single-entry, single-exit region, by checking that the
+  // header dominates the convergence block and that the convergence block
+  // post-dominates the header.
+  if (!dominator_analysis->Dominates(header->id(), convergence_block_id) ||
+      !postdominator_analysis->Dominates(convergence_block_id, header->id())) {
+    return false;
+  }
 
   // Traverse the CFG starting from the header and check all the blocks that can
   // be reached by the header before reaching the convergence block.
@@ -337,13 +348,6 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
       // We have reached the convergence block, we don't need to consider its
       // successors.
       continue;
-    }
-
-    // If the block is not dominated by the header or it is not postdominated by
-    // the convergence_block, this is not a single-entry, single-exit region.
-    if (!dominator_analysis->Dominates(header->id(), block_id) ||
-        !postdominator_analysis->Dominates(convergence_block_id, block_id)) {
-      return false;
     }
 
     auto block = ir_context->cfg()->block(block_id);
