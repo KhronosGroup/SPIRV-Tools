@@ -397,6 +397,7 @@ TEST_F(InlineTest, InOutParameter) {
          "%44 = OpFAdd %float %41 %43",
          "%45 = OpAccessChain %_ptr_Function_float %param %uint_2",
                "OpStore %45 %44",
+         "%26 = OpUndef %void",
          "%27 = OpLoad %v4float %param",
                "OpStore %b %27",
          "%28 = OpAccessChain %_ptr_Function_float %b %uint_2",
@@ -1536,6 +1537,7 @@ OpBranch %10
 OpLoopMerge %12 %10 None
 OpBranch %14
 %14 = OpLabel
+%11 = OpUndef %void
 OpBranchConditional %true %10 %12
 %12 = OpLabel
 OpReturn
@@ -1609,6 +1611,7 @@ OpLoopMerge %22 %23 None
 OpBranch %27
 %27 = OpLabel
 %28 = OpCopyObject %int %int_2
+%20 = OpUndef %void
 %21 = OpCopyObject %int %int_4
 OpBranchConditional %true %23 %22
 %23 = OpLabel
@@ -1702,6 +1705,7 @@ OpSelectionMerge %20 None
 OpBranchConditional %true %20 %20
 %20 = OpLabel
 %21 = OpPhi %bool %19 %17
+%15 = OpUndef %void
 OpBranchConditional %true %13 %16
 %16 = OpLabel
 OpReturn
@@ -1779,6 +1783,7 @@ OpSelectionMerge %28 None
 OpBranchConditional %true %28 %28
 %28 = OpLabel
 %29 = OpCopyObject %int %int_2
+%20 = OpUndef %void
 %21 = OpCopyObject %int %int_4
 OpBranchConditional %true %23 %22
 %23 = OpLabel
@@ -2170,6 +2175,7 @@ OpReturn
 OpFunctionEnd
 %main = OpFunction %void None %void_fn
 %main_entry = OpLabel
+%3 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";
@@ -2441,6 +2447,7 @@ OpName %kill_ "kill("
 %5 = OpLabel
 OpKill
 %18 = OpLabel
+%16 = OpUndef %void
 OpReturn
 OpFunctionEnd
 %kill_ = OpFunction %void None %3
@@ -2538,6 +2545,7 @@ OpName %kill_ "kill("
 %5 = OpLabel
 OpTerminateInvocation
 %18 = OpLabel
+%16 = OpUndef %void
 OpReturn
 OpFunctionEnd
 %kill_ = OpFunction %void None %3
@@ -2803,6 +2811,7 @@ OpBranch %24
 %23 = OpLabel
 OpBranch %22
 %24 = OpLabel
+%11 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";
@@ -3844,6 +3853,35 @@ OpFunctionEnd
 %bar_ret = OpFAdd %v4float %foo_val0 %v4f2
 OpReturnValue %bar_ret
 OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
+}
+
+TEST_F(InlineTest, UsingVoidFunctionResult) {
+  const std::string text = R"(
+; CHECK: OpFunction
+; CHECK: [[undef:%\w+]] = OpUndef %void
+; CHECK: OpCopyObject %void [[undef]]
+; CHECK: OpFunctionEnd
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpFunctionCall %2 %6
+          %9 = OpCopyObject %2 %8
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
 )";
 
   SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
