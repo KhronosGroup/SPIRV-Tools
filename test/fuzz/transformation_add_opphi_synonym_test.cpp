@@ -54,11 +54,13 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
           %6 = OpConstantTrue %5
           %7 = OpTypeInt 32 1
           %8 = OpTypeInt 32 0
+         %22 = OpTypePointer Function %7
           %9 = OpConstant %7 1
          %10 = OpConstant %7 2
          %11 = OpConstant %8 1
           %2 = OpFunction %3 None %4
          %12 = OpLabel
+         %23 = OpVariable %22 Function
          %13 = OpCopyObject %7 %9
          %14 = OpCopyObject %8 %11
                OpBranch %15
@@ -71,6 +73,7 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
          %21 = OpCopyObject %7 %10
                OpBranch %16
          %18 = OpLabel
+         %24 = OpCopyObject %22 %23
                OpBranch %16
          %16 = OpLabel
                OpReturn
@@ -88,6 +91,7 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
                                                validator_options);
 
   SetUpIdSynonyms(&fact_manager, context.get());
+  fact_manager.AddFact(MakeSynonymFact(23, 24), context.get());
 
   // %13 is not a block label.
   ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{}}, 100)
@@ -131,6 +135,10 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
 
   // %21 is not a fresh id.
   ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 9}, {18, 9}}}, 21)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // %23 and %24 have pointer id.
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(16, {{{17, 23}, {18, 24}}}, 100)
                    .IsApplicable(context.get(), transformation_context));
 }
 

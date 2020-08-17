@@ -34,6 +34,7 @@ class TransformationAddOpPhiSynonym : public Transformation {
   //   the block to an id that is available at the end of the predecessor.
   // - All the ids in |message_.pred_to_id| have been recorded as synonymous and
   //   all have the same type.
+  // - The ids in |message_.pred_to_id| do not refer to pointers.
   // - |message_.fresh_id| is a fresh id.
   bool IsApplicable(
       opt::IRContext* ir_context,

@@ -80,6 +80,12 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
   // are available to use at the end of the corresponding predecessor block.
   uint32_t first_id = preds_to_ids.begin()->second;
   uint32_t type_id = ir_context->get_def_use_mgr()->GetDef(first_id)->type_id();
+
+  // Check that the id is not a pointer.
+  if (ir_context->get_type_mgr()->GetType(type_id)->AsPointer()) {
+    return false;
+  }
+
   for (auto& pair : preds_to_ids) {
     // Check that the id is synonymous with the others by checking that it is
     // synonymous with the first one.
