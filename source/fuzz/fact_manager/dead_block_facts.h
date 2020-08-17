@@ -21,7 +21,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace detail {
 namespace fact_manager {
 
 // The purpose of this class is to group the fields and data used to represent
@@ -39,7 +38,6 @@ class DeadBlockFacts {
 };
 
 }  // namespace fact_manager
-}  // namespace detail
 }  // namespace fuzz
 }  // namespace spvtools
 

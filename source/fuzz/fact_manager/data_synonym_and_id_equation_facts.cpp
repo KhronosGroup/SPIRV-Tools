@@ -18,7 +18,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace detail {
 namespace fact_manager {
 
 size_t OperationHash::operator()(const Operation& operation) const {
@@ -850,6 +849,5 @@ bool DataSynonymAndIdEquationFacts::IsSynonymous(
 }
 
 }  // namespace fact_manager
-}  // namespace detail
 }  // namespace fuzz
 }  // namespace spvtools

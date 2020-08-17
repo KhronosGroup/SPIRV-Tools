@@ -25,7 +25,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace detail {
 namespace fact_manager {
 
 // This helper struct represents the right hand side of an equation as an
@@ -151,7 +150,6 @@ class DataSynonymAndIdEquationFacts {
 };
 
 }  // namespace fact_manager
-}  // namespace detail
 }  // namespace fuzz
 }  // namespace spvtools
 

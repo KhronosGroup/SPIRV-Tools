@@ -16,7 +16,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace detail {
 namespace fact_manager {
 
 void LivesafeFunctionFacts::AddFact(
@@ -29,6 +28,5 @@ bool LivesafeFunctionFacts::FunctionIsLivesafe(uint32_t function_id) const {
 }
 
 }  // namespace fact_manager
-}  // namespace detail
 }  // namespace fuzz
 }  // namespace spvtools

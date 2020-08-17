@@ -201,18 +201,18 @@ class FactManager {
   //==============================
 
  private:
-  std::unique_ptr<detail::fact_manager::ConstantUniformFacts>
+  std::unique_ptr<fact_manager::ConstantUniformFacts>
       uniform_constant_facts_;
 
-  std::unique_ptr<detail::fact_manager::DataSynonymAndIdEquationFacts>
+  std::unique_ptr<fact_manager::DataSynonymAndIdEquationFacts>
       data_synonym_and_id_equation_facts_;
 
-  std::unique_ptr<detail::fact_manager::DeadBlockFacts> dead_block_facts_;
+  std::unique_ptr<fact_manager::DeadBlockFacts> dead_block_facts_;
 
-  std::unique_ptr<detail::fact_manager::LivesafeFunctionFacts>
+  std::unique_ptr<fact_manager::LivesafeFunctionFacts>
       livesafe_function_facts_;
 
-  std::unique_ptr<detail::fact_manager::IrrelevantValueFacts>
+  std::unique_ptr<fact_manager::IrrelevantValueFacts>
       irrelevant_value_facts_;
 };
 

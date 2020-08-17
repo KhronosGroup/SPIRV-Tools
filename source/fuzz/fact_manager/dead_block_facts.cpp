@@ -16,7 +16,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace detail {
 namespace fact_manager {
 
 void DeadBlockFacts::AddFact(const protobufs::FactBlockIsDead& fact) {
@@ -28,6 +27,5 @@ bool DeadBlockFacts::BlockIsDead(uint32_t block_id) const {
 }
 
 }  // namespace fact_manager
-}  // namespace detail
 }  // namespace fuzz
 }  // namespace spvtools

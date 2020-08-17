@@ -19,7 +19,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace detail {
 namespace fact_manager {
 
 void IrrelevantValueFacts::AddFact(
@@ -48,6 +47,5 @@ bool IrrelevantValueFacts::IdIsIrrelevant(uint32_t pointer_id) const {
 }
 
 }  // namespace fact_manager
-}  // namespace detail
 }  // namespace fuzz
 }  // namespace spvtools

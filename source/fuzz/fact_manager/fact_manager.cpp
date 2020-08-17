@@ -89,14 +89,14 @@ std::string ToString(const protobufs::Fact& fact) {
 
 FactManager::FactManager()
     : uniform_constant_facts_(
-          MakeUnique<detail::fact_manager::ConstantUniformFacts>()),
+          MakeUnique<fact_manager::ConstantUniformFacts>()),
       data_synonym_and_id_equation_facts_(
-          MakeUnique<detail::fact_manager::DataSynonymAndIdEquationFacts>()),
-      dead_block_facts_(MakeUnique<detail::fact_manager::DeadBlockFacts>()),
+          MakeUnique<fact_manager::DataSynonymAndIdEquationFacts>()),
+      dead_block_facts_(MakeUnique<fact_manager::DeadBlockFacts>()),
       livesafe_function_facts_(
-          MakeUnique<detail::fact_manager::LivesafeFunctionFacts>()),
+          MakeUnique<fact_manager::LivesafeFunctionFacts>()),
       irrelevant_value_facts_(
-          MakeUnique<detail::fact_manager::IrrelevantValueFacts>()) {}
+          MakeUnique<fact_manager::IrrelevantValueFacts>()) {}
 
 void FactManager::AddFacts(const MessageConsumer& message_consumer,
                            const protobufs::FactSequence& initial_facts,

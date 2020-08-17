@@ -19,7 +19,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace detail {
 namespace fact_manager {
 
 uint32_t ConstantUniformFacts::GetConstantId(
@@ -232,6 +231,5 @@ ConstantUniformFacts::GetConstantUniformFactsAndTypes() const {
 }
 
 }  // namespace fact_manager
-}  // namespace detail
 }  // namespace fuzz
 }  // namespace spvtools
