@@ -39,6 +39,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // - The region must not contain atomic or barrier instructions.
   // - The region must not contain selection or loop constructs.
   // - For each instruction that requires additional fresh ids, then:
+  //   - it must not separate an OpSampledImage instruction from its use, since
+  //     they must be in the same block.
   //   - if the instruction is mapped to a list of fresh ids by
   //     |message_.instruction_to_fresh ids|, there must be enough fresh ids in
   //     this list;
