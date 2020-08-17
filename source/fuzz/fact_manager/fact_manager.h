@@ -15,7 +15,6 @@
 #ifndef SOURCE_FUZZ_FACT_MANAGER_FACT_MANAGER_H_
 #define SOURCE_FUZZ_FACT_MANAGER_FACT_MANAGER_H_
 
-#include <memory>
 #include <set>
 #include <utility>
 #include <vector>
@@ -43,8 +42,6 @@ namespace fuzz {
 // the module.
 class FactManager {
  public:
-  FactManager();
-
   // Adds all the facts from |facts|, checking them for validity with respect to
   // |context|.  Warnings about invalid facts are communicated via
   // |message_consumer|; such facts are otherwise ignored.
@@ -201,19 +198,12 @@ class FactManager {
   //==============================
 
  private:
-  std::unique_ptr<fact_manager::ConstantUniformFacts>
-      uniform_constant_facts_;
-
-  std::unique_ptr<fact_manager::DataSynonymAndIdEquationFacts>
+  fact_manager::ConstantUniformFacts uniform_constant_facts_;
+  fact_manager::DataSynonymAndIdEquationFacts
       data_synonym_and_id_equation_facts_;
-
-  std::unique_ptr<fact_manager::DeadBlockFacts> dead_block_facts_;
-
-  std::unique_ptr<fact_manager::LivesafeFunctionFacts>
-      livesafe_function_facts_;
-
-  std::unique_ptr<fact_manager::IrrelevantValueFacts>
-      irrelevant_value_facts_;
+  fact_manager::DeadBlockFacts dead_block_facts_;
+  fact_manager::LivesafeFunctionFacts livesafe_function_facts_;
+  fact_manager::IrrelevantValueFacts irrelevant_value_facts_;
 };
 
 }  // namespace fuzz
