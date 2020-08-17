@@ -81,8 +81,8 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
   uint32_t first_id = preds_to_ids.begin()->second;
   uint32_t type_id = ir_context->get_def_use_mgr()->GetDef(first_id)->type_id();
 
-  // Check that the id is not a pointer.
-  if (ir_context->get_type_mgr()->GetType(type_id)->AsPointer()) {
+  // Check that the type of the id is allowed.
+  if (!CheckTypeIsAllowed(ir_context, type_id)) {
     return false;
   }
 
@@ -161,6 +161,18 @@ protobufs::Transformation TransformationAddOpPhiSynonym::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_opphi_synonym() = message_;
   return result;
+}
+
+bool TransformationAddOpPhiSynonym::CheckTypeIsAllowed(
+    opt::IRContext* ir_context, uint32_t type_id) {
+  auto type = ir_context->get_type_mgr()->GetType(type_id);
+  if (!type) {
+    return false;
+  }
+
+  return type->AsBool() || type->AsInteger() || type->AsFloat() ||
+         type->AsVector() || type->AsMatrix() || type->AsArray() ||
+         type->AsRuntimeArray() || type->AsStruct();
 }
 
 }  // namespace fuzz
