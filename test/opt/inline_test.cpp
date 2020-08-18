@@ -1545,9 +1545,9 @@ OpFunctionEnd
 
   const std::string undef = "%11 = OpUndef %void\n";
 
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + undef + nonEntryFuncs + after,
-                                              false, true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(
+      predefs + nonEntryFuncs + before, predefs + undef + nonEntryFuncs + after,
+      false, true);
 }
 
 TEST_F(InlineTest, MultiBlockLoopHeaderCallsMultiBlockCallee) {
@@ -1623,9 +1623,9 @@ OpFunctionEnd
 )";
 
   const std::string undef = "%20 = OpUndef %void\n";
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + undef + nonEntryFuncs + after,
-                                              false, true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(
+      predefs + nonEntryFuncs + before, predefs + undef + nonEntryFuncs + after,
+      false, true);
 }
 
 TEST_F(InlineTest, SingleBlockLoopCallsMultiBlockCalleeHavingSelectionMerge) {
@@ -1712,9 +1712,9 @@ OpReturn
 OpFunctionEnd
 )";
   const std::string undef = "%15 = OpUndef %void\n";
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + undef + nonEntryFuncs + after,
-                                              false, true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(
+      predefs + nonEntryFuncs + before, predefs + undef + nonEntryFuncs + after,
+      false, true);
 }
 
 TEST_F(InlineTest,
@@ -1794,9 +1794,9 @@ OpFunctionEnd
 )";
 
   const std::string undef = "%20 = OpUndef %void\n";
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + undef + nonEntryFuncs + after,
-                                              false, true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(
+      predefs + nonEntryFuncs + before, predefs + undef + nonEntryFuncs + after,
+      false, true);
 }
 
 TEST_F(InlineTest, NonInlinableCalleeWithSingleReturn) {
