@@ -108,6 +108,7 @@ OpStore %param %33
 %45 = OpLoad %v2float %44
 %46 = OpImageSampleImplicitLod %v4float %43 %45
 OpStore %outColor %46
+%34 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";
@@ -307,6 +308,7 @@ OpStore %param %34
 %48 = OpLoad %v2float %47
 %49 = OpImageSampleImplicitLod %v4float %46 %48
 OpStore %outColor %49
+%35 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";
