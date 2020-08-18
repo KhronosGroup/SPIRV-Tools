@@ -56,7 +56,9 @@ bool TransformationInlineFunction::IsApplicable(
   }
 
   // |function_call_instruction| must be the penultimate instruction in its
-  // block and its block termination instruction must be an OpBranch.
+  // block and its block termination instruction must be an OpBranch. This
+  // avoids the case where the penultimate instruction is an OpLoopMerge, which
+  // would make the back-edge block not branch to the loop header.
   auto function_call_instruction_block =
       ir_context->get_instr_block(function_call_instruction);
   if (function_call_instruction !=
@@ -103,8 +105,7 @@ bool TransformationInlineFunction::IsApplicable(
   // that is being inlined.
   bool found_entry_for_parameter = false;
   called_function->ForEachParam(
-      [this, &result_id_map,
-       &found_entry_for_parameter](opt::Instruction* param) {
+      [&result_id_map, &found_entry_for_parameter](opt::Instruction* param) {
         if (result_id_map.count(param->result_id())) {
           found_entry_for_parameter = true;
         }
