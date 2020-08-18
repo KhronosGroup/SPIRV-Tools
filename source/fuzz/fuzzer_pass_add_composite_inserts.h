@@ -32,6 +32,9 @@ class FuzzerPassAddCompositeInserts : public FuzzerPass {
   ~FuzzerPassAddCompositeInserts();
   void Apply() override;
 
+  // Checks if any component of a composite is a pointer.
+  static bool ContainsPointer(const opt::analysis::Type& type);
+
   // Checks if any component of a composite has type OpTypeRuntimeArray.
   static bool ContainsRuntimeArray(const opt::analysis::Type& type);
 };

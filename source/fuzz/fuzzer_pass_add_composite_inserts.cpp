@@ -79,6 +79,18 @@ void FuzzerPassAddCompositeInserts::Apply() {
                   if (ContainsRuntimeArray(*instruction_type)) {
                     return false;
                   }
+
+                  // No components of the composite can be pointers.
+                  // TODO:
+                  // (https://github.com/KhronosGroup/SPIRV-Tools/issues/3658)
+                  //       Structs can have components of pointer type.
+                  //       FindOrCreateZeroConstant cannot be called on a
+                  //       pointer. We ignore pointers for now. Consider adding
+                  //       support for pointer types.
+                  if (ContainsPointer(*instruction_type)) {
+                    return false;
+                  }
+
                   return true;
                 });
 
@@ -94,8 +106,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
 
         // Take a random component of the chosen composite value. If the chosen
         // component is itself a composite, then randomly decide whether to take
-        // its component and repeat. Use OpCompositeExtract to get the
-        // component.
+        // its component and repeat.
         uint32_t current_node_type_id = available_composite->type_id();
         std::vector<uint32_t> path_to_replaced;
         while (true) {
@@ -151,18 +162,14 @@ void FuzzerPassAddCompositeInserts::Apply() {
                   return true;
                 });
 
-        // If there are no objects of the specific type available, create a zero
-        // constant of this type, which is not a pointer.
-        // TODO: (https://github.com/KhronosGroup/SPIRV-Tools/issues/3658)
-        //       Structs can have components of pointer type.
-        //       FindOrCreateZeroConstant cannot be called on a pointer. We
-        //       ignore pointers for now. Consider adding support for pointer
-        //       types.
+        // If there are no objects of the specific type available, check if
+        // FindOrCreateZeroConstant can be called and create a zero constant of
+        // this type.
         uint32_t available_object_id;
         if (available_objects.empty()) {
           auto current_node_type =
               GetIRContext()->get_type_mgr()->GetType(current_node_type_id);
-          if (current_node_type->kind() == opt::analysis::Type::kPointer) {
+          if (!fuzzerutil::CanFindOrCreateZeroConstant(*current_node_type)) {
             return;
           }
           available_object_id =
@@ -183,6 +190,28 @@ void FuzzerPassAddCompositeInserts::Apply() {
             available_composite->result_id(), available_object_id,
             path_to_replaced));
       });
+}
+
+bool FuzzerPassAddCompositeInserts::ContainsPointer(
+    const opt::analysis::Type& type) {
+  switch (type.kind()) {
+    case opt::analysis::Type::kPointer:
+      return true;
+    case opt::analysis::Type::kArray:
+      return ContainsPointer(*type.AsArray()->element_type());
+    case opt::analysis::Type::kMatrix:
+      return ContainsPointer(*type.AsMatrix()->element_type());
+    case opt::analysis::Type::kVector:
+      return ContainsPointer(*type.AsVector()->element_type());
+    case opt::analysis::Type::kStruct:
+      return std::any_of(type.AsStruct()->element_types().begin(),
+                         type.AsStruct()->element_types().end(),
+                         [](const opt::analysis::Type* element_type) {
+                           return ContainsPointer(*element_type);
+                         });
+    default:
+      return false;
+  }
 }
 
 bool FuzzerPassAddCompositeInserts::ContainsRuntimeArray(

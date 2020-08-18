@@ -497,6 +497,9 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
                                                  uint32_t block_id,
                                                  SpvOp opcode);
 
+// Checks if FindOrCreateZeroConstant can be called on this type.
+bool CanFindOrCreateZeroConstant(const opt::analysis::Type& type);
+
 }  // namespace fuzzerutil
 
 }  // namespace fuzz
