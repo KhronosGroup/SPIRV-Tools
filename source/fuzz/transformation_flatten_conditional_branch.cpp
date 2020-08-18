@@ -113,7 +113,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   for (auto instruction : instructions_that_need_ids) {
     // The number of ids needed depends on the id of the instruction.
     uint32_t ids_needed_by_this_instruction =
-        NumOfFreshIdsNeededByOpcode(instruction->opcode());
+        NumOfFreshIdsNeededByInstruction(instruction);
     if (instructions_to_fresh_ids.count(instruction) != 0) {
       // If there is a mapping from this instruction to a list of fresh
       // ids, the list must have enough ids.
@@ -204,8 +204,7 @@ void TransformationFlattenConditionalBranch::Apply(
       // same condition as the selection construct being flattened.
       for (auto instruction : problematic_instructions) {
         // Collect the fresh ids needed by this instructions
-        uint32_t ids_needed =
-            NumOfFreshIdsNeededByOpcode(instruction->opcode());
+        uint32_t ids_needed = NumOfFreshIdsNeededByInstruction(instruction);
         std::vector<uint32_t> fresh_ids;
 
         // Get them from the map.
@@ -286,6 +285,13 @@ void TransformationFlattenConditionalBranch::Apply(
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
+protobufs::Transformation TransformationFlattenConditionalBranch::ToMessage()
+    const {
+  protobufs::Transformation result;
+  *result.mutable_flatten_conditional_branch() = message_;
+  return result;
+}
+
 bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
     opt::IRContext* ir_context, opt::BasicBlock* header,
     std::set<opt::Instruction*>* instructions_that_need_ids) {
@@ -309,17 +315,6 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
     convergence_block_id = ir_context->cfg()->preds(convergence_block_id)[0];
   }
 
-  // Get all the blocks reachable by the header block before reaching the
-  // convergence block and check that, for each of these blocks:
-  //  - the header dominates it and the convergence block postdominates it (so
-  //    that the header and merge block form a single-entry, single-exit
-  //    region)
-  //  - it does not contain merge instructions
-  //  - it branches unconditionally to another block
-  //  - it does not contain atomic or barrier instructions
-  //  - any of the side-effecting instructions (e.g. loads, stores and function
-  //    calls) contained in it, which require the enclosing block to be split,
-  //    do not separate an OpSampledImage instruction from its use
   auto enclosing_function = header->GetParent();
   auto dominator_analysis =
       ir_context->GetDominatorAnalysis(enclosing_function);
@@ -334,8 +329,13 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
     return false;
   }
 
-  // Traverse the CFG starting from the header and check all the blocks that can
-  // be reached by the header before reaching the convergence block.
+  // Traverse the CFG starting from the header and check that, for all the
+  // blocks that can be reached by the header before reaching the convergence
+  // block:
+  //  - they don't contain merge, barrier or OpSampledImage instructions
+  //  - they branch unconditionally to another block
+  //  Add any side-effecting instruction, requiring fresh ids, to
+  //  |instructions_that_need_ids|
   std::list<uint32_t> to_check;
   header->ForEachSuccessorLabel(
       [&to_check](uint32_t label) { to_check.push_back(label); });
@@ -358,65 +358,29 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
       return false;
     }
 
-    // We need to make sure that OpSampledImage instructions will not be
-    // separated from their use, as they need to be in the same block.
-
-    // All result ids of an OpSampledImage instruction occurring before the last
-    // point where the block will need to be split.
-    std::set<uint32_t> sampled_image_result_ids_before_split;
-
-    // All result ids of an OpSampledImage instruction occurring after the last
-    // point where the block will need to be split. They can still be used.
-    std::set<uint32_t> sampled_image_result_ids_after_split;
-
     // Check all of the instructions in the block.
     bool all_instructions_compatible = block->WhileEachInst(
-        [instructions_that_need_ids, &sampled_image_result_ids_before_split,
-         &sampled_image_result_ids_after_split](opt::Instruction* instruction) {
-          // The instruction cannot be an atomic or barrier instruction
-          if (instruction->IsAtomicOp() ||
-              instruction->opcode() == SpvOpControlBarrier ||
-              instruction->opcode() == SpvOpMemoryBarrier ||
-              instruction->opcode() == SpvOpNamedBarrierInitialize ||
-              instruction->opcode() == SpvOpMemoryNamedBarrier ||
-              instruction->opcode() == SpvOpTypeNamedBarrier) {
+        [instructions_that_need_ids](opt::Instruction* instruction) {
+          // We can ignore OpLabel instructions.
+          if (instruction->opcode() == SpvOpLabel) {
+            return true;
+          }
+
+          // If the instruction is a branch, it must be an unconditional branch.
+          if (instruction->IsBranch()) {
+            return instruction->opcode() == SpvOpBranch;
+          }
+
+          // We cannot go ahead if we encounter an instruction that cannot be
+          // handled.
+          if (!InstructionCanBeHandled(instruction)) {
             return false;
           }
 
-          // If the instruction is OpSampledImage, add the result id to
-          // |sampled_image_result_ids_after_split|.
-          if (instruction->opcode() == SpvOpSampledImage) {
-            sampled_image_result_ids_after_split.emplace(
-                instruction->result_id());
-          }
-
-          // If the instruction uses an OpSampledImage that appeared before a
-          // point where we need to split the block (before a load, store or
-          // function call), then the transformation is not applicable.
-          if (!instruction->WhileEachInId(
-                  [&sampled_image_result_ids_before_split](
-                      uint32_t* id) -> bool {
-                    return !sampled_image_result_ids_before_split.count(*id);
-                  })) {
-            return false;
-          }
-
-          // If the instruction is a load, store or function call, add it to the
+          // If the instruction has side effects, add it to the
           // |instructions_that_need_ids| set.
-          if (instruction->opcode() == SpvOpLoad ||
-              instruction->opcode() == SpvOpStore ||
-              instruction->opcode() == SpvOpFunctionCall) {
+          if (!fuzzerutil::InstructionHasNoSideEffects(instruction)) {
             instructions_that_need_ids->emplace(instruction);
-
-            // All OpSampledImage ids defined before this point should not be
-            // used anymore. We need to move all ids in
-            // |sampled_image_result_ids_after_split| to
-            // |sampled_image_result_ids_before_split| so that this can be
-            // checked for the following instructions.
-            for (auto id : sampled_image_result_ids_after_split) {
-              sampled_image_result_ids_before_split.emplace(id);
-            }
-            sampled_image_result_ids_after_split.clear();
           }
 
           return true;
@@ -436,24 +400,13 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
   return true;
 }
 
-uint32_t TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByOpcode(
-    SpvOp opcode) {
-  switch (opcode) {
-    case SpvOpStore:
-      // 2 ids are needed for two new blocks, which will be used to enclose the
-      // instruction within a conditional.
-      return 2;
-    case SpvOpLoad:
-    case SpvOpFunctionCall:
-      // These instructions return a result, so we need 3 fresh ids for new
-      // blocks (the true block, the false block and the merge block), one for
-      // the instruction itself and one for an instruction returning a dummy
-      // value. The original result id of the instruction will be used for a new
-      // OpPhi instruction.
-      return 5;
-    default:
-      assert(false && "This line should never be reached");
-      return 0;
+uint32_t
+TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByInstruction(
+    opt::Instruction* instruction) {
+  if (instruction->HasResultId()) {
+    return 5;
+  } else {
+    return 2;
   }
 }
 
@@ -616,11 +569,27 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
   return merge_block;
 }
 
-protobufs::Transformation TransformationFlattenConditionalBranch::ToMessage()
-    const {
-  protobufs::Transformation result;
-  *result.mutable_flatten_conditional_branch() = message_;
-  return result;
+bool TransformationFlattenConditionalBranch::InstructionCanBeHandled(
+    opt::Instruction* instruction) {
+  // We can handle all instructions with no side effects.
+  if (fuzzerutil::InstructionHasNoSideEffects(instruction)) {
+    return true;
+  }
+
+  // We cannot handle barrier instructions, while we should be able to handle
+  // all other instructions by enclosing them inside a conditional.
+  if (instruction->opcode() == SpvOpControlBarrier ||
+      instruction->opcode() == SpvOpMemoryBarrier ||
+      instruction->opcode() == SpvOpNamedBarrierInitialize ||
+      instruction->opcode() == SpvOpMemoryNamedBarrier ||
+      instruction->opcode() == SpvOpTypeNamedBarrier) {
+    return false;
+  }
+
+  // We cannot handle OpSampledImage instructions, as they need to be in the
+  // same block as their use.
+  return instruction->opcode() != SpvOpSampledImage;
 }
+
 }  // namespace fuzz
 }  // namespace spvtools

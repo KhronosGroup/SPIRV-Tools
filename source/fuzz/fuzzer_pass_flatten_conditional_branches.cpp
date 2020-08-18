@@ -72,9 +72,8 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
         instructions_to_fresh_ids;
 
     for (auto instruction : instructions_that_need_ids) {
-      uint32_t num_fresh_ids_needed =
-          TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByOpcode(
-              instruction->opcode());
+      uint32_t num_fresh_ids_needed = TransformationFlattenConditionalBranch::
+          NumOfFreshIdsNeededByInstruction(instruction);
 
       instructions_to_fresh_ids.push_back(
           {MakeInstructionDescriptor(GetIRContext(), instruction),

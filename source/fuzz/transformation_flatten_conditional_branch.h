@@ -36,11 +36,9 @@ class TransformationFlattenConditionalBranch : public Transformation {
   //   which ends with an OpBranchConditional instruction.
   // - The header block and the merge block must describe a single-entry,
   //   single-exit region.
-  // - The region must not contain atomic or barrier instructions.
+  // - The region must not contain barrier or OpSampledImage instructions.
   // - The region must not contain selection or loop constructs.
   // - For each instruction that requires additional fresh ids, then:
-  //   - it must not separate an OpSampledImage instruction from its use, since
-  //     they must be in the same block.
   //   - if the instruction is mapped to a list of fresh ids by
   //     |message_.instruction_to_fresh ids|, there must be enough fresh ids in
   //     this list;
@@ -71,10 +69,13 @@ class TransformationFlattenConditionalBranch : public Transformation {
       opt::IRContext* ir_context, opt::BasicBlock* header,
       std::set<opt::Instruction*>* instructions_that_need_ids);
 
-  // Returns the number of fresh ids needed to enclose the instruction with the
-  // given opcode in a conditional. This can only be called on OpStore, OpLoad
-  // and OpFunctionCall.
-  static uint32_t NumOfFreshIdsNeededByOpcode(SpvOp opcode);
+  // Returns the number of fresh ids needed to enclose the given instruction in
+  // a conditional. That is:
+  // - 2 if the instruction does not have a result id, needed for 2 new blocks
+  // - 5 if the instruction has a result id: 3 for new blocks, 1 for a new
+  //   OpUndef instruction, 1 for the instruction itself
+  static uint32_t NumOfFreshIdsNeededByInstruction(
+      opt::Instruction* instruction);
 
  private:
   protobufs::TransformationFlattenConditionalBranch message_;
@@ -97,6 +98,10 @@ class TransformationFlattenConditionalBranch : public Transformation {
       opt::BasicBlock* block, opt::Instruction* instruction,
       const std::vector<uint32_t>& fresh_ids, uint32_t condition_id,
       bool exec_if_cond_true) const;
+
+  // Returns true if the given instruction either has no side effects or it can
+  // be handled by being enclosed in a conditional.
+  static bool InstructionCanBeHandled(opt::Instruction* instruction);
 };
 
 }  // namespace fuzz

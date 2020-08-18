@@ -134,10 +134,6 @@ TEST(TransformationFlattenConditionalBranchTest, Inapplicable) {
   ASSERT_FALSE(TransformationFlattenConditionalBranch(22).IsApplicable(
       context.get(), transformation_context));
 
-  // Block %26 is the header of a construct containing atomic instructions.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(26).IsApplicable(
-      context.get(), transformation_context));
-
   // Block %30 is the header of a construct containing a barrier instruction.
   ASSERT_FALSE(TransformationFlattenConditionalBranch(30).IsApplicable(
       context.get(), transformation_context));
@@ -334,11 +330,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpSelectionMerge %36 None
                OpBranchConditional %20 %37 %36
          %37 = OpLabel
-         %38 = OpSampledImage %24 %34 %35
-         %39 = OpImageSampleImplicitLod %12 %38 %18
           %6 = OpLoad %11 %4
-         %40 = OpSampledImage %24 %34 %35
-         %41 = OpImageSampleImplicitLod %12 %40 %18
           %7 = OpIAdd %11 %6 %14
                OpStore %4 %7
                OpBranch %36
@@ -418,9 +410,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                    {103, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115})
                    .IsApplicable(context.get(), transformation_context));
 
-  // %48 heads a construct where an OpSampledImage instruction is separated from
-  // its use by an OpLoad instruction, so the block cannot be split around the
-  // OpLoad and, thus, the transformation is not applicable.
+  // %48 heads a construct containing an OpSampledImage instruction.
   ASSERT_FALSE(TransformationFlattenConditionalBranch(
                    48, {{MakeInstructionDescriptor(53, SpvOpLoad, 0),
                          {100, 101, 102, 103, 104}}})
@@ -499,8 +489,6 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
          %35 = OpLoad %22 %33
                OpBranch %37
          %37 = OpLabel
-         %38 = OpSampledImage %24 %34 %35
-         %39 = OpImageSampleImplicitLod %12 %38 %18
                OpSelectionMerge %101 None
                OpBranchConditional %20 %100 %102
         %100 = OpLabel
@@ -511,8 +499,6 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpBranch %101
         %101 = OpLabel
           %6 = OpPhi %11 %103 %100 %104 %102
-         %40 = OpSampledImage %24 %34 %35
-         %41 = OpImageSampleImplicitLod %12 %40 %18
           %7 = OpIAdd %11 %6 %14
                OpSelectionMerge %106 None
                OpBranchConditional %20 %105 %106
