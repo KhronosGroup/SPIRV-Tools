@@ -347,8 +347,9 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   // PointeeValueIsIrrelevant, then the pointee of the other one is irrelevant
   // as well even if the instruction is not marked with that fact.
   //
-  // TODO(): This procedure can be improved when we can determine if two
-  //  pointers point to different memory regions.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3723):
+  //  This procedure can be improved when we can determine if two pointers point
+  //  to different memory regions.
 
   // From now on we will denote an instruction that:
   // - only reads from memory - R
