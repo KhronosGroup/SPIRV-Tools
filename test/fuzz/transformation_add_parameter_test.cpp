@@ -965,6 +965,116 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
+TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
+  // This test checks if the transformation has correctly applied the
+  // PointeeValueIsIrrelevant fact for new pointer parameters.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %20 "b"
+               OpName %22 "i1"
+               OpName %24 "i2"
+               OpName %25 "i3"
+               OpName %26 "param"
+               OpName %29 "i4"
+               OpName %30 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %50 = OpTypePointer Workgroup %6
+         %51 = OpVariable %50 Workgroup
+          %8 = OpTypeFunction %6 %7
+         %15 = OpConstant %6 2
+         %19 = OpTypePointer Private %6
+         %20 = OpVariable %19 Private
+         %21 = OpConstant %6 0
+         %23 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %22 = OpVariable %7 Function
+         %24 = OpVariable %7 Function
+         %25 = OpVariable %7 Function
+         %26 = OpVariable %7 Function
+         %29 = OpVariable %7 Function
+         %30 = OpVariable %7 Function
+               OpStore %20 %21
+               OpStore %22 %23
+               OpStore %24 %15
+         %27 = OpLoad %6 %22
+               OpStore %26 %27
+         %28 = OpFunctionCall %6 %10 %26
+               OpStore %25 %28
+         %31 = OpLoad %6 %24
+               OpStore %30 %31
+         %32 = OpFunctionCall %6 %10 %30
+               OpStore %29 %32
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %13 = OpLoad %6 %9
+               OpStore %12 %13
+         %14 = OpLoad %6 %12
+         %16 = OpIAdd %6 %14 %15
+               OpReturnValue %16
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  TransformationAddParameter transformation_good_1(10, 70, 7,
+                                                   {{{28, 22}, {32, 22}}}, 71);
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
+  // (storage class Function).
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(70));
+
+  TransformationAddParameter transformation_good_2(10, 72, 19,
+                                                   {{{28, 20}, {32, 20}}}, 73);
+  ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
+  // (storage class Private).
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(72));
+
+  TransformationAddParameter transformation_good_3(10, 74, 50,
+                                                   {{{28, 51}, {32, 51}}}, 75);
+  ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_3.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
+  // (storage class Workgroup).
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(74));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
