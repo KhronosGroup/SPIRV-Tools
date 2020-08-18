@@ -612,8 +612,7 @@ uint32_t FuzzerPass::FindOrCreateLocalVariable(
   assert(function && "The function must be defined.");
 
   // All of the local variable declarations are located in the first block.
-  auto block = function->begin();
-  for (auto& instruction : *block) {
+  for (auto& instruction : *function->begin()) {
     if (instruction.opcode() != SpvOpVariable) {
       continue;
     }

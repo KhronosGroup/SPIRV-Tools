@@ -326,7 +326,7 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // Bad: Id 19 is not available in the caller that has id 25.
+  // Bad: Id 19 is not available in the caller that has id 34.
   TransformationAddParameter transformation_bad_1(12, 50, 8,
                                                   {{{34, 19}, {38, 19}}}, 51);
 
@@ -809,6 +809,159 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                OpReturn
                OpFunctionEnd
   )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
+  // This types handles case where call_parameter_id has an entry for at least
+  // every caller (there are more entries than it is necessary).
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %19 "i1"
+               OpName %21 "i2"
+               OpName %22 "i3"
+               OpName %24 "i4"
+               OpName %25 "param"
+               OpName %28 "i5"
+               OpName %29 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %6 %7
+         %15 = OpConstant %6 2
+         %20 = OpConstant %6 1
+         %23 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %19 = OpVariable %7 Function
+         %21 = OpVariable %7 Function
+         %22 = OpVariable %7 Function
+         %24 = OpVariable %7 Function
+         %25 = OpVariable %7 Function
+         %28 = OpVariable %7 Function
+         %29 = OpVariable %7 Function
+               OpStore %19 %20
+               OpStore %21 %15
+               OpStore %22 %23
+         %26 = OpLoad %6 %19
+               OpStore %25 %26
+         %27 = OpFunctionCall %6 %10 %25
+               OpStore %24 %27
+         %30 = OpLoad %6 %21
+               OpStore %29 %30
+         %31 = OpFunctionCall %6 %10 %29
+               OpStore %28 %31
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %13 = OpLoad %6 %9
+               OpStore %12 %13
+         %14 = OpLoad %6 %12
+         %16 = OpIAdd %6 %14 %15
+               OpReturnValue %16
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Good: Local variable of id 21 is defined in every caller (id 27 and id 31).
+  TransformationAddParameter transformation_good_1(
+      10, 70, 7, {{{27, 21}, {31, 21}, {30, 21}}}, 71);
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Good: Local variable of id 28 is defined in every caller (id 27 and id 31).
+  TransformationAddParameter transformation_good_2(
+      10, 72, 7, {{{27, 28}, {31, 28}, {14, 21}, {16, 14}}}, 73);
+  ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+              OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %19 "i1"
+               OpName %21 "i2"
+               OpName %22 "i3"
+               OpName %24 "i4"
+               OpName %25 "param"
+               OpName %28 "i5"
+               OpName %29 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %15 = OpConstant %6 2
+         %20 = OpConstant %6 1
+         %23 = OpConstant %6 3
+          %8 = OpTypeFunction %6 %7 %7 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %19 = OpVariable %7 Function
+         %21 = OpVariable %7 Function
+         %22 = OpVariable %7 Function
+         %24 = OpVariable %7 Function
+         %25 = OpVariable %7 Function
+         %28 = OpVariable %7 Function
+         %29 = OpVariable %7 Function
+               OpStore %19 %20
+               OpStore %21 %15
+               OpStore %22 %23
+         %26 = OpLoad %6 %19
+               OpStore %25 %26
+         %27 = OpFunctionCall %6 %10 %25 %21 %28
+               OpStore %24 %27
+         %30 = OpLoad %6 %21
+               OpStore %29 %30
+         %31 = OpFunctionCall %6 %10 %29 %21 %28
+               OpStore %28 %31
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %70 = OpFunctionParameter %7
+         %72 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %13 = OpLoad %6 %9
+               OpStore %12 %13
+         %14 = OpLoad %6 %12
+         %16 = OpIAdd %6 %14 %15
+               OpReturnValue %16
+               OpFunctionEnd
+    )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 

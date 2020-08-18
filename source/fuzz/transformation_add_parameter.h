@@ -51,9 +51,8 @@ class TransformationAddParameter : public Transformation {
   // - Creates a new OpFunctionParameter instruction with result id
   //   |parameter_fresh_id| for the function with |function_id|.
   // - Adjusts function's type to include a new parameter.
-  // - There could be no callers. Otherwise, for every caller adds as a new
-  //   operand to every caller the value of the map |call_parameter_id| for the
-  //   key of the id of this caller.
+  // - Adds an argument to every caller of the function to account for the added
+  //   parameter. The argument is the value in |call_parameter_id| map.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
