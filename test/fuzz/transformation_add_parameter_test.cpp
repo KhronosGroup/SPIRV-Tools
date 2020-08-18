@@ -359,8 +359,9 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
       transformation_bad_6.IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationAddParameterTest, PointerTypeTest) {
-  // This types handles case of adding a new parameter of a pointer type.
+TEST(TransformationAddParameterTest, PointerFunctionTest) {
+  // This types handles case of adding a new parameter of a pointer type with
+  // storage class Function.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -576,6 +577,241 @@ TEST(TransformationAddParameterTest, PointerTypeTest) {
   )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
+
+TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
+  // This types handles case of adding a new parameter of a pointer type with
+  // storage class Private or Workgroup.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun1("
+               OpName %12 "fun2(i1;"
+               OpName %11 "a"
+               OpName %14 "fun3("
+               OpName %17 "s"
+               OpName %24 "s"
+               OpName %28 "f1"
+               OpName %31 "f2"
+               OpName %34 "i1"
+               OpName %35 "i2"
+               OpName %36 "param"
+               OpName %39 "i3"
+               OpName %40 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeFunction %8 %9
+         %20 = OpConstant %8 2
+         %25 = OpConstant %8 0
+         %26 = OpTypeFloat 32
+         %27 = OpTypePointer Private %26
+         %28 = OpVariable %27 Private
+         %60 = OpTypePointer Workgroup %26
+         %61 = OpVariable %60 Workgroup
+         %29 = OpConstant %26 1
+         %30 = OpTypePointer Function %26
+         %32 = OpConstant %26 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %31 = OpVariable %30 Function
+         %34 = OpVariable %9 Function
+         %35 = OpVariable %9 Function
+         %36 = OpVariable %9 Function
+         %39 = OpVariable %9 Function
+         %40 = OpVariable %9 Function
+               OpStore %28 %29
+               OpStore %31 %32
+         %33 = OpFunctionCall %2 %6
+               OpStore %34 %20
+         %37 = OpLoad %8 %34
+               OpStore %36 %37
+         %38 = OpFunctionCall %8 %12 %36
+               OpStore %35 %38
+         %41 = OpLoad %8 %35
+               OpStore %40 %41
+         %42 = OpFunctionCall %8 %12 %40
+               OpStore %39 %42
+         %43 = OpFunctionCall %2 %14
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %8 None %10
+         %11 = OpFunctionParameter %9
+         %13 = OpLabel
+         %17 = OpVariable %9 Function
+         %18 = OpLoad %8 %11
+               OpStore %17 %18
+         %19 = OpLoad %8 %17
+         %21 = OpIAdd %8 %19 %20
+               OpReturnValue %21
+               OpFunctionEnd
+         %14 = OpFunction %2 None %3
+         %15 = OpLabel
+         %24 = OpVariable %9 Function
+               OpStore %24 %25
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Good: Global variable of id 28 (storage class Private) is defined in the
+  // caller (main).
+  TransformationAddParameter transformation_good_1(12, 70, 27,
+                                                   {{{38, 28}, {42, 28}}}, 71);
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Good: Global variable of id 61 is (storage class Workgroup) is defined in
+  // the caller (main).
+  TransformationAddParameter transformation_good_2(12, 72, 27,
+                                                   {{{38, 28}, {42, 28}}}, 73);
+  ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_2.Apply(context.get(), &transformation_context);
+
+  // Good: Global variable of id 28 (storage class Private) is defined in the
+  // caller (main).
+  TransformationAddParameter transformation_good_3(6, 74, 27, {{{33, 28}}}, 75);
+  ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_3.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Good: Global variable of id 61 is (storage class Workgroup) is defined in
+  // the caller (main).
+  TransformationAddParameter transformation_good_4(6, 76, 60, {{{33, 61}}}, 77);
+  ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_4.Apply(context.get(), &transformation_context);
+
+  // Good: Global variable of id 28 (storage class Private) is defined in the
+  // caller (main).
+  TransformationAddParameter transformation_good_5(14, 78, 27, {{{43, 28}}},
+                                                   79);
+  ASSERT_TRUE(transformation_good_5.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_5.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // Good: Global variable of id 61 is (storage class Workgroup) is defined in
+  // the caller (main).
+  TransformationAddParameter transformation_good_6(14, 80, 60, {{{43, 61}}},
+                                                   81);
+  ASSERT_TRUE(transformation_good_6.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_6.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun1("
+               OpName %12 "fun2(i1;"
+               OpName %11 "a"
+               OpName %14 "fun3("
+               OpName %17 "s"
+               OpName %24 "s"
+               OpName %28 "f1"
+               OpName %31 "f2"
+               OpName %34 "i1"
+               OpName %35 "i2"
+               OpName %36 "param"
+               OpName %39 "i3"
+               OpName %40 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %20 = OpConstant %8 2
+         %25 = OpConstant %8 0
+         %26 = OpTypeFloat 32
+         %27 = OpTypePointer Private %26
+         %28 = OpVariable %27 Private
+         %60 = OpTypePointer Workgroup %26
+         %61 = OpVariable %60 Workgroup
+         %29 = OpConstant %26 1
+         %30 = OpTypePointer Function %26
+         %32 = OpConstant %26 2
+         %10 = OpTypeFunction %8 %9 %27 %27
+         %75 = OpTypeFunction %2 %27 %60
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %31 = OpVariable %30 Function
+         %34 = OpVariable %9 Function
+         %35 = OpVariable %9 Function
+         %36 = OpVariable %9 Function
+         %39 = OpVariable %9 Function
+         %40 = OpVariable %9 Function
+               OpStore %28 %29
+               OpStore %31 %32
+         %33 = OpFunctionCall %2 %6 %28 %61
+               OpStore %34 %20
+         %37 = OpLoad %8 %34
+               OpStore %36 %37
+         %38 = OpFunctionCall %8 %12 %36 %28 %28
+               OpStore %35 %38
+         %41 = OpLoad %8 %35
+               OpStore %40 %41
+         %42 = OpFunctionCall %8 %12 %40 %28 %28
+               OpStore %39 %42
+         %43 = OpFunctionCall %2 %14 %28 %61
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %75
+         %74 = OpFunctionParameter %27
+         %76 = OpFunctionParameter %60
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %8 None %10
+         %11 = OpFunctionParameter %9
+         %70 = OpFunctionParameter %27
+         %72 = OpFunctionParameter %27
+         %13 = OpLabel
+         %17 = OpVariable %9 Function
+         %18 = OpLoad %8 %11
+               OpStore %17 %18
+         %19 = OpLoad %8 %17
+         %21 = OpIAdd %8 %19 %20
+               OpReturnValue %21
+               OpFunctionEnd
+         %14 = OpFunction %2 None %75
+         %78 = OpFunctionParameter %27
+         %80 = OpFunctionParameter %60
+         %15 = OpLabel
+         %24 = OpVariable %9 Function
+               OpStore %24 %25
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

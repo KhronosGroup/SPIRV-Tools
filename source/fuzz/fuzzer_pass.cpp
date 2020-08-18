@@ -636,7 +636,7 @@ uint32_t FuzzerPass::FindOrCreateLocalVariable(
   uint32_t result_id = GetFuzzerContext()->GetFreshId();
   ApplyTransformation(TransformationAddLocalVariable(
       result_id, pointer_type_id, function_id,
-      FindOrCreateZeroConstant(pointee_type_id, true),
+      FindOrCreateZeroConstant(pointee_type_id, pointee_value_is_irrelevant),
       pointee_value_is_irrelevant));
   return result_id;
 }
@@ -685,7 +685,7 @@ uint32_t FuzzerPass::FindOrCreateGlobalVariable(
   } else {
     ApplyTransformation(TransformationAddGlobalVariable(
         result_id, pointer_type_id, SpvStorageClassPrivate,
-        FindOrCreateZeroConstant(pointee_type_id, true),
+        FindOrCreateZeroConstant(pointee_type_id, pointee_value_is_irrelevant),
         pointee_value_is_irrelevant));
   }
   return result_id;
