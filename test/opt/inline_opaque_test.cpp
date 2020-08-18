@@ -90,7 +90,8 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%main = OpFunction %void None %12
+      R"(%34 = OpUndef %void
+%main = OpFunction %void None %12
 %28 = OpLabel
 %s0 = OpVariable %_ptr_Function_S_t Function
 %param = OpVariable %_ptr_Function_S_t Function
@@ -108,7 +109,6 @@ OpStore %param %33
 %45 = OpLoad %v2float %44
 %46 = OpImageSampleImplicitLod %v4float %43 %45
 OpStore %outColor %46
-%34 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";
@@ -290,7 +290,8 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%main2 = OpFunction %void None %13
+      R"(%35 = OpUndef %void
+%main2 = OpFunction %void None %13
 %29 = OpLabel
 %s0 = OpVariable %_ptr_Function_S_t Function
 %param = OpVariable %_ptr_Function_S_t Function
@@ -308,7 +309,6 @@ OpStore %param %34
 %48 = OpLoad %v2float %47
 %49 = OpImageSampleImplicitLod %v4float %46 %48
 OpStore %outColor %49
-%35 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";

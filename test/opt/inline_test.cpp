@@ -381,6 +381,7 @@ TEST_F(InlineTest, InOutParameter) {
 
   const std::vector<const char*> after = {
       // clang-format off
+         "%26 = OpUndef %void",
        "%main = OpFunction %void None %11",
          "%23 = OpLabel",
           "%b = OpVariable %_ptr_Function_v4float Function",
@@ -397,7 +398,6 @@ TEST_F(InlineTest, InOutParameter) {
          "%44 = OpFAdd %float %41 %43",
          "%45 = OpAccessChain %_ptr_Function_float %param %uint_2",
                "OpStore %45 %44",
-         "%26 = OpUndef %void",
          "%27 = OpLoad %v4float %param",
                "OpStore %b %27",
          "%28 = OpAccessChain %_ptr_Function_float %b %uint_2",
@@ -1504,11 +1504,11 @@ OpSource OpenCL_C 120
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
 %void = OpTypeVoid
+%5 = OpTypeFunction %void
 )";
 
   const std::string nonEntryFuncs =
-      R"(%5 = OpTypeFunction %void
-%6 = OpFunction %void None %5
+      R"(%6 = OpFunction %void None %5
 %7 = OpLabel
 OpBranch %8
 %8 = OpLabel
@@ -1537,15 +1537,16 @@ OpBranch %10
 OpLoopMerge %12 %10 None
 OpBranch %14
 %14 = OpLabel
-%11 = OpUndef %void
 OpBranchConditional %true %10 %12
 %12 = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
+  const std::string undef = "%11 = OpUndef %void\n";
+
   SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
+                                              predefs + undef + nonEntryFuncs + after,
                                               false, true);
 }
 
@@ -1611,7 +1612,6 @@ OpLoopMerge %22 %23 None
 OpBranch %27
 %27 = OpLabel
 %28 = OpCopyObject %int %int_2
-%20 = OpUndef %void
 %21 = OpCopyObject %int %int_4
 OpBranchConditional %true %23 %22
 %23 = OpLabel
@@ -1622,8 +1622,9 @@ OpReturn
 OpFunctionEnd
 )";
 
+  const std::string undef = "%20 = OpUndef %void\n";
   SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
+                                              predefs + undef + nonEntryFuncs + after,
                                               false, true);
 }
 
@@ -1705,15 +1706,14 @@ OpSelectionMerge %20 None
 OpBranchConditional %true %20 %20
 %20 = OpLabel
 %21 = OpPhi %bool %19 %17
-%15 = OpUndef %void
 OpBranchConditional %true %13 %16
 %16 = OpLabel
 OpReturn
 OpFunctionEnd
 )";
-
+  const std::string undef = "%15 = OpUndef %void\n";
   SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
+                                              predefs + undef + nonEntryFuncs + after,
                                               false, true);
 }
 
@@ -1783,7 +1783,6 @@ OpSelectionMerge %28 None
 OpBranchConditional %true %28 %28
 %28 = OpLabel
 %29 = OpCopyObject %int %int_2
-%20 = OpUndef %void
 %21 = OpCopyObject %int %int_4
 OpBranchConditional %true %23 %22
 %23 = OpLabel
@@ -1794,8 +1793,9 @@ OpReturn
 OpFunctionEnd
 )";
 
+  const std::string undef = "%20 = OpUndef %void\n";
   SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
-                                              predefs + nonEntryFuncs + after,
+                                              predefs + undef + nonEntryFuncs + after,
                                               false, true);
 }
 
@@ -2169,13 +2169,13 @@ OpName %foo "foo"
 OpName %foo_entry "foo_entry"
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
+%3 = OpUndef %void
 %foo = OpFunction %void None %void_fn
 %foo_entry = OpLabel
 OpReturn
 OpFunctionEnd
 %main = OpFunction %void None %void_fn
 %main_entry = OpLabel
-%3 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";
@@ -2443,11 +2443,11 @@ OpName %kill_ "kill("
 %3 = OpTypeFunction %void
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
+%16 = OpUndef %void
 %main = OpFunction %void None %3
 %5 = OpLabel
 OpKill
 %18 = OpLabel
-%16 = OpUndef %void
 OpReturn
 OpFunctionEnd
 %kill_ = OpFunction %void None %3
@@ -2541,11 +2541,11 @@ OpName %kill_ "kill("
 %3 = OpTypeFunction %void
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
+%16 = OpUndef %void
 %main = OpFunction %void None %3
 %5 = OpLabel
 OpTerminateInvocation
 %18 = OpLabel
-%16 = OpUndef %void
 OpReturn
 OpFunctionEnd
 %kill_ = OpFunction %void None %3
@@ -2769,6 +2769,7 @@ OpFunctionEnd
 %uint_0 = OpConstant %uint 0
 %false = OpConstantFalse %bool
 %_ptr_Function_bool = OpTypePointer Function %bool
+%11 = OpUndef %void
 %foo_ = OpFunction %void None %4
 %7 = OpLabel
 %18 = OpVariable %_ptr_Function_bool Function %false
@@ -2811,7 +2812,6 @@ OpBranch %24
 %23 = OpLabel
 OpBranch %22
 %24 = OpLabel
-%11 = OpUndef %void
 OpReturn
 OpFunctionEnd
 )";
@@ -3860,8 +3860,8 @@ OpFunctionEnd
 
 TEST_F(InlineTest, UsingVoidFunctionResult) {
   const std::string text = R"(
-; CHECK: OpFunction
 ; CHECK: [[undef:%\w+]] = OpUndef %void
+; CHECK: OpFunction
 ; CHECK: OpCopyObject %void [[undef]]
 ; CHECK: OpFunctionEnd
                OpCapability Shader

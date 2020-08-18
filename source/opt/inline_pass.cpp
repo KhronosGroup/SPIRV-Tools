@@ -626,7 +626,7 @@ bool InlinePass::GenInlineCode(
     std::unique_ptr<Instruction> undef_inst(
         new Instruction(context(), SpvOpUndef, call_inst_itr->type_id(),
                         call_inst_itr->result_id(), {}));
-    new_blk_ptr->AddInstruction(std::move(undef_inst));
+    context()->AddGlobalValue(std::move(undef_inst));
   }
 
   // Move instructions of original caller block after call instruction.
