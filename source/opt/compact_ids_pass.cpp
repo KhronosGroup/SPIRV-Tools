@@ -56,6 +56,17 @@ Pass::Status CompactIdsPass::Process() {
           }
           ++operand;
         }
+        if (inst->GetDebugScope().GetLexicalScope() != kNoDebugScope) {
+          auto it =
+              result_id_mapping.find(inst->GetDebugScope().GetLexicalScope());
+          if (it != result_id_mapping.end())
+            inst->UpdateLexicalScope(it->second);
+        }
+        if (inst->GetDebugInlinedAt() != kNoInlinedAt) {
+          auto it = result_id_mapping.find(inst->GetDebugInlinedAt());
+          if (it != result_id_mapping.end())
+            inst->UpdateDebugInlinedAt(it->second);
+        }
       },
       true);
 
