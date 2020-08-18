@@ -517,6 +517,7 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
                                value_id, 0, index_id, insert_before);
     assert(added_dbg_value != nullptr);
     added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
+    AnalyzeDebugInst(added_dbg_value);
   }
 }
 

@@ -172,7 +172,8 @@ bool InlinePass::CloneAndMapLocals(
     }
     get_decoration_mgr()->CloneDecorations(callee_var_itr->result_id(), newId);
     var_inst->SetResultId(newId);
-    var_inst->UpdateDebugInlinedAt(
+    context()->UpdateDebugInlinedAt(
+        var_inst.get(),
         context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
             callee_var_itr->GetDebugInlinedAt(), inlined_at_ctx));
     (*callee2caller)[callee_var_itr->result_id()] = newId;
@@ -356,7 +357,7 @@ bool InlinePass::InlineSingleInstruction(
     get_decoration_mgr()->CloneDecorations(rid, nid);
   }
 
-  cp_inst->UpdateDebugInlinedAt(dbg_inlined_at);
+  context()->UpdateDebugInlinedAt(cp_inst.get(), dbg_inlined_at);
   new_blk_ptr->AddInstruction(std::move(cp_inst));
   return true;
 }
