@@ -103,10 +103,10 @@ bool FactManager::AddFact(const fuzz::protobufs::Fact& fact,
   switch (fact.fact_case()) {
     case protobufs::Fact::kConstantUniformFact:
       return uniform_constant_facts_.AddFact(fact.constant_uniform_fact(),
-                                              context);
+                                             context);
     case protobufs::Fact::kDataSynonymFact:
       data_synonym_and_id_equation_facts_.AddFact(fact.data_synonym_fact(),
-                                                   context);
+                                                  context);
       return true;
     case protobufs::Fact::kBlockIsDeadFact:
       dead_block_facts_.AddFact(fact.block_is_dead_fact());
@@ -139,7 +139,7 @@ std::vector<protobufs::UniformBufferElementDescriptor>
 FactManager::GetUniformDescriptorsForConstant(opt::IRContext* ir_context,
                                               uint32_t constant_id) const {
   return uniform_constant_facts_.GetUniformDescriptorsForConstant(ir_context,
-                                                                   constant_id);
+                                                                  constant_id);
 }
 
 uint32_t FactManager::GetConstantFromUniformDescriptor(
@@ -179,7 +179,7 @@ bool FactManager::IsSynonymous(
     const protobufs::DataDescriptor& data_descriptor1,
     const protobufs::DataDescriptor& data_descriptor2) const {
   return data_synonym_and_id_equation_facts_.IsSynonymous(data_descriptor1,
-                                                           data_descriptor2);
+                                                          data_descriptor2);
 }
 
 bool FactManager::BlockIsDead(uint32_t block_id) const {
