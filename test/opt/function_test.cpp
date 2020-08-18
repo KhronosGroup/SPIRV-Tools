@@ -29,6 +29,60 @@ namespace {
 
 using ::testing::Eq;
 
+TEST(FunctionTest, HasEarlyReturn) {
+  std::string shader = R"(
+          OpCapability Shader
+     %1 = OpExtInstImport "GLSL.std.450"
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint Vertex %6 "main"
+
+; Types
+     %2 = OpTypeBool
+     %3 = OpTypeVoid
+     %4 = OpTypeFunction %3
+
+; Constants
+     %5 = OpConstantTrue %2
+
+; main function without early return
+     %6 = OpFunction %3 None %4
+     %7 = OpLabel
+          OpBranch %8
+     %8 = OpLabel
+          OpBranch %9
+     %9 = OpLabel
+          OpBranch %10
+    %10 = OpLabel
+          OpReturn
+          OpFunctionEnd
+
+; function with early return
+    %11 = OpFunction %3 None %4
+    %12 = OpLabel
+          OpSelectionMerge %15 None
+          OpBranchConditional %5 %13 %14
+    %13 = OpLabel
+          OpReturn
+    %14 = OpLabel
+          OpBranch %15
+    %15 = OpLabel
+          OpReturn
+          OpFunctionEnd
+  )";
+
+  const auto context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, shader,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  // Tests |function| without early return.
+  auto* function = spvtest::GetFunction(context->module(), 6);
+  ASSERT_FALSE(function->HasEarlyReturn());
+
+  // Tests |function| with early return.
+  function = spvtest::GetFunction(context->module(), 11);
+  ASSERT_TRUE(function->HasEarlyReturn());
+}
+
 TEST(FunctionTest, IsNotRecursive) {
   const std::string text = R"(
 OpCapability Shader
