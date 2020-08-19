@@ -115,111 +115,60 @@ bool TransformationInlineFunction::IsApplicable(
 
 void TransformationInlineFunction::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  auto function_call_instruction =
+  auto* function_call_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.function_call_id());
-  auto caller_function =
+  auto* caller_function =
       ir_context->get_instr_block(function_call_instruction)->GetParent();
-  auto called_function = fuzzerutil::FindFunction(
+  auto* called_function = fuzzerutil::FindFunction(
       ir_context, function_call_instruction->GetSingleWordInOperand(0));
   const auto result_id_map =
       fuzzerutil::RepeatedUInt32PairToMap(message_.result_id_map());
+  auto* successor_block = ir_context->cfg()->block(
+      ir_context->get_instr_block(function_call_instruction)
+          ->terminator()
+          ->GetSingleWordInOperand(0));
 
-  for (auto& block : *called_function) {
-    // The called function entry block label will not be inlined.
-    if (&block != &*called_function->entry()) {
-      auto cloned_label_instruction = block.GetLabelInst()->Clone(ir_context);
-      assert(result_id_map.count(cloned_label_instruction->result_id()) &&
-             "Label id must be mapped to a fresh id.");
-      uint32_t fresh_id =
-          result_id_map.at(cloned_label_instruction->result_id());
-      cloned_label_instruction->SetResultId(fresh_id);
-      function_call_instruction->InsertBefore(
-          std::unique_ptr<opt::Instruction>(cloned_label_instruction));
-      fuzzerutil::UpdateModuleIdBound(ir_context, fresh_id);
+  // Inline the |called_function| entry block.
+  for (auto& entry_block_instruction : *called_function->entry()) {
+    opt::Instruction* instruction_to_be_inlined = nullptr;
+
+    if (entry_block_instruction.opcode() == SpvOpVariable) {
+      // All OpVariable instructions in a function must be in the first block
+      // in the function.
+      instruction_to_be_inlined =
+          caller_function->begin()->begin()->InsertBefore(
+              MakeUnique<opt::Instruction>(entry_block_instruction));
+    } else {
+      instruction_to_be_inlined = function_call_instruction->InsertBefore(
+          MakeUnique<opt::Instruction>(entry_block_instruction));
     }
 
-    for (auto& instruction : block) {
-      // Replaces the operand ids with their mapped result ids.
-      auto cloned_instruction = instruction.Clone(ir_context);
-      cloned_instruction->ForEachInId([called_function,
-                                       function_call_instruction,
-                                       &result_id_map](uint32_t* id) {
-        // If |id| is mapped, then set it to its mapped value.
-        if (result_id_map.count(*id)) {
-          *id = result_id_map.at(*id);
-          return;
-        }
+    InlineInstruction(ir_context, instruction_to_be_inlined);
+  }
 
-        uint32_t parameter_index = 0;
-        called_function->ForEachParam(
-            [id, function_call_instruction,
-             &parameter_index](opt::Instruction* parameter_instruction) {
-              // If the id is a function parameter, then set it to the
-              // parameter value passed in the function call instruction.
-              if (*id == parameter_instruction->result_id()) {
-                // We do + 1 because the first in-operand for OpFunctionCall is
-                // the function id that is being called.
-                *id = function_call_instruction->GetSingleWordInOperand(
-                    parameter_index + 1);
-              }
-              parameter_index++;
-            });
-      });
+  // Inline the |called_function| non-entry blocks.
+  for (auto& block : *called_function) {
+    if (&block == &*called_function->entry()) {
+      continue;
+    }
 
-      // If |cloned_instruction| has a result id, then set it to its mapped
-      // value.
-      if (cloned_instruction->HasResultId()) {
-        assert(result_id_map.count(cloned_instruction->result_id()) &&
-               "Result id must be mapped to a fresh id.");
-        uint32_t result_id = result_id_map.at(cloned_instruction->result_id());
-        cloned_instruction->SetResultId(result_id);
-        fuzzerutil::UpdateModuleIdBound(ir_context, result_id);
-      }
+    auto* cloned_block = block.Clone(ir_context);
+    cloned_block = caller_function->InsertBasicBlockBefore(
+        std::move(std::unique_ptr<opt::BasicBlock>(cloned_block)),
+        successor_block);
+    cloned_block->SetParent(caller_function);
+    cloned_block->GetLabel()->SetResultId(
+        result_id_map.at(cloned_block->GetLabel()->result_id()));
+    fuzzerutil::UpdateModuleIdBound(ir_context,
+                                    cloned_block->GetLabel()->result_id());
 
-      // The return instruction will be changed into an OpBranch to the basic
-      // block that follows the block containing the function call.
-      if (spvOpcodeIsReturn(cloned_instruction->opcode())) {
-        uint32_t following_block_id =
-            ir_context->get_instr_block(function_call_instruction)
-                ->terminator()
-                ->GetSingleWordInOperand(0);
-        switch (cloned_instruction->opcode()) {
-          case SpvOpReturn:
-            cloned_instruction->AddOperand(
-                {SPV_OPERAND_TYPE_ID, {following_block_id}});
-            break;
-          case SpvOpReturnValue: {
-            function_call_instruction->InsertBefore(
-                MakeUnique<opt::Instruction>(
-                    ir_context, SpvOpCopyObject,
-                    function_call_instruction->type_id(),
-                    function_call_instruction->result_id(),
-                    opt::Instruction::OperandList(
-                        {{SPV_OPERAND_TYPE_ID,
-                          {cloned_instruction->GetSingleWordOperand(0)}}})));
-            cloned_instruction->SetInOperand(0, {following_block_id});
-            break;
-          }
-          default:
-            break;
-        }
-        cloned_instruction->SetOpcode(SpvOpBranch);
-      }
-
-      if (cloned_instruction->opcode() == SpvOpVariable) {
-        // All OpVariable instructions in a function must be in the first block
-        // in the function.
-        caller_function->begin()->begin()->InsertBefore(
-            std::unique_ptr<opt::Instruction>(cloned_instruction));
-      } else {
-        function_call_instruction->InsertBefore(
-            std::unique_ptr<opt::Instruction>(cloned_instruction));
-      }
+    for (auto& instruction_to_be_inlined : *cloned_block) {
+      InlineInstruction(ir_context, &instruction_to_be_inlined);
     }
   }
 
   // Removes the function call instruction and its block termination instruction
-  // from the caller function.
+  // from |caller_function|.
   ir_context->KillInst(
       ir_context->get_instr_block(function_call_instruction)->terminator());
   ir_context->KillInst(function_call_instruction);
@@ -229,6 +178,82 @@ protobufs::Transformation TransformationInlineFunction::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_inline_function() = message_;
   return result;
+}
+
+void TransformationInlineFunction::InlineInstruction(
+    opt::IRContext* ir_context,
+    opt::Instruction* instruction_to_be_inlined) const {
+  auto* function_call_instruction =
+      ir_context->get_def_use_mgr()->GetDef(message_.function_call_id());
+  auto* called_function = fuzzerutil::FindFunction(
+      ir_context, function_call_instruction->GetSingleWordInOperand(0));
+  const auto result_id_map =
+      fuzzerutil::RepeatedUInt32PairToMap(message_.result_id_map());
+
+  // Replaces the operand ids with their mapped result ids.
+  instruction_to_be_inlined->ForEachInId([called_function,
+                                          function_call_instruction,
+                                          &result_id_map](uint32_t* id) {
+    // If |id| is mapped, then set it to its mapped value.
+    if (result_id_map.count(*id)) {
+      *id = result_id_map.at(*id);
+      return;
+    }
+
+    uint32_t parameter_index = 0;
+    called_function->ForEachParam(
+        [id, function_call_instruction,
+         &parameter_index](opt::Instruction* parameter_instruction) {
+          // If the id is a function parameter, then set it to the
+          // parameter value passed in the function call instruction.
+          if (*id == parameter_instruction->result_id()) {
+            // We do + 1 because the first in-operand for OpFunctionCall is
+            // the function id that is being called.
+            *id = function_call_instruction->GetSingleWordInOperand(
+                parameter_index + 1);
+          }
+          parameter_index++;
+        });
+  });
+
+  // If |instruction_to_be_inlined| has result id, then set it to its mapped
+  // value.
+  if (instruction_to_be_inlined->HasResultId()) {
+    assert(result_id_map.count(instruction_to_be_inlined->result_id()) &&
+           "Result id must be mapped to a fresh id.");
+    instruction_to_be_inlined->SetResultId(
+        result_id_map.at(instruction_to_be_inlined->result_id()));
+    fuzzerutil::UpdateModuleIdBound(ir_context,
+                                    instruction_to_be_inlined->result_id());
+  }
+
+  // The return instruction will be changed into an OpBranch to the basic
+  // block that follows the block containing the function call.
+  if (spvOpcodeIsReturn(instruction_to_be_inlined->opcode())) {
+    uint32_t successor_block_id =
+        ir_context->get_instr_block(function_call_instruction)
+            ->terminator()
+            ->GetSingleWordInOperand(0);
+    switch (instruction_to_be_inlined->opcode()) {
+      case SpvOpReturn:
+        instruction_to_be_inlined->AddOperand(
+            {SPV_OPERAND_TYPE_ID, {successor_block_id}});
+        break;
+      case SpvOpReturnValue: {
+        instruction_to_be_inlined->InsertBefore(MakeUnique<opt::Instruction>(
+            ir_context, SpvOpCopyObject, function_call_instruction->type_id(),
+            function_call_instruction->result_id(),
+            opt::Instruction::OperandList(
+                {{SPV_OPERAND_TYPE_ID,
+                  {instruction_to_be_inlined->GetSingleWordOperand(0)}}})));
+        instruction_to_be_inlined->SetInOperand(0, {successor_block_id});
+        break;
+      }
+      default:
+        break;
+    }
+    instruction_to_be_inlined->SetOpcode(SpvOpBranch);
+  }
 }
 
 }  // namespace fuzz

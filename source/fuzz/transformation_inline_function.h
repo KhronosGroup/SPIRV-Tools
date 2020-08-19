@@ -51,6 +51,11 @@ class TransformationInlineFunction : public Transformation {
 
  private:
   protobufs::TransformationInlineFunction message_;
+
+  // Inline |instruction_to_be_inlined| by setting its ids to the corresponding
+  // ids in |result_id_map|.
+  void InlineInstruction(opt::IRContext* ir_context,
+                         opt::Instruction* instruction) const;
 };
 
 }  // namespace fuzz
