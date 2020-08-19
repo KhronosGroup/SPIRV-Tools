@@ -62,56 +62,59 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
     return false;
   }
 
-  // Check that each predecessor has a corresponding mapping.
+  // Check that each predecessor has a corresponding mapping and all of the
+  // corresponding ids exist.
   for (uint32_t pred : predecessors) {
     if (preds_to_ids.count(pred) == 0) {
       return false;
     }
-  }
 
-  // Check that all the ids exist in the module.
-  for (auto& pair : message_.pred_to_id()) {
-    if (!ir_context->get_def_use_mgr()->GetDef(pair.second())) {
+    // Check that the id exists in the module.
+    if (!ir_context->get_def_use_mgr()->GetDef(preds_to_ids[pred])) {
       return false;
     }
   }
 
-  // Check that all the ids are synonymous, they all have the same type and they
-  // are available to use at the end of the corresponding predecessor block.
-  uint32_t first_id = preds_to_ids.begin()->second;
+  // Get the first id and its type (which should be the same as all the other
+  // ones) and check that the transformation supports this type.
+  uint32_t first_id = preds_to_ids[predecessors[0]];
   uint32_t type_id = ir_context->get_def_use_mgr()->GetDef(first_id)->type_id();
-
-  // Check that the type of the id is allowed.
   if (!CheckTypeIsAllowed(ir_context, type_id)) {
     return false;
   }
 
-  for (auto& pair : preds_to_ids) {
-    // Check that the id is synonymous with the others by checking that it is
-    // synonymous with the first one (or it is the same id).
-    if (pair.second != first_id &&
-        !transformation_context.GetFactManager()->IsSynonymous(
-            MakeDataDescriptor(pair.second, {}),
-            MakeDataDescriptor(first_id, {}))) {
+  // Check that the ids corresponding to predecessors are all synonymous, have
+  // the same type and are available to use at the end of the predecessor.
+  for (uint32_t pred : predecessors) {
+    auto id = preds_to_ids[pred];
+
+    // Check that the id has the same type as the other ones.
+    if (ir_context->get_def_use_mgr()->GetDef(id)->type_id() != type_id) {
       return false;
     }
 
-    // Check that the id has the same type as the other ones.
-    if (ir_context->get_def_use_mgr()->GetDef(pair.second)->type_id() !=
-        type_id) {
+    // Check that the id is synonymous with the others by checking that it is
+    // synonymous with the first one (or it is the same id).
+    if (id != first_id &&
+        !transformation_context.GetFactManager()->IsSynonymous(
+            MakeDataDescriptor(id, {}), MakeDataDescriptor(first_id, {}))) {
       return false;
     }
 
     // Check that the id is available at the end of the corresponding
     // predecessor block.
 
-    auto pred_block = ir_context->get_instr_block(pair.first);
+    auto pred_block = ir_context->get_instr_block(pred);
+
     // We should always be able to find the predecessor block, since it is in
     // the predecessors list of |block|.
     assert(pred_block && "Could not find one of the predecessor blocks.");
 
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3722): This
+    // function always returns false if the block is unreachable, so it may need
+    // to be refactored.
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(
-            ir_context, pred_block->terminator(), pair.second)) {
+            ir_context, pred_block->terminator(), id)) {
       return false;
     }
   }
@@ -175,7 +178,7 @@ bool TransformationAddOpPhiSynonym::CheckTypeIsAllowed(
   // RuntimeArray, Struct.
   if (type->AsBool() || type->AsInteger() || type->AsFloat() ||
       type->AsVector() || type->AsMatrix() || type->AsArray() ||
-      type->AsRuntimeArray() || type->AsStruct()) {
+      type->AsStruct()) {
     return true;
   }
 

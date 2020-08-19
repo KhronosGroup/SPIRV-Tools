@@ -19,6 +19,10 @@
 
 namespace spvtools {
 namespace fuzz {
+
+// A fuzzer pass to add OpPhi instructions which can take the values of ids that
+// have been marked as synonymous. This instruction will itself be marked as
+// synonymous with the others.
 class FuzzerPassAddOpPhiSynonyms : public FuzzerPass {
  public:
   FuzzerPassAddOpPhiSynonyms(
