@@ -14,6 +14,7 @@
 
 #include "source/fuzz/fuzzer_pass_add_opphi_synonyms.h"
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_add_opphi_synonym.h"
 
 namespace spvtools {
@@ -28,7 +29,74 @@ FuzzerPassAddOpPhiSynonyms::FuzzerPassAddOpPhiSynonyms(
 
 FuzzerPassAddOpPhiSynonyms::~FuzzerPassAddOpPhiSynonyms() = default;
 
-void FuzzerPassAddOpPhiSynonyms::Apply() {}
+void FuzzerPassAddOpPhiSynonyms::Apply() {
+  // Get a list of synonymous ids with the same type that can be used in the
+  // same OpPhi instruction.
+  auto equivalence_classes = GetIdEquivalenceClasses();
+
+  // Make a list of references to the sets, to avoid copying all the sets for
+  // each block.
+  std::vector<std::set<uint32_t>*> sets;
+  for (auto& set : equivalence_classes) {
+    sets.push_back(&set);
+  }
+
+  // Keep a list of transformations to apply at the end.
+  std::vector<TransformationAddOpPhiSynonym> transformations_to_apply;
+
+  for (auto& function : *GetIRContext()->module()) {
+    for (auto& block : function) {
+      // The block must have at least one predecessor.
+      if (GetIRContext()->cfg()->preds(block.id()).empty()) {
+        continue;
+      }
+
+      // Randomly decide whether to consider this block.
+      if (!GetFuzzerContext()->ChoosePercentage(
+              GetFuzzerContext()->GetChanceOfAddingOpPhiSynonym())) {
+        continue;
+      }
+
+      // Try to get a set with at least two distinct available ids.
+      auto chosen_set = MaybeFindSuitableSetRandomly(sets, block.id(), 2);
+      // If we could not find it, find a set with at least one available id.
+      if (!chosen_set) {
+        chosen_set = MaybeFindSuitableSetRandomly(sets, block.id(), 1);
+      }
+      // If no suitable set was found, we cannot apply the transformation to
+      // this block.
+      if (!chosen_set) {
+        continue;
+      }
+
+      // Initialise the map from predecessor labels to ids.
+      std::map<uint32_t, uint32_t> preds_to_ids;
+
+      // Choose an id for each predecessor.
+      for (uint32_t pred_id : GetIRContext()->cfg()->preds(block.id())) {
+        auto suitable_ids = GetSuitableIds(*chosen_set, pred_id);
+        assert(!suitable_ids.empty() &&
+               "We must be able to find at least one suitable id because the "
+               "set was chosen among suitable sets.");
+
+        uint32_t chosen_id =
+            suitable_ids[GetFuzzerContext()->RandomIndex(suitable_ids)];
+
+        // Add the pair (predecessor, chosen id) to the map.
+        preds_to_ids[pred_id] = chosen_id;
+      }
+
+      // Add the transformation to the list of transformations to apply.
+      transformations_to_apply.emplace_back(block.id(), preds_to_ids,
+                                            GetFuzzerContext()->GetFreshId());
+    }
+  }
+
+  // Apply the transformations.
+  for (const auto& transformation : transformations_to_apply) {
+    ApplyTransformation(transformation);
+  }
+}
 
 std::vector<std::set<uint32_t>>
 FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
@@ -95,6 +163,86 @@ FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
   }
 
   return id_equivalence_classes;
+}
+
+bool FuzzerPassAddOpPhiSynonyms::SetIsSuitableForBlock(
+    const std::set<uint32_t>& set, uint32_t block_id,
+    uint32_t distinct_ids_required) {
+  bool at_least_one_id_for_each_pred = true;
+
+  // Keep a set of the suitable ids found.
+  std::set<uint32_t> suitable_ids_found;
+
+  // Loop through all the predecessors of the block.
+  for (auto pred_id : GetIRContext()->cfg()->preds(block_id)) {
+    // Find the last instruction in the predecessor block.
+    auto last_instruction =
+        GetIRContext()->get_instr_block(pred_id)->terminator();
+
+    // Initially assume that there is not a suitable id for this predecessor.
+    bool at_least_one_suitable_id_found = false;
+    for (uint32_t id : set) {
+      if (fuzzerutil::IdIsAvailableBeforeInstruction(GetIRContext(),
+                                                     last_instruction, id)) {
+        // We have found a suitable id.
+        at_least_one_suitable_id_found = true;
+        suitable_ids_found.emplace(id);
+
+        // If we have already found enough distinct suitable ids, we don't need
+        // to check the remaining ones for this predecessor.
+        if (suitable_ids_found.size() >= distinct_ids_required) {
+          break;
+        }
+      }
+    }
+    // If no suitable id was found for this predecessor, this set is not
+    // suitable and we don't need to check the other predecessors.
+    if (!at_least_one_suitable_id_found) {
+      at_least_one_id_for_each_pred = false;
+      break;
+    }
+  }
+
+  // The set is suitable if at least one suitable id was found for each
+  // predecessor and we have found at least |distinct_ids_required| distinct
+  // suitable ids in general.
+  return at_least_one_id_for_each_pred &&
+         suitable_ids_found.size() >= distinct_ids_required;
+}
+
+std::vector<uint32_t> FuzzerPassAddOpPhiSynonyms::GetSuitableIds(
+    const std::set<uint32_t>& ids, uint32_t pred_id) {
+  // Initialise an empty vector of suitable ids.
+  std::vector<uint32_t> suitable_ids;
+
+  // Get the predecessor block.
+  auto predecessor = fuzzerutil::MaybeFindBlock(GetIRContext(), pred_id);
+
+  // Loop through the ids to find the suitable ones.
+  for (uint32_t id : ids) {
+    if (fuzzerutil::IdIsAvailableBeforeInstruction(
+            GetIRContext(), predecessor->terminator(), id)) {
+      suitable_ids.push_back(id);
+    }
+  }
+
+  return suitable_ids;
+}
+
+std::set<uint32_t>* FuzzerPassAddOpPhiSynonyms::MaybeFindSuitableSetRandomly(
+    const std::vector<std::set<uint32_t>*>& candidates, uint32_t block_id,
+    uint32_t distinct_ids_required) {
+  auto candidate_sets = candidates;
+  while (!candidate_sets.empty()) {
+    // Choose one set randomly and return it if it is suitable.
+    auto chosen = GetFuzzerContext()->RemoveAtRandomIndex(&candidate_sets);
+    if (SetIsSuitableForBlock(*chosen, block_id, distinct_ids_required)) {
+      return chosen;
+    }
+  }
+
+  // No suitable sets were found.
+  return nullptr;
 }
 
 }  // namespace fuzz

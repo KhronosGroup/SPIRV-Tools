@@ -31,31 +31,39 @@ protobufs::Fact MakeSynonymFact(uint32_t first, uint32_t second) {
 
 // Adds synonym facts to the fact manager.
 void SetUpIdSynonyms(FactManager* fact_manager, opt::IRContext* context) {
+  // Synonyms {9, 11, 15, 16, 21, 22}
   fact_manager->AddFact(MakeSynonymFact(11, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(13, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(14, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(19, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(20, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(10, 21), context);
+  fact_manager->AddFact(MakeSynonymFact(15, 9), context);
+  fact_manager->AddFact(MakeSynonymFact(16, 9), context);
+  fact_manager->AddFact(MakeSynonymFact(21, 9), context);
+  fact_manager->AddFact(MakeSynonymFact(22, 9), context);
+
+  // Synonyms {10, 23}
+  fact_manager->AddFact(MakeSynonymFact(10, 23), context);
+
+  // Synonyms {14, 27}
+  fact_manager->AddFact(MakeSynonymFact(14, 27), context);
+
+  // Synonyms {24, 26, 30}
+  fact_manager->AddFact(MakeSynonymFact(26, 24), context);
+  fact_manager->AddFact(MakeSynonymFact(30, 24), context);
 }
 
-bool EquivalenceClassesMatch(const std::vector<std::set<uint32_t>>& classes1,
-                             const std::vector<std::set<uint32_t>>& classes2) {
-  std::set<std::set<uint32_t>> set1;
-  for (auto equivalence_class : classes1) {
-    set1.emplace(equivalence_class);
-  }
+// Returns true if the given lists have the same elements, regardless of their
+// order.
+template <typename T>
+bool ListsHaveTheSameElements(const std::vector<T>& list1,
+                              const std::vector<T>& list2) {
+  auto sorted1 = list1;
+  std::sort(sorted1.begin(), sorted1.end());
 
-  std::set<std::set<uint32_t>> set2;
-  for (auto equivalence_class : classes2) {
-    set2.emplace(equivalence_class);
-  }
+  auto sorted2 = list2;
+  std::sort(sorted2.begin(), sorted2.end());
 
-  return set1 == set2;
+  return sorted1 == sorted2;
 }
 
-TEST(FuzzerPassAddOpPhiSynonymsTest, GetEquivalenceClasses) {
-  std::string shader = R"(
+std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -69,32 +77,41 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, GetEquivalenceClasses) {
           %6 = OpConstantTrue %5
           %7 = OpTypeInt 32 1
           %8 = OpTypeInt 32 0
-         %22 = OpTypePointer Function %7
           %9 = OpConstant %7 1
          %10 = OpConstant %7 2
          %11 = OpConstant %8 1
+         %12 = OpTypePointer Function %7
           %2 = OpFunction %3 None %4
-         %12 = OpLabel
-         %23 = OpVariable %22 Function
-         %13 = OpCopyObject %7 %9
-         %14 = OpCopyObject %8 %11
-               OpBranch %15
-         %15 = OpLabel
-               OpSelectionMerge %16 None
-               OpBranchConditional %6 %17 %18
+         %13 = OpLabel
+         %14 = OpVariable %12 Function
+         %15 = OpCopyObject %7 %9
+         %16 = OpCopyObject %8 %11
+               OpBranch %17
          %17 = OpLabel
-         %19 = OpCopyObject %7 %13
-         %20 = OpCopyObject %8 %14
-         %21 = OpCopyObject %7 %10
-               OpBranch %16
+               OpSelectionMerge %18 None
+               OpBranchConditional %6 %19 %20
+         %19 = OpLabel
+         %21 = OpCopyObject %7 %15
+         %22 = OpCopyObject %8 %16
+         %23 = OpCopyObject %7 %10
+         %24 = OpIAdd %7 %9 %10
+               OpBranch %18
+         %20 = OpLabel
+               OpBranch %18
          %18 = OpLabel
-         %24 = OpCopyObject %22 %23
-         %25 = OpCopyObject %7 %10
-               OpBranch %16
-         %16 = OpLabel
+         %26 = OpIAdd %7 %15 %10
+         %27 = OpCopyObject %12 %14
+               OpSelectionMerge %28 None
+               OpBranchConditional %6 %29 %28
+         %29 = OpLabel
+         %30 = OpCopyObject %7 %26
+               OpBranch %28
+         %28 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
+
+TEST(FuzzerPassAddOpPhiSynonymsTest, HelperFunctions) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -114,14 +131,37 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, GetEquivalenceClasses) {
                                          &transformation_sequence);
 
   SetUpIdSynonyms(&fact_manager, context.get());
-  fact_manager.AddFact(MakeSynonymFact(23, 24), context.get());
 
   std::vector<std::set<uint32_t>> expected_equivalence_classes = {
-      {9, 13, 19}, {11, 14, 20}, {10, 21}, {6}, {25}};
+      {9, 15, 21}, {11, 16, 22}, {10, 23}, {6}, {24, 26, 30}};
 
-  ASSERT_TRUE(EquivalenceClassesMatch(fuzzer_pass.GetIdEquivalenceClasses(),
-                                      expected_equivalence_classes));
+  ASSERT_TRUE(ListsHaveTheSameElements<std::set<uint32_t>>(
+      fuzzer_pass.GetIdEquivalenceClasses(), expected_equivalence_classes));
+
+  // The set {24, 26, 30} is not suitable for 18 (none if the ids is available
+  // for predecessor 20).
+  ASSERT_FALSE(fuzzer_pass.SetIsSuitableForBlock({24, 26, 30}, 18, 1));
+
+  // The set {6} is not suitable for 18 if we require at least 2 distinct
+  // available ids.
+  ASSERT_FALSE(fuzzer_pass.SetIsSuitableForBlock({6}, 18, 2));
+
+  // Only id 26 from the set {24, 26, 30} is available to use for the
+  // transformation at block 29, so the set is not suitable if we want at least
+  // 2 available ids.
+  ASSERT_FALSE(fuzzer_pass.SetIsSuitableForBlock({24, 26, 30}, 29, 2));
+
+  ASSERT_TRUE(fuzzer_pass.SetIsSuitableForBlock({24, 26, 30}, 29, 1));
+
+  // %21 is not available at the end of block 20.
+  ASSERT_TRUE(ListsHaveTheSameElements<uint32_t>(
+      fuzzer_pass.GetSuitableIds({9, 15, 21}, 20), {9, 15}));
+
+  // %24 and %30 are not available at the end of block 18.
+  ASSERT_TRUE(ListsHaveTheSameElements<uint32_t>(
+      fuzzer_pass.GetSuitableIds({24, 26, 30}, 18), {26}));
 }
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

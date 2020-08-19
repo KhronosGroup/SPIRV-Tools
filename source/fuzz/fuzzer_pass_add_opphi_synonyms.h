@@ -34,6 +34,31 @@ class FuzzerPassAddOpPhiSynonyms : public FuzzerPass {
   // in the module, where two ids are considered equivalent iff they have been
   // declared synonymous and they have the same type.
   std::vector<std::set<uint32_t>> GetIdEquivalenceClasses();
+
+  // Returns true iff |set| contains at least |distinct_ids_required| ids so
+  // that all of these ids are available at the end of at least one predecessor
+  // of the block with label |block_id|.
+  // Assumes that the block has at least one predecessor.
+  bool SetIsSuitableForBlock(const std::set<uint32_t>& set, uint32_t block_id,
+                             uint32_t distinct_ids_required);
+
+  // Returns a vector with the ids that are available to use at the end of the
+  // block with id |pred_id|, selected among the given |ids|. Assumes that
+  // |pred_id| is the label of a block and all ids in |ids| exist in the module.
+  std::vector<uint32_t> GetSuitableIds(const std::set<uint32_t>& ids,
+                                       uint32_t pred_id);
+
+ private:
+  // Randomly chooses one of the sets in |candidates|, so that it satisfies all
+  // of the following conditions:
+  // - For each of the predecessors of the |block_id| block, there is at least
+  //   one id in the chosen set that is available at the end of it.
+  // - There are at least |distinct_ids_required| ids available at the end of
+  //   some predecessor.
+  // Returns nullptr if no set in |candidates| satisfies the requirements.
+  std::set<uint32_t>* MaybeFindSuitableSetRandomly(
+      const std::vector<std::set<uint32_t>*>& candidates, uint32_t block_id,
+      uint32_t distinct_ids_required);
 };
 }  // namespace fuzz
 }  // namespace spvtools

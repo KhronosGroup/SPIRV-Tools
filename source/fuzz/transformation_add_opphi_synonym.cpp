@@ -88,8 +88,9 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
 
   for (auto& pair : preds_to_ids) {
     // Check that the id is synonymous with the others by checking that it is
-    // synonymous with the first one.
-    if (!transformation_context.GetFactManager()->IsSynonymous(
+    // synonymous with the first one (or it is the same id).
+    if (pair.second != first_id &&
+        !transformation_context.GetFactManager()->IsSynonymous(
             MakeDataDescriptor(pair.second, {}),
             MakeDataDescriptor(first_id, {}))) {
       return false;
@@ -170,9 +171,18 @@ bool TransformationAddOpPhiSynonym::CheckTypeIsAllowed(
     return false;
   }
 
-  return type->AsBool() || type->AsInteger() || type->AsFloat() ||
-         type->AsVector() || type->AsMatrix() || type->AsArray() ||
-         type->AsRuntimeArray() || type->AsStruct();
+  // We allow the following types: Bool, Integer, Float, Vector, Matrix, Array,
+  // RuntimeArray, Struct.
+  if (type->AsBool() || type->AsInteger() || type->AsFloat() ||
+      type->AsVector() || type->AsMatrix() || type->AsArray() ||
+      type->AsRuntimeArray() || type->AsStruct()) {
+    return true;
+  }
+
+  // If the VariablePointers capability is enabled, we can also allow pointers.
+  return ir_context->get_feature_mgr()->HasCapability(
+             SpvCapabilityVariablePointers) &&
+         type->AsPointer();
 }
 
 }  // namespace fuzz

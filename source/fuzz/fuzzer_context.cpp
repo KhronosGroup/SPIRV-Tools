@@ -43,6 +43,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingLoopPreheader = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingOpPhiSynonym = {5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingParameters = {5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingRelaxedDecoration = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingStore = {5, 50};
@@ -182,6 +183,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingMatrixType);
   chance_of_adding_no_contraction_decoration_ =
       ChooseBetweenMinAndMax(kChanceOfAddingNoContractionDecoration);
+  chance_of_adding_opphi_synonym_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingOpPhiSynonym);
   chance_of_adding_parameters =
       ChooseBetweenMinAndMax(kChanceOfAddingParameters);
   chance_of_adding_relaxed_decoration_ =
