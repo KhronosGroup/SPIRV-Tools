@@ -611,12 +611,13 @@ uint32_t FuzzerPass::FindOrCreateLocalVariable(
   auto function = fuzzerutil::FindFunction(GetIRContext(), function_id);
   assert(function && "The function must be defined.");
 
+  // First we try to find a suitable existing variable.
   // All of the local variable declarations are located in the first block.
   for (auto& instruction : *function->begin()) {
     if (instruction.opcode() != SpvOpVariable) {
       continue;
     }
-    // Every OpVariable has its type id defined.
+    // The existing OpVariable must have type |pointer_type_id|.
     if (instruction.type_id() != pointer_type_id) {
       continue;
     }
@@ -652,11 +653,13 @@ uint32_t FuzzerPass::FindOrCreateGlobalVariable(
            SpvStorageClassWorkgroup) &&
       "The pointer_type_id must refer to a defined pointer type with storage "
       "class Private or Workgroup");
+
+  // First we try to find a suitable existing variable.
   for (auto& instruction : GetIRContext()->module()->types_values()) {
     if (instruction.opcode() != SpvOpVariable) {
       continue;
     }
-    // Every OpVariable has its type id defined.
+    // The existing OpVariable must have type |pointer_type_id|.
     if (instruction.type_id() != pointer_type_id) {
       continue;
     }
