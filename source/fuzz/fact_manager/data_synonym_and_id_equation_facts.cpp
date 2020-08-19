@@ -20,7 +20,8 @@ namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
-size_t OperationHash::operator()(const Operation& operation) const {
+size_t DataSynonymAndIdEquationFacts::OperationHash::operator()(
+    const Operation& operation) const {
   std::u32string hash;
   hash.push_back(operation.opcode);
   for (auto operand : operation.operands) {
@@ -29,8 +30,8 @@ size_t OperationHash::operator()(const Operation& operation) const {
   return std::hash<std::u32string>()(hash);
 }
 
-bool OperationEquals::operator()(const Operation& first,
-                                 const Operation& second) const {
+bool DataSynonymAndIdEquationFacts::OperationEquals::operator()(
+    const Operation& first, const Operation& second) const {
   // Equal operations require...
   //
   // Equal opcodes.

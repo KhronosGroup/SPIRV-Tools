@@ -102,7 +102,7 @@ bool FactManager::AddFact(const fuzz::protobufs::Fact& fact,
                           opt::IRContext* context) {
   switch (fact.fact_case()) {
     case protobufs::Fact::kConstantUniformFact:
-      return uniform_constant_facts_.AddFact(fact.constant_uniform_fact(),
+      return constant_uniform_facts_.AddFact(fact.constant_uniform_fact(),
                                              context);
     case protobufs::Fact::kDataSynonymFact:
       data_synonym_and_id_equation_facts_.AddFact(fact.data_synonym_fact(),
@@ -131,32 +131,32 @@ void FactManager::AddFactDataSynonym(const protobufs::DataDescriptor& data1,
 
 std::vector<uint32_t> FactManager::GetConstantsAvailableFromUniformsForType(
     opt::IRContext* ir_context, uint32_t type_id) const {
-  return uniform_constant_facts_.GetConstantsAvailableFromUniformsForType(
+  return constant_uniform_facts_.GetConstantsAvailableFromUniformsForType(
       ir_context, type_id);
 }
 
 std::vector<protobufs::UniformBufferElementDescriptor>
 FactManager::GetUniformDescriptorsForConstant(opt::IRContext* ir_context,
                                               uint32_t constant_id) const {
-  return uniform_constant_facts_.GetUniformDescriptorsForConstant(ir_context,
+  return constant_uniform_facts_.GetUniformDescriptorsForConstant(ir_context,
                                                                   constant_id);
 }
 
 uint32_t FactManager::GetConstantFromUniformDescriptor(
     opt::IRContext* context,
     const protobufs::UniformBufferElementDescriptor& uniform_descriptor) const {
-  return uniform_constant_facts_.GetConstantFromUniformDescriptor(
+  return constant_uniform_facts_.GetConstantFromUniformDescriptor(
       context, uniform_descriptor);
 }
 
 std::vector<uint32_t> FactManager::GetTypesForWhichUniformValuesAreKnown()
     const {
-  return uniform_constant_facts_.GetTypesForWhichUniformValuesAreKnown();
+  return constant_uniform_facts_.GetTypesForWhichUniformValuesAreKnown();
 }
 
 const std::vector<std::pair<protobufs::FactConstantUniform, uint32_t>>&
 FactManager::GetConstantUniformFactsAndTypes() const {
-  return uniform_constant_facts_.GetConstantUniformFactsAndTypes();
+  return constant_uniform_facts_.GetConstantUniformFactsAndTypes();
 }
 
 std::vector<uint32_t> FactManager::GetIdsForWhichSynonymsAreKnown() const {

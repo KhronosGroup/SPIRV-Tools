@@ -198,7 +198,8 @@ class FactManager {
   //==============================
 
  private:
-  fact_manager::ConstantUniformFacts uniform_constant_facts_;
+  // Keep these in alphabetical order.
+  fact_manager::ConstantUniformFacts constant_uniform_facts_;
   fact_manager::DataSynonymAndIdEquationFacts
       data_synonym_and_id_equation_facts_;
   fact_manager::DeadBlockFacts dead_block_facts_;

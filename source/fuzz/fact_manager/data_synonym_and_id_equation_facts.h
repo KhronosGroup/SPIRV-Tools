@@ -27,23 +27,6 @@ namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
-// This helper struct represents the right hand side of an equation as an
-// operator applied to a number of data descriptor operands.
-struct Operation {
-  SpvOp opcode;
-  std::vector<const protobufs::DataDescriptor*> operands;
-};
-
-// Hashing for operations, to allow deterministic unordered sets.
-struct OperationHash {
-  size_t operator()(const Operation& operation) const;
-};
-
-// Equality for operations, to allow deterministic unordered sets.
-struct OperationEquals {
-  bool operator()(const Operation& first, const Operation& second) const;
-};
-
 // The purpose of this class is to group the fields and data used to represent
 // facts about data synonyms and id equations.
 class DataSynonymAndIdEquationFacts {
@@ -70,6 +53,23 @@ class DataSynonymAndIdEquationFacts {
                              uint32_t maximum_equivalence_class_size);
 
  private:
+  // This helper struct represents the right hand side of an equation as an
+  // operator applied to a number of data descriptor operands.
+  struct Operation {
+    SpvOp opcode;
+    std::vector<const protobufs::DataDescriptor*> operands;
+  };
+
+  // Hashing for operations, to allow deterministic unordered sets.
+  struct OperationHash {
+    size_t operator()(const Operation& operation) const;
+  };
+
+  // Equality for operations, to allow deterministic unordered sets.
+  struct OperationEquals {
+    bool operator()(const Operation& first, const Operation& second) const;
+  };
+
   using OperationSet =
       std::unordered_set<Operation, OperationHash, OperationEquals>;
 
