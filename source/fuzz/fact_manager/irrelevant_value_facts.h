@@ -41,7 +41,7 @@ class IrrelevantValueFacts {
   bool IdIsIrrelevant(uint32_t pointer_id) const;
 
   // See method in FactManager which delegates to this method.
-  std::unordered_set<uint32_t> GetIrrelevantIds() const;
+  const std::unordered_set<uint32_t>& GetIrrelevantIds() const;
 
  private:
   std::unordered_set<uint32_t> pointers_to_irrelevant_pointees_ids_;

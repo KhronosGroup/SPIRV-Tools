@@ -196,7 +196,7 @@ class FactManager {
 
   // Returns an unordered set of all the ids which have been declared
   // irrelevant.
-  std::unordered_set<uint32_t> GetIrrelevantIds() const;
+  const std::unordered_set<uint32_t>& GetIrrelevantIds() const;
 
   // End of irrelevant value facts
   //==============================

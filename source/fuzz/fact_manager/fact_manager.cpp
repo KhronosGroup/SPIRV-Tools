@@ -210,7 +210,7 @@ bool FactManager::IdIsIrrelevant(uint32_t result_id) const {
   return irrelevant_value_facts_.IdIsIrrelevant(result_id);
 }
 
-std::unordered_set<uint32_t> FactManager::GetIrrelevantIds() const {
+const std::unordered_set<uint32_t>& FactManager::GetIrrelevantIds() const {
   return irrelevant_value_facts_.GetIrrelevantIds();
 }
 
