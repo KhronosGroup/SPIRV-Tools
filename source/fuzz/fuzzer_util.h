@@ -498,7 +498,6 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
                                                  SpvOp opcode);
 
 }  // namespace fuzzerutil
-
 }  // namespace fuzz
 }  // namespace spvtools
 

@@ -412,6 +412,7 @@ message Transformation {
     TransformationMakeVectorOperationDynamic make_vector_operation_dynamic = 65;
     TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
     TransformationPropagateInstructionUp propagate_instruction_up = 67;
+    TransformationCompositeInsert composite_insert = 68;
     // Add additional option using the next available number.
   }
 }
@@ -1018,6 +1019,29 @@ message TransformationCompositeExtract {
 
   // Indices that indicate which part of the composite should be extracted.
   repeated uint32 index = 4;
+
+}
+
+message TransformationCompositeInsert {
+
+  // A transformation that adds an instruction OpCompositeInsert which creates
+  // a new composite from an existing composite, with an element inserted.
+
+  // A descriptor for an instruction before which the new instruction
+  // OpCompositeInsert should be inserted.
+  InstructionDescriptor instruction_to_insert_before = 1;
+
+  // Result id of the inserted OpCompositeInsert instruction.
+  uint32 fresh_id = 2;
+
+  // Id of the composite used as the basis for the insertion.
+  uint32 composite_id = 3;
+
+  // Id of the object to be inserted.
+  uint32 object_id = 4;
+
+  // Indices that indicate which part of the composite should be inserted into.
+  repeated uint32 index = 5;
 
 }
 
