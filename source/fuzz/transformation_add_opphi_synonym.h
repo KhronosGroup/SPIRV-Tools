@@ -34,6 +34,9 @@ class TransformationAddOpPhiSynonym : public Transformation {
   //   the block to an id that is available at the end of the predecessor.
   // - All the ids corresponding to a predecessor in |message_.pred_to_id|:
   //    - have been recorded as synonymous and all have the same type.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3726): if a
+  // predecessor is a dead block, any id of the right type could be used, even
+  // if it is not synonym with the others.
   //    - have one of the following types: Bool, Integer, Float, Vector, Matrix,
   //      Array, Struct. The Pointer type is allowed if the VariablePointers
   //      capability is enabled.
