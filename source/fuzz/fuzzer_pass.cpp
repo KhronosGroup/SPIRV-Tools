@@ -528,12 +528,11 @@ bool FuzzerPass::CanFindOrCreateZeroConstant(const opt::analysis::Type& type) {
     case opt::analysis::Type::kVector:
       return true;
     case opt::analysis::Type::kStruct:
-      return std::all_of(
-          type.AsStruct()->element_types().begin(),
-          type.AsStruct()->element_types().end(),
-          [this](const opt::analysis::Type* element_type) {
-            return FuzzerPass::CanFindOrCreateZeroConstant(*element_type);
-          });
+      return std::all_of(type.AsStruct()->element_types().begin(),
+                         type.AsStruct()->element_types().end(),
+                         [this](const opt::analysis::Type* element_type) {
+                           return CanFindOrCreateZeroConstant(*element_type);
+                         });
     default:
       return false;
   }
