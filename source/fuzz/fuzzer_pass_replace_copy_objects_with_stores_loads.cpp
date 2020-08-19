@@ -71,7 +71,7 @@ void FuzzerPassReplaceCopyObjectsWithStoresLoads::Apply() {
     // called.
     auto instruction_type =
         GetIRContext()->get_type_mgr()->GetType(instruction->type_id());
-    if (!fuzzerutil::CanFindOrCreateZeroConstant(*instruction_type)) {
+    if (!CanFindOrCreateZeroConstant(*instruction_type)) {
       return;
     }
     auto variable_initializer_id =
