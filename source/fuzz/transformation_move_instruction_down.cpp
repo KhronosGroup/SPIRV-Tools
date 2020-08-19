@@ -14,11 +14,28 @@
 
 #include "source/fuzz/transformation_move_instruction_down.h"
 
+#include "external/spirv-headers/include/spirv/unified1/GLSL.std.450.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 
 namespace spvtools {
 namespace fuzz {
+namespace {
+
+const char* const kExtensionSetName = "GLSL.std.450";
+
+std::string GetExtensionSet(opt::IRContext* ir_context,
+                            const opt::Instruction& op_ext_inst) {
+  assert(op_ext_inst.opcode() == SpvOpExtInst && "Wrong opcode");
+
+  const auto* ext_inst_import = ir_context->get_def_use_mgr()->GetDef(
+      op_ext_inst.GetSingleWordInOperand(0));
+  assert(ext_inst_import && "Extension set is not imported");
+
+  return ext_inst_import->GetInOperand(0).AsString();
+}
+
+}  // namespace
 
 TransformationMoveInstructionDown::TransformationMoveInstructionDown(
     const protobufs::TransformationMoveInstructionDown& message)
@@ -39,7 +56,7 @@ bool TransformationMoveInstructionDown::IsApplicable(
   }
 
   // Instruction's opcode must be supported by this transformation.
-  if (!IsOpcodeSupported(inst->opcode())) {
+  if (!IsInstructionSupported(ir_context, *inst)) {
     return false;
   }
 
@@ -58,16 +75,17 @@ bool TransformationMoveInstructionDown::IsApplicable(
   }
 
   // We don't risk swapping a memory instruction with an unsupported one.
-  if (!IsSimpleOpcode(inst->opcode()) &&
-      !IsOpcodeSupported(successor_it->opcode())) {
+  if (!IsSimpleInstruction(ir_context, *inst) &&
+      !IsInstructionSupported(ir_context, *successor_it)) {
     return false;
   }
 
   // We should be able to swap memory instructions without changing semantics of
   // the module.
-  if (IsOpcodeSupported(successor_it->opcode()) &&
+  if (IsInstructionSupported(ir_context, *successor_it) &&
       !CanSwapMaybeSimpleInstructions(
-          *inst, *successor_it, *transformation_context.GetFactManager())) {
+          ir_context, *inst, *successor_it,
+          *transformation_context.GetFactManager())) {
     return false;
   }
 
@@ -83,7 +101,7 @@ bool TransformationMoveInstructionDown::IsApplicable(
   if (inst->result_id()) {
     for (uint32_t i = 0; i < successor_it->NumInOperands(); ++i) {
       const auto& operand = successor_it->GetInOperand(i);
-      if (operand.type == SPV_OPERAND_TYPE_ID &&
+      if (spvIsInIdType(operand.type) &&
           operand.words[0] == inst->result_id()) {
         return false;
       }
@@ -114,17 +132,19 @@ protobufs::Transformation TransformationMoveInstructionDown::ToMessage() const {
   return result;
 }
 
-bool TransformationMoveInstructionDown::IsOpcodeSupported(SpvOp opcode) {
+bool TransformationMoveInstructionDown::IsInstructionSupported(
+    opt::IRContext* ir_context, const opt::Instruction& inst) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3605):
   //  We only support "simple" instructions that work don't with memory.
   //  We should extend this so that we support the ones that modify the memory
   //  too.
-  return IsSimpleOpcode(opcode) || IsMemoryOpcode(opcode) ||
-         IsBarrierOpcode(opcode);
+  return IsSimpleInstruction(ir_context, inst) ||
+         IsMemoryInstruction(ir_context, inst) || IsBarrierInstruction(inst);
 }
 
-bool TransformationMoveInstructionDown::IsSimpleOpcode(SpvOp opcode) {
-  switch (opcode) {
+bool TransformationMoveInstructionDown::IsSimpleInstruction(
+    opt::IRContext* ir_context, const opt::Instruction& inst) {
+  switch (inst.opcode()) {
     case SpvOpNop:
     case SpvOpUndef:
     case SpvOpAccessChain:
@@ -230,80 +250,249 @@ bool TransformationMoveInstructionDown::IsSimpleOpcode(SpvOp opcode) {
     case SpvOpBitCount:
     case SpvOpCopyLogical:
       return true;
+    case SpvOpExtInst: {
+      const auto* ext_inst_import =
+          ir_context->get_def_use_mgr()->GetDef(inst.GetSingleWordInOperand(0));
+
+      if (ext_inst_import->GetInOperand(0).AsString() != "GLSL.std.450") {
+        return false;
+      }
+
+      switch (static_cast<GLSLstd450>(inst.GetSingleWordInOperand(1))) {
+        case GLSLstd450Round:
+        case GLSLstd450RoundEven:
+        case GLSLstd450Trunc:
+        case GLSLstd450FAbs:
+        case GLSLstd450SAbs:
+        case GLSLstd450FSign:
+        case GLSLstd450SSign:
+        case GLSLstd450Floor:
+        case GLSLstd450Ceil:
+        case GLSLstd450Fract:
+        case GLSLstd450Radians:
+        case GLSLstd450Degrees:
+        case GLSLstd450Sin:
+        case GLSLstd450Cos:
+        case GLSLstd450Tan:
+        case GLSLstd450Asin:
+        case GLSLstd450Acos:
+        case GLSLstd450Atan:
+        case GLSLstd450Sinh:
+        case GLSLstd450Cosh:
+        case GLSLstd450Tanh:
+        case GLSLstd450Asinh:
+        case GLSLstd450Acosh:
+        case GLSLstd450Atanh:
+        case GLSLstd450Atan2:
+        case GLSLstd450Pow:
+        case GLSLstd450Exp:
+        case GLSLstd450Log:
+        case GLSLstd450Exp2:
+        case GLSLstd450Log2:
+        case GLSLstd450Sqrt:
+        case GLSLstd450InverseSqrt:
+        case GLSLstd450Determinant:
+        case GLSLstd450MatrixInverse:
+        case GLSLstd450ModfStruct:
+        case GLSLstd450FMin:
+        case GLSLstd450UMin:
+        case GLSLstd450SMin:
+        case GLSLstd450FMax:
+        case GLSLstd450UMax:
+        case GLSLstd450SMax:
+        case GLSLstd450FClamp:
+        case GLSLstd450UClamp:
+        case GLSLstd450SClamp:
+        case GLSLstd450FMix:
+        case GLSLstd450IMix:
+        case GLSLstd450Step:
+        case GLSLstd450SmoothStep:
+        case GLSLstd450Fma:
+        case GLSLstd450FrexpStruct:
+        case GLSLstd450Ldexp:
+        case GLSLstd450PackSnorm4x8:
+        case GLSLstd450PackUnorm4x8:
+        case GLSLstd450PackSnorm2x16:
+        case GLSLstd450PackUnorm2x16:
+        case GLSLstd450PackHalf2x16:
+        case GLSLstd450PackDouble2x32:
+        case GLSLstd450UnpackSnorm2x16:
+        case GLSLstd450UnpackUnorm2x16:
+        case GLSLstd450UnpackHalf2x16:
+        case GLSLstd450UnpackSnorm4x8:
+        case GLSLstd450UnpackUnorm4x8:
+        case GLSLstd450UnpackDouble2x32:
+        case GLSLstd450Length:
+        case GLSLstd450Distance:
+        case GLSLstd450Cross:
+        case GLSLstd450Normalize:
+        case GLSLstd450FaceForward:
+        case GLSLstd450Reflect:
+        case GLSLstd450Refract:
+        case GLSLstd450FindILsb:
+        case GLSLstd450FindSMsb:
+        case GLSLstd450FindUMsb:
+        case GLSLstd450NMin:
+        case GLSLstd450NMax:
+        case GLSLstd450NClamp:
+          return true;
+        default:
+          return false;
+      }
+    }
     default:
       return false;
   }
 }
 
-bool TransformationMoveInstructionDown::IsMemoryReadOpcode(SpvOp opcode) {
-  return opcode == SpvOpLoad || opcode == SpvOpCopyMemory;
+bool TransformationMoveInstructionDown::IsMemoryReadInstruction(
+    opt::IRContext* ir_context, const opt::Instruction& inst) {
+  switch (inst.opcode()) {
+    case SpvOpLoad:
+    case SpvOpCopyMemory:
+      return true;
+    case SpvOpExtInst: {
+      if (GetExtensionSet(ir_context, inst) != kExtensionSetName) {
+        return false;
+      }
+
+      switch (static_cast<GLSLstd450>(inst.GetSingleWordInOperand(1))) {
+        case GLSLstd450InterpolateAtCentroid:
+        case GLSLstd450InterpolateAtOffset:
+        case GLSLstd450InterpolateAtSample:
+          return true;
+        default:
+          return false;
+      }
+    }
+    default:
+      return false;
+  }
 }
 
 uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
-    const opt::Instruction& inst) {
+    opt::IRContext* ir_context, const opt::Instruction& inst) {
+  (void)ir_context;  // |ir_context| is only used in assertions.
+  assert(IsMemoryReadInstruction(ir_context, inst) &&
+         "|inst| is not a memory read instruction");
+
   switch (inst.opcode()) {
     case SpvOpLoad:
       return inst.GetSingleWordInOperand(0);
     case SpvOpStore:
     case SpvOpCopyMemory:
       return inst.GetSingleWordInOperand(1);
+    case SpvOpExtInst: {
+      assert(GetExtensionSet(ir_context, inst) == kExtensionSetName &&
+             "Extension set is not supported");
+
+      switch (static_cast<GLSLstd450>(inst.GetSingleWordInOperand(1))) {
+        case GLSLstd450InterpolateAtCentroid:
+        case GLSLstd450InterpolateAtOffset:
+        case GLSLstd450InterpolateAtSample:
+          return inst.GetSingleWordInOperand(2);
+        default:
+          assert(false && "Not all memory opcodes are handled");
+          return 0;
+      }
+    }
     default:
-      assert(!IsMemoryOpcode(inst.opcode()) &&
-             "Not all memory opcodes are handled");
+      assert(false && "Not all memory opcodes are handled");
       return 0;
   }
 }
 
-bool TransformationMoveInstructionDown::IsMemoryWriteOpcode(SpvOp opcode) {
-  return opcode == SpvOpStore || opcode == SpvOpCopyMemory;
+bool TransformationMoveInstructionDown::IsMemoryWriteInstruction(
+    opt::IRContext* ir_context, const opt::Instruction& inst) {
+  switch (inst.opcode()) {
+    case SpvOpStore:
+    case SpvOpCopyMemory:
+      return true;
+    case SpvOpExtInst: {
+      if (GetExtensionSet(ir_context, inst) != kExtensionSetName) {
+        return false;
+      }
+
+      auto extension = static_cast<GLSLstd450>(inst.GetSingleWordInOperand(1));
+      return extension == GLSLstd450Modf || extension == GLSLstd450Frexp;
+    }
+    default:
+      return false;
+  }
 }
 
 uint32_t TransformationMoveInstructionDown::GetMemoryWriteTarget(
-    const opt::Instruction& inst) {
+    opt::IRContext* ir_context, const opt::Instruction& inst) {
+  (void)ir_context;  // |ir_context| is only used in assertions.
+  assert(IsMemoryWriteInstruction(ir_context, inst) &&
+         "|inst| is not a memory write instruction");
+
   switch (inst.opcode()) {
-    case SpvOpLoad:
-      return inst.result_id();
     case SpvOpStore:
     case SpvOpCopyMemory:
       return inst.GetSingleWordInOperand(0);
+    case SpvOpExtInst: {
+      assert(GetExtensionSet(ir_context, inst) == kExtensionSetName &&
+             "Extension set is not supported");
+
+      switch (static_cast<GLSLstd450>(inst.GetSingleWordInOperand(1))) {
+        case GLSLstd450Modf:
+        case GLSLstd450Frexp:
+          return inst.GetSingleWordInOperand(3);
+        default:
+          assert(false && "Not all opcodes are handled");
+          return 0;
+      }
+    }
     default:
-      assert(!IsMemoryOpcode(inst.opcode()) &&
-             "Not all memory opcodes are handled");
+      assert(false && "Not all opcodes are handled");
       return 0;
   }
 }
 
-bool TransformationMoveInstructionDown::IsMemoryOpcode(SpvOp opcode) {
-  return IsMemoryReadOpcode(opcode) || IsMemoryWriteOpcode(opcode);
+bool TransformationMoveInstructionDown::IsMemoryInstruction(
+    opt::IRContext* ir_context, const opt::Instruction& inst) {
+  return IsMemoryReadInstruction(ir_context, inst) ||
+         IsMemoryWriteInstruction(ir_context, inst);
 }
 
-bool TransformationMoveInstructionDown::IsBarrierOpcode(SpvOp opcode) {
-  return opcode == SpvOpMemoryBarrier || opcode == SpvOpControlBarrier ||
-         opcode == SpvOpMemoryNamedBarrier;
+bool TransformationMoveInstructionDown::IsBarrierInstruction(
+    const opt::Instruction& inst) {
+  switch (inst.opcode()) {
+    case SpvOpMemoryBarrier:
+    case SpvOpControlBarrier:
+    case SpvOpMemoryNamedBarrier:
+      return true;
+    default:
+      return false;
+  }
 }
 
 bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
-    const opt::Instruction& a, const opt::Instruction& b,
-    const FactManager& fact_manager) {
-  assert(IsOpcodeSupported(a.opcode()) && IsOpcodeSupported(b.opcode()) &&
+    opt::IRContext* ir_context, const opt::Instruction& a,
+    const opt::Instruction& b, const FactManager& fact_manager) {
+  assert(IsInstructionSupported(ir_context, a) &&
+         IsInstructionSupported(ir_context, b) &&
          "Both opcodes must be supported");
 
   // One of opcodes is simple - we can swap them without any side-effects.
-  if (IsSimpleOpcode(a.opcode()) || IsSimpleOpcode(b.opcode())) {
+  if (IsSimpleInstruction(ir_context, a) ||
+      IsSimpleInstruction(ir_context, b)) {
     return true;
   }
 
   // Both parameters are either memory instruction or barriers.
 
   // One of the opcodes is a barrier - can't swap them.
-  if (IsBarrierOpcode(a.opcode()) || IsBarrierOpcode(b.opcode())) {
+  if (IsBarrierInstruction(a) || IsBarrierInstruction(b)) {
     return false;
   }
 
   // Both parameters are memory instructions.
 
   // Both parameters only read from memory - it's OK to swap them.
-  if (!IsMemoryWriteOpcode(a.opcode()) && !IsMemoryWriteOpcode(b.opcode())) {
+  if (!IsMemoryWriteInstruction(ir_context, a) &&
+      !IsMemoryWriteInstruction(ir_context, b)) {
     return true;
   }
 
@@ -360,28 +549,32 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   // one of them can be R. The procedure below checks all possible combinations
   // of R, W and RW according to the tables above.
 
-  if (IsMemoryReadOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
-      !fact_manager.PointeeValueIsIrrelevant(GetMemoryReadTarget(a)) &&
-      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
+  if (IsMemoryReadInstruction(ir_context, a) &&
+      IsMemoryWriteInstruction(ir_context, b) &&
+      !fact_manager.PointeeValueIsIrrelevant(
+          GetMemoryReadTarget(ir_context, a)) &&
+      !fact_manager.PointeeValueIsIrrelevant(
+          GetMemoryWriteTarget(ir_context, b))) {
     return false;
   }
 
-  if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryReadOpcode(b.opcode()) &&
-      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
-      !fact_manager.PointeeValueIsIrrelevant(GetMemoryReadTarget(b))) {
+  if (IsMemoryWriteInstruction(ir_context, a) &&
+      IsMemoryReadInstruction(ir_context, b) &&
+      !fact_manager.PointeeValueIsIrrelevant(
+          GetMemoryWriteTarget(ir_context, a)) &&
+      !fact_manager.PointeeValueIsIrrelevant(
+          GetMemoryReadTarget(ir_context, b))) {
     return false;
   }
 
-  if (IsMemoryWriteOpcode(a.opcode()) && IsMemoryWriteOpcode(b.opcode()) &&
-      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(a)) &&
-      !fact_manager.PointeeValueIsIrrelevant(GetMemoryWriteTarget(b))) {
-    auto read_target_a = GetMemoryReadTarget(a);
-    auto read_target_b = GetMemoryReadTarget(b);
-
-    // |read_target_a| and |read_target_b| might have different types.
-    return read_target_a == read_target_b ||
-           fact_manager.IsSynonymous(MakeDataDescriptor(read_target_a, {}),
-                                     MakeDataDescriptor(read_target_b, {}));
+  if (IsMemoryWriteInstruction(ir_context, a) &&
+      IsMemoryWriteInstruction(ir_context, b) &&
+      !fact_manager.PointeeValueIsIrrelevant(
+          GetMemoryWriteTarget(ir_context, a)) &&
+      !fact_manager.PointeeValueIsIrrelevant(
+          GetMemoryWriteTarget(ir_context, b))) {
+    // We ignore the case when the written value is the same.
+    return false;
   }
 
   return true;

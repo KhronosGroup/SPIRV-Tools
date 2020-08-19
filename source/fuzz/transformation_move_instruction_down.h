@@ -49,40 +49,46 @@ class TransformationMoveInstructionDown : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // Returns true if the |opcode| is supported by this transformation (i.e.
-  // we can move an instruction with this opcode).
-  static bool IsOpcodeSupported(SpvOp opcode);
+  // Returns true if the |inst| is supported by this transformation.
+  static bool IsInstructionSupported(opt::IRContext* ir_context,
+                                     const opt::Instruction& inst);
 
-  // Returns true if |opcode| represents a "simple" instruction. That is, it
+  // Returns true if |inst| represents a "simple" instruction. That is, it
   // neither reads from nor writes to the memory and is not a barrier.
-  static bool IsSimpleOpcode(SpvOp opcode);
+  static bool IsSimpleInstruction(opt::IRContext* ir_context,
+                                  const opt::Instruction& inst);
 
-  // Returns true if |opcode| represents an instruction that reads from memory.
-  static bool IsMemoryReadOpcode(SpvOp opcode);
+  // Returns true if |inst| reads from memory.
+  static bool IsMemoryReadInstruction(opt::IRContext* ir_context,
+                                      const opt::Instruction& inst);
 
-  // Returns id being used by |inst| to read from. The id is guaranteed to have
-  // pointer type if |IsMemoryReadOpcode(inst.opcode())| is true.
-  static uint32_t GetMemoryReadTarget(const opt::Instruction& inst);
+  // Returns id being used by |inst| to read from. |inst| must be a memory read
+  // instruction (see IsMemoryReadInstruction).
+  static uint32_t GetMemoryReadTarget(opt::IRContext* ir_context,
+                                      const opt::Instruction& inst);
 
-  // Returns true if |opcode| represents an instruction that writes to the
-  // memory.
-  static bool IsMemoryWriteOpcode(SpvOp opcode);
+  // Returns true if |inst| that writes to the memory.
+  static bool IsMemoryWriteInstruction(opt::IRContext* ir_context,
+                                       const opt::Instruction& inst);
 
-  // Returns id being used by |inst| to write into. The id is guaranteed to have
-  // pointer type if |IsMemoryWriteOpcode(inst.opcode())| is true.
-  static uint32_t GetMemoryWriteTarget(const opt::Instruction& inst);
+  // Returns id being used by |inst| to write into. |inst| must be a memory
+  // write instruction (see IsMemoryWriteInstruction).
+  static uint32_t GetMemoryWriteTarget(opt::IRContext* ir_context,
+                                       const opt::Instruction& inst);
 
-  // Returns true if |opcode| is either a memory-write opcode or a memory-read
-  // opcode (see IsMemoryWriteOpcode and IsMemoryReadOpcode accordingly).
-  static bool IsMemoryOpcode(SpvOp opcode);
+  // Returns true if |inst| either reads from or writes to the memory
+  // (see IsMemoryReadInstruction and IsMemoryWriteInstruction accordingly).
+  static bool IsMemoryInstruction(opt::IRContext* ir_context,
+                                  const opt::Instruction& inst);
 
-  // Returns true if |opcode| represents an a barrier instruction.
-  static bool IsBarrierOpcode(SpvOp opcode);
+  // Returns true if |inst| is a barrier instruction.
+  static bool IsBarrierInstruction(const opt::Instruction& inst);
 
   // Returns true if it is possible to swap |a| and |b| without invalidating
   // the module's semantics. |a| and |b| might not be memory instructions.
   // Opcodes of both parameters must be supported.
-  static bool CanSwapMaybeSimpleInstructions(const opt::Instruction& a,
+  static bool CanSwapMaybeSimpleInstructions(opt::IRContext* ir_context,
+                                             const opt::Instruction& a,
                                              const opt::Instruction& b,
                                              const FactManager& fact_manager);
 
