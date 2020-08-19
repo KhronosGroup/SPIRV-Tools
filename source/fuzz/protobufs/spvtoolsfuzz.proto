@@ -754,15 +754,17 @@ message TransformationAddParameter {
   // Fresh id for a new parameter.
   uint32 parameter_fresh_id = 2;
 
-  // Result id of the instruction, used to initializer new parameter
-  // in function calls. Type id of that instruction is the type id of the parameter.
-  // It may not be OpTypeVoid.
-  uint32 initializer_id = 3;
+  // Type id for a new parameter.
+  uint32 parameter_type_id = 3;
+
+  // A map that maps from the OpFunctionCall id to the id that will be passed as the new
+  // parameter at that call site. It must have the same type as that of the new parameter.
+  repeated UInt32Pair call_parameter_ids = 4;
 
   // A fresh id for a new function type. This might not be used
   // if a required function type already exists or if we can change
   // the old function type.
-  uint32 function_type_fresh_id = 4;
+  uint32 function_type_fresh_id = 5;
 
 }
 
