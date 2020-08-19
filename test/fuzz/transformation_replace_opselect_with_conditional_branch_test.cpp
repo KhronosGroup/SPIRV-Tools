@@ -36,6 +36,8 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
           %7 = OpTypeVector %5 4
           %8 = OpTypeBool
           %9 = OpConstantTrue %8
+         %34 = OpTypeVector %8 2
+         %35 = OpConstantComposite %34 %9 %9
          %10 = OpTypeSampler
          %11 = OpTypeImage %3 2D 2 0 0 1 Unknown
          %12 = OpTypeSampledImage %11
@@ -55,6 +57,7 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
          %25 = OpSelect %5 %9 %24 %6
                OpBranch %26
          %26 = OpLabel
+         %33 = OpSelect %16 %35 %18 %18
          %27 = OpSampledImage %12 %22 %23
          %28 = OpSelect %5 %9 %6 %24
          %29 = OpImageSampleImplicitLod %7 %27 %18
@@ -78,20 +81,21 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
                                                validator_options);
 
   // %24 is not an OpSelect instruction.
-  ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(24, {100, 101})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(24, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
 
   // The block containing %28 cannot be split before %28 because this would
   // separate an OpSampledImage instruction from its use.
-  ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(28, {100, 101})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(28, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
 
   // The block containing %31 cannot be split because it is a loop header.
-  ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(31, {100, 101})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(31, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // The condition for %33 is a vector of booleans, so not a scalar.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(33, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
@@ -129,16 +133,15 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
                                                validator_options);
 
   // One of the ids are not fresh.
-  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, {100, 11})
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, 100, 11)
                    .IsApplicable(context.get(), transformation_context));
 
   // The ids are repeated.
-  ASSERT_FALSE(
-      TransformationReplaceOpSelectWithConditionalBranch(11, {100, 100})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, 100, 100)
+                   .IsApplicable(context.get(), transformation_context));
 
   auto transformation =
-      TransformationReplaceOpSelectWithConditionalBranch(11, {100, 101});
+      TransformationReplaceOpSelectWithConditionalBranch(11, 100, 101);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);

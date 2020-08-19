@@ -28,9 +28,11 @@ class TransformationReplaceOpSelectWithConditionalBranch
           message);
 
   TransformationReplaceOpSelectWithConditionalBranch(
-      uint32_t select_id, std::pair<uint32_t, uint32_t> new_block_ids);
+      uint32_t select_id, uint32_t true_block_fresh_id,
+      uint32_t merge_block_fresh_id);
 
   // - |message_.select_id| is the result id of an OpSelect instruction.
+  // - The condition of the OpSelect must be a scalar boolean.
   // - The block containing the instruction can be split at the position
   //   corresponding to the instruction.
   // - The pair |message_.new_block_ids| contains 2 fresh and distinct ids
@@ -48,6 +50,8 @@ class TransformationReplaceOpSelectWithConditionalBranch
  private:
   protobufs::TransformationReplaceOpSelectWithConditionalBranch message_;
 };
+
 }  // namespace fuzz
 }  // namespace spvtools
+
 #endif  // SOURCE_FUZZ_TRANSFORMATION_REPLACE_OPSELECT_WITH_CONDITIONAL_BRANCH_H

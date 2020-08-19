@@ -1567,15 +1567,16 @@ message TransformationReplaceOpPhiIdFromDeadPredecessor {
 
 message TransformationReplaceOpSelectWithConditionalBranch {
 
-  // A transformation that takes an OpSelect instruction and replaces
-  // it with a conditional branch and an OpPhi instruction.
+  // A transformation that takes an OpSelect instruction with a
+  // scalar boolean condition and replaces it with a conditional
+  // branch and an OpPhi instruction.
 
   // The result id of the OpSelect instruction
   uint32 select_id = 1;
 
   // Fresh ids for the new blocks
-  UInt32Pair new_block_ids = 2;
-
+  uint32 true_block_fresh_id = 2;
+  uint32 merge_block_fresh_id = 3;
 }
 
 message TransformationReplaceParamsWithStruct {

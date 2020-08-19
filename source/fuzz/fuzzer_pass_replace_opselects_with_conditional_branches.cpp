@@ -78,8 +78,8 @@ void FuzzerPassReplaceOpSelectsWithConditionalBranches::Apply() {
   // Apply the transformations.
   for (uint32_t instruction_id : replaceable_opselect_instruction_ids) {
     ApplyTransformation(TransformationReplaceOpSelectWithConditionalBranch(
-        instruction_id,
-        {GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId()}));
+        instruction_id, GetFuzzerContext()->GetFreshId(),
+        GetFuzzerContext()->GetFreshId()));
   }
 }
 

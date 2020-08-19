@@ -20,6 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
+// A fuzzer pass to replace OpSelect instructions (where the condition is a
+// scalar boolean) with conditional branches and OpPhi instructions.
 class FuzzerPassReplaceOpSelectsWithConditionalBranches : public FuzzerPass {
  public:
   FuzzerPassReplaceOpSelectsWithConditionalBranches(
@@ -31,6 +33,8 @@ class FuzzerPassReplaceOpSelectsWithConditionalBranches : public FuzzerPass {
 
   void Apply() override;
 };
+
 }  // namespace fuzz
 }  // namespace spvtools
+
 #endif  // SOURCE_FUZZ_FUZZER_PASS_REPLACE_OPSELECTS_WITH_CONDITIONAL_BRANCHES_
