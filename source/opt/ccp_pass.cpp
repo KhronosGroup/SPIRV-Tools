@@ -145,8 +145,8 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(Instruction* instr) {
     assert(folded_inst->IsConstant() && "CCP is only interested in constant.");
     values_[instr->result_id()] = folded_inst->result_id();
 
-    // If the folded instruction has just been created, its result ID will be
-    // larger than the previous ID bound. When this happens, we need to indicate
+    // If the folded instruction has just been created, its result ID will
+    // match the previous ID bound. When this happens, we need to indicate
     // that CCP has modified the IR, independently of whether the constant is
     // actually propagated. See
     // https://github.com/KhronosGroup/SPIRV-Tools/issues/3636 for details.
