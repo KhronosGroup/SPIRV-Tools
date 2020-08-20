@@ -530,7 +530,7 @@ bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
     opt::BasicBlock* block_to_split, opt::Instruction* split_before);
 
 // Returns true if the instruction given has no side effects.
-bool InstructionHasNoSideEffects(opt::Instruction* instruction);
+bool InstructionHasNoSideEffects(const opt::Instruction& instruction);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz

@@ -1519,8 +1519,8 @@ bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
   return false;
 }
 
-bool InstructionHasNoSideEffects(opt::Instruction* instruction) {
-  switch (instruction->opcode()) {
+bool InstructionHasNoSideEffects(const opt::Instruction& instruction) {
+  switch (instruction.opcode()) {
     case SpvOpUndef:
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:

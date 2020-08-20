@@ -32,8 +32,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
           instructions_to_fresh_ids = {},
       std::vector<uint32_t> overflow_ids = {});
 
-  // - |message_.header_block_id| must be the label id of a selection header,
-  //   which ends with an OpBranchConditional instruction.
+  // - |message_.header_block_id| must be the label id of a reachable selection
+  //   header, which ends with an OpBranchConditional instruction.
   // - The header block and the merge block must describe a single-entry,
   //   single-exit region.
   // - The region must not contain barrier or OpSampledImage instructions.
@@ -69,13 +69,16 @@ class TransformationFlattenConditionalBranch : public Transformation {
       opt::IRContext* ir_context, opt::BasicBlock* header,
       std::set<opt::Instruction*>* instructions_that_need_ids);
 
-  // Returns the number of fresh ids needed to enclose the given instruction in
-  // a conditional. That is:
-  // - 2 if the instruction does not have a result id, needed for 2 new blocks
-  // - 5 if the instruction has a result id: 3 for new blocks, 1 for a new
-  //   OpUndef instruction, 1 for the instruction itself
+  // Returns the number of fresh ids needed to enclose the given instruction
+  // inside a conditional. That is:
+  // - 2 if the instruction does not have a result id or has a void result id,
+  //   needed for 2 new blocks
+  // - 5 if the instruction has a non-void result id: 3 for new blocks, 1 for a
+  //   new OpUndef instruction, 1 for the instruction itself
+  // Assumes that if the instruction has a non-void result type, its result id
+  // is not used in the module.
   static uint32_t NumOfFreshIdsNeededByInstruction(
-      opt::Instruction* instruction);
+      opt::IRContext* ir_context, const opt::Instruction& instruction);
 
  private:
   protobufs::TransformationFlattenConditionalBranch message_;
@@ -101,7 +104,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
   // Returns true if the given instruction either has no side effects or it can
   // be handled by being enclosed in a conditional.
-  static bool InstructionCanBeHandled(opt::Instruction* instruction);
+  static bool InstructionCanBeHandled(opt::IRContext* ir_context,
+                                      const opt::Instruction& instruction);
 };
 
 }  // namespace fuzz

@@ -48,19 +48,10 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& /* unused */) const {
   uint32_t header_block_id = message_.header_block_id();
+  auto header_block = fuzzerutil::MaybeFindBlock(ir_context, header_block_id);
 
-  // |header_block_id| must refer to a block label.
-  {
-    auto label = ir_context->get_def_use_mgr()->GetDef(header_block_id);
-    if (!label || label->opcode() != SpvOpLabel) {
-      return false;
-    }
-  }
-
-  auto header_block = ir_context->cfg()->block(header_block_id);
-
-  // |header_block| must be a selection header.
-  if (!header_block->GetMergeInst() ||
+  // The block must have been found and it must be a selection header.
+  if (!header_block || !header_block->GetMergeInst() ||
       header_block->GetMergeInst()->opcode() != SpvOpSelectionMerge) {
     return false;
   }
@@ -96,7 +87,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     }
 
     // Check the ids in the map.
-    for (auto pair : instructions_to_fresh_ids) {
+    for (const auto& pair : instructions_to_fresh_ids) {
       for (uint32_t id : pair.second) {
         if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
                                                           &used_fresh_ids)) {
@@ -113,7 +104,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   for (auto instruction : instructions_that_need_ids) {
     // The number of ids needed depends on the id of the instruction.
     uint32_t ids_needed_by_this_instruction =
-        NumOfFreshIdsNeededByInstruction(instruction);
+        NumOfFreshIdsNeededByInstruction(ir_context, *instruction);
     if (instructions_to_fresh_ids.count(instruction) != 0) {
       // If there is a mapping from this instruction to a list of fresh
       // ids, the list must have enough ids.
@@ -166,7 +157,7 @@ void TransformationFlattenConditionalBranch::Apply(
   for (int branch = 2; branch >= 1; branch--) {
     // branch = 1 corresponds to the true branch, branch = 2 corresponds to the
     // false branch. Consider the false branch first so that the true branch is
-    // laid out right after the false branch.
+    // laid out right after the header.
 
     auto block = header_block;
     // Get the id of the first block in this branch.
@@ -180,20 +171,16 @@ void TransformationFlattenConditionalBranch::Apply(
       block = ir_context->cfg()->block(block_id);
       block_id = block->terminator()->GetSingleWordInOperand(0);
 
-      // Find all the problematic instructions in the block (OpStore, OpLoad,
-      // OpFunctionCall).
+      // Find all the instructions in the block which need to be enclosed inside
+      // conditionals.
       std::vector<opt::Instruction*> problematic_instructions;
 
       block->ForEachInst(
           [&problematic_instructions](opt::Instruction* instruction) {
-            switch (instruction->opcode()) {
-              case SpvOpStore:
-              case SpvOpLoad:
-              case SpvOpFunctionCall:
-                problematic_instructions.push_back(instruction);
-                break;
-              default:
-                break;
+            if (instruction->opcode() != SpvOpLabel &&
+                instruction->opcode() != SpvOpBranch &&
+                !fuzzerutil::InstructionHasNoSideEffects(*instruction)) {
+              problematic_instructions.push_back(instruction);
             }
           });
 
@@ -204,7 +191,8 @@ void TransformationFlattenConditionalBranch::Apply(
       // same condition as the selection construct being flattened.
       for (auto instruction : problematic_instructions) {
         // Collect the fresh ids needed by this instructions
-        uint32_t ids_needed = NumOfFreshIdsNeededByInstruction(instruction);
+        uint32_t ids_needed =
+            NumOfFreshIdsNeededByInstruction(ir_context, *instruction);
         std::vector<uint32_t> fresh_ids;
 
         // Get them from the map.
@@ -212,10 +200,11 @@ void TransformationFlattenConditionalBranch::Apply(
           fresh_ids = instructions_to_fresh_ids[instruction];
         }
 
-        // Get the ones still needed from the overflow ids.
-        for (int still_needed = ids_needed - static_cast<int>(fresh_ids.size());
-             still_needed > 0; still_needed--) {
-          fresh_ids.push_back(message_.overflow_id(overflow_ids_used++));
+        // If we could not get it from the map, use overflow ids.
+        if (fresh_ids.empty()) {
+          for (uint32_t i = 0; i < ids_needed; i++) {
+            fresh_ids.push_back(message_.overflow_id(overflow_ids_used++));
+          }
         }
 
         // Enclose the instruction in a conditional and get the merge block
@@ -359,8 +348,9 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
     }
 
     // Check all of the instructions in the block.
-    bool all_instructions_compatible = block->WhileEachInst(
-        [instructions_that_need_ids](opt::Instruction* instruction) {
+    bool all_instructions_compatible =
+        block->WhileEachInst([ir_context, instructions_that_need_ids](
+                                 opt::Instruction* instruction) {
           // We can ignore OpLabel instructions.
           if (instruction->opcode() == SpvOpLabel) {
             return true;
@@ -373,13 +363,13 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
 
           // We cannot go ahead if we encounter an instruction that cannot be
           // handled.
-          if (!InstructionCanBeHandled(instruction)) {
+          if (!InstructionCanBeHandled(ir_context, *instruction)) {
             return false;
           }
 
           // If the instruction has side effects, add it to the
           // |instructions_that_need_ids| set.
-          if (!fuzzerutil::InstructionHasNoSideEffects(instruction)) {
+          if (!fuzzerutil::InstructionHasNoSideEffects(*instruction)) {
             instructions_that_need_ids->emplace(instruction);
           }
 
@@ -402,9 +392,11 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
 
 uint32_t
 TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByInstruction(
-    opt::Instruction* instruction) {
-  if (instruction->HasResultId()) {
-    return 5;
+    opt::IRContext* ir_context, const opt::Instruction& instruction) {
+  if (instruction.HasResultId()) {
+    // We need 5 ids if the type returned is not Void, 2 otherwise.
+    auto type = ir_context->get_type_mgr()->GetType(instruction.type_id());
+    return (type && type->AsVoid()) ? 2 : 5;
   } else {
     return 2;
   }
@@ -415,7 +407,7 @@ TransformationFlattenConditionalBranch::GetInstructionsToFreshIdsMapping(
     opt::IRContext* ir_context) const {
   std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
       instructions_to_fresh_ids;
-  for (auto pair : message_.instruction_to_fresh_ids()) {
+  for (const auto& pair : message_.instruction_to_fresh_ids()) {
     std::vector<uint32_t> fresh_ids;
     for (uint32_t id : pair.id()) {
       fresh_ids.push_back(id);
@@ -437,17 +429,14 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
     opt::BasicBlock* block, opt::Instruction* instruction,
     const std::vector<uint32_t>& fresh_ids, uint32_t condition_id,
     bool exec_if_cond_true) const {
-  assert((instruction->opcode() == SpvOpStore ||
-          instruction->opcode() == SpvOpLoad ||
-          instruction->opcode() == SpvOpFunctionCall) &&
-         "This function should only be called on OpStore, OpLoad or "
-         "OpFunctionCall instructions.");
-
   // Get the next instruction (it will be useful for splitting).
   auto next_instruction = instruction->NextNode();
 
-  // We need at least 2 fresh ids for two new blocks.
-  assert(fresh_ids.size() >= 2 && "Not enough fresh ids.");
+  auto fresh_ids_needed =
+      NumOfFreshIdsNeededByInstruction(ir_context, *instruction);
+
+  // We must have enough fresh ids.
+  assert(fresh_ids.size() >= fresh_ids_needed && "Not enough fresh ids.");
 
   // Update the module id bound
   for (auto id : fresh_ids) {
@@ -485,17 +474,14 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
 
-  // If the instruction has a result id, we need to:
-  // - add an additional block where a dummy result is obtained by using the
-  // OpUndef instruction
+  // If the instruction requires 5 fresh ids, it means that it has a result id
+  // and its result needs to be used later on, and we need to:
+  // - add an additional block where a placeholder result is obtained by using
+  //   the OpUndef instruction
   // - change the result id of the instruction to a fresh id
   // - add an OpPhi instruction, which will have the original result id of the
   //   instruction, in the merge block.
-  if (instruction->HasResultId()) {
-    // We need 3 more fresh ids for 1 additional block and 2 additional
-    // instructions.
-    assert(fresh_ids.size() >= 5 && "Not enough fresh ids.");
-
+  if (NumOfFreshIdsNeededByInstruction(ir_context, *instruction) == 5) {
     // Create a new block using a fresh id for its label.
     auto alternative_block_temp = MakeUnique<opt::BasicBlock>(
         MakeUnique<opt::Instruction>(ir_context, SpvOpLabel, 0, fresh_ids[2],
@@ -553,9 +539,9 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
   // Add an OpSelectionMerge instruction to the block.
   block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpSelectionMerge, 0, 0,
-      opt::Instruction::OperandList{
-          {SPV_OPERAND_TYPE_ID, {merge_block->id()}},
-          {SPV_OPERAND_TYPE_SELECTION_CONTROL, {0}}}));
+      opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {merge_block->id()}},
+                                    {SPV_OPERAND_TYPE_SELECTION_CONTROL,
+                                     {SpvSelectionControlMaskNone}}}));
 
   // Add an OpBranchConditional, to the block, using |condition_id| as the
   // condition and branching to |if_block_id| if the condition is true and to
@@ -570,7 +556,7 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
 }
 
 bool TransformationFlattenConditionalBranch::InstructionCanBeHandled(
-    opt::Instruction* instruction) {
+    opt::IRContext* ir_context, const opt::Instruction& instruction) {
   // We can handle all instructions with no side effects.
   if (fuzzerutil::InstructionHasNoSideEffects(instruction)) {
     return true;
@@ -578,17 +564,40 @@ bool TransformationFlattenConditionalBranch::InstructionCanBeHandled(
 
   // We cannot handle barrier instructions, while we should be able to handle
   // all other instructions by enclosing them inside a conditional.
-  if (instruction->opcode() == SpvOpControlBarrier ||
-      instruction->opcode() == SpvOpMemoryBarrier ||
-      instruction->opcode() == SpvOpNamedBarrierInitialize ||
-      instruction->opcode() == SpvOpMemoryNamedBarrier ||
-      instruction->opcode() == SpvOpTypeNamedBarrier) {
+  if (instruction.opcode() == SpvOpControlBarrier ||
+      instruction.opcode() == SpvOpMemoryBarrier ||
+      instruction.opcode() == SpvOpNamedBarrierInitialize ||
+      instruction.opcode() == SpvOpMemoryNamedBarrier ||
+      instruction.opcode() == SpvOpTypeNamedBarrier) {
     return false;
   }
 
   // We cannot handle OpSampledImage instructions, as they need to be in the
   // same block as their use.
-  return instruction->opcode() != SpvOpSampledImage;
+  if (instruction.opcode() == SpvOpSampledImage) {
+    return false;
+  }
+
+  // We cannot handle instructions with an id which return a void type, if the
+  // result id is used in the module (e.g. a function call to a function that
+  // returns nothing).
+  if (instruction.HasResultId()) {
+    auto type = ir_context->get_type_mgr()->GetType(instruction.type_id());
+    assert(type && "The type should be found in the module");
+
+    if (type->AsVoid() &&
+        !ir_context->get_def_use_mgr()->WhileEachUse(
+            instruction.result_id(),
+            [](opt::Instruction* use_inst, uint32_t use_index) {
+              // Return false if the id is used as an input operand.
+              return use_index <
+                     use_inst->NumOperands() - use_inst->NumInOperands();
+            })) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace fuzz
