@@ -1622,6 +1622,7 @@ bool InstructionHasNoSideEffects(const opt::Instruction& instruction) {
     case SpvOpBitReverse:
     case SpvOpBitCount:
     case SpvOpCopyLogical:
+    case SpvOpPhi:
     case SpvOpPtrEqual:
     case SpvOpPtrNotEqual:
       return true;
