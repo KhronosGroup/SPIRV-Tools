@@ -25,8 +25,8 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %50 "main"
-               OpExecutionMode %50 OriginUpperLeft
+               OpEntryPoint Fragment %52 "main"
+               OpExecutionMode %52 OriginUpperLeft
 
 ; Types
           %2 = OpTypeBool
@@ -52,75 +52,85 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
          %18 = OpConstantComposite %4 %9 %10 %11 %12
          %19 = OpConstantComposite %4 %13 %14 %15 %16
 
-; function with early return
+; function with void return type
          %20 = OpFunction %6 None %7
          %21 = OpLabel
-               OpSelectionMerge %24 None
-               OpBranchConditional %17 %22 %23
-         %22 = OpLabel
                OpReturn
+               OpFunctionEnd
+
+; function with early return
+         %22 = OpFunction %6 None %7
          %23 = OpLabel
-               OpBranch %24
+               OpSelectionMerge %26 None
+               OpBranchConditional %17 %24 %25
          %24 = OpLabel
+               OpReturn
+         %25 = OpLabel
+               OpBranch %26
+         %26 = OpLabel
                OpReturn
                OpFunctionEnd
 
 ; function containing an OpKill instruction
-         %25 = OpFunction %6 None %7
-         %26 = OpLabel
+         %27 = OpFunction %6 None %7
+         %28 = OpLabel
                OpKill
                OpFunctionEnd
 
 ; function containing an OpUnreachable instruction
-         %27 = OpFunction %6 None %7
-         %28 = OpLabel
+         %29 = OpFunction %6 None %7
+         %30 = OpLabel
                OpUnreachable
                OpFunctionEnd
 
 ; dot product function
-         %29 = OpFunction %3 None %8
-         %30 = OpFunctionParameter %5
-         %31 = OpFunctionParameter %5
-         %32 = OpLabel
-         %33 = OpLoad %4 %30
-         %34 = OpLoad %4 %31
-         %35 = OpCompositeExtract %3 %33 0
-         %36 = OpCompositeExtract %3 %34 0
-         %37 = OpFMul %3 %35 %36
-         %38 = OpCompositeExtract %3 %33 1
-         %39 = OpCompositeExtract %3 %34 1
-         %40 = OpFMul %3 %38 %39
-         %41 = OpCompositeExtract %3 %33 2
-         %42 = OpCompositeExtract %3 %34 2
-         %43 = OpFMul %3 %41 %42
-         %44 = OpCompositeExtract %3 %33 3
-         %45 = OpCompositeExtract %3 %34 3
-         %46 = OpFMul %3 %44 %45
-         %47 = OpFAdd %3 %37 %40
-         %48 = OpFAdd %3 %43 %47
-         %49 = OpFAdd %3 %46 %48
-               OpReturnValue %49
+         %31 = OpFunction %3 None %8
+         %32 = OpFunctionParameter %5
+         %33 = OpFunctionParameter %5
+         %34 = OpLabel
+         %35 = OpLoad %4 %32
+         %36 = OpLoad %4 %33
+         %37 = OpCompositeExtract %3 %35 0
+         %38 = OpCompositeExtract %3 %36 0
+         %39 = OpFMul %3 %37 %38
+         %40 = OpCompositeExtract %3 %35 1
+         %41 = OpCompositeExtract %3 %36 1
+         %42 = OpFMul %3 %40 %41
+         %43 = OpCompositeExtract %3 %35 2
+         %44 = OpCompositeExtract %3 %36 2
+         %45 = OpFMul %3 %43 %44
+         %46 = OpCompositeExtract %3 %35 3
+         %47 = OpCompositeExtract %3 %36 3
+         %48 = OpFMul %3 %46 %47
+         %49 = OpFAdd %3 %39 %42
+         %50 = OpFAdd %3 %45 %49
+         %51 = OpFAdd %3 %48 %50
+               OpReturnValue %51
                OpFunctionEnd
 
 ; main function
-         %50 = OpFunction %6 None %7
-         %51 = OpLabel
-         %52 = OpVariable %5 Function
-         %53 = OpVariable %5 Function
-         %54 = OpFunctionCall %6 %20 ; function with early return
-               OpBranch %55
-         %55 = OpLabel
-         %56 = OpFunctionCall %6 %25 ; function containing OpKill
+         %52 = OpFunction %6 None %7
+         %53 = OpLabel
+         %54 = OpVariable %5 Function
+         %55 = OpVariable %5 Function
+         %56 = OpFunctionCall %6 %20 ; function with void return type
                OpBranch %57
          %57 = OpLabel
-         %58 = OpFunctionCall %6 %27 ; function containing OpUnreachable
-               OpBranch %59
-         %59 = OpLabel
-               OpStore %52 %18
-               OpStore %53 %19
-         %60 = OpFunctionCall %3 %29 %52 %53 ; dot product function
-               OpBranch %61
-         %61 = OpLabel
+         %58 = OpCopyObject %6 %56
+         %59 = OpFunctionCall %6 %22 ; function with early return
+               OpBranch %60
+         %60 = OpLabel
+         %61 = OpFunctionCall %6 %27 ; function containing OpKill
+               OpBranch %62
+         %62 = OpLabel
+         %63 = OpFunctionCall %6 %29 ; function containing OpUnreachable
+               OpBranch %64
+         %64 = OpLabel
+               OpStore %54 %18
+               OpStore %55 %19
+         %65 = OpFunctionCall %3 %31 %54 %55 ; dot product function
+               OpBranch %66
+         %66 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -136,7 +146,7 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                                                validator_options);
 
   // Tests undefined OpFunctionCall instruction.
-  auto transformation = TransformationInlineFunction(62, {});
+  auto transformation = TransformationInlineFunction(67, {});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
@@ -145,40 +155,48 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
+  // Tests use of called function with void return type.
+  transformation = TransformationInlineFunction(56, {});
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      transformation.IsApplicable(context.get(), transformation_context),
+      "Function call with void return must not be used");
+#endif
+
   // Tests called function having an early return.
   transformation =
-      TransformationInlineFunction(54, {{22, 62}, {23, 63}, {24, 64}});
+      TransformationInlineFunction(59, {{24, 67}, {25, 68}, {26, 69}});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests called function containing an OpKill instruction.
-  transformation = TransformationInlineFunction(56, {});
+  transformation = TransformationInlineFunction(61, {});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests called function containing an OpUnreachable instruction.
-  transformation = TransformationInlineFunction(58, {});
+  transformation = TransformationInlineFunction(63, {});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests applicable transformation.
-  transformation = TransformationInlineFunction(60, {{33, 62},
-                                                     {34, 63},
-                                                     {35, 64},
-                                                     {36, 65},
-                                                     {37, 66},
-                                                     {38, 67},
-                                                     {39, 68},
-                                                     {40, 69},
-                                                     {41, 70},
-                                                     {42, 71},
-                                                     {43, 72},
-                                                     {44, 73},
-                                                     {45, 74},
-                                                     {46, 75},
-                                                     {47, 76},
-                                                     {48, 77},
-                                                     {49, 78}});
+  transformation = TransformationInlineFunction(65, {{35, 67},
+                                                     {36, 68},
+                                                     {37, 69},
+                                                     {38, 70},
+                                                     {39, 71},
+                                                     {40, 72},
+                                                     {41, 73},
+                                                     {42, 74},
+                                                     {43, 75},
+                                                     {44, 76},
+                                                     {45, 77},
+                                                     {46, 78},
+                                                     {47, 79},
+                                                     {48, 80},
+                                                     {49, 81},
+                                                     {50, 82},
+                                                     {51, 83}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 }

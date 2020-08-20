@@ -67,6 +67,15 @@ bool TransformationInlineFunction::IsApplicable(
     return false;
   }
 
+  // If |function_call_instruction| type is void, then assert there is no uses.
+  if (ir_context->get_type_mgr()
+          ->GetType(function_call_instruction->type_id())
+          ->AsVoid()) {
+    assert(ir_context->get_def_use_mgr()->NumUses(function_call_instruction) ==
+               0 &&
+           "Function call with void return must not be used");
+  }
+
   // The called function must not have an early return.
   auto called_function = fuzzerutil::FindFunction(
       ir_context, function_call_instruction->GetSingleWordInOperand(0));
