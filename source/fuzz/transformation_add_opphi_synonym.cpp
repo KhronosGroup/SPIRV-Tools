@@ -175,17 +175,10 @@ bool TransformationAddOpPhiSynonym::CheckTypeIsAllowed(
   }
 
   // We allow the following types: Bool, Integer, Float, Vector, Matrix, Array,
-  // RuntimeArray, Struct.
-  if (type->AsBool() || type->AsInteger() || type->AsFloat() ||
-      type->AsVector() || type->AsMatrix() || type->AsArray() ||
-      type->AsStruct()) {
-    return true;
-  }
-
-  // If the VariablePointers capability is enabled, we can also allow pointers.
-  return ir_context->get_feature_mgr()->HasCapability(
-             SpvCapabilityVariablePointers) &&
-         type->AsPointer();
+  // Struct.
+  return type->AsBool() || type->AsInteger() || type->AsFloat() ||
+         type->AsVector() || type->AsMatrix() || type->AsArray() ||
+         type->AsStruct();
 }
 
 }  // namespace fuzz
