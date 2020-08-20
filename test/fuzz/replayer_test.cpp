@@ -95,8 +95,8 @@ TEST(ReplayerTest, PartialReplay) {
     Replayer replayer(env, true, validator_options);
     replayer.SetMessageConsumer(kSilentConsumer);
     auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 11, &binary_out,
-                     &transformations_out);
+        replayer.Run(binary_in, empty_facts, transformations, 11, 0,
+                     &binary_out, &transformations_out);
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
               replayer_result_status);
@@ -183,7 +183,7 @@ TEST(ReplayerTest, PartialReplay) {
     Replayer replayer(env, true, validator_options);
     replayer.SetMessageConsumer(kSilentConsumer);
     auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 5, &binary_out,
+        replayer.Run(binary_in, empty_facts, transformations, 5, 0, &binary_out,
                      &transformations_out);
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -263,7 +263,7 @@ TEST(ReplayerTest, PartialReplay) {
     Replayer replayer(env, true, validator_options);
     replayer.SetMessageConsumer(kSilentConsumer);
     auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 0, &binary_out,
+        replayer.Run(binary_in, empty_facts, transformations, 0, 0, &binary_out,
                      &transformations_out);
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -283,8 +283,8 @@ TEST(ReplayerTest, PartialReplay) {
     Replayer replayer(env, true, validator_options);
     replayer.SetMessageConsumer(kSilentConsumer);
     auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 12, &binary_out,
-                     &transformations_out);
+        replayer.Run(binary_in, empty_facts, transformations, 12, 0,
+                     &binary_out, &transformations_out);
 
     // Replay should not succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kTooManyTransformationsRequested,

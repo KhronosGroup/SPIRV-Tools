@@ -14,8 +14,10 @@
 
 #include "source/fuzz/replayer.h"
 
+#include <memory>
 #include <utility>
 
+#include "source/fuzz/counter_overflow_id_source.h"
 #include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -54,7 +56,8 @@ Replayer::ReplayerResultStatus Replayer::Run(
     const std::vector<uint32_t>& binary_in,
     const protobufs::FactSequence& initial_facts,
     const protobufs::TransformationSequence& transformation_sequence_in,
-    uint32_t num_transformations_to_apply, std::vector<uint32_t>* binary_out,
+    uint32_t num_transformations_to_apply, uint32_t first_overflow_id,
+    std::vector<uint32_t>* binary_out,
     protobufs::TransformationSequence* transformation_sequence_out) const {
   // Check compatibility between the library version being linked with and the
   // header files being used.
@@ -97,8 +100,13 @@ Replayer::ReplayerResultStatus Replayer::Run(
 
   FactManager fact_manager;
   fact_manager.AddFacts(impl_->consumer, initial_facts, ir_context.get());
-  TransformationContext transformation_context(&fact_manager,
-                                               impl_->validator_options);
+  std::unique_ptr<TransformationContext> transformation_context =
+      first_overflow_id == 0
+          ? MakeUnique<TransformationContext>(&fact_manager,
+                                              impl_->validator_options)
+          : MakeUnique<TransformationContext>(
+                &fact_manager, impl_->validator_options,
+                MakeUnique<CounterOverflowIdSource>(first_overflow_id));
 
   // Consider the transformation proto messages in turn.
   uint32_t counter = 0;
@@ -112,10 +120,10 @@ Replayer::ReplayerResultStatus Replayer::Run(
 
     // Check whether the transformation can be applied.
     if (transformation->IsApplicable(ir_context.get(),
-                                     transformation_context)) {
+                                     *transformation_context)) {
       // The transformation is applicable, so apply it, and copy it to the
       // sequence of transformations that were applied.
-      transformation->Apply(ir_context.get(), &transformation_context);
+      transformation->Apply(ir_context.get(), transformation_context.get());
       *transformation_sequence_out->add_transformation() = message;
 
       if (impl_->validate_during_replay) {
