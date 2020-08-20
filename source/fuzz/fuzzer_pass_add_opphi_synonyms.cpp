@@ -34,8 +34,7 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
   // same OpPhi instruction.
   auto equivalence_classes = GetIdEquivalenceClasses();
 
-  // Make a list of references to the sets, to avoid copying all the sets for
-  // each block.
+  // Make a list of references to the sets.
   std::vector<std::set<uint32_t>*> sets;
   for (auto& set : equivalence_classes) {
     sets.push_back(&set);
@@ -46,23 +45,32 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
 
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
-      // The block must have at least one predecessor.
-      if (GetIRContext()->cfg()->preds(block.id()).empty()) {
-        continue;
-      }
-
       // Randomly decide whether to consider this block.
       if (!GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()->GetChanceOfAddingOpPhiSynonym())) {
         continue;
       }
 
-      // Try to get a set with at least two distinct available ids.
-      auto chosen_set = MaybeFindSuitableSetRandomly(sets, block.id(), 2);
-      // If we could not find it, find a set with at least one available id.
+      // The block must have at least one predecessor.
+      size_t num_preds = GetIRContext()->cfg()->preds(block.id()).size();
+      if (num_preds == 0) {
+        continue;
+      }
+
+      std::set<uint32_t>* chosen_set = nullptr;
+
+      if (num_preds > 1) {
+        // If the block has more than one predecessor, prioritise sets with at
+        // least 2 ids available at some predecessor.
+        chosen_set = MaybeFindSuitableSetRandomly(sets, block.id(), 2);
+      }
+
+      // If a set was not already chosen, choose one with at least one available
+      // id.
       if (!chosen_set) {
         chosen_set = MaybeFindSuitableSetRandomly(sets, block.id(), 1);
       }
+
       // If no suitable set was found, we cannot apply the transformation to
       // this block.
       if (!chosen_set) {
@@ -72,6 +80,12 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
       // Initialise the map from predecessor labels to ids.
       std::map<uint32_t, uint32_t> preds_to_ids;
 
+      // Keep track of the ids used and of the id of a predecessor with at least
+      // two ids to choose from. This is to ensure that, if possible, at least
+      // two distinct ids will be used.
+      std::set<uint32_t> ids_chosen;
+      uint32_t pred_with_alternatives = 0;
+
       // Choose an id for each predecessor.
       for (uint32_t pred_id : GetIRContext()->cfg()->preds(block.id())) {
         auto suitable_ids = GetSuitableIds(*chosen_set, pred_id);
@@ -79,11 +93,38 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
                "We must be able to find at least one suitable id because the "
                "set was chosen among suitable sets.");
 
+        // If this predecessor has more than one id to choose from and it is the
+        // first one of this kind that we found, remember its id.
+        if (suitable_ids.size() > 1 && !pred_with_alternatives) {
+          pred_with_alternatives = pred_id;
+        }
+
         uint32_t chosen_id =
             suitable_ids[GetFuzzerContext()->RandomIndex(suitable_ids)];
 
+        // Add this id to the set of ids chosen.
+        ids_chosen.emplace(chosen_id);
+
         // Add the pair (predecessor, chosen id) to the map.
         preds_to_ids[pred_id] = chosen_id;
+      }
+
+      // If:
+      // - the block has more than one predecessor
+      // - at least one predecessor has more than one alternative
+      // - the same id has been chosen by all the predecessors
+      // then choose another one for the predecessor with more than one
+      // alternative.
+      if (num_preds > 1 && pred_with_alternatives != 0 &&
+          ids_chosen.size() == 1) {
+        auto suitable_ids = GetSuitableIds(*chosen_set, pred_with_alternatives);
+        uint32_t chosen_id =
+            GetFuzzerContext()->RemoveAtRandomIndex(&suitable_ids);
+        if (chosen_id == preds_to_ids[pred_with_alternatives]) {
+          chosen_id = GetFuzzerContext()->RemoveAtRandomIndex(&suitable_ids);
+        }
+
+        preds_to_ids[pred_with_alternatives] = chosen_id;
       }
 
       // Add the transformation to the list of transformations to apply.
