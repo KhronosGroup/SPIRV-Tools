@@ -598,6 +598,11 @@ OpExecutionMode %func OriginUpperLeft
 %int_ptr_Input = OpTypePointer Input %int
 %in = OpVariable %int_ptr_Input Input
 %undef = OpUndef %int
+
+; Although no constants are propagated in this function, the propagator
+; generates a new %true value while visiting conditional statements.
+; CHECK: %true = OpConstantTrue %bool
+
 %functy = OpTypeFunction %void
 %func = OpFunction %void None %functy
 %1 = OpLabel
@@ -639,8 +644,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  auto res = SinglePassRunToBinary<CCPPass>(text, true);
-  EXPECT_EQ(std::get<1>(res), Pass::Status::SuccessWithoutChange);
+  auto result = SinglePassRunAndMatch<CCPPass>(text, true);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
 TEST_F(CCPTest, UndefInPhi) {
@@ -1054,6 +1059,50 @@ TEST_F(CCPTest, DebugFoldMultipleForSingleConstant) {
 )";
 
   SinglePassRunAndMatch<CCPPass>(text, true);
+}
+
+// Test from https://github.com/KhronosGroup/SPIRV-Tools/issues/3636
+TEST_F(CCPTest, CCPNoChangeFailure) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 2
+         %13 = OpConstant %6 4
+         %21 = OpConstant %6 1
+         %10 = OpTypeBool
+         %17 = OpTypePointer Function %6
+
+; CCP is generating two new constants during propagation that end up being
+; dead because they cannot be replaced anywhere in the IR.  CCP was wrongly
+; considering the IR to be unmodified because of this.
+; CHECK: %true = OpConstantTrue %bool
+; CHECK: %int_3 = OpConstant %int 3
+
+          %4 = OpFunction %2 None %3
+         %11 = OpLabel
+               OpBranch %5
+          %5 = OpLabel
+         %23 = OpPhi %6 %7 %11 %20 %15
+          %9 = OpSLessThan %10 %23 %13
+               OpLoopMerge %8 %15 None
+               OpBranchConditional %9 %15 %8
+         %15 = OpLabel
+         %20 = OpIAdd %6 %23 %21
+               OpBranch %5
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndMatch<CCPPass>(text, true);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
 }  // namespace
