@@ -481,7 +481,7 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
   // - change the result id of the instruction to a fresh id
   // - add an OpPhi instruction, which will have the original result id of the
   //   instruction, in the merge block.
-  if (NumOfFreshIdsNeededByInstruction(ir_context, *instruction) == 5) {
+  if (fresh_ids_needed == 5) {
     // Create a new block using a fresh id for its label.
     auto alternative_block_temp = MakeUnique<opt::BasicBlock>(
         MakeUnique<opt::Instruction>(ir_context, SpvOpLabel, 0, fresh_ids[2],

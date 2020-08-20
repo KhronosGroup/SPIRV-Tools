@@ -160,128 +160,6 @@ TEST(TransformationFlattenConditionalBranchTest, Inapplicable) {
       context.get(), transformation_context));
 }
 
-TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main"
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource ESSL 310
-          %3 = OpTypeVoid
-          %4 = OpTypeBool
-          %5 = OpConstantTrue %4
-          %6 = OpTypeFunction %3
-          %2 = OpFunction %3 None %6
-          %7 = OpLabel
-               OpSelectionMerge %8 None
-               OpBranchConditional %5 %9 %8
-          %9 = OpLabel
-         %10 = OpFunctionCall %3 %11
-               OpBranch %8
-          %8 = OpLabel
-               OpSelectionMerge %12 None
-               OpBranchConditional %5 %13 %12
-         %13 = OpLabel
-         %14 = OpFunctionCall %3 %11
-         %15 = OpCopyObject %3 %14
-               OpBranch %12
-         %12 = OpLabel
-               OpReturn
-         %16 = OpLabel
-               OpSelectionMerge %17 None
-               OpBranchConditional %5 %18 %17
-         %18 = OpLabel
-               OpBranch %17
-         %17 = OpLabel
-               OpReturn
-               OpFunctionEnd
-         %11 = OpFunction %3 None %6
-         %19 = OpLabel
-               OpReturn
-               OpFunctionEnd
-)";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_5;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  // The selection construct headed by %7 requires fresh ids because it contains
-  // a function call.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(7).IsApplicable(
-      context.get(), transformation_context));
-
-  auto transformation = TransformationFlattenConditionalBranch(
-      7, {{{MakeInstructionDescriptor(10, SpvOpFunctionCall, 0), {100, 101}}}});
-  ASSERT_TRUE(
-      transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
-
-  // The selection construct headed by %8 cannot be flattened because it
-  // contains a function call returning void, whose result id is used.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(
-                   7, {{{MakeInstructionDescriptor(14, SpvOpFunctionCall, 0),
-                         {102, 103}}}})
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Block %16 is unreachable.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(16).IsApplicable(
-      context.get(), transformation_context));
-
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main"
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource ESSL 310
-          %3 = OpTypeVoid
-          %4 = OpTypeBool
-          %5 = OpConstantTrue %4
-          %6 = OpTypeFunction %3
-          %2 = OpFunction %3 None %6
-          %7 = OpLabel
-               OpBranchConditional %9
-          %9 = OpLabel
-               OpSelectionMerge %101 None
-               OpBranchConditional %5 %100 %101
-        %100 = OpLabel
-         %10 = OpFunctionCall %3 %11
-               OpBranch %101
-        %101 = OpLabel
-               OpBranch %8
-          %8 = OpLabel
-               OpSelectionMerge %12 None
-               OpBranchConditional %5 %13 %12
-         %13 = OpLabel
-         %14 = OpFunctionCall %3 %11
-         %15 = OpCopyObject %3 %14
-               OpBranch %12
-         %12 = OpLabel
-               OpReturn
-         %16 = OpLabel
-               OpSelectionMerge %17 None
-               OpBranchConditional %5 %18 %17
-         %18 = OpLabel
-               OpBranch %17
-         %17 = OpLabel
-               OpReturn
-               OpFunctionEnd
-         %11 = OpFunction %3 None %6
-         %19 = OpLabel
-               OpReturn
-               OpFunctionEnd
-)";
-}
-
 TEST(TransformationFlattenConditionalBranchTest, Simple) {
   std::string shader = R"(
                OpCapability Shader
@@ -704,6 +582,129 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
 
   ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
+
+TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeBool
+          %5 = OpConstantTrue %4
+          %6 = OpTypeFunction %3
+          %2 = OpFunction %3 None %6
+          %7 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %5 %9 %8
+          %9 = OpLabel
+         %10 = OpFunctionCall %3 %11
+               OpBranch %8
+          %8 = OpLabel
+               OpSelectionMerge %12 None
+               OpBranchConditional %5 %13 %12
+         %13 = OpLabel
+         %14 = OpFunctionCall %3 %11
+         %15 = OpCopyObject %3 %14
+               OpBranch %12
+         %12 = OpLabel
+               OpReturn
+         %16 = OpLabel
+               OpSelectionMerge %17 None
+               OpBranchConditional %5 %18 %17
+         %18 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %3 None %6
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // The selection construct headed by %7 requires fresh ids because it contains
+  // a function call.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(7).IsApplicable(
+      context.get(), transformation_context));
+
+  auto transformation = TransformationFlattenConditionalBranch(
+      7, {{{MakeInstructionDescriptor(10, SpvOpFunctionCall, 0), {100, 101}}}});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+
+  // The selection construct headed by %8 cannot be flattened because it
+  // contains a function call returning void, whose result id is used.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   7, {{{MakeInstructionDescriptor(14, SpvOpFunctionCall, 0),
+                         {102, 103}}}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Block %16 is unreachable.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(16).IsApplicable(
+      context.get(), transformation_context));
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeBool
+          %5 = OpConstantTrue %4
+          %6 = OpTypeFunction %3
+          %2 = OpFunction %3 None %6
+          %7 = OpLabel
+               OpBranchConditional %9
+          %9 = OpLabel
+               OpSelectionMerge %101 None
+               OpBranchConditional %5 %100 %101
+        %100 = OpLabel
+         %10 = OpFunctionCall %3 %11
+               OpBranch %101
+        %101 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpSelectionMerge %12 None
+               OpBranchConditional %5 %13 %12
+         %13 = OpLabel
+         %14 = OpFunctionCall %3 %11
+         %15 = OpCopyObject %3 %14
+               OpBranch %12
+         %12 = OpLabel
+               OpReturn
+         %16 = OpLabel
+               OpSelectionMerge %17 None
+               OpBranchConditional %5 %18 %17
+         %18 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %3 None %6
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
