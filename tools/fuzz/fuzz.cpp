@@ -428,7 +428,7 @@ bool Replay(const spv_target_env& target_env,
 
   auto replay_result_status = replayer.Run(
       binary_in, initial_facts, transformation_sequence,
-      num_transformations_to_apply, binary_out, transformations_applied);
+      num_transformations_to_apply, 0, binary_out, transformations_applied);
   return !(replay_result_status !=
            spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete);
 }
