@@ -23,6 +23,8 @@ namespace spvtools {
 namespace opt {
 namespace {
 
+// Returns the remapped id of |id| from |result_id_mapping|. If the remapped
+// id does not exist, adds a new one to |result_id_mapping| and returns it.
 uint32_t GetRemappedId(
     std::unordered_map<uint32_t, uint32_t>* result_id_mapping, uint32_t id) {
   auto it = result_id_mapping->find(id);
