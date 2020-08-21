@@ -51,18 +51,6 @@ void FuzzerPassInlineFunctions::Apply() {
           continue;
         }
 
-        // If |instruction| is not the penultimate instruction in |block| or
-        // |block| termination instruction is not OpBranch, then try to split
-        // |block| such that the conditions are met.
-        if ((&instruction != &*--block.tail() ||
-             block.terminator()->opcode() != SpvOpBranch) &&
-            !MaybeApplyTransformation(TransformationSplitBlock(
-                MakeInstructionDescriptor(GetIRContext(),
-                                          instruction.NextNode()),
-                GetFuzzerContext()->GetFreshId()))) {
-          continue;
-        }
-
         function_call_instructions.push_back(&instruction);
       }
     }
@@ -70,9 +58,23 @@ void FuzzerPassInlineFunctions::Apply() {
 
   // Once the function calls have been collected, it's time to actually create
   // and apply the inlining transformations.
-  for (auto& instruction : function_call_instructions) {
-    auto called_function = fuzzerutil::FindFunction(
-        GetIRContext(), instruction->GetSingleWordInOperand(0));
+  for (auto& function_call_instruction : function_call_instructions) {
+    // If |function_call_instruction| is not the penultimate instruction in its
+    // block or its block termination instruction is not OpBranch, then try to
+    // split |function_call_block| such that the conditions are met.
+    auto* function_call_block =
+        GetIRContext()->get_instr_block(function_call_instruction);
+    if ((function_call_instruction != &*--function_call_block->tail() ||
+         function_call_block->terminator()->opcode() != SpvOpBranch) &&
+        !MaybeApplyTransformation(TransformationSplitBlock(
+            MakeInstructionDescriptor(GetIRContext(),
+                                      function_call_instruction->NextNode()),
+            GetFuzzerContext()->GetFreshId()))) {
+      continue;
+    }
+
+    auto* called_function = fuzzerutil::FindFunction(
+        GetIRContext(), function_call_instruction->GetSingleWordInOperand(0));
 
     // Mapping the called function instructions.
     std::map<uint32_t, uint32_t> result_id_map;
@@ -93,8 +95,8 @@ void FuzzerPassInlineFunctions::Apply() {
     }
 
     // Applies the inline function transformation.
-    ApplyTransformation(
-        TransformationInlineFunction(instruction->result_id(), result_id_map));
+    ApplyTransformation(TransformationInlineFunction(
+        function_call_instruction->result_id(), result_id_map));
   }
 }
 
