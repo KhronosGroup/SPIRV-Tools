@@ -468,7 +468,8 @@ void AddVectorType(opt::IRContext* ir_context, uint32_t result_id,
 
 // Creates a new OpTypeStruct instruction in the module. Updates module's id
 // bound to accommodate for |result_id|. |component_type_ids| may not contain
-// a result id of an OpTypeFunction.
+// a result id of an OpTypeFunction. if |component_type_ids| contains a result
+// of an OpTypeStruct instruction, that struct may not have BuiltIn members.
 void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
                    const std::vector<uint32_t>& component_type_ids);
 
@@ -515,6 +516,16 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
 bool IdUseCanBeReplaced(opt::IRContext* ir_context,
                         opt::Instruction* use_instruction,
                         uint32_t use_in_operand_index);
+
+// Returns true if all of the members of OpTypeStruct instruction with result
+// id |struct_type_id| are decorated with BuiltIn decoration.
+// Otherwise (none of the members are BuiltIn), returns false.
+//
+// According to the spec for the BuiltIn decoration:
+// - When applied to a structure-type member, all members of that structure
+//   type must also be decorated with BuiltIn. (No allowed mixing of built-in
+//   variables and non-built-in variables within a single structure.)
+bool HasBuiltInMembers(opt::IRContext* ir_context, uint32_t struct_type_id);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz

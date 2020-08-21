@@ -1270,6 +1270,15 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
     const auto* type = ir_context->get_type_mgr()->GetType(type_id);
     (void)type;  // Make compiler happy in release mode.
     assert(type && !type->AsFunction() && "Component's type id is invalid");
+
+    if (type->AsStruct()) {
+      // From the spec for the BuiltIn decoration:
+      // - When applied to a structure-type member, that structure type cannot
+      //   be contained as a member of another structure type.
+      assert(!HasBuiltInMembers(ir_context, type_id) &&
+             "A member struct has BuiltIn members");
+    }
+
     operands.push_back({SPV_OPERAND_TYPE_ID, {type_id}});
   }
 
@@ -1450,6 +1459,21 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
   }
 
   return true;
+}
+
+bool HasBuiltInMembers(opt::IRContext* ir_context, uint32_t struct_type_id) {
+  const auto* type = ir_context->get_type_mgr()->GetType(struct_type_id);
+  (void)type;  // Make compilers happy in release mode.
+  assert(type && type->AsStruct() &&
+         "|struct_type_id| is not a result id of an OpTypeStruct");
+
+  return !ir_context->get_def_use_mgr()->WhileEachUser(
+      struct_type_id, [struct_type_id](const opt::Instruction* user) {
+        return user->opcode() != SpvOpMemberDecorate ||
+               user->GetSingleWordInOperand(0) != struct_type_id ||
+               static_cast<SpvDecoration>(user->GetSingleWordInOperand(2)) !=
+                   SpvDecorationBuiltIn;
+      });
 }
 
 }  // namespace fuzzerutil
