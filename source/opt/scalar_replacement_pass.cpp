@@ -183,7 +183,7 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
             /*value_id=*/var->result_id(), /*expr_id=*/deref_expr->result_id(),
             index_id, /*insert_before=*/var->NextNode());
     if (added_dbg_value == nullptr) return false;
-    context()->UpdateDebugInfoFrom(added_dbg_value, dbg_decl);
+    added_dbg_value->UpdateDebugInfoFrom(dbg_decl);
     ++idx;
   }
   return true;
@@ -247,7 +247,7 @@ bool ScalarReplacementPass::ReplaceWholeLoad(
     where = where.InsertBefore(std::move(newLoad));
     get_def_use_mgr()->AnalyzeInstDefUse(&*where);
     context()->set_instr_block(&*where, block);
-    context()->UpdateDebugInfoFrom(&*where, load);
+    where->UpdateDebugInfoFrom(load);
     loads.push_back(&*where);
   }
 
@@ -266,7 +266,7 @@ bool ScalarReplacementPass::ReplaceWholeLoad(
   }
   where = where.InsertBefore(std::move(compositeConstruct));
   get_def_use_mgr()->AnalyzeInstDefUse(&*where);
-  context()->UpdateDebugInfoFrom(&*where, load);
+  where->UpdateDebugInfoFrom(load);
   context()->set_instr_block(&*where, block);
   context()->ReplaceAllUsesWith(load->result_id(), compositeId);
   return true;
@@ -298,7 +298,7 @@ bool ScalarReplacementPass::ReplaceWholeStore(
             {SPV_OPERAND_TYPE_ID, {storeInput}},
             {SPV_OPERAND_TYPE_LITERAL_INTEGER, {elementIndex++}}}));
     auto iter = where.InsertBefore(std::move(extract));
-    context()->UpdateDebugInfoFrom(&*iter, store);
+    iter->UpdateDebugInfoFrom(store);
     get_def_use_mgr()->AnalyzeInstDefUse(&*iter);
     context()->set_instr_block(&*iter, block);
 
@@ -315,7 +315,7 @@ bool ScalarReplacementPass::ReplaceWholeStore(
       newStore->AddOperand(std::move(copy));
     }
     iter = where.InsertBefore(std::move(newStore));
-    context()->UpdateDebugInfoFrom(&*iter, store);
+    iter->UpdateDebugInfoFrom(store);
     get_def_use_mgr()->AnalyzeInstDefUse(&*iter);
     context()->set_instr_block(&*iter, block);
   }
@@ -355,7 +355,7 @@ bool ScalarReplacementPass::ReplaceAccessChain(
         Operand copy(chain->GetInOperand(i));
         replacementChain->AddOperand(std::move(copy));
       }
-      context()->UpdateDebugInfoFrom(replacementChain.get(), chain);
+      replacementChain->UpdateDebugInfoFrom(chain);
       auto iter = chainIter.InsertBefore(std::move(replacementChain));
       get_def_use_mgr()->AnalyzeInstDefUse(&*iter);
       context()->set_instr_block(&*iter, context()->get_instr_block(chain));
@@ -503,7 +503,7 @@ void ScalarReplacementPass::CreateVariable(
   }
 
   // Update the OpenCL.DebugInfo.100 debug information.
-  context()->UpdateDebugInfoFrom(inst, varInst);
+  inst->UpdateDebugInfoFrom(varInst);
 
   replacements->push_back(inst);
 }

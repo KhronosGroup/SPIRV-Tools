@@ -71,7 +71,7 @@ bool WrapOpKill::ReplaceWithFunctionCall(Instruction* inst) {
   if (call_inst == nullptr) {
     return false;
   }
-  context()->UpdateDebugInfoFrom(call_inst, inst);
+  call_inst->UpdateDebugInfoFrom(inst);
 
   Instruction* return_inst = nullptr;
   uint32_t return_type_id = GetOwningFunctionsReturnType(inst);

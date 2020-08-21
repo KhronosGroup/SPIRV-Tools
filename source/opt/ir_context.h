@@ -576,24 +576,6 @@ class IRContext {
     return GetFunction(inst->result_id());
   }
 
-  // Updates DebugInlinedAt of |inst| and analyzes use information
-  // of DebugInlinedAt.
-  void UpdateDebugInlinedAt(Instruction* inst, uint32_t dbg_inlined_at) {
-    inst->UpdateDebugInlinedAt(dbg_inlined_at);
-    if (AreAnalysesValid(kAnalysisDebugInfo)) {
-      get_debug_info_mgr()->AnalyzeDebugInst(inst);
-    }
-  }
-
-  // Updates DebugScope and line of |inst| and analyzes use information
-  // of DebugScope.
-  void UpdateDebugInfoFrom(Instruction* inst, const Instruction* from) {
-    inst->UpdateDebugInfoFrom(from);
-    if (AreAnalysesValid(kAnalysisDebugInfo)) {
-      get_debug_info_mgr()->AnalyzeDebugInst(inst);
-    }
-  }
-
   // Add to |todo| all ids of functions called directly from |func|.
   void AddCalls(const Function* func, std::queue<uint32_t>* todo);
 
