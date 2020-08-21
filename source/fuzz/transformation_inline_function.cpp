@@ -46,12 +46,10 @@ bool TransformationInlineFunction::IsApplicable(
     }
   }
 
-  // |function_call_instruction| must be defined, must be an OpFunctionCall
-  // instruction.
-  auto function_call_instruction =
+  // |function_call_instruction| must be suitable for inlining.
+  auto* function_call_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.function_call_id());
-  if (!function_call_instruction ||
-      function_call_instruction->opcode() != SpvOpFunctionCall) {
+  if (!IsSuitableForInlining(ir_context, function_call_instruction)) {
     return false;
   }
 
@@ -59,7 +57,7 @@ bool TransformationInlineFunction::IsApplicable(
   // block and its block termination instruction must be an OpBranch. This
   // avoids the case where the penultimate instruction is an OpLoopMerge, which
   // would make the back-edge block not branch to the loop header.
-  auto function_call_instruction_block =
+  auto* function_call_instruction_block =
       ir_context->get_instr_block(function_call_instruction);
   if (function_call_instruction !=
           &*--function_call_instruction_block->tail() ||
@@ -67,30 +65,9 @@ bool TransformationInlineFunction::IsApplicable(
     return false;
   }
 
-  // If |function_call_instruction| type is void, then assert there is no uses.
-  if (ir_context->get_type_mgr()
-          ->GetType(function_call_instruction->type_id())
-          ->AsVoid()) {
-    assert(ir_context->get_def_use_mgr()->NumUses(function_call_instruction) ==
-               0 &&
-           "Function call with void return must not be used");
-  }
-
-  // The called function must not have an early return.
-  auto called_function = fuzzerutil::FindFunction(
+  auto* called_function = fuzzerutil::FindFunction(
       ir_context, function_call_instruction->GetSingleWordInOperand(0));
-  if (called_function->HasEarlyReturn()) {
-    return false;
-  }
-
   for (auto& block : *called_function) {
-    // |called_function| must not have a block with OpKill or OpUnreachable as
-    // its termination instruction.
-    if (block.terminator()->opcode() == SpvOpKill ||
-        block.terminator()->opcode() == SpvOpUnreachable) {
-      return false;
-    }
-
     // Since the entry block label will not be inlined, only the remaining
     // labels must have a corresponding value in the map.
     if (&block != &*called_function->entry() &&
@@ -139,20 +116,19 @@ void TransformationInlineFunction::Apply(
 
   // Inline the |called_function| entry block.
   for (auto& entry_block_instruction : *called_function->entry()) {
-    opt::Instruction* instruction_to_be_inlined = nullptr;
+    opt::Instruction* inlined_instruction = nullptr;
 
     if (entry_block_instruction.opcode() == SpvOpVariable) {
       // All OpVariable instructions in a function must be in the first block
       // in the function.
-      instruction_to_be_inlined =
-          caller_function->begin()->begin()->InsertBefore(
-              MakeUnique<opt::Instruction>(entry_block_instruction));
+      inlined_instruction = caller_function->begin()->begin()->InsertBefore(
+          MakeUnique<opt::Instruction>(entry_block_instruction));
     } else {
-      instruction_to_be_inlined = function_call_instruction->InsertBefore(
+      inlined_instruction = function_call_instruction->InsertBefore(
           MakeUnique<opt::Instruction>(entry_block_instruction));
     }
 
-    InlineInstruction(ir_context, instruction_to_be_inlined);
+    AdaptInlinedInstruction(ir_context, inlined_instruction);
   }
 
   // Inline the |called_function| non-entry blocks.
@@ -170,8 +146,8 @@ void TransformationInlineFunction::Apply(
     fuzzerutil::UpdateModuleIdBound(ir_context,
                                     cloned_block->GetLabel()->result_id());
 
-    for (auto& instruction_to_be_inlined : *cloned_block) {
-      InlineInstruction(ir_context, &instruction_to_be_inlined);
+    for (auto& inlined_instruction : *cloned_block) {
+      AdaptInlinedInstruction(ir_context, &inlined_instruction);
     }
   }
 
@@ -188,7 +164,40 @@ protobufs::Transformation TransformationInlineFunction::ToMessage() const {
   return result;
 }
 
-void TransformationInlineFunction::InlineInstruction(
+bool TransformationInlineFunction::IsSuitableForInlining(
+    opt::IRContext* ir_context, opt::Instruction* function_call_instruction) {
+  // |function_call_instruction| must be defined and must be an OpFunctionCall
+  // instruction.
+  if (!function_call_instruction ||
+      function_call_instruction->opcode() != SpvOpFunctionCall) {
+    return false;
+  }
+
+  // If |function_call_instruction| return type is void, then
+  // |function_call_instruction| must not have uses.
+  if (ir_context->get_type_mgr()
+          ->GetType(function_call_instruction->type_id())
+          ->AsVoid() &&
+      ir_context->get_def_use_mgr()->NumUses(function_call_instruction) != 0) {
+    return false;
+  }
+
+  // |called_function| must not have an early return.
+  auto called_function = fuzzerutil::FindFunction(
+      ir_context, function_call_instruction->GetSingleWordInOperand(0));
+  if (called_function->HasEarlyReturn()) {
+    return false;
+  }
+
+  // |called_function| must not use OpKill or OpUnreachable.
+  if (fuzzerutil::FunctionContainsOpKillOrUnreachable(*called_function)) {
+    return false;
+  }
+
+  return true;
+}
+
+void TransformationInlineFunction::AdaptInlinedInstruction(
     opt::IRContext* ir_context,
     opt::Instruction* instruction_to_be_inlined) const {
   auto* function_call_instruction =

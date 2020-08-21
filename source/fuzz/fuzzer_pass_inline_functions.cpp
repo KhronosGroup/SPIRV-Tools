@@ -17,6 +17,7 @@
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_inline_function.h"
+#include "source/fuzz/transformation_split_block.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -31,6 +32,9 @@ FuzzerPassInlineFunctions::FuzzerPassInlineFunctions(
 FuzzerPassInlineFunctions::~FuzzerPassInlineFunctions() = default;
 
 void FuzzerPassInlineFunctions::Apply() {
+  // |function_call_instructions| are the instructions that will be inlined.
+  // First, they will be collected and then do the inlining in another loop.
+  // This avoids changing the module while it is being inspected.
   std::vector<opt::Instruction*> function_call_instructions;
 
   for (auto& function : *GetIRContext()->module()) {
@@ -41,34 +45,21 @@ void FuzzerPassInlineFunctions::Apply() {
           continue;
         }
 
-        // |instruction| must be OpFunctionCall to consider applying the
-        // transformation.
-        if (instruction.opcode() != SpvOpFunctionCall) {
+        // |instruction| must be suitable for inlining.
+        if (!TransformationInlineFunction::IsSuitableForInlining(
+                GetIRContext(), &instruction)) {
           continue;
         }
 
-        // |called_function| must not have an early return.
-        auto called_function = fuzzerutil::FindFunction(
-            GetIRContext(), instruction.GetSingleWordInOperand(0));
-        if (called_function->HasEarlyReturn()) {
-          continue;
-        }
-
-        // Checks if some block in |called_function| has OpKill or OpUnreachable
-        // as its termination instruction.
-        bool hasKillOrUnreachableInstruction = false;
-        for (auto& called_function_block : *called_function) {
-          if (called_function_block.terminator()->opcode() == SpvOpKill ||
-              called_function_block.terminator()->opcode() ==
-                  SpvOpUnreachable) {
-            hasKillOrUnreachableInstruction = true;
-            break;
-          }
-        }
-
-        // |called_function| must not have a block with OpKill or OpUnreachable
-        // as its termination instruction.
-        if (hasKillOrUnreachableInstruction) {
+        // If |instruction| is not the penultimate instruction in |block| or
+        // |block| termination instruction is not OpBranch, then try to split
+        // |block| such that the conditions are met.
+        if ((&instruction != &*--block.tail() ||
+             block.terminator()->opcode() != SpvOpBranch) &&
+            !MaybeApplyTransformation(TransformationSplitBlock(
+                MakeInstructionDescriptor(GetIRContext(),
+                                          instruction.NextNode()),
+                GetFuzzerContext()->GetFreshId()))) {
           continue;
         }
 
@@ -77,6 +68,8 @@ void FuzzerPassInlineFunctions::Apply() {
     }
   }
 
+  // Once the function calls have been collected, it's time to actually create
+  // and apply the inlining transformations.
   for (auto& instruction : function_call_instructions) {
     auto called_function = fuzzerutil::FindFunction(
         GetIRContext(), instruction->GetSingleWordInOperand(0));

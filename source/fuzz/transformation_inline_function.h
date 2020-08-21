@@ -33,29 +33,40 @@ class TransformationInlineFunction : public Transformation {
       const std::map<uint32_t, uint32_t>& result_id_map);
 
   // - |message_.result_id_map| must map the instructions of the called function
-  // to fresh ids.
-  // - |message_.function_call_id| must be an OpFunctionCall instruction. The
-  // called function must not have an early return.
+  //   to fresh ids.
+  // - |message_.function_call_id| must be an OpFunctionCall instruction.
+  //   It must not have an early return and must not use OpUnreachable or
+  //   OpKill. This is to guard against making the module invalid when the
+  //   caller is inside a continue construct.
+  //   TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3735):
+  //     Allow functions that use OpKill or OpUnreachable to be inlined if the
+  //     function call is not part of a continue construct.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Iterates over the called function blocks and clones each instruction in the
-  // blocks. The cloned instruction result id and its operand ids are set to the
-  // corresponding value in |message_.result_id_map|. Finally, the cloned
-  // instructions are inserted into the caller function.
+  // Replaces the OpFunctionCall instruction, identified by
+  // |message_.function_call_id|, with a copy of the function's body.
+  // |message_.result_id_map| is used to provide fresh ids for duplicate
+  // instructions.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  // Returns true if |function_call_instruction| is defined, is an
+  // OpFunctionCall instruction, has no uses if its return type is void, has no
+  // early returns and has no uses of OpKill or OpUnreachable.
+  static bool IsSuitableForInlining(
+      opt::IRContext* ir_context, opt::Instruction* function_call_instruction);
 
  private:
   protobufs::TransformationInlineFunction message_;
 
   // Inline |instruction_to_be_inlined| by setting its ids to the corresponding
   // ids in |result_id_map|.
-  void InlineInstruction(opt::IRContext* ir_context,
-                         opt::Instruction* instruction) const;
+  void AdaptInlinedInstruction(opt::IRContext* ir_context,
+                               opt::Instruction* instruction) const;
 };
 
 }  // namespace fuzz

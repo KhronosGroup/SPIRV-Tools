@@ -20,10 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
-// Looks for OpFunctionCall instructions and randomly decides whether to apply
-// the transformation. If the instructions of the called function are going to
-// be inlined, then a mapping, between their result ids and suitable ids, is
-// done.
+// Looks for OpFunctionCall instructions and randomly decides which ones to
+// inline. If the instructions of the called function are going to be inlined,
+// then a mapping, between their result ids and suitable ids, is done.
 class FuzzerPassInlineFunctions : public FuzzerPass {
  public:
   FuzzerPassInlineFunctions(opt::IRContext* ir_context,

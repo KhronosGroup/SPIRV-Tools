@@ -27,6 +27,7 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %52 "main"
                OpExecutionMode %52 OriginUpperLeft
+               OpName %56 "function_with_void_return"
 
 ; Types
           %2 = OpTypeBool
@@ -52,7 +53,7 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
          %18 = OpConstantComposite %4 %9 %10 %11 %12
          %19 = OpConstantComposite %4 %13 %14 %15 %16
 
-; function with void return type
+; function with void return
          %20 = OpFunction %6 None %7
          %21 = OpLabel
                OpReturn
@@ -113,10 +114,9 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
          %53 = OpLabel
          %54 = OpVariable %5 Function
          %55 = OpVariable %5 Function
-         %56 = OpFunctionCall %6 %20 ; function with void return type
+         %56 = OpFunctionCall %6 %20 ; function with void return
                OpBranch %57
          %57 = OpLabel
-         %58 = OpCopyObject %6 %56
          %59 = OpFunctionCall %6 %22 ; function with early return
                OpBranch %60
          %60 = OpLabel
@@ -155,13 +155,10 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  // Tests use of called function with void return type.
+  // Tests use of called function with void return.
   transformation = TransformationInlineFunction(56, {});
-#ifndef NDEBUG
-  ASSERT_DEATH(
-      transformation.IsApplicable(context.get(), transformation_context),
-      "Function call with void return must not be used");
-#endif
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests called function having an early return.
   transformation =
