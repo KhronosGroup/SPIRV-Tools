@@ -156,6 +156,10 @@ void TransformationInlineFunction::Apply(
   ir_context->KillInst(
       ir_context->get_instr_block(function_call_instruction)->terminator());
   ir_context->KillInst(function_call_instruction);
+
+  // Since the SPIR-V module has changed, no analyses must be validated.
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationInlineFunction::ToMessage() const {
