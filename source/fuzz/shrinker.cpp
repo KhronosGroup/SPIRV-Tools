@@ -158,6 +158,8 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   // The largest id used by the module before any shrinking has been applied
   // serves as the first id that can be used for overflow purposes.
   const uint32_t first_overflow_id = impl_->GetIdBound(current_best_binary);
+  assert(first_overflow_id >= impl_->GetIdBound(binary_in) &&
+         "Applying transformations should only increase a module's id bound.");
 
   uint32_t attempt = 0;  // Keeps track of the number of shrink attempts that
                          // have been tried, whether successful or not.

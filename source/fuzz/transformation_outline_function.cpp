@@ -632,21 +632,16 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
   // Add one parameter to the function for each input id, using the fresh ids
   // provided in |input_id_to_fresh_id_map|, or overflow ids if needed.
   for (auto id : region_input_ids) {
-    uint32_t fresh_id = input_id_to_fresh_id_map.count(id)
-                            ? input_id_to_fresh_id_map.at(id)
-                            : transformation_context->GetOverflowIdSource()
-                                  ->GetNextOverflowId();
-
     outlined_function->AddParameter(MakeUnique<opt::Instruction>(
         ir_context, SpvOpFunctionParameter,
-        ir_context->get_def_use_mgr()->GetDef(id)->type_id(), fresh_id,
-        opt::Instruction::OperandList()));
+        ir_context->get_def_use_mgr()->GetDef(id)->type_id(),
+        input_id_to_fresh_id_map.at(id), opt::Instruction::OperandList()));
     // If the input id is an irrelevant-valued variable, the same should be true
     // of the corresponding parameter.
     if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
             id)) {
       transformation_context->GetFactManager()
-          ->AddFactValueOfPointeeIsIrrelevant(fresh_id);
+          ->AddFactValueOfPointeeIsIrrelevant(input_id_to_fresh_id_map.at(id));
     }
   }
 

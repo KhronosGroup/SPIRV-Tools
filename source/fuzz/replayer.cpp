@@ -108,6 +108,11 @@ Replayer::ReplayerResultStatus Replayer::Run(
                 &fact_manager, impl_->validator_options,
                 MakeUnique<CounterOverflowIdSource>(first_overflow_id));
 
+  // We track the largest id bound observed, to ensure that it only increases
+  // as transformations are applied.
+  uint32_t max_observed_id_bound = ir_context->module()->id_bound();
+  (void)(max_observed_id_bound);  // Keep release-mode compilers happy.
+
   // Consider the transformation proto messages in turn.
   uint32_t counter = 0;
   for (auto& message : transformation_sequence_in.transformation()) {
@@ -125,6 +130,11 @@ Replayer::ReplayerResultStatus Replayer::Run(
       // sequence of transformations that were applied.
       transformation->Apply(ir_context.get(), transformation_context.get());
       *transformation_sequence_out->add_transformation() = message;
+
+      assert(ir_context->module()->id_bound() >= max_observed_id_bound &&
+             "The module's id bound should only increase due to applying "
+             "transformations.");
+      max_observed_id_bound = ir_context->module()->id_bound();
 
       if (impl_->validate_during_replay) {
         std::vector<uint32_t> binary_to_validate;
