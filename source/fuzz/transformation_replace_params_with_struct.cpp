@@ -266,23 +266,7 @@ bool TransformationReplaceParamsWithStruct::IsParameterTypeSupported(
     const opt::analysis::Type& param_type) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
   //  Consider adding support for more types of parameters.
-  switch (param_type.kind()) {
-    case opt::analysis::Type::kBool:
-    case opt::analysis::Type::kInteger:
-    case opt::analysis::Type::kFloat:
-    case opt::analysis::Type::kArray:
-    case opt::analysis::Type::kVector:
-    case opt::analysis::Type::kMatrix:
-      return true;
-    case opt::analysis::Type::kStruct:
-      return std::all_of(param_type.AsStruct()->element_types().begin(),
-                         param_type.AsStruct()->element_types().end(),
-                         [](const opt::analysis::Type* type) {
-                           return IsParameterTypeSupported(*type);
-                         });
-    default:
-      return false;
-  }
+  return fuzzerutil::CanCreateConstant(param_type);
 }
 
 uint32_t TransformationReplaceParamsWithStruct::MaybeGetRequiredStructType(
