@@ -36,7 +36,7 @@ void FuzzerPassMutatePointers::Apply() {
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor) {
         if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()->GetChanceOfMutatingPointers())) {
+                GetFuzzerContext()->GetChanceOfMutatingPointer())) {
           return;
         }
 
