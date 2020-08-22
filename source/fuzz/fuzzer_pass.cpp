@@ -105,13 +105,13 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor)>
         action) {
-  std::vector<opt::BasicBlock*> reachable_blocks;
-
   // Consider every block in every function.
   for (auto& function : *GetIRContext()->module()) {
     // Consider only reachable blocks. We do this in a separate loop to avoid
     // recomputing the dominator analysis every time |action| changes the
     // module.
+    std::vector<opt::BasicBlock*> reachable_blocks;
+
     const auto* dominator_analysis =
         GetIRContext()->GetDominatorAnalysis(&function);
     for (auto& block : function) {
