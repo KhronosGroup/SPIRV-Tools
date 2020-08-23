@@ -110,7 +110,8 @@ void TransformationPropagateInstructionDown::Apply(
   }
 
   // Add an OpPhi instruction into the module if possible.
-  if (CanAddOpPhiInstruction(ir_context, message_.block_id(), successor_ids)) {
+  if (CanAddOpPhiInstruction(ir_context, message_.block_id(),
+                             *inst_to_propagate, successor_ids)) {
     const auto* source_block = ir_context->get_instr_block(inst_to_propagate);
     assert(source_block &&
            "Global instructions and function parameters are not propagated");
@@ -373,6 +374,14 @@ bool TransformationPropagateInstructionDown::IsApplicableToBlock(
     return false;
   }
 
+  const auto* dominator_analysis =
+      ir_context->GetDominatorAnalysis(block->GetParent());
+
+  // |block| must be reachable.
+  if (!dominator_analysis->IsReachable(block)) {
+    return false;
+  }
+
   // The block must have an instruction to propagate.
   const auto* inst_to_propagate =
       GetInstructionToPropagate(ir_context, block_id);
@@ -404,13 +413,12 @@ bool TransformationPropagateInstructionDown::IsApplicableToBlock(
   }
 
   uint32_t phi_block_id =
-      CanAddOpPhiInstruction(ir_context, block_id, successor_ids)
+      CanAddOpPhiInstruction(ir_context, block_id, *inst_to_propagate,
+                             successor_ids)
           ? block->GetMergeInst()->GetSingleWordInOperand(0)
           : 0;
 
   // Make sure we can adjust all users of the propagated instruction.
-  const auto* dominator_analysis =
-      ir_context->GetDominatorAnalysis(block->GetParent());
   return ir_context->get_def_use_mgr()->WhileEachUser(
       inst_to_propagate,
       [ir_context, &successor_ids, dominator_analysis, inst_to_propagate,
@@ -501,6 +509,7 @@ TransformationPropagateInstructionDown::GetAcceptableSuccessors(
 
 bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
     opt::IRContext* ir_context, uint32_t maybe_header_block_id,
+    const opt::Instruction& inst_to_propagate,
     const std::unordered_set<uint32_t>& successor_ids) {
   const auto* block = ir_context->cfg()->block(maybe_header_block_id);
   const auto* dominator_analysis =
@@ -522,7 +531,7 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
     return false;
   }
 
-  // All predecessors of the merge block must be dominate by at least one
+  // All predecessors of the merge block must be dominated by at least one
   // successor of the header block.
   assert(!ir_context->cfg()->preds(merge_block_id).empty() &&
          "Merge block must be reachable");
@@ -552,7 +561,15 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
   assert(!block->IsSuccessor(ir_context->cfg()->block(merge_block_id)) &&
          "Merge can't be a header's successor");
 
-  return true;
+  const auto* propagate_type =
+      ir_context->get_type_mgr()->GetType(inst_to_propagate.type_id());
+  assert(propagate_type && "|inst_to_propagate| must have a valid type");
+
+  // VariablePointers capability implicitly declares
+  // VariablePointersStorageBuffer.
+  return !propagate_type->AsPointer() ||
+         ir_context->get_feature_mgr()->HasCapability(
+             SpvCapabilityVariablePointersStorageBuffer);
 }
 
 std::unordered_set<uint32_t>

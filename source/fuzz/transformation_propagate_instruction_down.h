@@ -60,7 +60,8 @@ class TransformationPropagateInstructionDown : public Transformation {
 
   // Returns true if this transformation can be applied to the block with id
   // |block_id|. Concretely, returns true iff:
-  // - |block_id| must be a result id of some basic block in the module.
+  // - |block_id| must be a result id of some reachable basic block in the
+  //   module.
   // - the block must have an instruction to propagate (see
   //   GetInstructionToPropagate method).
   // - the block must have at least one acceptable successor (see
@@ -75,7 +76,8 @@ class TransformationPropagateInstructionDown : public Transformation {
 
   // Returns ids of successors of |block_id|, that can be used to propagate an
   // instruction into. Concretely, a successor block is acceptable if all
-  // dependencies of the propagated instruction dominate it.
+  // dependencies of the propagated instruction dominate it. Note that this
+  // implies that an acceptable successor must be reachable in the CFG.
   static std::unordered_set<uint32_t> GetAcceptableSuccessors(
       opt::IRContext* ir_context, uint32_t block_id);
 
@@ -111,6 +113,7 @@ class TransformationPropagateInstructionDown : public Transformation {
   //   for every predecessor of the merge block, dominating that predecessor.
   static bool CanAddOpPhiInstruction(
       opt::IRContext* ir_context, uint32_t maybe_header_block_id,
+      const opt::Instruction& inst_to_propagate,
       const std::unordered_set<uint32_t>& successor_ids);
 
   protobufs::TransformationPropagateInstructionDown message_;

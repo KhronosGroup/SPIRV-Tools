@@ -32,23 +32,30 @@ FuzzerPassPropagateInstructionsDown::~FuzzerPassPropagateInstructionsDown() =
 
 void FuzzerPassPropagateInstructionsDown::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
+    std::vector<const opt::BasicBlock*> reachable_blocks;
     for (const auto& block : function) {
+      if (GetIRContext()->GetDominatorAnalysis(&function)->IsReachable(&block)) {
+        reachable_blocks.push_back(&block);
+      }
+    }
+
+    for (const auto* block : reachable_blocks) {
       if (!GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()->GetChanceOfPropagatingInstructionsDown())) {
         continue;
       }
 
       if (TransformationPropagateInstructionDown::IsApplicableToBlock(
-              GetIRContext(), block.id())) {
+              GetIRContext(), block->id())) {
         std::map<uint32_t, uint32_t> fresh_ids;
         for (auto id :
              TransformationPropagateInstructionDown::GetAcceptableSuccessors(
-                 GetIRContext(), block.id())) {
+                 GetIRContext(), block->id())) {
           fresh_ids[id] = GetFuzzerContext()->GetFreshId();
         }
 
         ApplyTransformation(TransformationPropagateInstructionDown(
-            block.id(), GetFuzzerContext()->GetFreshId(), fresh_ids));
+            block->id(), GetFuzzerContext()->GetFreshId(), fresh_ids));
       }
     }
   }
