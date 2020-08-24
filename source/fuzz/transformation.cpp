@@ -52,6 +52,7 @@
 #include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_composite_insert.h"
 #include "source/fuzz/transformation_compute_data_synonym_fact_closure.h"
+#include "source/fuzz/transformation_duplicate_region_with_selection.h"
 #include "source/fuzz/transformation_equation_instruction.h"
 #include "source/fuzz/transformation_function_call.h"
 #include "source/fuzz/transformation_inline_function.h"
@@ -196,6 +197,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kComputeDataSynonymFactClosure:
       return MakeUnique<TransformationComputeDataSynonymFactClosure>(
           message.compute_data_synonym_fact_closure());
+    case protobufs::Transformation::TransformationCase::
+        kDuplicateRegionWithSelection:
+      return MakeUnique<TransformationDuplicateRegionWithSelection>(
+          message.duplicate_region_with_selection());
     case protobufs::Transformation::TransformationCase::kEquationInstruction:
       return MakeUnique<TransformationEquationInstruction>(
           message.equation_instruction());

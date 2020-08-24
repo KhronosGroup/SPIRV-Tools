@@ -70,6 +70,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfDuplicatingRegionWithSelection = {
+    20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperToInsertInComposite = {
     30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
@@ -230,6 +232,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
+  chance_of_duplicating_region_with_selection_ =
+      ChooseBetweenMinAndMax(kChanceOfDuplicatingRegionWithSelection);
   chance_of_going_deeper_to_insert_in_composite_ =
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperToInsertInComposite);
   chance_of_going_deeper_when_making_access_chain_ =
