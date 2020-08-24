@@ -315,6 +315,109 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
 
   ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
+
+TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpCapability VariablePointers
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %10 = OpTypePointer Workgroup %8
+          %3 = OpVariable %10 Workgroup
+          %2 = OpFunction %4 None %5
+         %11 = OpLabel
+         %12 = OpVariable %9 Function
+               OpSelectionMerge %13 None
+               OpBranchConditional %7 %14 %13
+         %14 = OpLabel
+         %15 = OpCopyObject %10 %3
+         %16 = OpCopyObject %9 %12
+               OpBranch %13
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Declare synonyms
+  fact_manager.AddFact(MakeSynonymFact(3, 15), context.get());
+  fact_manager.AddFact(MakeSynonymFact(12, 16), context.get());
+
+  // Remove the VariablePointers capability.
+  context.get()->get_feature_mgr()->RemoveCapability(
+      SpvCapabilityVariablePointers);
+
+  // The VariablePointers capability is required to add an OpPhi instruction of
+  // pointer type.
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{{11, 3}, {14, 15}}}, 100)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Add the VariablePointers capability back.
+  context.get()->get_feature_mgr()->AddCapability(
+      SpvCapabilityVariablePointers);
+
+  // If the ids have pointer type, the storage class must be Workgroup or
+  // StorageBuffer, but it is Function in this case.
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{{11, 12}, {14, 16}}}, 100)
+                   .IsApplicable(context.get(), transformation_context));
+
+  auto transformation =
+      TransformationAddOpPhiSynonym(13, {{{11, 3}, {14, 15}}}, 100);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+               OpCapability VariablePointers
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %10 = OpTypePointer Workgroup %8
+          %3 = OpVariable %10 Workgroup
+          %2 = OpFunction %4 None %5
+         %11 = OpLabel
+         %12 = OpVariable %9 Function
+               OpSelectionMerge %13 None
+               OpBranchConditional %7 %14 %13
+         %14 = OpLabel
+         %15 = OpCopyObject %10 %3
+         %16 = OpCopyObject %9 %12
+               OpBranch %13
+         %13 = OpLabel
+        %100 = OpPhi %10 %3 %11 %15 %14
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

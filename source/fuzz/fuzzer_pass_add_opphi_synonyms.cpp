@@ -34,10 +34,10 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
   // same OpPhi instruction.
   auto equivalence_classes = GetIdEquivalenceClasses();
 
-  // Make a list of references to the sets.
-  std::vector<std::set<uint32_t>*> sets;
+  // Make a list of references, to avoid copying sets unnecessarily.
+  std::vector<std::set<uint32_t>*> equivalence_class_pointers;
   for (auto& set : equivalence_classes) {
-    sets.push_back(&set);
+    equivalence_class_pointers.push_back(&set);
   }
 
   // Keep a list of transformations to apply at the end.
@@ -57,23 +57,25 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
         continue;
       }
 
-      std::set<uint32_t>* chosen_set = nullptr;
+      std::set<uint32_t>* chosen_equivalence_class = nullptr;
 
       if (num_preds > 1) {
         // If the block has more than one predecessor, prioritise sets with at
         // least 2 ids available at some predecessor.
-        chosen_set = MaybeFindSuitableSetRandomly(sets, block.id(), 2);
+        chosen_equivalence_class = MaybeFindSuitableEquivalenceClassRandomly(
+            equivalence_class_pointers, block.id(), 2);
       }
 
       // If a set was not already chosen, choose one with at least one available
       // id.
-      if (!chosen_set) {
-        chosen_set = MaybeFindSuitableSetRandomly(sets, block.id(), 1);
+      if (!chosen_equivalence_class) {
+        chosen_equivalence_class = MaybeFindSuitableEquivalenceClassRandomly(
+            equivalence_class_pointers, block.id(), 1);
       }
 
       // If no suitable set was found, we cannot apply the transformation to
       // this block.
-      if (!chosen_set) {
+      if (!chosen_equivalence_class) {
         continue;
       }
 
@@ -88,10 +90,10 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
 
       // Choose an id for each predecessor.
       for (uint32_t pred_id : GetIRContext()->cfg()->preds(block.id())) {
-        auto suitable_ids = GetSuitableIds(*chosen_set, pred_id);
+        auto suitable_ids = GetSuitableIds(*chosen_equivalence_class, pred_id);
         assert(!suitable_ids.empty() &&
                "We must be able to find at least one suitable id because the "
-               "set was chosen among suitable sets.");
+               "equivalence class was chosen among suitable ones.");
 
         // If this predecessor has more than one id to choose from and it is the
         // first one of this kind that we found, remember its id.
@@ -117,7 +119,8 @@ void FuzzerPassAddOpPhiSynonyms::Apply() {
       // alternative.
       if (num_preds > 1 && pred_with_alternatives != 0 &&
           ids_chosen.size() == 1) {
-        auto suitable_ids = GetSuitableIds(*chosen_set, pred_with_alternatives);
+        auto suitable_ids =
+            GetSuitableIds(*chosen_equivalence_class, pred_with_alternatives);
         uint32_t chosen_id =
             GetFuzzerContext()->RemoveAtRandomIndex(&suitable_ids);
         if (chosen_id == preds_to_ids[pred_with_alternatives]) {
@@ -175,7 +178,8 @@ FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
     for (auto synonym :
          GetTransformationContext()->GetFactManager()->GetSynonymsForId(
              pair.first)) {
-      // The synonym must not be an indexed access into a composite.
+      // The synonym must be a plain id - it cannot be an indexed access into a
+      // composite.
       if (synonym->index_size() > 0) {
         continue;
       }
@@ -206,8 +210,8 @@ FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
   return id_equivalence_classes;
 }
 
-bool FuzzerPassAddOpPhiSynonyms::SetIsSuitableForBlock(
-    const std::set<uint32_t>& set, uint32_t block_id,
+bool FuzzerPassAddOpPhiSynonyms::EquivalenceClassIsSuitableForBlock(
+    const std::set<uint32_t>& equivalence_class, uint32_t block_id,
     uint32_t distinct_ids_required) {
   bool at_least_one_id_for_each_pred = true;
 
@@ -222,7 +226,7 @@ bool FuzzerPassAddOpPhiSynonyms::SetIsSuitableForBlock(
 
     // Initially assume that there is not a suitable id for this predecessor.
     bool at_least_one_suitable_id_found = false;
-    for (uint32_t id : set) {
+    for (uint32_t id : equivalence_class) {
       if (fuzzerutil::IdIsAvailableBeforeInstruction(GetIRContext(),
                                                      last_instruction, id)) {
         // We have found a suitable id.
@@ -236,17 +240,17 @@ bool FuzzerPassAddOpPhiSynonyms::SetIsSuitableForBlock(
         }
       }
     }
-    // If no suitable id was found for this predecessor, this set is not
-    // suitable and we don't need to check the other predecessors.
+    // If no suitable id was found for this predecessor, this equivalence class
+    // is not suitable and we don't need to check the other predecessors.
     if (!at_least_one_suitable_id_found) {
       at_least_one_id_for_each_pred = false;
       break;
     }
   }
 
-  // The set is suitable if at least one suitable id was found for each
-  // predecessor and we have found at least |distinct_ids_required| distinct
-  // suitable ids in general.
+  // The equivalence class is suitable if at least one suitable id was found for
+  // each predecessor and we have found at least |distinct_ids_required|
+  // distinct suitable ids in general.
   return at_least_one_id_for_each_pred &&
          suitable_ids_found.size() >= distinct_ids_required;
 }
@@ -270,14 +274,17 @@ std::vector<uint32_t> FuzzerPassAddOpPhiSynonyms::GetSuitableIds(
   return suitable_ids;
 }
 
-std::set<uint32_t>* FuzzerPassAddOpPhiSynonyms::MaybeFindSuitableSetRandomly(
+std::set<uint32_t>*
+FuzzerPassAddOpPhiSynonyms::MaybeFindSuitableEquivalenceClassRandomly(
     const std::vector<std::set<uint32_t>*>& candidates, uint32_t block_id,
     uint32_t distinct_ids_required) {
-  auto candidate_sets = candidates;
-  while (!candidate_sets.empty()) {
+  auto remaining_candidates = candidates;
+  while (!remaining_candidates.empty()) {
     // Choose one set randomly and return it if it is suitable.
-    auto chosen = GetFuzzerContext()->RemoveAtRandomIndex(&candidate_sets);
-    if (SetIsSuitableForBlock(*chosen, block_id, distinct_ids_required)) {
+    auto chosen =
+        GetFuzzerContext()->RemoveAtRandomIndex(&remaining_candidates);
+    if (EquivalenceClassIsSuitableForBlock(*chosen, block_id,
+                                           distinct_ids_required)) {
       return chosen;
     }
   }

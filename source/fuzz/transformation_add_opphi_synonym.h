@@ -38,9 +38,9 @@ class TransformationAddOpPhiSynonym : public Transformation {
   //       predecessor is a dead block, any id of the right type could be used,
   //       even if it is not synonym with the others.
   //    - have one of the following types: Bool, Integer, Float, Vector, Matrix,
-  //      Array, Struct.
-  //      TODO: Consider enabling pointers, if the VariablePointers capability
-  //      is enabled and the other requirements are met.
+  //      Array, Struct. Pointer types are also allowed if the VariablePointers
+  //      capability is enabled and the storage class is Workgroup or
+  //      StorageBuffer.
   // - |message_.fresh_id| is a fresh id.
   bool IsApplicable(
       opt::IRContext* ir_context,
@@ -57,6 +57,8 @@ class TransformationAddOpPhiSynonym : public Transformation {
 
   // Returns true if |type_id| is the id of a type in the module, which is one
   // of the following: Bool, Integer, Float, Vector, Matrix, Array, Struct.
+  // Pointer types are also allowed if the VariablePointers capability is
+  // enabled and the storage class is Workgroup or StorageBuffer.
   static bool CheckTypeIsAllowed(opt::IRContext* ir_context, uint32_t type_id);
 
   protobufs::Transformation ToMessage() const override;

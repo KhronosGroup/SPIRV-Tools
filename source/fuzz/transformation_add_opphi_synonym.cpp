@@ -111,8 +111,8 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
     assert(pred_block && "Could not find one of the predecessor blocks.");
 
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3722): This
-    // function always returns false if the block is unreachable, so it may need
-    // to be refactored.
+    //  function always returns false if the block is unreachable, so it may
+    //  need to be refactored.
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(
             ir_context, pred_block->terminator(), id)) {
       return false;
@@ -176,9 +176,24 @@ bool TransformationAddOpPhiSynonym::CheckTypeIsAllowed(
 
   // We allow the following types: Bool, Integer, Float, Vector, Matrix, Array,
   // Struct.
-  return type->AsBool() || type->AsInteger() || type->AsFloat() ||
-         type->AsVector() || type->AsMatrix() || type->AsArray() ||
-         type->AsStruct();
+  if (type->AsBool() || type->AsInteger() || type->AsFloat() ||
+      type->AsVector() || type->AsMatrix() || type->AsArray() ||
+      type->AsStruct()) {
+    return true;
+  }
+
+  // We allow pointer types if the VariablePointers capability is enabled and
+  // the pointer has the correct storage class (Workgroup or StorageBuffer).
+  if (type->AsPointer()) {
+    auto storage_class = type->AsPointer()->storage_class();
+    return ir_context->get_feature_mgr()->HasCapability(
+               SpvCapabilityVariablePointers) &&
+           (storage_class == SpvStorageClassWorkgroup ||
+            storage_class == SpvStorageClassStorageBuffer);
+  }
+
+  // We do not allow other types.
+  return false;
 }
 
 }  // namespace fuzz

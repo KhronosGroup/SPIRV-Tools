@@ -140,18 +140,21 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, HelperFunctions) {
 
   // The set {24, 26, 30} is not suitable for 18 (none if the ids is available
   // for predecessor 20).
-  ASSERT_FALSE(fuzzer_pass.SetIsSuitableForBlock({24, 26, 30}, 18, 1));
+  ASSERT_FALSE(
+      fuzzer_pass.EquivalenceClassIsSuitableForBlock({24, 26, 30}, 18, 1));
 
   // The set {6} is not suitable for 18 if we require at least 2 distinct
   // available ids.
-  ASSERT_FALSE(fuzzer_pass.SetIsSuitableForBlock({6}, 18, 2));
+  ASSERT_FALSE(fuzzer_pass.EquivalenceClassIsSuitableForBlock({6}, 18, 2));
 
   // Only id 26 from the set {24, 26, 30} is available to use for the
   // transformation at block 29, so the set is not suitable if we want at least
   // 2 available ids.
-  ASSERT_FALSE(fuzzer_pass.SetIsSuitableForBlock({24, 26, 30}, 29, 2));
+  ASSERT_FALSE(
+      fuzzer_pass.EquivalenceClassIsSuitableForBlock({24, 26, 30}, 29, 2));
 
-  ASSERT_TRUE(fuzzer_pass.SetIsSuitableForBlock({24, 26, 30}, 29, 1));
+  ASSERT_TRUE(
+      fuzzer_pass.EquivalenceClassIsSuitableForBlock({24, 26, 30}, 29, 1));
 
   // %21 is not available at the end of block 20.
   ASSERT_TRUE(ListsHaveTheSameElements<uint32_t>(
