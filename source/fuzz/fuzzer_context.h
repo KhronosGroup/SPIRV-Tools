@@ -261,6 +261,9 @@ class FuzzerContext {
   uint32_t GetChanceOfReplacingLoadStoreWithCopyMemory() {
     return chance_of_replacing_load_store_with_copy_memory_;
   }
+  uint32_t GetChanceOfReplacingOpPhiIdFromDeadPredecessor() {
+    return chance_of_replacing_opphi_id_from_dead_predecessor_;
+  }
   uint32_t GetChanceOfReplacingParametersWithGlobals() {
     return chance_of_replacing_parameters_with_globals_;
   }
@@ -417,6 +420,7 @@ class FuzzerContext {
   uint32_t chance_of_replacing_irrelevant_id_;
   uint32_t chance_of_replacing_linear_algebra_instructions_;
   uint32_t chance_of_replacing_load_store_with_copy_memory_;
+  uint32_t chance_of_replacing_opphi_id_from_dead_predecessor_;
   uint32_t chance_of_replacing_parameters_with_globals_;
   uint32_t chance_of_replacing_parameters_with_struct_;
   uint32_t chance_of_splitting_block_;
