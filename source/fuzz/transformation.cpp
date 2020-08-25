@@ -77,7 +77,7 @@
 #include "source/fuzz/transformation_replace_irrelevant_id.h"
 #include "source/fuzz/transformation_replace_linear_algebra_instruction.h"
 #include "source/fuzz/transformation_replace_load_store_with_copy_memory.h"
-#include "source/fuzz/transformation_replace_opphi_id_when_predecessor_dead.h"
+#include "source/fuzz/transformation_replace_opphi_id_from_dead_predecessor.h"
 #include "source/fuzz/transformation_replace_parameter_with_global.h"
 #include "source/fuzz/transformation_replace_params_with_struct.h"
 #include "source/fuzz/transformation_set_function_control.h"
@@ -285,9 +285,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
       return MakeUnique<TransformationReplaceParamsWithStruct>(
           message.replace_params_with_struct());
     case protobufs::Transformation::TransformationCase::
-        kReplaceOpphiIdWhenPredecessorDead:
-      return MakeUnique<TransformationReplaceOpPhiIdWhenPredecessorDead>(
-          message.replace_opphi_id_when_predecessor_dead());
+        kReplaceOpphiIdFromDeadPredecessor:
+      return MakeUnique<TransformationReplaceOpPhiIdFromDeadPredecessor>(
+          message.replace_opphi_id_from_dead_predecessor());
     case protobufs::Transformation::TransformationCase::kSetFunctionControl:
       return MakeUnique<TransformationSetFunctionControl>(
           message.set_function_control());

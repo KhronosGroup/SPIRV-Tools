@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_replace_opphi_id_when_predecessor_dead.h"
+#include "source/fuzz/transformation_replace_opphi_id_from_dead_predecessor.h"
+
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {
 namespace fuzz {
 
-TransformationReplaceOpPhiIdWhenPredecessorDead::
-    TransformationReplaceOpPhiIdWhenPredecessorDead(
-        const protobufs::TransformationReplaceOpPhiIdWhenPredecessorDead&
+TransformationReplaceOpPhiIdFromDeadPredecessor::
+    TransformationReplaceOpPhiIdFromDeadPredecessor(
+        const protobufs::TransformationReplaceOpPhiIdFromDeadPredecessor&
             message)
     : message_(message) {}
 
-TransformationReplaceOpPhiIdWhenPredecessorDead::
-    TransformationReplaceOpPhiIdWhenPredecessorDead(uint32_t opphi_id,
+TransformationReplaceOpPhiIdFromDeadPredecessor::
+    TransformationReplaceOpPhiIdFromDeadPredecessor(uint32_t opphi_id,
                                                     uint32_t pred_label_id,
                                                     uint32_t replacement_id) {
   message_.set_opphi_id(opphi_id);
@@ -33,7 +34,7 @@ TransformationReplaceOpPhiIdWhenPredecessorDead::
   message_.set_replacement_id(replacement_id);
 }
 
-bool TransformationReplaceOpPhiIdWhenPredecessorDead::IsApplicable(
+bool TransformationReplaceOpPhiIdFromDeadPredecessor::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
   // |opphi_id| must be the id of an OpPhi instruction.
@@ -77,7 +78,7 @@ bool TransformationReplaceOpPhiIdWhenPredecessorDead::IsApplicable(
       ir_context, pred_block->terminator(), replacement_def->result_id());
 }
 
-void TransformationReplaceOpPhiIdWhenPredecessorDead::Apply(
+void TransformationReplaceOpPhiIdFromDeadPredecessor::Apply(
     opt::IRContext* ir_context,
     TransformationContext* /* transformation_context */) const {
   // Get the OpPhi instruction.
@@ -99,9 +100,9 @@ void TransformationReplaceOpPhiIdWhenPredecessorDead::Apply(
 }
 
 protobufs::Transformation
-TransformationReplaceOpPhiIdWhenPredecessorDead::ToMessage() const {
+TransformationReplaceOpPhiIdFromDeadPredecessor::ToMessage() const {
   protobufs::Transformation result;
-  *result.mutable_replace_opphi_id_when_predecessor_dead() = message_;
+  *result.mutable_replace_opphi_id_from_dead_predecessor() = message_;
   return result;
 }
 

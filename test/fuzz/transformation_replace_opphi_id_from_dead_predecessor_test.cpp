@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_replace_opphi_id_when_predecessor_dead.h"
+#include "source/fuzz/transformation_replace_opphi_id_from_dead_predecessor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -69,7 +69,7 @@ std::string shader = R"(
                OpFunctionEnd
 )";
 
-TEST(TransformationReplaceOpPhiIdWhenPredecessorDeadTest, Inapplicable) {
+TEST(TransformationReplaceOpPhiIdFromDeadPredecessorTest, Inapplicable) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -86,32 +86,32 @@ TEST(TransformationReplaceOpPhiIdWhenPredecessorDeadTest, Inapplicable) {
   transformation_context.GetFactManager()->AddFactBlockIsDead(28);
 
   // %26 is not an OpPhi instruction.
-  ASSERT_FALSE(TransformationReplaceOpPhiIdWhenPredecessorDead(26, 14, 10)
+  ASSERT_FALSE(TransformationReplaceOpPhiIdFromDeadPredecessor(26, 14, 10)
                    .IsApplicable(context.get(), transformation_context));
 
   // %25 is not a block label.
-  ASSERT_FALSE(TransformationReplaceOpPhiIdWhenPredecessorDead(30, 25, 10)
+  ASSERT_FALSE(TransformationReplaceOpPhiIdFromDeadPredecessor(30, 25, 10)
                    .IsApplicable(context.get(), transformation_context));
 
   // %14 is not a predecessor of %28 (which contains %29).
-  ASSERT_FALSE(TransformationReplaceOpPhiIdWhenPredecessorDead(29, 14, 10)
+  ASSERT_FALSE(TransformationReplaceOpPhiIdFromDeadPredecessor(29, 14, 10)
                    .IsApplicable(context.get(), transformation_context));
 
   // %19 is not a dead block.
-  ASSERT_FALSE(TransformationReplaceOpPhiIdWhenPredecessorDead(30, 19, 10)
+  ASSERT_FALSE(TransformationReplaceOpPhiIdFromDeadPredecessor(30, 19, 10)
                    .IsApplicable(context.get(), transformation_context));
 
   // %7 does not have the same type id as %25.
   ASSERT_FALSE(
-      TransformationReplaceOpPhiIdWhenPredecessorDead(25, 20, 7).IsApplicable(
+      TransformationReplaceOpPhiIdFromDeadPredecessor(25, 20, 7).IsApplicable(
           context.get(), transformation_context));
 
   // %29 is not available at the end of %20.
-  ASSERT_FALSE(TransformationReplaceOpPhiIdWhenPredecessorDead(25, 20, 29)
+  ASSERT_FALSE(TransformationReplaceOpPhiIdFromDeadPredecessor(25, 20, 29)
                    .IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationReplaceOpPhiIdWhenPredecessorDeadTest, Apply) {
+TEST(TransformationReplaceOpPhiIdFromDeadPredecessorTest, Apply) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -128,19 +128,19 @@ TEST(TransformationReplaceOpPhiIdWhenPredecessorDeadTest, Apply) {
   transformation_context.GetFactManager()->AddFactBlockIsDead(28);
 
   auto transformation1 =
-      TransformationReplaceOpPhiIdWhenPredecessorDead(25, 20, 18);
+      TransformationReplaceOpPhiIdFromDeadPredecessor(25, 20, 18);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
   transformation1.Apply(context.get(), &transformation_context);
 
   auto transformation2 =
-      TransformationReplaceOpPhiIdWhenPredecessorDead(30, 28, 29);
+      TransformationReplaceOpPhiIdFromDeadPredecessor(30, 28, 29);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
   transformation2.Apply(context.get(), &transformation_context);
 
   auto transformation3 =
-      TransformationReplaceOpPhiIdWhenPredecessorDead(29, 17, 10);
+      TransformationReplaceOpPhiIdFromDeadPredecessor(29, 17, 10);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
   transformation3.Apply(context.get(), &transformation_context);

@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_TRANSFORMATION_REPLACE_OPPHI_ID_WHEN_PREDECESSOR_DEAD_H_
-#define SOURCE_FUZZ_TRANSFORMATION_REPLACE_OPPHI_ID_WHEN_PREDECESSOR_DEAD_H_
+#ifndef SOURCE_FUZZ_TRANSFORMATION_REPLACE_OPPHI_ID_FROM_DEAD_PREDECESSOR_H_
+#define SOURCE_FUZZ_TRANSFORMATION_REPLACE_OPPHI_ID_FROM_DEAD_PREDECESSOR_H_
 
 #include "source/fuzz/transformation.h"
 
 namespace spvtools {
 namespace fuzz {
 
-class TransformationReplaceOpPhiIdWhenPredecessorDead : public Transformation {
+class TransformationReplaceOpPhiIdFromDeadPredecessor : public Transformation {
  public:
-  explicit TransformationReplaceOpPhiIdWhenPredecessorDead(
-      const protobufs::TransformationReplaceOpPhiIdWhenPredecessorDead&
+  explicit TransformationReplaceOpPhiIdFromDeadPredecessor(
+      const protobufs::TransformationReplaceOpPhiIdFromDeadPredecessor&
           message);
 
-  TransformationReplaceOpPhiIdWhenPredecessorDead(uint32_t opphi_id,
+  TransformationReplaceOpPhiIdFromDeadPredecessor(uint32_t opphi_id,
                                                   uint32_t pred_label_id,
                                                   uint32_t replacement_id);
 
@@ -48,9 +48,9 @@ class TransformationReplaceOpPhiIdWhenPredecessorDead : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  protobufs::TransformationReplaceOpPhiIdWhenPredecessorDead message_;
+  protobufs::TransformationReplaceOpPhiIdFromDeadPredecessor message_;
 };
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_TRANSFORMATION_REPLACE_OPPHI_ID_WHEN_PREDECESSOR_DEAD_H_
+#endif  // SOURCE_FUZZ_TRANSFORMATION_REPLACE_OPPHI_ID_FROM_DEAD_PREDECESSOR_H_

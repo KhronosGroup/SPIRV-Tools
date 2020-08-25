@@ -417,7 +417,7 @@ message Transformation {
     TransformationAddOpPhiSynonym add_opphi_synonym = 70;
     TransformationMutatePointer mutate_pointer = 71;
     TransformationReplaceIrrelevantId replace_irrelevant_id = 72;
-    TransformationReplaceOpPhiIdWhenPredecessorDead replace_opphi_id_when_predecessor_dead = 73;
+    TransformationReplaceOpPhiIdFromDeadPredecessor replace_opphi_id_from_dead_predecessor = 73;
     // Add additional option using the next available number.
   }
 }
@@ -1544,7 +1544,7 @@ message TransformationReplaceLoadStoreWithCopyMemory {
   InstructionDescriptor store_instruction_descriptor = 2;
 }
 
-message TransformationReplaceOpPhiIdWhenPredecessorDead {
+message TransformationReplaceOpPhiIdFromDeadPredecessor {
 
   // Replaces one of the ids used by an OpPhi instruction, when
   // the corresponding predecessor is dead, with any available id
