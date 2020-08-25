@@ -413,6 +413,7 @@ message Transformation {
     TransformationReplaceAddSubMulWithCarryingExtended replace_add_sub_mul_with_carrying_extended = 66;
     TransformationPropagateInstructionUp propagate_instruction_up = 67;
     TransformationCompositeInsert composite_insert = 68;
+    TransformationInlineFunction inline_function = 69;
     // Add additional option using the next available number.
   }
 }
@@ -1100,6 +1101,20 @@ message TransformationFunctionCall {
   // A descriptor for an instruction in a block before which the new
   // OpFunctionCall instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 4;
+
+}
+
+message TransformationInlineFunction {
+
+  // This transformation inlines a function by mapping the function instructions to fresh ids.
+
+  // Result id of the function call instruction.
+  uint32 function_call_id = 1;
+
+  // For each result id defined by the called function,
+  // this map provides an associated fresh id that can
+  // be used in the inlined version of the function call.
+  repeated UInt32Pair result_id_map = 2;
 
 }
 
