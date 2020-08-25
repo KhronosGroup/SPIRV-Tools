@@ -18,7 +18,7 @@
 #include <memory>
 #include <sstream>
 
-#include "source/fuzz/fact_manager.h"
+#include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 #include "source/fuzz/fuzzer_pass_add_composite_inserts.h"

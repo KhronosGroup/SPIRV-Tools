@@ -32,7 +32,12 @@ if(SPIRV_BUILD_FUZZER)
         call_graph.h
         data_descriptor.h
         equivalence_relation.h
-        fact_manager.h
+        fact_manager/constant_uniform_facts.h
+        fact_manager/data_synonym_and_id_equation_facts.h
+        fact_manager/dead_block_facts.h
+        fact_manager/fact_manager.h
+        fact_manager/irrelevant_value_facts.h
+        fact_manager/livesafe_function_facts.h
         force_render_red.h
         fuzzer.h
         fuzzer_context.h
@@ -176,7 +181,12 @@ if(SPIRV_BUILD_FUZZER)
 
         call_graph.cpp
         data_descriptor.cpp
-        fact_manager.cpp
+        fact_manager/constant_uniform_facts.cpp
+        fact_manager/data_synonym_and_id_equation_facts.cpp
+        fact_manager/dead_block_facts.cpp
+        fact_manager/fact_manager.cpp
+        fact_manager/irrelevant_value_facts.cpp
+        fact_manager/livesafe_function_facts.cpp
         force_render_red.cpp
         fuzzer.cpp
         fuzzer_context.cpp
