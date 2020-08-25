@@ -66,6 +66,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.h
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
+        fuzzer_pass_inline_functions.h
         fuzzer_pass_invert_comparison_operators.h
         fuzzer_pass_interchange_signedness_of_integer_operands.h
         fuzzer_pass_interchange_zero_like_constants.h
@@ -137,6 +138,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.h
         transformation_equation_instruction.h
         transformation_function_call.h
+        transformation_inline_function.h
         transformation_invert_comparison_operator.h
         transformation_load.h
         transformation_make_vector_operation_dynamic.h
@@ -208,6 +210,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.cpp
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
+        fuzzer_pass_inline_functions.cpp
         fuzzer_pass_invert_comparison_operators.cpp
         fuzzer_pass_interchange_signedness_of_integer_operands.cpp
         fuzzer_pass_interchange_zero_like_constants.cpp
@@ -278,6 +281,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.cpp
         transformation_equation_instruction.cpp
         transformation_function_call.cpp
+        transformation_inline_function.cpp
         transformation_invert_comparison_operator.cpp
         transformation_load.cpp
         transformation_make_vector_operation_dynamic.cpp
