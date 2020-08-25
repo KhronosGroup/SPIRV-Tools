@@ -45,7 +45,7 @@ bool TransformationReplaceOpPhiIdWhenPredecessorDead::IsApplicable(
   // |pred_label_id| must be the label id of a dead block.
   auto pred_block = ir_context->get_instr_block(message_.pred_label_id());
   if (!pred_block || pred_block->id() != message_.pred_label_id() ||
-      transformation_context.GetFactManager()->BlockIsDead(pred_block->id())) {
+      !transformation_context.GetFactManager()->BlockIsDead(pred_block->id())) {
     return false;
   }
 
@@ -90,8 +90,7 @@ void TransformationReplaceOpPhiIdWhenPredecessorDead::Apply(
   for (uint32_t i = 1; i < opphi_def->NumInOperands(); i += 2) {
     if (opphi_def->GetSingleWordInOperand(i) == message_.pred_label_id()) {
       // The operand to be replaced is at index i-1.
-      opphi_def->SetInOperand(
-          i - 1, {{SPV_OPERAND_TYPE_RESULT_ID, message_.replacement_id()}});
+      opphi_def->SetInOperand(i - 1, {message_.replacement_id()});
     }
   }
 
