@@ -43,6 +43,18 @@ class CallGraph {
   // invokes.
   std::set<uint32_t> GetIndirectCallees(uint32_t function_id) const;
 
+  // Returns the ids of all the functions in the graph in a topological order,
+  // in relation to the function calls, which are assumed to be recursion-free.
+  const std::vector<uint32_t>& GetFunctionsInTopologicalOrder() const {
+    return functions_in_topological_order_;
+  }
+
+  // Returns the maximum loop nesting depth from which |function_id| can be
+  // called from.
+  uint32_t GetMaxCallNestingDepth(uint32_t function_id) const {
+    return function_max_loop_nesting_depth_.at(function_id);
+  }
+
  private:
   // Pushes the direct callees of |function_id| on to |queue|.
   void PushDirectCallees(uint32_t function_id,
@@ -54,6 +66,19 @@ class CallGraph {
   // For each function id, stores the number of distinct functions that call
   // the function.
   std::map<uint32_t, uint32_t> function_in_degree_;
+
+  // Stores the ids of the functions in a topological order,
+  // in relation to the function calls, which are assumed to be recursion-free.
+  std::vector<uint32_t> functions_in_topological_order_;
+
+  // Computes a topological order of the functions in the graph, writing the
+  // result to |functions_in_topological_order_|. The function calls are assumed
+  // to be recursion-free.
+  void ComputeTopologicalOrderOfFunctions();
+
+  // For each function id, stores the maximum loop nesting depth that the
+  // function can be called from.
+  std::map<uint32_t, uint32_t> function_max_loop_nesting_depth_;
 };
 
 }  // namespace fuzz

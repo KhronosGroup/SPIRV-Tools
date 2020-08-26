@@ -154,12 +154,6 @@ class FuzzerPassDonateModules : public FuzzerPass {
   // array or struct; i.e. it is not an opaque type.
   bool IsBasicType(const opt::Instruction& instruction) const;
 
-  // Returns the ids of all functions in |context| in a topological order in
-  // relation to the call graph of |context|, which is assumed to be recursion-
-  // free.
-  static std::vector<uint32_t> GetFunctionsInCallGraphTopologicalOrder(
-      opt::IRContext* context);
-
   // Functions that supply SPIR-V modules
   std::vector<fuzzerutil::ModuleSupplier> donor_suppliers_;
 };
