@@ -17,6 +17,7 @@ if (${SPIRV_BUILD_FUZZER})
   set(SOURCES
           fuzz_test_util.h
 
+          call_graph_test.cpp
           data_synonym_transformation_test.cpp
           equivalence_relation_test.cpp
           fact_manager_test.cpp

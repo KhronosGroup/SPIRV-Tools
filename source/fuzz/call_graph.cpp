@@ -50,9 +50,14 @@ CallGraph::CallGraph(opt::IRContext* context) {
         // Get the loop nesting depth of this function call.
         uint32_t loop_nesting_depth =
             context->GetStructuredCFGAnalysis()->LoopNestingDepth(block.id());
+        // If inside a loop header, consider the function call nested inside the
+        // loop headed by the block.
+        if (block.IsLoopHeader()) {
+          loop_nesting_depth++;
+        }
 
-        // Update the map if we have not seen this pair (caller, callee) before
-        // or if this function call is from a greater depth.
+        // Update the map if we have not seen this pair (caller, callee)
+        // before or if this function call is from a greater depth.
         if (!known_callees.count(callee) ||
             call_to_max_depth[{function.result_id(), callee}] <
                 loop_nesting_depth) {
