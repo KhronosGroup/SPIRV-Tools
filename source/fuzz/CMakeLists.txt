@@ -30,6 +30,7 @@ if(SPIRV_BUILD_FUZZER)
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
         call_graph.h
+        counter_overflow_id_source.h
         data_descriptor.h
         equivalence_relation.h
         fact_manager/constant_uniform_facts.h
@@ -100,6 +101,7 @@ if(SPIRV_BUILD_FUZZER)
         id_use_descriptor.h
         instruction_descriptor.h
         instruction_message.h
+        overflow_id_source.h
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
@@ -180,6 +182,7 @@ if(SPIRV_BUILD_FUZZER)
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
         call_graph.cpp
+        counter_overflow_id_source.cpp
         data_descriptor.cpp
         fact_manager/constant_uniform_facts.cpp
         fact_manager/data_synonym_and_id_equation_facts.cpp
@@ -249,6 +252,7 @@ if(SPIRV_BUILD_FUZZER)
         id_use_descriptor.cpp
         instruction_descriptor.cpp
         instruction_message.cpp
+        overflow_id_source.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
         replayer.cpp

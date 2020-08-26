@@ -18,6 +18,8 @@
 
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/replayer.h"
+#include "source/opt/build_module.h"
+#include "source/opt/ir_context.h"
 #include "source/spirv_fuzzer_options.h"
 #include "source/util/make_unique.h"
 
@@ -67,6 +69,10 @@ struct Shrinker::Impl {
         validate_during_replay(validate),
         validator_options(options) {}
 
+  // Returns the id bound for the given SPIR-V binary, which is assumed to be
+  // valid.
+  uint32_t GetIdBound(const std::vector<uint32_t>& binary);
+
   const spv_target_env target_env;          // Target environment.
   MessageConsumer consumer;                 // Message consumer.
   const uint32_t step_limit;                // Step limit for reductions.
@@ -75,6 +81,14 @@ struct Shrinker::Impl {
                                             // transformations.
   spv_validator_options validator_options;  // Options to control validation.
 };
+
+uint32_t Shrinker::Impl::GetIdBound(const std::vector<uint32_t>& binary) {
+  // Build the module from the input binary.
+  std::unique_ptr<opt::IRContext> ir_context =
+      BuildModule(target_env, consumer, binary.data(), binary.size());
+  assert(ir_context && "Error building module.");
+  return ir_context->module()->id_bound();
+}
 
 Shrinker::Shrinker(spv_target_env env, uint32_t step_limit,
                    bool validate_during_replay,
@@ -99,7 +113,7 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   // header files being used.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  spvtools::SpirvTools tools(impl_->target_env);
+  SpirvTools tools(impl_->target_env);
   if (!tools.IsValid()) {
     impl_->consumer(SPV_MSG_ERROR, nullptr, {},
                     "Failed to create SPIRV-Tools interface; stopping.");
@@ -127,7 +141,8 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   if (replayer.Run(binary_in, initial_facts, transformation_sequence_in,
                    static_cast<uint32_t>(
                        transformation_sequence_in.transformation_size()),
-                   &current_best_binary, &current_best_transformations) !=
+                   /* No overflow ids */ 0, &current_best_binary,
+                   &current_best_transformations) !=
       Replayer::ReplayerResultStatus::kComplete) {
     return ShrinkerResultStatus::kReplayFailed;
   }
@@ -139,6 +154,12 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
                     "Initial binary is not interesting; stopping.");
     return ShrinkerResultStatus::kInitialBinaryNotInteresting;
   }
+
+  // The largest id used by the module before any shrinking has been applied
+  // serves as the first id that can be used for overflow purposes.
+  const uint32_t first_overflow_id = impl_->GetIdBound(current_best_binary);
+  assert(first_overflow_id >= impl_->GetIdBound(binary_in) &&
+         "Applying transformations should only increase a module's id bound.");
 
   uint32_t attempt = 0;  // Keeps track of the number of shrink attempts that
                          // have been tried, whether successful or not.
@@ -201,7 +222,7 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
               binary_in, initial_facts, transformations_with_chunk_removed,
               static_cast<uint32_t>(
                   transformations_with_chunk_removed.transformation_size()),
-              &next_binary, &next_transformation_sequence) !=
+              first_overflow_id, &next_binary, &next_transformation_sequence) !=
           Replayer::ReplayerResultStatus::kComplete) {
         // Replay should not fail; if it does, we need to abort shrinking.
         return ShrinkerResultStatus::kReplayFailed;
