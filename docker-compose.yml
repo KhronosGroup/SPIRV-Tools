@@ -1,0 +1,12 @@
+version: "3"
+services:
+  build:
+    build:
+      context: .
+      dockerfile: source/wasm/Dockerfile
+      args:
+        EMSDK_VERSION: "1.39.18"
+    working_dir: /app
+    command: ./source/wasm/build.sh
+    volumes:
+      - ./:/app
