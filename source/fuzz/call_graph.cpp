@@ -43,6 +43,55 @@ CallGraph::CallGraph(opt::IRContext* context) {
   ComputeInterproceduralFunctionCallDepths(call_to_max_depth);
 }
 
+void CallGraph::BuildGraphAndGetDepthOfFunctionCalls(
+    opt::IRContext* context,
+    std::map<std::pair<uint32_t, uint32_t>, uint32_t>* call_to_max_depth) {
+  // Consider every function.
+  for (auto& function : *context->module()) {
+    // Avoid considering the same callee of this function multiple times by
+    // recording known callees.
+    std::set<uint32_t> known_callees;
+    // Consider every function call instruction in every block.
+    for (auto& block : function) {
+      for (auto& instruction : block) {
+        if (instruction.opcode() != SpvOpFunctionCall) {
+          continue;
+        }
+        // Get the id of the function being called.
+        uint32_t callee = instruction.GetSingleWordInOperand(0);
+
+        // Get the loop nesting depth of this function call.
+        uint32_t loop_nesting_depth =
+            context->GetStructuredCFGAnalysis()->LoopNestingDepth(block.id());
+        // If inside a loop header, consider the function call nested inside the
+        // loop headed by the block.
+        if (block.IsLoopHeader()) {
+          loop_nesting_depth++;
+        }
+
+        // Update the map if we have not seen this pair (caller, callee)
+        // before or if this function call is from a greater depth.
+        if (!known_callees.count(callee) ||
+            call_to_max_depth->at({function.result_id(), callee}) <
+                loop_nesting_depth) {
+          call_to_max_depth->insert(
+              {{function.result_id(), callee}, loop_nesting_depth});
+        }
+
+        if (known_callees.count(callee)) {
+          // We have already considered a call to this function - ignore it.
+          continue;
+        }
+        // Increase the callee's in-degree and add an edge to the call graph.
+        function_in_degree_[callee]++;
+        call_graph_edges_[function.result_id()].insert(callee);
+        // Mark the callee as 'known'.
+        known_callees.insert(callee);
+      }
+    }
+  }
+}
+
 void CallGraph::ComputeTopologicalOrderOfFunctions() {
   // This is an implementation of Kahn’s algorithm for topological sorting.
 
@@ -82,55 +131,6 @@ void CallGraph::ComputeTopologicalOrderOfFunctions() {
          "Every function should appear in the sort.");
 
   return;
-}
-
-void CallGraph::BuildGraphAndGetDepthOfFunctionCalls(
-    opt::IRContext* context,
-    std::map<std::pair<uint32_t, uint32_t>, uint32_t>* call_to_max_depth) {
-  // Consider every function.
-  for (auto& function : *context->module()) {
-    // Avoid considering the same callee of this function multiple times by
-    // recording known callees.
-    std::set<uint32_t> known_callees;
-    // Consider every function call instruction in every block.
-    for (auto& block : function) {
-      for (auto& instruction : block) {
-        if (instruction.opcode() != SpvOpFunctionCall) {
-          continue;
-        }
-        // Get the id of the function being called.
-        uint32_t callee = instruction.GetSingleWordInOperand(0);
-
-        // Get the loop nesting depth of this function call.
-        uint32_t loop_nesting_depth =
-            context->GetStructuredCFGAnalysis()->LoopNestingDepth(block.id());
-        // If inside a loop header, consider the function call nested inside the
-        // loop headed by the block.
-        if (block.IsLoopHeader()) {
-          loop_nesting_depth++;
-        }
-
-        // Update the map if we have not seen this pair (caller, callee)
-        // before or if this function call is from a greater depth.
-        if (!known_callees.count(callee) ||
-            call_to_max_depth->at({function.result_id(), callee}) <
-                loop_nesting_depth) {
-          call_to_max_depth->at({function.result_id(), callee}) =
-              loop_nesting_depth;
-        }
-
-        if (known_callees.count(callee)) {
-          // We have already considered a call to this function - ignore it.
-          continue;
-        }
-        // Increase the callee's in-degree and add an edge to the call graph.
-        function_in_degree_[callee]++;
-        call_graph_edges_[function.result_id()].insert(callee);
-        // Mark the callee as 'known'.
-        known_callees.insert(callee);
-      }
-    }
-  }
 }
 
 void CallGraph::ComputeInterproceduralFunctionCallDepths(
