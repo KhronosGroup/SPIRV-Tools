@@ -246,8 +246,8 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
         fuzzer_pass_duplicate_regions_with_selections.cpp
-        fuzzer_pass_inline_functions.cpp
         fuzzer_pass_flatten_conditional_branches.cpp
+        fuzzer_pass_inline_functions.cpp
         fuzzer_pass_invert_comparison_operators.cpp
         fuzzer_pass_interchange_signedness_of_integer_operands.cpp
         fuzzer_pass_interchange_zero_like_constants.cpp

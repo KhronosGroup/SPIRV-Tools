@@ -277,10 +277,10 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     MaybeAddPass<FuzzerPassDuplicateRegionsWithSelections>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
-    MaybeAddPass<FuzzerPassInlineFunctions>(
+    MaybeAddPass<FuzzerPassFlattenConditionalBranches>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
-    MaybeAddPass<FuzzerPassFlattenConditionalBranches>(
+    MaybeAddPass<FuzzerPassInlineFunctions>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassInvertComparisonOperators>(
