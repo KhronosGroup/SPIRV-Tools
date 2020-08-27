@@ -1258,12 +1258,6 @@ message TransformationFlattenConditionalBranch {
   // enclosed inside smaller conditional before flattening the
   // main one, and the corresponding fresh ids needed.
   repeated InstToIdsForEnclosing inst_to_ids_for_enclosing = 2;
-
-  // A list of fresh ids to be used for instructions that need them, if
-  // they are not in instruction_to_fresh_ids. This allows the
-  // transformation to be applicable even if shrinking causes some
-  // unexpected instructions to appear in the module.
-  repeated uint32 overflow_id = 3;
 }
 
 message TransformationFunctionCall {

@@ -28,8 +28,7 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
     uint32_t header_block_id,
     std::vector<
         std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
-        instructions_to_ids_for_enclosing,
-    std::vector<uint32_t> overflow_ids) {
+        instructions_to_ids_for_enclosing) {
   message_.set_header_block_id(header_block_id);
   for (auto const& pair : instructions_to_ids_for_enclosing) {
     protobufs::InstToIdsForEnclosing inst_to_ids;
@@ -41,14 +40,11 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
     inst_to_ids.set_placeholder_result_id(pair.second.placeholder_result_id);
     *message_.add_inst_to_ids_for_enclosing() = inst_to_ids;
   }
-  for (auto id : overflow_ids) {
-    message_.add_overflow_id(id);
-  }
 }
 
 bool TransformationFlattenConditionalBranch::IsApplicable(
     opt::IRContext* ir_context,
-    const TransformationContext& /* unused */) const {
+    const TransformationContext& transformation_context) const {
   uint32_t header_block_id = message_.header_block_id();
   auto header_block = fuzzerutil::MaybeFindBlock(ir_context, header_block_id);
 
@@ -81,14 +77,6 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
 
     std::set<uint32_t> used_fresh_ids;
 
-    // Check the overflow ids.
-    for (uint32_t id : message_.overflow_id()) {
-      if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                        &used_fresh_ids)) {
-        return false;
-      }
-    }
-
     // Check the ids in the map.
     for (const auto& inst_to_ids : instructions_to_ids) {
       // Check the ids needed for all of the instructions that need to be
@@ -115,25 +103,12 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     }
   }
 
-  // Keep track of the number of overflow ids still available in the overflow
-  // pool, as we go through the instructions.
-  int remaining_overflow_ids = message_.overflow_id_size();
-
+  // If some instructions that require ids are not in the map, the
+  // transformation needs overflow ids to be applicable.
   for (auto instruction : instructions_that_need_ids) {
-    // The ids needed depend on the type of instruction.
-    bool inst_needs_placeholder =
-        InstructionNeedsPlaceholder(ir_context, *instruction);
-
-    if (instructions_to_ids.count(instruction) == 0) {
-      // If there is no mapping, we need to rely on the pool of overflow ids,
-      // where there must be enough remaining ids, that is: 5 if the instruction
-      // needs a placeholder, 2 otherwise.
-
-      remaining_overflow_ids -= inst_needs_placeholder ? 5 : 2;
-
-      if (remaining_overflow_ids < 0) {
-        return false;
-      }
+    if (instructions_to_ids.count(instruction) == 0 &&
+        !transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
+      return false;
     }
   }
 
@@ -156,9 +131,6 @@ void TransformationFlattenConditionalBranch::Apply(
 
   // Get the mapping from instructions to fresh ids.
   auto instructions_to_fresh_ids = GetInstructionsToIdsForEnclosing(ir_context);
-
-  // Keep track of the number of overflow ids used.
-  uint32_t overflow_ids_used = 0;
 
   auto branch_instruction = header_block->terminator();
 
@@ -210,17 +182,23 @@ void TransformationFlattenConditionalBranch::Apply(
           fresh_ids = instructions_to_fresh_ids[instruction];
         } else {
           // If we could not get it from the map, use overflow ids.
-          fresh_ids.merge_block_id = message_.overflow_id(overflow_ids_used++);
+          fresh_ids.merge_block_id =
+              transformation_context->GetOverflowIdSource()
+                  ->GetNextOverflowId();
           fresh_ids.execute_block_id =
-              message_.overflow_id(overflow_ids_used++);
+              transformation_context->GetOverflowIdSource()
+                  ->GetNextOverflowId();
 
           if (InstructionNeedsPlaceholder(ir_context, *instruction)) {
             fresh_ids.actual_result_id =
-                message_.overflow_id(overflow_ids_used++);
+                transformation_context->GetOverflowIdSource()
+                    ->GetNextOverflowId();
             fresh_ids.alternative_block_id =
-                message_.overflow_id(overflow_ids_used++);
+                transformation_context->GetOverflowIdSource()
+                    ->GetNextOverflowId();
             fresh_ids.placeholder_result_id =
-                message_.overflow_id(overflow_ids_used++);
+                transformation_context->GetOverflowIdSource()
+                    ->GetNextOverflowId();
           }
         }
 

@@ -14,6 +14,7 @@
 
 #include "source/fuzz/transformation_flatten_conditional_branch.h"
 
+#include "source/fuzz/counter_overflow_id_source.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -389,32 +390,32 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // The selection construct with header block %31 contains an OpLoad and an
-  // OpStore, requiring some fresh ids.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(31).IsApplicable(
-      context.get(), transformation_context));
+#ifndef NDEBUG
+  // The following checks lead to assertion failures, since some entries
+  // requiring fresh ids are not present in the map, and the transformation
+  // context does not have a source overflow ids.
 
-  // Not all of the instructions are given in the map and there are not enough
-  // overflow ids.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+  ASSERT_DEATH(TransformationFlattenConditionalBranch(31).IsApplicable(
+                   context.get(), transformation_context),
+               "Bad attempt to query whether overflow ids are available.");
+
+  ASSERT_DEATH(TransformationFlattenConditionalBranch(
                    31, {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
                          {100, 101, 102, 103, 104}}})
-                   .IsApplicable(context.get(), transformation_context));
+                   .IsApplicable(context.get(), transformation_context),
+               "Bad attempt to query whether overflow ids are available.");
+#endif
 
   // The map maps from an instruction to a list with not enough fresh ids.
-  ASSERT_FALSE(
-      TransformationFlattenConditionalBranch(
-          31,
-          {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {100, 101, 102, 103}}},
-          {105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   31, {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+                         {100, 101, 102, 103}}})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Not all fresh ids given are distinct.
   ASSERT_FALSE(TransformationFlattenConditionalBranch(
-                   31,
-                   {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
-                     {100, 101, 102, 103, 104}}},
-                   {103, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115})
+                   31, {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+                         {100, 100, 102, 103, 104}}})
                    .IsApplicable(context.get(), transformation_context));
 
   // %48 heads a construct containing an OpSampledImage instruction.
@@ -433,17 +434,20 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
 
   transformation1.Apply(context.get(), &transformation_context);
 
+  // Make a new transformation context with a source of overflow ids.
+  TransformationContext new_transformation_context(
+      &fact_manager, validator_options,
+      MakeUnique<CounterOverflowIdSource>(1000));
+
   auto transformation2 = TransformationFlattenConditionalBranch(
-      36,
-      {{MakeInstructionDescriptor(8, SpvOpFunctionCall, 0),
-        {112, 108, 109, 110, 111}},
-       {MakeInstructionDescriptor(8, SpvOpStore, 0), {114, 113}}},
-      {115, 116});
+      36, {{MakeInstructionDescriptor(8, SpvOpFunctionCall, 0),
+            {112, 108, 109, 110, 111}},
+           {MakeInstructionDescriptor(8, SpvOpStore, 0), {114, 113}}});
 
   ASSERT_TRUE(
-      transformation2.IsApplicable(context.get(), transformation_context));
+      transformation2.IsApplicable(context.get(), new_transformation_context));
 
-  transformation2.Apply(context.get(), &transformation_context);
+  transformation2.Apply(context.get(), &new_transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -527,12 +531,12 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpBranch %45
          %45 = OpLabel
          %47 = OpAccessChain %21 %5 %14
-               OpSelectionMerge %115 None
-               OpBranchConditional %20 %115 %116
-        %116 = OpLabel
+               OpSelectionMerge %1000 None
+               OpBranchConditional %20 %1000 %1001
+       %1001 = OpLabel
                OpStore %47 %14
-               OpBranch %115
-        %115 = OpLabel
+               OpBranch %1000
+       %1000 = OpLabel
                OpBranch %46
          %46 = OpLabel
                OpStore %4 %14
@@ -615,10 +619,14 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
+#ifndef NDEBUG
   // The selection construct headed by %7 requires fresh ids because it contains
-  // a function call.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(7).IsApplicable(
-      context.get(), transformation_context));
+  // a function call. This causes an assertion failure because transformation
+  // context does not have a source of overflow ids.
+  ASSERT_DEATH(TransformationFlattenConditionalBranch(7).IsApplicable(
+                   context.get(), transformation_context),
+               "Bad attempt to query whether overflow ids are available.");
+#endif
 
   auto transformation = TransformationFlattenConditionalBranch(
       7, {{{MakeInstructionDescriptor(10, SpvOpFunctionCall, 0), {100, 101}}}});

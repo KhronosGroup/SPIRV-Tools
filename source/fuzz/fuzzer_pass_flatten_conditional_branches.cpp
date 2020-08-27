@@ -86,13 +86,9 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
           {MakeInstructionDescriptor(GetIRContext(), instruction), info});
     }
 
-    // Add 10 overflow ids to account for possible changes in the module.
-    auto overflow_ids = GetFuzzerContext()->GetFreshIds(10);
-
     // Apply the transformation.
     ApplyTransformation(TransformationFlattenConditionalBranch(
-        header->id(), std::move(instructions_to_fresh_ids),
-        std::move(overflow_ids)));
+        header->id(), std::move(instructions_to_fresh_ids)));
   }
 }
 }  // namespace fuzz

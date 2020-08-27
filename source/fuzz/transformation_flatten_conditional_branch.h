@@ -53,8 +53,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
       uint32_t header_block_id,
       std::vector<
           std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
-          instructions_to_ids_for_enclosing = {},
-      std::vector<uint32_t> overflow_ids = {});
+          instructions_to_ids_for_enclosing = {});
 
   // - |message_.header_block_id| must be the label id of a reachable selection
   //   header, which ends with an OpBranchConditional instruction.
