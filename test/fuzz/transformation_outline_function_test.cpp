@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_outline_function.h"
+
+#include "source/fuzz/counter_overflow_id_source.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -2579,9 +2581,10 @@ TEST(TransformationOutlineFunctionTest, ExitBlockHeadsLoop) {
 }
 
 TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
-  // This tests outlining of some non-trivial code.
+  // This tests outlining of some non-trivial code, and also tests the way
+  // overflow ids are used by the transformation.
 
-  std::string shader = R"(
+  std::string reference_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2682,13 +2685,7 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
 
   TransformationOutlineFunction transformation(
       /*entry_block*/ 150,
@@ -2702,123 +2699,317 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
       /*input_id_to_fresh_id*/ {{102, 300}, {103, 301}, {40, 302}},
       /*output_id_to_fresh_id*/ {{106, 400}, {107, 401}});
 
-  ASSERT_TRUE(
-      transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  TransformationOutlineFunction transformation_with_missing_input_id(
+      /*entry_block*/ 150,
+      /*exit_block*/ 1001,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {{102, 300}, {40, 302}},
+      /*output_id_to_fresh_id*/ {{106, 400}, {107, 401}});
 
-  std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %85
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-               OpName %28 "buf"
-               OpMemberName %28 0 "u1"
-               OpMemberName %28 1 "u2"
-               OpName %30 ""
-               OpName %85 "color"
-               OpMemberDecorate %28 0 Offset 0
-               OpMemberDecorate %28 1 Offset 4
-               OpDecorate %28 Block
-               OpDecorate %30 DescriptorSet 0
-               OpDecorate %30 Binding 0
-               OpDecorate %85 Location 0
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeFloat 32
-          %7 = OpTypeVector %6 4
-         %10 = OpConstant %6 1
-         %11 = OpConstant %6 2
-         %12 = OpConstant %6 3
-         %13 = OpConstant %6 4
-         %14 = OpConstantComposite %7 %10 %11 %12 %13
-         %15 = OpTypeInt 32 1
-         %18 = OpConstant %15 0
-         %28 = OpTypeStruct %6 %6
-         %29 = OpTypePointer Uniform %28
-         %30 = OpVariable %29 Uniform
-         %31 = OpTypePointer Uniform %6
-         %35 = OpTypeBool
-         %39 = OpConstant %15 1
-         %84 = OpTypePointer Output %7
-         %85 = OpVariable %84 Output
-        %114 = OpConstant %15 8
-        %200 = OpTypeStruct %7 %15
-        %201 = OpTypeFunction %200 %15 %7 %15
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-               OpBranch %22
-         %22 = OpLabel
-        %103 = OpPhi %15 %18 %5 %106 %43
-        %102 = OpPhi %7 %14 %5 %107 %43
-        %101 = OpPhi %15 %18 %5 %40 %43
-         %32 = OpAccessChain %31 %30 %18
-         %33 = OpLoad %6 %32
-         %34 = OpConvertFToS %15 %33
-         %36 = OpSLessThan %35 %101 %34
-               OpLoopMerge %24 %43 None
-               OpBranchConditional %36 %23 %24
-         %23 = OpLabel
-         %40 = OpIAdd %15 %101 %39
-               OpBranch %150
-        %150 = OpLabel
-        %204 = OpFunctionCall %200 %202 %103 %102 %40
-        %107 = OpCompositeExtract %7 %204 0
-        %106 = OpCompositeExtract %15 %204 1
-               OpBranch %43
-         %43 = OpLabel
-               OpBranch %22
-         %24 = OpLabel
-         %87 = OpCompositeExtract %6 %102 0
-         %91 = OpConvertSToF %6 %103
-         %92 = OpCompositeConstruct %7 %87 %11 %91 %10
-               OpStore %85 %92
-               OpReturn
-               OpFunctionEnd
-        %202 = OpFunction %200 None %201
-        %301 = OpFunctionParameter %15
-        %300 = OpFunctionParameter %7
-        %302 = OpFunctionParameter %15
-        %203 = OpLabel
-               OpBranch %41
-         %41 = OpLabel
-        %401 = OpPhi %7 %300 %203 %111 %65
-        %400 = OpPhi %15 %301 %203 %110 %65
-        %104 = OpPhi %15 %302 %203 %81 %65
-         %47 = OpAccessChain %31 %30 %39
-         %48 = OpLoad %6 %47
-         %49 = OpConvertFToS %15 %48
-         %50 = OpSLessThan %35 %104 %49
-               OpLoopMerge %1000 %65 None
-               OpBranchConditional %50 %42 %1000
-         %42 = OpLabel
-         %60 = OpIAdd %15 %400 %114
-         %63 = OpSGreaterThan %35 %104 %60
-               OpBranchConditional %63 %64 %65
-         %64 = OpLabel
-         %71 = OpCompositeExtract %6 %401 0
-         %72 = OpFAdd %6 %71 %11
-         %97 = OpCompositeInsert %7 %72 %401 0
-         %76 = OpCompositeExtract %6 %401 3
-         %77 = OpConvertFToS %15 %76
-         %79 = OpIAdd %15 %60 %77
-               OpBranch %65
-         %65 = OpLabel
-        %111 = OpPhi %7 %401 %42 %97 %64
-        %110 = OpPhi %15 %60 %42 %79 %64
-         %81 = OpIAdd %15 %104 %39
-               OpBranch %41
-       %1000 = OpLabel
-               OpBranch %1001
-       %1001 = OpLabel
-        %205 = OpCompositeConstruct %200 %401 %400
-               OpReturnValue %205
-               OpFunctionEnd
-  )";
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+  TransformationOutlineFunction transformation_with_missing_output_id(
+      /*entry_block*/ 150,
+      /*exit_block*/ 1001,
+      /*new_function_struct_return_type_id*/ 200,
+      /*new_function_type_id*/ 201,
+      /*new_function_id*/ 202,
+      /*new_function_region_entry_block*/ 203,
+      /*new_caller_result_id*/ 204,
+      /*new_callee_result_id*/ 205,
+      /*input_id_to_fresh_id*/ {{102, 300}, {103, 301}, {40, 302}},
+      /*output_id_to_fresh_id*/ {{106, 400}});
+
+  TransformationOutlineFunction
+      transformation_with_missing_input_and_output_ids(
+          /*entry_block*/ 150,
+          /*exit_block*/ 1001,
+          /*new_function_struct_return_type_id*/ 200,
+          /*new_function_type_id*/ 201,
+          /*new_function_id*/ 202,
+          /*new_function_region_entry_block*/ 203,
+          /*new_caller_result_id*/ 204,
+          /*new_callee_result_id*/ 205,
+          /*input_id_to_fresh_id*/ {{102, 300}, {40, 302}},
+          /*output_id_to_fresh_id*/ {{106, 400}});
+
+  {
+    const auto context =
+        BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+    ASSERT_TRUE(IsValid(env, context.get()));
+
+    FactManager fact_manager;
+    TransformationContext transformation_context(&fact_manager,
+                                                 validator_options);
+
+#ifndef NDEBUG
+    // We expect the following applicability checks to lead to assertion
+    // failures since the transformations are missing input or output ids, and
+    // the transformation context does not have a source of overflow ids.
+    ASSERT_DEATH(transformation_with_missing_input_id.IsApplicable(
+                     context.get(), transformation_context),
+                 "Bad attempt to query whether overflow ids are available.");
+    ASSERT_DEATH(transformation_with_missing_output_id.IsApplicable(
+                     context.get(), transformation_context),
+                 "Bad attempt to query whether overflow ids are available.");
+    ASSERT_DEATH(transformation_with_missing_input_and_output_ids.IsApplicable(
+                     context.get(), transformation_context),
+                 "Bad attempt to query whether overflow ids are available.");
+#endif
+
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+
+    std::string variant_shader = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main" %85
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %28 "buf"
+                 OpMemberName %28 0 "u1"
+                 OpMemberName %28 1 "u2"
+                 OpName %30 ""
+                 OpName %85 "color"
+                 OpMemberDecorate %28 0 Offset 0
+                 OpMemberDecorate %28 1 Offset 4
+                 OpDecorate %28 Block
+                 OpDecorate %30 DescriptorSet 0
+                 OpDecorate %30 Binding 0
+                 OpDecorate %85 Location 0
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeFloat 32
+            %7 = OpTypeVector %6 4
+           %10 = OpConstant %6 1
+           %11 = OpConstant %6 2
+           %12 = OpConstant %6 3
+           %13 = OpConstant %6 4
+           %14 = OpConstantComposite %7 %10 %11 %12 %13
+           %15 = OpTypeInt 32 1
+           %18 = OpConstant %15 0
+           %28 = OpTypeStruct %6 %6
+           %29 = OpTypePointer Uniform %28
+           %30 = OpVariable %29 Uniform
+           %31 = OpTypePointer Uniform %6
+           %35 = OpTypeBool
+           %39 = OpConstant %15 1
+           %84 = OpTypePointer Output %7
+           %85 = OpVariable %84 Output
+          %114 = OpConstant %15 8
+          %200 = OpTypeStruct %7 %15
+          %201 = OpTypeFunction %200 %15 %7 %15
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+                 OpBranch %22
+           %22 = OpLabel
+          %103 = OpPhi %15 %18 %5 %106 %43
+          %102 = OpPhi %7 %14 %5 %107 %43
+          %101 = OpPhi %15 %18 %5 %40 %43
+           %32 = OpAccessChain %31 %30 %18
+           %33 = OpLoad %6 %32
+           %34 = OpConvertFToS %15 %33
+           %36 = OpSLessThan %35 %101 %34
+                 OpLoopMerge %24 %43 None
+                 OpBranchConditional %36 %23 %24
+           %23 = OpLabel
+           %40 = OpIAdd %15 %101 %39
+                 OpBranch %150
+          %150 = OpLabel
+          %204 = OpFunctionCall %200 %202 %103 %102 %40
+          %107 = OpCompositeExtract %7 %204 0
+          %106 = OpCompositeExtract %15 %204 1
+                 OpBranch %43
+           %43 = OpLabel
+                 OpBranch %22
+           %24 = OpLabel
+           %87 = OpCompositeExtract %6 %102 0
+           %91 = OpConvertSToF %6 %103
+           %92 = OpCompositeConstruct %7 %87 %11 %91 %10
+                 OpStore %85 %92
+                 OpReturn
+                 OpFunctionEnd
+          %202 = OpFunction %200 None %201
+          %301 = OpFunctionParameter %15
+          %300 = OpFunctionParameter %7
+          %302 = OpFunctionParameter %15
+          %203 = OpLabel
+                 OpBranch %41
+           %41 = OpLabel
+          %401 = OpPhi %7 %300 %203 %111 %65
+          %400 = OpPhi %15 %301 %203 %110 %65
+          %104 = OpPhi %15 %302 %203 %81 %65
+           %47 = OpAccessChain %31 %30 %39
+           %48 = OpLoad %6 %47
+           %49 = OpConvertFToS %15 %48
+           %50 = OpSLessThan %35 %104 %49
+                 OpLoopMerge %1000 %65 None
+                 OpBranchConditional %50 %42 %1000
+           %42 = OpLabel
+           %60 = OpIAdd %15 %400 %114
+           %63 = OpSGreaterThan %35 %104 %60
+                 OpBranchConditional %63 %64 %65
+           %64 = OpLabel
+           %71 = OpCompositeExtract %6 %401 0
+           %72 = OpFAdd %6 %71 %11
+           %97 = OpCompositeInsert %7 %72 %401 0
+           %76 = OpCompositeExtract %6 %401 3
+           %77 = OpConvertFToS %15 %76
+           %79 = OpIAdd %15 %60 %77
+                 OpBranch %65
+           %65 = OpLabel
+          %111 = OpPhi %7 %401 %42 %97 %64
+          %110 = OpPhi %15 %60 %42 %79 %64
+           %81 = OpIAdd %15 %104 %39
+                 OpBranch %41
+         %1000 = OpLabel
+                 OpBranch %1001
+         %1001 = OpLabel
+          %205 = OpCompositeConstruct %200 %401 %400
+                 OpReturnValue %205
+                 OpFunctionEnd
+    )";
+    ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+  }
+
+  {
+    const auto context =
+        BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+    ASSERT_TRUE(IsValid(env, context.get()));
+    FactManager fact_manager;
+    TransformationContext new_transformation_context(
+        &fact_manager, validator_options,
+        MakeUnique<CounterOverflowIdSource>(2000));
+    ASSERT_TRUE(transformation_with_missing_input_id.IsApplicable(
+        context.get(), new_transformation_context));
+    ASSERT_TRUE(transformation_with_missing_output_id.IsApplicable(
+        context.get(), new_transformation_context));
+    ASSERT_TRUE(transformation_with_missing_input_and_output_ids.IsApplicable(
+        context.get(), new_transformation_context));
+    transformation_with_missing_input_and_output_ids.Apply(
+        context.get(), &new_transformation_context);
+    ASSERT_TRUE(IsValid(env, context.get()));
+
+    std::string variant_shader = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main" %85
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %28 "buf"
+                 OpMemberName %28 0 "u1"
+                 OpMemberName %28 1 "u2"
+                 OpName %30 ""
+                 OpName %85 "color"
+                 OpMemberDecorate %28 0 Offset 0
+                 OpMemberDecorate %28 1 Offset 4
+                 OpDecorate %28 Block
+                 OpDecorate %30 DescriptorSet 0
+                 OpDecorate %30 Binding 0
+                 OpDecorate %85 Location 0
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeFloat 32
+            %7 = OpTypeVector %6 4
+           %10 = OpConstant %6 1
+           %11 = OpConstant %6 2
+           %12 = OpConstant %6 3
+           %13 = OpConstant %6 4
+           %14 = OpConstantComposite %7 %10 %11 %12 %13
+           %15 = OpTypeInt 32 1
+           %18 = OpConstant %15 0
+           %28 = OpTypeStruct %6 %6
+           %29 = OpTypePointer Uniform %28
+           %30 = OpVariable %29 Uniform
+           %31 = OpTypePointer Uniform %6
+           %35 = OpTypeBool
+           %39 = OpConstant %15 1
+           %84 = OpTypePointer Output %7
+           %85 = OpVariable %84 Output
+          %114 = OpConstant %15 8
+          %200 = OpTypeStruct %7 %15
+          %201 = OpTypeFunction %200 %15 %7 %15
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+                 OpBranch %22
+           %22 = OpLabel
+          %103 = OpPhi %15 %18 %5 %106 %43
+          %102 = OpPhi %7 %14 %5 %107 %43
+          %101 = OpPhi %15 %18 %5 %40 %43
+           %32 = OpAccessChain %31 %30 %18
+           %33 = OpLoad %6 %32
+           %34 = OpConvertFToS %15 %33
+           %36 = OpSLessThan %35 %101 %34
+                 OpLoopMerge %24 %43 None
+                 OpBranchConditional %36 %23 %24
+           %23 = OpLabel
+           %40 = OpIAdd %15 %101 %39
+                 OpBranch %150
+          %150 = OpLabel
+          %204 = OpFunctionCall %200 %202 %103 %102 %40
+          %107 = OpCompositeExtract %7 %204 0
+          %106 = OpCompositeExtract %15 %204 1
+                 OpBranch %43
+           %43 = OpLabel
+                 OpBranch %22
+           %24 = OpLabel
+           %87 = OpCompositeExtract %6 %102 0
+           %91 = OpConvertSToF %6 %103
+           %92 = OpCompositeConstruct %7 %87 %11 %91 %10
+                 OpStore %85 %92
+                 OpReturn
+                 OpFunctionEnd
+          %202 = OpFunction %200 None %201
+         %2000 = OpFunctionParameter %15
+          %300 = OpFunctionParameter %7
+          %302 = OpFunctionParameter %15
+          %203 = OpLabel
+                 OpBranch %41
+           %41 = OpLabel
+         %2001 = OpPhi %7 %300 %203 %111 %65
+          %400 = OpPhi %15 %2000 %203 %110 %65
+          %104 = OpPhi %15 %302 %203 %81 %65
+           %47 = OpAccessChain %31 %30 %39
+           %48 = OpLoad %6 %47
+           %49 = OpConvertFToS %15 %48
+           %50 = OpSLessThan %35 %104 %49
+                 OpLoopMerge %1000 %65 None
+                 OpBranchConditional %50 %42 %1000
+           %42 = OpLabel
+           %60 = OpIAdd %15 %400 %114
+           %63 = OpSGreaterThan %35 %104 %60
+                 OpBranchConditional %63 %64 %65
+           %64 = OpLabel
+           %71 = OpCompositeExtract %6 %2001 0
+           %72 = OpFAdd %6 %71 %11
+           %97 = OpCompositeInsert %7 %72 %2001 0
+           %76 = OpCompositeExtract %6 %2001 3
+           %77 = OpConvertFToS %15 %76
+           %79 = OpIAdd %15 %60 %77
+                 OpBranch %65
+           %65 = OpLabel
+          %111 = OpPhi %7 %2001 %42 %97 %64
+          %110 = OpPhi %15 %60 %42 %79 %64
+           %81 = OpIAdd %15 %104 %39
+                 OpBranch %41
+         %1000 = OpLabel
+                 OpBranch %1001
+         %1001 = OpLabel
+          %205 = OpCompositeConstruct %200 %2001 %400
+                 OpReturnValue %205
+                 OpFunctionEnd
+    )";
+    ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+  }
 }
 
 TEST(TransformationOutlineFunctionTest, Miscellaneous2) {

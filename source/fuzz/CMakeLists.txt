@@ -30,14 +30,21 @@ if(SPIRV_BUILD_FUZZER)
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
         call_graph.h
+        counter_overflow_id_source.h
         data_descriptor.h
         equivalence_relation.h
-        fact_manager.h
+        fact_manager/constant_uniform_facts.h
+        fact_manager/data_synonym_and_id_equation_facts.h
+        fact_manager/dead_block_facts.h
+        fact_manager/fact_manager.h
+        fact_manager/irrelevant_value_facts.h
+        fact_manager/livesafe_function_facts.h
         force_render_red.h
         fuzzer.h
         fuzzer_context.h
         fuzzer_pass.h
         fuzzer_pass_add_access_chains.h
+        fuzzer_pass_add_composite_inserts.h
         fuzzer_pass_add_composite_types.h
         fuzzer_pass_add_copy_memory.h
         fuzzer_pass_add_dead_blocks.h
@@ -65,6 +72,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.h
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
+        fuzzer_pass_inline_functions.h
         fuzzer_pass_invert_comparison_operators.h
         fuzzer_pass_interchange_signedness_of_integer_operands.h
         fuzzer_pass_interchange_zero_like_constants.h
@@ -93,6 +101,7 @@ if(SPIRV_BUILD_FUZZER)
         id_use_descriptor.h
         instruction_descriptor.h
         instruction_message.h
+        overflow_id_source.h
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
@@ -131,10 +140,12 @@ if(SPIRV_BUILD_FUZZER)
         transformation_adjust_branch_weights.h
         transformation_composite_construct.h
         transformation_composite_extract.h
+        transformation_composite_insert.h
         transformation_compute_data_synonym_fact_closure.h
         transformation_context.h
         transformation_equation_instruction.h
         transformation_function_call.h
+        transformation_inline_function.h
         transformation_invert_comparison_operator.h
         transformation_load.h
         transformation_make_vector_operation_dynamic.h
@@ -171,13 +182,20 @@ if(SPIRV_BUILD_FUZZER)
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
         call_graph.cpp
+        counter_overflow_id_source.cpp
         data_descriptor.cpp
-        fact_manager.cpp
+        fact_manager/constant_uniform_facts.cpp
+        fact_manager/data_synonym_and_id_equation_facts.cpp
+        fact_manager/dead_block_facts.cpp
+        fact_manager/fact_manager.cpp
+        fact_manager/irrelevant_value_facts.cpp
+        fact_manager/livesafe_function_facts.cpp
         force_render_red.cpp
         fuzzer.cpp
         fuzzer_context.cpp
         fuzzer_pass.cpp
         fuzzer_pass_add_access_chains.cpp
+        fuzzer_pass_add_composite_inserts.cpp
         fuzzer_pass_add_composite_types.cpp
         fuzzer_pass_add_copy_memory.cpp
         fuzzer_pass_add_dead_blocks.cpp
@@ -205,6 +223,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.cpp
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
+        fuzzer_pass_inline_functions.cpp
         fuzzer_pass_invert_comparison_operators.cpp
         fuzzer_pass_interchange_signedness_of_integer_operands.cpp
         fuzzer_pass_interchange_zero_like_constants.cpp
@@ -233,6 +252,7 @@ if(SPIRV_BUILD_FUZZER)
         id_use_descriptor.cpp
         instruction_descriptor.cpp
         instruction_message.cpp
+        overflow_id_source.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
         replayer.cpp
@@ -270,10 +290,12 @@ if(SPIRV_BUILD_FUZZER)
         transformation_adjust_branch_weights.cpp
         transformation_composite_construct.cpp
         transformation_composite_extract.cpp
+        transformation_composite_insert.cpp
         transformation_compute_data_synonym_fact_closure.cpp
         transformation_context.cpp
         transformation_equation_instruction.cpp
         transformation_function_call.cpp
+        transformation_inline_function.cpp
         transformation_invert_comparison_operator.cpp
         transformation_load.cpp
         transformation_make_vector_operation_dynamic.cpp
