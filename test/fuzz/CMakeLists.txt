@@ -21,6 +21,7 @@ if (${SPIRV_BUILD_FUZZER})
           equivalence_relation_test.cpp
           fact_manager_test.cpp
           fuzz_test_util.cpp
+          fuzzer_pass_add_opphi_synonyms_test.cpp
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           fuzzer_pass_outline_functions_test.cpp
@@ -42,6 +43,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_local_variable_test.cpp
           transformation_add_loop_preheader_test.cpp
           transformation_add_no_contraction_decoration_test.cpp
+          transformation_add_opphi_synonym_test.cpp
           transformation_add_parameter_test.cpp
           transformation_add_relaxed_decoration_test.cpp
           transformation_add_synonym_test.cpp
