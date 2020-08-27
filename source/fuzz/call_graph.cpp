@@ -33,95 +33,14 @@ CallGraph::CallGraph(opt::IRContext* context) {
   // to the corresponding maximum depth.
   std::map<std::pair<uint32_t, uint32_t>, uint32_t> call_to_max_depth;
 
-  // Consider every function.
-  for (auto& function : *context->module()) {
-    // Avoid considering the same callee of this function multiple times by
-    // recording known callees.
-    std::set<uint32_t> known_callees;
-    // Consider every function call instruction in every block.
-    for (auto& block : function) {
-      for (auto& instruction : block) {
-        if (instruction.opcode() != SpvOpFunctionCall) {
-          continue;
-        }
-        // Get the id of the function being called.
-        uint32_t callee = instruction.GetSingleWordInOperand(0);
-
-        // Get the loop nesting depth of this function call.
-        uint32_t loop_nesting_depth =
-            context->GetStructuredCFGAnalysis()->LoopNestingDepth(block.id());
-        // If inside a loop header, consider the function call nested inside the
-        // loop headed by the block.
-        if (block.IsLoopHeader()) {
-          loop_nesting_depth++;
-        }
-
-        // Update the map if we have not seen this pair (caller, callee)
-        // before or if this function call is from a greater depth.
-        if (!known_callees.count(callee) ||
-            call_to_max_depth[{function.result_id(), callee}] <
-                loop_nesting_depth) {
-          call_to_max_depth[{function.result_id(), callee}] =
-              loop_nesting_depth;
-        }
-
-        if (known_callees.count(callee)) {
-          // We have already considered a call to this function - ignore it.
-          continue;
-        }
-        // Increase the callee's in-degree and add an edge to the call graph.
-        function_in_degree_[callee]++;
-        call_graph_edges_[function.result_id()].insert(callee);
-        // Mark the callee as 'known'.
-        known_callees.insert(callee);
-      }
-    }
-  }
+  // Compute |function_in_degree_|, |call_graph_edges_| and |call_to_max_depth|.
+  BuildGraphAndGetDepthOfFunctionCalls(context, &call_to_max_depth);
 
   // Compute |functions_in_topological_order_|.
   ComputeTopologicalOrderOfFunctions();
 
-  // Find the maximum loop nesting depth that each function can be called from
-  // by considering them in topological order.
-  for (uint32_t function_id : functions_in_topological_order_) {
-    const auto& callees = call_graph_edges_[function_id];
-
-    // For each callee, update its maximum loop nesting depth, if a call from
-    // |function_id| increases it.
-    for (uint32_t callee : callees) {
-      uint32_t max_depth_from_this_function =
-          function_max_loop_nesting_depth_[function_id] +
-          call_to_max_depth[{function_id, callee}];
-      if (function_max_loop_nesting_depth_[callee] <
-          max_depth_from_this_function) {
-        function_max_loop_nesting_depth_[callee] = max_depth_from_this_function;
-      }
-    }
-  }
-}
-
-void CallGraph::PushDirectCallees(uint32_t function_id,
-                                  std::queue<uint32_t>* queue) const {
-  for (auto callee : GetDirectCallees(function_id)) {
-    queue->push(callee);
-  }
-}
-
-std::set<uint32_t> CallGraph::GetIndirectCallees(uint32_t function_id) const {
-  std::set<uint32_t> result;
-  std::queue<uint32_t> queue;
-  PushDirectCallees(function_id, &queue);
-
-  while (!queue.empty()) {
-    auto next = queue.front();
-    queue.pop();
-    if (result.count(next)) {
-      continue;
-    }
-    result.insert(next);
-    PushDirectCallees(next, &queue);
-  }
-  return result;
+  // Compute |function_max_loop_nesting_depth_|.
+  ComputeInterproceduralFunctionCallDepths(call_to_max_depth);
 }
 
 void CallGraph::ComputeTopologicalOrderOfFunctions() {
@@ -163,6 +82,101 @@ void CallGraph::ComputeTopologicalOrderOfFunctions() {
          "Every function should appear in the sort.");
 
   return;
+}
+
+void CallGraph::BuildGraphAndGetDepthOfFunctionCalls(
+    opt::IRContext* context,
+    std::map<std::pair<uint32_t, uint32_t>, uint32_t>* call_to_max_depth) {
+  // Consider every function.
+  for (auto& function : *context->module()) {
+    // Avoid considering the same callee of this function multiple times by
+    // recording known callees.
+    std::set<uint32_t> known_callees;
+    // Consider every function call instruction in every block.
+    for (auto& block : function) {
+      for (auto& instruction : block) {
+        if (instruction.opcode() != SpvOpFunctionCall) {
+          continue;
+        }
+        // Get the id of the function being called.
+        uint32_t callee = instruction.GetSingleWordInOperand(0);
+
+        // Get the loop nesting depth of this function call.
+        uint32_t loop_nesting_depth =
+            context->GetStructuredCFGAnalysis()->LoopNestingDepth(block.id());
+        // If inside a loop header, consider the function call nested inside the
+        // loop headed by the block.
+        if (block.IsLoopHeader()) {
+          loop_nesting_depth++;
+        }
+
+        // Update the map if we have not seen this pair (caller, callee)
+        // before or if this function call is from a greater depth.
+        if (!known_callees.count(callee) ||
+            call_to_max_depth->at({function.result_id(), callee}) <
+                loop_nesting_depth) {
+          call_to_max_depth->at({function.result_id(), callee}) =
+              loop_nesting_depth;
+        }
+
+        if (known_callees.count(callee)) {
+          // We have already considered a call to this function - ignore it.
+          continue;
+        }
+        // Increase the callee's in-degree and add an edge to the call graph.
+        function_in_degree_[callee]++;
+        call_graph_edges_[function.result_id()].insert(callee);
+        // Mark the callee as 'known'.
+        known_callees.insert(callee);
+      }
+    }
+  }
+}
+
+void CallGraph::ComputeInterproceduralFunctionCallDepths(
+    const std::map<std::pair<uint32_t, uint32_t>, uint32_t>&
+        call_to_max_depth) {
+  // Find the maximum loop nesting depth that each function can be
+  // called from, by considering them in topological order.
+  for (uint32_t function_id : functions_in_topological_order_) {
+    const auto& callees = call_graph_edges_[function_id];
+
+    // For each callee, update its maximum loop nesting depth, if a call from
+    // |function_id| increases it.
+    for (uint32_t callee : callees) {
+      uint32_t max_depth_from_this_function =
+          function_max_loop_nesting_depth_[function_id] +
+          call_to_max_depth.at({function_id, callee});
+      if (function_max_loop_nesting_depth_[callee] <
+          max_depth_from_this_function) {
+        function_max_loop_nesting_depth_[callee] = max_depth_from_this_function;
+      }
+    }
+  }
+}
+
+void CallGraph::PushDirectCallees(uint32_t function_id,
+                                  std::queue<uint32_t>* queue) const {
+  for (auto callee : GetDirectCallees(function_id)) {
+    queue->push(callee);
+  }
+}
+
+std::set<uint32_t> CallGraph::GetIndirectCallees(uint32_t function_id) const {
+  std::set<uint32_t> result;
+  std::queue<uint32_t> queue;
+  PushDirectCallees(function_id, &queue);
+
+  while (!queue.empty()) {
+    auto next = queue.front();
+    queue.pop();
+    if (result.count(next)) {
+      continue;
+    }
+    result.insert(next);
+    PushDirectCallees(next, &queue);
+  }
+  return result;
 }
 
 }  // namespace fuzz
