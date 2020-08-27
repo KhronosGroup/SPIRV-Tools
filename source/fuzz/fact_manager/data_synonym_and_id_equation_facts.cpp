@@ -768,6 +768,13 @@ bool DataSynonymAndIdEquationFacts::DataDescriptorsAreWellFormedAndComparable(
   if (end_type_id_1 == 0 || end_type_id_2 == 0) {
     return false;
   }
+  // Neither end type is allowed to be void.
+  if (context->get_def_use_mgr()->GetDef(end_type_id_1)->opcode() ==
+          SpvOpTypeVoid ||
+      context->get_def_use_mgr()->GetDef(end_type_id_2)->opcode() ==
+          SpvOpTypeVoid) {
+    return false;
+  }
   // If the end types are the same, the data descriptors are comparable.
   if (end_type_id_1 == end_type_id_2) {
     return true;
