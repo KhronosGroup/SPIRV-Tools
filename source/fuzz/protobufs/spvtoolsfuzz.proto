@@ -1244,25 +1244,9 @@ message TransformationFlattenConditionalBranch {
   // If all of the instructions in the true or false branches have
   // no side effects, this is semantics-preserving.
   // Side-effecting instructions will instead be enclosed by smaller
-  // conditionals. For example, if [true branch instructions]
-  // contains %5 = OpLoad %type %ptr, it becomes:
+  // conditionals. For more details, look at the definition for the
+  // InstToIdsForEnclosing message.
   //
-  // [instructions before the load]
-  //           OpSelectionMerge %fresh3 None
-  //           OpBranchConditional %cond %fresh1 %fresh2
-  // %fresh1 = OpLabel
-  // %fresh4 = OpLoad %type %ptr
-  //           OpBranch %fresh3
-  // %fresh2 = OpLabel
-  // %fresh5 = OpUndef %type
-  //           OpBranch %fresh3
-  // %fresh3 = OpLabel
-  //      %5 = OpPhi %type %fresh4 %fresh1 %fresh5 %fresh2
-  // [instructions after the load]
-  //
-  // If the side-effecting instruction does not return a value, the
-  // same happens, but without an 'else' block (fresh2 in the
-  // example) or an OpPhi instruction.
   // Nested conditionals or loops are not supported.
 
   // The label id of the header block
