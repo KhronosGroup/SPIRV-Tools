@@ -29,9 +29,10 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
       const protobufs::TransformationDuplicateRegionWithSelection& message);
 
   explicit TransformationDuplicateRegionWithSelection(
-      uint32_t condition_fresh_id, uint32_t merge_label_fresh_id,
-      uint32_t then_label_fresh_id, uint32_t else_label_fresh_id,
-      uint32_t entry_block_id, uint32_t exit_block_id,
+      uint32_t new_entry_fresh_id, uint32_t condition_fresh_id,
+      uint32_t merge_label_fresh_id, uint32_t then_label_fresh_id,
+      uint32_t else_label_fresh_id, uint32_t entry_block_id,
+      uint32_t exit_block_id,
       std::map<uint32_t, uint32_t> original_label_to_duplicate_label,
       std::map<uint32_t, uint32_t> original_id_to_duplicate_id,
       std::map<uint32_t, uint32_t> original_id_to_phi_id);
@@ -56,6 +57,12 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
   // will be executed regardless of which branch will be taken.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  // Returns the set of blocks dominated by |entry_block| and post-dominated
+  // by |exit_block|.
+  static std::set<opt::BasicBlock*> GetRegionBlocks(
+      opt::IRContext* ir_context, opt::BasicBlock* entry_block,
+      opt::BasicBlock* exit_block);
 
   protobufs::Transformation ToMessage() const override;
 

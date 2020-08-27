@@ -18,45 +18,55 @@
 namespace spvtools {
 namespace fuzz {
 namespace {
-TEST(TransformationDuplicateRegionWithSelectionTest, BasicScenarios) {
-  // This is a simple transformation and this test handles the main cases.
+TEST(TransformationDuplicateRegionWithSelectionTest, EntryBlockTest) {
+  // This test handles a case where the region consists of an entry block of an
+  // function.
 
   std::string shader = R"(
                OpCapability Shader
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "a"
-               OpName %10 "b"
-               OpName %14 "c"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "b"
+               OpName %18 "c"
+               OpName %20 "param"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
           %7 = OpTypePointer Function %6
-          %9 = OpConstant %6 4
-         %11 = OpConstant %6 6
-         %12 = OpTypeBool
-         %13 = OpTypePointer Function %12
-         %15 = OpConstantTrue %12
+          %8 = OpTypeFunction %2 %7
+         %14 = OpConstant %6 2
+         %16 = OpTypeBool
+         %17 = OpTypePointer Function %16
+         %19 = OpConstantTrue %16
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %8 = OpVariable %7 Function
-         %10 = OpVariable %7 Function
-         %14 = OpVariable %13 Function
-               OpStore %8 %9
-               OpStore %10 %11
-               OpStore %14 %15
-               OpSelectionMerge %19 None
-               OpBranchConditional %15 %19 %100
-        %100 = OpLabel
-         %25 = OpISub %6 %9 %11
-         %28 = OpLogicalNot %12 %15
-               OpBranch %19
-         %19 = OpLabel
-         %27 = OpISub %6 %9 %11
+         %18 = OpVariable %17 Function
+         %20 = OpVariable %7 Function
+               OpStore %18 %19
+               OpStore %20 %14
+         %21 = OpFunctionCall %2 %10 %20
+
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+               OpBranch %800
+        %800 = OpLabel
+         %13 = OpLoad %6 %9
+         %15 = OpIAdd %6 %13 %14
+               OpStore %12 %15
+               OpBranch %900
+         %900 = OpLabel
+         %901 = OpIAdd %6 %15 %13
                OpReturn
                OpFunctionEnd
     )";
@@ -70,6 +80,23 @@ TEST(TransformationDuplicateRegionWithSelectionTest, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
+
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(
+          500, 19, 501, 502, 503, 800, 800, {{800, 100}},
+          {{13, 201}, {15, 202}}, {{13, 301}, {15, 302}});
+
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  std::vector<uint32_t> actual_binary;
+  context.get()->module()->ToBinary(&actual_binary, false);
+  SpirvTools t(env);
+  std::string actual_disassembled;
+  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
+  std::cout << actual_disassembled;
+
+  ASSERT_TRUE(IsValid(env, context.get()));
 }
 
 }  // namespace

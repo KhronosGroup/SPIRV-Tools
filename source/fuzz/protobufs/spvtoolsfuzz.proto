@@ -1090,35 +1090,38 @@ message TransformationDuplicateRegionWithSelection {
   // that it is present in every conditional branch and will be executed regardless
   // of which branch will be taken.
 
+  // Fresh id for a label of the new entry block
+  uint32 new_entry_fresh_id = 1;
+
   // Fresh id for a boolean expression.
-  uint32 condition_fresh_id = 1;
+  uint32 condition_fresh_id = 2;
 
   // Fresh id for a label of the merge block of the conditional.
-  uint32 merge_label_fresh_id = 2;
+  uint32 merge_label_fresh_id = 3;
 
   // Fresh id for a label of the "then" branch of the conditional.
-  uint32 then_label_fresh_id = 3;
+  uint32 then_label_fresh_id = 4;
 
   // Fresh id for a label of the "else" branch of the conditional.
-  uint32 else_label_fresh_id = 4;
+  uint32 else_label_fresh_id = 5;
 
   // Block id of the entry block of the original region.
-  uint32 entry_block_id = 5;
+  uint32 entry_block_id = 6;
 
   // Block id of the exit block of the original region.
-  uint32 exit_block_id = 6;
+  uint32 exit_block_id = 7;
 
   // Map that maps from a label in the original region to the corresponding label
   // in the duplicated region.
-  repeated UInt32Pair original_label_to_duplicate_label = 7;
+  repeated UInt32Pair original_label_to_duplicate_label = 8;
 
   // Map that maps from a result id in the original region to the corresponding
   // result id in the duplicated region.
-  repeated UInt32Pair original_id_to_duplicate_id = 8;
+  repeated UInt32Pair original_id_to_duplicate_id = 9;
 
   // Map that maps from a result id in the original region to the result id of the
   // corresponding OpPhi instruction.
-  repeated UInt32Pair original_id_to_phi_id = 9;
+  repeated UInt32Pair original_id_to_phi_id = 10;
 }
 
 message TransformationEquationInstruction {
