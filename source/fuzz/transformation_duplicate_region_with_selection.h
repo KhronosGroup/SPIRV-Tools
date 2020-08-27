@@ -29,9 +29,8 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
       const protobufs::TransformationDuplicateRegionWithSelection& message);
 
   explicit TransformationDuplicateRegionWithSelection(
-      uint32_t new_entry_fresh_id, uint32_t condition_fresh_id,
-      uint32_t merge_label_fresh_id, uint32_t then_label_fresh_id,
-      uint32_t else_label_fresh_id, uint32_t entry_block_id,
+      uint32_t new_entry_fresh_id, uint32_t condition_id,
+      uint32_t merge_label_fresh_id, uint32_t entry_block_id,
       uint32_t exit_block_id,
       std::map<uint32_t, uint32_t> original_label_to_duplicate_label,
       std::map<uint32_t, uint32_t> original_id_to_duplicate_id,
