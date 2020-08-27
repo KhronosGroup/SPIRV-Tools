@@ -38,7 +38,7 @@ class Replayer {
   };
 
   // Constructs a replayer from the given target environment.
-  Replayer(spv_target_env env, bool validate_during_replay,
+  Replayer(spv_target_env target_env, bool validate_during_replay,
            spv_validator_options validator_options);
 
   // Disables copy/move constructor/assignment operations.
@@ -76,8 +76,17 @@ class Replayer {
       protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:
-  struct Impl;                  // Opaque struct for holding internal data.
-  std::unique_ptr<Impl> impl_;  // Unique pointer to internal data.
+  // Target environment.
+  const spv_target_env target_env_;
+
+  // Message consumer.
+  MessageConsumer consumer_;
+
+  // Controls whether the validator should be run after every replay step.
+  const bool validate_during_replay_;
+
+  // Options to control validation
+  spv_validator_options validator_options_;
 };
 
 }  // namespace fuzz
