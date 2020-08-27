@@ -309,7 +309,9 @@ message AccessChainClampingInfo {
 message InstToIdsForEnclosing {
   // When flattening a conditional branch, it is necessary to enclose
   // instructions that have side effects inside conditionals, so that
-  // they are only executed if a condition holds.
+  // they are only executed if the condition holds. Otherwise, there
+  // might be unintended changes in memory, or crashes that would not
+  // originally happen.
   // For example, the instruction %id = OpLoad %type %ptr, found in
   // the true branch of the conditional, will be enclosed in a new
   // conditional (assuming that the block containing it can be split
