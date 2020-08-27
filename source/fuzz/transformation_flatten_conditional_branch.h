@@ -20,6 +20,30 @@
 namespace spvtools {
 namespace fuzz {
 
+// A structure declaration for all the fresh ids needed to enclose a
+// side-effecting instruction inside a conditional.
+struct IdsForEnclosingInst {
+  // Fresh id for the new merge block.
+  uint32_t merge_block_id;
+
+  // Fresh id for the block where the original instruction is executed.
+  uint32_t execute_block_id;
+
+  // The following are only necessary if the original instruction returns a
+  // non-void result.
+
+  // Fresh id for the original instruction (a new OpPhi instruction will use the
+  // original id).
+  uint32_t actual_result_id;
+
+  // Fresh id for the block where an instruction returning a placeholder value
+  // is placed.
+  uint32_t alternative_block_id;
+
+  // Fresh id for the placeholder instruction.
+  uint32_t placeholder_result_id;
+};
+
 class TransformationFlattenConditionalBranch : public Transformation {
  public:
   explicit TransformationFlattenConditionalBranch(
@@ -28,8 +52,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
   TransformationFlattenConditionalBranch(
       uint32_t header_block_id,
       std::vector<
-          std::pair<protobufs::InstructionDescriptor, std::vector<uint32_t>>>
-          instructions_to_fresh_ids = {},
+          std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
+          instructions_to_ids_for_enclosing = {},
       std::vector<uint32_t> overflow_ids = {});
 
   // - |message_.header_block_id| must be the label id of a reachable selection
@@ -39,9 +63,9 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // - The region must not contain barrier or OpSampledImage instructions.
   // - The region must not contain selection or loop constructs.
   // - For each instruction that requires additional fresh ids, then:
-  //   - if the instruction is mapped to a list of fresh ids by
-  //     |message_.instruction_to_fresh ids|, there must be enough fresh ids in
-  //     this list;
+  //   - if the instruction is mapped to the required ids for enclosing it by
+  //     |message_.instructions_to_ids_for_enclosing|, these must be valid (the
+  //     fresh ids must be non-zero, fresh and distinct);
   //   - if there is no such mapping, there must be enough fresh ids in
   //     |message_.overflow_id|
   bool IsApplicable(
@@ -69,29 +93,28 @@ class TransformationFlattenConditionalBranch : public Transformation {
       opt::IRContext* ir_context, opt::BasicBlock* header,
       std::set<opt::Instruction*>* instructions_that_need_ids);
 
-  // Returns the number of fresh ids needed to enclose the given instruction
-  // inside a conditional. That is:
-  // - 2 if the instruction does not have a result id or has a void result id,
-  //   needed for 2 new blocks
-  // - 5 if the instruction has a non-void result id: 3 for new blocks, 1 for a
-  //   new OpUndef instruction, 1 for the instruction itself
-  // Assumes that if the instruction has a non-void result type, its result id
-  // is not used in the module.
-  static uint32_t NumOfFreshIdsNeededByInstruction(
-      opt::IRContext* ir_context, const opt::Instruction& instruction);
+  // Returns true iff the given instruction needs a placeholder to be enclosed
+  // inside a conditional. So, it returns:
+  // - true if the instruction has a non-void result id,
+  // - false if the instruction does not have a result id or has a void result
+  //   id.
+  // Assumes that if the instruction has a void result type, its result id is
+  // not used in the module.
+  static bool InstructionNeedsPlaceholder(opt::IRContext* ir_context,
+                                          const opt::Instruction& instruction);
 
  private:
   protobufs::TransformationFlattenConditionalBranch message_;
 
-  // Returns an unordered_map mapping instructions to lists of fresh ids. It
-  // gets the information from |message_.instruction_to_fresh_ids|.
-  std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
-  GetInstructionsToFreshIdsMapping(opt::IRContext* ir_context) const;
+  // Returns an unordered_map mapping instructions to the fresh ids required to
+  // enclose them inside a conditional. It gets the information from
+  // |message_.inst_to_ids_for_enclosing|.
+  std::unordered_map<opt::Instruction*, IdsForEnclosingInst>
+  GetInstructionsToIdsForEnclosing(opt::IRContext* ir_context) const;
 
   // Splits the given block, adding a new selection construct so that the given
   // instruction is only executed if the boolean value of |condition_id| matches
   // the value of |exec_if_cond_true|.
-  // The instruction must be one of OpStore, OpLoad and OpFunctionCall.
   // Assumes that all parameters are consistent.
   // 2 fresh ids are required if the instruction does not have a result id, 5
   // otherwise.
@@ -99,7 +122,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
   opt::BasicBlock* EncloseInstructionInConditional(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       opt::BasicBlock* block, opt::Instruction* instruction,
-      const std::vector<uint32_t>& fresh_ids, uint32_t condition_id,
+      const IdsForEnclosingInst& fresh_ids, uint32_t condition_id,
       bool exec_if_cond_true) const;
 
   // Returns true if the given instruction either has no side effects or it can

@@ -304,16 +304,6 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpEntryPoint Fragment %2 "main"
                OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
-               OpName %2 "main"
-               OpName %3 "func("
-               OpName %4 "a"
-               OpName %5 "b"
-               OpDecorate %3 RelaxedPrecision
-               OpDecorate %4 RelaxedPrecision
-               OpDecorate %6 RelaxedPrecision
-               OpDecorate %7 RelaxedPrecision
-               OpDecorate %8 RelaxedPrecision
-               OpDecorate %5 RelaxedPrecision
           %9 = OpTypeVoid
          %10 = OpTypeFunction %9
          %11 = OpTypeInt 32 1
@@ -435,8 +425,8 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
 
   auto transformation1 = TransformationFlattenConditionalBranch(
       31,
-      {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {100, 101, 102, 103, 104}},
-       {MakeInstructionDescriptor(6, SpvOpStore, 0), {105, 106, 107}}});
+      {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {104, 100, 101, 102, 103}},
+       {MakeInstructionDescriptor(6, SpvOpStore, 0), {106, 105, 107}}});
 
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
@@ -446,8 +436,8 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   auto transformation2 = TransformationFlattenConditionalBranch(
       36,
       {{MakeInstructionDescriptor(8, SpvOpFunctionCall, 0),
-        {108, 109, 110, 111, 112}},
-       {MakeInstructionDescriptor(8, SpvOpStore, 0), {113, 114}}},
+        {112, 108, 109, 110, 111}},
+       {MakeInstructionDescriptor(8, SpvOpStore, 0), {114, 113}}},
       {115, 116});
 
   ASSERT_TRUE(
@@ -464,16 +454,6 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpEntryPoint Fragment %2 "main"
                OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
-               OpName %2 "main"
-               OpName %3 "func("
-               OpName %4 "a"
-               OpName %5 "b"
-               OpDecorate %3 RelaxedPrecision
-               OpDecorate %4 RelaxedPrecision
-               OpDecorate %6 RelaxedPrecision
-               OpDecorate %7 RelaxedPrecision
-               OpDecorate %8 RelaxedPrecision
-               OpDecorate %5 RelaxedPrecision
           %9 = OpTypeVoid
          %10 = OpTypeFunction %9
          %11 = OpTypeInt 32 1
@@ -506,16 +486,16 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
          %35 = OpLoad %22 %33
                OpBranch %37
          %37 = OpLabel
-               OpSelectionMerge %101 None
+               OpSelectionMerge %104 None
                OpBranchConditional %20 %100 %102
         %100 = OpLabel
-        %103 = OpLoad %11 %4
-               OpBranch %101
+        %101 = OpLoad %11 %4
+               OpBranch %104
         %102 = OpLabel
-        %104 = OpUndef %11
-               OpBranch %101
-        %101 = OpLabel
-          %6 = OpPhi %11 %103 %100 %104 %102
+        %103 = OpUndef %11
+               OpBranch %104
+        %104 = OpLabel
+          %6 = OpPhi %11 %101 %100 %103 %102
           %7 = OpIAdd %11 %6 %14
                OpSelectionMerge %106 None
                OpBranchConditional %20 %105 %106
@@ -528,16 +508,16 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
          %42 = OpSelect %11 %20 %14 %14
                OpBranch %44
          %44 = OpLabel
-               OpSelectionMerge %109 None
+               OpSelectionMerge %112 None
                OpBranchConditional %20 %108 %110
         %108 = OpLabel
-        %111 = OpFunctionCall %11 %3
-               OpBranch %109
+        %109 = OpFunctionCall %11 %3
+               OpBranch %112
         %110 = OpLabel
-        %112 = OpUndef %11
-               OpBranch %109
-        %109 = OpLabel
-          %8 = OpPhi %11 %111 %108 %112 %110
+        %111 = OpUndef %11
+               OpBranch %112
+        %112 = OpLabel
+          %8 = OpPhi %11 %109 %108 %111 %110
                OpSelectionMerge %114 None
                OpBranchConditional %20 %113 %114
         %113 = OpLabel
@@ -547,12 +527,12 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpBranch %45
          %45 = OpLabel
          %47 = OpAccessChain %21 %5 %14
-               OpSelectionMerge %116 None
-               OpBranchConditional %20 %116 %115
-        %115 = OpLabel
-               OpStore %47 %14
-               OpBranch %116
+               OpSelectionMerge %115 None
+               OpBranchConditional %20 %115 %116
         %116 = OpLabel
+               OpStore %47 %14
+               OpBranch %115
+        %115 = OpLabel
                OpBranch %46
          %46 = OpLabel
                OpStore %4 %14

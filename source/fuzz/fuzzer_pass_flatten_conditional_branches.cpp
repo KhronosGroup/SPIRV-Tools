@@ -68,16 +68,22 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
     // Generate entries (instruction descriptor, fresh ids) for all the
     // instructions that require fresh ids.
     std::vector<
-        std::pair<protobufs::InstructionDescriptor, std::vector<uint32_t>>>
+        std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
         instructions_to_fresh_ids;
 
     for (auto instruction : instructions_that_need_ids) {
-      uint32_t num_fresh_ids_needed = TransformationFlattenConditionalBranch::
-          NumOfFreshIdsNeededByInstruction(GetIRContext(), *instruction);
+      IdsForEnclosingInst info = {GetFuzzerContext()->GetFreshId(),
+                                  GetFuzzerContext()->GetFreshId(), 0, 0, 0};
+
+      if (TransformationFlattenConditionalBranch::InstructionNeedsPlaceholder(
+              GetIRContext(), *instruction)) {
+        info.actual_result_id = GetFuzzerContext()->GetFreshId();
+        info.alternative_block_id = GetFuzzerContext()->GetFreshId();
+        info.placeholder_result_id = GetFuzzerContext()->GetFreshId();
+      }
 
       instructions_to_fresh_ids.push_back(
-          {MakeInstructionDescriptor(GetIRContext(), instruction),
-           GetFuzzerContext()->GetFreshIds(num_fresh_ids_needed)});
+          {MakeInstructionDescriptor(GetIRContext(), instruction), info});
     }
 
     // Add 10 overflow ids to account for possible changes in the module.

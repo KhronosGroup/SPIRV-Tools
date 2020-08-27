@@ -27,17 +27,19 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
 TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
     uint32_t header_block_id,
     std::vector<
-        std::pair<protobufs::InstructionDescriptor, std::vector<uint32_t>>>
-        instructions_to_fresh_ids,
+        std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
+        instructions_to_ids_for_enclosing,
     std::vector<uint32_t> overflow_ids) {
   message_.set_header_block_id(header_block_id);
-  for (auto const& pair : instructions_to_fresh_ids) {
-    protobufs::InstructionUint32ListPair mapping;
-    *mapping.mutable_instruction_descriptor() = pair.first;
-    for (auto id : pair.second) {
-      mapping.add_id(id);
-    }
-    *message_.add_instruction_to_fresh_ids() = mapping;
+  for (auto const& pair : instructions_to_ids_for_enclosing) {
+    protobufs::InstToIdsForEnclosing inst_to_ids;
+    *inst_to_ids.mutable_instruction() = pair.first;
+    inst_to_ids.set_merge_block_id(pair.second.merge_block_id);
+    inst_to_ids.set_execute_block_id(pair.second.execute_block_id);
+    inst_to_ids.set_actual_result_id(pair.second.actual_result_id);
+    inst_to_ids.set_alternative_block_id(pair.second.alternative_block_id);
+    inst_to_ids.set_placeholder_result_id(pair.second.placeholder_result_id);
+    *message_.add_inst_to_ids_for_enclosing() = inst_to_ids;
   }
   for (auto id : overflow_ids) {
     message_.add_overflow_id(id);
@@ -70,8 +72,9 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     return false;
   }
 
-  // Get the mapping from instructions to the fresh ids available for them.
-  auto instructions_to_fresh_ids = GetInstructionsToFreshIdsMapping(ir_context);
+  // Get the mapping from instructions to the fresh ids needed to enclose them
+  // inside conditionals.
+  auto instructions_to_ids = GetInstructionsToIdsForEnclosing(ir_context);
 
   {
     // Check that all the ids given are fresh and distinct.
@@ -87,11 +90,26 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     }
 
     // Check the ids in the map.
-    for (const auto& pair : instructions_to_fresh_ids) {
-      for (uint32_t id : pair.second) {
-        if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                          &used_fresh_ids)) {
+    for (const auto& inst_to_ids : instructions_to_ids) {
+      // Check the ids needed for all of the instructions that need to be
+      // enclosed inside a conditional.
+      for (uint32_t id : {inst_to_ids.second.merge_block_id,
+                          inst_to_ids.second.execute_block_id}) {
+        if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(
+                       id, ir_context, &used_fresh_ids)) {
           return false;
+        }
+      }
+
+      // Check the other ids needed, if the instruction needs a placeholder.
+      if (InstructionNeedsPlaceholder(ir_context, *inst_to_ids.first)) {
+        for (uint32_t id : {inst_to_ids.second.actual_result_id,
+                            inst_to_ids.second.alternative_block_id,
+                            inst_to_ids.second.placeholder_result_id}) {
+          if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(
+                         id, ir_context, &used_fresh_ids)) {
+            return false;
+          }
         }
       }
     }
@@ -102,22 +120,16 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   int remaining_overflow_ids = message_.overflow_id_size();
 
   for (auto instruction : instructions_that_need_ids) {
-    // The number of ids needed depends on the id of the instruction.
-    uint32_t ids_needed_by_this_instruction =
-        NumOfFreshIdsNeededByInstruction(ir_context, *instruction);
-    if (instructions_to_fresh_ids.count(instruction) != 0) {
-      // If there is a mapping from this instruction to a list of fresh
-      // ids, the list must have enough ids.
+    // The ids needed depend on the type of instruction.
+    bool inst_needs_placeholder =
+        InstructionNeedsPlaceholder(ir_context, *instruction);
 
-      if (instructions_to_fresh_ids[instruction].size() <
-          ids_needed_by_this_instruction) {
-        return false;
-      }
-    } else {
-      // If there is no mapping, we need to rely on the pool of
-      // overflow ids, where there must be enough remaining ids.
+    if (instructions_to_ids.count(instruction) == 0) {
+      // If there is no mapping, we need to rely on the pool of overflow ids,
+      // where there must be enough remaining ids, that is: 5 if the instruction
+      // needs a placeholder, 2 otherwise.
 
-      remaining_overflow_ids -= ids_needed_by_this_instruction;
+      remaining_overflow_ids -= inst_needs_placeholder ? 5 : 2;
 
       if (remaining_overflow_ids < 0) {
         return false;
@@ -143,7 +155,7 @@ void TransformationFlattenConditionalBranch::Apply(
   }
 
   // Get the mapping from instructions to fresh ids.
-  auto instructions_to_fresh_ids = GetInstructionsToFreshIdsMapping(ir_context);
+  auto instructions_to_fresh_ids = GetInstructionsToIdsForEnclosing(ir_context);
 
   // Keep track of the number of overflow ids used.
   uint32_t overflow_ids_used = 0;
@@ -190,20 +202,25 @@ void TransformationFlattenConditionalBranch::Apply(
       // Enclose all of the problematic instructions in conditionals, with the
       // same condition as the selection construct being flattened.
       for (auto instruction : problematic_instructions) {
-        // Collect the fresh ids needed by this instructions
-        uint32_t ids_needed =
-            NumOfFreshIdsNeededByInstruction(ir_context, *instruction);
-        std::vector<uint32_t> fresh_ids;
+        // Get the fresh_ids needed by this instructions
+        IdsForEnclosingInst fresh_ids;
 
-        // Get them from the map.
         if (instructions_to_fresh_ids.count(instruction) != 0) {
+          // Get the fresh ids from the map, if present.
           fresh_ids = instructions_to_fresh_ids[instruction];
-        }
+        } else {
+          // If we could not get it from the map, use overflow ids.
+          fresh_ids.merge_block_id = message_.overflow_id(overflow_ids_used++);
+          fresh_ids.execute_block_id =
+              message_.overflow_id(overflow_ids_used++);
 
-        // If we could not get it from the map, use overflow ids.
-        if (fresh_ids.empty()) {
-          for (uint32_t i = 0; i < ids_needed; i++) {
-            fresh_ids.push_back(message_.overflow_id(overflow_ids_used++));
+          if (InstructionNeedsPlaceholder(ir_context, *instruction)) {
+            fresh_ids.actual_result_id =
+                message_.overflow_id(overflow_ids_used++);
+            fresh_ids.alternative_block_id =
+                message_.overflow_id(overflow_ids_used++);
+            fresh_ids.placeholder_result_id =
+                message_.overflow_id(overflow_ids_used++);
           }
         }
 
@@ -390,70 +407,62 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
   return true;
 }
 
-uint32_t
-TransformationFlattenConditionalBranch::NumOfFreshIdsNeededByInstruction(
+bool TransformationFlattenConditionalBranch::InstructionNeedsPlaceholder(
     opt::IRContext* ir_context, const opt::Instruction& instruction) {
   if (instruction.HasResultId()) {
-    // We need 5 ids if the type returned is not Void, 2 otherwise.
+    // We need a placeholder iff the type is not Void.
     auto type = ir_context->get_type_mgr()->GetType(instruction.type_id());
-    return (type && type->AsVoid()) ? 2 : 5;
-  } else {
-    return 2;
+    return type && !type->AsVoid();
   }
+
+  return false;
 }
 
-std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
-TransformationFlattenConditionalBranch::GetInstructionsToFreshIdsMapping(
+std::unordered_map<opt::Instruction*, IdsForEnclosingInst>
+TransformationFlattenConditionalBranch::GetInstructionsToIdsForEnclosing(
     opt::IRContext* ir_context) const {
-  std::unordered_map<opt::Instruction*, std::vector<uint32_t>>
-      instructions_to_fresh_ids;
-  for (const auto& pair : message_.instruction_to_fresh_ids()) {
-    std::vector<uint32_t> fresh_ids;
-    for (uint32_t id : pair.id()) {
-      fresh_ids.push_back(id);
-    }
+  std::unordered_map<opt::Instruction*, IdsForEnclosingInst>
+      instructions_to_ids;
+  for (const auto& inst_to_ids : message_.inst_to_ids_for_enclosing()) {
+    IdsForEnclosingInst ids = {
+        inst_to_ids.merge_block_id(), inst_to_ids.execute_block_id(),
+        inst_to_ids.actual_result_id(), inst_to_ids.alternative_block_id(),
+        inst_to_ids.placeholder_result_id()};
 
-    auto instruction =
-        FindInstruction(pair.instruction_descriptor(), ir_context);
+    auto instruction = FindInstruction(inst_to_ids.instruction(), ir_context);
     if (instruction) {
-      instructions_to_fresh_ids.emplace(instruction, std::move(fresh_ids));
+      instructions_to_ids.emplace(instruction, std::move(ids));
     }
   }
 
-  return instructions_to_fresh_ids;
+  return instructions_to_ids;
 }
 
 opt::BasicBlock*
 TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     opt::BasicBlock* block, opt::Instruction* instruction,
-    const std::vector<uint32_t>& fresh_ids, uint32_t condition_id,
+    const IdsForEnclosingInst& fresh_ids, uint32_t condition_id,
     bool exec_if_cond_true) const {
   // Get the next instruction (it will be useful for splitting).
   auto next_instruction = instruction->NextNode();
 
-  auto fresh_ids_needed =
-      NumOfFreshIdsNeededByInstruction(ir_context, *instruction);
-
-  // We must have enough fresh ids.
-  assert(fresh_ids.size() >= fresh_ids_needed && "Not enough fresh ids.");
-
-  // Update the module id bound
-  for (auto id : fresh_ids) {
+  // Update the module id bound.
+  for (uint32_t id : {fresh_ids.merge_block_id, fresh_ids.execute_block_id}) {
     fuzzerutil::UpdateModuleIdBound(ir_context, id);
   }
 
   // Create the block where the instruction is executed by splitting the
   // original block.
   auto execute_block = block->SplitBasicBlock(
-      ir_context, fresh_ids[0],
+      ir_context, fresh_ids.execute_block_id,
       fuzzerutil::GetIteratorForInstruction(block, instruction));
 
   // Create the merge block for the conditional that we are about to create by
   // splitting execute_block (this will leave |instruction| as the only
   // instruction in |execute_block|).
   auto merge_block = execute_block->SplitBasicBlock(
-      ir_context, fresh_ids[1],
+      ir_context, fresh_ids.merge_block_id,
       fuzzerutil::GetIteratorForInstruction(execute_block, next_instruction));
 
   // Propagate the fact that the block is dead to the newly-created blocks.
@@ -474,30 +483,41 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
 
-  // If the instruction requires 5 fresh ids, it means that it has a result id
+  // If the instruction requires a placeholder, it means that it has a result id
   // and its result needs to be used later on, and we need to:
-  // - add an additional block where a placeholder result is obtained by using
-  //   the OpUndef instruction
+  // - add an additional block |fresh_ids.alternative_block_id| where a
+  // placeholder
+  //   result id (using fresh id |fresh_ids.placeholder_result_id|) is obtained
+  //   by using the OpUndef instruction
   // - change the result id of the instruction to a fresh id
+  //   (|fresh_ids.actual_result_id|).
   // - add an OpPhi instruction, which will have the original result id of the
   //   instruction, in the merge block.
-  if (fresh_ids_needed == 5) {
-    // Create a new block using a fresh id for its label.
-    auto alternative_block_temp = MakeUnique<opt::BasicBlock>(
-        MakeUnique<opt::Instruction>(ir_context, SpvOpLabel, 0, fresh_ids[2],
-                                     opt::Instruction::OperandList{}));
+  if (InstructionNeedsPlaceholder(ir_context, *instruction)) {
+    // Update the module id bound with the additional ids.
+    for (uint32_t id :
+         {fresh_ids.actual_result_id, fresh_ids.alternative_block_id,
+          fresh_ids.placeholder_result_id}) {
+      fuzzerutil::UpdateModuleIdBound(ir_context, id);
+    }
+
+    // Create a new block using |fresh_ids.alternative_block_id| for its label.
+    auto alternative_block_temp =
+        MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
+            ir_context, SpvOpLabel, 0, fresh_ids.alternative_block_id,
+            opt::Instruction::OperandList{}));
 
     // Keep the original result id of the instruction in a variable.
     uint32_t original_result_id = instruction->result_id();
 
-    // Set the result id of the instruction to a fresh id.
-    instruction->SetResultId(fresh_ids[3]);
+    // Set the result id of the instruction to be |fresh_ids.actual_result_id|.
+    instruction->SetResultId(fresh_ids.actual_result_id);
 
     // Add an OpUndef instruction, with the same type as the original
-    // instruction and a fresh id, to the new block.
+    // instruction and id |fresh_ids.placeholder_result_id|, to the new block.
     alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpUndef, instruction->type_id(), fresh_ids[4],
-        opt::Instruction::OperandList{}));
+        ir_context, SpvOpUndef, instruction->type_id(),
+        fresh_ids.placeholder_result_id, opt::Instruction::OperandList{}));
 
     // Add an unconditional branch from the new block to the merge block.
     alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
@@ -511,13 +531,13 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
 
     // Using the original instruction result id, add an OpPhi instruction to the
     // merge block, which will either take the value of the result of the
-    // instruction or the dummy value defined in the alternative block.
+    // instruction or the placeholder value defined in the alternative block.
     merge_block->begin().InsertBefore(MakeUnique<opt::Instruction>(
         ir_context, SpvOpPhi, instruction->type_id(), original_result_id,
         opt::Instruction::OperandList{
             {SPV_OPERAND_TYPE_ID, {instruction->result_id()}},
             {SPV_OPERAND_TYPE_ID, {execute_block->id()}},
-            {SPV_OPERAND_TYPE_ID, {fresh_ids[4]}},
+            {SPV_OPERAND_TYPE_ID, {fresh_ids.placeholder_result_id}},
             {SPV_OPERAND_TYPE_ID, {alternative_block->id()}}}));
 
     // Propagate the fact that the block is dead to the new block.
