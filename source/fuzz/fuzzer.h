@@ -72,6 +72,43 @@ class Fuzzer {
       protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:
+  // A *pass recommendation* is a fuzzer pass together with an integer *age*
+  // indicating how long ago this fuzzer pass was recommended.  Each time some
+  // fuzzer pass is applied, the age of all recommended passes increases by
+  // one.  A recommended pass gets removed either because it has been acted on
+  // (i.e., the pass has been applied), or because the recommendation gets too
+  // old (i.e., the age component reaches some limit).
+  using RecommendedPasses = std::vector<std::pair<FuzzerPass*, uint32_t>>;
+
+  // This type is used to record a single instance of every fuzzer pass that
+  // is enabled and that can be applied repeatedly.
+  struct PassInstances;
+
+  // This method should be invoked right after |completed_pass| has finished.
+  // The age of all passes in |recommended_passes| is incremented, with passes
+  // that get too old being removed.
+  //
+  // Zero or more new recommendations from |pass_instances| are made, depending
+  // on which pass |completed_pass| was.  For example, if |completed_pass| is a
+  // pass that donates new functions into the module, a fuzzer pass that creates
+  // function call instructions might be recommended.
+  //
+  // New recommendations are either added to |recommended_passes|, if not
+  // already present, or lead to the age of existing recommendations being
+  // decreased.
+  static void UpdateRecommendedPasses(FuzzerPass* completed_pass,
+                                      const PassInstances& pass_instances,
+                                      RecommendedPasses* recommended_passes);
+
+  // Helper method used by UpdateRecommendedPasses.  A no-op if |pass| is
+  // |nullptr|.
+  //
+  // If |pass| is non-null then a recommendation of |pass| with age 0 is added
+  // to |recommended_passes| if there is no existing recommendation |pass|;
+  // otherwise the existing recommendation has its age reset.
+  static void RecommendPass(FuzzerPass* pass,
+                            RecommendedPasses* recommended_passes);
+
   // Applies |pass|, which must be a pass constructed with |ir_context|, and
   // then returns true if and only if |ir_context| is valid.  |tools| is used to
   // check validity.
