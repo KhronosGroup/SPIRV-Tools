@@ -50,7 +50,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
       const protobufs::TransformationFlattenConditionalBranch& message);
 
   TransformationFlattenConditionalBranch(
-      uint32_t header_block_id,
+      uint32_t header_block_id, bool true_branch_first,
       std::vector<
           std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
           instructions_to_ids_for_enclosing = {});

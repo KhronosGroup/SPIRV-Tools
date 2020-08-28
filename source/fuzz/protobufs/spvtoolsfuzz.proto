@@ -1249,15 +1249,22 @@ message TransformationFlattenConditionalBranch {
   // conditionals. For more details, look at the definition for the
   // InstToIdsForEnclosing message.
   //
-  // Nested conditionals or loops are not supported.
+  // Nested conditionals or loops are not supported. The false branch
+  // could also be executed before the true branch, depending on the
+  // |true_branch_first| field.
 
   // The label id of the header block
   uint32 header_block_id = 1;
 
+  // A boolean field deciding the order in which the original
+  // branches will be laid out: the true branch will be laid
+  // out first iff this field is true.
+  bool true_branch_first = 2;
+
   // A list of instructions with side effects, which must be
   // enclosed inside smaller conditional before flattening the
   // main one, and the corresponding fresh ids needed.
-  repeated InstToIdsForEnclosing inst_to_ids_for_enclosing = 2;
+  repeated InstToIdsForEnclosing inst_to_ids_for_enclosing = 3;
 }
 
 message TransformationFunctionCall {

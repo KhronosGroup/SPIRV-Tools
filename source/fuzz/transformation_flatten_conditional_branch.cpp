@@ -25,11 +25,12 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
     : message_(message) {}
 
 TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
-    uint32_t header_block_id,
+    uint32_t header_block_id, bool true_branch_first,
     std::vector<
         std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
         instructions_to_ids_for_enclosing) {
   message_.set_header_block_id(header_block_id);
+  message_.set_true_branch_first(true_branch_first);
   for (auto const& pair : instructions_to_ids_for_enclosing) {
     protobufs::InstToIdsForEnclosing inst_to_ids;
     *inst_to_ids.mutable_instruction() = pair.first;
@@ -136,17 +137,25 @@ void TransformationFlattenConditionalBranch::Apply(
 
   auto branch_instruction = header_block->terminator();
 
-  // Get a reference to the last block in the true branch, before flow
-  // converges (if there is a true branch).
-  opt::BasicBlock* last_true_block = nullptr;
+  // Get a reference to the last block in the first branch that will be laid out
+  // (this depends on |message_.true_branch_first|). The last block is the block
+  // in the branch just before flow converges (it might not exist).
+  opt::BasicBlock* last_block_first_branch = nullptr;
+
+  // branch = 1 corresponds to the true branch, branch = 2 corresponds to the
+  // false branch. If the true branch is to be laid out first, we need to visit
+  // the false branch first, because each branch is moved to right after the
+  // header while it is visited.
+  std::vector<uint32_t> branches = {2, 1};
+  if (!message_.true_branch_first()) {
+    // Similarly, we need to visit the true branch first, if we want it to be
+    // laid out after the false branch.
+    branches = {1, 2};
+  }
 
   // Adjust the conditional branches by enclosing problematic instructions
   // within conditionals and get references to the last block in each branch.
-  for (int branch = 2; branch >= 1; branch--) {
-    // branch = 1 corresponds to the true branch, branch = 2 corresponds to the
-    // false branch. Consider the false branch first so that the true branch is
-    // laid out right after the header.
-
+  for (uint32_t branch : branches) {
     auto current_block = header_block;
     // Get the id of the first block in this branch.
     uint32_t next_block_id = branch_instruction->GetSingleWordInOperand(branch);
@@ -217,26 +226,31 @@ void TransformationFlattenConditionalBranch::Apply(
 
       next_block_id = current_block->terminator()->GetSingleWordInOperand(0);
 
-      // If the next block is the convergence block and this is the true branch,
-      // record this as the last block in the true branch.
-      if (next_block_id == convergence_block_id && branch == 1) {
-        last_true_block = current_block;
+      // If the next block is the convergence block and this the branch that
+      // will be laid out right after the header, record this as the last block
+      // in the first branch.
+      if (next_block_id == convergence_block_id && branch == branches[1]) {
+        last_block_first_branch = current_block;
       }
     }
   }
 
-  // Get the condition operand and the ids of the first blocks of the true and
-  // false branches.
+  // Get the condition operand and the ids of the starting blocks of the first
+  // and last branches to be laid out. The first branch is the true branch iff
+  // |message_.true_branch_first| is true.
   auto condition_operand = branch_instruction->GetInOperand(0);
-  uint32_t first_true_block_id = branch_instruction->GetSingleWordInOperand(1);
-  uint32_t first_false_block_id = branch_instruction->GetSingleWordInOperand(2);
+  uint32_t first_block_first_branch_id =
+      branch_instruction->GetSingleWordInOperand(branches[1]);
+  uint32_t first_block_last_branch_id =
+      branch_instruction->GetSingleWordInOperand(branches[0]);
 
-  // The current header should unconditionally branch to the first block in the
-  // true branch, if there exists a true branch, and to the first block in the
-  // false branch if there is no true branch.
-  uint32_t after_header = first_true_block_id != convergence_block_id
-                              ? first_true_block_id
-                              : first_false_block_id;
+  // The current header should unconditionally branch to the starting block in
+  // the first branch to be laid out, if such a branch exists (i.e. the header
+  // does not branch directly to the convergence block), and to the starting
+  // block in the last branch to be laid out otherwise.
+  uint32_t after_header = first_block_first_branch_id != convergence_block_id
+                              ? first_block_first_branch_id
+                              : first_block_last_branch_id;
 
   // Kill the merge instruction and the branch instruction in the current
   // header.
@@ -250,11 +264,13 @@ void TransformationFlattenConditionalBranch::Apply(
       ir_context, SpvOpBranch, 0, 0,
       opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {after_header}}}));
 
-  // If there is a true branch, change the branch instruction so that the last
-  // block in the true branch unconditionally branches to the first block in the
-  // false branch (or the convergence block if there is no false branch).
-  if (last_true_block) {
-    last_true_block->terminator()->SetInOperand(0, {first_false_block_id});
+  // If the first branch to be laid out exists, change the branch instruction so
+  // that the last block in such branch unconditionally branches to the first
+  // block in the other branch (or the convergence block if there is no other
+  // branch).
+  if (last_block_first_branch) {
+    last_block_first_branch->terminator()->SetInOperand(
+        0, {first_block_last_branch_id});
   }
 
   // Replace all of the current OpPhi instructions in the convergence block with
