@@ -65,8 +65,11 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
       continue;
     }
 
-    // Generate entries (instruction descriptor, fresh ids) for all the
-    // instructions that require fresh ids.
+    // Some instructions will require to be enclosed inside conditionals because
+    // they have side effects (for example, loads and stores). Some of this have
+    // no result id, so we require instruction descriptors to identify them.
+    // Each of them is associated with an IdsForEnclosingInst struct, containing
+    // all the necessary fresh ids for it.
     std::vector<
         std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
         instructions_to_fresh_ids;

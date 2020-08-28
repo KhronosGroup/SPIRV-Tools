@@ -82,7 +82,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
   // Returns true if the conditional headed by |header| can be flattened,
   // according to the conditions of the IsApplicable method, assuming that
-  // enough fresh ids are given. In this case, it fills the
+  // enough fresh ids would be provided. In this case, it fills the
   // |instructions_that_need_ids| set with all the instructions that would
   // require fresh ids.
   // Returns false otherwise.
@@ -97,8 +97,10 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // - true if the instruction has a non-void result id,
   // - false if the instruction does not have a result id or has a void result
   //   id.
-  // Assumes that if the instruction has a void result type, its result id is
-  // not used in the module.
+  // Assumes that the instruction has side effects, requiring it to be enclosed
+  // inside a conditional, and that it can be enclosed inside a conditional
+  // keeping the module valid. Assumes that, if the instruction has a void
+  // result type, its result id is not used in the module.
   static bool InstructionNeedsPlaceholder(opt::IRContext* ir_context,
                                           const opt::Instruction& instruction);
 
@@ -115,8 +117,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // instruction is only executed if the boolean value of |condition_id| matches
   // the value of |exec_if_cond_true|.
   // Assumes that all parameters are consistent.
-  // 2 fresh ids are required if the instruction does not have a result id, 5
-  // otherwise.
+  // 2 fresh ids are required if the instruction does not have a result id (the
+  // first two members of |fresh_ids| must be valid fresh ids), 5 otherwise.
   // Returns the merge block created.
   opt::BasicBlock* EncloseInstructionInConditional(
       opt::IRContext* ir_context, TransformationContext* transformation_context,

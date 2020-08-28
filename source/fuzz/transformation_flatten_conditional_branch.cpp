@@ -134,6 +134,8 @@ void TransformationFlattenConditionalBranch::Apply(
 
   auto branch_instruction = header_block->terminator();
 
+  // Get a reference to the last block in the true branch, before flow
+  // converges (if there is a true branch).
   opt::BasicBlock* last_true_block = nullptr;
 
   // Adjust the conditional branches by enclosing problematic instructions
@@ -387,6 +389,11 @@ bool TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
 
 bool TransformationFlattenConditionalBranch::InstructionNeedsPlaceholder(
     opt::IRContext* ir_context, const opt::Instruction& instruction) {
+  assert(!fuzzerutil::InstructionHasNoSideEffects(instruction) &&
+         InstructionCanBeHandled(ir_context, instruction) &&
+         "The instruction must have side effects and it must be possible to "
+         "enclose it inside a conditional.");
+
   if (instruction.HasResultId()) {
     // We need a placeholder iff the type is not Void.
     auto type = ir_context->get_type_mgr()->GetType(instruction.type_id());
