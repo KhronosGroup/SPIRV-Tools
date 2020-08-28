@@ -65,15 +65,15 @@ class TransformationFlattenConditionalBranch : public Transformation {
   //   - if the instruction is mapped to the required ids for enclosing it by
   //     |message_.instructions_to_ids_for_enclosing|, these must be valid (the
   //     fresh ids must be non-zero, fresh and distinct);
-  //   - if there is no such mapping, there must be enough fresh ids in
-  //     |message_.overflow_id|
+  //   - if there is no such mapping, the transformation context must have
+  //     overflow ids available.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
   // Flattens the selection construct with header |message_.header_block_id|,
   // changing any OpPhi in the block where the flow converges to OpSelect and
-  // enclosing any OpStore, OpLoad and OpFunctionCall in conditionals so that
+  // enclosing any instruction with side effects in conditionals so that
   // they are only executed when they should.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
@@ -88,7 +88,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // Returns false otherwise.
   // Assumes that |header| is the header of a conditional, so its last two
   // instructions are OpSelectionMerge and OpBranchConditional.
-  static bool ConditionalCanBeFlattened(
+  static bool GetProblematicInstructionsIfConditionalCanBeFlattened(
       opt::IRContext* ir_context, opt::BasicBlock* header,
       std::set<opt::Instruction*>* instructions_that_need_ids);
 

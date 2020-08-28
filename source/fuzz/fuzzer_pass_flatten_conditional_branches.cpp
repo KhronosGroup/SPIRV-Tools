@@ -60,8 +60,9 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
     std::set<opt::Instruction*> instructions_that_need_ids;
 
     // Do not consider this header if the conditional cannot be flattened.
-    if (!TransformationFlattenConditionalBranch::ConditionalCanBeFlattened(
-            GetIRContext(), header, &instructions_that_need_ids)) {
+    if (!TransformationFlattenConditionalBranch::
+            GetProblematicInstructionsIfConditionalCanBeFlattened(
+                GetIRContext(), header, &instructions_that_need_ids)) {
       continue;
     }
 
