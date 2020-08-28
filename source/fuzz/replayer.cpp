@@ -28,28 +28,16 @@
 namespace spvtools {
 namespace fuzz {
 
-struct Replayer::Impl {
-  Impl(spv_target_env env, bool validate, spv_validator_options options)
-      : target_env(env),
-        validate_during_replay(validate),
-        validator_options(options) {}
-
-  const spv_target_env target_env;    // Target environment.
-  MessageConsumer consumer;           // Message consumer.
-  const bool validate_during_replay;  // Controls whether the validator should
-                                      // be run after every replay step.
-  spv_validator_options validator_options;  // Options to control
-                                            // validation
-};
-
-Replayer::Replayer(spv_target_env env, bool validate_during_replay,
+Replayer::Replayer(spv_target_env target_env, bool validate_during_replay,
                    spv_validator_options validator_options)
-    : impl_(MakeUnique<Impl>(env, validate_during_replay, validator_options)) {}
+    : target_env_(target_env),
+      validate_during_replay_(validate_during_replay),
+      validator_options_(validator_options) {}
 
 Replayer::~Replayer() = default;
 
-void Replayer::SetMessageConsumer(MessageConsumer c) {
-  impl_->consumer = std::move(c);
+void Replayer::SetMessageConsumer(MessageConsumer consumer) {
+  consumer_ = std::move(consumer);
 }
 
 Replayer::ReplayerResultStatus Replayer::Run(
@@ -65,47 +53,45 @@ Replayer::ReplayerResultStatus Replayer::Run(
 
   if (num_transformations_to_apply >
       static_cast<uint32_t>(transformation_sequence_in.transformation_size())) {
-    impl_->consumer(SPV_MSG_ERROR, nullptr, {},
-                    "The number of transformations to be replayed must not "
-                    "exceed the size of the transformation sequence.");
+    consumer_(SPV_MSG_ERROR, nullptr, {},
+              "The number of transformations to be replayed must not "
+              "exceed the size of the transformation sequence.");
     return Replayer::ReplayerResultStatus::kTooManyTransformationsRequested;
   }
 
-  spvtools::SpirvTools tools(impl_->target_env);
+  spvtools::SpirvTools tools(target_env_);
   if (!tools.IsValid()) {
-    impl_->consumer(SPV_MSG_ERROR, nullptr, {},
-                    "Failed to create SPIRV-Tools interface; stopping.");
+    consumer_(SPV_MSG_ERROR, nullptr, {},
+              "Failed to create SPIRV-Tools interface; stopping.");
     return Replayer::ReplayerResultStatus::kFailedToCreateSpirvToolsInterface;
   }
 
   // Initial binary should be valid.
-  if (!tools.Validate(&binary_in[0], binary_in.size(),
-                      impl_->validator_options)) {
-    impl_->consumer(SPV_MSG_INFO, nullptr, {},
-                    "Initial binary is invalid; stopping.");
+  if (!tools.Validate(&binary_in[0], binary_in.size(), validator_options_)) {
+    consumer_(SPV_MSG_INFO, nullptr, {},
+              "Initial binary is invalid; stopping.");
     return Replayer::ReplayerResultStatus::kInitialBinaryInvalid;
   }
 
   // Build the module from the input binary.
-  std::unique_ptr<opt::IRContext> ir_context = BuildModule(
-      impl_->target_env, impl_->consumer, binary_in.data(), binary_in.size());
+  std::unique_ptr<opt::IRContext> ir_context =
+      BuildModule(target_env_, consumer_, binary_in.data(), binary_in.size());
   assert(ir_context);
 
   // For replay validation, we track the last valid SPIR-V binary that was
   // observed. Initially this is the input binary.
   std::vector<uint32_t> last_valid_binary;
-  if (impl_->validate_during_replay) {
+  if (validate_during_replay_) {
     last_valid_binary = binary_in;
   }
 
   FactManager fact_manager;
-  fact_manager.AddFacts(impl_->consumer, initial_facts, ir_context.get());
+  fact_manager.AddFacts(consumer_, initial_facts, ir_context.get());
   std::unique_ptr<TransformationContext> transformation_context =
       first_overflow_id == 0
-          ? MakeUnique<TransformationContext>(&fact_manager,
-                                              impl_->validator_options)
+          ? MakeUnique<TransformationContext>(&fact_manager, validator_options_)
           : MakeUnique<TransformationContext>(
-                &fact_manager, impl_->validator_options,
+                &fact_manager, validator_options_,
                 MakeUnique<CounterOverflowIdSource>(first_overflow_id));
 
   // We track the largest id bound observed, to ensure that it only increases
@@ -136,16 +122,16 @@ Replayer::ReplayerResultStatus Replayer::Run(
              "transformations.");
       max_observed_id_bound = ir_context->module()->id_bound();
 
-      if (impl_->validate_during_replay) {
+      if (validate_during_replay_) {
         std::vector<uint32_t> binary_to_validate;
         ir_context->module()->ToBinary(&binary_to_validate, false);
 
         // Check whether the latest transformation led to a valid binary.
         if (!tools.Validate(&binary_to_validate[0], binary_to_validate.size(),
-                            impl_->validator_options)) {
-          impl_->consumer(SPV_MSG_INFO, nullptr, {},
-                          "Binary became invalid during replay (set a "
-                          "breakpoint to inspect); stopping.");
+                            validator_options_)) {
+          consumer_(SPV_MSG_INFO, nullptr, {},
+                    "Binary became invalid during replay (set a "
+                    "breakpoint to inspect); stopping.");
           return Replayer::ReplayerResultStatus::kReplayValidationFailure;
         }
 
