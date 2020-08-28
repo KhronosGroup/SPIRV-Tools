@@ -179,7 +179,7 @@ void TransformationFlattenConditionalBranch::Apply(
       // Enclose all of the problematic instructions in conditionals, with the
       // same condition as the selection construct being flattened.
       for (auto instruction : problematic_instructions) {
-        // Get the fresh_ids needed by this instructions
+        // Get the fresh_ids needed by this instruction.
         IdsForEnclosingInst fresh_ids;
 
         if (instructions_to_fresh_ids.count(instruction) != 0) {
