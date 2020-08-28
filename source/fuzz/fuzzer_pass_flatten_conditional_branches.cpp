@@ -90,10 +90,11 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
           {MakeInstructionDescriptor(GetIRContext(), instruction), info});
     }
 
-    // TODO: Decide the order randomly
-    // Apply the transformation.
+    // Apply the transformation, evenly choosing whether to lay out the true
+    // branch or the false branch first.
     ApplyTransformation(TransformationFlattenConditionalBranch(
-        header->id(), true, std::move(instructions_to_fresh_ids)));
+        header->id(), GetFuzzerContext()->ChooseEven(),
+        std::move(instructions_to_fresh_ids)));
   }
 }
 }  // namespace fuzz

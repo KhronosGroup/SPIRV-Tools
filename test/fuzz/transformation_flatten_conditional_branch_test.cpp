@@ -610,6 +610,20 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
                OpFunctionEnd
          %11 = OpFunction %3 None %6
          %19 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpSelectionMerge %25 None
+               OpBranchConditional %5 %21 %22
+         %21 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpSelectionMerge %24 None
+               OpBranchConditional %5 %24 %23
+         %23 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpBranch %25
+         %25 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -633,12 +647,12 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
                "Bad attempt to query whether overflow ids are available.");
 #endif
 
-  auto transformation = TransformationFlattenConditionalBranch(
+  auto transformation1 = TransformationFlattenConditionalBranch(
       7, true,
       {{{MakeInstructionDescriptor(10, SpvOpFunctionCall, 0), {100, 101}}}});
   ASSERT_TRUE(
-      transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+      transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
 
   // The selection construct headed by %8 cannot be flattened because it
   // contains a function call returning void, whose result id is used.
@@ -651,6 +665,11 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
   // Block %16 is unreachable.
   ASSERT_FALSE(TransformationFlattenConditionalBranch(16, true).IsApplicable(
       context.get(), transformation_context));
+
+  auto transformation2 = TransformationFlattenConditionalBranch(20, false);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -695,6 +714,19 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
                OpFunctionEnd
          %11 = OpFunction %3 None %6
          %19 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpSelectionMerge %24 None
+               OpBranchConditional %5 %24 %23
+         %23 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpBranch %25
+         %25 = OpLabel
                OpReturn
                OpFunctionEnd
 )";

@@ -105,7 +105,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
                                           const opt::Instruction& instruction);
 
  private:
-  protobufs::TransformationFlattenConditionalBranch message_;
+  uint32_t GetConvergenceBlockId(opt::IRContext* ir_context,
+                                 opt::BasicBlock* header);
 
   // Returns an unordered_map mapping instructions to the fresh ids required to
   // enclose them inside a conditional. It gets the information from
@@ -130,6 +131,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // be handled by being enclosed in a conditional.
   static bool InstructionCanBeHandled(opt::IRContext* ir_context,
                                       const opt::Instruction& instruction);
+
+  protobufs::TransformationFlattenConditionalBranch message_;
 };
 
 }  // namespace fuzz

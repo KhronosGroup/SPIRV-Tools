@@ -126,10 +126,20 @@ void TransformationFlattenConditionalBranch::Apply(
   auto header_block = ir_context->cfg()->block(header_block_id);
 
   // Find the first block where flow converges (it is not necessarily the merge
-  // block).
-  uint32_t convergence_block_id = header_block->MergeBlockId();
-  while (ir_context->cfg()->preds(convergence_block_id).size() == 1) {
-    convergence_block_id = ir_context->cfg()->preds(convergence_block_id)[0];
+  // block) by walking the true branch until reaching a block that
+  // post-dominates the header.
+  // This is necessary because a potential common set of blocks at the end of
+  // the construct should not be duplicated.
+  uint32_t convergence_block_id =
+      header_block->terminator()->GetSingleWordInOperand(1);
+  auto postdominator_analysis =
+      ir_context->GetPostDominatorAnalysis(header_block->GetParent());
+  while (!postdominator_analysis->Dominates(convergence_block_id,
+                                            header_block_id)) {
+    auto current_block = ir_context->get_instr_block(convergence_block_id);
+    // If the transformation is applicable, the terminator is OpBranch.
+    convergence_block_id =
+        current_block->terminator()->GetSingleWordInOperand(0);
   }
 
   // Get the mapping from instructions to fresh ids.
@@ -309,37 +319,21 @@ bool TransformationFlattenConditionalBranch::
          header->terminator()->opcode() == SpvOpBranchConditional &&
          "|header| must be the header of a conditional.");
 
-  // Find the first block where flow converges (it is not necessarily the merge
-  // block).
-  uint32_t convergence_block_id = merge_block_id;
-  while (ir_context->cfg()->preds(convergence_block_id).size() == 1) {
-    if (convergence_block_id == header->id()) {
-      // There is a chain of blocks with one predecessor from the header block
-      // to the merge block. This means that the region is not single-entry,
-      // single-exit (because the merge block is only reached by one of the two
-      // branches).
-      return false;
-    }
-    convergence_block_id = ir_context->cfg()->preds(convergence_block_id)[0];
-  }
-
   auto enclosing_function = header->GetParent();
   auto dominator_analysis =
       ir_context->GetDominatorAnalysis(enclosing_function);
   auto postdominator_analysis =
       ir_context->GetPostDominatorAnalysis(enclosing_function);
 
-  // Check that this is a single-entry, single-exit region, by checking that the
-  // header dominates the convergence block and that the convergence block
-  // post-dominates the header.
-  if (!dominator_analysis->Dominates(header->id(), convergence_block_id) ||
-      !postdominator_analysis->Dominates(convergence_block_id, header->id())) {
+  // Check that the header and the merge block describe a single-entry,
+  // single-exit region.
+  if (!dominator_analysis->Dominates(header->id(), merge_block_id) ||
+      !postdominator_analysis->Dominates(merge_block_id, header->id())) {
     return false;
   }
 
   // Traverse the CFG starting from the header and check that, for all the
-  // blocks that can be reached by the header before reaching the convergence
-  // block:
+  // blocks that can be reached by the header before the flow converges:
   //  - they don't contain merge, barrier or OpSampledImage instructions
   //  - they branch unconditionally to another block
   //  Add any side-effecting instruction, requiring fresh ids, to
@@ -352,9 +346,11 @@ bool TransformationFlattenConditionalBranch::
     uint32_t block_id = to_check.front();
     to_check.pop_front();
 
-    if (block_id == convergence_block_id) {
-      // We have reached the convergence block, we don't need to consider its
-      // successors.
+    // If the block post-dominates the header, this is where flow converges, and
+    // we don't need to check this branch any further, because the
+    // transformation will only change the part of the graph where flow is
+    // divergent.
+    if (postdominator_analysis->Dominates(block_id, header->id())) {
       continue;
     }
 
@@ -363,6 +359,11 @@ bool TransformationFlattenConditionalBranch::
     // The block must not have a merge instruction, because inner constructs are
     // not allowed.
     if (block->GetMergeInst()) {
+      return false;
+    }
+
+    // The terminator instruction for the block must be OpBranch.
+    if (block->terminator()->opcode() != SpvOpBranch) {
       return false;
     }
 
