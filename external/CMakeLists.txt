@@ -74,11 +74,11 @@ if (NOT ${SPIRV_SKIP_TESTS})
           "Use shared (DLL) run-time lib even when Google Test is built as static lib."
           ON)
       endif()
-      # gtest requires special defines for building as a shared 
+      # gtest requires special defines for building as a shared
       # library, simply always build as static.
-      push_variable(BUILD_SHARED_LIBS 0) 
+      push_variable(BUILD_SHARED_LIBS 0)
       add_subdirectory(${GMOCK_DIR} EXCLUDE_FROM_ALL)
-      pop_variable(BUILD_SHARED_LIBS) 
+      pop_variable(BUILD_SHARED_LIBS)
     endif()
   endif()
   if (TARGET gmock)
@@ -137,16 +137,42 @@ if (NOT ${SPIRV_SKIP_TESTS})
 endif()
 
 if(SPIRV_BUILD_FUZZER)
-  set(PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
-  set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests")
-  set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "Do not build protobuf static runtime")
-  if (IS_DIRECTORY ${PROTOBUF_DIR})
-    if (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
-      add_definitions(-Wno-inconsistent-missing-override)
+  if(NOT TARGET protobuf::libprotobuf OR NOT TARGET protobuf::protoc)
+
+    set(SPIRV_TOOLS_PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
+    if (NOT IS_DIRECTORY ${SPIRV_TOOLS_PROTOBUF_DIR})
+      message(
+          FATAL_ERROR
+          "protobuf not found - please checkout a copy under external/.")
     endif()
-    add_subdirectory(${PROTOBUF_DIR} EXCLUDE_FROM_ALL)
-  else()
-    message(FATAL_ERROR
-      "protobuf not found - please checkout a copy under external/.")
+    set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests")
+    set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "Do not build protobuf static runtime")
+
+    if (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
+      add_compile_options(-Wno-inconsistent-missing-override)
+    endif()
+
+    set(
+        SPIRV_TOOLS_PROTOBUF_DEFINITIONS
+        -DGOOGLE_PROTOBUF_NO_RTTI=1
+        -DGOOGLE_PROTOBUF_USE_UNALIGNED=0)
+
+    # Compile protobufs with the above definitions.
+#    add_compile_definitions(${SPIRV_TOOLS_PROTOBUF_DEFINITIONS})
+    set_property(
+        DIRECTORY  "${SPIRV_TOOLS_PROTOBUF_DIR}"
+        APPEND PROPERTY COMPILE_DEFINITIONS
+        ${SPIRV_TOOLS_PROTOBUF_DEFINITIONS})
+
+    add_subdirectory(${SPIRV_TOOLS_PROTOBUF_DIR} EXCLUDE_FROM_ALL)
+
+    # Also, add the definitions to the interface of libprotobuf.
+    target_compile_definitions(libprotobuf PUBLIC ${SPIRV_TOOLS_PROTOBUF_DEFINITIONS})
+
+
+    get_directory_property(SPIRV_TOOLS_TEMP_D COMPILE_DEFINITIONS)
+
+    message(FATAL_ERROR ${SPIRV_TOOLS_TEMP_D})
+
   endif()
-endif(SPIRV_BUILD_FUZZER)
+endif()
