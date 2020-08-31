@@ -42,6 +42,10 @@ struct IdsForEnclosingInst {
 
   // Fresh id for the placeholder instruction.
   uint32_t placeholder_result_id;
+
+  // Module id of the same type as the instruction, and available to use in an
+  // OpCopyObject instruction with id |placeholder_result_id|.
+  uint32_t value_to_copy_id;
 };
 
 class TransformationFlattenConditionalBranch : public Transformation {
@@ -124,7 +128,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
   opt::BasicBlock* EncloseInstructionInConditional(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       opt::BasicBlock* block, opt::Instruction* instruction,
-      const IdsForEnclosingInst& fresh_ids, uint32_t condition_id,
+      const IdsForEnclosingInst& ids, uint32_t condition_id,
       bool exec_if_cond_true) const;
 
   // Returns true if the given instruction either has no side effects or it can

@@ -324,7 +324,7 @@ message InstToIdsForEnclosing {
   //    %actual_result_id = OpLoad %type %ptr
   //                       OpBranch %merge_block_id
   //  %alternative_block_id = OpLabel
-  // %placeholder_result_id = OpUndef %type
+  // %placeholder_result_id = OpCopyObject %type %value_to_copy_id
   //                       OpBranch %merge_block_id
   //     %merge_block_id = OpLabel
   //                 %id = OpPhi %type %actual_result_id %execute_block_id %placeholder_result_id %alternative_block_id
@@ -373,6 +373,12 @@ message InstToIdsForEnclosing {
 
   // A fresh id for the placeholder instruction.
   uint32 placeholder_result_id = 6;
+
+  // An id present in the module, available to use at this point in
+  // the program and with the same type as the original instruction,
+  // that can be used to create a placeholder OpCopyObject
+  // instruction.
+  uint32 value_to_copy_id = 7;
 }
 
 message LoopLimiterInfo {
@@ -1256,14 +1262,14 @@ message TransformationFlattenConditionalBranch {
   // The label id of the header block
   uint32 header_block_id = 1;
 
-  // A boolean field deciding the order in which the original
-  // branches will be laid out: the true branch will be laid
-  // out first iff this field is true.
+  // A boolean field deciding the order in which the original branches
+  // will be laid out: the true branch will be laid out first iff this
+  // field is true.
   bool true_branch_first = 2;
 
-  // A list of instructions with side effects, which must be
-  // enclosed inside smaller conditional before flattening the
-  // main one, and the corresponding fresh ids needed.
+  // A list of instructions with side effects, which must be enclosed
+  // inside smaller conditionals before flattening the main one, and
+  // the corresponding fresh ids and module ids needed.
   repeated InstToIdsForEnclosing inst_to_ids_for_enclosing = 3;
 }
 

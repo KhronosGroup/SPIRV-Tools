@@ -310,6 +310,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
          %11 = OpTypeInt 32 1
          %12 = OpTypeVector %11 4
          %13 = OpTypeFunction %11
+         %70 = OpConstant %11 0
          %14 = OpConstant %11 1
          %15 = OpTypeFloat 32
          %16 = OpTypeVector %15 2
@@ -402,7 +403,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   ASSERT_DEATH(TransformationFlattenConditionalBranch(
                    31, true,
                    {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
-                     {100, 101, 102, 103, 104}}})
+                     {100, 101, 102, 103, 104, 14}}})
                    .IsApplicable(context.get(), transformation_context),
                "Bad attempt to query whether overflow ids are available.");
 #endif
@@ -428,15 +429,33 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                      {100, 101, 102, 103, 104}}})
                    .IsApplicable(context.get(), transformation_context));
 
+  // %0 is not a valid id.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   31, true,
+                   {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+                     {104, 100, 101, 102, 103, 0}},
+                    {MakeInstructionDescriptor(6, SpvOpStore, 0), {106, 105}}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // %17 is a float constant, while %6 has int type.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   31, true,
+                   {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+                     {104, 100, 101, 102, 103, 17}},
+                    {MakeInstructionDescriptor(6, SpvOpStore, 0), {106, 105}}})
+                   .IsApplicable(context.get(), transformation_context));
+
   auto transformation1 = TransformationFlattenConditionalBranch(
       31, true,
-      {{MakeInstructionDescriptor(6, SpvOpLoad, 0), {104, 100, 101, 102, 103}},
-       {MakeInstructionDescriptor(6, SpvOpStore, 0), {106, 105, 107}}});
-
+      {{MakeInstructionDescriptor(6, SpvOpLoad, 0),
+        {104, 100, 101, 102, 103, 70}},
+       {MakeInstructionDescriptor(6, SpvOpStore, 0), {106, 105}}});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-
   transformation1.Apply(context.get(), &transformation_context);
+
+  // Check that the placeholder id was marked as irrelevant.
+  ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(103));
 
   // Make a new transformation context with a source of overflow ids.
   TransformationContext new_transformation_context(
@@ -444,14 +463,9 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
       MakeUnique<CounterOverflowIdSource>(1000));
 
   auto transformation2 = TransformationFlattenConditionalBranch(
-      36, false,
-      {{MakeInstructionDescriptor(8, SpvOpFunctionCall, 0),
-        {112, 108, 109, 110, 111}},
-       {MakeInstructionDescriptor(8, SpvOpStore, 0), {114, 113}}});
-
+      36, false, {{MakeInstructionDescriptor(8, SpvOpStore, 0), {114, 113}}});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), new_transformation_context));
-
   transformation2.Apply(context.get(), &new_transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -468,6 +482,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
          %11 = OpTypeInt 32 1
          %12 = OpTypeVector %11 4
          %13 = OpTypeFunction %11
+         %70 = OpConstant %11 0
          %14 = OpConstant %11 1
          %15 = OpTypeFloat 32
          %16 = OpTypeVector %15 2
@@ -501,7 +516,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
         %101 = OpLoad %11 %4
                OpBranch %104
         %102 = OpLabel
-        %103 = OpUndef %11
+        %103 = OpCopyObject %11 %70
                OpBranch %104
         %104 = OpLabel
           %6 = OpPhi %11 %101 %100 %103 %102
@@ -518,24 +533,24 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                OpBranch %45
          %45 = OpLabel
          %47 = OpAccessChain %21 %5 %14
-               OpSelectionMerge %1000 None
-               OpBranchConditional %20 %1000 %1001
-       %1001 = OpLabel
+               OpSelectionMerge %1005 None
+               OpBranchConditional %20 %1005 %1006
+       %1006 = OpLabel
                OpStore %47 %14
-               OpBranch %1000
-       %1000 = OpLabel
+               OpBranch %1005
+       %1005 = OpLabel
                OpBranch %44
          %44 = OpLabel
-               OpSelectionMerge %112 None
-               OpBranchConditional %20 %108 %110
-        %108 = OpLabel
-        %109 = OpFunctionCall %11 %3
-               OpBranch %112
-        %110 = OpLabel
-        %111 = OpUndef %11
-               OpBranch %112
-        %112 = OpLabel
-          %8 = OpPhi %11 %109 %108 %111 %110
+               OpSelectionMerge %1000 None
+               OpBranchConditional %20 %1001 %1003
+       %1001 = OpLabel
+       %1002 = OpFunctionCall %11 %3
+               OpBranch %1000
+       %1003 = OpLabel
+       %1004 = OpCopyObject %11 %70
+               OpBranch %1000
+       %1000 = OpLabel
+          %8 = OpPhi %11 %1002 %1001 %1004 %1003
                OpSelectionMerge %114 None
                OpBranchConditional %20 %113 %114
         %113 = OpLabel
@@ -686,14 +701,14 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
           %6 = OpTypeFunction %3
           %2 = OpFunction %3 None %6
           %7 = OpLabel
-               OpBranchConditional %9
+               OpBranch %9
           %9 = OpLabel
-               OpSelectionMerge %101 None
-               OpBranchConditional %5 %100 %101
-        %100 = OpLabel
-         %10 = OpFunctionCall %3 %11
-               OpBranch %101
+               OpSelectionMerge %100 None
+               OpBranchConditional %5 %101 %100
         %101 = OpLabel
+         %10 = OpFunctionCall %3 %11
+               OpBranch %100
+        %100 = OpLabel
                OpBranch %8
           %8 = OpLabel
                OpSelectionMerge %12 None
@@ -730,6 +745,8 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
                OpReturn
                OpFunctionEnd
 )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace
