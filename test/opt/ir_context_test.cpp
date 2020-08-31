@@ -1011,6 +1011,71 @@ OpFunctionEnd)";
       dbg_decl1->GetSingleWordOperand(kDebugDeclareOperandVariableIndex) == 20);
 }
 
+TEST_F(IRContextTest, DebugInstructionReplaceDebugScopeAndDebugInlinedAt) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+%2 = OpString "test"
+%3 = OpTypeVoid
+%4 = OpTypeFunction %3
+%5 = OpTypeFloat 32
+%6 = OpTypePointer Function %5
+%7 = OpConstant %5 0
+%8 = OpTypeInt 32 0
+%9 = OpConstant %8 32
+%10 = OpExtInst %3 %1 DebugExpression
+%11 = OpExtInst %3 %1 DebugSource %2
+%12 = OpExtInst %3 %1 DebugCompilationUnit 1 4 %11 HLSL
+%13 = OpExtInst %3 %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %3
+%14 = OpExtInst %3 %1 DebugFunction %2 %13 %11 0 0 %12 %2 FlagIsProtected|FlagIsPrivate 0 %17
+%15 = OpExtInst %3 %1 DebugInfoNone
+%16 = OpExtInst %3 %1 DebugFunction %2 %13 %11 10 10 %12 %2 FlagIsProtected|FlagIsPrivate 0 %15
+%25 = OpExtInst %3 %1 DebugInlinedAt 0 %14
+%26 = OpExtInst %3 %1 DebugInlinedAt 2 %14
+%17 = OpFunction %3 None %4
+%18 = OpLabel
+%19 = OpExtInst %3 %1 DebugScope %14
+%20 = OpVariable %6 Function
+OpBranch %21
+%21 = OpLabel
+%24 = OpExtInst %3 %1 DebugScope %16
+%22 = OpPhi %5 %7 %18
+OpBranch %23
+%23 = OpLabel
+%27 = OpExtInst %3 %1 DebugScope %16 %25
+OpLine %2 0 0
+%28 = OpFAdd %5 %7 %7
+OpStore %20 %28
+OpReturn
+OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ctx->BuildInvalidAnalyses(IRContext::kAnalysisDebugInfo);
+  NoopPassPreservesAll pass(Pass::Status::SuccessWithChange);
+  pass.Run(ctx.get());
+  EXPECT_TRUE(ctx->AreAnalysesValid(IRContext::kAnalysisDebugInfo));
+
+  auto* inst0 = ctx->get_def_use_mgr()->GetDef(20);
+  auto* inst1 = ctx->get_def_use_mgr()->GetDef(22);
+  auto* inst2 = ctx->get_def_use_mgr()->GetDef(28);
+  EXPECT_EQ(inst0->GetDebugScope().GetLexicalScope(), 14);
+  EXPECT_EQ(inst1->GetDebugScope().GetLexicalScope(), 16);
+  EXPECT_EQ(inst2->GetDebugScope().GetLexicalScope(), 16);
+  EXPECT_EQ(inst2->GetDebugInlinedAt(), 25);
+
+  EXPECT_TRUE(ctx->ReplaceAllUsesWith(14, 12));
+  EXPECT_TRUE(ctx->ReplaceAllUsesWith(16, 14));
+  EXPECT_TRUE(ctx->ReplaceAllUsesWith(25, 26));
+  EXPECT_EQ(inst0->GetDebugScope().GetLexicalScope(), 12);
+  EXPECT_EQ(inst1->GetDebugScope().GetLexicalScope(), 14);
+  EXPECT_EQ(inst2->GetDebugScope().GetLexicalScope(), 14);
+  EXPECT_EQ(inst2->GetDebugInlinedAt(), 26);
+}
+
 TEST_F(IRContextTest, AddDebugValueAfterReplaceUse) {
   const std::string text = R"(
 OpCapability Shader
