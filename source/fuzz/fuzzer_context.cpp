@@ -98,7 +98,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyMemoryWithLoadStore =
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyObjectWithStoreLoad =
     {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingIdWithSynonym = {10, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfReplacingIrrelevantId = {10, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfReplacingIrrelevantId = {35, 95};
 const std::pair<uint32_t, uint32_t>
     kChanceOfReplacingLinearAlgebraInstructions = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingLoadStoreWithCopyMemory =

@@ -34,13 +34,18 @@ FuzzerPassReplaceIrrelevantIds::FuzzerPassReplaceIrrelevantIds(
 FuzzerPassReplaceIrrelevantIds::~FuzzerPassReplaceIrrelevantIds() = default;
 
 void FuzzerPassReplaceIrrelevantIds::Apply() {
-  // Keep track of the irrelevant ids.
+  // Keep track of the irrelevant ids. This includes all the ids that are
+  // irrelevant according to the fact manager and that are still present in the
+  // module (some of them may have been removed by previously-run
+  // transformations).
   std::vector<uint32_t> irrelevant_ids;
 
   // Keep a map from the type ids of irrelevant ids to all the ids with that
   // type.
   std::unordered_map<uint32_t, std::vector<uint32_t>> types_to_ids;
 
+  // Find all the irrelevant ids that still exist in the module and all the
+  // types for which irrelevant ids exist.
   for (auto id :
        GetTransformationContext()->GetFactManager()->GetIrrelevantIds()) {
     // Check that the id still exists in the module.
@@ -55,7 +60,7 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
     // type id to an empty list in |types_to_ids|. The list will be filled later
     // on.
     if (types_to_ids.count(declaration->type_id()) == 0) {
-      types_to_ids[declaration->type_id()] = {};
+      types_to_ids.insert(declaration->type_id(), {});
     }
   }
 
@@ -64,11 +69,11 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
     return;
   }
 
-  // Loop through all the ids in the module and fill all the empty lists in
-  // |types_to_ids|.
+  // For every type for which we have at least one irrelevant id, record all ids
+  // in the module which have that type.
   for (const auto& pair : GetIRContext()->get_def_use_mgr()->id_to_defs()) {
     uint32_t type_id = pair.second->type_id();
-    if (types_to_ids.count(type_id)) {
+    if (type_id && types_to_ids.count(type_id)) {
       types_to_ids[type_id].push_back(pair.first);
     }
   }
@@ -89,16 +94,16 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
         irrelevant_id, [this, &irrelevant_id, &type_id, &types_to_ids,
                         &transformations_to_apply](opt::Instruction* use_inst,
                                                    uint32_t use_index) {
+          // Randomly decide whether to consider this use.
+          if (!GetFuzzerContext()->ChoosePercentage(
+                  GetFuzzerContext()->GetChanceOfReplacingIrrelevantId())) {
+            return;
+          }
+
           // The id must be used as an input operand.
           if (use_index < use_inst->NumOperands() - use_inst->NumInOperands()) {
             // The id is used as an output operand, so we cannot replace this
             // usage.
-            return;
-          }
-
-          // Randomly decide whether to consider this use.
-          if (!GetFuzzerContext()->ChoosePercentage(
-                  GetFuzzerContext()->GetChanceOfReplacingIrrelevantId())) {
             return;
           }
 

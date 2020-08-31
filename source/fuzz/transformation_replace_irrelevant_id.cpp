@@ -42,7 +42,7 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
     return false;
   }
 
-  // Find the instruction containing the id use.
+  // Find the instruction containing the id use, which must exist.
   auto use_instruction =
       FindInstructionContainingUse(message_.id_use_descriptor(), ir_context);
   if (!use_instruction) {
@@ -78,8 +78,8 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
 
   // The id must be available to use at the use point.
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3722):
-  // IdIsAvailable at use always returns false if the instruction is in an
-  // unreachable block, so it might need to be fixed.
+  //  IdIsAvailable at use always returns false if the instruction is in an
+  //  unreachable block, so it might need to be fixed.
   return fuzzerutil::IdIsAvailableAtUse(
       ir_context, use_instruction,
       message_.id_use_descriptor().in_operand_index(),

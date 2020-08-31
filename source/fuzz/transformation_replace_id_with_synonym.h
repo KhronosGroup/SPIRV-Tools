@@ -32,15 +32,12 @@ class TransformationReplaceIdWithSynonym : public Transformation {
       protobufs::IdUseDescriptor id_use_descriptor, uint32_t synonymous_id);
 
   // - The fact manager must know that the id identified by
-  //   |message_.id_use_descriptor| is synonomous with
-  //   |message_.synonymous_id|.
+  //   |message_.id_use_descriptor| is synonomous with |message_.synonymous_id|.
   // - Replacing the id in |message_.id_use_descriptor| by
   //   |message_.synonymous_id| must respect SPIR-V's rules about uses being
   //   dominated by their definitions.
-  // - The id must not be an index into an access chain whose base object has
-  //   struct type, as such indices must be constants.
-  // - The id must not be a pointer argument to a function call (because the
-  //   synonym might not be a memory object declaration).
+  // - The id use must be replaceable in principle. See
+  //   fuzzerutil::IdUseCanBeReplaced for details.
   // - |fresh_id_for_temporary| must be 0.
   bool IsApplicable(
       opt::IRContext* ir_context,

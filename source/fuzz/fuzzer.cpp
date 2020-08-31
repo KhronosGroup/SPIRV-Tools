@@ -194,6 +194,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
                                                validator_options_);
 
   // Apply some semantics-preserving passes.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3764): Enable
+  //  certain passes to run with a higher priority than the others.
   std::vector<std::unique_ptr<FuzzerPass>> passes;
   while (passes.empty()) {
     MaybeAddPass<FuzzerPassAddAccessChains>(
