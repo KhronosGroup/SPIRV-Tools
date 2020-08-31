@@ -69,18 +69,20 @@ void FuzzerPassReplaceOpPhiIdsFromDeadPredecessors::Apply() {
                 break;
               }
             }
+            assert(current_id != 0 &&
+                   "The predecessor - and corresponding id - should always be "
+                   "found.");
 
-            // Get the type id.
             uint32_t type_id = instruction->type_id();
 
-            // If the list of candidates for this type was not already computed,
-            // compute it.
+            // Find all the suitable instructions to replace the id.
             const auto& candidates = FindAvailableInstructions(
                 &function, &block, block.end(),
                 [type_id, current_id](opt::IRContext* /* unused */,
                                       opt::Instruction* candidate) -> bool {
-                  // Only consider instructions with a result id, with the
-                  // right type and different from the currently-used one.
+
+                  // Only consider instructions with a result id different from
+                  // the currently-used one, and with the right type.
                   return candidate->HasResultId() &&
                          candidate->type_id() == type_id &&
                          candidate->result_id() != current_id;
