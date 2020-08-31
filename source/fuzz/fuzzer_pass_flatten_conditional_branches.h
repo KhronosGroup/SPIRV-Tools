@@ -42,15 +42,15 @@ class FuzzerPassFlattenConditionalBranches : public FuzzerPass {
   class LessIfNestedMoreDeeply {
    public:
     explicit LessIfNestedMoreDeeply(opt::IRContext* ir_context)
-        : ir_context(ir_context) {}
+        : ir_context_(ir_context) {}
 
     bool operator()(const opt::BasicBlock* bb1, opt::BasicBlock* bb2) const {
-      return NestingDepth(ir_context, bb1->id()) >
-             NestingDepth(ir_context, bb2->id());
+      return NestingDepth(ir_context_, bb1->id()) >
+             NestingDepth(ir_context_, bb2->id());
     }
 
    private:
-    opt::IRContext* ir_context;
+    opt::IRContext* ir_context_;
   };
 };
 }  // namespace fuzz
