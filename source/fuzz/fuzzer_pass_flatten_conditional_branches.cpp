@@ -54,6 +54,11 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
     }
   }
 
+  // Sort the headers so that those that are more deeply nested are considered
+  // first, possibly enabling outer conditionals to be flattened.
+  std::sort(selection_headers.begin(), selection_headers.end(),
+            LessIfNestedMoreDeeply(GetIRContext()));
+
   // Apply the transformation to the headers which can be flattened.
   for (auto header : selection_headers) {
     // Make a set to keep track of the instructions that need fresh ids.
@@ -118,5 +123,22 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
         std::move(instructions_to_ids)));
   }
 }
+
+uint32_t FuzzerPassFlattenConditionalBranches::NestingDepth(
+    opt::IRContext* ir_context, uint32_t block_id) {
+  uint32_t result = 0;
+
+  // Find the merge block of the innermost construct that this block is in,
+  // until all constructs are exited.
+  block_id = ir_context->GetStructuredCFGAnalysis()->MergeBlock(block_id);
+
+  while (block_id != 0) {
+    result++;
+    block_id = ir_context->GetStructuredCFGAnalysis()->MergeBlock(block_id);
+  }
+
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools
