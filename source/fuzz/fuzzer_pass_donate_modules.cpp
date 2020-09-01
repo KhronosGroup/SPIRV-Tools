@@ -598,7 +598,7 @@ void FuzzerPassDonateModules::HandleFunctions(
   // Get the ids of functions in the donor module, topologically sorted
   // according to the donor's call graph.
   auto topological_order =
-      GetFunctionsInCallGraphTopologicalOrder(donor_ir_context);
+      CallGraph(donor_ir_context).GetFunctionsInTopologicalOrder();
 
   // Donate the functions in reverse topological order.  This ensures that a
   // function gets donated before any function that depends on it.  This allows
@@ -794,52 +794,6 @@ bool FuzzerPassDonateModules::IsBasicType(
     default:
       return false;
   }
-}
-
-std::vector<uint32_t>
-FuzzerPassDonateModules::GetFunctionsInCallGraphTopologicalOrder(
-    opt::IRContext* context) {
-  CallGraph call_graph(context);
-
-  // This is an implementation of Kahn’s algorithm for topological sorting.
-
-  // This is the sorted order of function ids that we will eventually return.
-  std::vector<uint32_t> result;
-
-  // Get a copy of the initial in-degrees of all functions.  The algorithm
-  // involves decrementing these values, hence why we work on a copy.
-  std::map<uint32_t, uint32_t> function_in_degree =
-      call_graph.GetFunctionInDegree();
-
-  // Populate a queue with all those function ids with in-degree zero.
-  std::queue<uint32_t> queue;
-  for (auto& entry : function_in_degree) {
-    if (entry.second == 0) {
-      queue.push(entry.first);
-    }
-  }
-
-  // Pop ids from the queue, adding them to the sorted order and decreasing the
-  // in-degrees of their successors.  A successor who's in-degree becomes zero
-  // gets added to the queue.
-  while (!queue.empty()) {
-    auto next = queue.front();
-    queue.pop();
-    result.push_back(next);
-    for (auto successor : call_graph.GetDirectCallees(next)) {
-      assert(function_in_degree.at(successor) > 0 &&
-             "The in-degree cannot be zero if the function is a successor.");
-      function_in_degree[successor] = function_in_degree.at(successor) - 1;
-      if (function_in_degree.at(successor) == 0) {
-        queue.push(successor);
-      }
-    }
-  }
-
-  assert(result.size() == function_in_degree.size() &&
-         "Every function should appear in the sort.");
-
-  return result;
 }
 
 void FuzzerPassDonateModules::HandleOpArrayLength(
