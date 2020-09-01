@@ -502,6 +502,20 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
                                                  uint32_t block_id,
                                                  SpvOp opcode);
 
+// Checks whether various conditions hold related to the acceptability of
+// replacing the id use at |use_in_operand_index| of |use_instruction| with a
+// synonym or another id of appropriate type if the original id is irrelevant.
+// In particular, this checks that:
+// - the id use is not an index into a struct field in an OpAccessChain - such
+//   indices must be constants, so it is dangerous to replace them.
+// - the id use is not a pointer function call argument, on which there are
+//   restrictions that make replacement problematic.
+// - the id use is not the Sample parameter of an OpImageTexelPointer
+//   instruction, as this must satisfy particular requirements.
+bool IdUseCanBeReplaced(opt::IRContext* ir_context,
+                        opt::Instruction* use_instruction,
+                        uint32_t use_in_operand_index);
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools

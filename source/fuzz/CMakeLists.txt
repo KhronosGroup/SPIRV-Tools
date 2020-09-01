@@ -91,6 +91,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.h
         fuzzer_pass_replace_copy_memories_with_loads_stores.h
         fuzzer_pass_replace_copy_objects_with_stores_loads.h
+        fuzzer_pass_replace_irrelevant_ids.h
         fuzzer_pass_replace_linear_algebra_instructions.h
         fuzzer_pass_replace_loads_stores_with_copy_memories.h
         fuzzer_pass_replace_parameter_with_global.h
@@ -168,6 +169,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_copy_memory_with_load_store.h
         transformation_replace_copy_object_with_store_load.h
         transformation_replace_id_with_synonym.h
+        transformation_replace_irrelevant_id.h
         transformation_replace_linear_algebra_instruction.h
         transformation_replace_load_store_with_copy_memory.h
         transformation_replace_parameter_with_global.h
@@ -246,6 +248,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.cpp
         fuzzer_pass_replace_copy_memories_with_loads_stores.cpp
         fuzzer_pass_replace_copy_objects_with_stores_loads.cpp
+        fuzzer_pass_replace_irrelevant_ids.cpp
         fuzzer_pass_replace_linear_algebra_instructions.cpp
         fuzzer_pass_replace_loads_stores_with_copy_memories.cpp
         fuzzer_pass_replace_parameter_with_global.cpp
@@ -322,6 +325,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_copy_memory_with_load_store.cpp
         transformation_replace_copy_object_with_store_load.cpp
         transformation_replace_id_with_synonym.cpp
+        transformation_replace_irrelevant_id.cpp
         transformation_replace_linear_algebra_instruction.cpp
         transformation_replace_load_store_with_copy_memory.cpp
         transformation_replace_parameter_with_global.cpp

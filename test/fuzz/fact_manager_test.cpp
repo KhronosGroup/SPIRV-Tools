@@ -1376,6 +1376,47 @@ TEST(FactManagerTest, IdIsIrrelevant) {
   ASSERT_FALSE(fact_manager.IdIsIrrelevant(13));
 }
 
+TEST(FactManagerTest, GetIrrelevantIds) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %12 = OpConstant %6 0
+         %13 = OpConstant %6 1
+         %14 = OpConstant %6 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  ASSERT_TRUE(fact_manager.GetIrrelevantIds() ==
+              std::unordered_set<uint32_t>({}));
+
+  fact_manager.AddFactIdIsIrrelevant(12);
+
+  ASSERT_TRUE(fact_manager.GetIrrelevantIds() ==
+              std::unordered_set<uint32_t>({12}));
+
+  fact_manager.AddFactIdIsIrrelevant(13);
+
+  ASSERT_TRUE(fact_manager.GetIrrelevantIds() ==
+              std::unordered_set<uint32_t>({12, 13}));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
