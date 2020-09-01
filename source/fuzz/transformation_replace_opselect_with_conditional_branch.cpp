@@ -35,6 +35,18 @@ TransformationReplaceOpSelectWithConditionalBranch::
 bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& /* unused */) const {
+  assert((message_.true_block_id() || message_.false_block_id()) &&
+         "At least one of the ids must be non-zero.");
+
+  // Check that the non-zero ids are fresh.
+  std::set<uint32_t> used_ids;
+  for (uint32_t id : {message_.true_block_id(), message_.false_block_id()}) {
+    if (id && !CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                            &used_ids)) {
+      return false;
+    }
+  }
+
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.select_id());
 
@@ -82,21 +94,6 @@ bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
   if (predecessor->GetMergeInst() != nullptr ||
       predecessor->terminator()->opcode() != SpvOpBranch) {
     return false;
-  }
-
-  // At least one of |message_.true_block_id| and |message_.false_block_id| is
-  // non-zero.
-  if (!message_.true_block_id() && !message_.false_block_id()) {
-    return false;
-  }
-
-  // Check that the non-zero ids are fresh.
-  std::set<uint32_t> used_ids;
-  for (uint32_t id : {message_.true_block_id(), message_.false_block_id()}) {
-    if (id && !CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                            &used_ids)) {
-      return false;
-    }
   }
 
   return true;

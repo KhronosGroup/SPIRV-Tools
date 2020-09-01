@@ -125,10 +125,13 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
   ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(35, 100, 101)
                    .IsApplicable(context.get(), transformation_context));
 
+#ifndef NDEBUG
   // |true_block_id| and |false_block_id| are both 0.
-  ASSERT_FALSE(
+  ASSERT_DEATH(
       TransformationReplaceOpSelectWithConditionalBranch(37, 0, 0).IsApplicable(
-          context.get(), transformation_context));
+          context.get(), transformation_context),
+      "At least one of the ids must be non-zero.");
+#endif
 
   // The fresh ids are not distinct.
   ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(37, 100, 100)
