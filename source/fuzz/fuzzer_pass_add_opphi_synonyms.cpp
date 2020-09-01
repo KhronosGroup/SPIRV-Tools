@@ -167,6 +167,12 @@ FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
       continue;
     }
 
+    // Exclude OpFunction and OpUndef instructions.
+    if (pair.second->opcode() == SpvOpFunction ||
+        pair.second->opcode() == SpvOpUndef) {
+      continue;
+    }
+
     // We need a new equivalence class for this id.
     std::set<uint32_t> new_equivalence_class;
 
