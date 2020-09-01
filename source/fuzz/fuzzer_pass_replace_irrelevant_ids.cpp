@@ -60,7 +60,7 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
     // type id to an empty list in |types_to_ids|. The list will be filled later
     // on.
     if (types_to_ids.count(declaration->type_id()) == 0) {
-      types_to_ids.insert(declaration->type_id(), {});
+      types_to_ids.insert({declaration->type_id(), {}});
     }
   }
 
