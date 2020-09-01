@@ -76,8 +76,8 @@ void FuzzerPassApplyIdSynonyms::Apply() {
       // the index of the operand restricted to input operands only.
       uint32_t use_in_operand_index =
           fuzzerutil::InOperandIndexFromOperandIndex(*use_inst, use_index);
-      if (!TransformationReplaceIdWithSynonym::UseCanBeReplacedWithSynonym(
-              GetIRContext(), use_inst, use_in_operand_index)) {
+      if (!fuzzerutil::IdUseCanBeReplaced(GetIRContext(), use_inst,
+                                          use_in_operand_index)) {
         continue;
       }
 

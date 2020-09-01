@@ -67,6 +67,7 @@
 #include "source/fuzz/fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.h"
 #include "source/fuzz/fuzzer_pass_replace_copy_memories_with_loads_stores.h"
 #include "source/fuzz/fuzzer_pass_replace_copy_objects_with_stores_loads.h"
+#include "source/fuzz/fuzzer_pass_replace_irrelevant_ids.h"
 #include "source/fuzz/fuzzer_pass_replace_linear_algebra_instructions.h"
 #include "source/fuzz/fuzzer_pass_replace_loads_stores_with_copy_memories.h"
 #include "source/fuzz/fuzzer_pass_replace_parameter_with_global.h"
@@ -193,6 +194,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
                                                validator_options_);
 
   // Apply some semantics-preserving passes.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3764): Enable
+  //  certain passes to run with a higher priority than the others.
   std::vector<std::unique_ptr<FuzzerPass>> passes;
   while (passes.empty()) {
     MaybeAddPass<FuzzerPassAddAccessChains>(
@@ -375,6 +378,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassPermutePhiOperands>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassReplaceIrrelevantIds>(
+      &passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassSwapCommutableOperands>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,

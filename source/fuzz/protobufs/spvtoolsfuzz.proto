@@ -416,6 +416,7 @@ message Transformation {
     TransformationInlineFunction inline_function = 69;
     TransformationAddOpPhiSynonym add_opphi_synonym = 70;
     TransformationMutatePointer mutate_pointer = 71;
+    TransformationReplaceIrrelevantId replace_irrelevant_id = 72;
     // Add additional option using the next available number.
   }
 }
@@ -1504,6 +1505,17 @@ message TransformationReplaceIdWithSynonym {
   // The synonymous id
   uint32 synonymous_id = 2;
 
+}
+
+message TransformationReplaceIrrelevantId {
+
+  // Replaces an irrelevant id with another id of the same type.
+
+  // The id use that is to be replaced
+  IdUseDescriptor id_use_descriptor = 1;
+
+  // The replacement id
+  uint32 replacement_id = 2;
 }
 
 message TransformationReplaceLinearAlgebraInstruction {

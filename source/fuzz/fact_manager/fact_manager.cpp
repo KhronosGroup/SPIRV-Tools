@@ -210,6 +210,10 @@ bool FactManager::IdIsIrrelevant(uint32_t result_id) const {
   return irrelevant_value_facts_.IdIsIrrelevant(result_id);
 }
 
+const std::unordered_set<uint32_t>& FactManager::GetIrrelevantIds() const {
+  return irrelevant_value_facts_.GetIrrelevantIds();
+}
+
 void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id) {
   protobufs::FactPointeeValueIsIrrelevant fact;
   fact.set_pointer_id(pointer_id);

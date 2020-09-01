@@ -194,6 +194,10 @@ class FactManager {
   // Returns true iff there exists a fact that the |result_id| is irrelevant.
   bool IdIsIrrelevant(uint32_t result_id) const;
 
+  // Returns an unordered set of all the ids which have been declared
+  // irrelevant.
+  const std::unordered_set<uint32_t>& GetIrrelevantIds() const;
+
   // End of irrelevant value facts
   //==============================
 
