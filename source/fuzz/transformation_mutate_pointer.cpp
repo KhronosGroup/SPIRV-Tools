@@ -65,7 +65,8 @@ bool TransformationMutatePointer::IsApplicable(
   }
 
   // Check that the module contains an irrelevant constant that will be used to
-  // mutate |pointer_inst|.
+  // mutate |pointer_inst|. The constant is irrelevant so that the latter
+  // transformation can change its value to something more interesting.
   auto constant_id = fuzzerutil::MaybeGetZeroConstant(
       ir_context, transformation_context,
       fuzzerutil::GetPointeeTypeIdFromPointerType(ir_context,
