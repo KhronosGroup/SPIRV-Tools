@@ -167,7 +167,10 @@ FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
       continue;
     }
 
-    // Exclude OpFunction and OpUndef instructions.
+    // Exclude OpFunction and OpUndef instructions, because:
+    // - OpFunction does not yield a value;
+    // - OpUndef yields an undefined value at each use, so it should never be a
+    //   synonym of another id.
     if (pair.second->opcode() == SpvOpFunction ||
         pair.second->opcode() == SpvOpUndef) {
       continue;
