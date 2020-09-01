@@ -61,6 +61,7 @@
 #include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_move_instruction_down.h"
+#include "source/fuzz/transformation_mutate_pointer.h"
 #include "source/fuzz/transformation_outline_function.h"
 #include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
@@ -217,6 +218,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kMoveInstructionDown:
       return MakeUnique<TransformationMoveInstructionDown>(
           message.move_instruction_down());
+    case protobufs::Transformation::TransformationCase::kMutatePointer:
+      return MakeUnique<TransformationMutatePointer>(message.mutate_pointer());
     case protobufs::Transformation::TransformationCase::kOutlineFunction:
       return MakeUnique<TransformationOutlineFunction>(
           message.outline_function());

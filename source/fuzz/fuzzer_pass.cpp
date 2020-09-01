@@ -516,26 +516,6 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
   }
 }
 
-bool FuzzerPass::CanFindOrCreateZeroConstant(const opt::analysis::Type& type) {
-  switch (type.kind()) {
-    case opt::analysis::Type::kBool:
-    case opt::analysis::Type::kInteger:
-    case opt::analysis::Type::kFloat:
-    case opt::analysis::Type::kArray:
-    case opt::analysis::Type::kMatrix:
-    case opt::analysis::Type::kVector:
-      return true;
-    case opt::analysis::Type::kStruct:
-      return std::all_of(type.AsStruct()->element_types().begin(),
-                         type.AsStruct()->element_types().end(),
-                         [this](const opt::analysis::Type* element_type) {
-                           return CanFindOrCreateZeroConstant(*element_type);
-                         });
-    default:
-      return false;
-  }
-}
-
 void FuzzerPass::MaybeAddUseToReplace(
     opt::Instruction* use_inst, uint32_t use_index, uint32_t replacement_id,
     std::vector<std::pair<protobufs::IdUseDescriptor, uint32_t>>*
