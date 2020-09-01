@@ -86,7 +86,9 @@ class TransformationMoveInstructionDown : public Transformation {
 
   // Returns true if it is possible to swap |a| and |b| without changing the
   // module's semantics. |a| and |b| are required to be supported instructions
-  // (see IsInstructionSupported).
+  // (see IsInstructionSupported). In particular, if either |a| or |b| are
+  // memory or barrier instructions, some checks are used to only say that they
+  // can be swapped if the swap is definitely semantics-preserving.
   static bool CanSafelySwapInstructions(opt::IRContext* ir_context,
                                         const opt::Instruction& a,
                                         const opt::Instruction& b,
