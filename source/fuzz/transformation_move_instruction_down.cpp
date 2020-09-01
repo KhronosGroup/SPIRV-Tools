@@ -579,7 +579,9 @@ bool TransformationMoveInstructionDown::CanSafelySwapInstructions(
           GetMemoryWriteTarget(ir_context, a)) &&
       !fact_manager.PointeeValueIsIrrelevant(
           GetMemoryWriteTarget(ir_context, b))) {
-    // We ignore the case when the written value is the same.
+    // We ignore the case when the written value is the same. This is because
+    // the written value might not be equal to one of the instruction's
+    // operands.
     return false;
   }
 
