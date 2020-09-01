@@ -80,12 +80,11 @@ bool TransformationMoveInstructionDown::IsApplicable(
     return false;
   }
 
-  // We should be able to swap memory instructions without changing semantics of
+  // It must be safe to swap the instructions without changing the semantics of
   // the module.
   if (IsInstructionSupported(ir_context, *successor_it) &&
-      !CanSwapMaybeSimpleInstructions(
-          ir_context, *inst, *successor_it,
-          *transformation_context.GetFactManager())) {
+      !CanSafelySwapInstructions(ir_context, *inst, *successor_it,
+                                 *transformation_context.GetFactManager())) {
     return false;
   }
 
@@ -135,9 +134,7 @@ protobufs::Transformation TransformationMoveInstructionDown::ToMessage() const {
 bool TransformationMoveInstructionDown::IsInstructionSupported(
     opt::IRContext* ir_context, const opt::Instruction& inst) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3605):
-  //  We only support "simple" instructions that work don't with memory.
-  //  We should extend this so that we support the ones that modify the memory
-  //  too.
+  //  Add support for more instructions here.
   return IsSimpleInstruction(ir_context, inst) ||
          IsMemoryInstruction(ir_context, inst) || IsBarrierInstruction(inst);
 }
@@ -254,7 +251,7 @@ bool TransformationMoveInstructionDown::IsSimpleInstruction(
       const auto* ext_inst_import =
           ir_context->get_def_use_mgr()->GetDef(inst.GetSingleWordInOperand(0));
 
-      if (ext_inst_import->GetInOperand(0).AsString() != "GLSL.std.450") {
+      if (ext_inst_import->GetInOperand(0).AsString() != kExtensionSetName) {
         return false;
       }
 
@@ -392,11 +389,15 @@ uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
         case GLSLstd450InterpolateAtSample:
           return inst.GetSingleWordInOperand(2);
         default:
+          // This assertion will fail if not all memory read extension
+          // instructions are handled in the switch.
           assert(false && "Not all memory opcodes are handled");
           return 0;
       }
     }
     default:
+      // This assertion will fail if not all memory read opcodes are handled in
+      // the switch.
       assert(false && "Not all memory opcodes are handled");
       return 0;
   }
@@ -440,11 +441,15 @@ uint32_t TransformationMoveInstructionDown::GetMemoryWriteTarget(
         case GLSLstd450Frexp:
           return inst.GetSingleWordInOperand(3);
         default:
+          // This assertion will fail if not all memory write extension
+          // instructions are handled in the switch.
           assert(false && "Not all opcodes are handled");
           return 0;
       }
     }
     default:
+      // This assertion will fail if not all memory write opcodes are handled in
+      // the switch.
       assert(false && "Not all opcodes are handled");
       return 0;
   }
@@ -468,7 +473,7 @@ bool TransformationMoveInstructionDown::IsBarrierInstruction(
   }
 }
 
-bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
+bool TransformationMoveInstructionDown::CanSafelySwapInstructions(
     opt::IRContext* ir_context, const opt::Instruction& a,
     const opt::Instruction& b, const FactManager& fact_manager) {
   assert(IsInstructionSupported(ir_context, a) &&
@@ -499,8 +504,8 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   // At least one of parameters is a memory read instruction.
 
   // In theory, we can swap two memory instructions, one of which reads
-  // from the memory, if read target (the pointer the memory is read from) and
-  // the write target (the memory is written into):
+  // from the memory, if the read target (the pointer the memory is read from)
+  // and the write target (the memory is written into):
   // - point to different memory regions
   // - point to the same region with irrelevant value
   // - point to the same region and the region is not used anymore.
@@ -517,22 +522,22 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   //
   // With this in mind, consider two cases (we will build a table for each one):
   // - one instruction only reads from memory, the other one only writes to it.
-  //   A - both point to the same memory region.
-  //   B - both point to different memory regions.
+  //   S - both point to the same memory region.
+  //   D - both point to different memory regions.
   //   0, 1, 2 - neither, one of or both of the memory regions are irrelevant.
   //   |-| - can't swap; |+| - can swap.
   //     | 0 | 1 | 2 |
-  //   A : -   +   +
-  //   B : +   +   +
+  //   S : -   +   +
+  //   D : +   +   +
   // - both instructions write to memory. Notation is the same.
   //     | 0 | 1 | 2 |
-  //   A : *   +   +
-  //   B : +   +   +
+  //   S : *   +   +
+  //   D : +   +   +
   //   * - we can swap two instructions that write into the same non-irrelevant
   //   memory region if the written value is the same.
   //
-  // Note that we can't always distinguish between A and B. Also note that
-  // in case of A, if one of the instructions is marked with
+  // Note that we can't always distinguish between S and D. Also note that
+  // in case of S, if one of the instructions is marked with
   // PointeeValueIsIrrelevant, then the pointee of the other one is irrelevant
   // as well even if the instruction is not marked with that fact.
   //
@@ -547,7 +552,8 @@ bool TransformationMoveInstructionDown::CanSwapMaybeSimpleInstructions(
   //
   // Both |a| and |b| can be either W or RW at this point. Additionally, at most
   // one of them can be R. The procedure below checks all possible combinations
-  // of R, W and RW according to the tables above.
+  // of R, W and RW according to the tables above. We conservatively assume that
+  // both |a| and |b| point to the same memory region.
 
   if (IsMemoryReadInstruction(ir_context, a) &&
       IsMemoryWriteInstruction(ir_context, b) &&

@@ -84,13 +84,13 @@ class TransformationMoveInstructionDown : public Transformation {
   // Returns true if |inst| is a barrier instruction.
   static bool IsBarrierInstruction(const opt::Instruction& inst);
 
-  // Returns true if it is possible to swap |a| and |b| without invalidating
-  // the module's semantics. |a| and |b| might not be memory instructions.
-  // Opcodes of both parameters must be supported.
-  static bool CanSwapMaybeSimpleInstructions(opt::IRContext* ir_context,
-                                             const opt::Instruction& a,
-                                             const opt::Instruction& b,
-                                             const FactManager& fact_manager);
+  // Returns true if it is possible to swap |a| and |b| without changing the
+  // module's semantics. |a| and |b| are required to be supported instructions
+  // (see IsInstructionSupported).
+  static bool CanSafelySwapInstructions(opt::IRContext* ir_context,
+                                        const opt::Instruction& a,
+                                        const opt::Instruction& b,
+                                        const FactManager& fact_manager);
 
   protobufs::TransformationMoveInstructionDown message_;
 };
