@@ -32,6 +32,19 @@ class FuzzerPassReplaceOpSelectsWithConditionalBranches : public FuzzerPass {
   ~FuzzerPassReplaceOpSelectsWithConditionalBranches() override;
 
   void Apply() override;
+
+ private:
+  // Returns true if any of the following holds:
+  // - the instruction is not the first in its block
+  // - the block containing it is a merge block
+  // - the block does not have a unique predecessor
+  // - the predecessor of the block is the header of a construct
+  // - the predecessor does not branch unconditionally to the block
+  // If this function returns true, the block must be split before the
+  // instruction for TransformationReplaceOpSelectWithConditionalBranch to be
+  // applicable.
+  // Assumes that the instruction is OpSelect.
+  bool InstructionNeedsSplitBefore(opt::Instruction* instruction);
 };
 
 }  // namespace fuzz

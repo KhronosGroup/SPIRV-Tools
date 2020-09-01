@@ -26,11 +26,10 @@ TransformationReplaceOpSelectWithConditionalBranch::
 
 TransformationReplaceOpSelectWithConditionalBranch::
     TransformationReplaceOpSelectWithConditionalBranch(
-        uint32_t select_id, uint32_t true_block_fresh_id,
-        uint32_t merge_block_fresh_id) {
+        uint32_t select_id, uint32_t true_block_id, uint32_t false_block_id) {
   message_.set_select_id(select_id);
-  message_.set_true_block_fresh_id(true_block_fresh_id);
-  message_.set_merge_block_fresh_id(merge_block_fresh_id);
+  message_.set_true_block_id(true_block_id);
+  message_.set_false_block_id(false_block_id);
 }
 
 bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
@@ -59,28 +58,48 @@ bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
   auto block = ir_context->get_instr_block(instruction);
   assert(block && "The block containing the instruction must be found");
 
-  // Check that the new block ids are fresh and distinct.
+  // The instruction must be the first in its block.
+  if (instruction->unique_id() != block->begin()->unique_id()) {
+    return false;
+  }
+
+  // The block must not be a merge block.
+  if (ir_context->GetStructuredCFGAnalysis()->IsMergeBlock(block->id())) {
+    return false;
+  }
+
+  // The block must have exactly one predecessor.
+  auto predecessors = ir_context->cfg()->preds(block->id());
+  if (predecessors.size() != 1) {
+    return false;
+  }
+
+  uint32_t pred_id = predecessors[0];
+  auto predecessor = ir_context->get_instr_block(pred_id);
+
+  // The predecessor must not be the header of a construct and it must end with
+  // OpBranch.
+  if (predecessor->GetMergeInst() != nullptr ||
+      predecessor->terminator()->opcode() != SpvOpBranch) {
+    return false;
+  }
+
+  // At least one of |message_.true_block_id| and |message_.false_block_id| is
+  // non-zero.
+  if (!message_.true_block_id() && !message_.false_block_id()) {
+    return false;
+  }
+
+  // Check that the non-zero ids are fresh.
   std::set<uint32_t> used_ids;
-  for (uint32_t id :
-       {message_.true_block_fresh_id(), message_.merge_block_fresh_id()}) {
-    if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                      &used_ids)) {
+  for (uint32_t id : {message_.true_block_id(), message_.false_block_id()}) {
+    if (id && !CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                            &used_ids)) {
       return false;
     }
   }
 
-  // The block cannot be a loop header, since splitting it would make back edges
-  // invalid.
-  if (block->IsLoopHeader()) {
-    return false;
-  }
-
-  // The block must be split around the OpSelect instruction. This means that
-  // there cannot be an OpSampledImage instruction before OpSelect that is used
-  // after it, because they are required to be in the same basic block.
-  return !fuzzerutil::
-      SplitBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
-          block, instruction);
+  return true;
 }
 
 void TransformationReplaceOpSelectWithConditionalBranch::Apply(
@@ -90,60 +109,88 @@ void TransformationReplaceOpSelectWithConditionalBranch::Apply(
 
   auto block = ir_context->get_instr_block(instruction);
 
-  // Update the module id bound with the new ids being used.
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.true_block_fresh_id());
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.merge_block_fresh_id());
+  auto predecessor =
+      ir_context->get_instr_block(ir_context->cfg()->preds(block->id())[0]);
 
-  // Split the block before the OpSelect instruction to get what will be the
-  // merge block.
-  auto merge_block = block->SplitBasicBlock(
-      ir_context, message_.merge_block_fresh_id(),
-      fuzzerutil::GetIteratorForInstruction(block, instruction));
+  // Create a new block for each non-zero id in {|message_.true_branch_id|,
+  // |message_.false_branch_id|}. Make each newly-created block branch
+  // unconditionally to the instruction block.
+  for (uint32_t id : {message_.true_block_id(), message_.false_block_id()}) {
+    if (id) {
+      fuzzerutil::UpdateModuleIdBound(ir_context, id);
 
-  // Create a new empty block.
-  auto new_block = MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpLabel, 0, message_.true_block_fresh_id(),
-      opt::Instruction::OperandList{}));
+      // Create the new block.
+      auto new_block = MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpLabel, 0, id, opt::Instruction::OperandList{}));
 
-  // Add an unconditional branch from the new block to the merge block.
-  new_block->AddInstruction(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpBranch, 0, 0,
-      opt::Instruction::OperandList{
-          {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
+      // Add an unconditional branch from the new block to the instruction
+      // block.
+      new_block->AddInstruction(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpBranch, 0, 0,
+          opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {block->id()}}}));
 
-  // Add an OpSelectionMerge instruction to the original block.
-  block->AddInstruction(MakeUnique<opt::Instruction>(
+      // Insert the new block right after the predecessor of the instruction
+      // block.
+      block->GetParent()->InsertBasicBlockBefore(std::move(new_block), block);
+    }
+  }
+
+  // Delete the OpBranch instruction from the predecessor.
+  ir_context->KillInst(predecessor->terminator());
+
+  // Add an OpSelectionMerge instruction to the predecessor block, where the
+  // merge block is the instruction block.
+  predecessor->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpSelectionMerge, 0, 0,
-      opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {merge_block->id()}},
+      opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {block->id()}},
                                     {SPV_OPERAND_TYPE_SELECTION_CONTROL,
                                      {SpvSelectionControlMaskNone}}}));
 
-  // Add a conditional branching instruction to the original block, using the
-  // same conditional as OpSelect and branching to the new block if the
-  // condition is true, to the merge block otherwise.
-  block->AddInstruction(MakeUnique<opt::Instruction>(
+  // |if_block| will be the true block, if it has been created, the instruction
+  // block otherwise.
+  uint32_t if_block =
+      message_.true_block_id() ? message_.true_block_id() : block->id();
+
+  // |else_block| will be the false block, if it has been created, the
+  // instruction block otherwise.
+  uint32_t else_block =
+      message_.false_block_id() ? message_.false_block_id() : block->id();
+
+  // Add a conditional branching instruction to the predecessor, branching to
+  // |if_block| if the condition is true and to |if_false| otherwise.
+  predecessor->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpBranchConditional, 0, 0,
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {instruction->GetSingleWordInOperand(0)}},
-          {SPV_OPERAND_TYPE_ID, {new_block->id()}},
-          {SPV_OPERAND_TYPE_ID, {merge_block->id()}}}));
+          {SPV_OPERAND_TYPE_ID, {if_block}},
+          {SPV_OPERAND_TYPE_ID, {else_block}}}));
+
+  // |if_pred| will be the true block, if it has been created, the existing
+  // predecessor otherwise.
+  uint32_t if_pred =
+      message_.true_block_id() ? message_.true_block_id() : predecessor->id();
+
+  // |else_pred| will be the false block, if it has been created, the existing
+  // predecessor otherwise.
+  uint32_t else_pred =
+      message_.false_block_id() ? message_.false_block_id() : predecessor->id();
 
   // Replace the OpSelect instruction in the merge block with an OpPhi.
   // This:          OpSelect %type %cond %if %else
-  // will become:   OpPhi %type %if %new_block_id %else %block_id
+  // will become:   OpPhi %type %if %if_pred %else %else_pred
   instruction->SetOpcode(SpvOpPhi);
   std::vector<opt::Operand> operands;
 
   operands.emplace_back(instruction->GetInOperand(1));
-  operands.emplace_back(opt::Operand{SPV_OPERAND_TYPE_ID, {new_block->id()}});
+  operands.emplace_back(opt::Operand{SPV_OPERAND_TYPE_ID, {if_pred}});
 
   operands.emplace_back(instruction->GetInOperand(2));
-  operands.emplace_back(opt::Operand{SPV_OPERAND_TYPE_ID, {block->id()}});
+  operands.emplace_back(opt::Operand{SPV_OPERAND_TYPE_ID, {else_pred}});
 
   instruction->SetInOperands(std::move(operands));
 
-  // Insert the new block before the merge block.
-  block->GetParent()->InsertBasicBlockBefore(std::move(new_block), merge_block);
+  // Invalidate all analyses, since the structure of the module was changed.
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation

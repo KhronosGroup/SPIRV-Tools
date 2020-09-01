@@ -115,6 +115,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingArrayOrStructType() {
     return chance_of_adding_array_or_struct_type_;
   }
+  uint32_t GetChanceOfAddingBothBranchesWhenReplacingOpSelect() {
+    return chance_of_adding_both_branches_when_replacing_opselect_;
+  }
   uint32_t GetChanceOfAddingCompositeInsert() {
     return chance_of_adding_composite_insert_;
   }
@@ -157,6 +160,9 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfAddingStore() { return chance_of_adding_store_; }
   uint32_t GetChanceOfAddingSynonyms() { return chance_of_adding_synonyms_; }
+  uint32_t GetChanceOfAddingTrueBranchWhenReplacingOpSelect() {
+    return chance_of_adding_true_branch_when_replacing_opselect_;
+  }
   uint32_t GetChanceOfAddingVectorShuffle() {
     return chance_of_adding_vector_shuffle_;
   }
@@ -367,6 +373,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_access_chain_;
   uint32_t chance_of_adding_another_struct_field_;
   uint32_t chance_of_adding_array_or_struct_type_;
+  uint32_t chance_of_adding_both_branches_when_replacing_opselect_;
   uint32_t chance_of_adding_composite_insert_;
   uint32_t chance_of_adding_copy_memory_;
   uint32_t chance_of_adding_dead_block_;
@@ -385,6 +392,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_relaxed_decoration_;
   uint32_t chance_of_adding_store_;
   uint32_t chance_of_adding_synonyms_;
+  uint32_t chance_of_adding_true_branch_when_replacing_opselect_;
   uint32_t chance_of_adding_vector_shuffle_;
   uint32_t chance_of_adding_vector_type_;
   uint32_t chance_of_adjusting_branch_weights_;

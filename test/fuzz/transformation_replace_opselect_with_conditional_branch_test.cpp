@@ -16,6 +16,9 @@
 
 #include "test/fuzz/fuzz_test_util.h"
 
+#include "source/fuzz/fuzzer_pass_replace_opselects_with_conditional_branches.h"
+#include "source/fuzz/pseudo_random_generator.h"
+
 namespace spvtools {
 namespace fuzz {
 namespace {
@@ -28,45 +31,54 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
                OpEntryPoint Fragment %2 "main"
                OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
-               OpName %2 "main"
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
           %5 = OpTypeInt 32 1
           %6 = OpConstant %5 1
-          %7 = OpTypeVector %5 4
-          %8 = OpTypeBool
-          %9 = OpConstantTrue %8
-         %34 = OpTypeVector %8 2
-         %35 = OpConstantComposite %34 %9 %9
-         %10 = OpTypeSampler
-         %11 = OpTypeImage %3 2D 2 0 0 1 Unknown
-         %12 = OpTypeSampledImage %11
-         %13 = OpTypePointer Function %11
-         %14 = OpTypePointer Function %10
-         %15 = OpTypeFloat 32
-         %16 = OpTypeVector %15 2
-         %17 = OpConstant %15 1
-         %18 = OpConstantComposite %16 %17 %17
+          %7 = OpConstant %5 2
+          %8 = OpTypeVector %5 4
+          %9 = OpConstantNull %8
+         %10 = OpConstantComposite %8 %6 %6 %7 %7
+         %11 = OpTypeBool
+         %12 = OpTypeVector %11 4
+         %13 = OpConstantTrue %11
+         %14 = OpConstantFalse %11
+         %15 = OpConstantComposite %12 %13 %14 %14 %13
           %2 = OpFunction %3 None %4
+         %16 = OpLabel
+         %17 = OpCopyObject %5 %6
+         %18 = OpCopyObject %5 %7
+               OpBranch %19
          %19 = OpLabel
-         %20 = OpVariable %13 Function
-         %21 = OpVariable %14 Function
-         %22 = OpLoad %11 %20
-         %23 = OpLoad %10 %21
-         %24 = OpCopyObject %5 %6
-         %25 = OpSelect %5 %9 %24 %6
-               OpBranch %26
+         %20 = OpCopyObject %5 %17
+         %21 = OpSelect %5 %13 %17 %18
+               OpBranch %22
+         %22 = OpLabel
+         %23 = OpSelect %8 %15 %9 %10
+               OpBranch %24
+         %24 = OpLabel
+               OpSelectionMerge %25 None
+               OpBranchConditional %13 %26 %27
          %26 = OpLabel
-         %33 = OpSelect %16 %35 %18 %18
-         %27 = OpSampledImage %12 %22 %23
-         %28 = OpSelect %5 %9 %6 %24
-         %29 = OpImageSampleImplicitLod %7 %27 %18
-               OpBranch %30
-         %30 = OpLabel
-         %31 = OpSelect %5 %9 %6 %24
-               OpLoopMerge %32 %30 None
-               OpBranchConditional %9 %30 %32
+         %28 = OpSelect %5 %13 %17 %18
+               OpBranch %27
+         %27 = OpLabel
+         %29 = OpSelect %5 %13 %17 %18
+               OpBranch %25
+         %25 = OpLabel
+         %30 = OpSelect %5 %13 %17 %18
+               OpBranch %31
+         %31 = OpLabel
+               OpLoopMerge %32 %33 None
+               OpBranch %33
+         %33 = OpLabel
+         %34 = OpSelect %5 %13 %17 %18
+               OpBranchConditional %13 %31 %32
          %32 = OpLabel
+         %35 = OpSelect %5 %13 %17 %18
+               OpBranch %36
+         %36 = OpLabel
+         %37 = OpSelect %5 %13 %17 %18
                OpReturn
                OpFunctionEnd
 )";
@@ -80,21 +92,50 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // %24 is not an OpSelect instruction.
+  // %20 is not an OpSelect instruction.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(20, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // %21 is not the first instruction in its block.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(21, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // The condition for %23 is not a scalar, but a vector of booleans.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(23, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // The predecessor (%24) of the block containing %28 is the header of a
+  // selection construct and does not branch unconditionally.
   ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(24, 100, 101)
                    .IsApplicable(context.get(), transformation_context));
 
-  // The block containing %28 cannot be split before %28 because this would
-  // separate an OpSampledImage instruction from its use.
-  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(28, 100, 101)
+  // The block containing %29 has two predecessors (%24 and %26).
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(29, 100, 101)
                    .IsApplicable(context.get(), transformation_context));
 
-  // The block containing %31 cannot be split because it is a loop header.
+  // The block containing %30 is the merge block for a selection construct.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(30, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // The predecessor (%31) of the block containing %34 is a loop header.
   ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(31, 100, 101)
                    .IsApplicable(context.get(), transformation_context));
 
-  // The condition for %33 is a vector of booleans, so not a scalar.
-  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(33, 100, 101)
+  // The block containing %35 is the merge block for a loop construct.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(35, 100, 101)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // |true_block_id| and |false_block_id| are both 0.
+  ASSERT_FALSE(
+      TransformationReplaceOpSelectWithConditionalBranch(37, 0, 0).IsApplicable(
+          context.get(), transformation_context));
+
+  // The fresh ids are not distinct.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(37, 100, 100)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // One of the ids is not fresh.
+  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(37, 100, 10)
                    .IsApplicable(context.get(), transformation_context));
 }
 
@@ -109,15 +150,35 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
                OpName %2 "main"
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
-          %5 = OpTypeBool
-          %6 = OpConstantTrue %5
-          %7 = OpTypeInt 32 1
-          %8 = OpConstant %7 1
+          %5 = OpTypeInt 32 1
+          %6 = OpConstant %5 1
+          %7 = OpConstant %5 2
+          %8 = OpTypeVector %5 4
+          %9 = OpConstantNull %8
+         %10 = OpConstantComposite %8 %6 %6 %7 %7
+         %11 = OpTypeBool
+         %12 = OpTypeVector %11 4
+         %13 = OpConstantTrue %11
+         %14 = OpConstantFalse %11
+         %15 = OpConstantComposite %12 %13 %14 %14 %13
           %2 = OpFunction %3 None %4
-          %9 = OpLabel
-         %10 = OpCopyObject %7 %8
-         %11 = OpSelect %7 %6 %10 %8
-         %12 = OpCopyObject %7 %10
+         %16 = OpLabel
+         %17 = OpCopyObject %5 %6
+         %18 = OpCopyObject %5 %7
+               OpBranch %19
+         %19 = OpLabel
+         %20 = OpSelect %5 %13 %17 %18
+               OpSelectionMerge %21 None
+               OpBranchConditional %13 %22 %21
+         %22 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+         %24 = OpSelect %8 %13 %9 %10
+               OpBranch %21
+         %21 = OpLabel
+               OpBranch %25
+         %25 = OpLabel
+         %26 = OpSelect %5 %13 %17 %18
                OpReturn
                OpFunctionEnd
 )";
@@ -132,19 +193,23 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // One of the ids are not fresh.
-  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, 100, 11)
-                   .IsApplicable(context.get(), transformation_context));
-
-  // The ids are repeated.
-  ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(11, 100, 100)
-                   .IsApplicable(context.get(), transformation_context));
-
   auto transformation =
-      TransformationReplaceOpSelectWithConditionalBranch(11, 100, 101);
+      TransformationReplaceOpSelectWithConditionalBranch(20, 100, 101);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
+
+  auto transformation2 =
+      TransformationReplaceOpSelectWithConditionalBranch(24, 0, 102);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+
+  auto transformation3 =
+      TransformationReplaceOpSelectWithConditionalBranch(26, 103, 0);
+  ASSERT_TRUE(
+      transformation3.IsApplicable(context.get(), transformation_context));
+  transformation3.Apply(context.get(), &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -158,20 +223,46 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
                OpName %2 "main"
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
-          %5 = OpTypeBool
-          %6 = OpConstantTrue %5
-          %7 = OpTypeInt 32 1
-          %8 = OpConstant %7 1
+          %5 = OpTypeInt 32 1
+          %6 = OpConstant %5 1
+          %7 = OpConstant %5 2
+          %8 = OpTypeVector %5 4
+          %9 = OpConstantNull %8
+         %10 = OpConstantComposite %8 %6 %6 %7 %7
+         %11 = OpTypeBool
+         %12 = OpTypeVector %11 4
+         %13 = OpConstantTrue %11
+         %14 = OpConstantFalse %11
+         %15 = OpConstantComposite %12 %13 %14 %14 %13
           %2 = OpFunction %3 None %4
-          %9 = OpLabel
-         %10 = OpCopyObject %7 %8
-               OpSelectionMerge %101 None
-               OpBranchConditional %6 %100 %101
+         %16 = OpLabel
+         %17 = OpCopyObject %5 %6
+         %18 = OpCopyObject %5 %7
+               OpSelectionMerge %19 None
+               OpBranchConditional %13 %100 %101
         %100 = OpLabel
-               OpBranch %101
+               OpBranch %19
         %101 = OpLabel
-         %11 = OpPhi %7 %10 %100 %8 %9
-         %12 = OpCopyObject %7 %10
+               OpBranch %19
+         %19 = OpLabel
+         %20 = OpPhi %5 %17 %100 %18 %101
+               OpSelectionMerge %21 None
+               OpBranchConditional %13 %22 %21
+         %22 = OpLabel
+               OpSelectionMerge %23 None
+               OpBranchConditional %13 %23 %102
+        %102 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+         %24 = OpPhi %8 %9 %22 %10 %102
+               OpBranch %21
+         %21 = OpLabel
+               OpSelectionMerge %25 None
+               OpBranchConditional %13 %103 %25
+        %103 = OpLabel
+               OpBranch %25
+         %25 = OpLabel
+         %26 = OpPhi %5 %17 %103 %18 %21
                OpReturn
                OpFunctionEnd
 )";

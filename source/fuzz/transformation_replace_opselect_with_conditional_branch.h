@@ -27,15 +27,19 @@ class TransformationReplaceOpSelectWithConditionalBranch
       const protobufs::TransformationReplaceOpSelectWithConditionalBranch&
           message);
 
-  TransformationReplaceOpSelectWithConditionalBranch(
-      uint32_t select_id, uint32_t true_block_fresh_id,
-      uint32_t merge_block_fresh_id);
+  TransformationReplaceOpSelectWithConditionalBranch(uint32_t select_id,
+                                                     uint32_t true_block_id,
+                                                     uint32_t false_block_id);
 
   // - |message_.select_id| is the result id of an OpSelect instruction.
   // - The condition of the OpSelect must be a scalar boolean.
-  // - The block containing the instruction can be split at the position
-  //   corresponding to the instruction.
-  // - The pair |message_.new_block_ids| contains 2 fresh and distinct ids
+  // - The OpSelect instruction is the first instruction in its block.
+  // - The block containing the instruction is not a merge block, and it has a
+  //   single predecessor, which is not a header and whose last instruction is
+  //   OpBranch.
+  // - Each of |message_.true_block_id| and |message_.false_block_id| is either
+  //   0 or a valid fresh id, and at most one of them is 0. They must be
+  //   distinct.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
