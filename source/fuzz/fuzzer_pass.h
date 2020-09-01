@@ -273,9 +273,6 @@ class FuzzerPass {
   uint32_t FindOrCreateZeroConstant(uint32_t scalar_or_composite_type_id,
                                     bool is_irrelevant);
 
-  // Checks if FindOrCreateZeroConstant can be called on this type.
-  bool CanFindOrCreateZeroConstant(const opt::analysis::Type& type);
-
   // Adds a pair (id_use_descriptor, |replacement_id|) to the vector
   // |uses_to_replace|, where id_use_descriptor is the id use descriptor
   // representing the usage of an id in the |use_inst| instruction, at operand

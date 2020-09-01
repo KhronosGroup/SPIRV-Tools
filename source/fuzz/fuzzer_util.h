@@ -388,6 +388,11 @@ uint32_t MaybeGetZeroConstant(
     const TransformationContext& transformation_context,
     uint32_t scalar_or_composite_type_id, bool is_irrelevant);
 
+// Returns true if it is possible to create an OpConstant or an
+// OpConstantComposite instruction of |type|. That is, returns true if |type|
+// and all its constituents are either scalar or composite.
+bool CanCreateConstant(const opt::analysis::Type& type);
+
 // Returns the result id of an OpConstant instruction. |scalar_type_id| must be
 // a result id of a scalar type (i.e. int, float or bool). Returns 0 if no such
 // instruction is present in the module. The returned id either participates in

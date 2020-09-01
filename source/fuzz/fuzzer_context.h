@@ -218,6 +218,7 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfMergingBlocks() { return chance_of_merging_blocks_; }
   uint32_t GetChanceOfMovingBlockDown() { return chance_of_moving_block_down_; }
+  uint32_t GetChanceOfMutatingPointer() { return chance_of_mutating_pointer_; }
   uint32_t GetChanceOfObfuscatingConstant() {
     return chance_of_obfuscating_constant_;
   }
@@ -398,6 +399,7 @@ class FuzzerContext {
   uint32_t chance_of_making_vector_operation_dynamic_;
   uint32_t chance_of_merging_blocks_;
   uint32_t chance_of_moving_block_down_;
+  uint32_t chance_of_mutating_pointer_;
   uint32_t chance_of_obfuscating_constant_;
   uint32_t chance_of_outlining_function_;
   uint32_t chance_of_permuting_instructions_;

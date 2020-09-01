@@ -415,6 +415,7 @@ message Transformation {
     TransformationCompositeInsert composite_insert = 68;
     TransformationInlineFunction inline_function = 69;
     TransformationAddOpPhiSynonym add_opphi_synonym = 70;
+    TransformationMutatePointer mutate_pointer = 71;
     // Add additional option using the next available number.
   }
 }
@@ -1209,6 +1210,22 @@ message TransformationMoveInstructionDown {
 
   // The instruction to move down.
   InstructionDescriptor instruction = 1;
+
+}
+
+message TransformationMutatePointer {
+
+  // Backs up value of the pointer, writes into the pointer and
+  // restores the original value.
+
+  // Result id of the pointer instruction to mutate.
+  uint32 pointer_id = 1;
+
+  // Fresh id for the OpLoad instruction.
+  uint32 fresh_id = 2;
+
+  // Instruction to insert backup, mutation and restoration code before.
+  InstructionDescriptor insert_before = 3;
 
 }
 
