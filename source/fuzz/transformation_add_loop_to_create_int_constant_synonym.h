@@ -25,6 +25,27 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
       const protobufs::TransformationAddLoopToCreateIntConstantSynonym&
           message);
 
+  TransformationAddLoopToCreateIntConstantSynonym(
+      uint32_t constant_id, uint32_t initial_val_id, uint32_t step_val_id,
+      uint32_t num_iterations_id, uint32_t block_after_loop_id, uint32_t syn_id,
+      uint32_t loop_id, uint32_t ctr_id, uint32_t temp_id,
+      uint32_t eventual_syn_id, uint32_t incremented_ctr_id, uint32_t cond_id,
+      uint32_t additional_block_id);
+
+  // - |message_.constant_id|, |message_.initial_value_id|,
+  //   |message_.step_val_id| are integer constant (scalar or vectors) with the
+  //   same type (with possibly different signedness, but same bit width, which
+  //   must be <= 64). Let their value be C, I, S respectively.
+  // - |message_.num_iterations_id| is a 32-bit integer scalar constant, with
+  //   value N > 0 and N <= 32.
+  // - The module contains 32-bit signed integer scalar constants of values 0
+  //   and 1.
+  // - C = I - S * N
+  // - |message_.block_after_loop_id| is the label of a block which has a single
+  //   predecessor and which is not a merge block.
+  // - |message_.additional_block_id| is either 0 or a valid fresh id, distinct
+  //   from the other fresh ids.
+  // - All of the other parameters are valid fresh ids.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

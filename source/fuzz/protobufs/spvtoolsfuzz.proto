@@ -861,7 +861,7 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   //            %temp_id = OpPhi %intI %I %pred %eventual_syn_id %loop_id
   //    %eventual_syn_id = OpISub %intI %temp_id %step_val_id
   // %incremented_ctr_id = OpIAdd %int %ctr_id %int_1
-  //            %cond_id = OpILessThan %bool %incremented_ctr_id %num_iterations_id
+  //            %cond_id = OpSLessThan %bool %incremented_ctr_id %num_iterations_id
   //                       OpLoopMerge %block_after_loop_id %loop_id %none
   //                       OpBranchConditional %cond_id %loop_id %block_after_loop_id
   //
@@ -922,7 +922,7 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   //  %additional_block_id = OpLabel
   //      %eventual_syn_id = OpISub %intI %temp_id %step_val_id
   //   %incremented_ctr_id = OpIAdd %int %ctr_id %int_1
-  //              %cond_id = OpILessThan %bool %incremented_ctr_id %num_iterations_id
+  //              %cond_id = OpSLessThan %bool %incremented_ctr_id %num_iterations_id
   //                         OpBranchConditional %cond_id %loop_id %block_after_loop_id
 
   // A fresh id for the additional block. If this is 0, it means that only one
