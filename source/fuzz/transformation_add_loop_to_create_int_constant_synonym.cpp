@@ -177,17 +177,16 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   for (uint32_t id : {message_.syn_id(), message_.loop_id(), message_.ctr_id(),
                       message_.temp_id(), message_.eventual_syn_id(),
                       message_.incremented_ctr_id(), message_.cond_id()}) {
-    CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                 &fresh_ids_used);
+    if (!id || CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                            &fresh_ids_used)) {
+      return false;
+    }
   }
 
-  // Only check the additional block id if it is non-zero.
-  if (message_.additional_block_id()) {
-    CheckIdIsFreshAndNotUsedByThisTransformation(message_.additional_block_id(),
-                                                 ir_context, &fresh_ids_used);
-  }
-
-  return true;
+  // Check the additional block id if it is non-zero.
+  return !message_.additional_block_id() ||
+           CheckIdIsFreshAndNotUsedByThisTransformation(
+               message_.additional_block_id(), ir_context, &fresh_ids_used));
 }
 
 void TransformationAddLoopToCreateIntConstantSynonym::Apply(
