@@ -54,6 +54,7 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
     if (start_blocks.empty()) {
       continue;
     }
+    // Randomly choose the entry block.
     auto entry_block =
         start_blocks[GetFuzzerContext()->RandomIndex(start_blocks)];
     auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(function);
@@ -64,8 +65,9 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
          postdominates_entry_block != nullptr;
          postdominates_entry_block = postdominator_analysis->ImmediateDominator(
              postdominates_entry_block)) {
-      // Consider the block if it is dominated by the entry block, ignore it if
-      // it is a continue target.
+      // The candidate exit block must be dominated by the entry block and the
+      // entry block must be post-dominated by the candidate exit block. Ignore
+      // the block if it heads a selection construct or a loop construct.
       if (dominator_analysis->Dominates(entry_block,
                                         postdominates_entry_block) &&
           !postdominates_entry_block->GetLoopMergeInst()) {
@@ -75,12 +77,17 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
     if (candidate_exit_blocks.empty()) {
       continue;
     }
+    // Randomly choose the exit block.
     auto exit_block = candidate_exit_blocks[GetFuzzerContext()->RandomIndex(
         candidate_exit_blocks)];
 
     auto region_blocks =
         TransformationDuplicateRegionWithSelection::GetRegionBlocks(
             GetIRContext(), entry_block, exit_block);
+
+    // Construct |original_label_to_duplicate_label| by iterating over all block
+    // in the region. Construct |original_id_to_duplicate_id| and
+    // |original_id_to_phi_id| by iterating over all instructions in each block.
     std::map<uint32_t, uint32_t> original_label_to_duplicate_label;
     std::map<uint32_t, uint32_t> original_id_to_duplicate_id;
     std::map<uint32_t, uint32_t> original_id_to_phi_id;
@@ -100,9 +107,11 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
         }
       }
     }
+    // Randomly decide between value "true" or "false"
+    auto condition_value = GetFuzzerContext()->ChooseEven();
+
     // Make sure the transformation has access to a bool constant to be used
     // while creating conditional construct.
-    auto condition_value = GetFuzzerContext()->ChooseEven();
     auto condition_id = FindOrCreateBoolConstant(condition_value, true);
     TransformationDuplicateRegionWithSelection transformation =
         TransformationDuplicateRegionWithSelection(

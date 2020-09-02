@@ -699,6 +699,7 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableCFGTest3) {
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 }
+
 TEST(TransformationDuplicateRegionWithSelectionTest, MultipleBlocksLoopTest) {
   // This test handles a case where the region consists of multiple blocks
   // (they form a loop). The transformation is applicable and the region is
@@ -890,11 +891,10 @@ TEST(TransformationDuplicateRegionWithSelectionTest, MultipleBlocksLoopTest) {
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
-TEST(TransformationDuplicateRegionWithSelectionTest,
-     MultipleBlocksNestedLoopTest) {
-  // This test handles a case where the region consists of multiple blocks
-  // (they form a nested loop). The transformation is applicable and the region
-  // is duplicated.
+TEST(TransformationDuplicateRegionWithSelectionTest, ResolvingOpPhiTest) {
+  // This test handles a case where the region under the transformation is
+  // referenced in OpPhi instructions. Since the new merge block becomes the
+  // exit of the region, these OpPhi instructions need to be updated.
 
   std::string shader = R"(
                OpCapability Shader
@@ -904,84 +904,52 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %6 "fun("
-               OpName %10 "s"
-               OpName %12 "i"
-               OpName %22 "j"
-               OpName %38 "r"
-               OpName %42 "t"
-               OpName %47 "b"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %26 "b"
+               OpName %29 "param"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %8 = OpTypeInt 32 1
-          %9 = OpTypePointer Function %8
-         %11 = OpConstant %8 0
-         %19 = OpConstant %8 10
-         %20 = OpTypeBool
-         %34 = OpConstant %8 1
-         %44 = OpConstant %8 2
-         %46 = OpTypePointer Function %20
-         %48 = OpConstantTrue %20
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 0
+         %15 = OpConstant %6 2
+         %16 = OpTypeBool
+         %25 = OpTypePointer Function %16
+         %27 = OpConstantTrue %16
+         %28 = OpConstant %6 3
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %47 = OpVariable %46 Function
-               OpStore %47 %48
-         %49 = OpFunctionCall %2 %6
+         %26 = OpVariable %25 Function
+         %29 = OpVariable %7 Function
+               OpStore %26 %27
+               OpStore %29 %28
+         %30 = OpFunctionCall %2 %10 %29
                OpReturn
                OpFunctionEnd
-          %6 = OpFunction %2 None %3
-          %7 = OpLabel
-         %10 = OpVariable %9 Function
-         %12 = OpVariable %9 Function
-         %22 = OpVariable %9 Function
-         %38 = OpVariable %9 Function
-         %42 = OpVariable %9 Function
-               OpStore %10 %11
-               OpStore %12 %11
-               OpBranch %13
-         %13 = OpLabel
-               OpLoopMerge %15 %16 None
-               OpBranch %17
-         %17 = OpLabel
-         %18 = OpLoad %8 %12
-         %21 = OpSLessThan %20 %18 %19
-               OpBranchConditional %21 %14 %15
-         %14 = OpLabel
-               OpStore %22 %11
-               OpBranch %23
-         %23 = OpLabel
-               OpLoopMerge %25 %26 None
-               OpBranch %27
-         %27 = OpLabel
-         %28 = OpLoad %8 %22
-         %29 = OpSLessThan %20 %28 %19
-               OpBranchConditional %29 %24 %25
-         %24 = OpLabel
-         %30 = OpLoad %8 %10
-         %31 = OpLoad %8 %12
-         %32 = OpIAdd %8 %30 %31
-               OpStore %10 %32
-               OpBranch %26
-         %26 = OpLabel
-         %33 = OpLoad %8 %22
-         %35 = OpIAdd %8 %33 %34
-               OpStore %22 %35
-               OpBranch %23
-         %25 = OpLabel
-               OpBranch %16
-         %16 = OpLabel
-         %36 = OpLoad %8 %12
-         %37 = OpIAdd %8 %36 %34
-               OpStore %12 %37
-               OpBranch %13
-         %15 = OpLabel
-         %39 = OpLoad %8 %10
-         %40 = OpLoad %8 %10
-         %41 = OpIMul %8 %39 %40
-               OpStore %38 %41
-         %43 = OpLoad %8 %10
-         %45 = OpIAdd %8 %43 %44
-               OpStore %42 %45
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+               OpStore %12 %13
+         %14 = OpLoad %6 %9
+         %17 = OpSLessThan %16 %14 %15
+               OpSelectionMerge %19 None
+               OpBranchConditional %17 %18 %22
+         %18 = OpLabel
+         %20 = OpLoad %6 %9
+         %21 = OpIAdd %6 %20 %15
+               OpStore %12 %21
+               OpBranch %19
+         %22 = OpLabel
+         %23 = OpLoad %6 %9
+         %24 = OpIMul %6 %23 %15
+               OpStore %12 %24
+               OpBranch %19
+         %19 = OpLabel
+         %40 = OpPhi %6 %21 %18 %24 %22
                OpReturn
                OpFunctionEnd
     )";
@@ -996,207 +964,19 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
+  ASSERT_TRUE(IsValid(env, context.get()));
+
   TransformationDuplicateRegionWithSelection transformation_good_1 =
-      TransformationDuplicateRegionWithSelection(500, 48, 501, 13, 15,
-                                                 {{13, 100},
-                                                  {13, 101},
-                                                  {17, 102},
-                                                  {14, 103},
-                                                  {23, 104},
-                                                  {27, 105},
-                                                  {24, 106},
-                                                  {26, 107},
-                                                  {25, 108},
-                                                  {16, 109},
-                                                  {15, 110}},
-                                                 {{18, 201},
-                                                  {21, 202},
-                                                  {28, 203},
-                                                  {29, 204},
-                                                  {30, 205},
-                                                  {31, 206},
-                                                  {32, 207},
-                                                  {33, 208},
-                                                  {35, 209},
-                                                  {36, 210},
-                                                  {37, 211},
-                                                  {39, 212},
-                                                  {40, 213},
-                                                  {41, 214},
-                                                  {43, 215},
-                                                  {45, 216}},
-                                                 {{18, 301},
-                                                  {21, 302},
-                                                  {28, 303},
-                                                  {29, 304},
-                                                  {30, 305},
-                                                  {31, 306},
-                                                  {32, 307},
-                                                  {33, 308},
-                                                  {35, 309},
-                                                  {36, 310},
-                                                  {37, 311},
-                                                  {39, 312},
-                                                  {40, 313},
-                                                  {41, 314},
-                                                  {43, 315},
-                                                  {45, 316}});
+      TransformationDuplicateRegionWithSelection(
+          500, 27, 501, 22, 22, {{22, 100}}, {{23, 201}, {24, 202}},
+          {{23, 301}, {24, 302}});
+
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
   transformation_good_1.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string expected_shader = R"(
-                 OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-               OpName %6 "fun("
-               OpName %10 "s"
-               OpName %12 "i"
-               OpName %22 "j"
-               OpName %38 "r"
-               OpName %42 "t"
-               OpName %47 "b"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %8 = OpTypeInt 32 1
-          %9 = OpTypePointer Function %8
-         %11 = OpConstant %8 0
-         %19 = OpConstant %8 10
-         %20 = OpTypeBool
-         %34 = OpConstant %8 1
-         %44 = OpConstant %8 2
-         %46 = OpTypePointer Function %20
-         %48 = OpConstantTrue %20
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-         %47 = OpVariable %46 Function
-               OpStore %47 %48
-         %49 = OpFunctionCall %2 %6
-               OpReturn
-               OpFunctionEnd
-          %6 = OpFunction %2 None %3
-          %7 = OpLabel
-         %10 = OpVariable %9 Function
-         %12 = OpVariable %9 Function
-         %22 = OpVariable %9 Function
-         %38 = OpVariable %9 Function
-         %42 = OpVariable %9 Function
-               OpStore %10 %11
-               OpStore %12 %11
-               OpBranch %500
-        %500 = OpLabel
-               OpSelectionMerge %501 None
-               OpBranchConditional %48 %13 %100
-         %13 = OpLabel
-               OpLoopMerge %15 %16 None
-               OpBranch %17
-         %17 = OpLabel
-         %18 = OpLoad %8 %12
-         %21 = OpSLessThan %20 %18 %19
-               OpBranchConditional %21 %14 %15
-         %14 = OpLabel
-               OpStore %22 %11
-               OpBranch %23
-         %23 = OpLabel
-               OpLoopMerge %25 %26 None
-               OpBranch %27
-         %27 = OpLabel
-         %28 = OpLoad %8 %22
-         %29 = OpSLessThan %20 %28 %19
-               OpBranchConditional %29 %24 %25
-         %24 = OpLabel
-         %30 = OpLoad %8 %10
-         %31 = OpLoad %8 %12
-         %32 = OpIAdd %8 %30 %31
-               OpStore %10 %32
-               OpBranch %26
-         %26 = OpLabel
-         %33 = OpLoad %8 %22
-         %35 = OpIAdd %8 %33 %34
-               OpStore %22 %35
-               OpBranch %23
-         %25 = OpLabel
-               OpBranch %16
-         %16 = OpLabel
-         %36 = OpLoad %8 %12
-         %37 = OpIAdd %8 %36 %34
-               OpStore %12 %37
-               OpBranch %13
-         %15 = OpLabel
-         %39 = OpLoad %8 %10
-         %40 = OpLoad %8 %10
-         %41 = OpIMul %8 %39 %40
-               OpStore %38 %41
-         %43 = OpLoad %8 %10
-         %45 = OpIAdd %8 %43 %44
-               OpStore %42 %45
-               OpBranch %501
-        %100 = OpLabel
-               OpLoopMerge %110 %109 None
-               OpBranch %102
-        %102 = OpLabel
-        %201 = OpLoad %8 %12
-        %202 = OpSLessThan %20 %201 %19
-               OpBranchConditional %202 %103 %110
-        %103 = OpLabel
-               OpStore %22 %11
-               OpBranch %104
-        %104 = OpLabel
-               OpLoopMerge %108 %107 None
-               OpBranch %105
-        %105 = OpLabel
-        %203 = OpLoad %8 %22
-        %204 = OpSLessThan %20 %203 %19
-               OpBranchConditional %204 %106 %108
-        %106 = OpLabel
-        %205 = OpLoad %8 %10
-        %206 = OpLoad %8 %12
-        %207 = OpIAdd %8 %205 %206
-               OpStore %10 %207
-               OpBranch %107
-        %107 = OpLabel
-        %208 = OpLoad %8 %22
-        %209 = OpIAdd %8 %208 %34
-               OpStore %22 %209
-               OpBranch %104
-        %108 = OpLabel
-               OpBranch %109
-        %109 = OpLabel
-        %210 = OpLoad %8 %12
-        %211 = OpIAdd %8 %210 %34
-               OpStore %12 %211
-               OpBranch %100
-        %110 = OpLabel
-        %212 = OpLoad %8 %10
-        %213 = OpLoad %8 %10
-        %214 = OpIMul %8 %212 %213
-               OpStore %38 %214
-        %215 = OpLoad %8 %10
-        %216 = OpIAdd %8 %215 %44
-               OpStore %42 %216
-               OpBranch %501
-        %501 = OpLabel
-        %312 = OpPhi %8 %39 %15 %212 %110
-        %313 = OpPhi %8 %40 %15 %213 %110
-        %314 = OpPhi %8 %41 %15 %214 %110
-        %315 = OpPhi %8 %43 %15 %215 %110
-        %316 = OpPhi %8 %45 %15 %216 %110
-        %301 = OpPhi %8 %18 %15 %201 %110
-        %302 = OpPhi %20 %21 %15 %202 %110
-
-               OpReturn
-               OpFunctionEnd
-        )";
-  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
-}
-
-TEST(FuzzerPassTest, BasicTest) {
-  std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1204,66 +984,68 @@ TEST(FuzzerPassTest, BasicTest) {
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %6 "fun("
-               OpName %10 "s"
-               OpName %12 "r"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %26 "b"
+               OpName %29 "param"
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %8 = OpTypeInt 32 1
-          %9 = OpTypePointer Function %8
-         %11 = OpConstant %8 0
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 0
+         %15 = OpConstant %6 2
+         %16 = OpTypeBool
+         %25 = OpTypePointer Function %16
+         %27 = OpConstantTrue %16
+         %28 = OpConstant %6 3
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %16 = OpFunctionCall %2 %6
+         %26 = OpVariable %25 Function
+         %29 = OpVariable %7 Function
+               OpStore %26 %27
+               OpStore %29 %28
+         %30 = OpFunctionCall %2 %10 %29
                OpReturn
                OpFunctionEnd
-          %6 = OpFunction %2 None %3
-          %7 = OpLabel
-         %10 = OpVariable %9 Function
-         %12 = OpVariable %9 Function
-               OpBranch %30
-         %30 = OpLabel
-               OpStore %10 %11
-         %13 = OpLoad %8 %10
-         %14 = OpLoad %8 %10
-         %15 = OpIAdd %8 %13 %14
-               OpStore %12 %15
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+               OpStore %12 %13
+         %14 = OpLoad %6 %9
+         %17 = OpSLessThan %16 %14 %15
+               OpSelectionMerge %19 None
+               OpBranchConditional %17 %18 %500
+         %18 = OpLabel
+         %20 = OpLoad %6 %9
+         %21 = OpIAdd %6 %20 %15
+               OpStore %12 %21
+               OpBranch %19
+        %500 = OpLabel
+               OpSelectionMerge %501 None
+               OpBranchConditional %27 %22 %100
+         %22 = OpLabel
+         %23 = OpLoad %6 %9
+         %24 = OpIMul %6 %23 %15
+               OpStore %12 %24
+               OpBranch %501
+        %100 = OpLabel
+        %201 = OpLoad %6 %9
+        %202 = OpIMul %6 %201 %15
+               OpStore %12 %202
+               OpBranch %501
+        %501 = OpLabel
+        %301 = OpPhi %6 %23 %22 %201 %100
+        %302 = OpPhi %6 %24 %22 %202 %100
+               OpBranch %19
+         %19 = OpLabel
+         %40 = OpPhi %6 %21 %18 %302 %501
                OpReturn
                OpFunctionEnd
-  )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-
-  auto prng = MakeUnique<PseudoRandomGenerator>(0);
-
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  FuzzerContext fuzzer_context(prng.get(), 100);
-  protobufs::TransformationSequence transformation_sequence;
-
-  for (uint32_t i = 0; i < 100; i++) {
-    FuzzerPassDuplicateRegionsWithSelections fuzzer_pass(
-        context.get(), &transformation_context, &fuzzer_context,
-        &transformation_sequence);
-
-    fuzzer_pass.Apply();
-  }
-  // We just check that the result is valid.
-
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled << std::endl;
-  ASSERT_TRUE(IsValid(env, context.get()));
+    )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
 }  // namespace

@@ -121,24 +121,6 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
       continue;
     }
 
-    if (region_set.count(&block) != 0) {
-      // The block is in the region and is not the region's exit block.  Let's
-      // see whether all of the block's successors are in the region.  If they
-      // are not, the region is not single-entry single-exit.
-      bool all_successors_in_region = true;
-      block.WhileEachSuccessorLabel([&all_successors_in_region, ir_context,
-                                     &region_set](uint32_t successor) -> bool {
-        if (region_set.count(ir_context->cfg()->block(successor)) == 0) {
-          all_successors_in_region = false;
-          return false;
-        }
-        return true;
-      });
-      if (!all_successors_in_region) {
-        return false;
-      }
-    }
-
     if (auto merge = block.GetMergeInst()) {
       // The block is a loop or selection header -- the header and its
       // associated merge block had better both be in the region or both be
@@ -312,7 +294,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
   }
   std::vector<opt::Instruction*> instructions_to_remove;
   opt::BasicBlock* previous_block = nullptr;
-  opt::BasicBlock* duplicated_exit_block = nullptr;
 
   // Duplicate blocks of the original region and their instructions.
   for (auto& block : blocks) {
@@ -379,9 +360,9 @@ void TransformationDuplicateRegionWithSelection::Apply(
     previous_block = duplicated_block_ptr;
   }
 
-  // After iteration this variable stores a pointer to the last duplicated
-  // block.
-  duplicated_exit_block = previous_block;
+  // After execution of the loop, this variable stores a pointer to the last
+  // duplicated block.
+  auto duplicated_exit_block = previous_block;
 
   for (auto& block : region_blocks) {
     for (auto& instr : *block) {
@@ -471,7 +452,8 @@ void TransformationDuplicateRegionWithSelection::Apply(
       MakeUnique<opt::Instruction>(merge_branch_instr));
 
   // Execution needs to start in the |new_entry_block|. Change all the uses of
-  // |entry_block_label_instr| to |message_.new_entry_fresh_id()|
+  // |entry_block_label_instr| outside of the original region to
+  // |message_.new_entry_fresh_id()|.
   auto entry_block_label_instr =
       ir_context->get_def_use_mgr()->GetDef(message_.entry_block_id());
   ir_context->get_def_use_mgr()->ForEachUse(
