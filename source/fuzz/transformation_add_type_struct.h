@@ -35,6 +35,9 @@ class TransformationAddTypeStruct : public Transformation {
 
   // - |message_.fresh_id| must be a fresh id
   // - |message_.member_type_id| must be a sequence of non-function type ids
+  // - |message_.member_type_id| may not contain a result id of an OpTypeStruct
+  //   instruction with BuiltIn members (i.e. members of the struct are
+  //   decorated via OpMemberDecorate with BuiltIn decoration).
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

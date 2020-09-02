@@ -44,6 +44,14 @@ bool TransformationAddTypeStruct::IsApplicable(
       // function type; both are illegal.
       return false;
     }
+
+    // From the spec for the BuiltIn decoration:
+    // - When applied to a structure-type member, that structure type cannot
+    //   be contained as a member of another structure type.
+    if (type->AsStruct() &&
+        fuzzerutil::MembersHaveBuiltInDecoration(ir_context, member_type)) {
+      return false;
+    }
   }
   return true;
 }
