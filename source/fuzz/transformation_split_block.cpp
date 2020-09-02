@@ -84,7 +84,7 @@ bool TransformationSplitBlock::IsApplicable(
   // Splitting the block must not separate the definition of an OpSampledImage
   // from its use: the SPIR-V data rules require them to be in the same block.
   return !fuzzerutil::
-      SplitBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+      SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
           block_to_split, instruction_to_split_before);
 }
 

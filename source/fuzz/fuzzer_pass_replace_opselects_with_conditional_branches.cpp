@@ -77,7 +77,7 @@ void FuzzerPassReplaceOpSelectsWithConditionalBranches::Apply() {
         // block cannot be split around it and the instruction cannot be
         // replaced.
         if (fuzzerutil::
-                SplitBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+                SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
                     &block, &instruction)) {
           continue;
         }

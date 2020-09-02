@@ -526,7 +526,7 @@ bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
 
 // Returns true iff splitting block |block_to_split| just before the instruction
 // |split_before| would separate an OpSampledImage instruction from its usage.
-bool SplitBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
     opt::BasicBlock* block_to_split, opt::Instruction* split_before);
 
 }  // namespace fuzzerutil

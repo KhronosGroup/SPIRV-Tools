@@ -58,12 +58,11 @@ bool TransformationReplaceOpSelectWithConditionalBranch::IsApplicable(
   // Check that the condition is a scalar boolean.
   auto condition = ir_context->get_def_use_mgr()->GetDef(
       instruction->GetSingleWordInOperand(0));
-  if (!condition) {
-    return false;
-  }
+  assert(condition && "The condition should always exist in a valid module.");
+
   auto condition_type =
       ir_context->get_type_mgr()->GetType(condition->type_id());
-  if (!condition_type || !condition_type->AsBool()) {
+  if (!condition_type->AsBool()) {
     return false;
   }
 
@@ -152,6 +151,10 @@ void TransformationReplaceOpSelectWithConditionalBranch::Apply(
   // instruction block otherwise.
   uint32_t else_block =
       message_.false_block_id() ? message_.false_block_id() : block->id();
+
+  assert(if_block != else_block &&
+         "|if_block| and |else_block| should always be different, if the "
+         "transformation is applicable.");
 
   // Add a conditional branching instruction to the predecessor, branching to
   // |if_block| if the condition is true and to |if_false| otherwise.

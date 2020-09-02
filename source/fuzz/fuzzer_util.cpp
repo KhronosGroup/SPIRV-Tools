@@ -1486,7 +1486,7 @@ bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
   return builtin_count != 0;
 }
 
-bool SplitBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
     opt::BasicBlock* block_to_split, opt::Instruction* split_before) {
   std::set<uint32_t> sampled_image_result_ids;
   bool before_split = true;
