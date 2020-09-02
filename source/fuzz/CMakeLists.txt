@@ -94,6 +94,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_irrelevant_ids.h
         fuzzer_pass_replace_linear_algebra_instructions.h
         fuzzer_pass_replace_loads_stores_with_copy_memories.h
+        fuzzer_pass_replace_opphi_ids_from_dead_predecessors.h
         fuzzer_pass_replace_parameter_with_global.h
         fuzzer_pass_replace_params_with_struct.h
         fuzzer_pass_split_blocks.h
@@ -172,6 +173,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_irrelevant_id.h
         transformation_replace_linear_algebra_instruction.h
         transformation_replace_load_store_with_copy_memory.h
+        transformation_replace_opphi_id_from_dead_predecessor.h
         transformation_replace_parameter_with_global.h
         transformation_replace_params_with_struct.h
         transformation_set_function_control.h
@@ -251,6 +253,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_irrelevant_ids.cpp
         fuzzer_pass_replace_linear_algebra_instructions.cpp
         fuzzer_pass_replace_loads_stores_with_copy_memories.cpp
+        fuzzer_pass_replace_opphi_ids_from_dead_predecessors.cpp
         fuzzer_pass_replace_parameter_with_global.cpp
         fuzzer_pass_replace_params_with_struct.cpp
         fuzzer_pass_split_blocks.cpp
@@ -328,6 +331,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_irrelevant_id.cpp
         transformation_replace_linear_algebra_instruction.cpp
         transformation_replace_load_store_with_copy_memory.cpp
+        transformation_replace_opphi_id_from_dead_predecessor.cpp
         transformation_replace_parameter_with_global.cpp
         transformation_replace_params_with_struct.cpp
         transformation_set_function_control.cpp

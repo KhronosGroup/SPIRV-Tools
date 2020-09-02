@@ -417,6 +417,7 @@ message Transformation {
     TransformationAddOpPhiSynonym add_opphi_synonym = 70;
     TransformationMutatePointer mutate_pointer = 71;
     TransformationReplaceIrrelevantId replace_irrelevant_id = 72;
+    TransformationReplaceOpPhiIdFromDeadPredecessor replace_opphi_id_from_dead_predecessor = 73;
     // Add additional option using the next available number.
   }
 }
@@ -1541,6 +1542,26 @@ message TransformationReplaceLoadStoreWithCopyMemory {
 
   // The instruction descriptor to OpStore
   InstructionDescriptor store_instruction_descriptor = 2;
+}
+
+message TransformationReplaceOpPhiIdFromDeadPredecessor {
+
+  // Replaces one of the ids used by an OpPhi instruction, when
+  // the corresponding predecessor is dead, with any available id
+  // of the correct type.
+
+  // The result id of the OpPhi instruction.
+  uint32 opphi_id = 1;
+
+  // The label id of one of the predecessors of the block containing
+  // the OpPhi instruction, corresponding to the id that we want to
+  // replace.
+  uint32 pred_label_id = 2;
+
+  // The id that, after the transformation, will be associated with
+  // the given predecessor.
+  uint32 replacement_id = 3;
+
 }
 
 message TransformationReplaceParamsWithStruct {
