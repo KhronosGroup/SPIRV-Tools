@@ -648,27 +648,26 @@ inline void Instruction::SetInOperands(OperandList&& new_operands) {
   operands_.insert(operands_.end(), new_operands.begin(), new_operands.end());
 }
 
-inline void Instruction::SetResultId(uint32_t result_id) {
+inline void Instruction::SetResultId(uint32_t res_id) {
   // TODO(dsinclair): Allow removing the result id. This needs to make sure,
   // if there was a result id previously to remove it from the operands_ array
   // and reset the has_result_id_ flag.
-  assert(result_id != 0);
+  assert(res_id != 0);
 
   // The result id operand index depends on whether the result type operand is
   // present.
   uint32_t result_id_index = has_type_id_ ? 1 : 0;
 
-  // If |this| already has a result id operand, then set its value to
-  // |result_id|.
+  // If |this| already has a result id operand, then set its value to |res_id|.
   if (has_result_id_) {
-    operands_[result_id_index].words = {result_id};
+    operands_[result_id_index].words = {res_id};
     return;
   }
 
-  // If |this| does not have a result id operand, then insert |result_id| in the
+  // If |this| does not have a result id operand, then insert |res_id| in the
   // appropriate operand position and update |has_result_id_|.
   operands_.insert(operands_.begin() + result_id_index,
-                   {SPV_OPERAND_TYPE_RESULT_ID, {result_id}});
+                   {SPV_OPERAND_TYPE_RESULT_ID, {res_id}});
   has_result_id_ = true;
 }
 
@@ -679,21 +678,21 @@ inline void Instruction::SetDebugScope(const DebugScope& scope) {
   }
 }
 
-inline void Instruction::SetResultType(uint32_t type_id) {
+inline void Instruction::SetResultType(uint32_t ty_id) {
   // TODO(dsinclair): Allow removing the type id. This needs to make sure,
   // if there was a type id previously to remove it from the operands_ array
   // and reset the has_type_id_ flag.
-  assert(type_id != 0);
+  assert(ty_id != 0);
 
-  // If |this| already has a type id operand, then set its value to |type_id|.
+  // If |this| already has a type id operand, then set its value to |ty_id|.
   if (has_type_id_) {
-    operands_.front().words = {type_id};
+    operands_.front().words = {ty_id};
     return;
   }
 
-  // If |this| does not have a type id operand, then insert |type_id| as the
-  // first operand and update |has_type_id_|.
-  operands_.insert(operands_.begin(), {SPV_OPERAND_TYPE_TYPE_ID, {type_id}});
+  // If |this| does not have a type id operand, then insert |ty_id| as the first
+  // operand and update |has_type_id_|.
+  operands_.insert(operands_.begin(), {SPV_OPERAND_TYPE_TYPE_ID, {ty_id}});
   has_type_id_ = true;
 }
 
