@@ -76,6 +76,7 @@ std::string shader = R"(
           %5 = OpTypeBool
           %6 = OpConstantTrue %5
           %7 = OpTypeInt 32 1
+         %31 = OpTypeFunction %7
           %8 = OpTypeInt 32 0
           %9 = OpConstant %7 1
          %10 = OpConstant %7 2
@@ -108,6 +109,10 @@ std::string shader = R"(
                OpBranch %28
          %28 = OpLabel
                OpReturn
+               OpFunctionEnd
+         %32 = OpFunction %7 None %31
+         %33 = OpLabel
+               OpReturnValue %9
                OpFunctionEnd
 )";
 
