@@ -70,6 +70,7 @@
 #include "source/fuzz/fuzzer_pass_replace_irrelevant_ids.h"
 #include "source/fuzz/fuzzer_pass_replace_linear_algebra_instructions.h"
 #include "source/fuzz/fuzzer_pass_replace_loads_stores_with_copy_memories.h"
+#include "source/fuzz/fuzzer_pass_replace_opphi_ids_from_dead_predecessors.h"
 #include "source/fuzz/fuzzer_pass_replace_parameter_with_global.h"
 #include "source/fuzz/fuzzer_pass_replace_params_with_struct.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
@@ -377,6 +378,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassPermutePhiOperands>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   MaybeAddPass<FuzzerPassReplaceIrrelevantIds>(
