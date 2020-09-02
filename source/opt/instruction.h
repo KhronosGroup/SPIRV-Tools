@@ -648,19 +648,28 @@ inline void Instruction::SetInOperands(OperandList&& new_operands) {
   operands_.insert(operands_.end(), new_operands.begin(), new_operands.end());
 }
 
-inline void Instruction::SetResultId(uint32_t res_id) {
-  // TODO(dsinclair): Allow setting a result id if there wasn't one
-  // previously. Need to make room in the operands_ array to place the result,
-  // and update the has_result_id_ flag.
-  assert(has_result_id_);
-
+inline void Instruction::SetResultId(uint32_t result_id) {
   // TODO(dsinclair): Allow removing the result id. This needs to make sure,
   // if there was a result id previously to remove it from the operands_ array
   // and reset the has_result_id_ flag.
-  assert(res_id != 0);
+  assert(result_id != 0);
 
-  auto ridx = has_type_id_ ? 1 : 0;
-  operands_[ridx].words = {res_id};
+  // The result id operand index depends on whether the result type operand is
+  // present.
+  uint32_t result_id_index = has_type_id_ ? 1 : 0;
+
+  // If |this| already has a result id operand, then set its value to
+  // |result_id|.
+  if (has_result_id_) {
+    operands_[result_id_index].words = {result_id};
+    return;
+  }
+
+  // If |this| does not have a result id operand, then insert |result_id| in the
+  // appropriate operand position and update |has_result_id_|.
+  operands_.insert(operands_.begin() + result_id_index,
+                   {SPV_OPERAND_TYPE_RESULT_ID, {result_id}});
+  has_result_id_ = true;
 }
 
 inline void Instruction::SetDebugScope(const DebugScope& scope) {
@@ -670,18 +679,22 @@ inline void Instruction::SetDebugScope(const DebugScope& scope) {
   }
 }
 
-inline void Instruction::SetResultType(uint32_t ty_id) {
-  // TODO(dsinclair): Allow setting a type id if there wasn't one
-  // previously. Need to make room in the operands_ array to place the result,
-  // and update the has_type_id_ flag.
-  assert(has_type_id_);
-
+inline void Instruction::SetResultType(uint32_t type_id) {
   // TODO(dsinclair): Allow removing the type id. This needs to make sure,
   // if there was a type id previously to remove it from the operands_ array
   // and reset the has_type_id_ flag.
-  assert(ty_id != 0);
+  assert(type_id != 0);
 
-  operands_.front().words = {ty_id};
+  // If |this| already has a type id operand, then set its value to |type_id|.
+  if (has_type_id_) {
+    operands_.front().words = {type_id};
+    return;
+  }
+
+  // If |this| does not have a type id operand, then insert |type_id| as the
+  // first operand and update |has_type_id_|.
+  operands_.insert(operands_.begin(), {SPV_OPERAND_TYPE_TYPE_ID, {type_id}});
+  has_type_id_ = true;
 }
 
 inline bool Instruction::IsNop() const {
