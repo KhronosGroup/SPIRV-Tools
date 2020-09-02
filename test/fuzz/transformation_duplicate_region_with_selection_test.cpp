@@ -15,10 +15,6 @@
 #include "source/fuzz/transformation_duplicate_region_with_selection.h"
 #include "test/fuzz/fuzz_test_util.h"
 
-/*to be removed*/
-#include "source/fuzz/fuzzer_pass_duplicate_regions_with_selections.h"
-#include "source/fuzz/pseudo_random_generator.h"
-
 namespace spvtools {
 namespace fuzz {
 namespace {
@@ -531,6 +527,24 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableIdTest) {
                                                  {{13, 301}, {15, 302}});
   ASSERT_FALSE(
       transformation_bad_9.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |condition_id| does not refer to the valid instruction.
+  TransformationDuplicateRegionWithSelection transformation_bad_10 =
+      TransformationDuplicateRegionWithSelection(
+          500, 200, 501, 800, 800, {{800, 100}}, {{13, 201}, {15, 202}},
+          {{13, 301}, {15, 302}});
+
+  ASSERT_FALSE(transformation_bad_10.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: |condition_id| does not refer to the instruction of type OpTypeBool
+  TransformationDuplicateRegionWithSelection transformation_bad_11 =
+      TransformationDuplicateRegionWithSelection(
+          500, 14, 501, 800, 800, {{800, 100}}, {{13, 201}, {15, 202}},
+          {{13, 301}, {15, 302}});
+
+  ASSERT_FALSE(transformation_bad_11.IsApplicable(context.get(),
+                                                  transformation_context));
 }
 
 TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableCFGTest2) {
@@ -1046,6 +1060,90 @@ TEST(TransformationDuplicateRegionWithSelectionTest, ResolvingOpPhiTest) {
                OpFunctionEnd
     )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableEarlyReturn) {
+  // This test handles a case where one of the blocks has successor outside of
+  // the region, which has an early return from the function, so that the
+  // transformation is not applicable.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %27 "b"
+               OpName %30 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 0
+         %15 = OpConstant %6 2
+         %16 = OpTypeBool
+         %26 = OpTypePointer Function %16
+         %28 = OpConstantTrue %16
+         %29 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %27 = OpVariable %26 Function
+         %30 = OpVariable %7 Function
+               OpStore %27 %28
+               OpStore %30 %29
+         %31 = OpFunctionCall %2 %10 %30
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+               OpBranch %50
+         %50 = OpLabel
+               OpStore %12 %13
+         %14 = OpLoad %6 %9
+         %17 = OpSLessThan %16 %14 %15
+               OpSelectionMerge %19 None
+               OpBranchConditional %17 %18 %22
+         %18 = OpLabel
+         %20 = OpLoad %6 %9
+         %21 = OpIAdd %6 %20 %15
+               OpStore %12 %21
+               OpBranch %19
+         %22 = OpLabel
+               OpReturn
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Bad: The block with id 50, which is the entry block, has two successors:
+  // the block with id 18 and the block with id 22. The block 22 has an early
+  // return from the function, so that the entry block is not post-dominated by
+  // the exit block.
+  TransformationDuplicateRegionWithSelection transformation_bad_1 =
+      TransformationDuplicateRegionWithSelection(
+          500, 28, 501, 50, 19, {{50, 100}, {18, 101}, {22, 102}, {19, 103}},
+          {{14, 202}, {17, 203}, {20, 204}, {21, 205}},
+          {{14, 302}, {17, 303}, {20, 304}, {21, 305}});
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace

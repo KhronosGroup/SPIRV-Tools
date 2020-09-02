@@ -45,7 +45,7 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
     }
     std::vector<opt::BasicBlock*> start_blocks;
     for (auto& block : *function) {
-      // We currently don't consider the first block to be the starting block.
+      // Currently, we don't consider the first block to be the starting block.
       if (&block == &*function->begin()) {
         continue;
       }
@@ -85,8 +85,8 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
         TransformationDuplicateRegionWithSelection::GetRegionBlocks(
             GetIRContext(), entry_block, exit_block);
 
-    // Construct |original_label_to_duplicate_label| by iterating over all block
-    // in the region. Construct |original_id_to_duplicate_id| and
+    // Construct |original_label_to_duplicate_label| by iterating over all
+    // blocks in the region. Construct |original_id_to_duplicate_id| and
     // |original_id_to_phi_id| by iterating over all instructions in each block.
     std::map<uint32_t, uint32_t> original_label_to_duplicate_label;
     std::map<uint32_t, uint32_t> original_id_to_duplicate_id;
@@ -107,12 +107,13 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
         }
       }
     }
-    // Randomly decide between value "true" or "false"
+    // Randomly decide between value "true" or "false" for a bool constant.
     auto condition_value = GetFuzzerContext()->ChooseEven();
 
     // Make sure the transformation has access to a bool constant to be used
     // while creating conditional construct.
     auto condition_id = FindOrCreateBoolConstant(condition_value, true);
+
     TransformationDuplicateRegionWithSelection transformation =
         TransformationDuplicateRegionWithSelection(
             GetFuzzerContext()->GetFreshId(), condition_id,

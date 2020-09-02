@@ -36,23 +36,24 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
       std::map<uint32_t, uint32_t> original_id_to_duplicate_id,
       std::map<uint32_t, uint32_t> original_id_to_phi_id);
 
-  // - |condition_fresh_id|, |merge_label_fresh_id|, |then_label_fresh_id|,
-  //   |else_label_fresh_id| must be fresh.
-  // - |entry_block_id| and |exit_block_id| must refer to a single-entry,
-  //   single-exit region.
-  // - |original_label_to_duplicate_label| must at least contain a key for every
+  // - |new_entry_fresh_id|, |merge_label_fresh_id| must be fresh and distinct.
+  // - |condition_id| must refer to a valid instruction of boolean type.
+  // - |entry_block_id| and |exit_block_id| must refer to valid blocks and they
+  //   must form a single-entry, single-exit region.
+  // - |original_label_to_duplicate_label| must contain at least a key for every
   //   block in the original region.
-  // - |original_id_to_duplicate_id| must at least contain a key for every
-  //   result id available at the end of the original region.
-  // - |original_id_to_phi_id| must at least contain a key for every result id
+  // - |original_id_to_duplicate_id| must contain at least a key for every
+  //   result id in the original region.
+  // - |original_id_to_phi_id| must contain at least a key for every result id
   //   available at the end of the original region.
+  // - In each of these three maps, each value must be a distinct, fresh id.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // A transformation that inserts a conditional statement on a boolean
+  // A transformation that inserts a conditional statement with a boolean
   // expression of arbitrary value and duplicates a given single-entry,
-  // single-exit region, so that it is present in every conditional branch and
+  // single-exit region, so that it is present in each conditional branch and
   // will be executed regardless of which branch will be taken.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;

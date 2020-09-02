@@ -1085,12 +1085,12 @@ message TransformationComputeDataSynonymFactClosure {
 
 message TransformationDuplicateRegionWithSelection {
 
-  // A transformation that inserts a conditional statement on a boolean expression
+  // A transformation that inserts a conditional statement with a boolean expression
   // of arbitrary value and duplicates a given single-entry, single-exit region, so
-  // that it is present in every conditional branch and will be executed regardless
+  // that it is present in each conditional branch and will be executed regardless
   // of which branch will be taken.
 
-  // Fresh id for a label of the new entry block
+  // Fresh id for a label of the new entry block.
   uint32 new_entry_fresh_id = 1;
 
   // Id for a boolean expression.
