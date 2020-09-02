@@ -1275,7 +1275,7 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
       // From the spec for the BuiltIn decoration:
       // - When applied to a structure-type member, that structure type cannot
       //   be contained as a member of another structure type.
-      assert(!HasBuiltInMembers(ir_context, type_id) &&
+      assert(!MembersHaveBuiltInDecoration(ir_context, type_id) &&
              "A member struct has BuiltIn members");
     }
 
@@ -1461,7 +1461,8 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
   return true;
 }
 
-bool HasBuiltInMembers(opt::IRContext* ir_context, uint32_t struct_type_id) {
+bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
+                                  uint32_t struct_type_id) {
   const auto* type_inst = ir_context->get_def_use_mgr()->GetDef(struct_type_id);
   assert(type_inst && type_inst->opcode() == SpvOpTypeStruct &&
          "|struct_type_id| is not a result id of an OpTypeStruct");
@@ -1479,7 +1480,7 @@ bool HasBuiltInMembers(opt::IRContext* ir_context, uint32_t struct_type_id) {
       });
 
   assert((builtin_count == 0 || builtin_count == type_inst->NumInOperands()) &&
-         "The module is invalid: either one or none of the members of "
+         "The module is invalid: either none or all of the members of "
          "|struct_type_id| may be builtin");
 
   return builtin_count != 0;

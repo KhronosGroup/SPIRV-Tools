@@ -517,15 +517,12 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
                         opt::Instruction* use_instruction,
                         uint32_t use_in_operand_index);
 
-// Returns true if all of the members of OpTypeStruct instruction with result
-// id |struct_type_id| are decorated with BuiltIn decoration.
-// Otherwise (none of the members are BuiltIn), returns false.
-//
-// According to the spec for the BuiltIn decoration:
-// - When applied to a structure-type member, all members of that structure
-//   type must also be decorated with BuiltIn. (No allowed mixing of built-in
-//   variables and non-built-in variables within a single structure.)
-bool HasBuiltInMembers(opt::IRContext* ir_context, uint32_t struct_type_id);
+// Requires that |struct_type_id| is the id of a struct type, and (as per the
+// SPIR-V spec) that either all or none of the members of |struct_type_id| have
+// the BuiltIn decoration. Returns true if and only if all members have the
+// BuiltIn decoration.
+bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
+                                  uint32_t struct_type_id);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz

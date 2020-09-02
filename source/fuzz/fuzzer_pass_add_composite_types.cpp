@@ -124,7 +124,8 @@ uint32_t FuzzerPassAddCompositeTypes::ChooseScalarOrCompositeType() {
         candidates.push_back(inst.result_id());
         break;
       case SpvOpTypeStruct: {
-        if (!fuzzerutil::HasBuiltInMembers(GetIRContext(), inst.result_id())) {
+        if (!fuzzerutil::MembersHaveBuiltInDecoration(GetIRContext(),
+                                                      inst.result_id())) {
           candidates.push_back(inst.result_id());
         }
       } break;

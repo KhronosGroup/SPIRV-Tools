@@ -49,7 +49,7 @@ bool TransformationAddTypeStruct::IsApplicable(
     // - When applied to a structure-type member, that structure type cannot
     //   be contained as a member of another structure type.
     if (type->AsStruct() &&
-        fuzzerutil::HasBuiltInMembers(ir_context, member_type)) {
+        fuzzerutil::MembersHaveBuiltInDecoration(ir_context, member_type)) {
       return false;
     }
   }
