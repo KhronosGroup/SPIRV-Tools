@@ -51,13 +51,14 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     const TransformationContext& /*transformation_context*/) const {
   std::set<uint32_t> ids_used_by_this_transformation;
 
-  // The various new ids used by the transformation must be fresh and distinct.
+  // The |new_entry_fresh_id| must be fresh and distinct.
   if (!CheckIdIsFreshAndNotUsedByThisTransformation(
           message_.new_entry_fresh_id(), ir_context,
           &ids_used_by_this_transformation)) {
     return false;
   }
 
+  // The |merge_label_fresh_id| must be fresh and distinct.
   if (!CheckIdIsFreshAndNotUsedByThisTransformation(
           message_.merge_label_fresh_id(), ir_context,
           &ids_used_by_this_transformation)) {
@@ -74,19 +75,19 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
   auto entry_block = ir_context->cfg()->block(message_.entry_block_id());
   auto exit_block = ir_context->cfg()->block(message_.exit_block_id());
 
-  // The block must be in the same function.
+  // The |entry_block| and the |exit_block| must be in the same function.
   if (entry_block->GetParent() != exit_block->GetParent()) {
     return false;
   }
 
-  // The entry block must dominate the exit block.
+  // The |entry_block| must dominate the |exit_block|.
   auto dominator_analysis =
       ir_context->GetDominatorAnalysis(entry_block->GetParent());
   if (!dominator_analysis->Dominates(entry_block, exit_block)) {
     return false;
   }
 
-  // The exit block must post-dominate the entry block.
+  // The |exit_block| must post-dominate the |entry_block|.
   auto postdominator_analysis =
       ir_context->GetPostDominatorAnalysis(entry_block->GetParent());
   if (!postdominator_analysis->Dominates(exit_block, entry_block)) {
@@ -96,7 +97,7 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
   auto enclosing_function = entry_block->GetParent();
 
   // Currently we avoid the case where |entry_block| is the first block of the
-  // function.
+  // |enclosing_function|.
   if (&*enclosing_function->begin() == entry_block) {
     return false;
   }
@@ -109,15 +110,12 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
   // e.g. avoid the situation where the region contains the head of a loop but
   // not the loop's continue construct.
   //
-  // This is achieved by going through every block in the function that contains
-  // the region.
-  for (auto& block : *entry_block->GetParent()) {
+  // This is achieved by going through every block in the |enclosing_function|
+  for (auto& block : *enclosing_function) {
     if (&block == exit_block) {
-      // It is OK (and typically expected) for the exit block of the region to
-      // have successors outside the region.
-      //
-      // It is not OK for the exit block to head a loop construct.
-      if (block.GetLoopMergeInst()) {
+      // It is not OK for the exit block to head a loop construct or a
+      // conditional construct.
+      if (block.GetMergeInst()) {
         return false;
       }
       continue;
@@ -153,7 +151,8 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     }
 
     if (auto loop_merge = block.GetLoopMergeInst()) {
-      // Similar to the above, but for the continue target of a loop.
+      // Similar to the above, but for the continue target of a loop
+      // |continue_target| and a loop header |loop_merge|.
       auto continue_target =
           ir_context->cfg()->block(loop_merge->GetSingleWordOperand(1));
       if (continue_target != exit_block &&
@@ -163,6 +162,7 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     }
   }
 
+  // Get the maps from the protobuf.
   std::map<uint32_t, uint32_t> original_label_to_duplicate_label =
       fuzzerutil::RepeatedUInt32PairToMap(
           message_.original_label_to_duplicate_label());
@@ -221,7 +221,6 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
       }
     }
   }
-
   return true;
 }
 
@@ -235,6 +234,9 @@ TransformationDuplicateRegionWithSelection::GetRegionBlocks(
   auto postdominator_analysis =
       ir_context->GetPostDominatorAnalysis(enclosing_function);
 
+  // A block belongs to a region between the entry block and the exit block if
+  // and only if it is dominated by the entry block and post-dominated by the
+  // exit block.
   std::set<opt::BasicBlock*> result;
   for (auto& block : *enclosing_function) {
     if (dominator_analysis->Dominates(entry_block, &block) &&
@@ -252,7 +254,7 @@ void TransformationDuplicateRegionWithSelection::Apply(
 
   // Create the new entry block containing the main conditional instruction. Set
   // its parent to the parent of the original entry block, since it is located
-  // in the same function
+  // in the same function.
   std::unique_ptr<opt::BasicBlock> new_entry_block =
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           ir_context, SpvOpLabel, 0, message_.new_entry_fresh_id(),
@@ -268,15 +270,13 @@ void TransformationDuplicateRegionWithSelection::Apply(
       GetRegionBlocks(ir_context, entry_block, exit_block);
 
   // Construct the merge block and set its parent.
-
-  auto merge_block_instr = opt::Instruction(ir_context, SpvOpLabel, 0,
-                                            message_.merge_label_fresh_id(),
-                                            opt::Instruction::OperandList());
-  std::unique_ptr<opt::BasicBlock> merge_block = MakeUnique<opt::BasicBlock>(
-      MakeUnique<opt::Instruction>(merge_block_instr));
+  std::unique_ptr<opt::BasicBlock> merge_block =
+      MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(opt::Instruction(
+          ir_context, SpvOpLabel, 0, message_.merge_label_fresh_id(),
+          opt::Instruction::OperandList())));
   merge_block->SetParent(enclosing_function);
 
-  // Get maps from the protobuf.
+  // Get the maps from the protobuf.
   std::map<uint32_t, uint32_t> original_label_to_duplicate_label =
       fuzzerutil::RepeatedUInt32PairToMap(
           message_.original_label_to_duplicate_label());
@@ -288,73 +288,85 @@ void TransformationDuplicateRegionWithSelection::Apply(
   std::map<uint32_t, uint32_t> original_id_to_phi_id =
       fuzzerutil::RepeatedUInt32PairToMap(message_.original_id_to_phi_id());
 
-  // Duplicate blocks with instructions of the original region.
-  opt::BasicBlock* previous_block = nullptr;
-  opt::BasicBlock* duplicated_exit_block = nullptr;
+  // Before adding duplicate blocks, we need to update the OpPhi instructions in
+  // the successors of the |exit_block|. We know that the execution of the
+  // transformed region will end in |merge_block|. Hence, we need to change all
+  // occurrences of |exit_block| to |merge_block|.
+  exit_block->ForEachSuccessorLabel([this, ir_context](uint32_t label_id) {
+    auto block = ir_context->cfg()->block(label_id);
+    for (auto& instr : *block) {
+      if (instr.opcode() == SpvOpPhi) {
+        instr.ForEachId([this](uint32_t* id) {
+          if (*id == message_.exit_block_id()) {
+            *id = message_.merge_label_fresh_id();
+          }
+        });
+      }
+    }
+  });
+
   std::vector<opt::BasicBlock*> blocks;
   for (auto block_it = enclosing_function->begin();
        block_it != enclosing_function->end(); block_it++) {
     blocks.push_back(&*block_it);
   }
   std::vector<opt::Instruction*> instructions_to_remove;
+  opt::BasicBlock* previous_block = nullptr;
+  opt::BasicBlock* duplicated_exit_block = nullptr;
+
+  // Duplicate blocks of the original region and their instructions.
   for (auto& block : blocks) {
-    // For every block in the original
-    // region create a new block with the label
-    // |original_label_to_duplicate_label|.
-    if (region_blocks.find(block) == region_blocks.end()) {
+    // The block must be contained in the region.
+    if (region_blocks.count(block) == 0) {
       continue;
     }
-    auto label =
-        ir_context->get_def_use_mgr()->GetDef(block->id())->result_id();
+
+    fuzzerutil::UpdateModuleIdBound(
+        ir_context, original_label_to_duplicate_label[block->id()]);
+
     std::unique_ptr<opt::BasicBlock> duplicated_block =
         MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
-            ir_context, SpvOpLabel, 0, original_label_to_duplicate_label[label],
+            ir_context, SpvOpLabel, 0,
+            original_label_to_duplicate_label[block->id()],
             opt::Instruction::OperandList()));
-    if (block == exit_block) {
-      duplicated_exit_block = duplicated_block.get();
-    }
 
     for (auto& instr : *block) {
-      // Duplicate instructions. Cases where an instruction is an OpBranch
+      // Cases where an instruction is an OpBranch
       // or an OpReturn or an OpReturnValue in the exit block are handled
       // separately so we don't clone these instructions.
-
       if (block == exit_block && (instr.opcode() == SpvOpReturn ||
                                   instr.opcode() == SpvOpReturnValue ||
                                   instr.opcode() == SpvOpBranch)) {
         instructions_to_remove.push_back(&instr);
         continue;
       }
+      // Duplicate instructions
       auto cloned_instr = instr.Clone(ir_context);
       duplicated_block->AddInstruction(
           std::unique_ptr<opt::Instruction>(cloned_instr));
-      // If the id from the original id was used in this instruction,
-      // replace it with the duplicate id from the map
-      // |original_id_to_duplicate_id|.
-      cloned_instr->ForEachId(
-          [original_id_to_duplicate_id,
-           original_label_to_duplicate_label](uint32_t* op) {
-            if (original_id_to_duplicate_id.find(*op) !=
-                original_id_to_duplicate_id.end()) {
-              *op = original_id_to_duplicate_id.at(*op);
-            }
-            if (original_label_to_duplicate_label.find(*op) !=
-                original_label_to_duplicate_label.end()) {
-              *op = original_label_to_duplicate_label.at(*op);
-            }
-          });
-    }
-    if (block == exit_block) {
-      opt::Instruction merge_branch_instr = opt::Instruction(
-          ir_context, SpvOpBranch, 0, 0,
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_ID, {message_.merge_label_fresh_id()}}}));
-      duplicated_exit_block->AddInstruction(
-          MakeUnique<opt::Instruction>(merge_branch_instr));
+
+      fuzzerutil::UpdateModuleIdBound(
+          ir_context, original_id_to_duplicate_id[instr.result_id()]);
+
+      // If an id from the original region was used in this instruction,
+      // replace it with the value from |original_id_to_duplicate_id|.
+      // If a label from the original region was used in this instruction,
+      // replace it with the value from |original_label_to_duplicate_label|.
+      cloned_instr->ForEachId([original_id_to_duplicate_id,
+                               original_label_to_duplicate_label,
+                               ir_context](uint32_t* op) {
+        if (original_id_to_duplicate_id.count(*op) != 0) {
+          *op = original_id_to_duplicate_id.at(*op);
+        }
+        if (original_label_to_duplicate_label.count(*op) != 0) {
+          *op = original_label_to_duplicate_label.at(*op);
+        }
+      });
     }
 
-    // Insert each duplicated order after the preceding one, or before the exit
-    // block of the original region if it is the first duplicated block.
+    // If the block is the first duplicated block, insert it before the exit
+    // block of the original region. Otherwise, insert it after the preceding
+    // one.
     duplicated_block->SetParent(enclosing_function);
     auto duplicated_block_ptr = duplicated_block.get();
     if (previous_block) {
@@ -371,19 +383,14 @@ void TransformationDuplicateRegionWithSelection::Apply(
   // block.
   duplicated_exit_block = previous_block;
 
-  // Get the label id of the entry block to use in OpPhi instructions
-  auto entry_block_label_instr =
-      ir_context->get_def_use_mgr()->GetDef(message_.entry_block_id());
-  auto entry_block_label_id = entry_block_label_instr->result_id();
-
-  // Add the OpPhi instruction for every result id that is available at the end
-  // of the region (the last instruction of the |exit_block|)
   for (auto& block : region_blocks) {
     for (auto& instr : *block) {
       if (instr.result_id() != 0 &&
           (&instr == &*exit_block->tail() ||
            fuzzerutil::IdIsAvailableBeforeInstruction(
                ir_context, &*exit_block->tail(), instr.result_id()))) {
+        // Add the OpPhi instruction for every result id that is available at
+        // the end of the region (the last instruction of the |exit_block|)
         merge_block->AddInstruction(MakeUnique<opt::Instruction>(
             ir_context, SpvOpPhi, instr.type_id(),
             original_id_to_phi_id[instr.result_id()],
@@ -394,11 +401,13 @@ void TransformationDuplicateRegionWithSelection::Apply(
                  {original_id_to_duplicate_id[instr.result_id()]}},
                 {SPV_OPERAND_TYPE_ID, {duplicated_exit_block->id()}},
             })));
+
         fuzzerutil::UpdateModuleIdBound(
             ir_context, original_id_to_phi_id[instr.result_id()]);
 
         // If the instruction has been remapped by an OpPhi, look for all its
-        // uses outside of the region and the merge block and replace the
+        // uses outside of the region and outside of the merge block (to not
+        // overwrite just added instructions in the merge block) and replace the
         // original instruction id with the id of the corresponding OpPhi
         // instruction.
         ir_context->get_def_use_mgr()->ForEachUse(
@@ -406,7 +415,8 @@ void TransformationDuplicateRegionWithSelection::Apply(
             [this, ir_context, &instr, region_blocks, original_id_to_phi_id,
              &merge_block](opt::Instruction* user, uint32_t operand_index) {
               auto user_block = ir_context->get_instr_block(user);
-              if ((region_blocks.find(user_block) != region_blocks.end())) {
+              if ((region_blocks.find(user_block) != region_blocks.end()) ||
+                  user_block == merge_block.get()) {
                 return;
               }
               user->SetOperand(operand_index,
@@ -420,7 +430,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
   // condition is true, the execution proceeds in the |entry_block| of the
   // original region. If the condition is false, the execution proceeds in the
   // first block of the duplicated region.
-
   new_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpSelectionMerge, 0, 0,
       opt::Instruction::OperandList(
@@ -431,12 +440,9 @@ void TransformationDuplicateRegionWithSelection::Apply(
       ir_context, SpvOpBranchConditional, 0, 0,
       opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID, {message_.condition_id()}},
-           //{SPV_OPERAND_TYPE_ID, {enclosing_function->result_id()}},
-           {SPV_OPERAND_TYPE_ID, {entry_block_label_id}},
-           //{SPV_OPERAND_TYPE_ID,
-           // {original_label_to_duplicate_label[entry_block_label_id]}},
+           {SPV_OPERAND_TYPE_ID, {message_.entry_block_id()}},
            {SPV_OPERAND_TYPE_ID,
-            {original_label_to_duplicate_label[entry_block_label_id]}}})));
+            {original_label_to_duplicate_label[message_.entry_block_id()]}}})));
 
   // If the exit block of the region contained an OpReturn or OpReturnValue
   // instruction we know that this was the exit block of the function. Move this
@@ -447,7 +453,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
   // refers to an another block outside of the region. Move this instruction to
   // the merge block, since the execution after the transformed region will
   // proceed from there.
-
   for (auto instr : instructions_to_remove) {
     auto cloned_instr = instr->Clone(ir_context);
     merge_block->AddInstruction(
@@ -455,25 +460,26 @@ void TransformationDuplicateRegionWithSelection::Apply(
     ir_context->KillInst(instr);
   }
 
+  // Add OpBranch instruction to the merge block at the end of |exit_block| and
+  // at the end of |duplicated_exit_block|.
   opt::Instruction merge_branch_instr = opt::Instruction(
       ir_context, SpvOpBranch, 0, 0,
       opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID, {message_.merge_label_fresh_id()}}}));
-
   exit_block->AddInstruction(MakeUnique<opt::Instruction>(merge_branch_instr));
-
-  // Add OpBranch instruction to the merge at the end of |exit_block| and at the
-  // end of |duplicated_exit_block|.
+  duplicated_exit_block->AddInstruction(
+      MakeUnique<opt::Instruction>(merge_branch_instr));
 
   // Execution needs to start in the |new_entry_block|. Change all the uses of
   // |entry_block_label_instr| to |message_.new_entry_fresh_id()|
-  instructions_to_remove.clear();
+  auto entry_block_label_instr =
+      ir_context->get_def_use_mgr()->GetDef(message_.entry_block_id());
   ir_context->get_def_use_mgr()->ForEachUse(
       entry_block_label_instr,
-      [this, ir_context, region_blocks, &instructions_to_remove](
-          opt::Instruction* user, uint32_t operand_index) {
+      [this, ir_context, region_blocks](opt::Instruction* user,
+                                        uint32_t operand_index) {
         auto user_block = ir_context->get_instr_block(user);
-        if ((region_blocks.find(user_block) != region_blocks.end())) {
+        if ((region_blocks.count(user_block) != 0)) {
           return;
         }
         switch (user->opcode()) {
@@ -484,9 +490,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
           case SpvOpSelectionMerge: {
             user->SetOperand(operand_index, {message_.new_entry_fresh_id()});
           } break;
-          case SpvOpPhi: {
-            instructions_to_remove.push_back(user);
-          }
           case SpvOpName:
             break;
           default:
@@ -496,9 +499,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
                    "OpSelectionMerge");
         }
       });
-  for (auto& instr : instructions_to_remove) {
-    ir_context->KillInst(instr);
-  }
 
   // Insert the merge block after the |duplicated_exit_block| (the last
   // duplicated block).
@@ -509,7 +509,8 @@ void TransformationDuplicateRegionWithSelection::Apply(
   enclosing_function->InsertBasicBlockBefore(std::move(new_entry_block),
                                              entry_block);
 
-  // Since we have changed the module, most of the analysis are now invalid.
+  // Since we have changed the module, most of the analysis are now invalid. We
+  // can invalidate analyses now when all of the blocks have been registered.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 

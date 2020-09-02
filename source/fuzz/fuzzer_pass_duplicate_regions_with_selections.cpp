@@ -36,14 +36,16 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     original_functions.push_back(&function);
   }
+  // Iterate over all of the functions in the module.
   for (auto& function : original_functions) {
+    // Randomly decide whether to apply the transformation.
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfDuplicatingRegionWithSelection())) {
       continue;
     }
     std::vector<opt::BasicBlock*> start_blocks;
     for (auto& block : *function) {
-      // We don't consider the first block to be the starting block.
+      // We currently don't consider the first block to be the starting block.
       if (&block == &*function->begin()) {
         continue;
       }
@@ -101,7 +103,7 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
     // Make sure the transformation has access to a bool constant to be used
     // while creating conditional construct.
     auto condition_value = GetFuzzerContext()->ChooseEven();
-    auto condition_id = FindOrCreateBoolConstant(condition_value, false);
+    auto condition_id = FindOrCreateBoolConstant(condition_value, true);
     TransformationDuplicateRegionWithSelection transformation =
         TransformationDuplicateRegionWithSelection(
             GetFuzzerContext()->GetFreshId(), condition_id,

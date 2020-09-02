@@ -1181,13 +1181,13 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                OpStore %42 %216
                OpBranch %501
         %501 = OpLabel
-        %301 = OpPhi %8 %18 %15 %201 %110
-        %302 = OpPhi %20 %21 %15 %202 %110
         %312 = OpPhi %8 %39 %15 %212 %110
         %313 = OpPhi %8 %40 %15 %213 %110
         %314 = OpPhi %8 %41 %15 %214 %110
         %315 = OpPhi %8 %43 %15 %215 %110
         %316 = OpPhi %8 %45 %15 %216 %110
+        %301 = OpPhi %8 %18 %15 %201 %110
+        %302 = OpPhi %20 %21 %15 %202 %110
 
                OpReturn
                OpFunctionEnd
@@ -1248,7 +1248,7 @@ TEST(FuzzerPassTest, BasicTest) {
   FuzzerContext fuzzer_context(prng.get(), 100);
   protobufs::TransformationSequence transformation_sequence;
 
-  for (uint32_t i = 0; i < 40; i++) {
+  for (uint32_t i = 0; i < 100; i++) {
     FuzzerPassDuplicateRegionsWithSelections fuzzer_pass(
         context.get(), &transformation_context, &fuzzer_context,
         &transformation_sequence);
