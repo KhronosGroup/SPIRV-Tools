@@ -63,7 +63,8 @@ class TransformationMoveInstructionDown : public Transformation {
                                       const opt::Instruction& inst);
 
   // Returns id being used by |inst| to read from. |inst| must be a memory read
-  // instruction (see IsMemoryReadInstruction).
+  // instruction (see IsMemoryReadInstruction). Returned id is not guaranteed to
+  // have pointer type.
   static uint32_t GetMemoryReadTarget(opt::IRContext* ir_context,
                                       const opt::Instruction& inst);
 
@@ -72,7 +73,8 @@ class TransformationMoveInstructionDown : public Transformation {
                                        const opt::Instruction& inst);
 
   // Returns id being used by |inst| to write into. |inst| must be a memory
-  // write instruction (see IsMemoryWriteInstruction).
+  // write instruction (see IsMemoryWriteInstruction). Returned id is not
+  // guaranteed to have pointer type.
   static uint32_t GetMemoryWriteTarget(opt::IRContext* ir_context,
                                        const opt::Instruction& inst);
 

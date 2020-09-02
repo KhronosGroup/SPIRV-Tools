@@ -347,6 +347,30 @@ bool TransformationMoveInstructionDown::IsMemoryReadInstruction(
   switch (inst.opcode()) {
     case SpvOpLoad:
     case SpvOpCopyMemory:
+    case SpvOpImageSampleImplicitLod:
+    case SpvOpImageSampleExplicitLod:
+    case SpvOpImageSampleDrefImplicitLod:
+    case SpvOpImageSampleDrefExplicitLod:
+    case SpvOpImageSampleProjImplicitLod:
+    case SpvOpImageSampleProjExplicitLod:
+    case SpvOpImageSampleProjDrefImplicitLod:
+    case SpvOpImageSampleProjDrefExplicitLod:
+    case SpvOpImageFetch:
+    case SpvOpImageGather:
+    case SpvOpImageDrefGather:
+    case SpvOpImageRead:
+    case SpvOpImageSparseSampleImplicitLod:
+    case SpvOpImageSparseSampleExplicitLod:
+    case SpvOpImageSparseSampleDrefImplicitLod:
+    case SpvOpImageSparseSampleDrefExplicitLod:
+    case SpvOpImageSparseSampleProjImplicitLod:
+    case SpvOpImageSparseSampleProjExplicitLod:
+    case SpvOpImageSparseSampleProjDrefImplicitLod:
+    case SpvOpImageSparseSampleProjDrefExplicitLod:
+    case SpvOpImageSparseFetch:
+    case SpvOpImageSparseGather:
+    case SpvOpImageSparseDrefGather:
+    case SpvOpImageSparseRead:
       return true;
     case SpvOpExtInst: {
       if (GetExtensionSet(ir_context, inst) != kExtensionSetName) {
@@ -375,8 +399,31 @@ uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
 
   switch (inst.opcode()) {
     case SpvOpLoad:
+    case SpvOpImageSampleImplicitLod:
+    case SpvOpImageSampleExplicitLod:
+    case SpvOpImageSampleDrefImplicitLod:
+    case SpvOpImageSampleDrefExplicitLod:
+    case SpvOpImageSampleProjImplicitLod:
+    case SpvOpImageSampleProjExplicitLod:
+    case SpvOpImageSampleProjDrefImplicitLod:
+    case SpvOpImageSampleProjDrefExplicitLod:
+    case SpvOpImageFetch:
+    case SpvOpImageGather:
+    case SpvOpImageDrefGather:
+    case SpvOpImageRead:
+    case SpvOpImageSparseSampleImplicitLod:
+    case SpvOpImageSparseSampleExplicitLod:
+    case SpvOpImageSparseSampleDrefImplicitLod:
+    case SpvOpImageSparseSampleDrefExplicitLod:
+    case SpvOpImageSparseSampleProjImplicitLod:
+    case SpvOpImageSparseSampleProjExplicitLod:
+    case SpvOpImageSparseSampleProjDrefImplicitLod:
+    case SpvOpImageSparseSampleProjDrefExplicitLod:
+    case SpvOpImageSparseFetch:
+    case SpvOpImageSparseGather:
+    case SpvOpImageSparseDrefGather:
+    case SpvOpImageSparseRead:
       return inst.GetSingleWordInOperand(0);
-    case SpvOpStore:
     case SpvOpCopyMemory:
       return inst.GetSingleWordInOperand(1);
     case SpvOpExtInst: {
@@ -408,6 +455,7 @@ bool TransformationMoveInstructionDown::IsMemoryWriteInstruction(
   switch (inst.opcode()) {
     case SpvOpStore:
     case SpvOpCopyMemory:
+    case SpvOpImageWrite:
       return true;
     case SpvOpExtInst: {
       if (GetExtensionSet(ir_context, inst) != kExtensionSetName) {
@@ -431,6 +479,7 @@ uint32_t TransformationMoveInstructionDown::GetMemoryWriteTarget(
   switch (inst.opcode()) {
     case SpvOpStore:
     case SpvOpCopyMemory:
+    case SpvOpImageWrite:
       return inst.GetSingleWordInOperand(0);
     case SpvOpExtInst: {
       assert(GetExtensionSet(ir_context, inst) == kExtensionSetName &&
@@ -555,32 +604,42 @@ bool TransformationMoveInstructionDown::CanSafelySwapInstructions(
   // of R, W and RW according to the tables above. We conservatively assume that
   // both |a| and |b| point to the same memory region.
 
+  auto memory_is_irrelevant = [ir_context, &fact_manager](uint32_t id) {
+    const auto* inst = ir_context->get_def_use_mgr()->GetDef(id);
+    if (!inst->type_id()) {
+      return false;
+    }
+
+    const auto* type = ir_context->get_type_mgr()->GetType(inst->type_id());
+    assert(type && "|id| has invalid type");
+
+    if (!type->AsPointer()) {
+      return false;
+    }
+
+    return fact_manager.PointeeValueIsIrrelevant(id);
+  };
+
   if (IsMemoryReadInstruction(ir_context, a) &&
       IsMemoryWriteInstruction(ir_context, b) &&
-      !fact_manager.PointeeValueIsIrrelevant(
-          GetMemoryReadTarget(ir_context, a)) &&
-      !fact_manager.PointeeValueIsIrrelevant(
-          GetMemoryWriteTarget(ir_context, b))) {
+      !memory_is_irrelevant(GetMemoryReadTarget(ir_context, a)) &&
+      !memory_is_irrelevant(GetMemoryWriteTarget(ir_context, b))) {
     return false;
   }
 
   if (IsMemoryWriteInstruction(ir_context, a) &&
       IsMemoryReadInstruction(ir_context, b) &&
-      !fact_manager.PointeeValueIsIrrelevant(
-          GetMemoryWriteTarget(ir_context, a)) &&
-      !fact_manager.PointeeValueIsIrrelevant(
-          GetMemoryReadTarget(ir_context, b))) {
+      !memory_is_irrelevant(GetMemoryWriteTarget(ir_context, a)) &&
+      !memory_is_irrelevant(GetMemoryReadTarget(ir_context, b))) {
     return false;
   }
 
   if (IsMemoryWriteInstruction(ir_context, a) &&
       IsMemoryWriteInstruction(ir_context, b) &&
-      !fact_manager.PointeeValueIsIrrelevant(
-          GetMemoryWriteTarget(ir_context, a)) &&
-      !fact_manager.PointeeValueIsIrrelevant(
-          GetMemoryWriteTarget(ir_context, b))) {
+      !memory_is_irrelevant(GetMemoryWriteTarget(ir_context, a)) &&
+      !memory_is_irrelevant(GetMemoryWriteTarget(ir_context, b))) {
     // We ignore the case when the written value is the same. This is because
-    // the written value might not be equal to one of the instruction's
+    // the written value might not be equal to any of the instruction's
     // operands.
     return false;
   }
