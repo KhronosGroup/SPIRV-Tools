@@ -255,11 +255,8 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_irrelevant_ids.cpp
         fuzzer_pass_replace_linear_algebra_instructions.cpp
         fuzzer_pass_replace_loads_stores_with_copy_memories.cpp
-<<<<<<< HEAD
         fuzzer_pass_replace_opphi_ids_from_dead_predecessors.cpp
-=======
         fuzzer_pass_replace_opselects_with_conditional_branches.cpp
->>>>>>> a626d96c (Rename transformation)
         fuzzer_pass_replace_parameter_with_global.cpp
         fuzzer_pass_replace_params_with_struct.cpp
         fuzzer_pass_split_blocks.cpp
