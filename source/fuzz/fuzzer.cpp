@@ -356,60 +356,61 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
             tools)) {
       return Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule;
     }
-
-    // Now apply some passes that it does not make sense to apply repeatedly,
-    // as they do not unlock other passes.
-    std::vector<std::unique_ptr<FuzzerPass>> final_passes;
-    MaybeAddPass<FuzzerPassAdjustBranchWeights>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassAdjustFunctionControls>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassAdjustLoopControls>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassAdjustMemoryOperandsMasks>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassAdjustSelectionControls>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassAddNoContractionDecorations>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassInterchangeZeroLikeConstants>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassPermutePhiOperands>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassReplaceIrrelevantIds>(
-        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
-        transformation_sequence_out);
-    MaybeAddPass<FuzzerPassSwapCommutableOperands>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    MaybeAddPass<FuzzerPassToggleAccessChainInstruction>(
-        &final_passes, ir_context.get(), &transformation_context,
-        &fuzzer_context, transformation_sequence_out);
-    for (auto& pass : final_passes) {
-      if (!ApplyPassAndCheckValidity(pass.get(), *ir_context, tools)) {
-        return Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule;
-      }
-    }
-
-    // Encode the module as a binary.
-    ir_context->module()->ToBinary(binary_out, false);
-
-    return Fuzzer::FuzzerResultStatus::kComplete;
   }
 
+  // Now apply some passes that it does not make sense to apply repeatedly,
+  // as they do not unlock other passes.
+  std::vector<std::unique_ptr<FuzzerPass>> final_passes;
+  MaybeAddPass<FuzzerPassAdjustBranchWeights>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassAdjustFunctionControls>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassAdjustLoopControls>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassAdjustMemoryOperandsMasks>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassAdjustSelectionControls>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassAddNoContractionDecorations>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassInterchangeZeroLikeConstants>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassPermutePhiOperands>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassReplaceIrrelevantIds>(
+      &passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassSwapCommutableOperands>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  MaybeAddPass<FuzzerPassToggleAccessChainInstruction>(
+      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
+      transformation_sequence_out);
+  for (auto& pass : final_passes) {
+    if (!ApplyPassAndCheckValidity(pass.get(), *ir_context, tools)) {
+      return Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule;
+    }
+  }
+
+  // Encode the module as a binary.
+  ir_context->module()->ToBinary(binary_out, false);
+
+  return Fuzzer::FuzzerResultStatus::kComplete;
+}
+
 }  // namespace fuzz
-}  // namespace fuzz
+}  // namespace spvtools
