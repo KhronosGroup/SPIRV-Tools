@@ -74,53 +74,49 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
     // Some instructions will require to be enclosed inside conditionals because
     // they have side effects (for example, loads and stores). Some of this have
     // no result id, so we require instruction descriptors to identify them.
-    // Each of them is associated with an IdsForEnclosingInst struct, containing
-    // all the necessary ids for it.
-    std::vector<
-        std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
-        instructions_to_ids;
+    // Each of them is associated with the necessary ids for it via a
+    // SideEffectWrapperInfo message.
+    std::vector<protobufs::SideEffectWrapperInfo> wrappers_info;
 
     for (auto instruction : instructions_that_need_ids) {
-      IdsForEnclosingInst info = {GetFuzzerContext()->GetFreshId(),
-                                  GetFuzzerContext()->GetFreshId(),
-                                  0,
-                                  0,
-                                  0,
-                                  0};
+      protobufs::SideEffectWrapperInfo wrapper_info;
+      *wrapper_info.mutable_instruction() =
+          MakeInstructionDescriptor(GetIRContext(), instruction);
+      wrapper_info.set_merge_block_id(GetFuzzerContext()->GetFreshId());
+      wrapper_info.set_execute_block_id(GetFuzzerContext()->GetFreshId());
 
       // If the instruction has a non-void result id, we need to define more
       // fresh ids and provide an id of the suitable type whose value can be
       // copied in order to create a placeholder id.
       if (TransformationFlattenConditionalBranch::InstructionNeedsPlaceholder(
               GetIRContext(), *instruction)) {
-        info.actual_result_id = GetFuzzerContext()->GetFreshId();
-        info.alternative_block_id = GetFuzzerContext()->GetFreshId();
-        info.placeholder_result_id = GetFuzzerContext()->GetFreshId();
+        wrapper_info.set_actual_result_id(GetFuzzerContext()->GetFreshId());
+        wrapper_info.set_alternative_block_id(GetFuzzerContext()->GetFreshId());
+        wrapper_info.set_placeholder_result_id(
+            GetFuzzerContext()->GetFreshId());
 
         // The id will be a zero constant if the type allows it, and an OpUndef
-        // otherwise. We want to avoid using OpUndef if possible because they
-        // limit the fuzzer's ability of applying further transformations,
-        // having undefined behaviour.
+        // otherwise. We want to avoid using OpUndef, if possible, to avoid
+        // undefined behaviour in the module as much as possible.
         if (CanFindOrCreateZeroConstant(
                 *GetIRContext()->get_type_mgr()->GetType(
                     instruction->type_id()))) {
-          info.value_to_copy_id =
-              FindOrCreateZeroConstant(instruction->type_id(), true);
+          wrapper_info.set_value_to_copy_id(
+              FindOrCreateZeroConstant(instruction->type_id(), true));
         } else {
-          info.value_to_copy_id =
-              FindOrCreateGlobalUndef(instruction->type_id());
+          wrapper_info.set_value_to_copy_id(
+              FindOrCreateGlobalUndef(instruction->type_id()));
         }
       }
 
-      instructions_to_ids.emplace_back(
-          MakeInstructionDescriptor(GetIRContext(), instruction), info);
+      wrappers_info.emplace_back(wrapper_info);
     }
 
     // Apply the transformation, evenly choosing whether to lay out the true
     // branch or the false branch first.
     ApplyTransformation(TransformationFlattenConditionalBranch(
         header->id(), GetFuzzerContext()->ChooseEven(),
-        std::move(instructions_to_ids)));
+        std::move(wrappers_info)));
   }
 }
 

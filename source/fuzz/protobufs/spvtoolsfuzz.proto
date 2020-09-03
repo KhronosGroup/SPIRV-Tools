@@ -306,7 +306,7 @@ message AccessChainClampingInfo {
 
 }
 
-message InstToIdsForEnclosing {
+message SideEffectWrapperInfo {
   // When flattening a conditional branch, it is necessary to enclose
   // instructions that have side effects inside conditionals, so that
   // they are only executed if the condition holds. Otherwise, there
@@ -1253,7 +1253,7 @@ message TransformationFlattenConditionalBranch {
   // no side effects, this is semantics-preserving.
   // Side-effecting instructions will instead be enclosed by smaller
   // conditionals. For more details, look at the definition for the
-  // InstToIdsForEnclosing message.
+  // SideEffectWrapperInfo message.
   //
   // Nested conditionals or loops are not supported. The false branch
   // could also be executed before the true branch, depending on the
@@ -1270,7 +1270,7 @@ message TransformationFlattenConditionalBranch {
   // A list of instructions with side effects, which must be enclosed
   // inside smaller conditionals before flattening the main one, and
   // the corresponding fresh ids and module ids needed.
-  repeated InstToIdsForEnclosing inst_to_ids_for_enclosing = 3;
+  repeated SideEffectWrapperInfo side_effect_wrapper_info = 3;
 }
 
 message TransformationFunctionCall {

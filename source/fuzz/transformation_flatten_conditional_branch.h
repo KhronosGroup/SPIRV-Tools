@@ -20,34 +20,6 @@
 namespace spvtools {
 namespace fuzz {
 
-// A structure declaration for all the fresh ids needed to enclose a
-// side-effecting instruction inside a conditional.
-struct IdsForEnclosingInst {
-  // Fresh id for the new merge block.
-  uint32_t merge_block_id;
-
-  // Fresh id for the block where the original instruction is executed.
-  uint32_t execute_block_id;
-
-  // The following are only necessary if the original instruction returns a
-  // non-void result.
-
-  // Fresh id for the original instruction (a new OpPhi instruction will use the
-  // original id).
-  uint32_t actual_result_id;
-
-  // Fresh id for the block where an instruction returning a placeholder value
-  // is placed.
-  uint32_t alternative_block_id;
-
-  // Fresh id for the placeholder instruction.
-  uint32_t placeholder_result_id;
-
-  // Module id of the same type as the instruction, and available to use in an
-  // OpCopyObject instruction with id |placeholder_result_id|.
-  uint32_t value_to_copy_id;
-};
-
 class TransformationFlattenConditionalBranch : public Transformation {
  public:
   explicit TransformationFlattenConditionalBranch(
@@ -55,9 +27,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
   TransformationFlattenConditionalBranch(
       uint32_t header_block_id, bool true_branch_first,
-      std::vector<
-          std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
-          instructions_to_ids_for_enclosing = {});
+      const std::vector<protobufs::SideEffectWrapperInfo>&
+          side_effect_wrappers_info = {});
 
   // - |message_.header_block_id| must be the label id of a reachable selection
   //   header, which ends with an OpBranchConditional instruction.
@@ -67,7 +38,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // - The region must not contain selection or loop constructs.
   // - For each instruction that requires additional fresh ids, then:
   //   - if the instruction is mapped to the required ids for enclosing it by
-  //     |message_.instructions_to_ids_for_enclosing|, these must be valid (the
+  //     |message_.side_effect_wrapper_info|, these must be valid (the
   //     fresh ids must be non-zero, fresh and distinct);
   //   - if there is no such mapping, the transformation context must have
   //     overflow ids available.
@@ -109,27 +80,24 @@ class TransformationFlattenConditionalBranch : public Transformation {
                                           const opt::Instruction& instruction);
 
  private:
-  uint32_t GetConvergenceBlockId(opt::IRContext* ir_context,
-                                 opt::BasicBlock* header);
-
-  // Returns an unordered_map mapping instructions to the fresh ids required to
-  // enclose them inside a conditional. It gets the information from
-  // |message_.inst_to_ids_for_enclosing|.
-  std::unordered_map<opt::Instruction*, IdsForEnclosingInst>
-  GetInstructionsToIdsForEnclosing(opt::IRContext* ir_context) const;
+  // Returns an unordered_map mapping instructions to the info required to
+  // enclose them inside a conditional. It maps the instructions to the
+  // corresponding entry in |message_.side_effect_wrapper_info|.
+  std::unordered_map<opt::Instruction*, protobufs::SideEffectWrapperInfo>
+  GetInstructionsToWrapperInfo(opt::IRContext* ir_context) const;
 
   // Splits the given block, adding a new selection construct so that the given
   // instruction is only executed if the boolean value of |condition_id| matches
   // the value of |exec_if_cond_true|.
   // Assumes that all parameters are consistent.
   // 2 fresh ids are required if the instruction does not have a result id (the
-  // first two members of |fresh_ids| must be valid fresh ids), 5 otherwise.
+  // first two ids in |wrapper_info| must be valid fresh ids), 5 otherwise.
   // Returns the merge block created.
   opt::BasicBlock* EncloseInstructionInConditional(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       opt::BasicBlock* block, opt::Instruction* instruction,
-      const IdsForEnclosingInst& ids, uint32_t condition_id,
-      bool exec_if_cond_true) const;
+      const protobufs::SideEffectWrapperInfo& wrapper_info,
+      uint32_t condition_id, bool exec_if_cond_true) const;
 
   // Returns true if the given instruction either has no side effects or it can
   // be handled by being enclosed in a conditional.

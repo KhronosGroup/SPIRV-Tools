@@ -26,21 +26,12 @@ TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
 
 TransformationFlattenConditionalBranch::TransformationFlattenConditionalBranch(
     uint32_t header_block_id, bool true_branch_first,
-    std::vector<
-        std::pair<protobufs::InstructionDescriptor, IdsForEnclosingInst>>
-        instructions_to_ids_for_enclosing) {
+    const std::vector<protobufs::SideEffectWrapperInfo>&
+        side_effect_wrappers_info) {
   message_.set_header_block_id(header_block_id);
   message_.set_true_branch_first(true_branch_first);
-  for (auto const& pair : instructions_to_ids_for_enclosing) {
-    protobufs::InstToIdsForEnclosing inst_to_ids;
-    *inst_to_ids.mutable_instruction() = pair.first;
-    inst_to_ids.set_merge_block_id(pair.second.merge_block_id);
-    inst_to_ids.set_execute_block_id(pair.second.execute_block_id);
-    inst_to_ids.set_actual_result_id(pair.second.actual_result_id);
-    inst_to_ids.set_alternative_block_id(pair.second.alternative_block_id);
-    inst_to_ids.set_placeholder_result_id(pair.second.placeholder_result_id);
-    inst_to_ids.set_value_to_copy_id(pair.second.value_to_copy_id);
-    *message_.add_inst_to_ids_for_enclosing() = inst_to_ids;
+  for (auto const& side_effect_wrapper_info : side_effect_wrappers_info) {
+    *message_.add_side_effect_wrapper_info() = side_effect_wrapper_info;
   }
 }
 
@@ -74,17 +65,17 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
 
   // Get the mapping from instructions to the fresh ids needed to enclose them
   // inside conditionals.
-  auto instructions_to_ids = GetInstructionsToIdsForEnclosing(ir_context);
+  auto insts_to_wrapper_info = GetInstructionsToWrapperInfo(ir_context);
 
   {
     std::set<uint32_t> used_fresh_ids;
 
     // Check the ids in the map.
-    for (const auto& inst_to_ids : instructions_to_ids) {
+    for (const auto& inst_to_info : insts_to_wrapper_info) {
       // Check the fresh ids needed for all of the instructions that need to be
       // enclosed inside a conditional.
-      for (uint32_t id : {inst_to_ids.second.merge_block_id,
-                          inst_to_ids.second.execute_block_id}) {
+      for (uint32_t id : {inst_to_info.second.merge_block_id(),
+                          inst_to_info.second.execute_block_id()}) {
         if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(
                        id, ir_context, &used_fresh_ids)) {
           return false;
@@ -92,11 +83,11 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
       }
 
       // Check the other ids needed, if the instruction needs a placeholder.
-      if (InstructionNeedsPlaceholder(ir_context, *inst_to_ids.first)) {
+      if (InstructionNeedsPlaceholder(ir_context, *inst_to_info.first)) {
         // Check the fresh ids.
-        for (uint32_t id : {inst_to_ids.second.actual_result_id,
-                            inst_to_ids.second.alternative_block_id,
-                            inst_to_ids.second.placeholder_result_id}) {
+        for (uint32_t id : {inst_to_info.second.actual_result_id(),
+                            inst_to_info.second.alternative_block_id(),
+                            inst_to_info.second.placeholder_result_id()}) {
           if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(
                          id, ir_context, &used_fresh_ids)) {
             return false;
@@ -106,12 +97,12 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
         // Check that the placeholder value id exists, has the right type and is
         // available to use at this point.
         auto value_def = ir_context->get_def_use_mgr()->GetDef(
-            inst_to_ids.second.value_to_copy_id);
+            inst_to_info.second.value_to_copy_id());
         if (!value_def ||
-            value_def->type_id() != inst_to_ids.first->type_id() ||
+            value_def->type_id() != inst_to_info.first->type_id() ||
             !fuzzerutil::IdIsAvailableBeforeInstruction(
-                ir_context, inst_to_ids.first,
-                inst_to_ids.second.value_to_copy_id)) {
+                ir_context, inst_to_info.first,
+                inst_to_info.second.value_to_copy_id())) {
           return false;
         }
       }
@@ -121,7 +112,7 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   // If some instructions that require ids are not in the map, the
   // transformation needs overflow ids to be applicable.
   for (auto instruction : instructions_that_need_ids) {
-    if (instructions_to_ids.count(instruction) == 0 &&
+    if (insts_to_wrapper_info.count(instruction) == 0 &&
         !transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
       return false;
     }
@@ -155,7 +146,7 @@ void TransformationFlattenConditionalBranch::Apply(
   }
 
   // Get the mapping from instructions to fresh ids.
-  auto instructions_to_ids = GetInstructionsToIdsForEnclosing(ir_context);
+  auto insts_to_info = GetInstructionsToWrapperInfo(ir_context);
 
   auto branch_instruction = header_block->terminator();
 
@@ -210,40 +201,43 @@ void TransformationFlattenConditionalBranch::Apply(
       // Enclose all of the problematic instructions in conditionals, with the
       // same condition as the selection construct being flattened.
       for (auto instruction : problematic_instructions) {
-        // Get the ids needed by this instruction.
-        IdsForEnclosingInst needed_ids;
+        // Get the info needed by this instruction to wrap it inside a
+        // conditional.
+        protobufs::SideEffectWrapperInfo wrapper_info;
 
-        if (instructions_to_ids.count(instruction) != 0) {
+        if (insts_to_info.count(instruction) != 0) {
           // Get the fresh ids from the map, if present.
-          needed_ids = instructions_to_ids[instruction];
+          wrapper_info = insts_to_info[instruction];
         } else {
-          // If we could not get it from the map, use overflow ids.
-          needed_ids.merge_block_id =
+          // If we could not get it from the map, use overflow ids. We don't
+          // need to set |wrapper_info.instruction|, as it will not be used.
+          wrapper_info.set_merge_block_id(
               transformation_context->GetOverflowIdSource()
-                  ->GetNextOverflowId();
-          needed_ids.execute_block_id =
+                  ->GetNextOverflowId());
+          wrapper_info.set_execute_block_id(
               transformation_context->GetOverflowIdSource()
-                  ->GetNextOverflowId();
+                  ->GetNextOverflowId());
 
           if (InstructionNeedsPlaceholder(ir_context, *instruction)) {
             // Ge the fresh ids from the overflow ids.
-            needed_ids.actual_result_id =
+            wrapper_info.set_actual_result_id(
                 transformation_context->GetOverflowIdSource()
-                    ->GetNextOverflowId();
-            needed_ids.alternative_block_id =
+                    ->GetNextOverflowId());
+            wrapper_info.set_alternative_block_id(
                 transformation_context->GetOverflowIdSource()
-                    ->GetNextOverflowId();
-            needed_ids.placeholder_result_id =
+                    ->GetNextOverflowId());
+            wrapper_info.set_placeholder_result_id(
                 transformation_context->GetOverflowIdSource()
-                    ->GetNextOverflowId();
+                    ->GetNextOverflowId());
 
             // Try to find a zero constant. It does not matter whether it is
             // relevant or irrelevant.
             for (bool is_irrelevant : {true, false}) {
-              needed_ids.value_to_copy_id = fuzzerutil::MaybeGetZeroConstant(
-                  ir_context, *transformation_context, instruction->type_id(),
-                  is_irrelevant);
-              if (needed_ids.value_to_copy_id) {
+              wrapper_info.set_value_to_copy_id(
+                  fuzzerutil::MaybeGetZeroConstant(
+                      ir_context, *transformation_context,
+                      instruction->type_id(), is_irrelevant));
+              if (wrapper_info.value_to_copy_id()) {
                 break;
               }
             }
@@ -255,7 +249,7 @@ void TransformationFlattenConditionalBranch::Apply(
         // instructions will be).
         current_block = EncloseInstructionInConditional(
             ir_context, transformation_context, current_block, instruction,
-            needed_ids, condition_id, branch == 1);
+            wrapper_info, condition_id, branch == 1);
       }
 
       next_block_id = current_block->terminator()->GetSingleWordInOperand(0);
@@ -450,20 +444,15 @@ bool TransformationFlattenConditionalBranch::InstructionNeedsPlaceholder(
   return false;
 }
 
-std::unordered_map<opt::Instruction*, IdsForEnclosingInst>
-TransformationFlattenConditionalBranch::GetInstructionsToIdsForEnclosing(
+std::unordered_map<opt::Instruction*, protobufs::SideEffectWrapperInfo>
+TransformationFlattenConditionalBranch::GetInstructionsToWrapperInfo(
     opt::IRContext* ir_context) const {
-  std::unordered_map<opt::Instruction*, IdsForEnclosingInst>
+  std::unordered_map<opt::Instruction*, protobufs::SideEffectWrapperInfo>
       instructions_to_ids;
-  for (const auto& inst_to_ids : message_.inst_to_ids_for_enclosing()) {
-    IdsForEnclosingInst ids = {
-        inst_to_ids.merge_block_id(),        inst_to_ids.execute_block_id(),
-        inst_to_ids.actual_result_id(),      inst_to_ids.alternative_block_id(),
-        inst_to_ids.placeholder_result_id(), inst_to_ids.value_to_copy_id()};
-
-    auto instruction = FindInstruction(inst_to_ids.instruction(), ir_context);
+  for (const auto& wrapper_info : message_.side_effect_wrapper_info()) {
+    auto instruction = FindInstruction(wrapper_info.instruction(), ir_context);
     if (instruction) {
-      instructions_to_ids.emplace(instruction, std::move(ids));
+      instructions_to_ids.emplace(instruction, wrapper_info);
     }
   }
 
@@ -474,27 +463,28 @@ opt::BasicBlock*
 TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     opt::BasicBlock* block, opt::Instruction* instruction,
-    const IdsForEnclosingInst& ids, uint32_t condition_id,
+    const protobufs::SideEffectWrapperInfo& wrapper_info, uint32_t condition_id,
     bool exec_if_cond_true) const {
   // Get the next instruction (it will be useful for splitting).
   auto next_instruction = instruction->NextNode();
 
   // Update the module id bound.
-  for (uint32_t id : {ids.merge_block_id, ids.execute_block_id}) {
+  for (uint32_t id :
+       {wrapper_info.merge_block_id(), wrapper_info.execute_block_id()}) {
     fuzzerutil::UpdateModuleIdBound(ir_context, id);
   }
 
   // Create the block where the instruction is executed by splitting the
   // original block.
   auto execute_block = block->SplitBasicBlock(
-      ir_context, ids.execute_block_id,
+      ir_context, wrapper_info.execute_block_id(),
       fuzzerutil::GetIteratorForInstruction(block, instruction));
 
   // Create the merge block for the conditional that we are about to create by
   // splitting execute_block (this will leave |instruction| as the only
   // instruction in |execute_block|).
   auto merge_block = execute_block->SplitBasicBlock(
-      ir_context, ids.merge_block_id,
+      ir_context, wrapper_info.merge_block_id(),
       fuzzerutil::GetIteratorForInstruction(execute_block, next_instruction));
 
   // Propagate the fact that the block is dead to the newly-created blocks.
@@ -528,43 +518,45 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
   //   instruction, in the merge block.
   if (InstructionNeedsPlaceholder(ir_context, *instruction)) {
     // Update the module id bound with the additional ids.
-    for (uint32_t id : {ids.actual_result_id, ids.alternative_block_id,
-                        ids.placeholder_result_id}) {
+    for (uint32_t id :
+         {wrapper_info.actual_result_id(), wrapper_info.alternative_block_id(),
+          wrapper_info.placeholder_result_id()}) {
       fuzzerutil::UpdateModuleIdBound(ir_context, id);
     }
 
     // Create a new block using |fresh_ids.alternative_block_id| for its label.
     auto alternative_block_temp =
         MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
-            ir_context, SpvOpLabel, 0, ids.alternative_block_id,
+            ir_context, SpvOpLabel, 0, wrapper_info.alternative_block_id(),
             opt::Instruction::OperandList{}));
 
     // Keep the original result id of the instruction in a variable.
     uint32_t original_result_id = instruction->result_id();
 
     // Set the result id of the instruction to be |ids.actual_result_id|.
-    instruction->SetResultId(ids.actual_result_id);
+    instruction->SetResultId(wrapper_info.actual_result_id());
 
     // Add a placeholder instruction, with the same type as the original
     // instruction and id |ids.placeholder_result_id|, to the new block.
-    if (ids.value_to_copy_id) {
+    if (wrapper_info.value_to_copy_id()) {
       // If there is an available id to copy from, the placeholder instruction
       // will be %placeholder_result_id = OpCopyObject %type %value_to_copy_id
       alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
           ir_context, SpvOpCopyObject, instruction->type_id(),
-          ids.placeholder_result_id,
+          wrapper_info.placeholder_result_id(),
           opt::Instruction::OperandList{
-              {SPV_OPERAND_TYPE_ID, {ids.value_to_copy_id}}}));
+              {SPV_OPERAND_TYPE_ID, {wrapper_info.value_to_copy_id()}}}));
     } else {
       // If there is no such id, use an OpUndef instruction.
       alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
           ir_context, SpvOpUndef, instruction->type_id(),
-          ids.placeholder_result_id, opt::Instruction::OperandList{}));
+          wrapper_info.placeholder_result_id(),
+          opt::Instruction::OperandList{}));
     }
 
     // Mark |ids.placeholder_result_id| as irrelevant.
     transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
-        ids.placeholder_result_id);
+        wrapper_info.placeholder_result_id());
 
     // Add an unconditional branch from the new block to the merge block.
     alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
@@ -584,7 +576,7 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
         opt::Instruction::OperandList{
             {SPV_OPERAND_TYPE_ID, {instruction->result_id()}},
             {SPV_OPERAND_TYPE_ID, {execute_block->id()}},
-            {SPV_OPERAND_TYPE_ID, {ids.placeholder_result_id}},
+            {SPV_OPERAND_TYPE_ID, {wrapper_info.placeholder_result_id()}},
             {SPV_OPERAND_TYPE_ID, {alternative_block->id()}}}));
 
     // Propagate the fact that the block is dead to the new block.
