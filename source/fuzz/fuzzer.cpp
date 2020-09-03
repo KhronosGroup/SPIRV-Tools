@@ -182,12 +182,11 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   PseudoRandomGenerator random_generator(seed_);
 
   // The fuzzer will introduce new ids into the module.  The module's id bound
-  // gives the smallest id that can be used for this purpose.  We add an
-  // offset to this so that there is a sizeable gap between the ids used in
-  // the original module and the ids used for fuzzing, as a readability aid.
+  // gives the smallest id that can be used for this purpose.  We add an offset
+  // to this so that there is a sizeable gap between the ids used in the
+  // original module and the ids used for fuzzing, as a readability aid.
   //
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider
-  // the
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider the
   //  case where the maximum id bound is reached.
   auto minimum_fresh_id = ir_context->module()->id_bound() + kIdBoundGap;
   FuzzerContext fuzzer_context(&random_generator, minimum_fresh_id);
@@ -344,6 +343,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
   }
+
   bool is_first = true;
   while (static_cast<uint32_t>(
              transformation_sequence_out->transformation_size()) <
