@@ -60,6 +60,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -73,6 +74,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 0);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 0);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -86,6 +88,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -132,6 +135,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -145,6 +149,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 1);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 1);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -158,6 +163,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -171,6 +177,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 1);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 1);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -222,6 +229,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -235,6 +243,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 1);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 1);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -248,6 +257,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -261,6 +271,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 1);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 1);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -274,6 +285,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 2);
   EXPECT_EQ(analysis.ContainingLoop(5), 1);
   EXPECT_EQ(analysis.MergeBlock(5), 6);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 1);
   EXPECT_EQ(analysis.ContainingSwitch(5), 0);
@@ -287,6 +299,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(6), 1);
   EXPECT_EQ(analysis.ContainingLoop(6), 1);
   EXPECT_EQ(analysis.MergeBlock(6), 3);
+  EXPECT_EQ(analysis.NestingDepth(6), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(6), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(6), 1);
   EXPECT_EQ(analysis.ContainingSwitch(6), 0);
@@ -338,6 +351,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -351,6 +365,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 0);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 0);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -364,6 +379,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -377,6 +393,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 0);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 0);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -390,6 +407,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 2);
   EXPECT_EQ(analysis.ContainingLoop(5), 2);
   EXPECT_EQ(analysis.MergeBlock(5), 4);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 1);
   EXPECT_EQ(analysis.ContainingSwitch(5), 0);
@@ -403,6 +421,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(6), 2);
   EXPECT_EQ(analysis.ContainingLoop(6), 2);
   EXPECT_EQ(analysis.MergeBlock(6), 4);
+  EXPECT_EQ(analysis.NestingDepth(6), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(6), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(6), 1);
   EXPECT_EQ(analysis.ContainingSwitch(6), 0);
@@ -452,6 +471,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -465,6 +485,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 0);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 0);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -478,6 +499,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -491,6 +513,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 0);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 0);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -504,6 +527,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 2);
   EXPECT_EQ(analysis.ContainingLoop(5), 0);
   EXPECT_EQ(analysis.MergeBlock(5), 4);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 0);
   EXPECT_EQ(analysis.ContainingSwitch(5), 0);
@@ -557,6 +581,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -570,6 +595,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 1);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 1);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -583,6 +609,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -596,6 +623,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 1);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 1);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -609,6 +637,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 2);
   EXPECT_EQ(analysis.ContainingLoop(5), 2);
   EXPECT_EQ(analysis.MergeBlock(5), 4);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 2);
   EXPECT_EQ(analysis.ContainingSwitch(5), 0);
@@ -622,6 +651,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(6), 2);
   EXPECT_EQ(analysis.ContainingLoop(6), 2);
   EXPECT_EQ(analysis.MergeBlock(6), 4);
+  EXPECT_EQ(analysis.NestingDepth(6), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(6), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(6), 2);
   EXPECT_EQ(analysis.ContainingSwitch(6), 0);
@@ -635,6 +665,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(7), 1);
   EXPECT_EQ(analysis.ContainingLoop(7), 1);
   EXPECT_EQ(analysis.MergeBlock(7), 3);
+  EXPECT_EQ(analysis.NestingDepth(7), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(7), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(7), 1);
   EXPECT_EQ(analysis.ContainingSwitch(7), 0);
@@ -676,6 +707,7 @@ OpFunctionEnd
     EXPECT_EQ(analysis.ContainingConstruct(i), 0);
     EXPECT_EQ(analysis.ContainingLoop(i), 0);
     EXPECT_EQ(analysis.MergeBlock(i), 0);
+    EXPECT_EQ(analysis.NestingDepth(i), 0);
     EXPECT_EQ(analysis.LoopMergeBlock(i), 0);
     EXPECT_EQ(analysis.LoopNestingDepth(i), 0);
     EXPECT_EQ(analysis.ContainingSwitch(i), 0);
@@ -739,6 +771,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -752,6 +785,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 0);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 0);
   EXPECT_EQ(analysis.ContainingSwitch(2), 1);
@@ -765,6 +799,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -816,6 +851,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -829,6 +865,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 0);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 0);
   EXPECT_EQ(analysis.ContainingSwitch(2), 1);
@@ -842,6 +879,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -855,6 +893,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 0);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 0);
   EXPECT_EQ(analysis.ContainingSwitch(4), 1);
@@ -868,6 +907,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 2);
   EXPECT_EQ(analysis.ContainingLoop(5), 2);
   EXPECT_EQ(analysis.MergeBlock(5), 4);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 1);
   EXPECT_EQ(analysis.ContainingSwitch(5), 0);
@@ -881,6 +921,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(6), 2);
   EXPECT_EQ(analysis.ContainingLoop(6), 2);
   EXPECT_EQ(analysis.MergeBlock(6), 4);
+  EXPECT_EQ(analysis.NestingDepth(6), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(6), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(6), 1);
   EXPECT_EQ(analysis.ContainingSwitch(6), 0);
@@ -930,6 +971,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -943,6 +985,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 0);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 0);
   EXPECT_EQ(analysis.ContainingSwitch(2), 1);
@@ -956,6 +999,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -969,6 +1013,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 0);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 0);
   EXPECT_EQ(analysis.ContainingSwitch(4), 1);
@@ -982,6 +1027,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 2);
   EXPECT_EQ(analysis.ContainingLoop(5), 0);
   EXPECT_EQ(analysis.MergeBlock(5), 4);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 0);
   EXPECT_EQ(analysis.ContainingSwitch(5), 1);
@@ -1031,6 +1077,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -1044,6 +1091,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 0);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 0);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -1057,6 +1105,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -1070,6 +1119,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 0);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 0);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -1083,6 +1133,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 2);
   EXPECT_EQ(analysis.ContainingLoop(5), 0);
   EXPECT_EQ(analysis.MergeBlock(5), 4);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 0);
   EXPECT_EQ(analysis.ContainingSwitch(5), 2);
@@ -1134,6 +1185,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -1147,6 +1199,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 1);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 1);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -1160,6 +1213,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -1173,6 +1227,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 1);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 1);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -1186,6 +1241,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 4);
   EXPECT_EQ(analysis.ContainingLoop(5), 1);
   EXPECT_EQ(analysis.MergeBlock(5), 6);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 1);
   EXPECT_EQ(analysis.ContainingSwitch(5), 0);
@@ -1199,6 +1255,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(6), 1);
   EXPECT_EQ(analysis.ContainingLoop(6), 1);
   EXPECT_EQ(analysis.MergeBlock(6), 3);
+  EXPECT_EQ(analysis.NestingDepth(6), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(6), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(6), 1);
   EXPECT_EQ(analysis.ContainingSwitch(6), 0);
@@ -1252,6 +1309,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(1), 0);
   EXPECT_EQ(analysis.ContainingLoop(1), 0);
   EXPECT_EQ(analysis.MergeBlock(1), 0);
+  EXPECT_EQ(analysis.NestingDepth(1), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(1), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(1), 0);
   EXPECT_EQ(analysis.ContainingSwitch(1), 0);
@@ -1265,6 +1323,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(2), 1);
   EXPECT_EQ(analysis.ContainingLoop(2), 1);
   EXPECT_EQ(analysis.MergeBlock(2), 3);
+  EXPECT_EQ(analysis.NestingDepth(2), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(2), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(2), 1);
   EXPECT_EQ(analysis.ContainingSwitch(2), 0);
@@ -1278,6 +1337,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(3), 0);
   EXPECT_EQ(analysis.ContainingLoop(3), 0);
   EXPECT_EQ(analysis.MergeBlock(3), 0);
+  EXPECT_EQ(analysis.NestingDepth(3), 0);
   EXPECT_EQ(analysis.LoopMergeBlock(3), 0);
   EXPECT_EQ(analysis.LoopNestingDepth(3), 0);
   EXPECT_EQ(analysis.ContainingSwitch(3), 0);
@@ -1291,6 +1351,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(4), 1);
   EXPECT_EQ(analysis.ContainingLoop(4), 1);
   EXPECT_EQ(analysis.MergeBlock(4), 3);
+  EXPECT_EQ(analysis.NestingDepth(4), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(4), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(4), 1);
   EXPECT_EQ(analysis.ContainingSwitch(4), 0);
@@ -1304,6 +1365,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(5), 7);
   EXPECT_EQ(analysis.ContainingLoop(5), 7);
   EXPECT_EQ(analysis.MergeBlock(5), 4);
+  EXPECT_EQ(analysis.NestingDepth(5), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(5), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(5), 2);
   EXPECT_EQ(analysis.ContainingSwitch(5), 0);
@@ -1317,6 +1379,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(6), 7);
   EXPECT_EQ(analysis.ContainingLoop(6), 7);
   EXPECT_EQ(analysis.MergeBlock(6), 4);
+  EXPECT_EQ(analysis.NestingDepth(6), 2);
   EXPECT_EQ(analysis.LoopMergeBlock(6), 4);
   EXPECT_EQ(analysis.LoopNestingDepth(6), 2);
   EXPECT_EQ(analysis.ContainingSwitch(6), 0);
@@ -1330,6 +1393,7 @@ OpFunctionEnd
   EXPECT_EQ(analysis.ContainingConstruct(7), 1);
   EXPECT_EQ(analysis.ContainingLoop(7), 1);
   EXPECT_EQ(analysis.MergeBlock(7), 3);
+  EXPECT_EQ(analysis.NestingDepth(7), 1);
   EXPECT_EQ(analysis.LoopMergeBlock(7), 3);
   EXPECT_EQ(analysis.LoopNestingDepth(7), 1);
   EXPECT_EQ(analysis.ContainingSwitch(7), 0);
