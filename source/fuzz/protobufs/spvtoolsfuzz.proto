@@ -418,6 +418,7 @@ message Transformation {
     TransformationMutatePointer mutate_pointer = 71;
     TransformationReplaceIrrelevantId replace_irrelevant_id = 72;
     TransformationReplaceOpPhiIdFromDeadPredecessor replace_opphi_id_from_dead_predecessor = 73;
+    TransformationReplaceOpSelectWithConditionalBranch replace_opselect_with_conditional_branch = 74;
     // Add additional option using the next available number.
   }
 }
@@ -1562,6 +1563,39 @@ message TransformationReplaceOpPhiIdFromDeadPredecessor {
   // the given predecessor.
   uint32 replacement_id = 3;
 
+}
+
+message TransformationReplaceOpSelectWithConditionalBranch {
+
+  // A transformation that takes an OpSelect instruction with a
+  // scalar boolean condition and replaces it with a conditional
+  // branch and an OpPhi instruction.
+  // The OpSelect instruction must be the first instruction in its
+  // block, which must have a unique predecessor. The block will
+  // become the merge block of a new construct, while its predecessor
+  // will become the header.
+  // Given the original OpSelect instruction:
+  //   %id = OpSelect %type %cond %then %else
+  // The branching instruction of the header will be:
+  //         OpBranchConditional %cond %true_block_id %false_block_id
+  // and the OpSelect instruction will be turned into:
+  //   %id = OpPhi %type %then %true_block_id %else %false_block_id
+  // At most one of |true_block_id| and |false_block_id| can be zero. In
+  // that case, there will be no such block and all references to it
+  // will be replaced by %merge_block (where %merge_block is the
+  // block containing the OpSelect instruction).
+
+  // The result id of the OpSelect instruction.
+  uint32 select_id = 1;
+
+  // A fresh id for the new block that the predecessor of the block
+  // containing |select_id| will branch to if the condition holds.
+  uint32 true_block_id = 2;
+
+  // A fresh id for the new block that the predecessor of the block
+  // containing |select_id| will branch to if the condition does not
+  // hold.
+  uint32 false_block_id = 3;
 }
 
 message TransformationReplaceParamsWithStruct {

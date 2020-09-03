@@ -87,6 +87,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_replace_linear_algebra_instruction_test.cpp
           transformation_replace_load_store_with_copy_memory_test.cpp
           transformation_replace_opphi_id_from_dead_predecessor_test.cpp
+          transformation_replace_opselect_with_conditional_branch_test.cpp
           transformation_replace_parameter_with_global_test.cpp
           transformation_replace_params_with_struct_test.cpp
           transformation_set_function_control_test.cpp
