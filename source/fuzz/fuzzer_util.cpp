@@ -1486,6 +1486,39 @@ bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
   return builtin_count != 0;
 }
 
+bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+    opt::BasicBlock* block_to_split, opt::Instruction* split_before) {
+  std::set<uint32_t> sampled_image_result_ids;
+  bool before_split = true;
+
+  // Check all the instructions in the block to split.
+  for (auto& instruction : *block_to_split) {
+    if (&instruction == &*split_before) {
+      before_split = false;
+    }
+    if (before_split) {
+      // If the instruction comes before the split and its opcode is
+      // OpSampledImage, record its result id.
+      if (instruction.opcode() == SpvOpSampledImage) {
+        sampled_image_result_ids.insert(instruction.result_id());
+      }
+    } else {
+      // If the instruction comes after the split, check if ids
+      // corresponding to OpSampledImage instructions defined before the split
+      // are used, and return true if they are.
+      if (!instruction.WhileEachInId(
+              [&sampled_image_result_ids](uint32_t* id) -> bool {
+                return !sampled_image_result_ids.count(*id);
+              })) {
+        return true;
+      }
+    }
+  }
+
+  // No usage that would be separated from the definition has been found.
+  return false;
+}
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools

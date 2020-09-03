@@ -71,6 +71,7 @@
 #include "source/fuzz/fuzzer_pass_replace_linear_algebra_instructions.h"
 #include "source/fuzz/fuzzer_pass_replace_loads_stores_with_copy_memories.h"
 #include "source/fuzz/fuzzer_pass_replace_opphi_ids_from_dead_predecessors.h"
+#include "source/fuzz/fuzzer_pass_replace_opselects_with_conditional_branches.h"
 #include "source/fuzz/fuzzer_pass_replace_parameter_with_global.h"
 #include "source/fuzz/fuzzer_pass_replace_params_with_struct.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
@@ -323,6 +324,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassReplaceLinearAlgebraInstructions>(
+        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
+        transformation_sequence_out);
+    MaybeAddPass<FuzzerPassReplaceOpSelectsWithConditionalBranches>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassReplaceParamsWithStruct>(

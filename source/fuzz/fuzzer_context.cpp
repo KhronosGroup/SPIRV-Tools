@@ -27,6 +27,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingAccessChain = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfAddingBothBranchesWhenReplacingOpSelect = {40, 60};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCompositeInsert = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCopyMemory = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
@@ -48,6 +50,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingParameters = {5, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingRelaxedDecoration = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingStore = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingSynonyms = {20, 50};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfAddingTrueBranchWhenReplacingOpSelect = {40, 60};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingVectorShuffle = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingBranchWeights = {20, 90};
@@ -105,6 +109,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingLoadStoreWithCopyMemory =
     {20, 90};
 const std::pair<uint32_t, uint32_t>
     kChanceOfReplacingOpPhiIdFromDeadPredecessor = {20, 90};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfReplacingOpSelectWithConditionalBranch = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithGlobals = {
     30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithStruct = {
@@ -162,6 +168,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingAnotherStructField);
   chance_of_adding_array_or_struct_type_ =
       ChooseBetweenMinAndMax(kChanceOfAddingArrayOrStructType);
+  chance_of_adding_both_branches_when_replacing_opselect_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingBothBranchesWhenReplacingOpSelect);
   chance_of_adding_composite_insert_ =
       ChooseBetweenMinAndMax(kChanceOfAddingCompositeInsert);
   chance_of_adding_copy_memory_ =
@@ -194,6 +202,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_adding_relaxed_decoration_ =
       ChooseBetweenMinAndMax(kChanceOfAddingRelaxedDecoration);
   chance_of_adding_store_ = ChooseBetweenMinAndMax(kChanceOfAddingStore);
+  chance_of_adding_true_branch_when_replacing_opselect_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingTrueBranchWhenReplacingOpSelect);
   chance_of_adding_vector_shuffle_ =
       ChooseBetweenMinAndMax(kChanceOfAddingVectorShuffle);
   chance_of_adding_vector_type_ =
@@ -271,6 +281,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfReplacingLoadStoreWithCopyMemory);
   chance_of_replacing_opphi_id_from_dead_predecessor_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingOpPhiIdFromDeadPredecessor);
+  chance_of_replacing_opselect_with_conditional_branch_ =
+      ChooseBetweenMinAndMax(kChanceOfReplacingOpSelectWithConditionalBranch);
   chance_of_replacing_parameters_with_globals_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingParametersWithGlobals);
   chance_of_replacing_parameters_with_struct_ =

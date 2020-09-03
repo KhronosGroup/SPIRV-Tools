@@ -78,6 +78,7 @@
 #include "source/fuzz/transformation_replace_linear_algebra_instruction.h"
 #include "source/fuzz/transformation_replace_load_store_with_copy_memory.h"
 #include "source/fuzz/transformation_replace_opphi_id_from_dead_predecessor.h"
+#include "source/fuzz/transformation_replace_opselect_with_conditional_branch.h"
 #include "source/fuzz/transformation_replace_parameter_with_global.h"
 #include "source/fuzz/transformation_replace_params_with_struct.h"
 #include "source/fuzz/transformation_set_function_control.h"
@@ -276,6 +277,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kReplaceLoadStoreWithCopyMemory:
       return MakeUnique<TransformationReplaceLoadStoreWithCopyMemory>(
           message.replace_load_store_with_copy_memory());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceOpselectWithConditionalBranch:
+      return MakeUnique<TransformationReplaceOpSelectWithConditionalBranch>(
+          message.replace_opselect_with_conditional_branch());
     case protobufs::Transformation::TransformationCase::
         kReplaceParameterWithGlobal:
       return MakeUnique<TransformationReplaceParameterWithGlobal>(
