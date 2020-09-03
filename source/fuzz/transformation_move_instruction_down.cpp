@@ -620,6 +620,16 @@ bool TransformationMoveInstructionDown::CanSafelySwapInstructions(
     return fact_manager.PointeeValueIsIrrelevant(id);
   };
 
+  if (IsMemoryWriteInstruction(ir_context, a) &&
+      IsMemoryWriteInstruction(ir_context, b) &&
+      (memory_is_irrelevant(GetMemoryWriteTarget(ir_context, a)) ||
+       memory_is_irrelevant(GetMemoryWriteTarget(ir_context, b)))) {
+    // We ignore the case when the written value is the same. This is because
+    // the written value might not be equal to any of the instruction's
+    // operands.
+    return true;
+  }
+
   if (IsMemoryReadInstruction(ir_context, a) &&
       IsMemoryWriteInstruction(ir_context, b) &&
       !memory_is_irrelevant(GetMemoryReadTarget(ir_context, a)) &&
@@ -634,17 +644,8 @@ bool TransformationMoveInstructionDown::CanSafelySwapInstructions(
     return false;
   }
 
-  if (IsMemoryWriteInstruction(ir_context, a) &&
-      IsMemoryWriteInstruction(ir_context, b) &&
-      !memory_is_irrelevant(GetMemoryWriteTarget(ir_context, a)) &&
-      !memory_is_irrelevant(GetMemoryWriteTarget(ir_context, b))) {
-    // We ignore the case when the written value is the same. This is because
-    // the written value might not be equal to any of the instruction's
-    // operands.
-    return false;
-  }
-
-  return true;
+  return IsMemoryReadInstruction(ir_context, a) ||
+         IsMemoryReadInstruction(ir_context, b);
 }
 
 }  // namespace fuzz
