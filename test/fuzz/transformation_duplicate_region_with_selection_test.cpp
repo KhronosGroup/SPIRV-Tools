@@ -905,7 +905,8 @@ TEST(TransformationDuplicateRegionWithSelectionTest, MultipleBlocksLoopTest) {
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
-TEST(TransformationDuplicateRegionWithSelectionTest, ResolvingOpPhiTest) {
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     ResolvingOpPhiExitBlockTest) {
   // This test handles a case where the region under the transformation is
   // referenced in OpPhi instructions. Since the new merge block becomes the
   // exit of the region, these OpPhi instructions need to be updated.
@@ -1142,6 +1143,216 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableEarlyReturn) {
           500, 28, 501, 50, 19, {{50, 100}, {18, 101}, {22, 102}, {19, 103}},
           {{14, 202}, {17, 203}, {20, 204}, {21, 205}},
           {{14, 302}, {17, 303}, {20, 304}, {21, 305}});
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest, ResolvingOpPhiEntryBlock) {
+  // This test handles a case where the entry block has an OpPhi instruction
+  // referring to its predecessor. After transformation, this instruction needs
+  // to be updated.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %14 "t"
+               OpName %20 "b"
+               OpName %23 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 0
+         %15 = OpConstant %6 2
+         %18 = OpTypeBool
+         %19 = OpTypePointer Function %18
+         %21 = OpConstantTrue %18
+         %22 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpVariable %19 Function
+         %23 = OpVariable %7 Function
+               OpStore %20 %21
+               OpStore %23 %22
+         %24 = OpFunctionCall %2 %10 %23
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %14 = OpVariable %7 Function
+               OpStore %12 %13
+         %16 = OpLoad %6 %12
+         %17 = OpIMul %6 %15 %16
+               OpStore %14 %17
+               OpBranch %50
+         %50 = OpLabel
+         %51 = OpPhi %6 %17 %11
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(
+          500, 21, 501, 50, 50, {{50, 100}}, {{51, 201}}, {{51, 301}});
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+                OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %14 "t"
+               OpName %20 "b"
+               OpName %23 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 0
+         %15 = OpConstant %6 2
+         %18 = OpTypeBool
+         %19 = OpTypePointer Function %18
+         %21 = OpConstantTrue %18
+         %22 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpVariable %19 Function
+         %23 = OpVariable %7 Function
+               OpStore %20 %21
+               OpStore %23 %22
+         %24 = OpFunctionCall %2 %10 %23
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %14 = OpVariable %7 Function
+               OpStore %12 %13
+         %16 = OpLoad %6 %12
+         %17 = OpIMul %6 %15 %16
+               OpStore %14 %17
+               OpBranch %500
+        %500 = OpLabel
+               OpSelectionMerge %501 None
+               OpBranchConditional %21 %50 %100
+         %50 = OpLabel
+         %51 = OpPhi %6 %17 %500
+               OpBranch %501
+        %100 = OpLabel
+        %201 = OpPhi %6 %17 %500
+               OpBranch %501
+        %501 = OpLabel
+        %301 = OpPhi %6 %51 %50 %201 %100
+               OpReturn
+               OpFunctionEnd
+    )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     NotApplicableNoVariablePointerCapability) {
+  // This test handles a case where the transformation would create an OpPhi
+  // instruction with pointer operands, however there is no cab
+  // CapabilityVariablePointers. Hence, the transformation is not applicable.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "fun(i1;"
+               OpName %9 "a"
+               OpName %12 "s"
+               OpName %14 "t"
+               OpName %20 "b"
+               OpName %23 "param"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %2 %7
+         %13 = OpConstant %6 0
+         %15 = OpConstant %6 2
+         %18 = OpTypeBool
+         %19 = OpTypePointer Function %18
+         %21 = OpConstantTrue %18
+         %22 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpVariable %19 Function
+         %23 = OpVariable %7 Function
+               OpStore %20 %21
+               OpStore %23 %22
+         %24 = OpFunctionCall %2 %10 %23
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %12 = OpVariable %7 Function
+         %14 = OpVariable %7 Function
+               OpStore %12 %13
+         %16 = OpLoad %6 %12
+         %17 = OpIMul %6 %15 %16
+               OpStore %14 %17
+               OpBranch %50
+         %50 = OpLabel
+         %51 = OpCopyObject %7 %12
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Bad: There is no required capability CapabilityVariablePointers
+  TransformationDuplicateRegionWithSelection transformation_bad_1 =
+      TransformationDuplicateRegionWithSelection(
+          500, 21, 501, 50, 50, {{50, 100}}, {{51, 201}}, {{51, 301}});
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 }

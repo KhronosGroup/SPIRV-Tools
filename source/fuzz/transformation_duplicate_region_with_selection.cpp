@@ -219,6 +219,12 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
         if (original_id_to_phi_id.count(instr.result_id()) == 0) {
           return false;
         }
+        // Using pointers with OpPhi requires capability VariablePointers.
+        if (ir_context->get_type_mgr()->GetType(instr.type_id())->AsPointer() &&
+            !ir_context->get_feature_mgr()->HasCapability(
+                SpvCapabilityVariablePointers)) {
+          return false;
+        }
         auto phi_id = original_id_to_phi_id[instr.result_id()];
         // Id assigned to this result id in the region must be distinct and
         // fresh.
@@ -312,6 +318,24 @@ void TransformationDuplicateRegionWithSelection::Apply(
       }
     }
   });
+
+  // Similarly, we need to update OpPhi instructions in the |entry_block|. We
+  // know that it has only one predecessor, since the region is single-entry,
+  // single-exit. We need to change all occurrences of its id to the label id of
+  // the |new_entry| block.
+  uint32_t entry_block_pred_id =
+      ir_context
+          ->get_instr_block(ir_context->cfg()->preds(entry_block->id())[0])
+          ->id();
+  for (auto& instr : *entry_block) {
+    if (instr.opcode() == SpvOpPhi) {
+      instr.ForEachId([this, entry_block_pred_id](uint32_t* id) {
+        if (*id == entry_block_pred_id) {
+          *id = message_.new_entry_fresh_id();
+        }
+      });
+    }
+  }
 
   // Duplication of blocks will invalidate iterators. Store all the blocks from
   // the enclosing function.
