@@ -388,16 +388,16 @@ void TransformationDuplicateRegionWithSelection::Apply(
       // replace it with the value from |original_id_to_duplicate_id|.
       // If a label from the original region was used in this instruction,
       // replace it with the value from |original_label_to_duplicate_label|.
-      cloned_instr->ForEachId([original_id_to_duplicate_id,
-                               original_label_to_duplicate_label,
-                               ir_context](uint32_t* op) {
-        if (original_id_to_duplicate_id.count(*op) != 0) {
-          *op = original_id_to_duplicate_id.at(*op);
-        }
-        if (original_label_to_duplicate_label.count(*op) != 0) {
-          *op = original_label_to_duplicate_label.at(*op);
-        }
-      });
+      cloned_instr->ForEachId(
+          [original_id_to_duplicate_id,
+           original_label_to_duplicate_label](uint32_t* op) {
+            if (original_id_to_duplicate_id.count(*op) != 0) {
+              *op = original_id_to_duplicate_id.at(*op);
+            }
+            if (original_label_to_duplicate_label.count(*op) != 0) {
+              *op = original_label_to_duplicate_label.at(*op);
+            }
+          });
     }
 
     // If the block is the first duplicated block, insert it before the exit
