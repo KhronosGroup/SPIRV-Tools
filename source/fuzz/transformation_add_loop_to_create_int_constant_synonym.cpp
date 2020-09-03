@@ -98,12 +98,10 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   }
 
   // |message_.num_iterations_id| is an integer constant with bit width 32.
-  auto num_iterations_def =
-      ir_context->get_def_use_mgr()->GetDef(message_.num_iterations_id());
   auto num_iterations = ir_context->get_constant_mgr()->FindDeclaredConstant(
       message_.num_iterations_id());
 
-  if (!num_iterations || num_iterations->AsIntConstant() ||
+  if (!num_iterations || !num_iterations->AsIntConstant() ||
       num_iterations->type()->AsInteger()->width() != 32) {
     return false;
   }
@@ -146,14 +144,21 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
     s_components = step_val->AsVectorConstant()->GetComponents();
   }
 
-  // Check the value of the components satisfy the equation (the values are sign
-  // extended because this way the equation is satisfied iff it would be
-  // satisfied with the non-extended values).
+  // Check the value of the components satisfy the equation.
   for (uint32_t i = 0; i < c_components.size(); i++) {
+    // Use 64-bits integers to be able to handle constants of any width <= 64.
     int64_t c_value = c_components[i]->AsIntConstant()->GetSignExtendedValue();
     int64_t i_value = i_components[i]->AsIntConstant()->GetSignExtendedValue();
     int64_t s_value = s_components[i]->AsIntConstant()->GetSignExtendedValue();
-    if (c_value != i_value - s_value * num_iterations_value) {
+
+    int64_t result = i_value - s_value * num_iterations_value;
+
+    // Use bit shifts to ignore the first bits in excess (if there are any). By
+    // shifting left, we discard the first |64 - bit_width| bits. By shifting
+    // right, we move the bits back to their correct position.
+    result = (result << (64 - bit_width)) >> (64 - bit_width);
+
+    if (c_value != result) {
       return false;
     }
   }
@@ -162,8 +167,8 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   auto block =
       fuzzerutil::MaybeFindBlock(ir_context, message_.block_after_loop_id());
 
-  // Check that the block has a single predecessor.
-  if (ir_context->cfg()->preds(block->id()).size() != 1) {
+  // Check that the block exists and has a single predecessor.
+  if (!block || ir_context->cfg()->preds(block->id()).size() != 1) {
     return false;
   }
 
@@ -177,16 +182,16 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   for (uint32_t id : {message_.syn_id(), message_.loop_id(), message_.ctr_id(),
                       message_.temp_id(), message_.eventual_syn_id(),
                       message_.incremented_ctr_id(), message_.cond_id()}) {
-    if (!id || CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                            &fresh_ids_used)) {
+    if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                             &fresh_ids_used)) {
       return false;
     }
   }
 
   // Check the additional block id if it is non-zero.
   return !message_.additional_block_id() ||
-           CheckIdIsFreshAndNotUsedByThisTransformation(
-               message_.additional_block_id(), ir_context, &fresh_ids_used));
+         CheckIdIsFreshAndNotUsedByThisTransformation(
+             message_.additional_block_id(), ir_context, &fresh_ids_used);
 }
 
 void TransformationAddLoopToCreateIntConstantSynonym::Apply(
