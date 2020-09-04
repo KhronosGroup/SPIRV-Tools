@@ -731,3 +731,16 @@ bool spvOpcodeIsAccessChain(SpvOp opcode) {
       return false;
   }
 }
+
+bool spvOpcodeIsBit(SpvOp opcode) {
+  switch (opcode) {
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3557):
+    // Right now, only certain operations are supported.
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+      return true;
+    default:
+      return false;
+  }
+}

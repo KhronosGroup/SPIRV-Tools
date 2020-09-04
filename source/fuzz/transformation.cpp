@@ -18,6 +18,7 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_access_chain.h"
+#include "source/fuzz/transformation_add_bit_instruction_synonym.h"
 #include "source/fuzz/transformation_add_constant_boolean.h"
 #include "source/fuzz/transformation_add_constant_composite.h"
 #include "source/fuzz/transformation_add_constant_null.h"
@@ -105,6 +106,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
   switch (message.transformation_case()) {
     case protobufs::Transformation::TransformationCase::kAccessChain:
       return MakeUnique<TransformationAccessChain>(message.access_chain());
+    case protobufs::Transformation::TransformationCase::
+        kAddBitInstructionSynonym:
+      return MakeUnique<TransformationAddBitInstructionSynonym>(
+          message.add_bit_instruction_synonym());
     case protobufs::Transformation::TransformationCase::kAddConstantBoolean:
       return MakeUnique<TransformationAddConstantBoolean>(
           message.add_constant_boolean());
