@@ -2160,6 +2160,59 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
 
+INSTANTIATE_TEST_SUITE_P(
+    DrawIndexSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("DrawIndex"), Values("Vertex"), Values("Input"),
+            Values("%u32"), Values("OpCapability DrawParameters\n"),
+            Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    DrawIndexMeshSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("DrawIndex"), Values("MeshNV", "TaskNV"), Values("Input"),
+        Values("%u32"), Values("OpCapability MeshShadingNV\n"),
+        Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\nOpExtension "
+               "\"SPV_NV_mesh_shader\"\n"),
+        Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    DrawIndexInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("DrawIndex"),
+            Values("Fragment", "GLCompute", "Geometry", "TessellationControl",
+                   "TessellationEvaluation"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability DrawParameters\n"),
+            Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
+            Values("VUID-DrawIndex-DrawIndex-04207"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with Vertex, MeshNV, or TaskNV "
+                              "execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    DrawIndexNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("DrawIndex"), Values("Vertex"), Values("Output"),
+            Values("%u32"), Values("OpCapability DrawParameters\n"),
+            Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
+            Values("VUID-DrawIndex-DrawIndex-04208"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    DrawIndexNotIntScalar,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("DrawIndex"), Values("Vertex"), Values("Input"),
+            Values("%f32", "%u32vec3"), Values("OpCapability DrawParameters\n"),
+            Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
+            Values("VUID-DrawIndex-DrawIndex-04209"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
 CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
                                               const char* const built_in,
                                               const char* const execution_model,
