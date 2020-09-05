@@ -205,6 +205,8 @@ class BuiltInsValidator {
       const Decoration& decoration, const Instruction& inst);
   spv_result_t ValidateWorkgroupSizeAtDefinition(const Decoration& decoration,
                                                  const Instruction& inst);
+  spv_result_t ValidateBaseInstanceOrVertexAtDefinition(
+      const Decoration& decoration, const Instruction& inst);
   // Used for GlobalInvocationId, LocalInvocationId, NumWorkgroups, WorkgroupId.
   spv_result_t ValidateComputeShaderI32Vec3InputAtDefinition(
       const Decoration& decoration, const Instruction& inst);
@@ -335,6 +337,11 @@ class BuiltInsValidator {
       const Instruction& referenced_from_inst);
 
   spv_result_t ValidateClipOrCullDistanceAtReference(
+      const Decoration& decoration, const Instruction& built_in_inst,
+      const Instruction& referenced_inst,
+      const Instruction& referenced_from_inst);
+
+  spv_result_t ValidateBaseInstanceOrVertexAtReference(
       const Decoration& decoration, const Instruction& built_in_inst,
       const Instruction& referenced_inst,
       const Instruction& referenced_from_inst);
@@ -2978,6 +2985,76 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtReference(
   return SPV_SUCCESS;
 }
 
+spv_result_t BuiltInsValidator::ValidateBaseInstanceOrVertexAtDefinition(
+    const Decoration& decoration, const Instruction& inst) {
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (spv_result_t error = ValidateI32(
+            decoration, inst,
+            [this, &inst,
+             &decoration](const std::string& message) -> spv_result_t {
+              uint32_t vuid = (decoration.params()[0] == SpvBuiltInBaseInstance)
+                                  ? 4183
+                                  : 4186;
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << _.VkErrorID(vuid)
+                     << "According to the Vulkan spec BuiltIn "
+                     << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                                      decoration.params()[0])
+                     << " variable needs to be a 32-bit int scalar. "
+                     << message;
+            })) {
+      return error;
+    }
+  }
+
+  return ValidateBaseInstanceOrVertexAtReference(decoration, inst, inst, inst);
+}
+
+spv_result_t BuiltInsValidator::ValidateBaseInstanceOrVertexAtReference(
+    const Decoration& decoration, const Instruction& built_in_inst,
+    const Instruction& referenced_inst,
+    const Instruction& referenced_from_inst) {
+  uint32_t operand = decoration.params()[0];
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    const SpvStorageClass storage_class = GetStorageClass(referenced_from_inst);
+    if (storage_class != SpvStorageClassMax &&
+        storage_class != SpvStorageClassInput) {
+      uint32_t vuid = (operand == SpvBuiltInBaseInstance) ? 4182 : 4185;
+      return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
+             << _.VkErrorID(vuid) << "Vulkan spec allows BuiltIn "
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                              operand)
+             << " to be only used for variables with Input storage class. "
+             << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                 referenced_from_inst)
+             << " " << GetStorageClassDesc(referenced_from_inst);
+    }
+
+    for (const SpvExecutionModel execution_model : execution_models_) {
+      if (execution_model != SpvExecutionModelVertex) {
+        uint32_t vuid = (operand == SpvBuiltInBaseInstance) ? 4181 : 4184;
+        return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
+               << _.VkErrorID(vuid) << "Vulkan spec allows BuiltIn "
+               << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                                operand)
+               << " to be used only with Vertex execution model. "
+               << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                   referenced_from_inst, execution_model);
+      }
+    }
+  }
+
+  if (function_id_ == 0) {
+    // Propagate this rule to all dependant ids in the global scope.
+    id_to_at_reference_checks_[referenced_from_inst.id()].push_back(
+        std::bind(&BuiltInsValidator::ValidateBaseInstanceOrVertexAtReference,
+                  this, decoration, built_in_inst, referenced_from_inst,
+                  std::placeholders::_1));
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t BuiltInsValidator::ValidateSMBuiltinsAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   if (spvIsVulkanEnv(_.context()->target_env)) {
@@ -3168,6 +3245,10 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInSMIDNV: {
       return ValidateSMBuiltinsAtDefinition(decoration, inst);
     }
+    case SpvBuiltInBaseInstance:
+    case SpvBuiltInBaseVertex: {
+      return ValidateBaseInstanceOrVertexAtDefinition(decoration, inst);
+    }
     case SpvBuiltInWorkDim:
     case SpvBuiltInGlobalSize:
     case SpvBuiltInEnqueuedWorkgroupSize:
@@ -3175,8 +3256,6 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInGlobalLinearId:
     case SpvBuiltInSubgroupMaxSize:
     case SpvBuiltInNumEnqueuedSubgroups:
-    case SpvBuiltInBaseVertex:
-    case SpvBuiltInBaseInstance:
     case SpvBuiltInDrawIndex:
     case SpvBuiltInDeviceIndex:
     case SpvBuiltInViewIndex:
