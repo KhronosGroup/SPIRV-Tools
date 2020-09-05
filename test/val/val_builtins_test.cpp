@@ -2213,6 +2213,48 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
 
+INSTANTIATE_TEST_SUITE_P(
+    ViewIndexSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("ViewIndex"),
+            Values("Fragment", "Vertex", "Geometry", "TessellationControl",
+                   "TessellationEvaluation"),
+            Values("Input"), Values("%u32"), Values("OpCapability MultiView\n"),
+            Values("OpExtension \"SPV_KHR_multiview\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    ViewIndexInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("ViewIndex"), Values("GLCompute"), Values("Input"),
+            Values("%u32"), Values("OpCapability MultiView\n"),
+            Values("OpExtension \"SPV_KHR_multiview\"\n"),
+            Values("VUID-ViewIndex-ViewIndex-04401"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be not be used with GLCompute execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ViewIndexNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("ViewIndex"), Values("Vertex"), Values("Output"),
+            Values("%u32"), Values("OpCapability MultiView\n"),
+            Values("OpExtension \"SPV_KHR_multiview\"\n"),
+            Values("VUID-ViewIndex-ViewIndex-04402"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ViewIndexNotIntScalar,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("ViewIndex"), Values("Vertex"), Values("Input"),
+            Values("%f32", "%u32vec3"), Values("OpCapability MultiView\n"),
+            Values("OpExtension \"SPV_KHR_multiview\"\n"),
+            Values("VUID-ViewIndex-ViewIndex-04403"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
 CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
                                               const char* const built_in,
                                               const char* const execution_model,
