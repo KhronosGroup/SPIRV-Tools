@@ -498,6 +498,7 @@ message Transformation {
     TransformationFlattenConditionalBranch flatten_conditional_branch = 76;
     TransformationAddBitInstructionSynonym add_bit_instruction_synonym = 77;
     TransformationAddLoopToCreateIntConstantSynonym add_loop_to_create_int_constant_synonym = 78;
+    TransformationSplitLoop split_loop = 79;
     // Add additional option using the next available number.
   }
 }
@@ -2000,6 +2001,60 @@ message TransformationSplitBlock {
   uint32 fresh_id = 2;
 
 }
+
+message TransformationSplitLoop {
+    // A transformation that replaces a loop with two loops, which in total
+    // iterate over the same loop body with the same condition of iteration.
+    // The first loop is executed up to a constant number of times. If more
+    // iterations are required, they are performed in the second loop.
+
+    // Fresh id for a variable, which stores the number of iterations.
+    uint32 variable_counter_fresh_id = 1;
+
+    // Fresh id for a variable, which indicates whether there was a break
+    // from the loop body
+    uint32 variable_exited_fresh_id = 2;
+
+    // Fresh id for an OpLoad instruction from |counter|
+    uint32 load_counter_fresh_id = 3;
+
+    // Fresh id for an OpLoad instruction from |exited|
+    uint32 load_exited_fresh_id = 4;
+
+    // Id for a limit of the number of iterations in the first loop.
+    uint32 iteration_limit_id = 5;
+
+    // Fresh id for a condition on |counter| in the continue block of the
+    // first loop.
+    uint32 condition_counter_fresh_id = 6;
+
+    // Fresh id for OpLogicalNot instruction before the conditional after
+    // the first loop.
+    uint32 logical_not_fresh_id = 7;
+
+    // Fresh id for a then branch of the conditional after the first loop.
+    uint32 then_branch_fresh_id = 8;
+
+    // Fresh id for an else branch of the conditional after the first loop.
+    uint32 else_branch_fresh_id = 9;
+
+    // Block id of the entry block of the original loop
+    uint32 entry_block_id = 10;
+
+    // Block id of the exit block of the original loop
+    uint32 exit_block_id = 11;
+
+    // Map that maps from a result id in the original loop to the
+    // corresponding result id in the duplicated loop (the second loop).
+    repeated UInt32Pair original_id_to_duplicate_id = 12;
+
+    // Map that maps from a label in the original region to the corresponding
+    // label in the duplicated region
+    repeated UInt32Pair original_label_to_duplicate_label = 13;
+
+}
+
+
 
 message TransformationStore {
 

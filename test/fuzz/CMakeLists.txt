@@ -101,6 +101,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_set_memory_operands_mask_test.cpp
           transformation_set_selection_control_test.cpp
           transformation_split_block_test.cpp
+          transformation_split_loop_test.cpp
           transformation_store_test.cpp
           transformation_swap_commutable_operands_test.cpp
           transformation_swap_conditional_branch_operands_test.cpp

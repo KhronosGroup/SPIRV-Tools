@@ -80,6 +80,7 @@
 #include "source/fuzz/fuzzer_pass_replace_parameter_with_global.h"
 #include "source/fuzz/fuzzer_pass_replace_params_with_struct.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
+#include "source/fuzz/fuzzer_pass_split_loops.h"
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
@@ -287,6 +288,7 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
         &pass_instances);
     MaybeAddRepeatedPass<FuzzerPassReplaceParamsWithStruct>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassSplitBlocks>(&pass_instances);
+    MaybeAddRepeatedPass<FuzzerPassSplitLoops>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassSwapBranchConditionalOperands>(
         &pass_instances);
     // There is a theoretical possibility that no pass instances were created

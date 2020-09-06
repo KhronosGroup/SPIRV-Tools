@@ -301,6 +301,7 @@ class FuzzerContext {
     return chance_of_replacing_parameters_with_struct_;
   }
   uint32_t GetChanceOfSplittingBlock() { return chance_of_splitting_block_; }
+  uint32_t GetChanceOfSplittingLoop() { return chance_of_splitting_loop_; }
   uint32_t GetChanceOfSwappingConditionalBranchOperands() {
     return chance_of_swapping_conditional_branch_operands_;
   }
@@ -470,6 +471,7 @@ class FuzzerContext {
   uint32_t chance_of_replacing_parameters_with_globals_;
   uint32_t chance_of_replacing_parameters_with_struct_;
   uint32_t chance_of_splitting_block_;
+  uint32_t chance_of_splitting_loop_;
   uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_toggling_access_chain_instruction_;
 

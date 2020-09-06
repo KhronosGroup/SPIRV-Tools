@@ -90,6 +90,7 @@
 #include "source/fuzz/transformation_set_memory_operands_mask.h"
 #include "source/fuzz/transformation_set_selection_control.h"
 #include "source/fuzz/transformation_split_block.h"
+#include "source/fuzz/transformation_split_loop.h"
 #include "source/fuzz/transformation_store.h"
 #include "source/fuzz/transformation_swap_commutable_operands.h"
 #include "source/fuzz/transformation_swap_conditional_branch_operands.h"
@@ -327,6 +328,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.set_selection_control());
     case protobufs::Transformation::TransformationCase::kSplitBlock:
       return MakeUnique<TransformationSplitBlock>(message.split_block());
+    case protobufs::Transformation::TransformationCase::kSplitLoop:
+      return MakeUnique<TransformationSplitLoop>(message.split_loop());
     case protobufs::Transformation::TransformationCase::kStore:
       return MakeUnique<TransformationStore>(message.store());
     case protobufs::Transformation::TransformationCase::kSwapCommutableOperands:

@@ -111,6 +111,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_parameter_with_global.h
         fuzzer_pass_replace_params_with_struct.h
         fuzzer_pass_split_blocks.h
+        fuzzer_pass_split_loops.h
         fuzzer_pass_swap_commutable_operands.h
         fuzzer_pass_swap_conditional_branch_operands.h
         fuzzer_pass_toggle_access_chain_instruction.h
@@ -206,6 +207,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_set_memory_operands_mask.h
         transformation_set_selection_control.h
         transformation_split_block.h
+        transformation_split_loop.h
         transformation_store.h
         transformation_swap_commutable_operands.h
         transformation_swap_conditional_branch_operands.h
@@ -287,6 +289,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_replace_parameter_with_global.cpp
         fuzzer_pass_replace_params_with_struct.cpp
         fuzzer_pass_split_blocks.cpp
+        fuzzer_pass_split_loops.cpp
         fuzzer_pass_swap_commutable_operands.cpp
         fuzzer_pass_swap_conditional_branch_operands.cpp
         fuzzer_pass_toggle_access_chain_instruction.cpp
@@ -380,6 +383,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_set_memory_operands_mask.cpp
         transformation_set_selection_control.cpp
         transformation_split_block.cpp
+        transformation_split_loop.cpp
         transformation_store.cpp
         transformation_swap_commutable_operands.cpp
         transformation_swap_conditional_branch_operands.cpp
