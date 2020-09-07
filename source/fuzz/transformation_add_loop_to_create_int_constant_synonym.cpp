@@ -126,6 +126,11 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
     return false;
   }
 
+  // Check that the module contains the Bool type.
+  if (!fuzzerutil::MaybeGetBoolType(ir_context)) {
+    return false;
+  }
+
   // Check that the equation C = I - S * N is satisfied.
 
   // Collect the components in vectors (if the constants are scalars, these
@@ -195,8 +200,106 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
 }
 
 void TransformationAddLoopToCreateIntConstantSynonym::Apply(
-    opt::IRContext* /* ir_context */,
-    TransformationContext* /* transformation_context */) const {}
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  // Retrieve all the constants that we need.
+  auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.constant_id());
+  auto initial_val = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.initial_val_id());
+  auto initial_val_def =
+      ir_context->get_def_use_mgr()->GetDef(message_.initial_val_id());
+  auto step_val = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.step_val_id());
+  auto num_iterations = ir_context->get_constant_mgr()->FindDeclaredConstant(
+      message_.num_iterations_id());
+
+  // Find 32-bit signed integer constants 0 and 1.
+  auto const_0_id = !fuzzerutil::MaybeGetIntegerConstant(
+      ir_context, *transformation_context, {0}, 32, true, false);
+  auto const_0_def = ir_context->get_def_use_mgr()->GetDef(const_0_id);
+  auto const_1_id = !fuzzerutil::MaybeGetIntegerConstant(
+      ir_context, *transformation_context, {0}, 32, true, false);
+  auto const_1_def = ir_context->get_def_use_mgr()->GetDef(const_1_id);
+
+  // Find the predecessor of the block.
+  uint32_t pred_id =
+      ir_context->cfg()->preds(message_.block_after_loop_id())[0];
+
+  // Get the id for the last block in the new loop. It will be
+  // |message_.additional_block_id| if this is non_zero, |message_.loop_id|
+  // otherwise.
+  uint32_t last_loop_block_id = message_.additional_block_id()
+                                    ? message_.additional_block_id()
+                                    : message_.loop_id();
+
+  // Create the loop header block.
+  std::unique_ptr<opt::BasicBlock> loop_block =
+      MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpLabel, 0, message_.loop_id(),
+          std::initializer_list<opt::Operand>{}));
+
+  // Add OpPhi instructions to retrieve the current value of the counter and of
+  // the temporary variable that will be decreased at each operation.
+  loop_block->AddInstruction(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpPhi, const_0_def->type_id(), message_.ctr_id(),
+      std::initializer_list<opt::Operand>{
+          {SPV_OPERAND_TYPE_ID, {const_0_id}},
+          {SPV_OPERAND_TYPE_ID, {pred_id}},
+          {SPV_OPERAND_TYPE_ID, {message_.incremented_ctr_id()}},
+          {SPV_OPERAND_TYPE_ID, {last_loop_block_id}}}));
+
+  loop_block->AddInstruction(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpPhi, initial_val_def->type_id(), message_.temp_id(),
+      std::initializer_list<opt::Operand>{
+          {SPV_OPERAND_TYPE_ID, {message_.initial_val_id()}},
+          {SPV_OPERAND_TYPE_ID, {pred_id}},
+          {SPV_OPERAND_TYPE_ID, {message_.eventual_syn_id()}},
+          {SPV_OPERAND_TYPE_ID, {last_loop_block_id}}}));
+
+  // Collect the other instructions in a list.
+  std::vector<std::unique_ptr<opt::Instruction>> other_instructions;
+
+  // Add the instruction to subtract the step value from the temporary value.
+  // The value of this id will converge to the constant in the last iteration.
+  other_instructions.push_back(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpISub, initial_val_def->type_id(),
+      message_.eventual_syn_id(),
+      std::initializer_list<opt::Operand>{
+          {SPV_OPERAND_TYPE_ID, {message_.temp_id()}},
+          {SPV_OPERAND_TYPE_ID, {message_.step_val_id()}}}));
+
+  // Add the instruction to increment the counter.
+  other_instructions.push_back(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpIAdd, const_0_def->type_id(),
+      message_.incremented_ctr_id(),
+      std::initializer_list<opt::Operand>{
+          {SPV_OPERAND_TYPE_ID, {message_.ctr_id()}},
+          {SPV_OPERAND_TYPE_ID, {const_1_id}}}));
+
+  // Add the instruction to decide whether the condition holds.
+  other_instructions.push_back(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpSLessThan, fuzzerutil::MaybeGetBoolType(ir_context),
+      message_.cond_id(),
+      std::initializer_list<opt::Operand>{
+          {SPV_OPERAND_TYPE_ID, {message_.incremented_ctr_id()}},
+          {SPV_OPERAND_TYPE_ID, {message_.num_iterations_id()}}}));
+
+  // If an id for the additional block is specified, create the additional block
+  // and add the instructions to it.
+  std::unique_ptr<opt::BasicBlock> additional_block;
+  if (message_.additional_block_id()) {
+    additional_block = MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
+        ir_context, SpvOpLabel, 0, message_.additional_block_id(),
+        std::initializer_list<opt::Operand>{}));
+
+    for (auto& instruction : other_instructions) {
+      additional_block->AddInstruction(std::move(instruction));
+    }
+  }
+
+  // TODO: Continue.
+}
 
 protobufs::Transformation
 TransformationAddLoopToCreateIntConstantSynonym::ToMessage() const {

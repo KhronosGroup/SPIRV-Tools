@@ -33,6 +33,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                OpName %2 "main"
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
+         %36 = OpTypeBool
           %5 = OpTypeInt 32 1
           %6 = OpConstant %5 -1
           %7 = OpConstant %5 0
@@ -152,7 +153,49 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                    .IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationAddLoopToCreateIntConstantSynonymTest, MissingConstants) {
+TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
+     MissingConstantsOrBoolType) {
+  {
+    // The shader is missing the boolean type.
+    std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+         %20 = OpConstant %5 0
+          %6 = OpConstant %5 1
+          %7 = OpConstant %5 2
+          %8 = OpConstant %5 5
+          %9 = OpConstant %5 10
+         %10 = OpConstant %5 20
+          %2 = OpFunction %3 None %4
+         %11 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+    const auto env = SPV_ENV_UNIVERSAL_1_5;
+    const auto consumer = nullptr;
+    const auto context =
+        BuildModule(env, consumer, shader, kFuzzAssembleOption);
+    ASSERT_TRUE(IsValid(env, context.get()));
+
+    FactManager fact_manager;
+    spvtools::ValidatorOptions validator_options;
+    TransformationContext transformation_context(&fact_manager,
+                                                 validator_options);
+
+    ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                     9, 10, 8, 7, 12, 100, 101, 102, 103, 104, 105, 106, 107)
+                     .IsApplicable(context.get(), transformation_context));
+  }
   {
     // The shader is missing a 32-bit integer 0 constant.
     std::string shader = R"(
@@ -164,6 +207,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, MissingConstants) {
                OpSource ESSL 310
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
+         %20 = OpTypeBool
           %5 = OpTypeInt 32 1
           %6 = OpConstant %5 1
           %7 = OpConstant %5 2
@@ -204,6 +248,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, MissingConstants) {
                OpSource ESSL 310
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
+         %20 = OpTypeBool
           %5 = OpTypeInt 32 1
           %6 = OpConstant %5 0
           %7 = OpConstant %5 2
@@ -499,8 +544,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
       transformation2.IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
-     OverflowAndUnderflow) {
+TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -541,8 +585,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // These tests check that overflows are taken into consideration when deciding
-  // if  transformation is applicable.
+  // These tests check that underflows are taken into consideration when
+  // deciding if  transformation is applicable.
 
   // Subtracting 2147483648 20 times from 32-bit integer 0 underflows 2 times
   // and the result is equivalent to -4.

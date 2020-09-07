@@ -40,6 +40,7 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
   //   value N > 0 and N <= 32.
   // - The module contains 32-bit signed integer scalar constants of values 0
   //   and 1.
+  // - The module contains the boolean type.
   // - C = I - S * N
   // - |message_.block_after_loop_id| is the label of a block which has a single
   //   predecessor and which is not a merge block.
@@ -61,4 +62,5 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
 
 }  // namespace fuzz
 }  // namespace spvtools
+
 #endif  // SOURCE_FUZZ_TRANSFORMATION_ADD_LOOP_TO_CREATE_INT_CONSTANT_SYNONYM_H_
