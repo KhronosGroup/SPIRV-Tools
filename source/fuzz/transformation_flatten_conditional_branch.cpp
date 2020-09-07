@@ -295,26 +295,49 @@ void TransformationFlattenConditionalBranch::Apply(
   // If the first branch to be laid out exists, change the branch instruction so
   // that the last block in such branch unconditionally branches to the first
   // block in the other branch (or the convergence block if there is no other
-  // branch).
+  // branch) and change the OpPhi instructions in the last branch accordingly
+  // (the predecessor changed).
   if (last_block_first_branch) {
     last_block_first_branch->terminator()->SetInOperand(
         0, {first_block_last_branch_id});
+
+    // Change the OpPhi instructions of the last branch (if there is another
+    // branch) so that the predecessor is now the last block of the first
+    // branch. The block must have a single predecessor, so the operand
+    // specifying the predecessor is always in the same position.
+    if (first_block_last_branch_id != convergence_block_id) {
+      ir_context->get_instr_block(first_block_last_branch_id)
+          ->ForEachPhiInst(
+              [&last_block_first_branch](opt::Instruction* phi_inst) {
+                // The operand specifying the predecessor is the second input
+                // operand.
+                phi_inst->SetInOperand(1, {last_block_first_branch->id()});
+              });
+    }
   }
 
-  // Replace all of the current OpPhi instructions in the convergence block with
-  // OpSelect.
-  ir_context->get_instr_block(convergence_block_id)
-      ->ForEachPhiInst([&condition_operand](opt::Instruction* phi_inst) {
-        phi_inst->SetOpcode(SpvOpSelect);
-        std::vector<opt::Operand> operands;
-        operands.emplace_back(condition_operand);
-        // Only consider the operands referring to the instructions ids, as the
-        // block labels are not necessary anymore.
-        for (uint32_t i = 0; i < phi_inst->NumInOperands(); i += 2) {
-          operands.emplace_back(phi_inst->GetInOperand(i));
-        }
-        phi_inst->SetInOperands(std::move(operands));
-      });
+  // If the OpBranchConditional instruction in the header branches to the same
+  // block for both values of the condition, this is the convergence block (the
+  // flow does not actually diverge) and the OpPhi instructions in it are still
+  // valid, so we do not need to make any changes.
+  if (first_block_first_branch_id != first_block_last_branch_id) {
+    // Replace all of the current OpPhi instructions in the convergence block
+    // with OpSelect.
+
+    ir_context->get_instr_block(convergence_block_id)
+        ->ForEachPhiInst([&condition_operand](opt::Instruction* phi_inst) {
+          phi_inst->SetOpcode(SpvOpSelect);
+          std::vector<opt::Operand> operands;
+          operands.emplace_back(condition_operand);
+          // Only consider the operands referring to the instructions ids, as
+          // the block labels are not necessary anymore.
+          for (uint32_t i = 0; i < phi_inst->NumInOperands(); i += 2) {
+            operands.emplace_back(phi_inst->GetInOperand(i));
+          }
+
+          phi_inst->SetInOperands(std::move(operands));
+        });
+  }
 
   // Invalidate all analyses
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);

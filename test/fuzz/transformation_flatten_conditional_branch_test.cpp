@@ -195,8 +195,10 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
                OpSelectionMerge %8 None
                OpBranchConditional %4 %9 %10
          %10 = OpLabel
+         %26 = OpPhi %3 %4 %7
                OpBranch %8
           %9 = OpLabel
+         %27 = OpPhi %3 %4 %7
          %11 = OpCopyObject %3 %4
                OpBranch %8
           %8 = OpLabel
@@ -208,10 +210,12 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
                OpSelectionMerge %15 None
                OpBranchConditional %4 %16 %17
          %16 = OpLabel
+         %28 = OpPhi %3 %4 %13
                OpBranch %18
          %18 = OpLabel
                OpBranch %19
          %17 = OpLabel
+         %29 = OpPhi %3 %4 %13
          %20 = OpCopyObject %3 %4
                OpBranch %19
          %19 = OpLabel
@@ -221,6 +225,7 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
                OpSelectionMerge %22 None
                OpBranchConditional %4 %22 %22
          %22 = OpLabel
+         %30 = OpPhi %3 %4 %15
                OpSelectionMerge %25 None
                OpBranchConditional %4 %24 %24
          %24 = OpLabel
@@ -260,57 +265,62 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
       transformation4.IsApplicable(context.get(), transformation_context));
   transformation4.Apply(context.get(), &transformation_context);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(IsValid(env, context.get()));
 
-  std::string after_transformations = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main"
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %2 "main"
-          %3 = OpTypeBool
-          %4 = OpConstantTrue %3
-          %5 = OpTypeVoid
-          %6 = OpTypeFunction %5
-          %2 = OpFunction %5 None %6
-          %7 = OpLabel
-               OpBranch %9
-          %9 = OpLabel
-         %11 = OpCopyObject %3 %4
-               OpBranch %10
-         %10 = OpLabel
-               OpBranch %8
-          %8 = OpLabel
-         %12 = OpSelect %3 %4 %11 %4
-         %23 = OpSelect %3 %4 %4 %4
-               OpBranch %13
-         %13 = OpLabel
-         %14 = OpCopyObject %3 %4
-               OpBranch %17
-         %17 = OpLabel
-         %20 = OpCopyObject %3 %4
-               OpBranch %16
-         %16 = OpLabel
-               OpBranch %18
-         %18 = OpLabel
-               OpBranch %19
-         %19 = OpLabel
-         %21 = OpSelect %3 %4 %4 %20
-               OpBranch %15
-         %15 = OpLabel
-               OpBranch %22
-         %22 = OpLabel
-               OpBranch %24
-         %24 = OpLabel
-               OpBranch %25
-         %25 = OpLabel
-               OpReturn
-               OpFunctionEnd
-)";
+    std::string after_transformations = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %2 "main"
+                 OpExecutionMode %2 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %2 "main"
+            %3 = OpTypeBool
+            %4 = OpConstantTrue %3
+            %5 = OpTypeVoid
+            %6 = OpTypeFunction %5
+            %2 = OpFunction %5 None %6
+            %7 = OpLabel
+                 OpBranch %9
+            %9 = OpLabel
+           %27 = OpPhi %3 %4 %7
+           %11 = OpCopyObject %3 %4
+                 OpBranch %10
+           %10 = OpLabel
+           %26 = OpPhi %3 %4 %9
+                 OpBranch %8
+            %8 = OpLabel
+           %12 = OpSelect %3 %4 %11 %4
+           %23 = OpSelect %3 %4 %4 %4
+                 OpBranch %13
+           %13 = OpLabel
+           %14 = OpCopyObject %3 %4
+                 OpBranch %17
+           %17 = OpLabel
+           %29 = OpPhi %3 %4 %13
+           %20 = OpCopyObject %3 %4
+                 OpBranch %16
+           %16 = OpLabel
+           %28 = OpPhi %3 %4 %17
+                 OpBranch %18
+           %18 = OpLabel
+                 OpBranch %19
+           %19 = OpLabel
+           %21 = OpSelect %3 %4 %4 %20
+                 OpBranch %15
+           %15 = OpLabel
+                 OpBranch %22
+           %22 = OpLabel
+           %30 = OpPhi %3 %4 %15
+                 OpBranch %24
+           %24 = OpLabel
+                 OpBranch %25
+           %25 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+  )";
 
-  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
+    ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
