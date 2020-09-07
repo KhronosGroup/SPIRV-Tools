@@ -234,6 +234,331 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, MissingConstants) {
                      .IsApplicable(context.get(), transformation_context));
   }
 }
+
+TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpConstant %7 5
+         %12 = OpConstant %7 10
+         %13 = OpConstant %7 20
+          %2 = OpFunction %3 None %4
+         %14 = OpLabel
+               OpBranch %15
+         %15 = OpLabel
+               OpSelectionMerge %16 None
+               OpBranchConditional %6 %17 %18
+         %17 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+               OpLoopMerge %20 %19 None
+               OpBranchConditional %6 %20 %19
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Block %14 has no predecessors.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 14, 100, 101, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Block %18 has more than one predecessor.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 18, 100, 101, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Block %16 is a merge block.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 16, 100, 101, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Block %19 has more than one predecessor.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 19, 100, 101, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Block %20 is a merge block.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 20, 100, 101, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Id %20 is supposed to be fresh, but it is not.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 6, 100, 20, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Id %100 is used twice.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 6, 100, 100, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Id %100 is used twice.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 6, 100, 101, 102, 103, 104, 105, 106, 100)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Only the last id (for the additional block) is optional, so the other ones
+  // cannot be 0.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 6, 0, 101, 102, 103, 104, 105, 106, 100)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // This transformation will create a synonym of constant %12 from a 1-block
+  // loop.
+  auto transformation1 = TransformationAddLoopToCreateIntConstantSynonym(
+      12, 13, 11, 10, 15, 100, 101, 102, 103, 104, 105, 106, 0);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+
+  // This transformation will create a synonym of constant %12 from a 2-block
+  // loop.
+  auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
+      12, 13, 11, 10, 17, 107, 108, 109, 110, 111, 112, 113, 114);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
+     DifferentSignednessAndVectors) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpConstant %7 5
+         %12 = OpConstant %7 10
+         %13 = OpConstant %7 20
+         %14 = OpTypeInt 32 0
+         %15 = OpConstant %14 0
+         %16 = OpConstant %14 5
+         %17 = OpConstant %14 10
+         %18 = OpConstant %14 20
+         %19 = OpTypeVector %7 2
+         %20 = OpTypeVector %14 2
+         %21 = OpConstantComposite %19 %12 %8
+         %22 = OpConstantComposite %20 %17 %15
+         %23 = OpConstantComposite %19 %13 %12
+         %24 = OpConstantComposite %19 %11 %11
+          %2 = OpFunction %3 None %4
+         %25 = OpLabel
+               OpBranch %26
+         %26 = OpLabel
+               OpBranch %27
+         %27 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+               OpBranch %29
+         %29 = OpLabel
+               OpBranch %30
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // These tests check that the transformation is applicable and is applied
+  // correctly with integers, scalar and vectors, of different signedness.
+
+  // %12 is a signed integer, %18 and %16 are unsigned integers.
+  auto transformation1 = TransformationAddLoopToCreateIntConstantSynonym(
+      12, 18, 16, 10, 26, 100, 101, 102, 103, 104, 105, 106, 0);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+
+  // %12 and %11 are signed integers, %18 is an unsigned integer.
+  auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
+      12, 18, 11, 10, 26, 107, 108, 109, 110, 111, 112, 113, 0);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+
+  // %17, %18 and %16 are all signed integers.
+  auto transformation3 = TransformationAddLoopToCreateIntConstantSynonym(
+      17, 18, 16, 10, 26, 107, 108, 109, 110, 111, 112, 113, 0);
+  ASSERT_TRUE(
+      transformation3.IsApplicable(context.get(), transformation_context));
+
+  // %22 is an unsigned integer vector, %23 and %24 are signed integer vectors.
+  auto transformation4 = TransformationAddLoopToCreateIntConstantSynonym(
+      22, 23, 24, 10, 26, 114, 115, 116, 117, 118, 119, 120, 0);
+  ASSERT_TRUE(
+      transformation4.IsApplicable(context.get(), transformation_context));
+
+  // %21, %23 and %24 are all signed integer vectors.
+  auto transformation5 = TransformationAddLoopToCreateIntConstantSynonym(
+      21, 23, 24, 10, 26, 121, 122, 123, 124, 125, 126, 127, 0);
+  ASSERT_TRUE(
+      transformation5.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpCapability Int64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpTypeInt 64 1
+         %12 = OpConstant %11 5
+         %13 = OpConstant %11 10
+         %14 = OpConstant %11 20
+         %15 = OpTypeVector %11 2
+         %16 = OpConstantComposite %15 %13 %13
+         %17 = OpConstantComposite %15 %14 %14
+         %18 = OpConstantComposite %15 %12 %12
+          %2 = OpFunction %3 None %4
+         %19 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // These tests check that the transformation can be applied, and is applied
+  // correctly, to 64-bit integer (scalar and vector) constants.
+
+  // 64-bit scalar integers.
+  auto transformation1 = TransformationAddLoopToCreateIntConstantSynonym(
+      13, 14, 12, 10, 20, 100, 101, 102, 103, 104, 105, 106, 0);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+
+  // 64-bit vector integers.
+  auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
+      16, 17, 18, 10, 21, 107, 108, 109, 110, 111, 112, 113, 0);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
+     OverflowAndUnderflow) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpConstant %7 20
+         %12 = OpConstant %7 -4
+         %13 = OpTypeInt 32 0
+         %14 = OpConstant %13 214748365
+         %15 = OpConstant %13 4294967256
+          %2 = OpFunction %3 None %4
+         %16 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // These tests check that overflows are taken into consideration when deciding
+  // if  transformation is applicable.
+
+  // Subtracting 2147483648 20 times from 32-bit integer 0 underflows 2 times
+  // and the result is equivalent to -4.
+  auto transformation1 = TransformationAddLoopToCreateIntConstantSynonym(
+      12, 8, 14, 11, 17, 100, 101, 102, 103, 104, 105, 106, 0);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+
+  // Subtracting 20 twice from 0 underflows and gives the unsigned integer
+  // 4294967256.
+  auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
+      15, 8, 11, 10, 18, 107, 108, 109, 110, 111, 112, 113, 0);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
