@@ -152,27 +152,7 @@ if(SPIRV_BUILD_FUZZER)
       add_compile_options(-Wno-inconsistent-missing-override)
     endif()
 
-    set(
-        SPIRV_TOOLS_PROTOBUF_DEFINITIONS
-        -DGOOGLE_PROTOBUF_NO_RTTI=1
-        -DGOOGLE_PROTOBUF_USE_UNALIGNED=0)
-
-    # Compile protobufs with the above definitions.
-#    add_compile_definitions(${SPIRV_TOOLS_PROTOBUF_DEFINITIONS})
-    set_property(
-        DIRECTORY  "${SPIRV_TOOLS_PROTOBUF_DIR}"
-        APPEND PROPERTY COMPILE_DEFINITIONS
-        ${SPIRV_TOOLS_PROTOBUF_DEFINITIONS})
-
     add_subdirectory(${SPIRV_TOOLS_PROTOBUF_DIR} EXCLUDE_FROM_ALL)
-
-    # Also, add the definitions to the interface of libprotobuf.
-    target_compile_definitions(libprotobuf PUBLIC ${SPIRV_TOOLS_PROTOBUF_DEFINITIONS})
-
-
-    get_directory_property(SPIRV_TOOLS_TEMP_D COMPILE_DEFINITIONS)
-
-    message(FATAL_ERROR ${SPIRV_TOOLS_TEMP_D})
 
   endif()
 endif()
