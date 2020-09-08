@@ -29,14 +29,16 @@ class TransformationSplitLoop : public Transformation {
       const protobufs::TransformationSplitLoop& message);
 
   explicit TransformationSplitLoop(
-      uint32_t variable_counter_fresh_id, uint32_t variable_exited_fresh_id,
-      uint32_t load_counter_fresh_id, uint32_t load_exited_fresh_id,
-      uint32_t iteration_limit_id, uint32_t condition_counter_fresh_id,
-      uint32_t logical_not_fresh_id, uint32_t then_branch_fresh_id,
-      uint32_t else_branch_fresh_id, uint32_t entry_block_id,
-      uint32_t exit_block_id,
-      std::map<uint32_t, uint32_t> original_id_to_duplicate_id,
-      std::map<uint32_t, uint32_t> original_label_to_duplicate_label);
+      uint32_t loop_header_id, uint32_t variable_counter_id,
+      uint32_t variable_run_second_id, uint32_t constant_one_id,
+      uint32_t constant_zero_id, uint32_t constant_limit_id,
+      uint32_t load_counter_fresh_id, uint32_t increment_counter_fresh_id,
+      uint32_t condition_counter_fresh_id, uint32_t pred_merge_block_fresh_id,
+      uint32_t constant_true_id, uint32_t constant_false_id,
+      uint32_t load_run_second_fresh_id,
+      uint32_t selection_merge_block_fresh_id,
+      std::map<uint32_t, uint32_t> original_label_to_duplicate_label,
+      std::map<uint32_t, uint32_t> original_id_to_duplicate_id);
 
   bool IsApplicable(
       opt::IRContext* ir_context,
@@ -46,6 +48,10 @@ class TransformationSplitLoop : public Transformation {
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  static std::set<opt::BasicBlock*> GetRegionBlocks(
+      opt::IRContext* ir_context, opt::BasicBlock* entry_block,
+      opt::BasicBlock* exit_block);
 
  private:
   protobufs::TransformationSplitLoop message_;
