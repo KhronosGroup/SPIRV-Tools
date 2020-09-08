@@ -137,6 +137,23 @@ if (NOT ${SPIRV_SKIP_TESTS})
 endif()
 
 if(SPIRV_BUILD_FUZZER)
+
+  function(backup_compile_options)
+    get_property(
+        SPIRV_TOOLS_BACKUP_EXTERNAL_COMPILE_OPTIONS
+        DIRECTORY
+        PROPERTY COMPILE_OPTIONS
+        )
+  endfunction()
+
+  function(restore_compile_options)
+    set_property(
+        DIRECTORY
+        PROPERTY COMPILE_OPTIONS
+        ${SPIRV_TOOLS_BACKUP_EXTERNAL_COMPILE_OPTIONS}
+    )
+  endfunction()
+
   if(NOT TARGET protobuf::libprotobuf OR NOT TARGET protobuf::protoc)
 
     set(SPIRV_TOOLS_PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
@@ -148,11 +165,15 @@ if(SPIRV_BUILD_FUZZER)
     set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests")
     set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "Do not build protobuf static runtime")
 
+    backup_compile_options()
+
     if (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
-      add_compile_options(-Wno-inconsistent-missing-override)
+      add_compile_options(-Wno-inconsistent-missing-override -Wno-shadow)
     endif()
 
     add_subdirectory(${SPIRV_TOOLS_PROTOBUF_DIR} EXCLUDE_FROM_ALL)
+
+    restore_compile_options()
 
   endif()
 endif()
