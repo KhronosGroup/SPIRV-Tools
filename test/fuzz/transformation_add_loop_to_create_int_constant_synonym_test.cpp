@@ -303,9 +303,11 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
          %14 = OpLabel
                OpBranch %15
          %15 = OpLabel
+         %22 = OpPhi %7 %12 %14
                OpSelectionMerge %16 None
                OpBranchConditional %6 %17 %18
          %17 = OpLabel
+         %23 = OpPhi %7 %13 %15
                OpBranch %18
          %18 = OpLabel
                OpBranch %16
@@ -383,6 +385,10 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
       12, 13, 11, 10, 15, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // This transformation will create a synonym of constant %12 from a 2-block
   // loop.
@@ -390,6 +396,74 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
       12, 13, 11, 10, 17, 107, 108, 109, 110, 111, 112, 113, 114);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(107, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpConstant %7 5
+         %12 = OpConstant %7 10
+         %13 = OpConstant %7 20
+          %2 = OpFunction %3 None %4
+         %14 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+        %102 = OpPhi %7 %8 %14 %105 %101
+        %103 = OpPhi %7 %13 %14 %104 %101
+        %104 = OpISub %7 %103 %11
+        %105 = OpIAdd %7 %102 %8
+        %106 = OpSLessThan %5 %105 %10
+               OpLoopMerge %15 %101 None
+               OpBranchConditional %106 %101 %15
+         %15 = OpLabel
+        %100 = OpPhi %7 %104 %101
+         %22 = OpPhi %7 %12 %101
+               OpSelectionMerge %16 None
+               OpBranchConditional %6 %108 %18
+        %108 = OpLabel
+        %109 = OpPhi %7 %8 %15 %112 %114
+        %110 = OpPhi %7 %13 %15 %111 %114
+               OpLoopMerge %17 %114 None
+               OpBranch %114
+        %114 = OpLabel
+        %111 = OpISub %7 %110 %11
+        %112 = OpIAdd %7 %109 %8
+        %113 = OpSLessThan %5 %112 %10
+               OpBranchConditional %113 %108 %17
+         %17 = OpLabel
+        %107 = OpPhi %7 %111 %114
+         %23 = OpPhi %7 %13 %114
+               OpBranch %18
+         %18 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+               OpLoopMerge %20 %19 None
+               OpBranchConditional %6 %20 %19
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
@@ -457,30 +531,142 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
       12, 18, 16, 10, 26, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // %12 and %11 are signed integers, %18 is an unsigned integer.
   auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
-      12, 18, 11, 10, 26, 107, 108, 109, 110, 111, 112, 113, 0);
+      12, 18, 11, 10, 27, 108, 109, 110, 111, 112, 113, 114, 0);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(108, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // %17, %18 and %16 are all signed integers.
   auto transformation3 = TransformationAddLoopToCreateIntConstantSynonym(
-      17, 18, 16, 10, 26, 107, 108, 109, 110, 111, 112, 113, 0);
+      17, 18, 16, 10, 28, 115, 116, 117, 118, 119, 120, 121, 0);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
+  transformation3.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(17, {}), MakeDataDescriptor(115, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // %22 is an unsigned integer vector, %23 and %24 are signed integer vectors.
   auto transformation4 = TransformationAddLoopToCreateIntConstantSynonym(
-      22, 23, 24, 10, 26, 114, 115, 116, 117, 118, 119, 120, 0);
+      22, 23, 24, 10, 29, 122, 123, 124, 125, 126, 127, 128, 0);
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
+  transformation4.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(22, {}), MakeDataDescriptor(122, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // %21, %23 and %24 are all signed integer vectors.
   auto transformation5 = TransformationAddLoopToCreateIntConstantSynonym(
-      21, 23, 24, 10, 26, 121, 122, 123, 124, 125, 126, 127, 0);
+      21, 23, 24, 10, 30, 129, 130, 131, 132, 133, 134, 135, 0);
   ASSERT_TRUE(
       transformation5.IsApplicable(context.get(), transformation_context));
+  transformation5.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(129, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpConstant %7 5
+         %12 = OpConstant %7 10
+         %13 = OpConstant %7 20
+         %14 = OpTypeInt 32 0
+         %15 = OpConstant %14 0
+         %16 = OpConstant %14 5
+         %17 = OpConstant %14 10
+         %18 = OpConstant %14 20
+         %19 = OpTypeVector %7 2
+         %20 = OpTypeVector %14 2
+         %21 = OpConstantComposite %19 %12 %8
+         %22 = OpConstantComposite %20 %17 %15
+         %23 = OpConstantComposite %19 %13 %12
+         %24 = OpConstantComposite %19 %11 %11
+          %2 = OpFunction %3 None %4
+         %25 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+        %102 = OpPhi %7 %8 %25 %105 %101
+        %103 = OpPhi %14 %18 %25 %104 %101
+        %104 = OpISub %14 %103 %16
+        %105 = OpIAdd %7 %102 %8
+        %106 = OpSLessThan %5 %105 %10
+               OpLoopMerge %26 %101 None
+               OpBranchConditional %106 %101 %26
+         %26 = OpLabel
+        %100 = OpPhi %14 %104 %101
+               OpBranch %109
+        %109 = OpLabel
+        %110 = OpPhi %7 %8 %26 %113 %109
+        %111 = OpPhi %14 %18 %26 %112 %109
+        %112 = OpISub %14 %111 %11
+        %113 = OpIAdd %7 %110 %8
+        %114 = OpSLessThan %5 %113 %10
+               OpLoopMerge %27 %109 None
+               OpBranchConditional %114 %109 %27
+         %27 = OpLabel
+        %108 = OpPhi %14 %112 %109
+               OpBranch %116
+        %116 = OpLabel
+        %117 = OpPhi %7 %8 %27 %120 %116
+        %118 = OpPhi %14 %18 %27 %119 %116
+        %119 = OpISub %14 %118 %16
+        %120 = OpIAdd %7 %117 %8
+        %121 = OpSLessThan %5 %120 %10
+               OpLoopMerge %28 %116 None
+               OpBranchConditional %121 %116 %28
+         %28 = OpLabel
+        %115 = OpPhi %14 %119 %116
+               OpBranch %123
+        %123 = OpLabel
+        %124 = OpPhi %7 %8 %28 %127 %123
+        %125 = OpPhi %19 %23 %28 %126 %123
+        %126 = OpISub %19 %125 %24
+        %127 = OpIAdd %7 %124 %8
+        %128 = OpSLessThan %5 %127 %10
+               OpLoopMerge %29 %123 None
+               OpBranchConditional %128 %123 %29
+         %29 = OpLabel
+        %122 = OpPhi %19 %126 %123
+               OpBranch %130
+        %130 = OpLabel
+        %131 = OpPhi %7 %8 %29 %134 %130
+        %132 = OpPhi %19 %23 %29 %133 %130
+        %133 = OpISub %19 %132 %24
+        %134 = OpIAdd %7 %131 %8
+        %135 = OpSLessThan %5 %134 %10
+               OpLoopMerge %30 %130 None
+               OpBranchConditional %135 %130 %30
+         %30 = OpLabel
+        %129 = OpPhi %19 %133 %130
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
@@ -536,12 +722,74 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
       13, 14, 12, 10, 20, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(13, {}), MakeDataDescriptor(100, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // 64-bit vector integers.
   auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
       16, 17, 18, 10, 21, 107, 108, 109, 110, 111, 112, 113, 0);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(16, {}), MakeDataDescriptor(107, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+               OpCapability Int64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpTypeInt 64 1
+         %12 = OpConstant %11 5
+         %13 = OpConstant %11 10
+         %14 = OpConstant %11 20
+         %15 = OpTypeVector %11 2
+         %16 = OpConstantComposite %15 %13 %13
+         %17 = OpConstantComposite %15 %14 %14
+         %18 = OpConstantComposite %15 %12 %12
+          %2 = OpFunction %3 None %4
+         %19 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+        %102 = OpPhi %7 %8 %19 %105 %101
+        %103 = OpPhi %11 %14 %19 %104 %101
+        %104 = OpISub %11 %103 %12
+        %105 = OpIAdd %7 %102 %8
+        %106 = OpSLessThan %5 %105 %10
+               OpLoopMerge %20 %101 None
+               OpBranchConditional %106 %101 %20
+         %20 = OpLabel
+        %100 = OpPhi %11 %104 %101
+               OpBranch %108
+        %108 = OpLabel
+        %109 = OpPhi %7 %8 %20 %112 %108
+        %110 = OpPhi %15 %17 %20 %111 %108
+        %111 = OpISub %15 %110 %18
+        %112 = OpIAdd %7 %109 %8
+        %113 = OpSLessThan %5 %112 %10
+               OpLoopMerge %21 %108 None
+               OpBranchConditional %113 %108 %21
+         %21 = OpLabel
+        %107 = OpPhi %15 %111 %108
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
@@ -594,6 +842,10 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
       12, 8, 14, 11, 17, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // Subtracting 20 twice from 0 underflows and gives the unsigned integer
   // 4294967256.
@@ -601,6 +853,60 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
       15, 8, 11, 10, 18, 107, 108, 109, 110, 111, 112, 113, 0);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(107, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpTypeInt 32 1
+          %8 = OpConstant %7 0
+          %9 = OpConstant %7 1
+         %10 = OpConstant %7 2
+         %11 = OpConstant %7 20
+         %12 = OpConstant %7 -4
+         %13 = OpTypeInt 32 0
+         %14 = OpConstant %13 214748365
+         %15 = OpConstant %13 4294967256
+          %2 = OpFunction %3 None %4
+         %16 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+        %102 = OpPhi %7 %8 %16 %105 %101
+        %103 = OpPhi %7 %8 %16 %104 %101
+        %104 = OpISub %7 %103 %14
+        %105 = OpIAdd %7 %102 %8
+        %106 = OpSLessThan %5 %105 %11
+               OpLoopMerge %17 %101 None
+               OpBranchConditional %106 %101 %17
+         %17 = OpLabel
+        %100 = OpPhi %7 %104 %101
+               OpBranch %108
+        %108 = OpLabel
+        %109 = OpPhi %7 %8 %17 %112 %108
+        %110 = OpPhi %7 %8 %17 %111 %108
+        %111 = OpISub %7 %110 %11
+        %112 = OpIAdd %7 %109 %8
+        %113 = OpSLessThan %5 %112 %10
+               OpLoopMerge %18 %108 None
+               OpBranchConditional %113 %108 %18
+         %18 = OpLabel
+        %107 = OpPhi %7 %111 %108
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 }  // namespace

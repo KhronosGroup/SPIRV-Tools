@@ -152,9 +152,9 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   // Check the value of the components satisfy the equation.
   for (uint32_t i = 0; i < c_components.size(); i++) {
     // Use 64-bits integers to be able to handle constants of any width <= 64.
-    uint64_t c_value = c_components[i]->AsIntConstant()->GetSignExtendedValue();
-    uint64_t i_value = i_components[i]->AsIntConstant()->GetSignExtendedValue();
-    uint64_t s_value = s_components[i]->AsIntConstant()->GetSignExtendedValue();
+    uint64_t c_value = c_components[i]->AsIntConstant()->GetZeroExtendedValue();
+    uint64_t i_value = i_components[i]->AsIntConstant()->GetZeroExtendedValue();
+    uint64_t s_value = s_components[i]->AsIntConstant()->GetZeroExtendedValue();
 
     uint64_t result = i_value - s_value * num_iterations_value;
 
@@ -203,10 +203,10 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
   // Find 32-bit signed integer constants 0 and 1.
-  auto const_0_id = !fuzzerutil::MaybeGetIntegerConstant(
+  uint32_t const_0_id = fuzzerutil::MaybeGetIntegerConstant(
       ir_context, *transformation_context, {0}, 32, true, false);
   auto const_0_def = ir_context->get_def_use_mgr()->GetDef(const_0_id);
-  auto const_1_id = !fuzzerutil::MaybeGetIntegerConstant(
+  uint32_t const_1_id = fuzzerutil::MaybeGetIntegerConstant(
       ir_context, *transformation_context, {0}, 32, true, false);
 
   // Retrieve the instruction defining the initial value constant.
@@ -288,7 +288,8 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
       ir_context, SpvOpLoopMerge, 0, 0,
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {message_.block_after_loop_id()}},
-          {SPV_OPERAND_TYPE_ID, {last_loop_block_id}}});
+          {SPV_OPERAND_TYPE_ID, {last_loop_block_id}},
+          {SPV_OPERAND_TYPE_LOOP_CONTROL, {SpvLoopControlMaskNone}}});
 
   // Define a conditional branch instruction, branching to the loop header if
   // the condition holds, and to the existing block otherwise. This instruction
@@ -348,15 +349,13 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
                                                           block_after_loop);
   }
 
-  // Update all the references to the existing block (e.g. the one in the
-  // branching instruction of the predecessor): they should now refer to the
-  // loop header.
+  // Update the branching instructions leading to this block.
   ir_context->get_def_use_mgr()->ForEachUse(
       message_.block_after_loop_id(),
       [this](opt::Instruction* instruction, uint32_t operand_index) {
-        // Replace all uses of the label as an input operand.
-        if (operand_index >
-            (instruction->NumOperands() - instruction->NumInOperands())) {
+        // Replace all uses of the label inside branch instructions.
+        if (instruction->opcode() == SpvOpBranch ||
+            instruction->opcode() == SpvOpBranchConditional) {
           instruction->SetOperand(operand_index, {message_.loop_id()});
         }
       });
@@ -380,14 +379,22 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
           {SPV_OPERAND_TYPE_ID, {message_.eventual_syn_id()}},
           {SPV_OPERAND_TYPE_ID, {last_loop_block_id}}}));
 
-  // Record that |message_.syn_id| is synonymous with |message_.constant_id|.
-  transformation_context->GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(message_.syn_id(), {}),
-      MakeDataDescriptor(message_.constant_id(), {}), ir_context);
+  // Update the module id bound with all the fresh ids used.
+  for (uint32_t id : {message_.syn_id(), message_.loop_id(), message_.ctr_id(),
+                      message_.temp_id(), message_.eventual_syn_id(),
+                      message_.incremented_ctr_id(), message_.cond_id(),
+                      message_.cond_id(), message_.additional_block_id()}) {
+    fuzzerutil::UpdateModuleIdBound(ir_context, id);
+  }
 
   // Since we changed the structure of the module, we need to invalidate all the
   // analyses.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
+  // Record that |message_.syn_id| is synonymous with |message_.constant_id|.
+  transformation_context->GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(message_.syn_id(), {}),
+      MakeDataDescriptor(message_.constant_id(), {}), ir_context);
 }
 
 protobufs::Transformation
