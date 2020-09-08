@@ -168,7 +168,7 @@ if(SPIRV_BUILD_FUZZER)
     backup_compile_options()
 
     if (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
-      add_compile_options(-Wno-inconsistent-missing-override -Wno-shadow)
+      add_compile_options(-Wno-inconsistent-missing-override)
     endif()
 
     add_subdirectory(${SPIRV_TOOLS_PROTOBUF_DIR} EXCLUDE_FROM_ALL)
