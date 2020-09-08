@@ -152,11 +152,11 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   // Check the value of the components satisfy the equation.
   for (uint32_t i = 0; i < c_components.size(); i++) {
     // Use 64-bits integers to be able to handle constants of any width <= 64.
-    int64_t c_value = c_components[i]->AsIntConstant()->GetSignExtendedValue();
-    int64_t i_value = i_components[i]->AsIntConstant()->GetSignExtendedValue();
-    int64_t s_value = s_components[i]->AsIntConstant()->GetSignExtendedValue();
+    uint64_t c_value = c_components[i]->AsIntConstant()->GetSignExtendedValue();
+    uint64_t i_value = i_components[i]->AsIntConstant()->GetSignExtendedValue();
+    uint64_t s_value = s_components[i]->AsIntConstant()->GetSignExtendedValue();
 
-    int64_t result = i_value - s_value * num_iterations_value;
+    uint64_t result = i_value - s_value * num_iterations_value;
 
     // Use bit shifts to ignore the first bits in excess (if there are any). By
     // shifting left, we discard the first |64 - bit_width| bits. By shifting
@@ -202,25 +202,20 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
 void TransformationAddLoopToCreateIntConstantSynonym::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  // Retrieve all the constants that we need.
-  auto constant = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.constant_id());
-  auto initial_val = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.initial_val_id());
-  auto initial_val_def =
-      ir_context->get_def_use_mgr()->GetDef(message_.initial_val_id());
-  auto step_val = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.step_val_id());
-  auto num_iterations = ir_context->get_constant_mgr()->FindDeclaredConstant(
-      message_.num_iterations_id());
-
   // Find 32-bit signed integer constants 0 and 1.
   auto const_0_id = !fuzzerutil::MaybeGetIntegerConstant(
       ir_context, *transformation_context, {0}, 32, true, false);
   auto const_0_def = ir_context->get_def_use_mgr()->GetDef(const_0_id);
   auto const_1_id = !fuzzerutil::MaybeGetIntegerConstant(
       ir_context, *transformation_context, {0}, 32, true, false);
-  auto const_1_def = ir_context->get_def_use_mgr()->GetDef(const_1_id);
+
+  // Retrieve the instruction defining the initial value constant.
+  auto initial_val_def =
+      ir_context->get_def_use_mgr()->GetDef(message_.initial_val_id());
+
+  // Retrieve the block before which we want to insert the loop.
+  auto block_after_loop =
+      ir_context->get_instr_block(message_.block_after_loop_id());
 
   // Find the predecessor of the block.
   uint32_t pred_id =
@@ -237,13 +232,13 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
   std::unique_ptr<opt::BasicBlock> loop_block =
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           ir_context, SpvOpLabel, 0, message_.loop_id(),
-          std::initializer_list<opt::Operand>{}));
+          opt::Instruction::OperandList{}));
 
   // Add OpPhi instructions to retrieve the current value of the counter and of
   // the temporary variable that will be decreased at each operation.
   loop_block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpPhi, const_0_def->type_id(), message_.ctr_id(),
-      std::initializer_list<opt::Operand>{
+      opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {const_0_id}},
           {SPV_OPERAND_TYPE_ID, {pred_id}},
           {SPV_OPERAND_TYPE_ID, {message_.incremented_ctr_id()}},
@@ -251,54 +246,148 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
 
   loop_block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpPhi, initial_val_def->type_id(), message_.temp_id(),
-      std::initializer_list<opt::Operand>{
+      opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {message_.initial_val_id()}},
           {SPV_OPERAND_TYPE_ID, {pred_id}},
           {SPV_OPERAND_TYPE_ID, {message_.eventual_syn_id()}},
           {SPV_OPERAND_TYPE_ID, {last_loop_block_id}}}));
 
-  // Collect the other instructions in a list.
+  // Collect the other instructions in a list. These will be added to an
+  // additional block if |message_.additional_block_id| is defined, to the loop
+  // header otherwise.
   std::vector<std::unique_ptr<opt::Instruction>> other_instructions;
 
-  // Add the instruction to subtract the step value from the temporary value.
+  // Add an instruction to subtract the step value from the temporary value.
   // The value of this id will converge to the constant in the last iteration.
   other_instructions.push_back(MakeUnique<opt::Instruction>(
       ir_context, SpvOpISub, initial_val_def->type_id(),
       message_.eventual_syn_id(),
-      std::initializer_list<opt::Operand>{
+      opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {message_.temp_id()}},
           {SPV_OPERAND_TYPE_ID, {message_.step_val_id()}}}));
 
-  // Add the instruction to increment the counter.
+  // Add an instruction to increment the counter.
   other_instructions.push_back(MakeUnique<opt::Instruction>(
       ir_context, SpvOpIAdd, const_0_def->type_id(),
       message_.incremented_ctr_id(),
-      std::initializer_list<opt::Operand>{
-          {SPV_OPERAND_TYPE_ID, {message_.ctr_id()}},
-          {SPV_OPERAND_TYPE_ID, {const_1_id}}}));
+      opt::Instruction::OperandList{{SPV_OPERAND_TYPE_ID, {message_.ctr_id()}},
+                                    {SPV_OPERAND_TYPE_ID, {const_1_id}}}));
 
-  // Add the instruction to decide whether the condition holds.
+  // Add an instruction to decide whether the condition holds.
   other_instructions.push_back(MakeUnique<opt::Instruction>(
       ir_context, SpvOpSLessThan, fuzzerutil::MaybeGetBoolType(ir_context),
       message_.cond_id(),
-      std::initializer_list<opt::Operand>{
+      opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {message_.incremented_ctr_id()}},
           {SPV_OPERAND_TYPE_ID, {message_.num_iterations_id()}}}));
 
-  // If an id for the additional block is specified, create the additional block
-  // and add the instructions to it.
-  std::unique_ptr<opt::BasicBlock> additional_block;
+  // Define the OpLoopMerge instruction for the loop header. The merge block is
+  // the existing block, the continue block is the last block in the loop
+  // (either the loop itself or the additional block).
+  std::unique_ptr<opt::Instruction> merge_inst = MakeUnique<opt::Instruction>(
+      ir_context, SpvOpLoopMerge, 0, 0,
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {message_.block_after_loop_id()}},
+          {SPV_OPERAND_TYPE_ID, {last_loop_block_id}}});
+
+  // Define a conditional branch instruction, branching to the loop header if
+  // the condition holds, and to the existing block otherwise. This instruction
+  // will be added to the last block in the loop.
+  std::unique_ptr<opt::Instruction> conditional_branch =
+      MakeUnique<opt::Instruction>(
+          ir_context, SpvOpBranchConditional, 0, 0,
+          opt::Instruction::OperandList{
+              {SPV_OPERAND_TYPE_ID, {message_.cond_id()}},
+              {SPV_OPERAND_TYPE_ID, {message_.loop_id()}},
+              {SPV_OPERAND_TYPE_ID, {message_.block_after_loop_id()}}});
+
   if (message_.additional_block_id()) {
-    additional_block = MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpLabel, 0, message_.additional_block_id(),
-        std::initializer_list<opt::Operand>{}));
+    // If an id for the additional block is specified, create an additional
+    // block, containing the instructions in the list and a branching
+    // instruction.
+
+    std::unique_ptr<opt::BasicBlock> additional_block =
+        MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
+            ir_context, SpvOpLabel, 0, message_.additional_block_id(),
+            opt::Instruction::OperandList{}));
 
     for (auto& instruction : other_instructions) {
       additional_block->AddInstruction(std::move(instruction));
     }
+
+    additional_block->AddInstruction(std::move(conditional_branch));
+
+    // Add the merge instruction to the header.
+    loop_block->AddInstruction(std::move(merge_inst));
+
+    // Add an unconditional branch from the header to the additional block.
+    loop_block->AddInstruction(MakeUnique<opt::Instruction>(
+        ir_context, SpvOpBranch, 0, 0,
+        opt::Instruction::OperandList{
+            {SPV_OPERAND_TYPE_ID, {message_.additional_block_id()}}}));
+
+    // Insert the two loop blocks before the existing block.
+    block_after_loop->GetParent()->InsertBasicBlockBefore(std::move(loop_block),
+                                                          block_after_loop);
+    block_after_loop->GetParent()->InsertBasicBlockBefore(
+        std::move(additional_block), block_after_loop);
+  } else {
+    // If no id for an additional block is specified, the loop will only be made
+    // up of one block, so we need to add all the instructions to it.
+
+    for (auto& instruction : other_instructions) {
+      loop_block->AddInstruction(std::move(instruction));
+    }
+
+    // Add the merge and conditional branch instructions.
+    loop_block->AddInstruction(std::move(merge_inst));
+    loop_block->AddInstruction(std::move(conditional_branch));
+
+    // Insert the header before the existing block.
+    block_after_loop->GetParent()->InsertBasicBlockBefore(std::move(loop_block),
+                                                          block_after_loop);
   }
 
-  // TODO: Continue.
+  // Update all the references to the existing block (e.g. the one in the
+  // branching instruction of the predecessor): they should now refer to the
+  // loop header.
+  ir_context->get_def_use_mgr()->ForEachUse(
+      message_.block_after_loop_id(),
+      [this](opt::Instruction* instruction, uint32_t operand_index) {
+        // Replace all uses of the label as an input operand.
+        if (operand_index >
+            (instruction->NumOperands() - instruction->NumInOperands())) {
+          instruction->SetOperand(operand_index, {message_.loop_id()});
+        }
+      });
+
+  // Update all the OpPhi instructions in the block after the loop: its
+  // predecessor is now the last block in the loop.
+  block_after_loop->ForEachPhiInst(
+      [last_loop_block_id](opt::Instruction* phi_inst) {
+        // Since the block only had one predecessor, the id of the predecessor
+        // is input operand 1.
+        phi_inst->SetInOperand(1, {last_loop_block_id});
+      });
+
+  // Add a new OpPhi instruction at the beginning of the block after the loop,
+  // defining the synonym of the constant. The type id will be the same as
+  // |message_.initial_value_id|, since this is the value that is decremented in
+  // the loop.
+  block_after_loop->begin()->InsertBefore(MakeUnique<opt::Instruction>(
+      ir_context, SpvOpPhi, initial_val_def->type_id(), message_.syn_id(),
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_ID, {message_.eventual_syn_id()}},
+          {SPV_OPERAND_TYPE_ID, {last_loop_block_id}}}));
+
+  // Record that |message_.syn_id| is synonymous with |message_.constant_id|.
+  transformation_context->GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(message_.syn_id(), {}),
+      MakeDataDescriptor(message_.constant_id(), {}), ir_context);
+
+  // Since we changed the structure of the module, we need to invalidate all the
+  // analyses.
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation

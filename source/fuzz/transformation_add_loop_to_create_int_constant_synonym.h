@@ -51,6 +51,8 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Adds a loop to the module, defining a synonym of an integer (scalar or
+  // vector) constant. This id is marked as synonym with the original constant.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
