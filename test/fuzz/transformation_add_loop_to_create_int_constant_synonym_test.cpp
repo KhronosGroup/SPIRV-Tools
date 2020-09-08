@@ -360,23 +360,23 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
 
   // Id %20 is supposed to be fresh, but it is not.
   ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
-                   12, 13, 11, 10, 6, 100, 20, 102, 103, 104, 105, 106, 107)
+                   12, 13, 11, 10, 15, 100, 20, 102, 103, 104, 105, 106, 107)
                    .IsApplicable(context.get(), transformation_context));
 
   // Id %100 is used twice.
   ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
-                   12, 13, 11, 10, 6, 100, 100, 102, 103, 104, 105, 106, 107)
+                   12, 13, 11, 10, 15, 100, 100, 102, 103, 104, 105, 106, 107)
                    .IsApplicable(context.get(), transformation_context));
 
   // Id %100 is used twice.
   ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
-                   12, 13, 11, 10, 6, 100, 101, 102, 103, 104, 105, 106, 100)
+                   12, 13, 11, 10, 15, 100, 101, 102, 103, 104, 105, 106, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // Only the last id (for the additional block) is optional, so the other ones
   // cannot be 0.
   ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
-                   12, 13, 11, 10, 6, 0, 101, 102, 103, 104, 105, 106, 100)
+                   12, 13, 11, 10, 15, 0, 101, 102, 103, 104, 105, 106, 100)
                    .IsApplicable(context.get(), transformation_context));
 
   // This transformation will create a synonym of constant %12 from a 1-block
