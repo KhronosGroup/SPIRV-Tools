@@ -39,7 +39,9 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
   // - |new_entry_fresh_id|, |merge_label_fresh_id| must be fresh and distinct.
   // - |condition_id| must refer to a valid instruction of boolean type.
   // - |entry_block_id| and |exit_block_id| must refer to valid blocks and they
-  //   must form a single-entry, single-exit region.
+  //   must form a single-entry, single-exit region. Its constructs and their
+  //   merge blocks must be either wholly within or wholly outside of the
+  //   region.
   // - |original_label_to_duplicate_label| must contain at least a key for every
   //   block in the original region.
   // - |original_id_to_duplicate_id| must contain at least a key for every

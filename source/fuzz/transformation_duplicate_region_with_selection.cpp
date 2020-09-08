@@ -105,8 +105,7 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
 
   auto enclosing_function = entry_block->GetParent();
 
-  // Currently we avoid the case where |entry_block| is the first block of the
-  // |enclosing_function|.
+  // |entry_block| cannot be the first block of the |enclosing_function|.
   if (&*enclosing_function->begin() == entry_block) {
     return false;
   }
@@ -148,8 +147,8 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     }
 
     if (auto merge = block.GetMergeInst()) {
-      // The block is a loop or selection header -- the header and its
-      // associated merge block had better both be in the region or both be
+      // The block is a loop or selection header. The header and its
+      // associated merge block must be both in the region or both be
       // outside the region.
       auto merge_block =
           ir_context->cfg()->block(merge->GetSingleWordOperand(0));
@@ -159,10 +158,13 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     }
 
     if (auto loop_merge = block.GetLoopMergeInst()) {
-      // Similar to the above, but for the continue target of a loop
-      // |continue_target| and a loop header |loop_merge|.
+      // The continue target of a loop must be within the region if and only if
+      // the header of the loop is.
       auto continue_target =
           ir_context->cfg()->block(loop_merge->GetSingleWordOperand(1));
+      // The continue target is a single-entry, single-exit region. Therefore,
+      // if the continue target is the exit block, the region might not contain
+      // the loop header.
       if (continue_target != exit_block &&
           region_set.count(&block) != region_set.count(continue_target)) {
         return false;
@@ -192,12 +194,13 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     }
     auto duplicate_label = original_label_to_duplicate_label[label];
     // Each id assigned to labels in the region must be distinct and fresh.
-    if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+    if (!duplicate_label ||
+        !CheckIdIsFreshAndNotUsedByThisTransformation(
             duplicate_label, ir_context, &ids_used_by_this_transformation)) {
       return false;
     }
     for (auto instr : *block) {
-      if (!instr.result_id()) {
+      if (!instr.HasResultId()) {
         continue;
       }
       // Every instruction with a result id in the region must be present in the
@@ -207,7 +210,8 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
       }
       auto duplicate_id = original_id_to_duplicate_id[instr.result_id()];
       // Id assigned to this result id in the region must be distinct and fresh.
-      if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+      if (!duplicate_id ||
+          !CheckIdIsFreshAndNotUsedByThisTransformation(
               duplicate_id, ir_context, &ids_used_by_this_transformation)) {
         return false;
       }
@@ -228,7 +232,8 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
         auto phi_id = original_id_to_phi_id[instr.result_id()];
         // Id assigned to this result id in the region must be distinct and
         // fresh.
-        if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+        if (!phi_id ||
+            !CheckIdIsFreshAndNotUsedByThisTransformation(
                 phi_id, ir_context, &ids_used_by_this_transformation)) {
           return false;
         }
@@ -275,7 +280,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
           opt::Instruction::OperandList()));
   auto entry_block = ir_context->cfg()->block(message_.entry_block_id());
   auto enclosing_function = entry_block->GetParent();
-  new_entry_block->SetParent(enclosing_function);
   auto exit_block = ir_context->cfg()->block(message_.exit_block_id());
 
   // Get the blocks contained in the region.
@@ -287,7 +291,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpLabel, 0, message_.merge_label_fresh_id(),
           opt::Instruction::OperandList())));
-  merge_block->SetParent(enclosing_function);
 
   // Get the maps from the protobuf.
   std::map<uint32_t, uint32_t> original_label_to_duplicate_label =
@@ -321,8 +324,9 @@ void TransformationDuplicateRegionWithSelection::Apply(
 
   // Similarly, we need to update OpPhi instructions in the |entry_block|. We
   // know that it has only one predecessor, since the region is single-entry,
-  // single-exit. We need to change all occurrences of its id to the label id of
-  // the |new_entry| block.
+  // single-exit. Its constructs and their merge blocks must be either wholly
+  // within or wholly outside of the region. We need to change all occurrences
+  // of its id to the label id of the |new_entry| block.
   uint32_t entry_block_pred_id =
       ir_context
           ->get_instr_block(ir_context->cfg()->preds(entry_block->id())[0])
@@ -340,9 +344,8 @@ void TransformationDuplicateRegionWithSelection::Apply(
   // Duplication of blocks will invalidate iterators. Store all the blocks from
   // the enclosing function.
   std::vector<opt::BasicBlock*> blocks;
-  for (auto block_it = enclosing_function->begin();
-       block_it != enclosing_function->end(); block_it++) {
-    blocks.push_back(&*block_it);
+  for (auto& block : *enclosing_function) {
+    blocks.push_back(&block);
   }
   // Store instructions OpReturn, OpReturnValue, OpBranch from the last block to
   // be moved (cloned and removed).
@@ -400,10 +403,9 @@ void TransformationDuplicateRegionWithSelection::Apply(
           });
     }
 
-    // If the block is the first duplicated block, insert it before the exit
+    // If the block is the first duplicated block, insert it after the exit
     // block of the original region. Otherwise, insert it after the preceding
     // one.
-    duplicated_block->SetParent(enclosing_function);
     auto duplicated_block_ptr = duplicated_block.get();
     if (previous_block) {
       enclosing_function->InsertBasicBlockAfter(std::move(duplicated_block),
@@ -470,7 +472,8 @@ void TransformationDuplicateRegionWithSelection::Apply(
       ir_context, SpvOpSelectionMerge, 0, 0,
       opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID, {message_.merge_label_fresh_id()}},
-           {SPV_OPERAND_TYPE_SELECTION_CONTROL, {0}}})));
+           {SPV_OPERAND_TYPE_SELECTION_CONTROL,
+            {SpvSelectionControlMaskNone}}})));
 
   new_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpBranchConditional, 0, 0,

@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
-#define SPIRV_TOOLS_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
+#ifndef SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
+#define SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
 
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
+// A fuzzer pass that iterates over the whole module. For each function it
+// finds a single-entry, single-exit region with its constructs and their merge
+// blocks either completely within or completely outside the region. It
+// duplicates this region using the corresponding transformation.
 class FuzzerPassDuplicateRegionsWithSelections : public FuzzerPass {
  public:
   FuzzerPassDuplicateRegionsWithSelections(
@@ -35,4 +39,4 @@ class FuzzerPassDuplicateRegionsWithSelections : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
+#endif  // SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H

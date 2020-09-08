@@ -32,34 +32,35 @@ FuzzerPassDuplicateRegionsWithSelections::
     ~FuzzerPassDuplicateRegionsWithSelections() = default;
 
 void FuzzerPassDuplicateRegionsWithSelections::Apply() {
-  std::vector<opt::Function*> original_functions;
-  for (auto& function : *GetIRContext()->module()) {
-    original_functions.push_back(&function);
-  }
   // Iterate over all of the functions in the module.
-  for (auto& function : original_functions) {
+  for (auto& function : *GetIRContext()->module()) {
     // Randomly decide whether to apply the transformation.
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfDuplicatingRegionWithSelection())) {
       continue;
     }
-    std::vector<opt::BasicBlock*> start_blocks;
-    for (auto& block : *function) {
-      // Currently, we don't consider the first block to be the starting block.
-      if (&block == &*function->begin()) {
+    std::vector<opt::BasicBlock*> candidate_entry_blocks;
+    for (auto& block : function) {
+      // We don't consider the first block to be the entry block, since it
+      // could contain OpVariable instructions that would require additional
+      // operations to be reassigned.
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3778):
+      //     Consider extending this fuzzer pass to allow the first block to be
+      //     used in duplication.
+      if (&block == &*function.begin()) {
         continue;
       }
-      start_blocks.push_back(&block);
+      candidate_entry_blocks.push_back(&block);
     }
-    if (start_blocks.empty()) {
+    if (candidate_entry_blocks.empty()) {
       continue;
     }
     // Randomly choose the entry block.
-    auto entry_block =
-        start_blocks[GetFuzzerContext()->RandomIndex(start_blocks)];
-    auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(function);
+    auto entry_block = candidate_entry_blocks[GetFuzzerContext()->RandomIndex(
+        candidate_entry_blocks)];
+    auto dominator_analysis = GetIRContext()->GetDominatorAnalysis(&function);
     auto postdominator_analysis =
-        GetIRContext()->GetPostDominatorAnalysis(function);
+        GetIRContext()->GetPostDominatorAnalysis(&function);
     std::vector<opt::BasicBlock*> candidate_exit_blocks;
     for (auto postdominates_entry_block = entry_block;
          postdominates_entry_block != nullptr;
@@ -98,9 +99,14 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
         if (instr.result_id()) {
           original_id_to_duplicate_id[instr.result_id()] =
               GetFuzzerContext()->GetFreshId();
-          if ((&instr == &*exit_block->tail() ||
+          auto final_instruction = &*exit_block->tail();
+          // &*exit_block->tail() is the final instruction of the region.
+          // The instruction is available at the end of the region if and only
+          // if it is available before this final instruction or it is the final
+          // instruction.
+          if ((&instr == final_instruction ||
                fuzzerutil::IdIsAvailableBeforeInstruction(
-                   GetIRContext(), &*exit_block->tail(), instr.result_id()))) {
+                   GetIRContext(), final_instruction, instr.result_id()))) {
             original_id_to_phi_id[instr.result_id()] =
                 GetFuzzerContext()->GetFreshId();
           }
@@ -108,11 +114,10 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
       }
     }
     // Randomly decide between value "true" or "false" for a bool constant.
-    auto condition_value = GetFuzzerContext()->ChooseEven();
-
     // Make sure the transformation has access to a bool constant to be used
     // while creating conditional construct.
-    auto condition_id = FindOrCreateBoolConstant(condition_value, true);
+    auto condition_id =
+        FindOrCreateBoolConstant(GetFuzzerContext()->ChooseEven(), true);
 
     TransformationDuplicateRegionWithSelection transformation =
         TransformationDuplicateRegionWithSelection(
