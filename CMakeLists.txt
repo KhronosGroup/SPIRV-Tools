@@ -79,6 +79,8 @@ if(SPIRV_BUILD_COMPRESSION)
           "Please remove SPIRV_BUILD_COMPRESSION from your build options.")
 endif(SPIRV_BUILD_COMPRESSION)
 
+option(SPIRV_BUILD_FUZZER "Build spirv-fuzz" OFF)
+
 option(SPIRV_WERROR "Enable error on warning" ON)
 if(("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR (("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") AND (NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")))
   set(COMPILER_IS_LIKE_GNU TRUE)

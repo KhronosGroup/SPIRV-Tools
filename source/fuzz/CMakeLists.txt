@@ -362,7 +362,6 @@ if(SPIRV_BUILD_FUZZER)
   add_library(SPIRV-Tools-fuzz ${SPIRV_TOOLS_FUZZ_SOURCES})
 
   spvtools_default_compile_options(SPIRV-Tools-fuzz)
-  target_compile_definitions(SPIRV-Tools-fuzz PUBLIC -DGOOGLE_PROTOBUF_NO_RTTI -DGOOGLE_PROTOBUF_USE_UNALIGNED=0)
 
   # Compilation of the auto-generated protobuf source file will yield warnings,
   # which we have no control over and thus wish to ignore.
