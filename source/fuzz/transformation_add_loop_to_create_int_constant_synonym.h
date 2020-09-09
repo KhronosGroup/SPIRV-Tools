@@ -43,7 +43,8 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
   // - The module contains the boolean type.
   // - C = I - S * N
   // - |message_.block_after_loop_id| is the label of a block which has a single
-  //   predecessor and which is not a merge block or a loop header.
+  //   predecessor and which is not a merge block, a continue block or a loop
+  //   header.
   // - |message_.additional_block_id| is either 0 or a valid fresh id, distinct
   //   from the other fresh ids.
   // - All of the other parameters are valid fresh ids.

@@ -319,6 +319,15 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
          %20 = OpLabel
                OpBranch %21
          %21 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpLoopMerge %27 %25 None
+               OpBranch %25
+         %25 = OpLabel
+               OpBranch %26
+         %26 = OpLabel
+               OpBranchConditional %6 %24 %27
+         %27 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -346,6 +355,11 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
   // Block %16 is a merge block.
   ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
                    12, 13, 11, 10, 16, 100, 101, 102, 103, 104, 105, 106, 107)
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Block %25 is a continue block.
+  ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
+                   12, 13, 11, 10, 25, 100, 101, 102, 103, 104, 105, 106, 107)
                    .IsApplicable(context.get(), transformation_context));
 
   // Block %19 has more than one predecessor.
@@ -399,6 +413,17 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
   transformation2.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(107, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // This transformation will create a synonym of constant %12 from a 2-block
+  // loop.
+  auto transformation3 = TransformationAddLoopToCreateIntConstantSynonym(
+      12, 13, 11, 10, 26, 115, 116, 117, 118, 119, 120, 121, 0);
+  ASSERT_TRUE(
+      transformation3.IsApplicable(context.get(), transformation_context));
+  transformation3.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(115, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformations = R"(
@@ -459,6 +484,24 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
          %20 = OpLabel
                OpBranch %21
          %21 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpLoopMerge %27 %25 None
+               OpBranch %25
+         %25 = OpLabel
+               OpBranch %116
+        %116 = OpLabel
+        %117 = OpPhi %7 %8 %25 %120 %116
+        %118 = OpPhi %7 %13 %25 %119 %116
+        %119 = OpISub %7 %118 %11
+        %120 = OpIAdd %7 %117 %8
+        %121 = OpSLessThan %5 %120 %10
+               OpLoopMerge %26 %116 None
+               OpBranchConditional %121 %116 %26
+         %26 = OpLabel
+        %115 = OpPhi %7 %119 %116
+               OpBranchConditional %6 %24 %27
+         %27 = OpLabel
                OpReturn
                OpFunctionEnd
 )";

@@ -182,6 +182,11 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
     return false;
   }
 
+  // Check that the block is not a continue block.
+  if (ir_context->GetStructuredCFGAnalysis()->IsContinueBlock(block->id())) {
+    return false;
+  }
+
   // Check that the block is not a loop header.
   if (block->IsLoopHeader()) {
     return false;
