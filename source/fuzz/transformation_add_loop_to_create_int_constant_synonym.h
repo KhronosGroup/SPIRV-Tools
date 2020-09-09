@@ -33,7 +33,7 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
       uint32_t additional_block_id);
 
   // - |message_.constant_id|, |message_.initial_value_id|,
-  //   |message_.step_val_id| are integer constant (scalar or vectors) with the
+  //   |message_.step_val_id| are integer constants (scalar or vectors) with the
   //   same type (with possibly different signedness, but same bit width, which
   //   must be <= 64). Let their value be C, I, S respectively.
   // - |message_.num_iterations_id| is a 32-bit integer scalar constant, with
@@ -43,7 +43,7 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
   // - The module contains the boolean type.
   // - C = I - S * N
   // - |message_.block_after_loop_id| is the label of a block which has a single
-  //   predecessor and which is not a merge block.
+  //   predecessor and which is not a merge block or a loop header.
   // - |message_.additional_block_id| is either 0 or a valid fresh id, distinct
   //   from the other fresh ids.
   // - All of the other parameters are valid fresh ids.

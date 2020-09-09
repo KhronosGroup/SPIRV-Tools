@@ -35,6 +35,7 @@
 #include "source/fuzz/transformation_add_type_pointer.h"
 #include "source/fuzz/transformation_add_type_struct.h"
 #include "source/fuzz/transformation_add_type_vector.h"
+#include "source/fuzz/transformation_split_block.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -606,6 +607,29 @@ opt::BasicBlock* FuzzerPass::GetOrCreateSimpleLoopPreheader(
 
   // Make the newly-created preheader the new entry block.
   return &*function->FindBlock(preheader_id);
+}
+
+opt::BasicBlock* FuzzerPass::SplitBlockAfterOpPhiOrOpVariable(
+    uint32_t block_id) {
+  auto block = fuzzerutil::MaybeFindBlock(GetIRContext(), block_id);
+  assert(block && "|block_id| must be a block label");
+  assert(!block->IsLoopHeader() && "|block_id| cannot be a loop header");
+
+  // Find the first non-OpPhi and non-OpVariable instruction.
+  auto non_phi_or_var_inst = &*block->begin();
+  while (non_phi_or_var_inst->opcode() == SpvOpPhi ||
+         non_phi_or_var_inst->opcode() == SpvOpVariable) {
+    non_phi_or_var_inst = non_phi_or_var_inst->NextNode();
+  }
+
+  // Split the block.
+  uint32_t new_block_id = GetFuzzerContext()->GetFreshId();
+  ApplyTransformation(TransformationSplitBlock(
+      MakeInstructionDescriptor(GetIRContext(), non_phi_or_var_inst),
+      new_block_id));
+
+  // We need to return the newly-created block.
+  return &*block->GetParent()->FindBlock(new_block_id);
 }
 
 uint32_t FuzzerPass::FindOrCreateLocalVariable(

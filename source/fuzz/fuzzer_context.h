@@ -154,6 +154,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingLoopPreheader() {
     return chance_of_adding_loop_preheader_;
   }
+  uint32_t GetChanceOfAddingLoopToCreateIntSynonym() {
+    return chance_of_adding_loop_to_create_int_synonym_;
+  }
   uint32_t GetChanceOfAddingMatrixType() {
     return chance_of_adding_matrix_type_;
   }
@@ -204,6 +207,9 @@ class FuzzerContext {
     return chance_of_constructing_composite_;
   }
   uint32_t GetChanceOfCopyingObject() { return chance_of_copying_object_; }
+  uint32_t GetChanceOfCreatingIntSynonymsUsingLoops() {
+    return chance_of_creating_int_synonyms_using_loops_;
+  }
   uint32_t GetChanceOfDonatingAdditionalModule() {
     return chance_of_donating_additional_module_;
   }
@@ -218,6 +224,9 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfGoingDeeperWhenMakingAccessChain() {
     return chance_of_going_deeper_when_making_access_chain_;
+  }
+  uint32_t GetChanceOfHavingTwoBlocksInLoopToCreateIntSynonym() {
+    return chance_of_having_two_blocks_in_loop_to_create_int_synonym_;
   }
   uint32_t GetChanceOfInliningFunction() {
     return chance_of_inlining_function_;
@@ -342,6 +351,15 @@ class FuzzerContext {
   uint32_t GetRandomIndexForCompositeInsert(uint32_t number_of_components) {
     return random_generator_->RandomUint32(number_of_components);
   }
+  uint64_t GetRandomLongInteger() {
+    uint64_t result = random_generator_->RandomUint32(INT32_MAX);
+    result <<= 31u;
+    result += random_generator_->RandomUint32(INT32_MAX);
+    if (random_generator_->RandomBool()) {
+      result = -result;
+    }
+    return result;
+  }
   uint32_t GetRandomLoopControlPartialCount() {
     return random_generator_->RandomUint32(max_loop_control_partial_count_);
   }
@@ -350,6 +368,9 @@ class FuzzerContext {
   }
   uint32_t GetRandomLoopLimit() {
     return random_generator_->RandomUint32(max_loop_limit_);
+  }
+  uint32_t GetRandomNumberOfLoopIterations(uint32_t max_num_iterations) {
+    return ChooseBetweenMinAndMax({1, max_num_iterations});
   }
   uint32_t GetRandomNumberOfNewParameters(uint32_t num_of_params) {
     assert(num_of_params < GetMaximumNumberOfFunctionParameters());
@@ -403,6 +424,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_load_;
   uint32_t chance_of_adding_local_variable_;
   uint32_t chance_of_adding_loop_preheader_;
+  uint32_t chance_of_adding_loop_to_create_int_synonym_;
   uint32_t chance_of_adding_matrix_type_;
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_opphi_synonym_;
@@ -423,11 +445,13 @@ class FuzzerContext {
   uint32_t chance_of_choosing_workgroup_storage_class_;
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
+  uint32_t chance_of_creating_int_synonyms_using_loops_;
   uint32_t chance_of_donating_additional_module_;
   uint32_t chance_of_duplicating_region_with_selection_;
   uint32_t chance_of_flattening_conditional_branch_;
   uint32_t chance_of_going_deeper_to_insert_in_composite_;
   uint32_t chance_of_going_deeper_when_making_access_chain_;
+  uint32_t chance_of_having_two_blocks_in_loop_to_create_int_synonym_;
   uint32_t chance_of_inlining_function_;
   uint32_t chance_of_interchanging_signedness_of_integer_operands_;
   uint32_t chance_of_interchanging_zero_like_constants_;

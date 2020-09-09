@@ -182,6 +182,11 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
     return false;
   }
 
+  // Check that the block is not a loop header.
+  if (block->IsLoopHeader()) {
+    return false;
+  }
+
   // Check all the fresh ids.
   std::set<uint32_t> fresh_ids_used;
   for (uint32_t id : {message_.syn_id(), message_.loop_id(), message_.ctr_id(),

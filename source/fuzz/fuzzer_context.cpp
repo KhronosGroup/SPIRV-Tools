@@ -48,6 +48,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingImageSampleUnusedComponents =
 const std::pair<uint32_t, uint32_t> kChanceOfAddingLoad = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingLocalVariable = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingLoopPreheader = {20, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingLoopToCreateIntSynonym = {
+    10, 30};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingMatrixType = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingNoContractionDecoration = {
     5, 70};
@@ -75,6 +77,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
     50, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfCreatingIntSynonymsUsingLoops = {
+    20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDuplicatingRegionWithSelection = {
     20, 50};
@@ -84,6 +88,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperToInsertInComposite = {
     30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
     {50, 95};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfHavingTwoBlocksInLoopToCreateIntSynonym = {50, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfInliningFunction = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfInterchangingZeroLikeConstants = {
     10, 90};
@@ -203,6 +209,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_adding_load_ = ChooseBetweenMinAndMax(kChanceOfAddingLoad);
   chance_of_adding_loop_preheader_ =
       ChooseBetweenMinAndMax(kChanceOfAddingLoopPreheader);
+  chance_of_adding_loop_to_create_int_synonym_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingLoopToCreateIntSynonym);
   chance_of_adding_image_sample_unused_components_ =
       ChooseBetweenMinAndMax(kChanceOfAddingImageSampleUnusedComponents);
   chance_of_adding_local_variable_ =
@@ -244,6 +252,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_constructing_composite_ =
       ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
+  chance_of_creating_int_synonyms_using_loops_ =
+      ChooseBetweenMinAndMax(kChanceOfCreatingIntSynonymsUsingLoops);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
   chance_of_duplicating_region_with_selection_ =
@@ -254,6 +264,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperToInsertInComposite);
   chance_of_going_deeper_when_making_access_chain_ =
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperWhenMakingAccessChain);
+  chance_of_having_two_blocks_in_loop_to_create_int_synonym_ =
+      ChooseBetweenMinAndMax(kChanceOfHavingTwoBlocksInLoopToCreateIntSynonym);
   chance_of_inlining_function_ =
       ChooseBetweenMinAndMax(kChanceOfInliningFunction);
   chance_of_interchanging_signedness_of_integer_operands_ =
