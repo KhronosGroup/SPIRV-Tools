@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_TRANSFORMATION_DUPLICATE_REGION_WITH_SELECTION_H
-#define SPIRV_TOOLS_TRANSFORMATION_DUPLICATE_REGION_WITH_SELECTION_H
+#ifndef SOURCE_FUZZ_TRANSFORMATION_DUPLICATE_REGION_WITH_SELECTION_H
+#define SOURCE_FUZZ_TRANSFORMATION_DUPLICATE_REGION_WITH_SELECTION_H
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -75,4 +75,4 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_TRANSFORMATION_DUPLICATE_REGION_WITH_SELECTION_H
+#endif  // SOURCE_FUZZ_TRANSFORMATION_DUPLICATE_REGION_WITH_SELECTION_H
