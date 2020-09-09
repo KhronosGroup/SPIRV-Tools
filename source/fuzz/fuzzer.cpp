@@ -166,7 +166,7 @@ bool Fuzzer::ApplyPassAndCheckValidity(
 }
 
 // This struct should have one field for every distinct fuzzer pass that can be
-// applied repeatedly.  Fuzzer passes that are only intened to be run at most
+// applied repeatedly.  Fuzzer passes that are only intended to be run at most
 // once, at the end of fuzzing, are not included.
 struct Fuzzer::PassInstances {
   FuzzerPassAddAccessChains* add_access_chains;
@@ -448,7 +448,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     // until now; loop again if so.
   } while (enabled_passes.empty());
 
-  FuzzerStrategy strategy = kRandomWithRecommendations;
+  FuzzerStrategy strategy = kLoopedWithRecommendations;
 
   bool fuzzing_succeeded;
   switch (strategy) {
@@ -792,6 +792,8 @@ std::vector<FuzzerPass*> Fuzzer::RandomOrderAndNonNull(
   std::vector<uint32_t> indices(passes.size());
   std::iota(indices.begin(), indices.end(), 0);
   std::vector<FuzzerPass*> result;
+  // TODO: don't necessarily always add the recommendations even if the struct
+  //  fields are non-null.
   while (!indices.empty()) {
     FuzzerPass* maybe_pass =
         passes[fuzzer_context->RemoveAtRandomIndex(&indices)];
@@ -874,13 +876,10 @@ bool Fuzzer::ApplyFuzzerPassesLoopedWithRecommendations(
   } while (
       fuzzer_context->ChoosePercentage(kChanceOfAddingAnotherPassToPassLoop));
 
-  for (uint32_t index = 0;;
+  for (uint32_t index = 0; ContinueFuzzing(*transformation_sequence_out, fuzzer_context);
        index = (index + 1) % static_cast<uint32_t>(pass_loop.size())) {
     if (!ApplyPassAndCheckValidity(pass_loop[index], *ir_context, tools)) {
       return false;
-    }
-    if (!ContinueFuzzing(*transformation_sequence_out, fuzzer_context)) {
-      break;
     }
   }
   return true;
