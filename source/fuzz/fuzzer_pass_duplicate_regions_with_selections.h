@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
-#define SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
+#ifndef SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -39,4 +39,4 @@ class FuzzerPassDuplicateRegionsWithSelections : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H
+#endif  // SOURCE_FUZZ_FUZZER_PASS_DUPLICATE_REGIONS_WITH_SELECTIONS_H_
