@@ -30,9 +30,9 @@ TransformationDuplicateRegionWithSelection::
         uint32_t new_entry_fresh_id, uint32_t condition_id,
         uint32_t merge_label_fresh_id, uint32_t entry_block_id,
         uint32_t exit_block_id,
-        std::map<uint32_t, uint32_t> original_label_to_duplicate_label,
-        std::map<uint32_t, uint32_t> original_id_to_duplicate_id,
-        std::map<uint32_t, uint32_t> original_id_to_phi_id) {
+        const std::map<uint32_t, uint32_t>& original_label_to_duplicate_label,
+        const std::map<uint32_t, uint32_t>& original_id_to_duplicate_id,
+        const std::map<uint32_t, uint32_t>& original_id_to_phi_id) {
   message_.set_new_entry_fresh_id(new_entry_fresh_id);
   message_.set_condition_id(condition_id);
   message_.set_merge_label_fresh_id(merge_label_fresh_id);
@@ -110,6 +110,9 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     return false;
   }
 
+  // TODO (https://github.com/KhronosGroup/SPIRV-Tools/issues/3785):
+  //     The following code has been copied from TransformationOutlineFunction.
+  //     Consider refactoring to avoid duplication.
   auto region_set = GetRegionBlocks(ir_context, entry_block, exit_block);
 
   // Check whether |region_set| really is a single-entry single-exit region, and
@@ -173,6 +176,9 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
   }
 
   // Get the maps from the protobuf.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3786):
+  //     Consider additionally providing overflow ids to make this
+  //     transformation more applicable when shrinking.
   std::map<uint32_t, uint32_t> original_label_to_duplicate_label =
       fuzzerutil::RepeatedUInt32PairToMap(
           message_.original_label_to_duplicate_label());
@@ -224,6 +230,10 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
           return false;
         }
         // Using pointers with OpPhi requires capability VariablePointers.
+        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3787):
+        //     Consider not adding OpPhi instructions for the pointers which are
+        //     unused after the region, so that the transformation could be
+        //     still applicable.
         if (ir_context->get_type_mgr()->GetType(instr.type_id())->AsPointer() &&
             !ir_context->get_feature_mgr()->HasCapability(
                 SpvCapabilityVariablePointers)) {
@@ -241,29 +251,6 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     }
   }
   return true;
-}
-
-std::set<opt::BasicBlock*>
-TransformationDuplicateRegionWithSelection::GetRegionBlocks(
-    opt::IRContext* ir_context, opt::BasicBlock* entry_block,
-    opt::BasicBlock* exit_block) {
-  auto enclosing_function = entry_block->GetParent();
-  auto dominator_analysis =
-      ir_context->GetDominatorAnalysis(enclosing_function);
-  auto postdominator_analysis =
-      ir_context->GetPostDominatorAnalysis(enclosing_function);
-
-  // A block belongs to a region between the entry block and the exit block if
-  // and only if it is dominated by the entry block and post-dominated by the
-  // exit block.
-  std::set<opt::BasicBlock*> result;
-  for (auto& block : *enclosing_function) {
-    if (dominator_analysis->Dominates(entry_block, &block) &&
-        postdominator_analysis->Dominates(exit_block, &block)) {
-      result.insert(&block);
-    }
-  }
-  return result;
 }
 
 void TransformationDuplicateRegionWithSelection::Apply(
@@ -286,7 +273,7 @@ void TransformationDuplicateRegionWithSelection::Apply(
   std::set<opt::BasicBlock*> region_blocks =
       GetRegionBlocks(ir_context, entry_block, exit_block);
 
-  // Construct the merge block and set its parent.
+  // Construct the merge block.
   std::unique_ptr<opt::BasicBlock> merge_block =
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpLabel, 0, message_.merge_label_fresh_id(),
@@ -322,23 +309,21 @@ void TransformationDuplicateRegionWithSelection::Apply(
     }
   });
 
-  // Similarly, we need to update OpPhi instructions in the |entry_block|. We
-  // know that it has only one predecessor, since the region is single-entry,
-  // single-exit. Its constructs and their merge blocks must be either wholly
-  // within or wholly outside of the region. We need to change all occurrences
-  // of its id to the label id of the |new_entry| block.
-  uint32_t entry_block_pred_id =
-      ir_context
-          ->get_instr_block(ir_context->cfg()->preds(entry_block->id())[0])
-          ->id();
+  // Similarly, we need to update OpPhi instructions in the |entry_block|. It
+  // could have many predecessors, but after the transformation it will have
+  // only one predecessor: |new_entry_block|. Fix all OpPhi instructions in the
+  // |entry_block| by moving them to the beginning of the |new_entry_block|.
+  std::vector<opt::Instruction*> op_phi_to_move;
   for (auto& instr : *entry_block) {
     if (instr.opcode() == SpvOpPhi) {
-      instr.ForEachId([this, entry_block_pred_id](uint32_t* id) {
-        if (*id == entry_block_pred_id) {
-          *id = message_.new_entry_fresh_id();
-        }
-      });
+      op_phi_to_move.push_back(&instr);
     }
+  }
+  for (auto& instr : op_phi_to_move) {
+    auto cloned_instr = instr->Clone(ir_context);
+    new_entry_block->AddInstruction(
+        std::unique_ptr<opt::Instruction>(cloned_instr));
+    ir_context->KillInst(instr);
   }
 
   // Duplication of blocks will invalidate iterators. Store all the blocks from
@@ -347,11 +332,8 @@ void TransformationDuplicateRegionWithSelection::Apply(
   for (auto& block : *enclosing_function) {
     blocks.push_back(&block);
   }
-  // Store instructions OpReturn, OpReturnValue, OpBranch from the last block to
-  // be moved (cloned and removed).
-  std::vector<opt::Instruction*> instructions_to_move;
-  opt::BasicBlock* previous_block = nullptr;
 
+  opt::BasicBlock* previous_block = nullptr;
   // Iterate over all blocks of the function to duplicate blocks of the original
   // region and their instructions.
   for (auto& block : blocks) {
@@ -370,13 +352,9 @@ void TransformationDuplicateRegionWithSelection::Apply(
             opt::Instruction::OperandList()));
 
     for (auto& instr : *block) {
-      // Cases where an instruction is an OpBranch
-      // or an OpReturn or an OpReturnValue in the exit block are handled
-      // separately, after the iteration.
-      if (block == exit_block && (instr.opcode() == SpvOpReturn ||
-                                  instr.opcode() == SpvOpReturnValue ||
-                                  instr.opcode() == SpvOpBranch)) {
-        instructions_to_move.push_back(&instr);
+      // Case where an instruction is the terminator of the exit block is
+      // handled separately.
+      if (block == exit_block && instr.IsBlockTerminator()) {
         continue;
       }
       // Duplicate the instruction.
@@ -487,17 +465,16 @@ void TransformationDuplicateRegionWithSelection::Apply(
   // instruction we know that this was the exit block of the function. Move this
   // instruction to the merge block, since it will be the new exit block of the
   // function.
-  //
   // If the exit block of the region contained an OpBranch instruction, it
   // refers to an another block outside of the region. Move this instruction to
   // the merge block, since the execution after the transformed region will
   // proceed from there.
-  for (auto instr : instructions_to_move) {
-    auto cloned_instr = instr->Clone(ir_context);
-    merge_block->AddInstruction(
-        std::unique_ptr<opt::Instruction>(cloned_instr));
-    ir_context->KillInst(instr);
-  }
+  // In each case, we need to move the terminator of |exit_block| to
+  // |merge_block|.
+  auto exit_block_terminator = exit_block->terminator();
+  auto cloned_instr = exit_block_terminator->Clone(ir_context);
+  merge_block->AddInstruction(std::unique_ptr<opt::Instruction>(cloned_instr));
+  ir_context->KillInst(exit_block_terminator);
 
   // Add OpBranch instruction to the merge block at the end of |exit_block| and
   // at the end of |duplicated_exit_block|, so that the execution proceeds in
@@ -553,6 +530,32 @@ void TransformationDuplicateRegionWithSelection::Apply(
   // Since we have changed the module, most of the analysis are now invalid. We
   // can invalidate analyses now after all of the blocks have been registered.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+}
+
+// TODO (https://github.com/KhronosGroup/SPIRV-Tools/issues/3785):
+//     The following method has been copied from TransformationOutlineFunction.
+//     Consider refactoring to avoid duplication.
+std::set<opt::BasicBlock*>
+TransformationDuplicateRegionWithSelection::GetRegionBlocks(
+    opt::IRContext* ir_context, opt::BasicBlock* entry_block,
+    opt::BasicBlock* exit_block) {
+  auto enclosing_function = entry_block->GetParent();
+  auto dominator_analysis =
+      ir_context->GetDominatorAnalysis(enclosing_function);
+  auto postdominator_analysis =
+      ir_context->GetPostDominatorAnalysis(enclosing_function);
+
+  // A block belongs to a region between the entry block and the exit block if
+  // and only if it is dominated by the entry block and post-dominated by the
+  // exit block.
+  std::set<opt::BasicBlock*> result;
+  for (auto& block : *enclosing_function) {
+    if (dominator_analysis->Dominates(entry_block, &block) &&
+        postdominator_analysis->Dominates(exit_block, &block)) {
+      result.insert(&block);
+    }
+  }
+  return result;
 }
 
 protobufs::Transformation

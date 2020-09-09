@@ -1147,7 +1147,8 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableEarlyReturn) {
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationDuplicateRegionWithSelectionTest, ResolvingOpPhiEntryBlock) {
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     ResolvingOpPhiEntryBlockOnePredecessor) {
   // This test handles a case where the entry block has an OpPhi instruction
   // referring to its predecessor. After transformation, this instruction needs
   // to be updated.
@@ -1223,7 +1224,7 @@ TEST(TransformationDuplicateRegionWithSelectionTest, ResolvingOpPhiEntryBlock) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string expected_shader = R"(
-                OpCapability Shader
+               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
@@ -1267,16 +1268,14 @@ TEST(TransformationDuplicateRegionWithSelectionTest, ResolvingOpPhiEntryBlock) {
                OpStore %14 %17
                OpBranch %500
         %500 = OpLabel
+         %51 = OpPhi %6 %17 %11
                OpSelectionMerge %501 None
                OpBranchConditional %21 %50 %100
          %50 = OpLabel
-         %51 = OpPhi %6 %17 %500
                OpBranch %501
         %100 = OpLabel
-        %201 = OpPhi %6 %17 %500
                OpBranch %501
         %501 = OpLabel
-        %301 = OpPhi %6 %51 %50 %201 %100
                OpReturn
                OpFunctionEnd
     )";

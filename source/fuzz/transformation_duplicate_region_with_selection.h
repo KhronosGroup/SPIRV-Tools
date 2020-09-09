@@ -32,9 +32,9 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
       uint32_t new_entry_fresh_id, uint32_t condition_id,
       uint32_t merge_label_fresh_id, uint32_t entry_block_id,
       uint32_t exit_block_id,
-      std::map<uint32_t, uint32_t> original_label_to_duplicate_label,
-      std::map<uint32_t, uint32_t> original_id_to_duplicate_id,
-      std::map<uint32_t, uint32_t> original_id_to_phi_id);
+      const std::map<uint32_t, uint32_t>& original_label_to_duplicate_label,
+      const std::map<uint32_t, uint32_t>& original_id_to_duplicate_id,
+      const std::map<uint32_t, uint32_t>& original_id_to_phi_id);
 
   // - |new_entry_fresh_id|, |merge_label_fresh_id| must be fresh and distinct.
   // - |condition_id| must refer to a valid instruction of boolean type.
