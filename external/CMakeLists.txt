@@ -74,11 +74,11 @@ if (NOT ${SPIRV_SKIP_TESTS})
           "Use shared (DLL) run-time lib even when Google Test is built as static lib."
           ON)
       endif()
-      # gtest requires special defines for building as a shared 
+      # gtest requires special defines for building as a shared
       # library, simply always build as static.
-      push_variable(BUILD_SHARED_LIBS 0) 
+      push_variable(BUILD_SHARED_LIBS 0)
       add_subdirectory(${GMOCK_DIR} EXCLUDE_FROM_ALL)
-      pop_variable(BUILD_SHARED_LIBS) 
+      pop_variable(BUILD_SHARED_LIBS)
     endif()
   endif()
   if (TARGET gmock)
@@ -137,16 +137,43 @@ if (NOT ${SPIRV_SKIP_TESTS})
 endif()
 
 if(SPIRV_BUILD_FUZZER)
-  set(PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
-  set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests")
-  set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "Do not build protobuf static runtime")
-  if (IS_DIRECTORY ${PROTOBUF_DIR})
-    if (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
-      add_definitions(-Wno-inconsistent-missing-override)
+
+  function(backup_compile_options)
+    get_property(
+        SPIRV_TOOLS_BACKUP_EXTERNAL_COMPILE_OPTIONS
+        DIRECTORY
+        PROPERTY COMPILE_OPTIONS
+        )
+  endfunction()
+
+  function(restore_compile_options)
+    set_property(
+        DIRECTORY
+        PROPERTY COMPILE_OPTIONS
+        ${SPIRV_TOOLS_BACKUP_EXTERNAL_COMPILE_OPTIONS}
+    )
+  endfunction()
+
+  if(NOT TARGET protobuf::libprotobuf OR NOT TARGET protobuf::protoc)
+
+    set(SPIRV_TOOLS_PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
+    if (NOT IS_DIRECTORY ${SPIRV_TOOLS_PROTOBUF_DIR})
+      message(
+          FATAL_ERROR
+          "protobuf not found - please checkout a copy under external/.")
     endif()
-    add_subdirectory(${PROTOBUF_DIR} EXCLUDE_FROM_ALL)
-  else()
-    message(FATAL_ERROR
-      "protobuf not found - please checkout a copy under external/.")
+    set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests")
+    set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "Do not build protobuf static runtime")
+
+    backup_compile_options()
+
+    if (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
+      add_compile_options(-Wno-inconsistent-missing-override)
+    endif()
+
+    add_subdirectory(${SPIRV_TOOLS_PROTOBUF_DIR} EXCLUDE_FROM_ALL)
+
+    restore_compile_options()
+
   endif()
-endif(SPIRV_BUILD_FUZZER)
+endif()
