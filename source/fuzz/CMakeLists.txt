@@ -18,9 +18,16 @@ if(SPIRV_BUILD_FUZZER)
 
   set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/protobufs/spvtoolsfuzz.proto)
 
+  set(
+        SPIRV_FUZZ_PROTOC_COMMAND
+        "protobuf::protoc"
+        CACHE
+        STRING
+        "The command to invoke the protobuf compiler (protoc). By default it is the protobufs::protoc CMake target. It should be overridden when cross-compiling, such as for Android.")
+
   add_custom_command(
         OUTPUT protobufs/spvtoolsfuzz.pb.cc protobufs/spvtoolsfuzz.pb.h
-        COMMAND protobuf::protoc
+        COMMAND "${SPIRV_FUZZ_PROTOC_COMMAND}"
         -I=${CMAKE_CURRENT_SOURCE_DIR}/protobufs
         --cpp_out=protobufs
         ${PROTOBUF_SOURCE}
