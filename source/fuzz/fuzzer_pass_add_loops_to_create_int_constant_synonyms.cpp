@@ -77,144 +77,137 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
 
   // Consider each constant and each block.
   for (uint32_t constant_id : constants) {
-    for (uint32_t block_id : blocks) {
-      // Randomly decide whether to add a loop before |block_id| to create a
-      // synonym for |constant_id|.
-      if (!GetFuzzerContext()->ChoosePercentage(
-              GetFuzzerContext()->GetChanceOfAddingLoopToCreateIntSynonym())) {
-        continue;
-      }
+    // Choose one of the blocks.
+    uint32_t block_id = blocks[GetFuzzerContext()->RandomIndex(blocks)];
 
-      // Adjust the block so that the transformation can be applied.
+    // Adjust the block so that the transformation can be applied.
 
-      auto block = GetIRContext()->get_instr_block(block_id);
+    auto block = GetIRContext()->get_instr_block(block_id);
 
-      // If the block is a loop header, add a simple preheader. We can do this
-      // because we have excluded all the non-reachable headers.
-      if (block->IsLoopHeader()) {
-        block = GetOrCreateSimpleLoopPreheader(block->id());
-        block_id = block->id();
-      }
-
-      assert(!block->IsLoopHeader() &&
-             "The block cannot be a loop header at this point.");
-
-      // If the block is a merge block or it does not have exactly 1
-      // predecessor, split it after any OpPhi or OpVariable instructions.
-      if (GetIRContext()->GetStructuredCFGAnalysis()->IsMergeBlock(
-              block->id()) ||
-          GetIRContext()->cfg()->preds(block->id()).size() != 1) {
-        block = SplitBlockAfterOpPhiOrOpVariable(block->id());
-        block_id = block->id();
-      }
-
-      // Randomly decide the values for the number of iterations and the step
-      // value, and compute the initial value accordingly.
-
-      // The maximum number of iterations depends on the loop nesting depth of
-      // the block. It is:
-      // - 1 if the nesting depth is <= 4
-      // - 2^(4 - nesting_depth) otherwise
-      uint32_t nesting_depth =
-          GetIRContext()->GetStructuredCFGAnalysis()->LoopNestingDepth(
-              block->id());
-      uint32_t num_iterations =
-          nesting_depth >= 4
-              ? 1
-              : GetFuzzerContext()->GetRandomNumberOfLoopIterations(
-                    1u << (4 - nesting_depth));
-
-      // Find or create the corresponding constant containing the number of
-      // iterations.
-      uint32_t num_iterations_id =
-          FindOrCreateIntegerConstant({num_iterations}, 32, true, false);
-
-      // Find the other constants.
-      // We use 64-bit values and then use the bits that we need. We find the
-      // step value (S) randomly and then compute the initial value (I) using
-      // the equation I = C + S*N.
-      uint32_t initial_value_id = 0;
-      uint32_t step_value_id = 0;
-
-      // Get the content of the existing constant.
-      const auto constant =
-          GetIRContext()->get_constant_mgr()->FindDeclaredConstant(constant_id);
-      const auto constant_type_id =
-          GetIRContext()->get_def_use_mgr()->GetDef(constant_id)->type_id();
-
-      if (constant->AsIntConstant()) {
-        // The constant is a scalar integer.
-
-        std::tie(initial_value_id, step_value_id) =
-            FindSuitableStepAndInitialValueConstants(
-                constant->GetZeroExtendedValue(),
-                constant->type()->AsInteger()->width(),
-                constant->type()->AsInteger()->IsSigned(), num_iterations);
-      } else {
-        // The constant is a vector of integers.
-        assert(constant->AsVectorConstant() &&
-               constant->AsVectorConstant()->component_type()->AsInteger() &&
-               "If the program got here, the constant should be a vector of "
-               "integers.");
-
-        // Find a constant for each component of the initial value and the step
-        // values.
-        std::vector<uint32_t> initial_value_component_ids;
-        std::vector<uint32_t> step_value_component_ids;
-
-        // Get the value, width and signedness of the components.
-        std::vector<uint64_t> component_values;
-        for (auto component : constant->AsVectorConstant()->GetComponents()) {
-          component_values.push_back(component->GetZeroExtendedValue());
-        }
-        uint32_t bit_width = constant->AsVectorConstant()
-                                 ->component_type()
-                                 ->AsInteger()
-                                 ->width();
-        uint32_t is_signed = constant->AsVectorConstant()
-                                 ->component_type()
-                                 ->AsInteger()
-                                 ->IsSigned();
-
-        for (uint64_t component_val : component_values) {
-          uint32_t initial_val_id;
-          uint32_t step_val_id;
-          std::tie(initial_val_id, step_val_id) =
-              FindSuitableStepAndInitialValueConstants(
-                  component_val, bit_width, is_signed, num_iterations);
-          initial_value_component_ids.push_back(initial_val_id);
-          step_value_component_ids.push_back(step_val_id);
-        }
-
-        // Find or create the vector constants.
-        initial_value_id = FindOrCreateCompositeConstant(
-            initial_value_component_ids, constant_type_id, false);
-        step_value_id = FindOrCreateCompositeConstant(step_value_component_ids,
-                                                      constant_type_id, false);
-      }
-
-      assert(
-          initial_value_id && step_value_id &&
-          "|initial_value_id| and |step_value_id| should have been defined.");
-
-      // Randomly decide whether to have two blocks (or just one) in the new
-      // loop.
-      uint32_t additional_block_id =
-          GetFuzzerContext()->ChoosePercentage(
-              GetFuzzerContext()
-                  ->GetChanceOfHavingTwoBlocksInLoopToCreateIntSynonym())
-              ? GetFuzzerContext()->GetFreshId()
-              : 0;
-
-      // Add the loop and create the synonym.
-      ApplyTransformation(TransformationAddLoopToCreateIntConstantSynonym(
-          constant_id, initial_value_id, step_value_id, num_iterations_id,
-          block_id, GetFuzzerContext()->GetFreshId(),
-          GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
-          GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
-          GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
-          additional_block_id));
+    // If the block is a loop header, add a simple preheader. We can do this
+    // because we have excluded all the non-reachable headers.
+    if (block->IsLoopHeader()) {
+      block = GetOrCreateSimpleLoopPreheader(block->id());
+      block_id = block->id();
     }
+
+    assert(!block->IsLoopHeader() &&
+           "The block cannot be a loop header at this point.");
+
+    // If the block is a merge block, a continue block or it does not have
+    // exactly 1 predecessor, split it after any OpPhi or OpVariable
+    // instructions.
+    if (GetIRContext()->GetStructuredCFGAnalysis()->IsMergeBlock(block->id()) ||
+        GetIRContext()->GetStructuredCFGAnalysis()->IsContinueBlock(
+            block->id()) ||
+        GetIRContext()->cfg()->preds(block->id()).size() != 1) {
+      block = SplitBlockAfterOpPhiOrOpVariable(block->id());
+      block_id = block->id();
+    }
+
+    // Randomly decide the values for the number of iterations and the step
+    // value, and compute the initial value accordingly.
+
+    // The maximum number of iterations depends on the loop nesting depth of
+    // the block. It is:
+    // - 1 if the nesting depth is <= 4
+    // - 2^(4 - nesting_depth) otherwise
+    uint32_t nesting_depth =
+        GetIRContext()->GetStructuredCFGAnalysis()->LoopNestingDepth(
+            block->id());
+    uint32_t num_iterations =
+        nesting_depth >= 4
+            ? 1
+            : GetFuzzerContext()->GetRandomNumberOfLoopIterations(
+                  1u << (4 - nesting_depth));
+
+    // Find or create the corresponding constant containing the number of
+    // iterations.
+    uint32_t num_iterations_id =
+        FindOrCreateIntegerConstant({num_iterations}, 32, true, false);
+
+    // Find the other constants.
+    // We use 64-bit values and then use the bits that we need. We find the
+    // step value (S) randomly and then compute the initial value (I) using
+    // the equation I = C + S*N.
+    uint32_t initial_value_id = 0;
+    uint32_t step_value_id = 0;
+
+    // Get the content of the existing constant.
+    const auto constant =
+        GetIRContext()->get_constant_mgr()->FindDeclaredConstant(constant_id);
+    const auto constant_type_id =
+        GetIRContext()->get_def_use_mgr()->GetDef(constant_id)->type_id();
+
+    if (constant->AsIntConstant()) {
+      // The constant is a scalar integer.
+
+      std::tie(initial_value_id, step_value_id) =
+          FindSuitableStepAndInitialValueConstants(
+              constant->GetZeroExtendedValue(),
+              constant->type()->AsInteger()->width(),
+              constant->type()->AsInteger()->IsSigned(), num_iterations);
+    } else {
+      // The constant is a vector of integers.
+      assert(constant->AsVectorConstant() &&
+             constant->AsVectorConstant()->component_type()->AsInteger() &&
+             "If the program got here, the constant should be a vector of "
+             "integers.");
+
+      // Find a constant for each component of the initial value and the step
+      // values.
+      std::vector<uint32_t> initial_value_component_ids;
+      std::vector<uint32_t> step_value_component_ids;
+
+      // Get the value, width and signedness of the components.
+      std::vector<uint64_t> component_values;
+      for (auto component : constant->AsVectorConstant()->GetComponents()) {
+        component_values.push_back(component->GetZeroExtendedValue());
+      }
+      uint32_t bit_width =
+          constant->AsVectorConstant()->component_type()->AsInteger()->width();
+      uint32_t is_signed = constant->AsVectorConstant()
+                               ->component_type()
+                               ->AsInteger()
+                               ->IsSigned();
+
+      for (uint64_t component_val : component_values) {
+        uint32_t initial_val_id;
+        uint32_t step_val_id;
+        std::tie(initial_val_id, step_val_id) =
+            FindSuitableStepAndInitialValueConstants(component_val, bit_width,
+                                                     is_signed, num_iterations);
+        initial_value_component_ids.push_back(initial_val_id);
+        step_value_component_ids.push_back(step_val_id);
+      }
+
+      // Find or create the vector constants.
+      initial_value_id = FindOrCreateCompositeConstant(
+          initial_value_component_ids, constant_type_id, false);
+      step_value_id = FindOrCreateCompositeConstant(step_value_component_ids,
+                                                    constant_type_id, false);
+    }
+
+    assert(initial_value_id && step_value_id &&
+           "|initial_value_id| and |step_value_id| should have been defined.");
+
+    // Randomly decide whether to have two blocks (or just one) in the new
+    // loop.
+    uint32_t additional_block_id =
+        GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()
+                ->GetChanceOfHavingTwoBlocksInLoopToCreateIntSynonym())
+            ? GetFuzzerContext()->GetFreshId()
+            : 0;
+
+    // Add the loop and create the synonym.
+    ApplyTransformation(TransformationAddLoopToCreateIntConstantSynonym(
+        constant_id, initial_value_id, step_value_id, num_iterations_id,
+        block_id, GetFuzzerContext()->GetFreshId(),
+        GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+        GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+        GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+        additional_block_id));
   }
 }
 

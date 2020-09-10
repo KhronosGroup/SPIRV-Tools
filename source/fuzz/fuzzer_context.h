@@ -154,9 +154,6 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingLoopPreheader() {
     return chance_of_adding_loop_preheader_;
   }
-  uint32_t GetChanceOfAddingLoopToCreateIntSynonym() {
-    return chance_of_adding_loop_to_create_int_synonym_;
-  }
   uint32_t GetChanceOfAddingMatrixType() {
     return chance_of_adding_matrix_type_;
   }
@@ -424,7 +421,6 @@ class FuzzerContext {
   uint32_t chance_of_adding_load_;
   uint32_t chance_of_adding_local_variable_;
   uint32_t chance_of_adding_loop_preheader_;
-  uint32_t chance_of_adding_loop_to_create_int_synonym_;
   uint32_t chance_of_adding_matrix_type_;
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_opphi_synonym_;
