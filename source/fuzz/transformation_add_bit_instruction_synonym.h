@@ -34,7 +34,7 @@ class TransformationAddBitInstructionSynonym : public Transformation {
 
   // - |message_.instruction_result_id| must be a bit instruction.
   // - |message_.fresh_ids| must be fresh ids needed to apply the
-  // transformation.
+  //   transformation.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

@@ -40,18 +40,26 @@ bool TransformationAddBitInstructionSynonym::IsApplicable(
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
 
-  // |instruction| must be defined and must be a bit instruction.
-  if (!instruction || !spvOpcodeIsBit(instruction->opcode())) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3557):
+  //  Right now we only support certain operations. When this issue is addressed
+  //  the following conditional can use the function |spvOpcodeIsBit|.
+  // |instruction| must be defined and must be a supported bit instruction.
+  if (!instruction || (instruction->opcode() != SpvOpBitwiseOr &&
+                       instruction->opcode() != SpvOpBitwiseXor &&
+                       instruction->opcode() != SpvOpBitwiseAnd)) {
     return false;
   }
 
-  // Right now, only integer operands are supported.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3792):
+  //  Right now, only integer operands are supported.
   if (ir_context->get_type_mgr()->GetType(instruction->type_id())->AsVector()) {
     return false;
   }
 
-  // TODO: This condition could be relaxed if the index exists as another
-  // integer type. All bit indexes must be defined as 32-bit unsigned integers.
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3791):
+  //  This condition could be relaxed if the index exists as another integer
+  //  type.
+  // All bit indexes must be defined as 32-bit unsigned integers.
   uint32_t width = ir_context->get_type_mgr()
                        ->GetType(instruction->type_id())
                        ->AsInteger()
@@ -110,7 +118,7 @@ protobufs::Transformation TransformationAddBitInstructionSynonym::ToMessage()
 uint32_t TransformationAddBitInstructionSynonym::GetRequiredFreshIdCount(
     opt::IRContext* ir_context, opt::Instruction* bit_instruction) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3557):
-  // Right now, only certain operations are supported.
+  //  Right now, only certain operations are supported.
   switch (bit_instruction->opcode()) {
     case SpvOpBitwiseOr:
     case SpvOpBitwiseXor:

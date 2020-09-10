@@ -41,8 +41,13 @@ void FuzzerPassAddBitInstructionSynonyms::Apply() {
           continue;
         }
 
-        // |instruction| must be a bit instruction.
-        if (!spvOpcodeIsBit(instruction.opcode())) {
+        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3557):
+        //  Right now we only support certain operations. When this issue is
+        //  addressed the following conditional can use the function
+        //  |spvOpcodeIsBit|.
+        if (instruction.opcode() != SpvOpBitwiseOr &&
+            instruction.opcode() != SpvOpBitwiseXor &&
+            instruction.opcode() != SpvOpBitwiseAnd) {
           continue;
         }
 
@@ -64,7 +69,7 @@ void FuzzerPassAddBitInstructionSynonyms::Apply() {
           FindOrCreateIntegerConstant({i}, 32, false, false);
         }
 
-        // Tries to apply the transformation.
+        // Applies the add bit instruction synonym transformation.
         ApplyTransformation(TransformationAddBitInstructionSynonym(
             instruction.result_id(),
             GetFuzzerContext()->GetFreshIds(
