@@ -1268,14 +1268,16 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                OpStore %14 %17
                OpBranch %500
         %500 = OpLabel
-         %51 = OpPhi %6 %17 %11
                OpSelectionMerge %501 None
                OpBranchConditional %21 %50 %100
          %50 = OpLabel
+         %51 = OpPhi %6 %17 %500
                OpBranch %501
         %100 = OpLabel
+        %201 = OpPhi %6 %17 %500
                OpBranch %501
         %501 = OpLabel
+        %301 = OpPhi %6 %51 %50 %201 %100
                OpReturn
                OpFunctionEnd
     )";
@@ -1354,6 +1356,247 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
           500, 21, 501, 50, 50, {{50, 100}}, {{51, 201}}, {{51, 301}});
   ASSERT_FALSE(
       transformation_bad_1.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     ExitBlockTerminatorOpUnreachable) {
+  // This test handles a case where the exit block ends with OpUnreachable.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun("
+               OpName %10 "s"
+               OpName %17 "b"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 2
+         %15 = OpTypeBool
+         %16 = OpTypePointer Function %15
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %17 = OpVariable %16 Function
+               OpStore %17 %18
+         %19 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpBranch %50
+         %50 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %8 %10
+         %14 = OpIAdd %8 %12 %13
+               OpStore %10 %14
+               OpUnreachable
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(
+          500, 18, 501, 50, 50, {{50, 100}}, {{12, 201}, {14, 202}},
+          {{12, 301}, {14, 302}});
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun("
+               OpName %10 "s"
+               OpName %17 "b"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 2
+         %15 = OpTypeBool
+         %16 = OpTypePointer Function %15
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %17 = OpVariable %16 Function
+               OpStore %17 %18
+         %19 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpBranch %500
+        %500 = OpLabel
+               OpSelectionMerge %501 None
+               OpBranchConditional %18 %50 %100
+         %50 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %8 %10
+         %14 = OpIAdd %8 %12 %13
+               OpStore %10 %14
+               OpBranch %501
+        %100 = OpLabel
+               OpStore %10 %11
+        %201 = OpLoad %8 %10
+        %202 = OpIAdd %8 %201 %13
+               OpStore %10 %202
+               OpBranch %501
+        %501 = OpLabel
+        %301 = OpPhi %8 %12 %50 %201 %100
+        %302 = OpPhi %8 %14 %50 %202 %100
+               OpUnreachable
+               OpFunctionEnd
+        )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     ExitBlockTerminatorOpKill) {
+  // This test handles a case where the exit block ends with OpKill.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun("
+               OpName %10 "s"
+               OpName %17 "b"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 2
+         %15 = OpTypeBool
+         %16 = OpTypePointer Function %15
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %17 = OpVariable %16 Function
+               OpStore %17 %18
+         %19 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpBranch %50
+         %50 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %8 %10
+         %14 = OpIAdd %8 %12 %13
+               OpStore %10 %14
+               OpKill
+               OpFunctionEnd
+         )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(
+          500, 18, 501, 50, 50, {{50, 100}}, {{12, 201}, {14, 202}},
+          {{12, 301}, {14, 302}});
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun("
+               OpName %10 "s"
+               OpName %17 "b"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 2
+         %15 = OpTypeBool
+         %16 = OpTypePointer Function %15
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %17 = OpVariable %16 Function
+               OpStore %17 %18
+         %19 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpBranch %500
+        %500 = OpLabel
+               OpSelectionMerge %501 None
+               OpBranchConditional %18 %50 %100
+         %50 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %8 %10
+         %14 = OpIAdd %8 %12 %13
+               OpStore %10 %14
+               OpBranch %501
+        %100 = OpLabel
+               OpStore %10 %11
+        %201 = OpLoad %8 %10
+        %202 = OpIAdd %8 %201 %13
+               OpStore %10 %202
+               OpBranch %501
+        %501 = OpLabel
+        %301 = OpPhi %8 %12 %50 %201 %100
+        %302 = OpPhi %8 %14 %50 %202 %100
+               OpKill
+               OpFunctionEnd
+        )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
 }  // namespace
