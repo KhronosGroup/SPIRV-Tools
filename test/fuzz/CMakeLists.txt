@@ -18,6 +18,7 @@ if (${SPIRV_BUILD_FUZZER})
           fuzz_test_util.h
 
           call_graph_test.cpp
+          compare_blocks_deep_first_test.cpp
           data_synonym_transformation_test.cpp
           equivalence_relation_test.cpp
           fact_manager_test.cpp
@@ -25,7 +26,6 @@ if (${SPIRV_BUILD_FUZZER})
           fuzzer_pass_add_opphi_synonyms_test.cpp
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
-          fuzzer_pass_flatten_conditional_branches_test.cpp
           fuzzer_pass_outline_functions_test.cpp
           instruction_descriptor_test.cpp
           replayer_test.cpp

@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_pass_flatten_conditional_branches.h"
+#include "source/fuzz/compare_blocks_deep_first.h"
+#include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/pseudo_random_generator.h"
+#include "source/fuzz/transformation_context.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -67,7 +69,41 @@ std::string shader = R"(
                OpFunctionEnd
 )";
 
-TEST(FuzzerPassFlattenConditionalBranches, Comparator) {
+TEST(CompareBlocksDeepFirstTest, Compare) {
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto is_deeper = CompareBlocksDeepFirst(context.get());
+
+  // The block ids and the corresponding depths are:
+  // 12, 13          -> depth 0
+  // 14, 15, 16, 17  -> depth 1
+  // 18, 19, 20, 21  -> depth 2
+  // 22, 23          -> depth 3
+
+  // Perform some comparisons and check that they return true iff the first
+  // block is deeper than the second.
+  ASSERT_FALSE(is_deeper(12, 12));
+  ASSERT_FALSE(is_deeper(12, 13));
+  ASSERT_FALSE(is_deeper(12, 14));
+  ASSERT_FALSE(is_deeper(12, 18));
+  ASSERT_FALSE(is_deeper(12, 22));
+  ASSERT_TRUE(is_deeper(14, 12));
+  ASSERT_FALSE(is_deeper(14, 15));
+  ASSERT_FALSE(is_deeper(15, 14));
+  ASSERT_FALSE(is_deeper(14, 18));
+  ASSERT_TRUE(is_deeper(18, 12));
+  ASSERT_TRUE(is_deeper(18, 16));
+}
+
+TEST(CompareBlocksDeepFirstTest, Sort) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -86,8 +122,7 @@ TEST(FuzzerPassFlattenConditionalBranches, Comparator) {
                                           context->get_instr_block(13)};
 
   std::sort(blocks.begin(), blocks.end(),
-            FuzzerPassFlattenConditionalBranches::LessIfNestedMoreDeeply(
-                context.get()));
+            CompareBlocksDeepFirst(context.get()));
 
   // Check that the blocks are in the correct order.
   ASSERT_EQ(blocks[0]->id(), 20);

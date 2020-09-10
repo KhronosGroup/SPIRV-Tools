@@ -37,6 +37,7 @@ if(SPIRV_BUILD_FUZZER)
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
         call_graph.h
+        compare_blocks_deep_first.h
         counter_overflow_id_source.h
         data_descriptor.h
         equivalence_relation.h

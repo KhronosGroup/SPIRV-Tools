@@ -30,23 +30,6 @@ class FuzzerPassFlattenConditionalBranches : public FuzzerPass {
   ~FuzzerPassFlattenConditionalBranches() override;
 
   void Apply() override;
-
-  // Comparator for blocks, comparing them based on how deep they are nested
-  // inside conditionals. Deeper blocks are considered less than ones that are
-  // not as deep.
-  class LessIfNestedMoreDeeply {
-   public:
-    explicit LessIfNestedMoreDeeply(opt::IRContext* ir_context)
-        : ir_context_(ir_context) {}
-
-    bool operator()(const opt::BasicBlock* bb1, opt::BasicBlock* bb2) const {
-      return ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb1->id()) >
-             ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb2->id());
-    }
-
-   private:
-    opt::IRContext* ir_context_;
-  };
 };
 }  // namespace fuzz
 }  // namespace spvtools
