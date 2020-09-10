@@ -36,11 +36,12 @@ uint32_t FindOrCreateGlobalVariable(opt::IRContext* context,
   const uint32_t variable_id = context->TakeNextId();
   auto variable_inst = MakeUnique<opt::Instruction>(
       context, SpvOpVariable, pointer_type_id, variable_id,
-      opt::Instruction::OperandList({{SPV_OPERAND_TYPE_STORAGE_CLASS,
-                                      {context->get_type_mgr()
-                                           ->GetType(pointer_type_id)
-                                           ->AsPointer()
-                                           ->storage_class()}}}));
+      opt::Instruction::OperandList(
+          {{SPV_OPERAND_TYPE_STORAGE_CLASS,
+            {static_cast<uint32_t>(context->get_type_mgr()
+                                       ->GetType(pointer_type_id)
+                                       ->AsPointer()
+                                       ->storage_class())}}}));
   context->module()->AddGlobalValue(std::move(variable_inst));
   return variable_id;
 }
