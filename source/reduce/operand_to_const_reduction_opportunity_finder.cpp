@@ -20,11 +20,9 @@
 namespace spvtools {
 namespace reduce {
 
-using opt::IRContext;
-
 std::vector<std::unique_ptr<ReductionOpportunity>>
 OperandToConstReductionOpportunityFinder::GetAvailableOpportunities(
-    IRContext* context) const {
+    opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
   assert(result.empty());
 
