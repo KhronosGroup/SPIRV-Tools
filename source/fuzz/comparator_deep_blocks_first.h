@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_COMPARATOR_BLOCKS_DEEP_FIRST_H_
 #define SOURCE_FUZZ_COMPARATOR_BLOCKS_DEEP_FIRST_H_
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -22,13 +23,20 @@ namespace fuzz {
 
 // Comparator for blocks, comparing them based on how deep they are nested
 // inside selection or loop constructs. Deeper blocks are considered less than
-// ones that are not as deep.
+// ones that are not as deep. The blocks are required to be in the same
+// function.
 class ComparatorDeepBlocksFirst {
  public:
   explicit ComparatorDeepBlocksFirst(opt::IRContext* ir_context)
       : ir_context_(ir_context) {}
 
   bool operator()(uint32_t bb1, uint32_t bb2) const {
+    auto block1 = fuzzerutil::MaybeFindBlock(ir_context_, bb1);
+    auto block2 = fuzzerutil::MaybeFindBlock(ir_context_, bb2);
+    assert(block1 && block2 && "The blocks must exist.");
+    assert(block1->GetParent() == block2->GetParent() &&
+           "The blocks must be in the same function.");
+
     return ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb1) >
            ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb2);
   }

@@ -28,7 +28,7 @@ class TransformationFlattenConditionalBranch : public Transformation {
   TransformationFlattenConditionalBranch(
       uint32_t header_block_id, bool true_branch_first,
       const std::vector<protobufs::SideEffectWrapperInfo>&
-          side_effect_wrappers_info = {});
+          side_effect_wrappers_info);
 
   // - |message_.header_block_id| must be the label id of a reachable selection
   //   header, which ends with an OpBranchConditional instruction.

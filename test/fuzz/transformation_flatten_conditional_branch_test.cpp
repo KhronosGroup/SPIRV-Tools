@@ -138,43 +138,43 @@ TEST(TransformationFlattenConditionalBranchTest, Inapplicable) {
                                                validator_options);
 
   // Block %15 does not end with OpBranchConditional.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(15, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(15, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Block %17 is not a selection header.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(17, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(17, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Block %16 is a loop header, not a selection header.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(16, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(16, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Block %19 and the corresponding merge block do not describe a single-entry,
   // single-exit region, because there is a return instruction in %21.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(19, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(19, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Block %20 is the header of a construct containing an inner selection
   // construct.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(20, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(20, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Block %22 is the header of a construct containing an inner loop.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(22, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(22, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Block %30 is the header of a construct containing a barrier instruction.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(30, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(30, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // %33 is not a block.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(33, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(33, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Block %36 and the corresponding merge block do not describe a single-entry,
   // single-exit region, because block %37 breaks out of the outer loop.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(36, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(36, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationFlattenConditionalBranchTest, Simple) {
@@ -245,22 +245,22 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  auto transformation1 = TransformationFlattenConditionalBranch(7, true);
+  auto transformation1 = TransformationFlattenConditionalBranch(7, true, {});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
   transformation1.Apply(context.get(), &transformation_context);
 
-  auto transformation2 = TransformationFlattenConditionalBranch(13, false);
+  auto transformation2 = TransformationFlattenConditionalBranch(13, false, {});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
   transformation2.Apply(context.get(), &transformation_context);
 
-  auto transformation3 = TransformationFlattenConditionalBranch(15, true);
+  auto transformation3 = TransformationFlattenConditionalBranch(15, true, {});
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
   transformation3.Apply(context.get(), &transformation_context);
 
-  auto transformation4 = TransformationFlattenConditionalBranch(22, false);
+  auto transformation4 = TransformationFlattenConditionalBranch(22, false, {});
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
   transformation4.Apply(context.get(), &transformation_context);
@@ -422,8 +422,8 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   // requiring fresh ids are not present in the map, and the transformation
   // context does not have a source overflow ids.
 
-  ASSERT_DEATH(TransformationFlattenConditionalBranch(31, true).IsApplicable(
-                   context.get(), transformation_context),
+  ASSERT_DEATH(TransformationFlattenConditionalBranch(31, true, {})
+                   .IsApplicable(context.get(), transformation_context),
                "Bad attempt to query whether overflow ids are available.");
 
   ASSERT_DEATH(TransformationFlattenConditionalBranch(
@@ -694,8 +694,8 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
   // The selection construct headed by %7 requires fresh ids because it contains
   // a function call. This causes an assertion failure because transformation
   // context does not have a source of overflow ids.
-  ASSERT_DEATH(TransformationFlattenConditionalBranch(7, true).IsApplicable(
-                   context.get(), transformation_context),
+  ASSERT_DEATH(TransformationFlattenConditionalBranch(7, true, {})
+                   .IsApplicable(context.get(), transformation_context),
                "Bad attempt to query whether overflow ids are available.");
 #endif
 
@@ -717,10 +717,10 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
           .IsApplicable(context.get(), transformation_context));
 
   // Block %16 is unreachable.
-  ASSERT_FALSE(TransformationFlattenConditionalBranch(16, true).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(16, true, {})
+                   .IsApplicable(context.get(), transformation_context));
 
-  auto transformation2 = TransformationFlattenConditionalBranch(20, false);
+  auto transformation2 = TransformationFlattenConditionalBranch(20, false, {});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
   transformation2.Apply(context.get(), &transformation_context);
