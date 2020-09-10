@@ -483,7 +483,7 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
 // lower-order word of the value and the second one representing the
 // higher-order word.
 std::vector<uint32_t> IntToWords(uint64_t value, uint32_t width,
-                                        bool is_signed);
+                                 bool is_signed);
 
 // Returns a bit pattern that represents a floating-point |value|.
 inline uint32_t FloatToWord(float value) {
