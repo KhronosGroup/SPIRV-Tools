@@ -21,8 +21,8 @@ namespace {
 
 TEST(TransformationAddDeadContinueTest, SimpleExample) {
   // For a simple loop, checks that some dead continue scenarios are possible,
-  // coherence-checks that some illegal scenarios are indeed not allowed, and
-  // then applies a transformation.
+  // checks that some invalid scenarios are indeed not allowed, and then applies
+  // a transformation.
 
   // The SPIR-V for this test is adapted from the following GLSL, by separating
   // some assignments into their own basic blocks, and adding constants for true
