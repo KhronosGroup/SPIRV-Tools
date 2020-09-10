@@ -31,11 +31,6 @@ class FuzzerPassFlattenConditionalBranches : public FuzzerPass {
 
   void Apply() override;
 
-  // Returns the nesting depth of the given block, i.e. the number of constructs
-  // containing it. Headers and merge blocks of constructs are not considered
-  // part of a construct.
-  static uint32_t NestingDepth(opt::IRContext* ir_context, uint32_t block_id);
-
   // Comparator for blocks, comparing them based on how deep they are nested
   // inside conditionals. Deeper blocks are considered less than ones that are
   // not as deep.
@@ -45,8 +40,8 @@ class FuzzerPassFlattenConditionalBranches : public FuzzerPass {
         : ir_context_(ir_context) {}
 
     bool operator()(const opt::BasicBlock* bb1, opt::BasicBlock* bb2) const {
-      return NestingDepth(ir_context_, bb1->id()) >
-             NestingDepth(ir_context_, bb2->id());
+      return ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb1->id()) >
+             ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb2->id());
     }
 
    private:

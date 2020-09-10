@@ -120,21 +120,5 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
   }
 }
 
-uint32_t FuzzerPassFlattenConditionalBranches::NestingDepth(
-    opt::IRContext* ir_context, uint32_t block_id) {
-  uint32_t result = 0;
-
-  // Find the merge block of the innermost construct that this block is in,
-  // until all constructs are exited.
-  block_id = ir_context->GetStructuredCFGAnalysis()->MergeBlock(block_id);
-
-  while (block_id != 0) {
-    result++;
-    block_id = ir_context->GetStructuredCFGAnalysis()->MergeBlock(block_id);
-  }
-
-  return result;
-}
-
 }  // namespace fuzz
 }  // namespace spvtools

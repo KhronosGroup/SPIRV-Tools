@@ -67,36 +67,6 @@ std::string shader = R"(
                OpFunctionEnd
 )";
 
-TEST(FuzzerPassFlattenConditionalBranches, NestingDepth) {
-  const auto env = SPV_ENV_UNIVERSAL_1_5;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  // Check the nesting depth of a few blocks.
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 22), 3);
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 21), 2);
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 20), 2);
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 19), 2);
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 16), 1);
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 15), 1);
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 13), 0);
-  ASSERT_EQ(
-      FuzzerPassFlattenConditionalBranches::NestingDepth(context.get(), 12), 0);
-}
-
 TEST(FuzzerPassFlattenConditionalBranches, Comparator) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
