@@ -26,14 +26,13 @@ namespace reduce {
 extern const uint32_t kTrueBranchOperandIndex;
 extern const uint32_t kFalseBranchOperandIndex;
 
-// Checks whether the global value list has an OpVariable of type
-// |pointer_type_id|, adding one if not, and returns the id of such an
-// OpVariable.
+// Returns a global OpVariable of type |pointer_type_id|, adding one if none
+// exist.
 uint32_t FindOrCreateGlobalVariable(opt::IRContext* context,
                                     uint32_t pointer_type_id);
 
-// Checks whether |function| has an OpVariable of type |pointer_type_id|, adding
-// one if not, and returns the id of such an OpVariable.
+// Returns an OpVariable of type |pointer_type_id| declared in |function|,
+// adding one if none exist.
 uint32_t FindOrCreateFunctionVariable(opt::IRContext* context, opt::Function*,
                                       uint32_t pointer_type_id);
 
