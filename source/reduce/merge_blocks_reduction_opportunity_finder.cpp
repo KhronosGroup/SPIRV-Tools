@@ -19,15 +19,13 @@
 namespace spvtools {
 namespace reduce {
 
-using opt::IRContext;
-
 std::string MergeBlocksReductionOpportunityFinder::GetName() const {
   return "MergeBlocksReductionOpportunityFinder";
 }
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 MergeBlocksReductionOpportunityFinder::GetAvailableOpportunities(
-    IRContext* context) const {
+    opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   // Consider every block in every function.
