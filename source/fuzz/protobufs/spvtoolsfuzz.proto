@@ -854,7 +854,7 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   // a number of iterations N such that C = I - N * S. For each iteration, S is
   // added to the total.
   // The loop can be made up of one or two blocks, and it is inserted before a
-  // loop with a single predecessor. In the one-block case, it is of the form:
+  // block with a single predecessor. In the one-block case, it is of the form:
   //
   //            %loop_id = OpLabel
   //             %ctr_id = OpPhi %int %int_0 %pred %incremented_ctr_id %loop_id
@@ -865,9 +865,17 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   //                       OpLoopMerge %block_after_loop_id %loop_id %none
   //                       OpBranchConditional %cond_id %loop_id %block_after_loop_id
   //
-  // Which can be translated, assuming that N > 0, to:
+  // A new OpPhi instruction is then added to %block_after_loop_id, as follows:
+  //
+  //  %block_after_loop_id = OpLabel
+  //               %syn_id = OpPhi %type_of_I %eventual_syn_id %loop_id
+  //
+  // This can be translated, assuming that N > 0, to:
   // int syn = I;
   // for (int ctr = 0; ctr < N; ctr++) syn = syn - S;
+  //
+  // All existing OpPhi instructions in %block_after_loop_id are also updated
+  // to reflect the fact that its predecessor is now %loop_id.
 
   // The following are existing ids.
 

@@ -19,6 +19,11 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace {
+// The maximum nesting depth of a new loop for which we allow the number of
+// iterations to be greater than 1.
+uint32_t kMaxNestingDepth = 4;
+}  // namespace
 
 FuzzerPassAddLoopsToCreateIntConstantSynonyms::
     FuzzerPassAddLoopsToCreateIntConstantSynonyms(
@@ -62,11 +67,10 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
   // synonym. We cannot apply the transformation while iterating over the
   // module, because we are going to add new blocks.
   for (auto& function : *GetIRContext()->module()) {
-    for (auto& block : function) {
-      // Exclude the unreachable loop headers, since we can only add preheaders
-      // to reachable loop headers.
-      blocks.push_back(block.id());
-    }
+    // Consider all blocks reachable from the first block of the function.
+    GetIRContext()->cfg()->ForEachBlockInPostOrder(
+        &*function.begin(),
+        [&blocks](opt::BasicBlock* block) { blocks.push_back(block->id()); });
   }
 
   // Make sure that the module has an OpTypeBool instruction, and 32-bit signed
@@ -109,16 +113,16 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
 
     // The maximum number of iterations depends on the loop nesting depth of
     // the block. It is:
-    // - 1 if the nesting depth is >= 4
-    // - 2^(4 - nesting_depth) otherwise
+    // - 1 if the nesting depth is >= kMaxNestingDepth
+    // - 2^(kMaxNestingDepth - nesting_depth) otherwise
     uint32_t nesting_depth =
         GetIRContext()->GetStructuredCFGAnalysis()->LoopNestingDepth(
             block->id());
     uint32_t num_iterations =
-        nesting_depth >= 4
+        nesting_depth >= kMaxNestingDepth
             ? 1
             : GetFuzzerContext()->GetRandomNumberOfLoopIterations(
-                  1u << (4 - nesting_depth));
+                  1u << (kMaxNestingDepth - nesting_depth));
 
     // Find or create the corresponding constant containing the number of
     // iterations.
@@ -218,7 +222,8 @@ std::pair<uint32_t, uint32_t> FuzzerPassAddLoopsToCreateIntConstantSynonyms::
   // The result of |initial_value| could overflow, but this is OK, since
   // the transformation takes overflows into consideration (the equation still
   // holds as long as the last |bit_width| bits of C and of (I-S*N) match).
-  uint64_t step_value = GetFuzzerContext()->GetRandomLongInteger();
+  uint64_t step_value =
+      GetFuzzerContext()->GetRandomValueForStepConstantInLoop();
   uint64_t initial_value = constant_val + step_value * num_iterations;
 
   uint32_t initial_val_id = FindOrCreateIntegerConstant(
