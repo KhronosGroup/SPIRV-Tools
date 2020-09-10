@@ -31,18 +31,16 @@ class ComparatorDeepBlocksFirst {
       : ir_context_(ir_context) {}
 
   bool operator()(uint32_t bb1, uint32_t bb2) const {
-    auto block1 = fuzzerutil::MaybeFindBlock(ir_context_, bb1);
-    auto block2 = fuzzerutil::MaybeFindBlock(ir_context_, bb2);
-    assert(block1 && block2 && "The blocks must exist.");
-    assert(block1->GetParent() == block2->GetParent() &&
-           "The blocks must be in the same function.");
-
-    return ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb1) >
-           ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb2);
+    return this->operator()(fuzzerutil::MaybeFindBlock(ir_context_, bb1),
+                            fuzzerutil::MaybeFindBlock(ir_context_, bb2));
   }
 
   bool operator()(const opt::BasicBlock* bb1, opt::BasicBlock* bb2) const {
-    return this->operator()(bb1->id(), bb2->id());
+    assert(bb1 && bb2 && "The blocks must exist.");
+    assert(bb1->GetParent() == bb2->GetParent() &&
+           "The blocks must be in the same functions.");
+    return ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb1->id()) >
+           ir_context_->GetStructuredCFGAnalysis()->NestingDepth(bb2->id());
   }
 
  private:
