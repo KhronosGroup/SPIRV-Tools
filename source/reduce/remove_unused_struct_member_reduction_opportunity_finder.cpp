@@ -26,7 +26,7 @@ std::vector<std::unique_ptr<ReductionOpportunity>>
 RemoveUnusedStructMemberReductionOpportunityFinder::GetAvailableOpportunities(
     opt::IRContext* context, uint32_t target_function) const {
   if (target_function) {
-    // Removing an unused struct member is a global change, a struct types are
+    // Removing an unused struct member is a global change, as struct types are
     // global.  We thus do not consider such opportunities if we are targeting
     // a specific function.
     return {};
