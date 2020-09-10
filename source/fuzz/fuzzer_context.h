@@ -356,7 +356,7 @@ class FuzzerContext {
     uint64_t result = random_generator_->RandomUint32(INT32_MAX);
     result <<= 31u;
     result += random_generator_->RandomUint32(INT32_MAX);
-    // We choose the sign, so the number returned in the range (-2^62, 2^62)
+    // We choose the sign, so the number returned is in the range (-2^62, 2^62).
     return random_generator_->RandomBool() ? result : (0 - result);
   }
   uint32_t GetRandomLoopControlPartialCount() {
