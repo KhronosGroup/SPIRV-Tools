@@ -14,14 +14,13 @@
 
 #include "source/fuzz/fuzzer_pass_add_loops_to_create_int_constant_synonyms.h"
 
+#include "source/fuzz/call_graph.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_add_loop_to_create_int_constant_synonym.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
-// The maximum nesting depth of a new loop for which we allow the number of
-// iterations to be greater than 1.
 uint32_t kMaxNestingDepth = 4;
 }  // namespace
 
@@ -79,6 +78,10 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
   FindOrCreateIntegerConstant({0}, 32, true, false);
   FindOrCreateIntegerConstant({1}, 32, true, false);
 
+  // Compute the call graph. We can use this for any further computation, since
+  // we are not adding or removing functions or function calls.
+  auto call_graph = CallGraph(GetIRContext());
+
   // Consider each constant and each block.
   for (uint32_t constant_id : constants) {
     // Choose one of the blocks.
@@ -111,18 +114,21 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
     // Randomly decide the values for the number of iterations and the step
     // value, and compute the initial value accordingly.
 
-    // The maximum number of iterations depends on the loop nesting depth of
-    // the block. It is:
+    // The maximum number of iterations depends on the maximum possible loop
+    // nesting depth of the block, computed interprocedurally, i.e. also
+    // considering the possibility that the enclosing function is called inside
+    // a loop. It is:
     // - 1 if the nesting depth is >= kMaxNestingDepth
     // - 2^(kMaxNestingDepth - nesting_depth) otherwise
-    uint32_t nesting_depth =
+    uint32_t max_nesting_depth =
+        call_graph.GetMaxCallNestingDepth(block->GetParent()->result_id()) +
         GetIRContext()->GetStructuredCFGAnalysis()->LoopNestingDepth(
             block->id());
     uint32_t num_iterations =
-        nesting_depth >= kMaxNestingDepth
+        max_nesting_depth >= kMaxNestingDepth
             ? 1
             : GetFuzzerContext()->GetRandomNumberOfLoopIterations(
-                  1u << (kMaxNestingDepth - nesting_depth));
+                  1u << (kMaxNestingDepth - max_nesting_depth));
 
     // Find or create the corresponding constant containing the number of
     // iterations.
