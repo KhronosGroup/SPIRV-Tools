@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/compare_blocks_deep_first.h"
+#include "source/fuzz/comparator_deep_blocks_first.h"
 #include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/transformation_context.h"
@@ -69,7 +69,7 @@ std::string shader = R"(
                OpFunctionEnd
 )";
 
-TEST(CompareBlocksDeepFirstTest, Compare) {
+TEST(ComparatorDeepBlocksFirstTest, Compare) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -80,7 +80,7 @@ TEST(CompareBlocksDeepFirstTest, Compare) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  auto is_deeper = CompareBlocksDeepFirst(context.get());
+  auto is_deeper = ComparatorDeepBlocksFirst(context.get());
 
   // The block ids and the corresponding depths are:
   // 12, 13          -> depth 0
@@ -103,7 +103,7 @@ TEST(CompareBlocksDeepFirstTest, Compare) {
   ASSERT_TRUE(is_deeper(18, 16));
 }
 
-TEST(CompareBlocksDeepFirstTest, Sort) {
+TEST(ComparatorDeepBlocksFirstTest, Sort) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -122,7 +122,7 @@ TEST(CompareBlocksDeepFirstTest, Sort) {
                                           context->get_instr_block(13)};
 
   std::sort(blocks.begin(), blocks.end(),
-            CompareBlocksDeepFirst(context.get()));
+            ComparatorDeepBlocksFirst(context.get()));
 
   // Check that the blocks are in the correct order.
   ASSERT_EQ(blocks[0]->id(), 20);

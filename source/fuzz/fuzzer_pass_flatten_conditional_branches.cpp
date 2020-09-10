@@ -14,7 +14,7 @@
 
 #include "source/fuzz/fuzzer_pass_flatten_conditional_branches.h"
 
-#include "source/fuzz/compare_blocks_deep_first.h"
+#include "source/fuzz/comparator_deep_blocks_first.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_flatten_conditional_branch.h"
 
@@ -58,7 +58,7 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
   // Sort the headers so that those that are more deeply nested are considered
   // first, possibly enabling outer conditionals to be flattened.
   std::sort(selection_headers.begin(), selection_headers.end(),
-            CompareBlocksDeepFirst(GetIRContext()));
+            ComparatorDeepBlocksFirst(GetIRContext()));
 
   // Apply the transformation to the headers which can be flattened.
   for (auto header : selection_headers) {

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_COMPARE_BLOCKS_DEEP_FIRST_H_
-#define SOURCE_FUZZ_COMPARE_BLOCKS_DEEP_FIRST_H_
+#ifndef SOURCE_FUZZ_COMPARATOR_BLOCKS_DEEP_FIRST_H_
+#define SOURCE_FUZZ_COMPARATOR_BLOCKS_DEEP_FIRST_H_
 
 #include "source/opt/ir_context.h"
 
@@ -23,9 +23,9 @@ namespace fuzz {
 // Comparator for blocks, comparing them based on how deep they are nested
 // inside selection or loop constructs. Deeper blocks are considered less than
 // ones that are not as deep.
-class CompareBlocksDeepFirst {
+class ComparatorDeepBlocksFirst {
  public:
-  explicit CompareBlocksDeepFirst(opt::IRContext* ir_context)
+  explicit ComparatorDeepBlocksFirst(opt::IRContext* ir_context)
       : ir_context_(ir_context) {}
 
   bool operator()(uint32_t bb1, uint32_t bb2) const {
@@ -44,4 +44,4 @@ class CompareBlocksDeepFirst {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_COMPARE_BLOCKS_DEEP_FIRST_H_
+#endif  // SOURCE_FUZZ_COMPARATOR_BLOCKS_DEEP_FIRST_H_

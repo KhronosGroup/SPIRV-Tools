@@ -18,7 +18,7 @@ if (${SPIRV_BUILD_FUZZER})
           fuzz_test_util.h
 
           call_graph_test.cpp
-          compare_blocks_deep_first_test.cpp
+          comparator_deep_blocks_first_test.cpp
           data_synonym_transformation_test.cpp
           equivalence_relation_test.cpp
           fact_manager_test.cpp
