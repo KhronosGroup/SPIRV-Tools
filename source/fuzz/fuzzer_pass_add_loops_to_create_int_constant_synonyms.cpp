@@ -81,7 +81,6 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
     uint32_t block_id = blocks[GetFuzzerContext()->RandomIndex(blocks)];
 
     // Adjust the block so that the transformation can be applied.
-
     auto block = GetIRContext()->get_instr_block(block_id);
 
     // If the block is a loop header, add a simple preheader. We can do this
@@ -110,7 +109,7 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
 
     // The maximum number of iterations depends on the loop nesting depth of
     // the block. It is:
-    // - 1 if the nesting depth is <= 4
+    // - 1 if the nesting depth is >= 4
     // - 2^(4 - nesting_depth) otherwise
     uint32_t nesting_depth =
         GetIRContext()->GetStructuredCFGAnalysis()->LoopNestingDepth(
@@ -216,6 +215,9 @@ std::pair<uint32_t, uint32_t> FuzzerPassAddLoopsToCreateIntConstantSynonyms::
                                              uint32_t bit_width, bool is_signed,
                                              uint32_t num_iterations) {
   // Choose the step value randomly and compute the initial value accordingly.
+  // The result of |initial_value| could overflow, but this is OK, since
+  // the transformation takes overflows into consideration (the equation still
+  // holds as long as the last |bit_width| bits of C and of (I-S*N) match).
   uint64_t step_value = GetFuzzerContext()->GetRandomLongInteger();
   uint64_t initial_value = constant_val + step_value * num_iterations;
 

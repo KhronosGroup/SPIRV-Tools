@@ -858,15 +858,16 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   //
   //            %loop_id = OpLabel
   //             %ctr_id = OpPhi %int %int_0 %pred %incremented_ctr_id %loop_id
-  //            %temp_id = OpPhi %intI %I %pred %eventual_syn_id %loop_id
-  //    %eventual_syn_id = OpISub %intI %temp_id %step_val_id
+  //            %temp_id = OpPhi %type_of_I %I %pred %eventual_syn_id %loop_id
+  //    %eventual_syn_id = OpISub %type_of_I %temp_id %step_val_id
   // %incremented_ctr_id = OpIAdd %int %ctr_id %int_1
   //            %cond_id = OpSLessThan %bool %incremented_ctr_id %num_iterations_id
   //                       OpLoopMerge %block_after_loop_id %loop_id %none
   //                       OpBranchConditional %cond_id %loop_id %block_after_loop_id
   //
   // Which can be translated, assuming that N > 0, to:
-  // for (int ctr = 0; ctr < N; ctr++) S = S - I
+  // int syn = I;
+  // for (int ctr = 0; ctr < N; ctr++) syn = syn - S;
 
   // The following are existing ids.
 
@@ -915,12 +916,12 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   //
   //  %loop_id = OpLabel
   //   %ctr_id = OpPhi %int %int_0 %pred %incremented_ctr_id %loop_id
-  //  %temp_id = OpPhi %intI %I %pred %eventual_syn_id %loop_id
+  //  %temp_id = OpPhi %type_of_I %I %pred %eventual_syn_id %loop_id
   //             OpLoopMerge %block_after_loop_id %additional_block_id None
   //             OpBranch %additional_block_id
   //
   //  %additional_block_id = OpLabel
-  //      %eventual_syn_id = OpISub %intI %temp_id %step_val_id
+  //      %eventual_syn_id = OpISub %type_of_I %temp_id %step_val_id
   //   %incremented_ctr_id = OpIAdd %int %ctr_id %int_1
   //              %cond_id = OpSLessThan %bool %incremented_ctr_id %num_iterations_id
   //                         OpBranchConditional %cond_id %loop_id %block_after_loop_id

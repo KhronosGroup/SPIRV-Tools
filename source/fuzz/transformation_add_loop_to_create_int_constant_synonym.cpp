@@ -63,7 +63,8 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
     return false;
   }
 
-  // Check that |constant| is an integer scalar or vector constant.
+  // Check that the type of |constant| is integer scalar or vector with integer
+  // components.
   if (!constant->AsIntConstant() &&
       (!constant->AsVectorConstant() ||
        !constant->type()->AsVector()->element_type()->AsInteger())) {

@@ -348,14 +348,16 @@ class FuzzerContext {
   uint32_t GetRandomIndexForCompositeInsert(uint32_t number_of_components) {
     return random_generator_->RandomUint32(number_of_components);
   }
-  uint64_t GetRandomLongInteger() {
+  int64_t GetRandomLongInteger() {
+    // INT32_MAX is the maximum value that can be used with RandomUint32. Each
+    // call to RandomUint32 will return a 31-bit number (the 32-th bit - the
+    // sign bit - is always 0). By appending them together, we get a number
+    // between 0 and 2^62-1 (included).
     uint64_t result = random_generator_->RandomUint32(INT32_MAX);
     result <<= 31u;
     result += random_generator_->RandomUint32(INT32_MAX);
-    if (random_generator_->RandomBool()) {
-      result = -result;
-    }
-    return result;
+    // We choose the sign, so the number returned in the range (-2^62, 2^62)
+    return random_generator_->RandomBool() ? result : (0 - result);
   }
   uint32_t GetRandomLoopControlPartialCount() {
     return random_generator_->RandomUint32(max_loop_control_partial_count_);
