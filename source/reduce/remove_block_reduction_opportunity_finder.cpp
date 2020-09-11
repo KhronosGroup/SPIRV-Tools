@@ -25,15 +25,15 @@ std::string RemoveBlockReductionOpportunityFinder::GetName() const {
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 RemoveBlockReductionOpportunityFinder::GetAvailableOpportunities(
-    opt::IRContext* context) const {
+    opt::IRContext* context, uint32_t target_function) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
-  // Consider every block in every function.
-  for (auto& function : *context->module()) {
-    for (auto bi = function.begin(); bi != function.end(); ++bi) {
-      if (IsBlockValidOpportunity(context, function, bi)) {
-        result.push_back(spvtools::MakeUnique<RemoveBlockReductionOpportunity>(
-            &function, &*bi));
+  // Consider every block in every relevant function.
+  for (auto* function : GetTargetFunctions(context, target_function)) {
+    for (auto bi = function->begin(); bi != function->end(); ++bi) {
+      if (IsBlockValidOpportunity(context, function, &bi)) {
+        result.push_back(
+            MakeUnique<RemoveBlockReductionOpportunity>(function, &*bi));
       }
     }
   }
@@ -41,22 +41,22 @@ RemoveBlockReductionOpportunityFinder::GetAvailableOpportunities(
 }
 
 bool RemoveBlockReductionOpportunityFinder::IsBlockValidOpportunity(
-    opt::IRContext* context, opt::Function& function,
-    opt::Function::iterator& bi) {
-  assert(bi != function.end() && "Block iterator was out of bounds");
+    opt::IRContext* context, opt::Function* function,
+    opt::Function::iterator* bi) {
+  assert(*bi != function->end() && "Block iterator was out of bounds");
 
   // Don't remove first block; we don't want to end up with no blocks.
-  if (bi == function.begin()) {
+  if (*bi == function->begin()) {
     return false;
   }
 
   // Don't remove blocks with references.
-  if (context->get_def_use_mgr()->NumUsers(bi->id()) > 0) {
+  if (context->get_def_use_mgr()->NumUsers((*bi)->id()) > 0) {
     return false;
   }
 
   // Don't remove blocks whose instructions have outside references.
-  if (!BlockInstructionsHaveNoOutsideReferences(context, bi)) {
+  if (!BlockInstructionsHaveNoOutsideReferences(context, *bi)) {
     return false;
   }
 

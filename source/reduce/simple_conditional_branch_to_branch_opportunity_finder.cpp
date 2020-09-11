@@ -22,13 +22,13 @@ namespace reduce {
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 SimpleConditionalBranchToBranchOpportunityFinder::GetAvailableOpportunities(
-    opt::IRContext* context) const {
+    opt::IRContext* context, uint32_t target_function) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   // Consider every function.
-  for (auto& function : *context->module()) {
+  for (auto* function : GetTargetFunctions(context, target_function)) {
     // Consider every block in the function.
-    for (auto& block : function) {
+    for (auto& block : *function) {
       // The terminator must be SpvOpBranchConditional.
       opt::Instruction* terminator = block.terminator();
       if (terminator->opcode() != SpvOpBranchConditional) {
