@@ -30,11 +30,11 @@ std::string RemoveSelectionReductionOpportunityFinder::GetName() const {
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 RemoveSelectionReductionOpportunityFinder::GetAvailableOpportunities(
-    opt::IRContext* context) const {
+    opt::IRContext* context, uint32_t target_function) const {
   // Get all loop merge and continue blocks so we can check for these later.
   std::unordered_set<uint32_t> merge_and_continue_blocks_from_loops;
-  for (auto& function : *context->module()) {
-    for (auto& block : function) {
+  for (auto* function : GetTargetFunctions(context, target_function)) {
+    for (auto& block : *function) {
       if (auto merge_instruction = block.GetMergeInst()) {
         if (merge_instruction->opcode() == SpvOpLoopMerge) {
           uint32_t merge_block_id =
