@@ -451,7 +451,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
         %102 = OpPhi %7 %8 %14 %105 %101
         %103 = OpPhi %7 %13 %14 %104 %101
         %104 = OpISub %7 %103 %11
-        %105 = OpIAdd %7 %102 %8
+        %105 = OpIAdd %7 %102 %9
         %106 = OpSLessThan %5 %105 %10
                OpLoopMerge %15 %101 None
                OpBranchConditional %106 %101 %15
@@ -467,7 +467,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
                OpBranch %114
         %114 = OpLabel
         %111 = OpISub %7 %110 %11
-        %112 = OpIAdd %7 %109 %8
+        %112 = OpIAdd %7 %109 %9
         %113 = OpSLessThan %5 %112 %10
                OpBranchConditional %113 %108 %17
          %17 = OpLabel
@@ -494,7 +494,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
         %117 = OpPhi %7 %8 %25 %120 %116
         %118 = OpPhi %7 %13 %25 %119 %116
         %119 = OpISub %7 %118 %11
-        %120 = OpIAdd %7 %117 %8
+        %120 = OpIAdd %7 %117 %9
         %121 = OpSLessThan %5 %120 %10
                OpLoopMerge %26 %116 None
                OpBranchConditional %121 %116 %26
@@ -655,7 +655,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         %102 = OpPhi %7 %8 %25 %105 %101
         %103 = OpPhi %14 %18 %25 %104 %101
         %104 = OpISub %14 %103 %16
-        %105 = OpIAdd %7 %102 %8
+        %105 = OpIAdd %7 %102 %9
         %106 = OpSLessThan %5 %105 %10
                OpLoopMerge %26 %101 None
                OpBranchConditional %106 %101 %26
@@ -666,7 +666,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         %110 = OpPhi %7 %8 %26 %113 %109
         %111 = OpPhi %14 %18 %26 %112 %109
         %112 = OpISub %14 %111 %11
-        %113 = OpIAdd %7 %110 %8
+        %113 = OpIAdd %7 %110 %9
         %114 = OpSLessThan %5 %113 %10
                OpLoopMerge %27 %109 None
                OpBranchConditional %114 %109 %27
@@ -677,7 +677,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         %117 = OpPhi %7 %8 %27 %120 %116
         %118 = OpPhi %14 %18 %27 %119 %116
         %119 = OpISub %14 %118 %16
-        %120 = OpIAdd %7 %117 %8
+        %120 = OpIAdd %7 %117 %9
         %121 = OpSLessThan %5 %120 %10
                OpLoopMerge %28 %116 None
                OpBranchConditional %121 %116 %28
@@ -688,7 +688,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         %124 = OpPhi %7 %8 %28 %127 %123
         %125 = OpPhi %19 %23 %28 %126 %123
         %126 = OpISub %19 %125 %24
-        %127 = OpIAdd %7 %124 %8
+        %127 = OpIAdd %7 %124 %9
         %128 = OpSLessThan %5 %127 %10
                OpLoopMerge %29 %123 None
                OpBranchConditional %128 %123 %29
@@ -699,7 +699,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         %131 = OpPhi %7 %8 %29 %134 %130
         %132 = OpPhi %19 %23 %29 %133 %130
         %133 = OpISub %19 %132 %24
-        %134 = OpIAdd %7 %131 %8
+        %134 = OpIAdd %7 %131 %9
         %135 = OpSLessThan %5 %134 %10
                OpLoopMerge %30 %130 None
                OpBranchConditional %135 %130 %30
@@ -811,7 +811,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
         %102 = OpPhi %7 %8 %19 %105 %101
         %103 = OpPhi %11 %14 %19 %104 %101
         %104 = OpISub %11 %103 %12
-        %105 = OpIAdd %7 %102 %8
+        %105 = OpIAdd %7 %102 %9
         %106 = OpSLessThan %5 %105 %10
                OpLoopMerge %20 %101 None
                OpBranchConditional %106 %101 %20
@@ -822,7 +822,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
         %109 = OpPhi %7 %8 %20 %112 %108
         %110 = OpPhi %15 %17 %20 %111 %108
         %111 = OpISub %15 %110 %18
-        %112 = OpIAdd %7 %109 %8
+        %112 = OpIAdd %7 %109 %9
         %113 = OpSLessThan %5 %112 %10
                OpLoopMerge %21 %108 None
                OpBranchConditional %113 %108 %21
@@ -928,7 +928,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
         %102 = OpPhi %7 %8 %16 %105 %101
         %103 = OpPhi %7 %8 %16 %104 %101
         %104 = OpISub %7 %103 %14
-        %105 = OpIAdd %7 %102 %8
+        %105 = OpIAdd %7 %102 %9
         %106 = OpSLessThan %5 %105 %11
                OpLoopMerge %17 %101 None
                OpBranchConditional %106 %101 %17
@@ -939,7 +939,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
         %109 = OpPhi %7 %8 %17 %112 %108
         %110 = OpPhi %7 %8 %17 %111 %108
         %111 = OpISub %7 %110 %11
-        %112 = OpIAdd %7 %109 %8
+        %112 = OpIAdd %7 %109 %9
         %113 = OpSLessThan %5 %112 %10
                OpLoopMerge %18 %108 None
                OpBranchConditional %113 %108 %18

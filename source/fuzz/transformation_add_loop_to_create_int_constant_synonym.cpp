@@ -218,7 +218,7 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
       ir_context, *transformation_context, {0}, 32, true, false);
   auto const_0_def = ir_context->get_def_use_mgr()->GetDef(const_0_id);
   uint32_t const_1_id = fuzzerutil::MaybeGetIntegerConstant(
-      ir_context, *transformation_context, {0}, 32, true, false);
+      ir_context, *transformation_context, {1}, 32, true, false);
 
   // Retrieve the instruction defining the initial value constant.
   auto initial_val_def =
