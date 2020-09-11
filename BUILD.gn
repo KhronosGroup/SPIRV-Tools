@@ -774,6 +774,7 @@ static_library("spvtools_reduce") {
     "source/reduce/reducer.h",
     "source/reduce/reduction_opportunity.cpp",
     "source/reduce/reduction_opportunity.h",
+    "source/reduce/reduction_opportunity_finder.cpp",
     "source/reduce/reduction_opportunity_finder.h",
     "source/reduce/reduction_pass.cpp",
     "source/reduce/reduction_pass.h",
