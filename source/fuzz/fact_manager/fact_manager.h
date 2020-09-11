@@ -194,12 +194,13 @@ class FactManager {
   // |pointer_id| is irrelevant.
   bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;
 
-  // Returns true iff there exists a fact that the |result_id| is irrelevant.
-  bool IdIsIrrelevant(uint32_t result_id) const;
+  // Returns true if there exists a fact that the |result_id| is irrelevant, or
+  // if |result_id| is inside a dead block in the given module.
+  bool IdIsIrrelevant(opt::IRContext* ir_context, uint32_t result_id) const;
 
   // Returns an unordered set of all the ids which have been declared
-  // irrelevant.
-  const std::unordered_set<uint32_t>& GetIrrelevantIds() const;
+  // irrelevant, or which are declared in a dead block in the given module.
+  std::unordered_set<uint32_t> GetIrrelevantIds(opt::IRContext* ir_context) const;
 
   // End of irrelevant value facts
   //==============================

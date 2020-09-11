@@ -46,8 +46,8 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
 
   // Find all the irrelevant ids that still exist in the module and all the
   // types for which irrelevant ids exist.
-  for (auto id :
-       GetTransformationContext()->GetFactManager()->GetIrrelevantIds()) {
+  for (auto id : GetTransformationContext()->GetFactManager()->GetIrrelevantIds(
+           GetIRContext())) {
     // Check that the id still exists in the module.
     auto declaration = GetIRContext()->get_def_use_mgr()->GetDef(id);
     if (!declaration) {

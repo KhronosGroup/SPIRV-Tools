@@ -26,6 +26,10 @@ bool DeadBlockFacts::BlockIsDead(uint32_t block_id) const {
   return dead_block_ids_.count(block_id) != 0;
 }
 
+const std::unordered_set<uint32_t>& DeadBlockFacts::GetDeadBlocks() const {
+  return dead_block_ids_;
+}
+
 }  // namespace fact_manager
 }  // namespace fuzz
 }  // namespace spvtools

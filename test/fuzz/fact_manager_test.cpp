@@ -1440,13 +1440,13 @@ TEST(FactManagerTest, IdIsIrrelevant) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(12));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 12));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 13));
 
   fact_manager.AddFactIdIsIrrelevant(12, context.get());
 
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(12));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(context.get(), 12));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 13));
 }
 
 TEST(FactManagerTest, GetIrrelevantIds) {
@@ -1476,17 +1476,17 @@ TEST(FactManagerTest, GetIrrelevantIds) {
 
   FactManager fact_manager;
 
-  ASSERT_TRUE(fact_manager.GetIrrelevantIds() ==
+  ASSERT_TRUE(fact_manager.GetIrrelevantIds(context.get()) ==
               std::unordered_set<uint32_t>({}));
 
   fact_manager.AddFactIdIsIrrelevant(12, context.get());
 
-  ASSERT_TRUE(fact_manager.GetIrrelevantIds() ==
+  ASSERT_TRUE(fact_manager.GetIrrelevantIds(context.get()) ==
               std::unordered_set<uint32_t>({12}));
 
   fact_manager.AddFactIdIsIrrelevant(13, context.get());
 
-  ASSERT_TRUE(fact_manager.GetIrrelevantIds() ==
+  ASSERT_TRUE(fact_manager.GetIrrelevantIds(context.get()) ==
               std::unordered_set<uint32_t>({12, 13}));
 }
 

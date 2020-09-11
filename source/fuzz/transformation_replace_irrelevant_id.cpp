@@ -38,7 +38,7 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
 
   // The id must be irrelevant.
   if (!transformation_context.GetFactManager()->IdIsIrrelevant(
-          id_of_interest)) {
+          ir_context, id_of_interest)) {
     return false;
   }
 

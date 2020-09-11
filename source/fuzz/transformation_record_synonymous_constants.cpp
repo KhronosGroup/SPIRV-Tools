@@ -41,9 +41,9 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
   }
 
   if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.constant1_id()) ||
+          ir_context, message_.constant1_id()) ||
       transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.constant2_id())) {
+          ir_context, message_.constant2_id())) {
     return false;
   }
 

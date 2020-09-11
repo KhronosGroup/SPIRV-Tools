@@ -50,10 +50,11 @@ class IrrelevantValueFacts {
   // See method in FactManager which delegates to this method.
   bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;
 
-  // See method in FactManager which delegates to this method.
+  // Returns true iff there exists a fact that the |result_id| is irrelevant.
   bool IdIsIrrelevant(uint32_t pointer_id) const;
 
-  // See method in FactManager which delegates to this method.
+  // Returns an unordered set of all the ids which have been declared
+  // irrelevant.
   const std::unordered_set<uint32_t>& GetIrrelevantIds() const;
 
  private:

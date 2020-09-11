@@ -17,6 +17,7 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "source/opt/ir_context.h"
 
@@ -207,12 +208,39 @@ bool FactManager::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
   return irrelevant_value_facts_.PointeeValueIsIrrelevant(pointer_id);
 }
 
-bool FactManager::IdIsIrrelevant(uint32_t result_id) const {
-  return irrelevant_value_facts_.IdIsIrrelevant(result_id);
+bool FactManager::IdIsIrrelevant(opt::IRContext* ir_context,
+                                 uint32_t result_id) const {
+  // An id is irrelevant if it has been declared irrelevant.
+  if (irrelevant_value_facts_.IdIsIrrelevant(result_id)) {
+    return true;
+  }
+
+  // An id is irrelevant if it is in a dead block.
+  return ir_context->get_instr_block(result_id) &&
+         dead_block_facts_.BlockIsDead(
+             ir_context->get_instr_block(result_id)->id());
 }
 
-const std::unordered_set<uint32_t>& FactManager::GetIrrelevantIds() const {
-  return irrelevant_value_facts_.GetIrrelevantIds();
+std::unordered_set<uint32_t> FactManager::GetIrrelevantIds(
+    opt::IRContext* ir_context) const {
+  // Get all the ids that have been declared irrelevant.
+  std::unordered_set<uint32_t> irrelevant_ids =
+      irrelevant_value_facts_.GetIrrelevantIds();
+
+  // Get all the ids with a type id in dead blocks.
+  for (uint32_t block_id : dead_block_facts_.GetDeadBlocks()) {
+    auto block = fuzzerutil::MaybeFindBlock(ir_context, block_id);
+    if (!block) {
+      continue;
+    }
+    block->ForEachInst([&irrelevant_ids](opt::Instruction* inst) {
+      if (inst->HasResultId() && inst->type_id()) {
+        irrelevant_ids.emplace(inst->result_id());
+      }
+    });
+  }
+
+  return irrelevant_ids;
 }
 
 void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id,

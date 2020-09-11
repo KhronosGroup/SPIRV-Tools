@@ -107,10 +107,10 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   irrelevant_false.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(100));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(101));
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(102));
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(103));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 100));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 101));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(context.get(), 102));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(context.get(), 103));
 
   std::string after_transformation = R"(
                OpCapability Shader
