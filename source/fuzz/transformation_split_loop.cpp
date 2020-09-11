@@ -25,26 +25,20 @@ TransformationSplitLoop::TransformationSplitLoop(
 
 TransformationSplitLoop::TransformationSplitLoop(
     uint32_t loop_header_id, uint32_t variable_counter_id,
-    uint32_t variable_run_second_id, uint32_t constant_one_id,
-    uint32_t constant_zero_id, uint32_t constant_limit_id,
+    uint32_t variable_run_second_id, uint32_t constant_limit_id,
     uint32_t load_counter_fresh_id, uint32_t increment_counter_fresh_id,
-    uint32_t condition_counter_fresh_id, uint32_t pred_merge_block_fresh_id,
-    uint32_t constant_true_id, uint32_t constant_false_id,
+    uint32_t condition_counter_fresh_id, uint32_t new_body_entry_block_fresh_id,
     uint32_t load_run_second_fresh_id, uint32_t selection_merge_block_fresh_id,
-    std::map<uint32_t, uint32_t> original_label_to_duplicate_label,
-    std::map<uint32_t, uint32_t> original_id_to_duplicate_id) {
+    const std::map<uint32_t, uint32_t>& original_label_to_duplicate_label,
+    const std::map<uint32_t, uint32_t>& original_id_to_duplicate_id) {
   message_.set_loop_header_id(loop_header_id);
   message_.set_variable_counter_id(variable_counter_id);
   message_.set_variable_run_second_id(variable_run_second_id);
-  message_.set_constant_one_id(constant_one_id);
-  message_.set_constant_zero_id(constant_zero_id);
   message_.set_constant_limit_id(constant_limit_id);
   message_.set_load_counter_fresh_id(load_counter_fresh_id);
   message_.set_increment_counter_fresh_id(increment_counter_fresh_id);
   message_.set_condition_counter_fresh_id(condition_counter_fresh_id);
-  message_.set_pred_merge_block_fresh_id(pred_merge_block_fresh_id);
-  message_.set_constant_true_id(constant_true_id);
-  message_.set_constant_false_id(constant_false_id);
+  message_.set_new_body_entry_block_fresh_id(new_body_entry_block_fresh_id);
   message_.set_load_run_second_fresh_id(load_run_second_fresh_id);
   message_.set_selection_merge_block_fresh_id(selection_merge_block_fresh_id);
   *message_.mutable_original_label_to_duplicate_label() =
@@ -68,7 +62,7 @@ bool TransformationSplitLoop::IsApplicable(
     return false;
   }
   if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-          message_.pred_merge_block_fresh_id(), ir_context,
+          message_.new_body_entry_block_fresh_id(), ir_context,
           &ids_used_by_this_transformation)) {
     return false;
   }
@@ -80,31 +74,35 @@ bool TransformationSplitLoop::IsApplicable(
   return true;
 }
 
-void TransformationSplitLoop::Apply(opt::IRContext* ir_context,
-                                    TransformationContext* /*unused*/) const {
+void TransformationSplitLoop::Apply(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  auto const_zero_id = fuzzerutil::MaybeGetIntegerConstant(
+      ir_context, *transformation_context, {0}, 32, false, false);
+  auto const_one_id = fuzzerutil::MaybeGetIntegerConstant(
+      ir_context, *transformation_context, {1}, 32, false, false);
+  auto const_false_id = fuzzerutil::MaybeGetBoolConstant(
+      ir_context, *transformation_context, false, false);
+  auto const_true_id = fuzzerutil::MaybeGetBoolConstant(
+      ir_context, *transformation_context, true, false);
+
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.load_counter_fresh_id());
   fuzzerutil::UpdateModuleIdBound(ir_context,
                                   message_.increment_counter_fresh_id());
   fuzzerutil::UpdateModuleIdBound(ir_context,
                                   message_.condition_counter_fresh_id());
   fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  message_.pred_merge_block_fresh_id());
+                                  message_.new_body_entry_block_fresh_id());
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.load_counter_fresh_id());
   fuzzerutil::UpdateModuleIdBound(ir_context,
                                   message_.selection_merge_block_fresh_id());
   fuzzerutil::UpdateModuleIdBound(ir_context,
                                   message_.load_run_second_fresh_id());
 
-  std::unique_ptr<opt::BasicBlock> pred_merge_block =
-      MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpLabel, 0, message_.pred_merge_block_fresh_id(),
-          opt::Instruction::OperandList()));
-
   auto loop_header_block = ir_context->cfg()->block(message_.loop_header_id());
   auto merge_block =
       ir_context->cfg()->block(loop_header_block->MergeBlockId());
   auto enclosing_function = loop_header_block->GetParent();
-  pred_merge_block->SetParent(enclosing_function);
 
   // .......................................................
   // 1. Duplicate the loop
@@ -122,7 +120,6 @@ void TransformationSplitLoop::Apply(opt::IRContext* ir_context,
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           ir_context, SpvOpLabel, 0, message_.selection_merge_block_fresh_id(),
           opt::Instruction::OperandList()));
-  selection_merge_block->SetParent(enclosing_function);
 
   auto exited_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
       ir_context, ir_context->get_def_use_mgr()
@@ -250,73 +247,41 @@ void TransformationSplitLoop::Apply(opt::IRContext* ir_context,
           ir_context, SpvOpStore, 0, 0,
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.variable_counter_id()}},
-               {SPV_OPERAND_TYPE_ID, {message_.constant_zero_id()}}}))));
+               {SPV_OPERAND_TYPE_ID, {const_zero_id}}}))));
 
   enclosing_function->begin()->terminator()->InsertBefore(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpStore, 0, 0,
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.variable_run_second_id()}},
-               {SPV_OPERAND_TYPE_ID, {message_.constant_true_id()}}}))));
-
-  pred_merge_block->AddInstruction(
-      MakeUnique<opt::Instruction>(opt::Instruction(
-          ir_context, SpvOpStore, 0, 0,
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_ID, {message_.variable_run_second_id()}},
-               {SPV_OPERAND_TYPE_ID, {message_.constant_false_id()}}}))));
-
-  pred_merge_block->AddInstruction(MakeUnique<opt::Instruction>(
-      opt::Instruction(ir_context, SpvOpBranch, 0, 0,
-                       opt::Instruction::OperandList(
-                           {{SPV_OPERAND_TYPE_ID, {merge_block->id()}}}))));
-
-  auto condition_block = ir_context->cfg()->block(
-      loop_header_block->terminator()->GetSingleWordOperand(0));
-  // Replace all uses of merge label with the |pred_merge_block| label, except
-  // for the block directly after the loop header.
-  ir_context->get_def_use_mgr()->ForEachUse(
-      merge_block->id(),
-      [ir_context, this, loop_blocks, &loop_header_block, condition_block](
-          opt::Instruction* user, uint32_t operand_index) {
-        auto user_block = ir_context->get_instr_block(user);
-        // We don't change the merge block of the function.
-        if (user->opcode() == SpvOpLoopMerge) {
-          return;
-        }
-        // If the condition of the loop is false, we don't set |exited| to true,
-        // so we progress directly to the merge block.
-        if (user->opcode() == SpvOpBranchConditional &&
-            user_block == condition_block) {
-          return;
-        }
-        if ((loop_blocks.find(user_block) == loop_blocks.end())) {
-          return;
-        }
-        user->SetOperand(operand_index, {message_.pred_merge_block_fresh_id()});
-      });
+               {SPV_OPERAND_TYPE_ID, {const_true_id}}}))));
 
   auto counter_type_id = fuzzerutil::GetPointeeTypeIdFromPointerType(
       ir_context, ir_context->get_def_use_mgr()
                       ->GetDef(message_.variable_counter_id())
                       ->type_id());
 
-  loop_header_block->terminator()->PreviousNode()->InsertBefore(
+  std::unique_ptr<opt::BasicBlock> new_body_entry_block =
+      MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpLabel, 0, message_.new_body_entry_block_fresh_id(),
+          opt::Instruction::OperandList()));
+
+  new_body_entry_block->AddInstruction(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpLoad, counter_type_id,
           message_.load_counter_fresh_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.variable_counter_id()}}}))));
 
-  loop_header_block->terminator()->PreviousNode()->InsertBefore(
+  new_body_entry_block->AddInstruction(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpIAdd, counter_type_id,
           message_.increment_counter_fresh_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.load_counter_fresh_id()}},
-               {SPV_OPERAND_TYPE_ID, {message_.constant_one_id()}}}))));
+               {SPV_OPERAND_TYPE_ID, {const_one_id}}}))));
 
-  loop_header_block->terminator()->PreviousNode()->InsertBefore(
+  new_body_entry_block->AddInstruction(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpStore, 0, 0,
           opt::Instruction::OperandList(
@@ -326,30 +291,71 @@ void TransformationSplitLoop::Apply(opt::IRContext* ir_context,
 
   auto bool_type_id = fuzzerutil::MaybeGetBoolType(ir_context);
   assert(bool_type_id && "The bool type must be present.");
-  loop_header_block->terminator()->PreviousNode()->InsertBefore(
+  new_body_entry_block->AddInstruction(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpSLessThan, bool_type_id,
           message_.condition_counter_fresh_id(),
           {{SPV_OPERAND_TYPE_ID, {message_.increment_counter_fresh_id()}},
            {SPV_OPERAND_TYPE_ID, {message_.constant_limit_id()}}})));
 
-  loop_header_block->terminator()->InsertBefore(
+  // Set |run_second| to false before every break from the loop.
+
+  auto merge_block_instr = merge_block->GetLabelInst();
+  ir_context->get_def_use_mgr()->ForEachUse(
+      merge_block_instr, [this, const_false_id, ir_context, loop_blocks](
+                             opt::Instruction* user, uint32_t) {
+        auto user_block = ir_context->get_instr_block(user);
+        if (loop_blocks.find(user_block) != loop_blocks.end() &&
+            user->opcode() == SpvOpBranch) {
+          user->InsertBefore(MakeUnique<opt::Instruction>(opt::Instruction(
+              ir_context, SpvOpStore, 0, 0,
+              opt::Instruction::OperandList(
+                  {{SPV_OPERAND_TYPE_ID, {message_.variable_run_second_id()}},
+                   {SPV_OPERAND_TYPE_ID, {const_false_id}}}))));
+        }
+      });
+
+  // In the terminator of |loop_header| take first branch which is not a merge
+  // block and set it to |new_body_entry|
+  auto loop_header_terminator = loop_header_block->terminator();
+  uint32_t next_not_merge_id;
+  uint32_t next_not_merge_pos;
+  if (loop_header_terminator->opcode() == SpvOpBranch) {
+    next_not_merge_id = loop_header_terminator->GetSingleWordInOperand(0);
+    next_not_merge_pos = 0;
+  } else  // SpvOpBranchConditional
+  {
+    uint32_t first_id = loop_header_terminator->GetSingleWordInOperand(1);
+    uint32_t second_id = loop_header_terminator->GetSingleWordInOperand(2);
+    if (first_id != merge_block->id()) {
+      next_not_merge_id = first_id;
+      next_not_merge_pos = 1;
+    } else {
+      next_not_merge_id = second_id;
+      next_not_merge_pos = 2;
+    }
+  }
+  loop_header_terminator->SetInOperand(next_not_merge_pos,
+                                       {new_body_entry_block->id()});
+
+  // Insert conditional branch at the end of |new_body_entry|. If the number of
+  // iterations is smaller than the limit, go to |next_not_merge_id|. Otherwise,
+  // we have finished the iteration in the first loop, therefore go to
+  // |merge_block->id()|
+  new_body_entry_block->AddInstruction(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpBranchConditional, 0, 0,
           {{SPV_OPERAND_TYPE_ID, {message_.condition_counter_fresh_id()}},
-           {SPV_OPERAND_TYPE_ID, {condition_block->id()}},
+           {SPV_OPERAND_TYPE_ID, {next_not_merge_id}},
            {SPV_OPERAND_TYPE_ID, {merge_block->id()}}})));
 
-  // Remove the OpBranch instruction.
-  ir_context->KillInst(loop_header_block->terminator());
-
-  enclosing_function->InsertBasicBlockBefore(std::move(pred_merge_block),
-                                             merge_block);
+  enclosing_function->InsertBasicBlockAfter(std::move(new_body_entry_block),
+                                            loop_header_block);
   enclosing_function->InsertBasicBlockAfter(std::move(selection_merge_block),
                                             duplicated_merge_block);
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
-}  // namespace fuzz
+}
 
 protobufs::Transformation TransformationSplitLoop::ToMessage() const {
   protobufs::Transformation result;

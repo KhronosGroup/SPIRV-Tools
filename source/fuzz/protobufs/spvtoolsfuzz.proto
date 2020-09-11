@@ -2017,49 +2017,35 @@ message TransformationSplitLoop {
     // Id for a variable which indicates if the second loop should be executed.
     uint32 variable_run_second_id = 3;
 
-    // Id for an integer constant 1 used by incrementation of |counter|.
-    uint32 constant_one_id = 4;
-
-    // Id for an integer constant 0 used by initialization of |counter|.
-    uint32 constant_zero_id = 5;
-
     // Id for a limit of the number of iterations in the first loop.
-    uint32 constant_limit_id = 6;
+    uint32 constant_limit_id = 4;
 
     // Fresh id for an OpLoad instruction with |counter|.
-    uint32 load_counter_fresh_id = 7;
+    uint32 load_counter_fresh_id = 5;
 
     // Fresh id for incrementation of the counter.
-    uint32 increment_counter_fresh_id = 8;
+    uint32 increment_counter_fresh_id = 6;
 
     // Fresh id for a boolean condition on the value |counter|.
-    uint32 condition_counter_fresh_id = 9;
+    uint32 condition_counter_fresh_id = 7;
 
-    // Fresh id for a new predecessor of the merge block of the first
-    // loop.
-    uint32 pred_merge_block_fresh_id = 10;
-
-    // Id for constant "true" for the variable |run_second|.
-    uint32 constant_true_id = 11;
-
-    // Id for constant "false" for the variable |run_second|.
-    uint32 constant_false_id = 12;
+    // Fresh id for a new entry block of the body of the first loop.
+    uint32 new_body_entry_block_fresh_id = 8;
 
     // Id for an OpLoad instruction with |run_second|.
-    uint32 load_run_second_fresh_id = 13;
+    uint32 load_run_second_fresh_id = 9;
 
     // Id for a final selection merge block (after the first and the
     // second loop).
-    uint32 selection_merge_block_fresh_id = 14;
+    uint32 selection_merge_block_fresh_id = 10;
 
     // Map that maps from a label in the first loop to the corresponding
     // label in the second loop.
-    repeated UInt32Pair original_label_to_duplicate_label = 15;
+    repeated UInt32Pair original_label_to_duplicate_label = 11;
 
     // Map that maps from a result id in the first loop to the corresponding
     // result id in the second loop.
-    repeated UInt32Pair original_id_to_duplicate_id = 16;
-
+    repeated UInt32Pair original_id_to_duplicate_id = 12;
 }
 
 

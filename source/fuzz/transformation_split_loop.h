@@ -30,15 +30,13 @@ class TransformationSplitLoop : public Transformation {
 
   explicit TransformationSplitLoop(
       uint32_t loop_header_id, uint32_t variable_counter_id,
-      uint32_t variable_run_second_id, uint32_t constant_one_id,
-      uint32_t constant_zero_id, uint32_t constant_limit_id,
+      uint32_t variable_run_second_id, uint32_t constant_limit_id,
       uint32_t load_counter_fresh_id, uint32_t increment_counter_fresh_id,
-      uint32_t condition_counter_fresh_id, uint32_t pred_merge_block_fresh_id,
-      uint32_t constant_true_id, uint32_t constant_false_id,
-      uint32_t load_run_second_fresh_id,
+      uint32_t condition_counter_fresh_id,
+      uint32_t new_body_entry_block_fresh_id, uint32_t load_run_second_fresh_id,
       uint32_t selection_merge_block_fresh_id,
-      std::map<uint32_t, uint32_t> original_label_to_duplicate_label,
-      std::map<uint32_t, uint32_t> original_id_to_duplicate_id);
+      const std::map<uint32_t, uint32_t>& original_label_to_duplicate_label,
+      const std::map<uint32_t, uint32_t>& original_id_to_duplicate_id);
 
   bool IsApplicable(
       opt::IRContext* ir_context,
