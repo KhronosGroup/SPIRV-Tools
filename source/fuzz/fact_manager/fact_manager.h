@@ -200,7 +200,8 @@ class FactManager {
 
   // Returns an unordered set of all the ids which have been declared
   // irrelevant, or which are declared in a dead block in the given module.
-  std::unordered_set<uint32_t> GetIrrelevantIds(opt::IRContext* ir_context) const;
+  std::unordered_set<uint32_t> GetIrrelevantIds(
+      opt::IRContext* ir_context) const;
 
   // End of irrelevant value facts
   //==============================
