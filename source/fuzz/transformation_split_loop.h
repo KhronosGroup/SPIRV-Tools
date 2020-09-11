@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_TRANSFORMATION_SPLIT_LOOP_H
-#define SPIRV_TOOLS_TRANSFORMATION_SPLIT_LOOP_H
+#ifndef SOURCE_FUZZ_TRANSFORMATION_SPLIT_LOOP_H_
+#define SOURCE_FUZZ_TRANSFORMATION_SPLIT_LOOP_H_
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -58,4 +58,4 @@ class TransformationSplitLoop : public Transformation {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_TRANSFORMATION_ADD_RELAXED_DECORATION_H
+#endif  // SOURCE_FUZZ_TRANSFORMATION_SPLIT_LOOP_H_
