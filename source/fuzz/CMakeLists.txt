@@ -80,6 +80,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.h
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
+        fuzzer_pass_duplicate_regions_with_selections.h
         fuzzer_pass_inline_functions.h
         fuzzer_pass_invert_comparison_operators.h
         fuzzer_pass_interchange_signedness_of_integer_operands.h
@@ -156,6 +157,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_insert.h
         transformation_compute_data_synonym_fact_closure.h
         transformation_context.h
+        transformation_duplicate_region_with_selection.h
         transformation_equation_instruction.h
         transformation_function_call.h
         transformation_inline_function.h
@@ -241,6 +243,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_construct_composites.cpp
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
+        fuzzer_pass_duplicate_regions_with_selections.cpp
         fuzzer_pass_inline_functions.cpp
         fuzzer_pass_invert_comparison_operators.cpp
         fuzzer_pass_interchange_signedness_of_integer_operands.cpp
@@ -316,7 +319,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_composite_insert.cpp
         transformation_compute_data_synonym_fact_closure.cpp
         transformation_context.cpp
-        transformation_replace_opselect_with_conditional_branch.cpp
+        transformation_duplicate_region_with_selection.cpp
         transformation_equation_instruction.cpp
         transformation_function_call.cpp
         transformation_inline_function.cpp
@@ -343,6 +346,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_linear_algebra_instruction.cpp
         transformation_replace_load_store_with_copy_memory.cpp
         transformation_replace_opphi_id_from_dead_predecessor.cpp
+        transformation_replace_opselect_with_conditional_branch.cpp
         transformation_replace_parameter_with_global.cpp
         transformation_replace_params_with_struct.cpp
         transformation_set_function_control.cpp

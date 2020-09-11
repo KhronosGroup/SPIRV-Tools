@@ -198,6 +198,9 @@ class FuzzerContext {
   uint32_t GetChanceOfDonatingAdditionalModule() {
     return chance_of_donating_additional_module_;
   }
+  uint32_t GetChanceOfDuplicatingRegionWithSelection() {
+    return chance_of_duplicating_region_with_selection_;
+  }
   uint32_t GetChanceOfGoingDeeperToInsertInComposite() {
     return chance_of_going_deeper_to_insert_in_composite_;
   }
@@ -406,6 +409,7 @@ class FuzzerContext {
   uint32_t chance_of_constructing_composite_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_donating_additional_module_;
+  uint32_t chance_of_duplicating_region_with_selection_;
   uint32_t chance_of_going_deeper_to_insert_in_composite_;
   uint32_t chance_of_going_deeper_when_making_access_chain_;
   uint32_t chance_of_inlining_function_;
