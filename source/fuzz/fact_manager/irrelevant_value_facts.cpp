@@ -15,25 +15,30 @@
 #include "source/fuzz/fact_manager/irrelevant_value_facts.h"
 
 #include "source/fuzz/data_descriptor.h"
-#include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/fact_manager/data_synonym_and_id_equation_facts.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
 void IrrelevantValueFacts::AddFact(
-    const protobufs::FactPointeeValueIsIrrelevant& fact) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550)
-  //  Assert that the id does not participate in DataSynonym facts and is a
-  //  pointer.
+    const protobufs::FactPointeeValueIsIrrelevant& fact,
+    const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts) {
+  assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.pointer_id())
+             .empty() &&
+         "The id cannot participate in DataSynonym facts.");
+  // TODO: Assert that the id is a pointer.
 
   pointers_to_irrelevant_pointees_ids_.insert(fact.pointer_id());
 }
 
-void IrrelevantValueFacts::AddFact(const protobufs::FactIdIsIrrelevant& fact) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550)
-  //  Assert that the id does not participate in DataSynonym facts and is not a
-  //  pointer.
+void IrrelevantValueFacts::AddFact(
+    const protobufs::FactIdIsIrrelevant& fact,
+    const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts) {
+  assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.result_id())
+             .empty() &&
+         "The id cannot participate in DataSynonym facts.");
+  // TODO: Assert that the id is not a pointer.
 
   irrelevant_ids_.insert(fact.result_id());
 }

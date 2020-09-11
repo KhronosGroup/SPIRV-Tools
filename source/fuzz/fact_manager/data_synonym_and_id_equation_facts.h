@@ -20,6 +20,7 @@
 
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/equivalence_relation.h"
+#include "source/fuzz/fact_manager/irrelevant_value_facts.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/ir_context.h"
 
@@ -32,10 +33,18 @@ namespace fact_manager {
 class DataSynonymAndIdEquationFacts {
  public:
   // See method in FactManager which delegates to this method.
-  void AddFact(const protobufs::FactDataSynonym& fact, opt::IRContext* context);
+  void AddFact(const protobufs::FactDataSynonym& fact,
+               const IrrelevantValueFacts& irrelevant_value_facts,
+               opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
-  void AddFact(const protobufs::FactIdEquation& fact, opt::IRContext* context);
+  void AddFact(const protobufs::FactIdEquation& fact,
+               const IrrelevantValueFacts& irrelevant_value_facts,
+               opt::IRContext* context);
+
+  // See method in FactManager which delegates to this method.
+  std::vector<const protobufs::DataDescriptor*> GetSynonymsForId(
+      uint32_t id) const;
 
   // See method in FactManager which delegates to this method.
   std::vector<const protobufs::DataDescriptor*> GetSynonymsForDataDescriptor(
