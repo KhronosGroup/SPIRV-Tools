@@ -32,11 +32,13 @@ class DataSynonymAndIdEquationFacts;
 class IrrelevantValueFacts {
  public:
   // See method in FactManager which delegates to this method.
+  // |data_synonym_and_id_equation_facts| is passed for consistency checks.
   void AddFact(
       const protobufs::FactPointeeValueIsIrrelevant& fact,
       const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts);
 
   // See method in FactManager which delegates to this method.
+  // |data_synonym_and_id_equation_facts| is passed for consistency checks.
   void AddFact(
       const protobufs::FactIdIsIrrelevant& fact,
       const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts);
