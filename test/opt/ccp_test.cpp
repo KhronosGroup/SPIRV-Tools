@@ -1105,6 +1105,59 @@ TEST_F(CCPTest, CCPNoChangeFailure) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
+// Test from https://github.com/KhronosGroup/SPIRV-Tools/issues/3738
+// Similar to the previous one but more than one constant is generated in a
+// single call to the instruction folder.
+TEST_F(CCPTest, CCPNoChangeFailureSeveralConstantsDuringFolding) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+       %bool = OpTypeBool
+     %v3bool = OpTypeVector %bool 3
+    %float_0 = OpConstant %float 0
+         %12 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+%float_0_300000012 = OpConstant %float 0.300000012
+         %14 = OpConstantComposite %v3float %float_0_300000012 %float_0_300000012 %float_0_300000012
+
+; CCP is generating several constants during a single instruction evaluation.
+; When folding %19, it generates the constants %true and %24.  They are dead
+; because they cannot be replaced anywhere in the IR.  CCP was wrongly
+; considering the IR to be unmodified because of this.
+;
+; CHECK: %true = OpConstantTrue %bool
+; CHECK: %24 = OpConstantComposite %v3bool %true %true %true
+; CHECK: %float_1 = OpConstant %float 1
+; CHECK: %float_0_699999988 = OpConstant %float 0.699999988
+
+          %2 = OpFunction %void None %4
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpPhi %v3float %12 %15 %14 %18
+         %19 = OpFOrdLessThan %v3bool %17 %14
+         %20 = OpAll %bool %19
+               OpLoopMerge %21 %18 None
+               OpBranchConditional %20 %18 %21
+         %18 = OpLabel
+               OpBranch %16
+         %21 = OpLabel
+         %22 = OpExtInst %v3float %1 FMix %12 %17 %14
+               OpReturn
+               OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndMatch<CCPPass>(text, true);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
