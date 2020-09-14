@@ -20,7 +20,6 @@
 
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/equivalence_relation.h"
-#include "source/fuzz/fact_manager/irrelevant_value_facts.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/ir_context.h"
 
@@ -28,16 +27,21 @@ namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
+// Forward reference to the IrrelevantValueFacts class.
+class IrrelevantValueFacts;
+
 // The purpose of this class is to group the fields and data used to represent
 // facts about data synonyms and id equations.
 class DataSynonymAndIdEquationFacts {
  public:
   // See method in FactManager which delegates to this method.
+  // |irrelevant_value_facts| is passed to check consistency.
   void AddFact(const protobufs::FactDataSynonym& fact,
                const IrrelevantValueFacts& irrelevant_value_facts,
                opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
+  // |irrelevant_value_facts| is passed to check consistency.
   void AddFact(const protobufs::FactIdEquation& fact,
                const IrrelevantValueFacts& irrelevant_value_facts,
                opt::IRContext* context);

@@ -24,7 +24,7 @@ namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
-// Forward reference to DataSynonymAndIdEquationFacts class.
+// Forward reference to the DataSynonymAndIdEquationFacts class.
 class DataSynonymAndIdEquationFacts;
 
 // The purpose of this class is to group the fields and data used to represent

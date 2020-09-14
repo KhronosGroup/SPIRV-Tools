@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fact_manager/data_synonym_and_id_equation_facts.h"
+
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {
@@ -54,6 +55,7 @@ void DataSynonymAndIdEquationFacts::AddFact(
     const protobufs::FactDataSynonym& fact,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
+  (void)irrelevant_value_facts;
   assert(!irrelevant_value_facts.IdIsIrrelevant(fact.data1().object()) &&
          !irrelevant_value_facts.IdIsIrrelevant(fact.data2().object()) &&
          "Irrelevant ids cannot be synonymous with other ids.");
@@ -67,6 +69,7 @@ void DataSynonymAndIdEquationFacts::AddFact(
     const protobufs::FactIdEquation& fact,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
+  (void)irrelevant_value_facts;
   assert(!irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id()) &&
          "Irrelevant ids are not allowed.");
 
