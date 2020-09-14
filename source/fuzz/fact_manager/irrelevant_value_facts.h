@@ -32,16 +32,20 @@ class DataSynonymAndIdEquationFacts;
 class IrrelevantValueFacts {
  public:
   // See method in FactManager which delegates to this method.
-  // |data_synonym_and_id_equation_facts| is passed for consistency checks.
+  // |data_synonym_and_id_equation_facts| and |context| are passed for
+  // consistency checks.
   void AddFact(
       const protobufs::FactPointeeValueIsIrrelevant& fact,
-      const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts);
+      const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
+      opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
-  // |data_synonym_and_id_equation_facts| is passed for consistency checks.
+  // |data_synonym_and_id_equation_facts| and |context| are passed for
+  // consistency checks.
   void AddFact(
       const protobufs::FactIdIsIrrelevant& fact,
-      const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts);
+      const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
+      opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
   bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;
