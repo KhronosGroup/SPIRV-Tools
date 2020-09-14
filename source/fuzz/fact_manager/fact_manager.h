@@ -66,11 +66,14 @@ class FactManager {
 
   // Records the fact that the value of the pointee associated with |pointer_id|
   // is irrelevant: it does not affect the observable behaviour of the module.
-  void AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id);
+  // |pointer_id| must exist in the module and actually be a pointer.
+  void AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id,
+                                         opt::IRContext* context);
 
   // Records a fact that the |result_id| is irrelevant (i.e. it doesn't affect
-  // the semantics of the module)
-  void AddFactIdIsIrrelevant(uint32_t result_id);
+  // the semantics of the module).
+  // |result_id| must exist in the module and actually be a pointer.
+  void AddFactIdIsIrrelevant(uint32_t result_id, opt::IRContext* context);
 
   // Records the fact that |lhs_id| is defined by the equation:
   //

@@ -2033,9 +2033,9 @@ TEST(TransformationOutlineFunctionTest, OutlineLivesafe) {
 
   transformation_context.GetFactManager()->AddFactFunctionIsLivesafe(30);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      200);
+      200, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      201);
+      201, context.get());
 
   TransformationOutlineFunction transformation(
       /*entry_block*/ 198,
@@ -2429,9 +2429,10 @@ TEST(TransformationOutlineFunctionTest,
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(9);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      14);
+      9, context.get());
+  transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+      14, context.get());
 
   TransformationOutlineFunction transformation(
       /*entry_block*/ 50,

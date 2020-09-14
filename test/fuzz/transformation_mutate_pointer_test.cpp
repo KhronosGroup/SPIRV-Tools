@@ -84,8 +84,8 @@ TEST(TransformationMutatePointerTest, BasicTest) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(35);
-  fact_manager.AddFactIdIsIrrelevant(39);
+  fact_manager.AddFactIdIsIrrelevant(35, context.get());
+  fact_manager.AddFactIdIsIrrelevant(39, context.get());
 
   const auto insert_before = MakeInstructionDescriptor(26, SpvOpReturn, 0);
 
@@ -140,7 +140,7 @@ TEST(TransformationMutatePointerTest, BasicTest) {
                    26, 70, MakeInstructionDescriptor(26, SpvOpAccessChain, 0))
                    .IsApplicable(context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(40);
+  fact_manager.AddFactIdIsIrrelevant(40, context.get());
 
   uint32_t fresh_id = 70;
   uint32_t pointer_ids[] = {
@@ -274,7 +274,7 @@ TEST(TransformationMutatePointerTest, HandlesUnreachableBlocks) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(7);
+  fact_manager.AddFactIdIsIrrelevant(7, context.get());
 
   ASSERT_FALSE(
       context->GetDominatorAnalysis(context->GetFunction(4))->IsReachable(10));

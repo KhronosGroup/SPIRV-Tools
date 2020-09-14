@@ -814,7 +814,7 @@ TEST(TransformationRecordSynonymousConstantsTest, FirstIrrelevantConstant) {
   ASSERT_TRUE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(7);
+  fact_manager.AddFactIdIsIrrelevant(7, context.get());
   ASSERT_FALSE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 }
@@ -851,7 +851,7 @@ TEST(TransformationRecordSynonymousConstantsTest, SecondIrrelevantConstant) {
   ASSERT_TRUE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(8);
+  fact_manager.AddFactIdIsIrrelevant(8, context.get());
   ASSERT_FALSE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 }

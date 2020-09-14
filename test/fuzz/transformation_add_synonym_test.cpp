@@ -75,7 +75,7 @@ TEST(TransformationAddSynonymTest, NotApplicable) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(24);
+  fact_manager.AddFactIdIsIrrelevant(24, context.get());
 
   auto insert_before = MakeInstructionDescriptor(22, SpvOpReturn, 0);
 
@@ -1300,7 +1300,8 @@ TEST(TransformationAddSynonymTest, PropagateIrrelevantPointeeFact) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(8);
+  transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+      8, context.get());
 
   TransformationAddSynonym transformation1(
       8, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,

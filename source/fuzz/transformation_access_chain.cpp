@@ -339,7 +339,7 @@ void TransformationAccessChain::Apply(
   if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
           message_.pointer_id())) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        message_.fresh_id());
+        message_.fresh_id(), ir_context);
   }
 }
 

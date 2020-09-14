@@ -215,16 +215,20 @@ const std::unordered_set<uint32_t>& FactManager::GetIrrelevantIds() const {
   return irrelevant_value_facts_.GetIrrelevantIds();
 }
 
-void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id) {
+void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id,
+                                                    opt::IRContext* context) {
   protobufs::FactPointeeValueIsIrrelevant fact;
   fact.set_pointer_id(pointer_id);
-  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_);
+  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_,
+                                  context);
 }
 
-void FactManager::AddFactIdIsIrrelevant(uint32_t result_id) {
+void FactManager::AddFactIdIsIrrelevant(uint32_t result_id,
+                                        opt::IRContext* context) {
   protobufs::FactIdIsIrrelevant fact;
   fact.set_result_id(result_id);
-  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_);
+  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_,
+                                  context);
 }
 
 void FactManager::AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
