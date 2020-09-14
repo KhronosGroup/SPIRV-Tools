@@ -33,6 +33,7 @@ void IrrelevantValueFacts::AddFact(
   auto pointer_def = context->get_def_use_mgr()->GetDef(fact.pointer_id());
   assert(pointer_def && "The id must exist in the module.");
   auto type = context->get_type_mgr()->GetType(pointer_def->type_id());
+  (void)type;  // Keep release compilers happy.
   assert(type && type->AsPointer() && "The id must be a pointer.");
 
   pointers_to_irrelevant_pointees_ids_.insert(fact.pointer_id());
@@ -49,6 +50,7 @@ void IrrelevantValueFacts::AddFact(
   auto pointer_def = context->get_def_use_mgr()->GetDef(fact.result_id());
   assert(pointer_def && "The id must exist in the module.");
   auto type = context->get_type_mgr()->GetType(pointer_def->type_id());
+  (void)type;  // Keep release compilers happy.
   assert(type && !type->AsPointer() && "The id must not be a pointer.");
 
   irrelevant_ids_.insert(fact.result_id());
