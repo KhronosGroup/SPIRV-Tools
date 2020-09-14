@@ -26,7 +26,7 @@ void IrrelevantValueFacts::AddFact(
     const protobufs::FactPointeeValueIsIrrelevant& fact,
     const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
     opt::IRContext* context) {
-  (void)data_synonym_and_id_equation_facts;
+  (void)data_synonym_and_id_equation_facts;  // Keep release compilers happy.
   assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.pointer_id())
              .empty() &&
          "The id cannot participate in DataSynonym facts.");
@@ -42,7 +42,7 @@ void IrrelevantValueFacts::AddFact(
     const protobufs::FactIdIsIrrelevant& fact,
     const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
     opt::IRContext* context) {
-  (void)data_synonym_and_id_equation_facts;
+  (void)data_synonym_and_id_equation_facts;  // Keep release compilers happy.
   assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.result_id())
              .empty() &&
          "The id cannot participate in DataSynonym facts.");

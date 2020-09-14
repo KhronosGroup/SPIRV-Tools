@@ -55,7 +55,7 @@ void DataSynonymAndIdEquationFacts::AddFact(
     const protobufs::FactDataSynonym& fact,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
-  (void)irrelevant_value_facts;
+  (void)irrelevant_value_facts;  // Keep release compilers happy.
   assert(!irrelevant_value_facts.IdIsIrrelevant(fact.data1().object()) &&
          !irrelevant_value_facts.IdIsIrrelevant(fact.data2().object()) &&
          "Irrelevant ids cannot be synonymous with other ids.");
@@ -69,7 +69,7 @@ void DataSynonymAndIdEquationFacts::AddFact(
     const protobufs::FactIdEquation& fact,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
-  (void)irrelevant_value_facts;
+  (void)irrelevant_value_facts;  // Keep release compilers happy.
   assert(!irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id()) &&
          "Irrelevant ids are not allowed.");
 
