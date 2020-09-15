@@ -54,6 +54,7 @@
 #include "source/fuzz/transformation_compute_data_synonym_fact_closure.h"
 #include "source/fuzz/transformation_duplicate_region_with_selection.h"
 #include "source/fuzz/transformation_equation_instruction.h"
+#include "source/fuzz/transformation_flatten_conditional_branch.h"
 #include "source/fuzz/transformation_function_call.h"
 #include "source/fuzz/transformation_inline_function.h"
 #include "source/fuzz/transformation_invert_comparison_operator.h"
@@ -204,6 +205,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kEquationInstruction:
       return MakeUnique<TransformationEquationInstruction>(
           message.equation_instruction());
+    case protobufs::Transformation::TransformationCase::
+        kFlattenConditionalBranch:
+      return MakeUnique<TransformationFlattenConditionalBranch>(
+          message.flatten_conditional_branch());
     case protobufs::Transformation::TransformationCase::kFunctionCall:
       return MakeUnique<TransformationFunctionCall>(message.function_call());
     case protobufs::Transformation::TransformationCase::kInlineFunction:

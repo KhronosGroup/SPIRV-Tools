@@ -529,6 +529,12 @@ bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
 bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
     opt::BasicBlock* block_to_split, opt::Instruction* split_before);
 
+// Returns true if the instruction given has no side effects.
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3758): Add any
+//  missing instructions to the list. In particular, GLSL extended instructions
+//  (called using OpExtInst) have not been considered.
+bool InstructionHasNoSideEffects(const opt::Instruction& instruction);
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools
