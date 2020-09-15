@@ -607,7 +607,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesMemoryInstructions) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactValueOfPointeeIsIrrelevant(22);
+  fact_manager.AddFactValueOfPointeeIsIrrelevant(22, context.get());
 
   // Invalid swaps.
 
