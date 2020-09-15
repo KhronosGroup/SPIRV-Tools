@@ -60,8 +60,8 @@ bool TransformationEquationInstruction::IsApplicable(
     if (inst->opcode() == SpvOpUndef) {
       return false;
     }
-    if (transformation_context.GetFactManager()->IdIsIrrelevant(ir_context,
-                                                                id)) {
+    if (transformation_context.GetFactManager()->IdIsIrrelevant(id,
+                                                                ir_context)) {
       return false;
     }
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,

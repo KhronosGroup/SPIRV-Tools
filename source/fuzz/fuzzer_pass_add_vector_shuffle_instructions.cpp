@@ -75,8 +75,8 @@ void FuzzerPassAddVectorShuffleInstructions::Apply() {
 
                   if (!GetTransformationContext()
                            ->GetFactManager()
-                           ->IdIsIrrelevant(GetIRContext(),
-                                            instruction->result_id()) &&
+                           ->IdIsIrrelevant(instruction->result_id(),
+                                            GetIRContext()) &&
                       !fuzzerutil::CanMakeSynonymOf(ir_context,
                                                     *GetTransformationContext(),
                                                     instruction)) {

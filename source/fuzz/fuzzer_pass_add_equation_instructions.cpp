@@ -83,8 +83,8 @@ void FuzzerPassAddEquationInstructions::Apply() {
                          instruction->opcode() != SpvOpUndef &&
                          !GetTransformationContext()
                               ->GetFactManager()
-                              ->IdIsIrrelevant(ir_context,
-                                               instruction->result_id());
+                              ->IdIsIrrelevant(instruction->result_id(),
+                                               ir_context);
                 });
 
         // Try the opcodes for which we know how to make ids at random until

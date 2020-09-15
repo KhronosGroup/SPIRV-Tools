@@ -1440,13 +1440,13 @@ TEST(FactManagerTest, IdIsIrrelevant) {
 
   FactManager fact_manager;
 
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 12));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 13));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(12, context.get()));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13, context.get()));
 
   fact_manager.AddFactIdIsIrrelevant(12, context.get());
 
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(context.get(), 12));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(context.get(), 13));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(12, context.get()));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13, context.get()));
 }
 
 TEST(FactManagerTest, GetIrrelevantIds) {
