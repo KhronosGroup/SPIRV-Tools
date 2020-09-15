@@ -27,7 +27,7 @@ TEST(TransformationAddBitInstructionSynonymTest, IsApplicable) {
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %37 "main"
 
-; Types   
+; Types
           %2 = OpTypeInt 32 0
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
@@ -168,7 +168,7 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %37 "main"
 
-; Types   
+; Types
           %2 = OpTypeInt 32 0
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
@@ -245,7 +245,7 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %37 "main"
 
-; Types   
+; Types
           %2 = OpTypeInt 32 0
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
