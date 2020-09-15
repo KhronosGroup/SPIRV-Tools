@@ -93,11 +93,18 @@ class TransformationFlattenConditionalBranch : public Transformation {
   // 2 fresh ids are required if the instruction does not have a result id (the
   // first two ids in |wrapper_info| must be valid fresh ids), 5 otherwise.
   // Returns the merge block created.
+  //
+  // |dead_blocks| and |irrelevant_ids| are used to record the ids of blocks
+  // and instructions for which dead block and irrelevant id facts should
+  // ultimately be created.
   opt::BasicBlock* EncloseInstructionInConditional(
-      opt::IRContext* ir_context, TransformationContext* transformation_context,
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context,
       opt::BasicBlock* block, opt::Instruction* instruction,
       const protobufs::SideEffectWrapperInfo& wrapper_info,
-      uint32_t condition_id, bool exec_if_cond_true) const;
+      uint32_t condition_id, bool exec_if_cond_true,
+      std::vector<uint32_t>* dead_blocks,
+      std::vector<uint32_t>* irrelevant_ids) const;
 
   // Returns true if the given instruction either has no side effects or it can
   // be handled by being enclosed in a conditional.
