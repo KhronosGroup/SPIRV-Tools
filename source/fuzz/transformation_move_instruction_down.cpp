@@ -14,9 +14,9 @@
 
 #include "source/fuzz/transformation_move_instruction_down.h"
 
-#include "external/spirv-headers/include/spirv/unified1/GLSL.std.450.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "spirv/unified1/GLSL.std.450.h"
 
 namespace spvtools {
 namespace fuzz {
