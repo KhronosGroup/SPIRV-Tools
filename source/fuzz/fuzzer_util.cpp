@@ -503,6 +503,9 @@ bool FunctionIsEntryPoint(opt::IRContext* context, uint32_t function_id) {
 bool IdIsAvailableAtUse(opt::IRContext* context,
                         opt::Instruction* use_instruction,
                         uint32_t use_input_operand_index, uint32_t id) {
+  assert(context->get_instr_block(use_instruction) &&
+         "|use_instruction| must be in a basic block");
+
   auto defining_instruction = context->get_def_use_mgr()->GetDef(id);
   auto enclosing_function =
       context->get_instr_block(use_instruction)->GetParent();
@@ -521,6 +524,12 @@ bool IdIsAvailableAtUse(opt::IRContext* context,
     return false;
   }
   auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
+  if (!dominator_analysis->IsReachable(
+          context->get_instr_block(use_instruction)) ||
+      !dominator_analysis->IsReachable(context->get_instr_block(id))) {
+    // Skip unreachable blocks.
+    return false;
+  }
   if (use_instruction->opcode() == SpvOpPhi) {
     // In the case where the use is an operand to OpPhi, it is actually the
     // *parent* block associated with the operand that must be dominated by
@@ -536,6 +545,9 @@ bool IdIsAvailableAtUse(opt::IRContext* context,
 bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
                                     opt::Instruction* instruction,
                                     uint32_t id) {
+  assert(context->get_instr_block(instruction) &&
+         "|instruction| must be in a basic block");
+
   auto defining_instruction = context->get_def_use_mgr()->GetDef(id);
   auto enclosing_function = context->get_instr_block(instruction)->GetParent();
   // If the id a function parameter, it needs to be associated with the
@@ -552,8 +564,12 @@ bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
     // The instruction is not available right before its own definition.
     return false;
   }
-  return context->GetDominatorAnalysis(enclosing_function)
-      ->Dominates(defining_instruction, instruction);
+  const auto* dominator_analysis =
+      context->GetDominatorAnalysis(enclosing_function);
+  return dominator_analysis->IsReachable(
+             context->get_instr_block(instruction)) &&
+         dominator_analysis->IsReachable(context->get_instr_block(id)) &&
+         dominator_analysis->Dominates(defining_instruction, instruction);
 }
 
 bool InstructionIsFunctionParameter(opt::Instruction* instruction,

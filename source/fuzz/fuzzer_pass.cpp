@@ -107,7 +107,20 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
         action) {
   // Consider every block in every function.
   for (auto& function : *GetIRContext()->module()) {
+    // Consider only reachable blocks. We do this in a separate loop to avoid
+    // recomputing the dominator analysis every time |action| changes the
+    // module.
+    std::vector<opt::BasicBlock*> reachable_blocks;
+
+    const auto* dominator_analysis =
+        GetIRContext()->GetDominatorAnalysis(&function);
     for (auto& block : function) {
+      if (dominator_analysis->IsReachable(&block)) {
+        reachable_blocks.push_back(&block);
+      }
+    }
+
+    for (auto* block : reachable_blocks) {
       // We now consider every instruction in the block, randomly deciding
       // whether to apply a transformation before it.
 
@@ -122,7 +135,7 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
           base_opcode_skip_triples;
 
       // The initial base instruction is the block label.
-      uint32_t base = block.id();
+      uint32_t base = block->id();
 
       // Counts the number of times we have seen each opcode since we reset the
       // base instruction.
@@ -131,7 +144,7 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
       // Consider every instruction in the block.  The label is excluded: it is
       // only necessary to consider it as a base in case the first instruction
       // in the block does not have a result id.
-      for (auto inst_it = block.begin(); inst_it != block.end(); ++inst_it) {
+      for (auto inst_it = block->begin(); inst_it != block->end(); ++inst_it) {
         if (inst_it->HasResultId()) {
           // In the case that the instruction has a result id, we use the
           // instruction as its own base, and clear the skip counts we have
@@ -142,7 +155,7 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
         const SpvOp opcode = inst_it->opcode();
 
         // Invoke the provided function, which might apply a transformation.
-        action(&function, &block, inst_it,
+        action(&function, block, inst_it,
                MakeInstructionDescriptor(
                    base, opcode,
                    skip_count.count(opcode) ? skip_count.at(opcode) : 0));

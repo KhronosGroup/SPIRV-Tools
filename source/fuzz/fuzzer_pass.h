@@ -70,9 +70,9 @@ class FuzzerPass {
       std::function<bool(opt::IRContext*, opt::Instruction*)>
           instruction_is_relevant) const;
 
-  // A helper method that iterates through each instruction in each block, at
-  // all times tracking an instruction descriptor that allows the latest
-  // instruction to be located even if it has no result id.
+  // A helper method that iterates through each instruction in each reachable
+  // block, at all times tracking an instruction descriptor that allows the
+  // latest instruction to be located even if it has no result id.
   //
   // The code to manipulate the instruction descriptor is a bit fiddly.  The
   // point of this method is to avoiding having to duplicate it in multiple
