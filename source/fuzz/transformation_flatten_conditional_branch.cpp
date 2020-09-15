@@ -579,7 +579,7 @@ TransformationFlattenConditionalBranch::EncloseInstructionInConditional(
 
     // Mark |ids.placeholder_result_id| as irrelevant.
     transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
-        wrapper_info.placeholder_result_id());
+        wrapper_info.placeholder_result_id(), ir_context);
 
     // Add an unconditional branch from the new block to the merge block.
     alternative_block_temp->AddInstruction(MakeUnique<opt::Instruction>(
