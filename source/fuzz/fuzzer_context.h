@@ -115,6 +115,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingArrayOrStructType() {
     return chance_of_adding_array_or_struct_type_;
   }
+  uint32_t GetChanceOfAddingBitInstructionSynonym() {
+    return chance_of_adding_bit_instruction_synonym_;
+  }
   uint32_t GetChanceOfAddingBothBranchesWhenReplacingOpSelect() {
     return chance_of_adding_both_branches_when_replacing_opselect_;
   }
@@ -379,6 +382,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_access_chain_;
   uint32_t chance_of_adding_another_struct_field_;
   uint32_t chance_of_adding_array_or_struct_type_;
+  uint32_t chance_of_adding_bit_instruction_synonym_;
   uint32_t chance_of_adding_both_branches_when_replacing_opselect_;
   uint32_t chance_of_adding_composite_insert_;
   uint32_t chance_of_adding_copy_memory_;
