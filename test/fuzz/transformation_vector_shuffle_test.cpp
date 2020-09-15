@@ -693,7 +693,7 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds2) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(112);
+  fact_manager.AddFactIdIsIrrelevant(112, context.get());
   TransformationVectorShuffle transformation(
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 200, 12, 112, {2, 0});
   ASSERT_TRUE(

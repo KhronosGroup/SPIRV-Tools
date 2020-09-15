@@ -147,23 +147,23 @@ TEST(TransformationFunctionCallTest, BasicTest) {
   transformation_context.GetFactManager()->AddFactFunctionIsLivesafe(21);
   transformation_context.GetFactManager()->AddFactFunctionIsLivesafe(200);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      71);
+      71, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      72);
+      72, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      19);
+      19, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      20);
+      20, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      23);
+      23, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      44);
+      44, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      46);
+      46, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      51);
+      51, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      52);
+      52, context.get());
 
   // Livesafe functions with argument types: 21(7, 13), 200(7, 13)
   // Non-livesafe functions with argument types: 4(), 10(7), 17(7, 13), 24(7)

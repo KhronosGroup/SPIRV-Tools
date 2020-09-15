@@ -125,20 +125,6 @@ void TransformationAddParameter::Apply(
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.parameter_fresh_id());
 
-  // If the |new_parameter_type_id| is not a pointer type, mark id as
-  // irrelevant so that we can replace its use with some other id. If the
-  // |new_parameter_type_id| is a pointer type, we cannot mark it with
-  // IdIsIrrelevant, because this pointer might be replaced by a pointer from
-  // original shader. This would change the semantics of the module. In the case
-  // of a pointer type we mark it with PointeeValueIsIrrelevant.
-  if (new_parameter_type->kind() != opt::analysis::Type::kPointer) {
-    transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
-        message_.parameter_fresh_id());
-  } else {
-    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        message_.parameter_fresh_id());
-  }
-
   // Fix all OpFunctionCall instructions.
   for (auto* inst : fuzzerutil::GetCallers(ir_context, function->result_id())) {
     inst->AddOperand(
@@ -167,9 +153,25 @@ void TransformationAddParameter::Apply(
         old_function_type->GetSingleWordInOperand(0), parameter_type_ids);
   }
 
+  auto new_parameter_kind = new_parameter_type->kind();
+
   // Make sure our changes are analyzed.
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
+
+  // If the |new_parameter_type_id| is not a pointer type, mark id as
+  // irrelevant so that we can replace its use with some other id. If the
+  // |new_parameter_type_id| is a pointer type, we cannot mark it with
+  // IdIsIrrelevant, because this pointer might be replaced by a pointer from
+  // original shader. This would change the semantics of the module. In the case
+  // of a pointer type we mark it with PointeeValueIsIrrelevant.
+  if (new_parameter_kind != opt::analysis::Type::kPointer) {
+    transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
+        message_.parameter_fresh_id(), ir_context);
+  } else {
+    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+        message_.parameter_fresh_id(), ir_context);
+  }
 }
 
 protobufs::Transformation TransformationAddParameter::ToMessage() const {

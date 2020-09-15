@@ -24,15 +24,28 @@ namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
+// Forward reference to the DataSynonymAndIdEquationFacts class.
+class DataSynonymAndIdEquationFacts;
+
 // The purpose of this class is to group the fields and data used to represent
 // facts about various irrelevant values in the module.
 class IrrelevantValueFacts {
  public:
   // See method in FactManager which delegates to this method.
-  void AddFact(const protobufs::FactPointeeValueIsIrrelevant& fact);
+  // |data_synonym_and_id_equation_facts| and |context| are passed for
+  // consistency checks.
+  void AddFact(
+      const protobufs::FactPointeeValueIsIrrelevant& fact,
+      const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
+      opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
-  void AddFact(const protobufs::FactIdIsIrrelevant& fact);
+  // |data_synonym_and_id_equation_facts| and |context| are passed for
+  // consistency checks.
+  void AddFact(
+      const protobufs::FactIdIsIrrelevant& fact,
+      const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
+      opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
   bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;

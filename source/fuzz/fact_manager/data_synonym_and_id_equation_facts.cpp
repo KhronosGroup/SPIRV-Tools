@@ -52,9 +52,13 @@ bool DataSynonymAndIdEquationFacts::OperationEquals::operator()(
 }
 
 void DataSynonymAndIdEquationFacts::AddFact(
-    const protobufs::FactDataSynonym& fact, opt::IRContext* context) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550)
-  //  Assert that ids are not irrelevant.
+    const protobufs::FactDataSynonym& fact,
+    const IrrelevantValueFacts& irrelevant_value_facts,
+    opt::IRContext* context) {
+  (void)irrelevant_value_facts;  // Keep release compilers happy.
+  assert(!irrelevant_value_facts.IdIsIrrelevant(fact.data1().object()) &&
+         !irrelevant_value_facts.IdIsIrrelevant(fact.data2().object()) &&
+         "Irrelevant ids cannot be synonymous with other ids.");
 
   // Add the fact, including all facts relating sub-components of the data
   // descriptors that are involved.
@@ -62,9 +66,12 @@ void DataSynonymAndIdEquationFacts::AddFact(
 }
 
 void DataSynonymAndIdEquationFacts::AddFact(
-    const protobufs::FactIdEquation& fact, opt::IRContext* context) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550)
-  //  Assert that ids are not irrelevant.
+    const protobufs::FactIdEquation& fact,
+    const IrrelevantValueFacts& irrelevant_value_facts,
+    opt::IRContext* context) {
+  (void)irrelevant_value_facts;  // Keep release compilers happy.
+  assert(!irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id()) &&
+         "Irrelevant ids are not allowed.");
 
   protobufs::DataDescriptor lhs_dd = MakeDataDescriptor(fact.lhs_id(), {});
 
@@ -75,8 +82,8 @@ void DataSynonymAndIdEquationFacts::AddFact(
   // equation.
   std::vector<const protobufs::DataDescriptor*> rhs_dds;
   for (auto rhs_id : fact.rhs_id()) {
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550)
-    //  Assert that ids are not irrelevant.
+    assert(!irrelevant_value_facts.IdIsIrrelevant(rhs_id) &&
+           "Irrelevant ids are not allowed.");
 
     // Register a data descriptor based on this id in the equivalence relation
     // if needed, and then record the equivalence class representative.
@@ -826,6 +833,11 @@ bool DataSynonymAndIdEquationFacts::DataDescriptorsAreWellFormedAndComparable(
          (type_b->AsInteger() || type_b->AsFloat()) &&
          (get_bit_count_for_numeric_type(*type_a) ==
           get_bit_count_for_numeric_type(*type_b));
+}
+
+std::vector<const protobufs::DataDescriptor*>
+DataSynonymAndIdEquationFacts::GetSynonymsForId(uint32_t id) const {
+  return GetSynonymsForDataDescriptor(MakeDataDescriptor(id, {}));
 }
 
 std::vector<const protobufs::DataDescriptor*>

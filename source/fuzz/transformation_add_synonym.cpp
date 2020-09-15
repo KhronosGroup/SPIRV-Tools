@@ -109,7 +109,7 @@ void TransformationAddSynonym::Apply(
           message_.result_id()) &&
       new_synonym_type->AsPointer()) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        message_.synonym_fresh_id());
+        message_.synonym_fresh_id(), ir_context);
   }
 
   // Mark two ids as synonymous.

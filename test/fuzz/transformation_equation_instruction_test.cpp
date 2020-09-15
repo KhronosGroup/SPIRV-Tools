@@ -1578,10 +1578,10 @@ TEST(TransformationEquationInstructionTest, HandlesIrrelevantIds) {
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Handles irrelevant ids.
-  fact_manager.AddFactIdIsIrrelevant(16);
+  fact_manager.AddFactIdIsIrrelevant(16, context.get());
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
-  fact_manager.AddFactIdIsIrrelevant(15);
+  fact_manager.AddFactIdIsIrrelevant(15, context.get());
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 }

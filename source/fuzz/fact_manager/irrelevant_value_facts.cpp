@@ -15,25 +15,43 @@
 #include "source/fuzz/fact_manager/irrelevant_value_facts.h"
 
 #include "source/fuzz/data_descriptor.h"
-#include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/fact_manager/data_synonym_and_id_equation_facts.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
 void IrrelevantValueFacts::AddFact(
-    const protobufs::FactPointeeValueIsIrrelevant& fact) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550)
-  //  Assert that the id does not participate in DataSynonym facts and is a
-  //  pointer.
+    const protobufs::FactPointeeValueIsIrrelevant& fact,
+    const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
+    opt::IRContext* context) {
+  (void)data_synonym_and_id_equation_facts;  // Keep release compilers happy.
+  assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.pointer_id())
+             .empty() &&
+         "The id cannot participate in DataSynonym facts.");
+  auto pointer_def = context->get_def_use_mgr()->GetDef(fact.pointer_id());
+  assert(pointer_def && "The id must exist in the module.");
+  auto type = context->get_type_mgr()->GetType(pointer_def->type_id());
+  (void)type;  // Keep release compilers happy.
+  assert(type && type->AsPointer() && "The id must be a pointer.");
 
   pointers_to_irrelevant_pointees_ids_.insert(fact.pointer_id());
 }
 
-void IrrelevantValueFacts::AddFact(const protobufs::FactIdIsIrrelevant& fact) {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3550)
-  //  Assert that the id does not participate in DataSynonym facts and is not a
-  //  pointer.
+void IrrelevantValueFacts::AddFact(
+    const protobufs::FactIdIsIrrelevant& fact,
+    const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts,
+    opt::IRContext* context) {
+  (void)data_synonym_and_id_equation_facts;  // Keep release compilers happy.
+  assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.result_id())
+             .empty() &&
+         "The id cannot participate in DataSynonym facts.");
+  auto pointer_def = context->get_def_use_mgr()->GetDef(fact.result_id());
+  assert(pointer_def && "The id must exist in the module.");
+  auto type = context->get_type_mgr()->GetType(pointer_def->type_id());
+  (void)type;  // Keep release compilers happy.
+  assert(type && !type->AsPointer() && "The id must not be a pointer.");
 
   irrelevant_ids_.insert(fact.result_id());
 }
