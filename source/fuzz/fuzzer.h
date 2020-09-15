@@ -21,6 +21,8 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass.h"
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/pass_instances.h"
+#include "source/fuzz/pass_recommender.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "spirv-tools/libspirv.hpp"
 
@@ -39,11 +41,22 @@ class Fuzzer {
     kInitialBinaryInvalid,
   };
 
+  // TODO comment
+  enum class RepeatedPassStrategy {
+    kSimple,
+    kRandomWithRecommendations,
+    kLoopedWithRecommendations
+  };
+
   // Constructs a fuzzer from the given target environment |target_env|.  |seed|
-  // is a seed for pseudo-random number generation.
-  // |validate_after_each_fuzzer_pass| controls whether the validator will be
-  // invoked after every fuzzer pass is applied.
-  Fuzzer(spv_target_env target_env, uint32_t seed,
+  // is a seed for pseudo-random number generation.  If |enable_all_passes| is
+  // true then all fuzzer passes will be enabled, otherwise a random subset of
+  // fuzzer passes will be enabled.  |validate_after_each_fuzzer_pass| controls
+  // whether the validator will be invoked after every fuzzer pass is applied,
+  // and |validator_options| provides the options that should be used during
+  // validation if so.
+  Fuzzer(spv_target_env target_env, uint32_t seed, bool enable_all_passes,
+         RepeatedPassStrategy repeated_pass_strategy,
          bool validate_after_each_fuzzer_pass,
          spv_validator_options validator_options);
 
@@ -73,35 +86,31 @@ class Fuzzer {
       protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:
-  // This type is used to record a single instance of every fuzzer pass that
-  // is enabled and that can be applied repeatedly.
-  struct PassInstances;
 
-  bool ApplyFuzzerPassesSimple(
-      const spvtools::SpirvTools& tools,
-      const std::vector<std::unique_ptr<FuzzerPass>>& enabled_passes,
-      FuzzerContext* fuzzer_context, opt::IRContext* ir_context,
-      protobufs::TransformationSequence* transformation_sequence_out) const;
+  // TODO revise comment and consider renaming.
+  // A convenience method to add a fuzzer pass to |passes| with probability 0.5.
+  // All fuzzer passes take |ir_context|, |transformation_context|,
+  // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
+  // arguments can be provided via |extra_args|.
+  //
+  // If the fuzzer pass is added, a pointer to the pass is returned.  Otherwise
+  // |nullptr| is returned.
+  template <typename T, typename... Args>
+  void MaybeAddPassInstance(PassInstances* pass_instances,
+                          opt::IRContext* ir_context,
+                          TransformationContext* transformation_context,
+                          FuzzerContext* fuzzer_context,
+                          protobufs::TransformationSequence* transformation_sequence_out,
+                          Args&&... extra_args) const;
 
-  bool ApplyFuzzerPassesRandomlyWithRecommendations(
-      const spvtools::SpirvTools& tools, const PassInstances& pass_instances,
-      const std::vector<std::unique_ptr<FuzzerPass>>& enabled_passes,
-      FuzzerContext* fuzzer_context, opt::IRContext* ir_context,
-      protobufs::TransformationSequence* transformation_sequence_out) const;
-
-  bool ApplyFuzzerPassesLoopedWithRecommendations(
-      const spvtools::SpirvTools& tools, const PassInstances& pass_instances,
-      const std::vector<std::unique_ptr<FuzzerPass>>& enabled_passes,
-      FuzzerContext* fuzzer_context, opt::IRContext* ir_context,
-      protobufs::TransformationSequence* transformation_sequence_out) const;
-
-  std::vector<FuzzerPass*> GetRecommendedFuturePasses(
-      FuzzerPass* completed_pass, const PassInstances& pass_instances,
-      FuzzerContext* fuzzer_context) const;
-
-  std::vector<FuzzerPass*> RandomOrderAndNonNull(
-      const std::vector<FuzzerPass*>& passes,
-      FuzzerContext* fuzzer_context) const;
+  // TODO consider renaming
+  template <typename T, typename... Args>
+  void MaybeAddPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
+                            opt::IRContext* ir_context,
+                            TransformationContext* transformation_context,
+                            FuzzerContext* fuzzer_context,
+                            protobufs::TransformationSequence* transformation_sequence_out,
+                            Args&&... extra_args) const;
 
   bool ContinueFuzzing(
       const protobufs::TransformationSequence& transformation_sequence_out,
@@ -122,6 +131,13 @@ class Fuzzer {
 
   // Seed for random number generator.
   const uint32_t seed_;
+
+  // Determines whether all passes should be enabled, vs. having passes be
+  // probabilistically enabled.
+  bool enable_all_passes_;
+
+  // TODO comment
+  RepeatedPassStrategy repeated_pass_strategy_;
 
   // Determines whether the validator should be invoked after every fuzzer pass.
   bool validate_after_each_fuzzer_pass_;

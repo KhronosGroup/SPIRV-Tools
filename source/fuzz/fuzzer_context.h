@@ -109,6 +109,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingAccessChain() {
     return chance_of_adding_access_chain_;
   }
+  uint32_t GetChanceOfAddingAnotherPassToPassLoop() {
+    return chance_of_adding_another_pass_to_pass_loop_;
+  }
   uint32_t GetChanceOfAddingAnotherStructField() {
     return chance_of_adding_another_struct_field_;
   }
@@ -380,6 +383,7 @@ class FuzzerContext {
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
   uint32_t chance_of_adding_access_chain_;
+  uint32_t chance_of_adding_another_pass_to_pass_loop_;
   uint32_t chance_of_adding_another_struct_field_;
   uint32_t chance_of_adding_array_or_struct_type_;
   uint32_t chance_of_adding_bit_instruction_synonym_;

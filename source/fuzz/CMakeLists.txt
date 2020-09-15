@@ -118,9 +118,16 @@ if(SPIRV_BUILD_FUZZER)
         instruction_descriptor.h
         instruction_message.h
         overflow_id_source.h
+        pass_instances.h
+        pass_recommender.h
+        pass_recommender_standard.h
         protobufs/spirvfuzz_protobufs.h
         pseudo_random_generator.h
         random_generator.h
+        repeated_pass_manager.h
+        repeated_pass_manager_looped_with_recommendations.h
+        repeated_pass_manager_random_with_recommendations.h
+        repeated_pass_manager_simple.h
         replayer.h
         shrinker.h
         transformation.h
@@ -285,8 +292,14 @@ if(SPIRV_BUILD_FUZZER)
         instruction_descriptor.cpp
         instruction_message.cpp
         overflow_id_source.cpp
+        pass_recommender.cpp
+        pass_recommender_standard.cpp
         pseudo_random_generator.cpp
         random_generator.cpp
+        repeated_pass_manager.cpp
+        repeated_pass_manager_looped_with_recommendations.cpp
+        repeated_pass_manager_random_with_recommendations.cpp
+        repeated_pass_manager_simple.cpp
         replayer.cpp
         shrinker.cpp
         transformation.cpp

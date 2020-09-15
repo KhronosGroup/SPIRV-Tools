@@ -15,7 +15,6 @@
 #include "source/fuzz/fuzzer.h"
 
 #include <cassert>
-#include <deque>
 #include <memory>
 #include <numeric>
 
@@ -83,6 +82,11 @@
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
+#include "source/fuzz/pass_recommender_standard.h"
+#include "source/fuzz/repeated_pass_manager.h"
+#include "source/fuzz/repeated_pass_manager_looped_with_recommendations.h"
+#include "source/fuzz/repeated_pass_manager_random_with_recommendations.h"
+#include "source/fuzz/repeated_pass_manager_simple.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/transformation_context.h"
@@ -98,46 +102,17 @@ const uint32_t kIdBoundGap = 100;
 
 const uint32_t kTransformationLimit = 2000;
 
-const uint32_t kChanceOfAddingAnotherPassToPassLoop = 90;
-
-// A convenience method to add a fuzzer pass to |passes| with probability 0.5.
-// All fuzzer passes take |ir_context|, |transformation_context|,
-// |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
-// arguments can be provided via |extra_args|.
-//
-// If the fuzzer pass is added, a pointer to the pass is returned.  Otherwise
-// |nullptr| is returned.
-template <typename T, typename... Args>
-T* MaybeAddPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
-                opt::IRContext* ir_context,
-                TransformationContext* transformation_context,
-                FuzzerContext* fuzzer_context,
-                protobufs::TransformationSequence* transformation_sequence_out,
-                Args&&... extra_args) {
-  if (fuzzer_context->ChooseEven()) {
-    auto pass = MakeUnique<T>(ir_context, transformation_context,
-                              fuzzer_context, transformation_sequence_out,
-                              std::forward<Args>(extra_args)...);
-    auto result = pass.get();
-    passes->push_back(std::move(pass));
-    return result;
-  }
-  return nullptr;
-}
-
-enum FuzzerStrategy {
-  kSimple,
-  kRandomWithRecommendations,
-  kLoopedWithRecommendations
-};
-
 }  // namespace
 
 Fuzzer::Fuzzer(spv_target_env target_env, uint32_t seed,
+               bool enable_all_passes,
+               RepeatedPassStrategy repeated_pass_strategy,
                bool validate_after_each_fuzzer_pass,
                spv_validator_options validator_options)
     : target_env_(target_env),
       seed_(seed),
+      enable_all_passes_(enable_all_passes),
+      repeated_pass_strategy_(repeated_pass_strategy),
       validate_after_each_fuzzer_pass_(validate_after_each_fuzzer_pass),
       validator_options_(validator_options) {}
 
@@ -145,6 +120,34 @@ Fuzzer::~Fuzzer() = default;
 
 void Fuzzer::SetMessageConsumer(MessageConsumer consumer) {
   consumer_ = std::move(consumer);
+}
+
+template <typename T, typename... Args>
+void Fuzzer::MaybeAddPassInstance(PassInstances* pass_instances,
+                        opt::IRContext* ir_context,
+                        TransformationContext* transformation_context,
+                        FuzzerContext* fuzzer_context,
+                        protobufs::TransformationSequence* transformation_sequence_out,
+                        Args&&... extra_args) const {
+  if (enable_all_passes_ || fuzzer_context->ChooseEven()) {
+    pass_instances->SetPass(MakeUnique<T>(ir_context, transformation_context,
+                              fuzzer_context, transformation_sequence_out,
+                              std::forward<Args>(extra_args)...));
+  }
+}
+
+template <typename T, typename... Args>
+void Fuzzer::MaybeAddPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
+                          opt::IRContext* ir_context,
+                                  TransformationContext* transformation_context,
+                                  FuzzerContext* fuzzer_context,
+                                  protobufs::TransformationSequence* transformation_sequence_out,
+                                  Args&&... extra_args) const {
+  if (enable_all_passes_ || fuzzer_context->ChooseEven()) {
+    passes->push_back(MakeUnique<T>(ir_context, transformation_context,
+                                          fuzzer_context, transformation_sequence_out,
+                                          std::forward<Args>(extra_args)...));
+  }
 }
 
 bool Fuzzer::ApplyPassAndCheckValidity(
@@ -164,61 +167,6 @@ bool Fuzzer::ApplyPassAndCheckValidity(
   }
   return true;
 }
-
-// This struct should have one field for every distinct fuzzer pass that can be
-// applied repeatedly.  Fuzzer passes that are only intended to be run at most
-// once, at the end of fuzzing, are not included.
-struct Fuzzer::PassInstances {
-  FuzzerPassAddAccessChains* add_access_chains;
-  FuzzerPassAddCompositeInserts* add_composite_inserts;
-  FuzzerPassAddCompositeTypes* add_composite_types;
-  FuzzerPassAddCopyMemory* add_copy_memory;
-  FuzzerPassAddDeadBlocks* add_dead_blocks;
-  FuzzerPassAddDeadBreaks* add_dead_breaks;
-  FuzzerPassAddDeadContinues* add_dead_continues;
-  FuzzerPassAddEquationInstructions* add_equation_instructions;
-  FuzzerPassAddFunctionCalls* add_function_calls;
-  FuzzerPassAddGlobalVariables* add_global_variables;
-  FuzzerPassAddImageSampleUnusedComponents* add_image_sample_unused_components;
-  FuzzerPassAddLoads* add_loads;
-  FuzzerPassAddLocalVariables* add_local_variables;
-  FuzzerPassAddLoopPreheaders* add_loop_preheaders;
-  FuzzerPassAddOpPhiSynonyms* add_op_phi_synonyms;
-  FuzzerPassAddParameters* add_parameters;
-  FuzzerPassAddRelaxedDecorations* add_relaxed_decorations;
-  FuzzerPassAddStores* add_stores;
-  FuzzerPassAddSynonyms* add_synonyms;
-  FuzzerPassAddVectorShuffleInstructions* add_vector_shuffle_instructions;
-  FuzzerPassApplyIdSynonyms* apply_id_synonyms;
-  FuzzerPassConstructComposites* construct_composites;
-  FuzzerPassCopyObjects* copy_objects;
-  FuzzerPassDonateModules* donate_modules;
-  FuzzerPassInlineFunctions* inline_functions;
-  FuzzerPassInvertComparisonOperators* invert_comparison_operators;
-  FuzzerPassMakeVectorOperationsDynamic* make_vector_operations_dynamic;
-  FuzzerPassMergeBlocks* merge_blocks;
-  FuzzerPassObfuscateConstants* obfuscate_constants;
-  FuzzerPassOutlineFunctions* outline_functions;
-  FuzzerPassPermuteBlocks* permute_blocks;
-  FuzzerPassPermuteFunctionParameters* permute_function_parameters;
-  FuzzerPassPermuteInstructions* permute_instructions;
-  FuzzerPassPropagateInstructionsUp* propagate_instructions_up;
-  FuzzerPassPushIdsThroughVariables* push_ids_through_variables;
-  FuzzerPassReplaceAddsSubsMulsWithCarryingExtended*
-      replace_adds_subs_muls_with_carrying_extended;
-  FuzzerPassReplaceCopyMemoriesWithLoadsStores*
-      replace_copy_memories_with_loads_stores;
-  FuzzerPassReplaceCopyObjectsWithStoresLoads*
-      replace_copy_objects_with_stores_loads;
-  FuzzerPassReplaceLoadsStoresWithCopyMemories*
-      replace_loads_stores_with_copy_memories;
-  FuzzerPassReplaceParameterWithGlobal* replace_parameter_with_global;
-  FuzzerPassReplaceLinearAlgebraInstructions*
-      replace_linear_algebra_instructions;
-  FuzzerPassReplaceParamsWithStruct* replace_params_with_struct;
-  FuzzerPassSplitBlocks* split_blocks;
-  FuzzerPassSwapBranchConditionalOperands* swap_branch_conditional_operands;
-};
 
 Fuzzer::FuzzerResultStatus Fuzzer::Run(
     const std::vector<uint32_t>& binary_in,
@@ -268,14 +216,10 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   TransformationContext transformation_context(&fact_manager,
                                                validator_options_);
 
-  // Each field will be set to |nullptr| if the corresponding fuzzer pass is
-  // not available, and otherwise will be a pointer to an instance of the
-  // fuzzer pass.
-  PassInstances pass_instances = {};
-
-  // Of the passes that can be applied repeatedly, this captures those that are
-  // enabled.
-  std::vector<std::unique_ptr<FuzzerPass>> enabled_passes;
+  // Each fuzzer pass field will be set to |nullptr| if the corresponding fuzzer
+  // pass is not available, and otherwise will be a pointer to an instance of
+  // the fuzzer pass.  The sequence of enabled passes is also stored.
+  PassInstances pass_instances{};
 
   do {
     // Each call to MaybeAddPass randomly decides whether the given pass should
@@ -284,197 +228,165 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     // Each pass that *is* enabled is added to |passes|, and a pointer to the
     // pass is set in the corresponding field of |pass_instances| to allow us
     // to refer to the instance by name.
-    pass_instances.add_access_chains = MaybeAddPass<FuzzerPassAddAccessChains>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddAccessChains>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_composite_inserts =
-        MaybeAddPass<FuzzerPassAddCompositeInserts>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddCompositeInserts>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_composite_types =
-        MaybeAddPass<FuzzerPassAddCompositeTypes>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddCompositeTypes>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_copy_memory = MaybeAddPass<FuzzerPassAddCopyMemory>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddCopyMemory>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_dead_blocks = MaybeAddPass<FuzzerPassAddDeadBlocks>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddDeadBlocks>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_dead_breaks = MaybeAddPass<FuzzerPassAddDeadBreaks>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddDeadBreaks>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_dead_continues =
-        MaybeAddPass<FuzzerPassAddDeadContinues>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddDeadContinues>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_equation_instructions =
-        MaybeAddPass<FuzzerPassAddEquationInstructions>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddEquationInstructions>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_function_calls =
-        MaybeAddPass<FuzzerPassAddFunctionCalls>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddFunctionCalls>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_global_variables =
-        MaybeAddPass<FuzzerPassAddGlobalVariables>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddGlobalVariables>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_image_sample_unused_components =
-        MaybeAddPass<FuzzerPassAddImageSampleUnusedComponents>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddImageSampleUnusedComponents>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_loads = MaybeAddPass<FuzzerPassAddLoads>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddLoads>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_local_variables =
-        MaybeAddPass<FuzzerPassAddLocalVariables>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddLocalVariables>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_loop_preheaders =
-        MaybeAddPass<FuzzerPassAddLoopPreheaders>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddLoopPreheaders>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_op_phi_synonyms =
-        MaybeAddPass<FuzzerPassAddOpPhiSynonyms>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddOpPhiSynonyms>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_parameters = MaybeAddPass<FuzzerPassAddParameters>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddParameters>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_relaxed_decorations =
-        MaybeAddPass<FuzzerPassAddRelaxedDecorations>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddRelaxedDecorations>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_stores = MaybeAddPass<FuzzerPassAddStores>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddStores>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_synonyms = MaybeAddPass<FuzzerPassAddSynonyms>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddSynonyms>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.add_vector_shuffle_instructions =
-        MaybeAddPass<FuzzerPassAddVectorShuffleInstructions>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassAddVectorShuffleInstructions>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.apply_id_synonyms = MaybeAddPass<FuzzerPassApplyIdSynonyms>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassApplyIdSynonyms>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.construct_composites =
-        MaybeAddPass<FuzzerPassConstructComposites>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassConstructComposites>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.copy_objects = MaybeAddPass<FuzzerPassCopyObjects>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassCopyObjects>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.donate_modules = MaybeAddPass<FuzzerPassDonateModules>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassDonateModules>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out, donor_suppliers);
-    pass_instances.inline_functions = MaybeAddPass<FuzzerPassInlineFunctions>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassInlineFunctions>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.invert_comparison_operators =
-        MaybeAddPass<FuzzerPassInvertComparisonOperators>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassInvertComparisonOperators>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.make_vector_operations_dynamic =
-        MaybeAddPass<FuzzerPassMakeVectorOperationsDynamic>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassMakeVectorOperationsDynamic>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.merge_blocks = MaybeAddPass<FuzzerPassMergeBlocks>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassMergeBlocks>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.obfuscate_constants =
-        MaybeAddPass<FuzzerPassObfuscateConstants>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassObfuscateConstants>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.outline_functions = MaybeAddPass<FuzzerPassOutlineFunctions>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassOutlineFunctions>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.permute_blocks = MaybeAddPass<FuzzerPassPermuteBlocks>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassPermuteBlocks>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.permute_function_parameters =
-        MaybeAddPass<FuzzerPassPermuteFunctionParameters>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassPermuteFunctionParameters>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.permute_instructions =
-        MaybeAddPass<FuzzerPassPermuteInstructions>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassPermuteInstructions>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.propagate_instructions_up =
-        MaybeAddPass<FuzzerPassPropagateInstructionsUp>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassPropagateInstructionsUp>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.push_ids_through_variables =
-        MaybeAddPass<FuzzerPassPushIdsThroughVariables>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassPushIdsThroughVariables>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.replace_adds_subs_muls_with_carrying_extended =
-        MaybeAddPass<FuzzerPassReplaceAddsSubsMulsWithCarryingExtended>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassReplaceAddsSubsMulsWithCarryingExtended>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.replace_copy_memories_with_loads_stores =
-        MaybeAddPass<FuzzerPassReplaceCopyMemoriesWithLoadsStores>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassReplaceCopyMemoriesWithLoadsStores>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.replace_copy_objects_with_stores_loads =
-        MaybeAddPass<FuzzerPassReplaceCopyObjectsWithStoresLoads>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassReplaceCopyObjectsWithStoresLoads>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.replace_loads_stores_with_copy_memories =
-        MaybeAddPass<FuzzerPassReplaceLoadsStoresWithCopyMemories>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassReplaceLoadsStoresWithCopyMemories>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.replace_parameter_with_global =
-        MaybeAddPass<FuzzerPassReplaceParameterWithGlobal>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassReplaceParameterWithGlobal>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.replace_linear_algebra_instructions =
-        MaybeAddPass<FuzzerPassReplaceLinearAlgebraInstructions>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassReplaceLinearAlgebraInstructions>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.replace_params_with_struct =
-        MaybeAddPass<FuzzerPassReplaceParamsWithStruct>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassReplaceParamsWithStruct>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
-    pass_instances.split_blocks = MaybeAddPass<FuzzerPassSplitBlocks>(
-        &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassSplitBlocks>(
+        &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    pass_instances.swap_branch_conditional_operands =
-        MaybeAddPass<FuzzerPassSwapBranchConditionalOperands>(
-            &enabled_passes, ir_context.get(), &transformation_context,
+    MaybeAddPassInstance<FuzzerPassSwapBranchConditionalOperands>(
+            &pass_instances, ir_context.get(), &transformation_context,
             &fuzzer_context, transformation_sequence_out);
     // There is a theoretical possibility that no pass instances were created
     // until now; loop again if so.
-  } while (enabled_passes.empty());
+  } while (pass_instances.GetPasses().empty());
 
-  FuzzerStrategy strategy = kLoopedWithRecommendations;
+  PassRecommenderStandard pass_recommender(&pass_instances, &fuzzer_context);
 
-  bool fuzzing_succeeded;
-  switch (strategy) {
-    case kSimple:
-      fuzzing_succeeded = ApplyFuzzerPassesSimple(
-          tools, enabled_passes, &fuzzer_context, ir_context.get(),
-          transformation_sequence_out);
+  std::unique_ptr<RepeatedPassManager> repeated_pass_manager = nullptr;
+  switch (repeated_pass_strategy_) {
+    case RepeatedPassStrategy::kSimple:
+      repeated_pass_manager = MakeUnique<RepeatedPassManagerSimple>(&fuzzer_context, &pass_instances);
       break;
-    case kRandomWithRecommendations:
-      fuzzing_succeeded = ApplyFuzzerPassesRandomlyWithRecommendations(
-          tools, pass_instances, enabled_passes, &fuzzer_context,
-          ir_context.get(), transformation_sequence_out);
+    case RepeatedPassStrategy::kLoopedWithRecommendations:
+      repeated_pass_manager = MakeUnique<RepeatedPassManagerLoopedWithRecommendations>(&fuzzer_context, &pass_instances, &pass_recommender);
       break;
-    case kLoopedWithRecommendations:
-      fuzzing_succeeded = ApplyFuzzerPassesLoopedWithRecommendations(
-          tools, pass_instances, enabled_passes, &fuzzer_context,
-          ir_context.get(), transformation_sequence_out);
+    case RepeatedPassStrategy::kRandomWithRecommendations:
+      repeated_pass_manager = MakeUnique<RepeatedPassManagerRandomWithRecommendations>(&fuzzer_context, &pass_instances, &pass_recommender);
       break;
     default:
-      assert(false && "Unreachable.");
-      fuzzing_succeeded = false;
+      assert(false && "Invalid repeated pass manager.");
       break;
   }
-  if (!fuzzing_succeeded) {
-    return Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule;
-  }
+
+  do {
+    if (!ApplyPassAndCheckValidity(repeated_pass_manager->ChoosePass(), *ir_context, tools)) {
+      return Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule;
+    }
+  } while (ContinueFuzzing(*transformation_sequence_out, &fuzzer_context));
 
   // Now apply some passes that it does not make sense to apply repeatedly,
   // as they do not unlock other passes.
@@ -530,280 +442,6 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   return Fuzzer::FuzzerResultStatus::kComplete;
 }
 
-std::vector<FuzzerPass*> Fuzzer::GetRecommendedFuturePasses(
-    FuzzerPass* completed_pass, const PassInstances& pass_instances,
-    FuzzerContext* fuzzer_context) const {
-  if (completed_pass == pass_instances.add_access_chains) {
-    // - Adding access chains means there is more scope for loading and storing
-    // - It could be worth making more access chains from the recently-added
-    //   access chains.
-    return RandomOrderAndNonNull(
-        {pass_instances.add_loads, pass_instances.add_stores,
-         pass_instances.add_access_chains},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_composite_inserts) {
-    // - Having added inserts we will have more vectors, so there is scope for
-    //   vector shuffling.
-    // - Adding inserts creates synonyms, which we should try to use.
-    // - Vector inserts can be made dynamic.
-    return RandomOrderAndNonNull(
-        {pass_instances.add_vector_shuffle_instructions,
-         pass_instances.apply_id_synonyms,
-         pass_instances.make_vector_operations_dynamic},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_composite_types) {
-    // - More composite types gives more scope for constructing composites.
-    return RandomOrderAndNonNull({pass_instances.construct_composites},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_copy_memory) {
-    // - Recently-added copy memories could be replace with load-store pairs.
-    return RandomOrderAndNonNull(
-        {pass_instances.replace_copy_memories_with_loads_stores},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_dead_blocks) {
-    // - Dead blocks are great for adding function calls
-    // - Dead blocks are also great for adding loads and stores
-    // - The guard associated with a dead block can be obfuscated
-    return RandomOrderAndNonNull(
-        {pass_instances.add_function_calls, pass_instances.add_loads,
-         pass_instances.add_stores, pass_instances.obfuscate_constants},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_dead_breaks) {
-    // - The guard of the dead break is a good candidate for obfuscation.
-    return RandomOrderAndNonNull({pass_instances.obfuscate_constants},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_dead_continues) {
-    // - The guard of the dead continue is a good candidate for obfuscation.
-    return RandomOrderAndNonNull({pass_instances.obfuscate_constants},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_equation_instructions) {
-    // - Equation instructions can create synonyms, which we can apply
-    // - Equation instructions collaborate with one another to make synonyms, so
-    //   having added some it is worth adding more
-    return RandomOrderAndNonNull({pass_instances.apply_id_synonyms,
-                                  pass_instances.add_equation_instructions},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_function_calls) {
-    // - Called functions can be inlined
-    // - TODO: Called functions use irrelevant ids, which can be replaced
-    return RandomOrderAndNonNull({pass_instances.inline_functions},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_global_variables) {
-    // - New globals provide new possibilities for making access chains
-    // - We can load from and store to new globals
-    return RandomOrderAndNonNull(
-        {pass_instances.add_access_chains, pass_instances.add_loads,
-         pass_instances.add_stores},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_image_sample_unused_components) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.add_loads) {
-    // - Loads might end up with corresponding stores, so that pairs can be
-    //   replaced with memory copies.
-    return RandomOrderAndNonNull(
-        {pass_instances.replace_loads_stores_with_copy_memories},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_local_variables) {
-    // - New locals provide new possibilities for making access chains
-    // - We can load from and store to new locals
-    return RandomOrderAndNonNull(
-        {pass_instances.add_access_chains, pass_instances.add_loads,
-         pass_instances.add_stores},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_loop_preheaders) {
-    // - No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.add_op_phi_synonyms) {
-    // - New synonyms can be applied
-    // - TODO: the one about dead blocks and op phis.
-    return RandomOrderAndNonNull({pass_instances.apply_id_synonyms},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_parameters) {
-    // - TODO: irrelevant id replacement.
-    return RandomOrderAndNonNull({}, fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_relaxed_decorations) {
-    // - No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.add_stores) {
-    // - Stores might end up with corresponding loads, so that pairs can be
-    //   replaced with memory copies.
-    return RandomOrderAndNonNull(
-        {pass_instances.replace_loads_stores_with_copy_memories},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_synonyms) {
-    // - New synonyms can be applied
-    // - Synonym instructions use constants, which can be obfuscated
-    // - Synonym instructions introduce addition/subtraction, which can be
-    //   replaced with carrying/extended versions
-    return RandomOrderAndNonNull(
-        {pass_instances.apply_id_synonyms, pass_instances.obfuscate_constants,
-         pass_instances.replace_adds_subs_muls_with_carrying_extended},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.add_vector_shuffle_instructions) {
-    // - Vector shuffles create synonyms that can be applied
-    // - TODO: extract from composites
-    return RandomOrderAndNonNull({pass_instances.apply_id_synonyms},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.apply_id_synonyms) {
-    // - No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.construct_composites) {
-    // TODO: extract from composites,
-    return RandomOrderAndNonNull({}, fuzzer_context);
-  }
-  if (completed_pass == pass_instances.copy_objects) {
-    // - Object copies create synonyms that can be applied
-    // - OpCopyObject can be replaced with a store/load pair
-    return RandomOrderAndNonNull(
-        {pass_instances.apply_id_synonyms,
-         pass_instances.replace_copy_objects_with_stores_loads},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.donate_modules) {
-    // - New functions in the module can be called
-    return RandomOrderAndNonNull({pass_instances.add_function_calls},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.inline_functions) {
-    // - Parts of inlined functions can be outlined again
-    return RandomOrderAndNonNull({pass_instances.outline_functions},
-                                 fuzzer_context);
-  }
-  if (completed_pass == pass_instances.invert_comparison_operators) {
-    // - No obvious follow-on passes
-    return {};
-  }
-  if (completed_pass == pass_instances.make_vector_operations_dynamic) {
-    // - No obvious follow-on passes
-    return {};
-  }
-  if (completed_pass == pass_instances.merge_blocks) {
-    // - Having merged some blocks it may be interesting to split them in a
-    //   different way
-    return RandomOrderAndNonNull({pass_instances.split_blocks}, fuzzer_context);
-  }
-  if (completed_pass == pass_instances.obfuscate_constants) {
-    // - No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.outline_functions) {
-    // - This creates more functions, which can be called
-    // - Inlining the function for the region that was outlined might also be
-    //   fruitful; it will be inlined in a different form
-    return RandomOrderAndNonNull(
-        {pass_instances.add_function_calls, pass_instances.inline_functions},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.permute_blocks) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.permute_function_parameters) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.permute_instructions) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.propagate_instructions_up) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.push_ids_through_variables) {
-    // - This pass creates synonyms, so it is worth applying them.
-    return RandomOrderAndNonNull({pass_instances.apply_id_synonyms},
-                                 fuzzer_context);
-  }
-  if (completed_pass ==
-      pass_instances.replace_adds_subs_muls_with_carrying_extended) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass ==
-      pass_instances.replace_copy_memories_with_loads_stores) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.replace_copy_objects_with_stores_loads) {
-    // - We may end up with load/store pairs that could be used to create memory
-    //   copies.
-    return RandomOrderAndNonNull(
-        {pass_instances.replace_loads_stores_with_copy_memories},
-        fuzzer_context);
-  }
-  if (completed_pass ==
-      pass_instances.replace_loads_stores_with_copy_memories) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.replace_parameter_with_global) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.replace_linear_algebra_instructions) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  if (completed_pass == pass_instances.replace_params_with_struct) {
-    // TODO: possibly some passes related to composites
-    return {};
-  }
-  if (completed_pass == pass_instances.split_blocks) {
-    // - More blocks means more chances for adding dead breaks/continues, and
-    //   for adding dead blocks
-    return RandomOrderAndNonNull(
-        {pass_instances.add_dead_breaks, pass_instances.add_dead_continues,
-         pass_instances.add_dead_blocks},
-        fuzzer_context);
-  }
-  if (completed_pass == pass_instances.swap_branch_conditional_operands) {
-    // No obvious follow-on passes.
-    return {};
-  }
-  assert(false && "Unreachable: every fuzzer pass should be dealt with.");
-}
-
-std::vector<FuzzerPass*> Fuzzer::RandomOrderAndNonNull(
-    const std::vector<FuzzerPass*>& passes,
-    FuzzerContext* fuzzer_context) const {
-  std::vector<uint32_t> indices(passes.size());
-  std::iota(indices.begin(), indices.end(), 0);
-  std::vector<FuzzerPass*> result;
-  // TODO: don't necessarily always add the recommendations even if the struct
-  //  fields are non-null.
-  while (!indices.empty()) {
-    FuzzerPass* maybe_pass =
-        passes[fuzzer_context->RemoveAtRandomIndex(&indices)];
-    if (maybe_pass) {
-      result.push_back(maybe_pass);
-    }
-  }
-  return result;
-}
-
 bool Fuzzer::ContinueFuzzing(
     const protobufs::TransformationSequence& transformation_sequence_out,
     FuzzerContext* fuzzer_context) const {
@@ -816,73 +454,6 @@ bool Fuzzer::ContinueFuzzing(
       100.0 * (1.0 - (static_cast<double>(transformations_applied_so_far) /
                       static_cast<double>(kTransformationLimit))));
   return fuzzer_context->ChoosePercentage(chance_of_continuing);
-}
-
-bool Fuzzer::ApplyFuzzerPassesSimple(
-    const spvtools::SpirvTools& tools,
-    const std::vector<std::unique_ptr<FuzzerPass>>& enabled_passes,
-    FuzzerContext* fuzzer_context, opt::IRContext* ir_context,
-    protobufs::TransformationSequence* transformation_sequence_out) const {
-  do {
-    FuzzerPass* current_pass =
-        enabled_passes[fuzzer_context->RandomIndex(enabled_passes)].get();
-    if (!ApplyPassAndCheckValidity(current_pass, *ir_context, tools)) {
-      return false;
-    }
-  } while (ContinueFuzzing(*transformation_sequence_out, fuzzer_context));
-  return true;
-}
-
-bool Fuzzer::ApplyFuzzerPassesRandomlyWithRecommendations(
-    const spvtools::SpirvTools& tools, const PassInstances& pass_instances,
-    const std::vector<std::unique_ptr<FuzzerPass>>& enabled_passes,
-    FuzzerContext* fuzzer_context, opt::IRContext* ir_context,
-    protobufs::TransformationSequence* transformation_sequence_out) const {
-  std::deque<FuzzerPass*> recommended_passes;
-  do {
-    FuzzerPass* current_pass;
-    if (recommended_passes.empty() || fuzzer_context->ChooseEven()) {
-      current_pass =
-          enabled_passes[fuzzer_context->RandomIndex(enabled_passes)].get();
-    } else {
-      current_pass = recommended_passes.front();
-      recommended_passes.pop_front();
-    }
-    if (!ApplyPassAndCheckValidity(current_pass, *ir_context, tools)) {
-      return false;
-    }
-    for (auto future_pass : GetRecommendedFuturePasses(
-             current_pass, pass_instances, fuzzer_context)) {
-      recommended_passes.push_back(future_pass);
-    }
-  } while (ContinueFuzzing(*transformation_sequence_out, fuzzer_context));
-  return true;
-}
-
-bool Fuzzer::ApplyFuzzerPassesLoopedWithRecommendations(
-    const spvtools::SpirvTools& tools, const PassInstances& pass_instances,
-    const std::vector<std::unique_ptr<FuzzerPass>>& enabled_passes,
-    FuzzerContext* fuzzer_context, opt::IRContext* ir_context,
-    protobufs::TransformationSequence* transformation_sequence_out) const {
-  std::vector<FuzzerPass*> pass_loop;
-  do {
-    FuzzerPass* current_pass =
-        enabled_passes[fuzzer_context->RandomIndex(enabled_passes)].get();
-    pass_loop.push_back(current_pass);
-    for (auto future_pass : GetRecommendedFuturePasses(
-             current_pass, pass_instances, fuzzer_context)) {
-      pass_loop.push_back(future_pass);
-    }
-  } while (
-      fuzzer_context->ChoosePercentage(kChanceOfAddingAnotherPassToPassLoop));
-
-  for (uint32_t index = 0; ContinueFuzzing(*transformation_sequence_out, fuzzer_context);
-       index = (index + 1) % static_cast<uint32_t>(pass_loop.size())) {
-    if (!ApplyPassAndCheckValidity(pass_loop[index], *ir_context, tools)) {
-      return false;
-    }
-  }
-  return true;
 }
 
 }  // namespace fuzz

@@ -1639,12 +1639,33 @@ void RunFuzzerAndReplayer(const std::string& shader,
     });
   }
 
-  for (uint32_t seed = initial_seed; seed < initial_seed + num_runs; seed++) {
+  Fuzzer::RepeatedPassStrategy repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kSimple;
+  for (uint32_t seed = initial_seed; seed < initial_seed + num_runs;
+       seed++) {
     std::vector<uint32_t> fuzzer_binary_out;
     protobufs::TransformationSequence fuzzer_transformation_sequence_out;
 
     spvtools::ValidatorOptions validator_options;
-    Fuzzer fuzzer(env, seed, true, validator_options);
+    // Every 4th time we run the fuzzer, enable all fuzzer passes.
+    bool enable_all_passes = (seed % 4) == 0;
+    Fuzzer fuzzer(env, seed, enable_all_passes, repeated_pass_strategy, true, validator_options);
+
+    // Cycle the repeated pass strategy so that we try a different one next time we run the fuzzer.
+    switch (repeated_pass_strategy) {
+      case Fuzzer::RepeatedPassStrategy::kSimple:
+        repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kRandomWithRecommendations;
+        break;
+      case Fuzzer::RepeatedPassStrategy::kRandomWithRecommendations:
+        repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
+        break;
+      case Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations:
+        repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kSimple;
+        break;
+      default:
+        assert (false && "Unknown repeated pass strategy.");
+        break;
+    }
+
     fuzzer.SetMessageConsumer(kConsoleMessageConsumer);
     auto fuzzer_result_status =
         fuzzer.Run(binary_in, initial_facts, donor_suppliers,
