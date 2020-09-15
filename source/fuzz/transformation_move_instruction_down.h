@@ -49,9 +49,52 @@ class TransformationMoveInstructionDown : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // Returns true if the |opcode| is supported by this transformation (i.e.
-  // we can move an instruction with this opcode).
-  static bool IsOpcodeSupported(SpvOp opcode);
+  // Returns true if the |inst| is supported by this transformation.
+  static bool IsInstructionSupported(opt::IRContext* ir_context,
+                                     const opt::Instruction& inst);
+
+  // Returns true if |inst| represents a "simple" instruction. That is, it
+  // neither reads from nor writes to the memory and is not a barrier.
+  static bool IsSimpleInstruction(opt::IRContext* ir_context,
+                                  const opt::Instruction& inst);
+
+  // Returns true if |inst| reads from memory.
+  static bool IsMemoryReadInstruction(opt::IRContext* ir_context,
+                                      const opt::Instruction& inst);
+
+  // Returns id being used by |inst| to read from. |inst| must be a memory read
+  // instruction (see IsMemoryReadInstruction). Returned id is not guaranteed to
+  // have pointer type.
+  static uint32_t GetMemoryReadTarget(opt::IRContext* ir_context,
+                                      const opt::Instruction& inst);
+
+  // Returns true if |inst| that writes to the memory.
+  static bool IsMemoryWriteInstruction(opt::IRContext* ir_context,
+                                       const opt::Instruction& inst);
+
+  // Returns id being used by |inst| to write into. |inst| must be a memory
+  // write instruction (see IsMemoryWriteInstruction). Returned id is not
+  // guaranteed to have pointer type.
+  static uint32_t GetMemoryWriteTarget(opt::IRContext* ir_context,
+                                       const opt::Instruction& inst);
+
+  // Returns true if |inst| either reads from or writes to the memory
+  // (see IsMemoryReadInstruction and IsMemoryWriteInstruction accordingly).
+  static bool IsMemoryInstruction(opt::IRContext* ir_context,
+                                  const opt::Instruction& inst);
+
+  // Returns true if |inst| is a barrier instruction.
+  static bool IsBarrierInstruction(const opt::Instruction& inst);
+
+  // Returns true if it is possible to swap |a| and |b| without changing the
+  // module's semantics. |a| and |b| are required to be supported instructions
+  // (see IsInstructionSupported). In particular, if either |a| or |b| are
+  // memory or barrier instructions, some checks are used to only say that they
+  // can be swapped if the swap is definitely semantics-preserving.
+  static bool CanSafelySwapInstructions(opt::IRContext* ir_context,
+                                        const opt::Instruction& a,
+                                        const opt::Instruction& b,
+                                        const FactManager& fact_manager);
 
   protobufs::TransformationMoveInstructionDown message_;
 };
