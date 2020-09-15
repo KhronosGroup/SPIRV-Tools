@@ -110,9 +110,6 @@ bool TransformationAddOpPhiSynonym::IsApplicable(
     // the predecessors list of |block|.
     assert(pred_block && "Could not find one of the predecessor blocks.");
 
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3722): This
-    //  function always returns false if the block is unreachable, so it may
-    //  need to be refactored.
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(
             ir_context, pred_block->terminator(), id)) {
       return false;
