@@ -16,6 +16,7 @@
 
 #include <limits>
 
+#include "source/fuzz/transformation_merge_blocks.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -869,6 +870,78 @@ TEST(FactManagerTest, CorollaryConversionFacts) {
                                         MakeDataDescriptor(28, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(32, {}),
                                         MakeDataDescriptor(29, {})));
+}
+
+TEST(FactManagerTest, HandlesCorollariesWithInvalidIds) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %8 = OpTypeInt 32 1
+          %9 = OpConstant %8 3
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %14 = OpConvertSToF %6 %9
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpPhi %6 %14 %13
+         %15 = OpConvertSToF %6 %9
+         %18 = OpConvertSToF %6 %9
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+
+  // Add required facts.
+  fact_manager.AddFactIdEquation(14, SpvOpConvertSToF, {9}, context.get());
+  fact_manager.AddFactDataSynonym(MakeDataDescriptor(14, {}),
+                                  MakeDataDescriptor(17, {}), context.get());
+
+  // Apply TransformationMergeBlocks which will remove %17 from the module.
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  TransformationMergeBlocks transformation(16);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  ASSERT_EQ(context->get_def_use_mgr()->GetDef(17), nullptr);
+
+  // Add another equation.
+  fact_manager.AddFactIdEquation(15, SpvOpConvertSToF, {9}, context.get());
+
+  // Check that two ids are synonymous even though one of them doesn't exist in
+  // the module (%17).
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
+                                        MakeDataDescriptor(17, {})));
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
+                                        MakeDataDescriptor(14, {})));
+
+  // Remove some instructions from the module. At this point, the equivalence
+  // class of %14 has no valid members.
+  ASSERT_TRUE(context->KillDef(14));
+  ASSERT_TRUE(context->KillDef(15));
+
+  fact_manager.AddFactIdEquation(18, SpvOpConvertSToF, {9}, context.get());
+
+  // We don't create synonyms if at least one of the equivalence classes has no
+  // valid members.
+  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(14, {}),
+                                         MakeDataDescriptor(18, {})));
 }
 
 TEST(FactManagerTest, LogicalNotEquationFacts) {

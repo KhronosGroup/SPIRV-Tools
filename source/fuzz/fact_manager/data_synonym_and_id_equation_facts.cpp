@@ -281,14 +281,9 @@ void DataSynonymAndIdEquationFacts::ComputeConversionDataSynonymFacts(
   assert(synonymous_.Exists(dd) &&
          "|dd| should've been registered in the equivalence relation");
 
-  const auto* representative = synonymous_.Find(&dd);
-  assert(representative &&
-         "Representative can't be null for a registered descriptor");
-
   const auto* type =
       context->get_type_mgr()->GetType(fuzzerutil::WalkCompositeTypeIndices(
-          context, fuzzerutil::GetTypeId(context, representative->object()),
-          representative->index()));
+          context, fuzzerutil::GetTypeId(context, dd.object()), dd.index()));
   assert(type && "Data descriptor has invalid type");
 
   if ((type->AsVector() && type->AsVector()->element_type()->AsInteger()) ||
@@ -300,24 +295,36 @@ void DataSynonymAndIdEquationFacts::ComputeConversionDataSynonymFacts(
     std::vector<const protobufs::DataDescriptor*> convert_u_to_f_lhs;
 
     for (const auto& fact : id_equations_) {
+      auto equivalence_class = synonymous_.GetEquivalenceClass(*fact.first);
+      auto dd_it = std::find_if(
+          equivalence_class.begin(), equivalence_class.end(),
+          [context](const protobufs::DataDescriptor* a) {
+            return context->get_def_use_mgr()->GetDef(a->object()) != nullptr;
+          });
+      if (dd_it == equivalence_class.end()) {
+        // Skip |equivalence_class| if it has no valid ids.
+        continue;
+      }
+
       for (const auto& equation : fact.second) {
-        if (synonymous_.IsEquivalent(*equation.operands[0], *representative)) {
+        if (synonymous_.IsEquivalent(*equation.operands[0], dd)) {
           if (equation.opcode == SpvOpConvertSToF) {
-            convert_s_to_f_lhs.push_back(fact.first);
+            convert_s_to_f_lhs.push_back(*dd_it);
           } else if (equation.opcode == SpvOpConvertUToF) {
-            convert_u_to_f_lhs.push_back(fact.first);
+            convert_u_to_f_lhs.push_back(*dd_it);
           }
         }
       }
     }
 
-    for (const auto& synonyms :
-         {std::move(convert_s_to_f_lhs), std::move(convert_u_to_f_lhs)}) {
-      for (const auto* synonym_a : synonyms) {
-        for (const auto* synonym_b : synonyms) {
-          if (!synonymous_.IsEquivalent(*synonym_a, *synonym_b) &&
-              DataDescriptorsAreWellFormedAndComparable(context, *synonym_a,
-                                                        *synonym_b)) {
+    // We use pointers in the initializer list here since otherwise we would
+    // copy memory from these vectors.
+    for (const auto* synonyms : {&convert_s_to_f_lhs, &convert_u_to_f_lhs}) {
+      for (const auto* synonym_a : *synonyms) {
+        for (const auto* synonym_b : *synonyms) {
+          // DataDescriptorsAreWellFormedAndComparable will be called in the
+          // AddDataSynonymFactRecursive method.
+          if (!synonymous_.IsEquivalent(*synonym_a, *synonym_b)) {
             // |synonym_a| and |synonym_b| have compatible types - they are
             // synonymous.
             AddDataSynonymFactRecursive(*synonym_a, *synonym_b, context);
@@ -765,12 +772,14 @@ DataSynonymAndIdEquationFacts::RegisterDataDescriptor(
 bool DataSynonymAndIdEquationFacts::DataDescriptorsAreWellFormedAndComparable(
     opt::IRContext* context, const protobufs::DataDescriptor& dd1,
     const protobufs::DataDescriptor& dd2) {
+  assert(context->get_def_use_mgr()->GetDef(dd1.object()) &&
+         context->get_def_use_mgr()->GetDef(dd2.object()) &&
+         "Both descriptors must exist in the module");
+
   auto end_type_id_1 = fuzzerutil::WalkCompositeTypeIndices(
-      context, context->get_def_use_mgr()->GetDef(dd1.object())->type_id(),
-      dd1.index());
+      context, fuzzerutil::GetTypeId(context, dd1.object()), dd1.index());
   auto end_type_id_2 = fuzzerutil::WalkCompositeTypeIndices(
-      context, context->get_def_use_mgr()->GetDef(dd2.object())->type_id(),
-      dd2.index());
+      context, fuzzerutil::GetTypeId(context, dd2.object()), dd2.index());
   // The end types of the data descriptors must exist.
   if (end_type_id_1 == 0 || end_type_id_2 == 0) {
     return false;

@@ -572,7 +572,9 @@ bool InstructionIsFunctionParameter(opt::Instruction* instruction,
 }
 
 uint32_t GetTypeId(opt::IRContext* context, uint32_t result_id) {
-  return context->get_def_use_mgr()->GetDef(result_id)->type_id();
+  const auto* inst = context->get_def_use_mgr()->GetDef(result_id);
+  assert(inst && "|result_id| is invalid");
+  return inst->type_id();
 }
 
 uint32_t GetPointeeTypeIdFromPointerType(opt::Instruction* pointer_type_inst) {
