@@ -345,8 +345,10 @@ bool TransformationMoveInstructionDown::IsSimpleInstruction(
 bool TransformationMoveInstructionDown::IsMemoryReadInstruction(
     opt::IRContext* ir_context, const opt::Instruction& inst) {
   switch (inst.opcode()) {
+      // Some simple instructions.
     case SpvOpLoad:
     case SpvOpCopyMemory:
+      // Image instructions.
     case SpvOpImageSampleImplicitLod:
     case SpvOpImageSampleExplicitLod:
     case SpvOpImageSampleDrefImplicitLod:
@@ -371,7 +373,25 @@ bool TransformationMoveInstructionDown::IsMemoryReadInstruction(
     case SpvOpImageSparseGather:
     case SpvOpImageSparseDrefGather:
     case SpvOpImageSparseRead:
+      // Atomic instructions.
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFlagTestAndSet:
       return true;
+      // Extensions.
     case SpvOpExtInst: {
       if (GetExtensionSet(ir_context, inst) != kExtensionSetName) {
         return false;
@@ -398,7 +418,9 @@ uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
          "|inst| is not a memory read instruction");
 
   switch (inst.opcode()) {
+      // Simple instructions.
     case SpvOpLoad:
+      // Image instructions.
     case SpvOpImageSampleImplicitLod:
     case SpvOpImageSampleExplicitLod:
     case SpvOpImageSampleDrefImplicitLod:
@@ -423,6 +445,23 @@ uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
     case SpvOpImageSparseGather:
     case SpvOpImageSparseDrefGather:
     case SpvOpImageSparseRead:
+      // Atomic instructions.
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFlagTestAndSet:
       return inst.GetSingleWordInOperand(0);
     case SpvOpCopyMemory:
       return inst.GetSingleWordInOperand(1);
@@ -453,10 +492,31 @@ uint32_t TransformationMoveInstructionDown::GetMemoryReadTarget(
 bool TransformationMoveInstructionDown::IsMemoryWriteInstruction(
     opt::IRContext* ir_context, const opt::Instruction& inst) {
   switch (inst.opcode()) {
+      // Simple Instructions.
     case SpvOpStore:
     case SpvOpCopyMemory:
+      // Image instructions.
     case SpvOpImageWrite:
+      // Atomic instructions.
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFlagTestAndSet:
+    case SpvOpAtomicFlagClear:
       return true;
+      // Extensions.
     case SpvOpExtInst: {
       if (GetExtensionSet(ir_context, inst) != kExtensionSetName) {
         return false;
@@ -480,6 +540,23 @@ uint32_t TransformationMoveInstructionDown::GetMemoryWriteTarget(
     case SpvOpStore:
     case SpvOpCopyMemory:
     case SpvOpImageWrite:
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFlagTestAndSet:
+    case SpvOpAtomicFlagClear:
       return inst.GetSingleWordInOperand(0);
     case SpvOpExtInst: {
       assert(GetExtensionSet(ir_context, inst) == kExtensionSetName &&
