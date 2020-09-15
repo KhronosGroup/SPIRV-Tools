@@ -31,6 +31,7 @@ if (${SPIRV_BUILD_FUZZER})
           fuzzer_pass_test.cpp
           replayer_test.cpp
           transformation_access_chain_test.cpp
+          transformation_add_bit_instruction_synonym_test.cpp
           transformation_add_constant_boolean_test.cpp
           transformation_add_constant_composite_test.cpp
           transformation_add_constant_null_test.cpp

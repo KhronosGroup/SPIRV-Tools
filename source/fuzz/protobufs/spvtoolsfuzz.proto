@@ -496,6 +496,7 @@ message Transformation {
     TransformationReplaceOpSelectWithConditionalBranch replace_opselect_with_conditional_branch = 74;
     TransformationDuplicateRegionWithSelection duplicate_region_with_selection = 75;
     TransformationFlattenConditionalBranch flatten_conditional_branch = 76;
+    TransformationAddBitInstructionSynonym add_bit_instruction_synonym = 77;
     // Add additional option using the next available number.
   }
 }
@@ -529,6 +530,33 @@ message TransformationAccessChain {
   // Additional fresh ids, required to clamp index variables. A pair is needed
   // for each access to a non-struct composite.
   repeated UInt32Pair fresh_ids_for_clamping = 5;
+
+}
+
+message TransformationAddBitInstructionSynonym {
+
+  // A transformation that adds synonyms for bit instructions by evaluating
+  // each bit with the corresponding operation. There is a SPIR-V code example in the
+  // header file of the transformation class that can help understand the transformation.
+
+  // This transformation is only applicable if the described instruction has one of the following opcodes.
+  // Supported:
+  //   OpBitwiseOr
+  //   OpBitwiseXor
+  //   OpBitwiseAnd
+  // To be supported in the future:
+  //   OpShiftRightLogical
+  //   OpShiftRightArithmetic
+  //   OpShiftLeftLogical
+  //   OpNot
+  //   OpBitReverse
+  //   OpBitCount
+
+  // The bit instruction result id.
+  uint32 instruction_result_id = 1;
+
+  // The fresh ids required to apply the transformation.
+  repeated uint32 fresh_ids = 2;
 
 }
 

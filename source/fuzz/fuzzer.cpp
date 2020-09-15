@@ -20,6 +20,7 @@
 #include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
+#include "source/fuzz/fuzzer_pass_add_bit_instruction_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_composite_inserts.h"
 #include "source/fuzz/fuzzer_pass_add_composite_types.h"
 #include "source/fuzz/fuzzer_pass_add_copy_memory.h"
@@ -203,6 +204,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   std::vector<std::unique_ptr<FuzzerPass>> passes;
   while (passes.empty()) {
     MaybeAddPass<FuzzerPassAddAccessChains>(
+        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
+        transformation_sequence_out);
+    MaybeAddPass<FuzzerPassAddBitInstructionSynonyms>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassAddCompositeInserts>(
