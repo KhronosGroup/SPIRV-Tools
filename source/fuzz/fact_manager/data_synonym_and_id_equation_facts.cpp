@@ -288,17 +288,23 @@ void DataSynonymAndIdEquationFacts::ComputeConversionDataSynonymFacts(
     std::vector<const protobufs::DataDescriptor*> convert_u_to_f_lhs;
 
     for (const auto& fact : id_equations_) {
-      if (!context->get_def_use_mgr()->GetDef(fact.first->object())) {
-        // Skip non-existent instructions.
+      auto equivalence_class = synonymous_.GetEquivalenceClass(*fact.first);
+      auto dd_it = std::find_if(
+          equivalence_class.begin(), equivalence_class.end(),
+          [context](const protobufs::DataDescriptor* a) {
+            return context->get_def_use_mgr()->GetDef(a->object()) != nullptr;
+          });
+      if (dd_it == equivalence_class.end()) {
+        // Skip |equivalence_class| if it has no valid ids.
         continue;
       }
 
       for (const auto& equation : fact.second) {
         if (synonymous_.IsEquivalent(*equation.operands[0], dd)) {
           if (equation.opcode == SpvOpConvertSToF) {
-            convert_s_to_f_lhs.push_back(fact.first);
+            convert_s_to_f_lhs.push_back(*dd_it);
           } else if (equation.opcode == SpvOpConvertUToF) {
-            convert_u_to_f_lhs.push_back(fact.first);
+            convert_u_to_f_lhs.push_back(*dd_it);
           }
         }
       }
