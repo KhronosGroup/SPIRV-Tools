@@ -99,14 +99,6 @@ void TransformationReplaceParameterWithGlobal::Apply(
       fuzzerutil::MaybeGetZeroConstant(ir_context, *transformation_context,
                                        param_inst->type_id(), false));
 
-  // Mark the global variable's pointee as irrelevant if replaced parameter is
-  // irrelevant.
-  if (transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.parameter_id())) {
-    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        message_.global_variable_fresh_id());
-  }
-
   auto* function = fuzzerutil::GetFunctionFromParameterId(
       ir_context, message_.parameter_id());
   assert(function && "Function must exist");
@@ -188,6 +180,14 @@ void TransformationReplaceParameterWithGlobal::Apply(
   // Make sure our changes are analyzed
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
+
+  // Mark the pointee of the global variable storing the parameter's value as
+  // irrelevant if replaced parameter is irrelevant.
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.parameter_id())) {
+    transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+        message_.global_variable_fresh_id(), ir_context);
+  }
 }
 
 protobufs::Transformation TransformationReplaceParameterWithGlobal::ToMessage()

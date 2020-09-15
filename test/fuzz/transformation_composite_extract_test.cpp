@@ -569,7 +569,7 @@ TEST(TransformationCompositeExtractTest, DontAddSynonymsForIrrelevantIds) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(100);
+  fact_manager.AddFactIdIsIrrelevant(100, context.get());
   TransformationCompositeExtract transformation(
       MakeInstructionDescriptor(36, SpvOpConvertFToS, 0), 201, 100, {2});
   ASSERT_TRUE(

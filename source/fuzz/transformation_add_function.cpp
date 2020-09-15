@@ -168,30 +168,6 @@ void TransformationAddFunction::Apply(
   (void)(success);  // Keep release builds happy (otherwise they may complain
                     // that |success| is not used).
 
-  // Record the fact that all pointer parameters and variables declared in the
-  // function should be regarded as having irrelevant values.  This allows other
-  // passes to store arbitrarily to such variables, and to pass them freely as
-  // parameters to other functions knowing that it is OK if they get
-  // over-written.
-  for (auto& instruction : message_.instruction()) {
-    switch (instruction.opcode()) {
-      case SpvOpFunctionParameter:
-        if (ir_context->get_def_use_mgr()
-                ->GetDef(instruction.result_type_id())
-                ->opcode() == SpvOpTypePointer) {
-          transformation_context->GetFactManager()
-              ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id());
-        }
-        break;
-      case SpvOpVariable:
-        transformation_context->GetFactManager()
-            ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id());
-        break;
-      default:
-        break;
-    }
-  }
-
   if (message_.is_livesafe()) {
     // Make the function livesafe, which also should succeed.
     success = TryToMakeFunctionLivesafe(ir_context, *transformation_context);
@@ -214,6 +190,32 @@ void TransformationAddFunction::Apply(
     }
   }
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
+  // Record the fact that all pointer parameters and variables declared in the
+  // function should be regarded as having irrelevant values.  This allows other
+  // passes to store arbitrarily to such variables, and to pass them freely as
+  // parameters to other functions knowing that it is OK if they get
+  // over-written.
+  for (auto& instruction : message_.instruction()) {
+    switch (instruction.opcode()) {
+      case SpvOpFunctionParameter:
+        if (ir_context->get_def_use_mgr()
+                ->GetDef(instruction.result_type_id())
+                ->opcode() == SpvOpTypePointer) {
+          transformation_context->GetFactManager()
+              ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id(),
+                                                  ir_context);
+        }
+        break;
+      case SpvOpVariable:
+        transformation_context->GetFactManager()
+            ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id(),
+                                                ir_context);
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 protobufs::Transformation TransformationAddFunction::ToMessage() const {

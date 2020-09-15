@@ -123,7 +123,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
                                                validator_options);
 
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      54);
+      54, context.get());
 
   // Bad: id is not fresh
   ASSERT_FALSE(TransformationAccessChain(

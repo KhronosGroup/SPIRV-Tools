@@ -74,11 +74,12 @@ void TransformationAddLocalVariable::Apply(
                                message_.type_id(), message_.function_id(),
                                message_.initializer_id());
 
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
   if (message_.value_is_irrelevant()) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        message_.fresh_id());
+        message_.fresh_id(), ir_context);
   }
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationAddLocalVariable::ToMessage() const {

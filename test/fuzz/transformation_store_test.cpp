@@ -99,19 +99,19 @@ TEST(TransformationStoreTest, BasicTest) {
                                                validator_options);
 
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      27);
+      27, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      11);
+      11, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      46);
+      46, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      16);
+      16, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      52);
+      52, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      81);
+      81, context.get());
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      82);
+      82, context.get());
 
   transformation_context.GetFactManager()->AddFactBlockIsDead(36);
 

@@ -330,7 +330,7 @@ TEST(TransformationReplaceParameterWithGlobalTest,
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(10);
+  fact_manager.AddFactIdIsIrrelevant(10, context.get());
 
   {
     TransformationReplaceParameterWithGlobal transformation(20, 10, 21);

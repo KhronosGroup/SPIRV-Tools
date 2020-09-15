@@ -1515,7 +1515,7 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(25);
+  fact_manager.AddFactIdIsIrrelevant(25, context.get());
 
   TransformationCompositeConstruct transformation(
       32, {25, 28, 31}, MakeInstructionDescriptor(31, SpvOpReturn, 0), 200);

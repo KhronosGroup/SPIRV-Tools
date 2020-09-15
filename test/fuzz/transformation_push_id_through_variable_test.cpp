@@ -682,7 +682,7 @@ TEST(TransformationPushIdThroughVariableTest, DontAddSynonymsForIrrelevantIds) {
   // Tests the reference shader validity.
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  fact_manager.AddFactIdIsIrrelevant(21);
+  fact_manager.AddFactIdIsIrrelevant(21, context.get());
 
   uint32_t value_id = 21;
   uint32_t value_synonym_id = 62;

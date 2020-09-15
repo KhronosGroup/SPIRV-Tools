@@ -365,7 +365,7 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
                                                validator_options);
 
   // Add fact that the composite is irrelevant.
-  fact_manager.AddFactIdIsIrrelevant(30);
+  fact_manager.AddFactIdIsIrrelevant(30, context.get());
 
   auto transformation_good_1 = TransformationCompositeInsert(
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
@@ -470,7 +470,7 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectSomeSynonyms) {
                                                validator_options);
 
   // Add fact that the object is irrelevant.
-  fact_manager.AddFactIdIsIrrelevant(11);
+  fact_manager.AddFactIdIsIrrelevant(11, context.get());
 
   auto transformation_good_1 = TransformationCompositeInsert(
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
