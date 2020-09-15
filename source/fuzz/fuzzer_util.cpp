@@ -1519,6 +1519,118 @@ bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
   return false;
 }
 
+bool InstructionHasNoSideEffects(const opt::Instruction& instruction) {
+  switch (instruction.opcode()) {
+    case SpvOpUndef:
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpArrayLength:
+    case SpvOpVectorExtractDynamic:
+    case SpvOpVectorInsertDynamic:
+    case SpvOpVectorShuffle:
+    case SpvOpCompositeConstruct:
+    case SpvOpCompositeExtract:
+    case SpvOpCompositeInsert:
+    case SpvOpCopyObject:
+    case SpvOpTranspose:
+    case SpvOpConvertFToU:
+    case SpvOpConvertFToS:
+    case SpvOpConvertSToF:
+    case SpvOpConvertUToF:
+    case SpvOpUConvert:
+    case SpvOpSConvert:
+    case SpvOpFConvert:
+    case SpvOpQuantizeToF16:
+    case SpvOpSatConvertSToU:
+    case SpvOpSatConvertUToS:
+    case SpvOpBitcast:
+    case SpvOpSNegate:
+    case SpvOpFNegate:
+    case SpvOpIAdd:
+    case SpvOpFAdd:
+    case SpvOpISub:
+    case SpvOpFSub:
+    case SpvOpIMul:
+    case SpvOpFMul:
+    case SpvOpUDiv:
+    case SpvOpSDiv:
+    case SpvOpFDiv:
+    case SpvOpUMod:
+    case SpvOpSRem:
+    case SpvOpSMod:
+    case SpvOpFRem:
+    case SpvOpFMod:
+    case SpvOpVectorTimesScalar:
+    case SpvOpMatrixTimesScalar:
+    case SpvOpVectorTimesMatrix:
+    case SpvOpMatrixTimesVector:
+    case SpvOpMatrixTimesMatrix:
+    case SpvOpOuterProduct:
+    case SpvOpDot:
+    case SpvOpIAddCarry:
+    case SpvOpISubBorrow:
+    case SpvOpUMulExtended:
+    case SpvOpSMulExtended:
+    case SpvOpAny:
+    case SpvOpAll:
+    case SpvOpIsNan:
+    case SpvOpIsInf:
+    case SpvOpIsFinite:
+    case SpvOpIsNormal:
+    case SpvOpSignBitSet:
+    case SpvOpLessOrGreater:
+    case SpvOpOrdered:
+    case SpvOpUnordered:
+    case SpvOpLogicalEqual:
+    case SpvOpLogicalNotEqual:
+    case SpvOpLogicalOr:
+    case SpvOpLogicalAnd:
+    case SpvOpLogicalNot:
+    case SpvOpSelect:
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan:
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual:
+    case SpvOpULessThan:
+    case SpvOpSLessThan:
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual:
+    case SpvOpFOrdEqual:
+    case SpvOpFUnordEqual:
+    case SpvOpFOrdNotEqual:
+    case SpvOpFUnordNotEqual:
+    case SpvOpFOrdLessThan:
+    case SpvOpFUnordLessThan:
+    case SpvOpFOrdGreaterThan:
+    case SpvOpFUnordGreaterThan:
+    case SpvOpFOrdLessThanEqual:
+    case SpvOpFUnordLessThanEqual:
+    case SpvOpFOrdGreaterThanEqual:
+    case SpvOpFUnordGreaterThanEqual:
+    case SpvOpShiftRightLogical:
+    case SpvOpShiftRightArithmetic:
+    case SpvOpShiftLeftLogical:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+    case SpvOpNot:
+    case SpvOpBitFieldInsert:
+    case SpvOpBitFieldSExtract:
+    case SpvOpBitFieldUExtract:
+    case SpvOpBitReverse:
+    case SpvOpBitCount:
+    case SpvOpCopyLogical:
+    case SpvOpPhi:
+    case SpvOpPtrEqual:
+    case SpvOpPtrNotEqual:
+      return true;
+    default:
+      return false;
+  }
+}
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools

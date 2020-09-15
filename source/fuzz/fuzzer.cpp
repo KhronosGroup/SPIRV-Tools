@@ -50,6 +50,7 @@
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
 #include "source/fuzz/fuzzer_pass_donate_modules.h"
 #include "source/fuzz/fuzzer_pass_duplicate_regions_with_selections.h"
+#include "source/fuzz/fuzzer_pass_flatten_conditional_branches.h"
 #include "source/fuzz/fuzzer_pass_inline_functions.h"
 #include "source/fuzz/fuzzer_pass_interchange_signedness_of_integer_operands.h"
 #include "source/fuzz/fuzzer_pass_interchange_zero_like_constants.h"
@@ -274,6 +275,9 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out, donor_suppliers);
     MaybeAddPass<FuzzerPassDuplicateRegionsWithSelections>(
+        &passes, ir_context.get(), &transformation_context, &fuzzer_context,
+        transformation_sequence_out);
+    MaybeAddPass<FuzzerPassFlattenConditionalBranches>(
         &passes, ir_context.get(), &transformation_context, &fuzzer_context,
         transformation_sequence_out);
     MaybeAddPass<FuzzerPassInlineFunctions>(

@@ -37,6 +37,7 @@ if(SPIRV_BUILD_FUZZER)
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
         call_graph.h
+        comparator_deep_blocks_first.h
         counter_overflow_id_source.h
         data_descriptor.h
         equivalence_relation.h
@@ -81,6 +82,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
         fuzzer_pass_duplicate_regions_with_selections.h
+        fuzzer_pass_flatten_conditional_branches.h
         fuzzer_pass_inline_functions.h
         fuzzer_pass_invert_comparison_operators.h
         fuzzer_pass_interchange_signedness_of_integer_operands.h
@@ -159,6 +161,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.h
         transformation_duplicate_region_with_selection.h
         transformation_equation_instruction.h
+        transformation_flatten_conditional_branch.h
         transformation_function_call.h
         transformation_inline_function.h
         transformation_invert_comparison_operator.h
@@ -244,6 +247,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
         fuzzer_pass_duplicate_regions_with_selections.cpp
+        fuzzer_pass_flatten_conditional_branches.cpp
         fuzzer_pass_inline_functions.cpp
         fuzzer_pass_invert_comparison_operators.cpp
         fuzzer_pass_interchange_signedness_of_integer_operands.cpp
@@ -321,6 +325,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.cpp
         transformation_duplicate_region_with_selection.cpp
         transformation_equation_instruction.cpp
+        transformation_flatten_conditional_branch.cpp
         transformation_function_call.cpp
         transformation_inline_function.cpp
         transformation_invert_comparison_operator.cpp

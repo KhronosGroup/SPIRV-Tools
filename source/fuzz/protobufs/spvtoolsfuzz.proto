@@ -306,6 +306,81 @@ message AccessChainClampingInfo {
 
 }
 
+message SideEffectWrapperInfo {
+  // When flattening a conditional branch, it is necessary to enclose
+  // instructions that have side effects inside conditionals, so that
+  // they are only executed if the condition holds. Otherwise, there
+  // might be unintended changes in memory, or crashes that would not
+  // originally happen.
+  // For example, the instruction %id = OpLoad %type %ptr, found in
+  // the true branch of the conditional, will be enclosed in a new
+  // conditional (assuming that the block containing it can be split
+  // around it) as follows:
+  //
+  //   [previous instructions in the block]
+  //                        OpSelectionMerge %merge_block_id None
+  //                        OpBranchConditional %cond %execute_block_id %alternative_block_id
+  //    %execute_block_id = OpLabel
+  //    %actual_result_id = OpLoad %type %ptr
+  //                       OpBranch %merge_block_id
+  //  %alternative_block_id = OpLabel
+  // %placeholder_result_id = OpCopyObject %type %value_to_copy_id
+  //                       OpBranch %merge_block_id
+  //     %merge_block_id = OpLabel
+  //                 %id = OpPhi %type %actual_result_id %execute_block_id %placeholder_result_id %alternative_block_id
+  //   [following instructions from the original block]
+  //
+  // If the instruction does not have a result id, this is simplified.
+  // For example, OpStore %ptr %value, found in the true branch of a
+  // conditional, is enclosed as follows:
+  //
+  //   [previous instructions in the block]
+  //                       OpSelectionMerge %merge_block None
+  //                       OpBranchConditional %cond %execute_block_id %merge_block_id
+  //   %execute_block_id = OpLabel
+  //                       OpStore %ptr %value
+  //                       OpBranch %merge_block_id
+  //     %merge_block_id = OpLabel
+  //   [following instructions from the original block]
+  //
+  // The same happens if the instruction is found in the false branch
+  // of the conditional being flattened, except that the label ids in
+  // the OpBranchConditional are swapped.
+
+
+  // An instruction descriptor for identifying the instruction to be
+  // enclosed inside a conditional. An instruction descriptor is
+  // necessary because the instruction might not have a result id.
+  InstructionDescriptor instruction = 1;
+
+  // A fresh id for the new merge block.
+  uint32 merge_block_id = 2;
+
+  // A fresh id for the new block where the actual instruction is
+  // executed.
+  uint32 execute_block_id = 3;
+
+  // The following fields are only needed if the original instruction has a
+  // result id. They can be set to 0 if not needed.
+
+  // A fresh id for the result id of the instruction (the original
+  // one is used by the OpPhi instruction).
+  uint32 actual_result_id = 4;
+
+  // A fresh id for the new block where the placeholder instruction
+  // is placed.
+  uint32 alternative_block_id = 5;
+
+  // A fresh id for the placeholder instruction.
+  uint32 placeholder_result_id = 6;
+
+  // An id present in the module, available to use at this point in
+  // the program and with the same type as the original instruction,
+  // that can be used to create a placeholder OpCopyObject
+  // instruction.
+  uint32 value_to_copy_id = 7;
+}
+
 message LoopLimiterInfo {
 
   // Structure capturing the information required to manipulate a loop limiter
@@ -420,6 +495,7 @@ message Transformation {
     TransformationReplaceOpPhiIdFromDeadPredecessor replace_opphi_id_from_dead_predecessor = 73;
     TransformationReplaceOpSelectWithConditionalBranch replace_opselect_with_conditional_branch = 74;
     TransformationDuplicateRegionWithSelection duplicate_region_with_selection = 75;
+    TransformationFlattenConditionalBranch flatten_conditional_branch = 76;
     // Add additional option using the next available number.
   }
 }
@@ -1138,6 +1214,63 @@ message TransformationEquationInstruction {
   // instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 4;
 
+}
+
+message TransformationFlattenConditionalBranch {
+
+  // A transformation that takes a selection construct with a header
+  // containing an OpBranchConditional instruction and flattens it.
+  // For example, something of the form:
+  //
+  // %1 = OpLabel
+  //      [header instructions]
+  //      OpSelectionMerge %4 None
+  //      OpBranchConditional %cond %2 %3
+  // %2 = OpLabel
+  //      [true branch instructions]
+  //      OpBranch %4
+  // %3 = OpLabel
+  //      [false branch instructions]
+  //      OpBranch %4
+  // %4 = OpLabel
+  //      ...
+  //
+  // becomes:
+  //
+  // %1 = OpLabel
+  //      [header instructions]
+  //      OpBranch %2
+  // %2 = OpLabel
+  //      [true branch instructions]
+  //      OpBranch %3
+  // %3 = OpLabel
+  //      [false branch instructions]
+  //      OpBranch %4
+  // %4 = OpLabel
+  //      ...
+  //
+  // If all of the instructions in the true or false branches have
+  // no side effects, this is semantics-preserving.
+  // Side-effecting instructions will instead be enclosed by smaller
+  // conditionals. For more details, look at the definition for the
+  // SideEffectWrapperInfo message.
+  //
+  // Nested conditionals or loops are not supported. The false branch
+  // could also be executed before the true branch, depending on the
+  // |true_branch_first| field.
+
+  // The label id of the header block
+  uint32 header_block_id = 1;
+
+  // A boolean field deciding the order in which the original branches
+  // will be laid out: the true branch will be laid out first iff this
+  // field is true.
+  bool true_branch_first = 2;
+
+  // A list of instructions with side effects, which must be enclosed
+  // inside smaller conditionals before flattening the main one, and
+  // the corresponding fresh ids and module ids needed.
+  repeated SideEffectWrapperInfo side_effect_wrapper_info = 3;
 }
 
 message TransformationFunctionCall {
