@@ -76,12 +76,6 @@ bool TransformationAddParameter::IsApplicable(
     }
     // If the id of the value of the map is not available before the caller,
     // return false.
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3722):
-    //      This can potentially trigger a bug if the caller is in an
-    //      unreachable block. fuzzerutil::IdIsAvailableBeforeInstruction uses
-    //      dominator analysis to check that value_id is available and the
-    //      domination rules are not defined for unreachable blocks.
-    //      The following code should be refactored.
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, instr,
                                                     value_id)) {
       return false;
