@@ -504,7 +504,7 @@ bool IdIsAvailableAtUse(opt::IRContext* context,
                         opt::Instruction* use_instruction,
                         uint32_t use_input_operand_index, uint32_t id) {
   assert(context->get_instr_block(use_instruction) &&
-         "|use_instruction| must be a local instruction");
+         "|use_instruction| must be in a basic block");
 
   auto defining_instruction = context->get_def_use_mgr()->GetDef(id);
   auto enclosing_function =
@@ -546,7 +546,7 @@ bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
                                     opt::Instruction* instruction,
                                     uint32_t id) {
   assert(context->get_instr_block(instruction) &&
-         "|instruction| must be a local instruction");
+         "|instruction| must be in a basic block");
 
   auto defining_instruction = context->get_def_use_mgr()->GetDef(id);
   auto enclosing_function = context->get_instr_block(instruction)->GetParent();
