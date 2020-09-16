@@ -27,6 +27,8 @@ namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
+// Forward reference to the DeadBlockFacts class.
+class DeadBlockFacts;
 // Forward reference to the IrrelevantValueFacts class.
 class IrrelevantValueFacts;
 
@@ -35,14 +37,18 @@ class IrrelevantValueFacts;
 class DataSynonymAndIdEquationFacts {
  public:
   // See method in FactManager which delegates to this method.
-  // |irrelevant_value_facts| is passed for consistency checks.
+  // |dead_block_facts| and |irrelevant_value_facts| are passed for consistency
+  // checks.
   void AddFact(const protobufs::FactDataSynonym& fact,
+               const DeadBlockFacts& dead_block_facts,
                const IrrelevantValueFacts& irrelevant_value_facts,
                opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
-  // |irrelevant_value_facts| is passed for consistency checks.
+  // |dead_block_facts| and |irrelevant_value_facts| are passed for consistency
+  // checks.
   void AddFact(const protobufs::FactIdEquation& fact,
+               const DeadBlockFacts& dead_block_facts,
                const IrrelevantValueFacts& irrelevant_value_facts,
                opt::IRContext* context);
 

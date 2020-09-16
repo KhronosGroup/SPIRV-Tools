@@ -153,6 +153,13 @@ void TransformationVectorShuffle::Apply(
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
 
+  // If the new instruction is irrelevant (because it is in a dead block), it
+  // cannot participate in any DataSynonym fact.
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.fresh_id(), ir_context)) {
+    return;
+  }
+
   // Add synonym facts relating the defined elements of the shuffle result to
   // the vector components that they come from.
   for (uint32_t component_index = 0;
