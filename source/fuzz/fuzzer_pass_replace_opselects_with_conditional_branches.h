@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_REPLACE_OPSELECTS_WITH_CONDITIONAL_BRANCHES_
-#define SOURCE_FUZZ_FUZZER_PASS_REPLACE_OPSELECTS_WITH_CONDITIONAL_BRANCHES_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_REPLACE_OPSELECTS_WITH_CONDITIONAL_BRANCHES_H_
+#define SOURCE_FUZZ_FUZZER_PASS_REPLACE_OPSELECTS_WITH_CONDITIONAL_BRANCHES_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -50,4 +50,4 @@ class FuzzerPassReplaceOpSelectsWithConditionalBranches : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_REPLACE_OPSELECTS_WITH_CONDITIONAL_BRANCHES_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_REPLACE_OPSELECTS_WITH_CONDITIONAL_BRANCHES_H_
