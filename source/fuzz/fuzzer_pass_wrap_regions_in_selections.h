@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_OUTLINE_SELECTION_CONSTRUCT_H_
-#define SOURCE_FUZZ_FUZZER_PASS_OUTLINE_SELECTION_CONSTRUCT_H_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_WRAP_REGIONS_IN_SELECTIONS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_WRAP_REGIONS_IN_SELECTIONS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// Randomly outlines a set of blocks in every function into a selection
+// Randomly wraps a region of blocks in every function into a selection
 // construct.
 class FuzzerPassWrapRegionsInSelections : public FuzzerPass {
  public:
@@ -52,4 +52,4 @@ class FuzzerPassWrapRegionsInSelections : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_OUTLINE_SELECTION_CONSTRUCT_H_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_WRAP_REGIONS_IN_SELECTIONS_H_

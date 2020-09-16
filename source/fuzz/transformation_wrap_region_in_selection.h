@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_TRANSFORMATION_OUTLINE_SELECTION_CONSTRUCT_H_
-#define SOURCE_FUZZ_TRANSFORMATION_OUTLINE_SELECTION_CONSTRUCT_H_
+#ifndef SOURCE_FUZZ_TRANSFORMATION_WRAP_REGION_IN_SELECTION_H_
+#define SOURCE_FUZZ_TRANSFORMATION_WRAP_REGION_IN_SELECTION_H_
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -57,4 +57,4 @@ class TransformationWrapRegionInSelection : public Transformation {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_TRANSFORMATION_OUTLINE_SELECTION_CONSTRUCT_H_
+#endif  // SOURCE_FUZZ_TRANSFORMATION_WRAP_REGION_IN_SELECTION_H_
