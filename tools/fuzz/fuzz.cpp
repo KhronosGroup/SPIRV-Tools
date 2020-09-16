@@ -16,7 +16,6 @@
 #include <cerrno>
 #include <cstring>
 #include <fstream>
-#include <functional>
 #include <random>
 #include <sstream>
 #include <string>
@@ -108,7 +107,13 @@ Options (in lexicographical order):
                with replay and shrink modes.  The file should be empty if no
                donors are to be used.
   --enable-all-passes
-               TODO explain.
+               By default, spirv-fuzz follows the philosophy of "swarm testing"
+               (Groce et al., 2012): only a subset of fuzzer passes are enabled
+               on any given fuzzer run, with the subset being chosen randomly.
+               This flag instead forces *all* fuzzer passes to be enabled.  When
+               running spirv-fuzz many times this is likely to produce *less*
+               diverse fuzzed modules than when swarm testing is used.  The
+               purpose of the flag is to allow that hypothesis to be tested.
   --force-render-red
                Transforms the input shader into a shader that writes red to the
                output buffer, and then captures the original shader as the body
@@ -121,7 +126,18 @@ Options (in lexicographical order):
                fuzzing.  Aborts fuzzing early if an invalid binary is created.
                Useful for debugging spirv-fuzz.
   --repeated-pass-strategy=
-               TODO explain.
+               Available strategies are:
+               - looped (the default): a sequence of fuzzer passes is chosen at
+                 the start of fuzzing, via randomly choosing enabled passes, and
+                 augmenting these choices with fuzzer passes that it is
+                 recommended to run subsequently.  Fuzzing then involves
+                 repeatedly applying this fixed sequence of passes.
+               - random: each time a fuzzer pass is requested, this strategy
+                 either provides one at random from the set of enabled passes,
+                 or provides a pass that has been recommended based on a pass
+                 that was used previously.
+               - simple: each time a fuzzer pass is requested, one is provided
+                 at random from the set of enabled passes.
   --replay
                File from which to read a sequence of transformations to replay
                (instead of fuzzing)
@@ -224,24 +240,26 @@ FuzzStatus ParseFlags(
       } else if (0 == strncmp(cur_arg, "--fuzzer-pass-validation",
                               sizeof("--fuzzer-pass-validation") - 1)) {
         fuzzer_options->enable_fuzzer_pass_validation();
-      } else if (0 == strncmp(cur_arg, "--repeated-pass-strategy=",
-                              sizeof("--repeated-pass-strategy=") - 1)) {
+      } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file = std::string(split_flag.second);
-      } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
+      } else if (0 == strncmp(cur_arg, "--repeated-pass-strategy=",
+                              sizeof("--repeated-pass-strategy=") - 1)) {
         std::string strategy = spvtools::utils::SplitFlagArgs(cur_arg).second;
-        if (strategy == "simple") {
-          *repeated_pass_strategy =
-              spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kSimple;
+        if (strategy == "looped") {
+          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
+              RepeatedPassStrategy::kLoopedWithRecommendations;
         } else if (strategy == "random") {
           *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
               RepeatedPassStrategy::kRandomWithRecommendations;
-        } else if (strategy == "looped") {
-          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
-              RepeatedPassStrategy::kLoopedWithRecommendations;
+        } else if (strategy == "simple") {
+          *repeated_pass_strategy =
+              spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kSimple;
         } else {
           std::stringstream ss;
-          ss << "Unknown repeated pass strategy '" << strategy << "'";
+          ss << "Unknown repeated pass strategy '" << strategy << "'"
+             << std::endl;
+          ss << "Valid options are 'looped', 'random' and 'simple'.";
           spvtools::Error(FuzzDiagnostic, nullptr, {}, ss.str().c_str());
           return {FuzzActions::STOP, 1};
         }

@@ -220,6 +220,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     // Each call to MaybeAddRepeatedPass randomly decides whether the given pass
     // should be enabled, and adds an instance of the pass to |pass_instances|
     // if it is enabled.
+    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3764): Consider
+    //  enabling some passes always, or with higher probability.
     MaybeAddRepeatedPass<FuzzerPassAddAccessChains>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
@@ -395,9 +397,6 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
       repeated_pass_manager =
           MakeUnique<RepeatedPassManagerRandomWithRecommendations>(
               &fuzzer_context, &pass_instances, &pass_recommender);
-      break;
-    default:
-      assert(false && "Invalid repeated pass manager.");
       break;
   }
 
