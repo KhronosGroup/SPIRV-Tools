@@ -56,6 +56,7 @@ void DataSynonymAndIdEquationFacts::AddFact(
     const DeadBlockFacts& dead_block_facts,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
+  (void)dead_block_facts;        // Keep release compilers happy.
   (void)irrelevant_value_facts;  // Keep release compilers happy.
   assert(!irrelevant_value_facts.IdIsIrrelevant(fact.data1().object(),
                                                 dead_block_facts, context) &&
@@ -73,6 +74,7 @@ void DataSynonymAndIdEquationFacts::AddFact(
     const DeadBlockFacts& dead_block_facts,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
+  (void)dead_block_facts;        // Keep release compilers happy.
   (void)irrelevant_value_facts;  // Keep release compilers happy.
   assert(!irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id(), dead_block_facts,
                                                 context) &&
