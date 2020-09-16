@@ -15,6 +15,10 @@
 #include "source/fuzz/transformation_split_loop.h"
 #include "test/fuzz/fuzz_test_util.h"
 
+// to be removed
+#include "source/fuzz/fuzzer_pass_split_loops.h"
+#include "source/fuzz/pseudo_random_generator.h"
+
 namespace spvtools {
 namespace fuzz {
 namespace {
@@ -95,7 +99,7 @@ TEST(TransformationSplitLoopTest, BasicScenarios) {
                                                validator_options);
 
   auto transformation =
-      TransformationSplitLoop(11, 50, 54, 24, 101, 102, 103, 104, 105, 106,
+      TransformationSplitLoop(11, 50, 54, 24, 101, 102, 103, 104, 105, 106, 107,
                               {{11, 201},
                                {15, 202},
                                {12, 203},
@@ -222,31 +226,31 @@ TEST(TransformationSplitLoopTest, TestShaderFirstLoop) {
 
   // First loop.
 
-  auto transformation =
-      TransformationSplitLoop(12, 100, 102, 9, 201, 202, 203, 204, 205, 206,
-                              {{12, 301},
-                               {16, 302},
-                               {13, 303},
-                               {24, 304},
-                               {25, 305},
-                               {32, 306},
-                               {33, 307},
-                               {15, 308},
-                               {14, 309}},
-                              {{17, 401},
-                               {20, 402},
-                               {21, 403},
-                               {22, 404},
-                               {23, 405},
-                               {27, 406},
-                               {28, 407},
-                               {29, 408},
-                               {31, 409},
-                               {35, 410},
-                               {36, 411},
-                               {37, 412},
-                               {38, 413},
-                               {40, 414}});
+  auto transformation = TransformationSplitLoop(12, 100, 102, 9, 201, 202, 203,
+                                                204, 205, 206, 207,
+                                                {{12, 301},
+                                                 {16, 302},
+                                                 {13, 303},
+                                                 {24, 304},
+                                                 {25, 305},
+                                                 {32, 306},
+                                                 {33, 307},
+                                                 {15, 308},
+                                                 {14, 309}},
+                                                {{17, 401},
+                                                 {20, 402},
+                                                 {21, 403},
+                                                 {22, 404},
+                                                 {23, 405},
+                                                 {27, 406},
+                                                 {28, 407},
+                                                 {29, 408},
+                                                 {31, 409},
+                                                 {35, 410},
+                                                 {36, 411},
+                                                 {37, 412},
+                                                 {38, 413},
+                                                 {40, 414}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
@@ -359,19 +363,109 @@ TEST(TransformationSplitLoopTest, TestShaderSecondLoop) {
 
   auto transformation =
       TransformationSplitLoop(42, 100, 102, 9, 201, 202, 203, 204, 205, 206,
-                              {{42, 301}, {43, 302}, {44, 303}, {45, 304}},
+                              207, {{42, 301}, {43, 302}, {44, 303}, {45, 304}},
                               {{47, 401}, {48, 402}, {49, 403}, {50, 404}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   transformation.Apply(context.get(), &transformation_context);
 
-  /*std::vector<uint32_t> actual_binary;
+  ASSERT_TRUE(IsValid(env, context.get()));
+}
+
+TEST(TransformationSplitLoopTest, FuzzerPassBasicTest) {
+  // This is a simple transformation and this test handles the main cases.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "s"
+               OpName %10 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %60 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+         %61 = OpTypePointer Function %60
+          %9 = OpConstant %60 0
+         %17 = OpConstant %60 10
+         %18 = OpTypeBool
+         %55 = OpConstantTrue %18
+         %56 = OpConstantFalse %18
+         %53 = OpTypePointer Function %18
+         %24 = OpConstant %60 3
+         %30 = OpConstant %60 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %61 Function
+         %10 = OpVariable %61 Function
+         %50 = OpVariable %61 Function
+         %54 = OpVariable %53 Function
+               OpStore %8 %9
+               OpStore %10 %9
+               OpBranch %11
+         %11 = OpLabel
+               OpLoopMerge %13 %14 None
+               OpBranch %15
+         %15 = OpLabel
+         %16 = OpLoad %60 %10
+         %19 = OpSLessThan %18 %16 %17
+               OpBranchConditional %19 %12 %13
+         %12 = OpLabel
+         %20 = OpLoad %60 %10
+         %21 = OpLoad %60 %8
+         %22 = OpIAdd %60 %21 %20
+               OpStore %8 %22
+         %23 = OpLoad %60 %10
+         %25 = OpIEqual %18 %23 %24
+               OpSelectionMerge %27 None
+               OpBranchConditional %25 %26 %27
+         %26 = OpLabel
+               OpBranch %13
+         %27 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+         %29 = OpLoad %60 %10
+         %31 = OpIAdd %60 %29 %30
+               OpStore %10 %31
+               OpBranch %11
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto prng = MakeUnique<PseudoRandomGenerator>(0);
+
+  FuzzerContext fuzzer_context(prng.get(), 100);
+  protobufs::TransformationSequence transformation_sequence;
+
+  for (int i = 0; i < 20; i++) {
+    FuzzerPassSplitLoops fuzzer_pass(context.get(), &transformation_context,
+                                     &fuzzer_context, &transformation_sequence);
+
+    fuzzer_pass.Apply();
+  }
+
+  std::vector<uint32_t> actual_binary;
   context.get()->module()->ToBinary(&actual_binary, false);
   SpirvTools t(env);
   std::string actual_disassembled;
   t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled << std::endl;*/
+  std::cout << actual_disassembled << std::endl;
 
   ASSERT_TRUE(IsValid(env, context.get()));
 }

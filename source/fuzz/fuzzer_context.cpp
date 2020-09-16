@@ -130,7 +130,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithGlobals = {
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithStruct = {
     20, 40};
 const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
-const std::pair<uint32_t, uint32_t> kChanceOfSplittingLoop = {20, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfSplittingLoop = {2, 5};
 const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
     {10, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
@@ -139,6 +139,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
 // Default limits for various quantities that are chosen during fuzzing.
 // Keep them in alphabetical order.
 const uint32_t kDefaultMaxEquivalenceClassSizeForDataSynonymFactClosure = 1000;
+const uint32_t kDefaultMaxLimitOfLoopIterationsWhenSplittingLoop = 20;
 const uint32_t kDefaultMaxLoopControlPartialCount = 100;
 const uint32_t kDefaultMaxLoopControlPeelCount = 100;
 const uint32_t kDefaultMaxLoopLimit = 20;
@@ -147,6 +148,7 @@ const uint32_t kDefaultMaxNewArraySizeLimit = 100;
 //  think whether there is a better limit on the maximum number of parameters.
 const uint32_t kDefaultMaxNumberOfFunctionParameters = 128;
 const uint32_t kDefaultMaxNumberOfNewParameters = 15;
+const uint32_t kDefaultMinLimitOfLoopIterationsWhenSplittingLoop = 2;
 const uint32_t kGetDefaultMaxNumberOfParametersReplacedWithStruct = 5;
 
 // Default functions for controlling how deep to go during recursive
@@ -167,6 +169,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       next_fresh_id_(min_fresh_id),
       max_equivalence_class_size_for_data_synonym_fact_closure_(
           kDefaultMaxEquivalenceClassSizeForDataSynonymFactClosure),
+      max_limit_of_loop_iterations_when_splitting_loop_(
+          kDefaultMaxLimitOfLoopIterationsWhenSplittingLoop),
       max_loop_control_partial_count_(kDefaultMaxLoopControlPartialCount),
       max_loop_control_peel_count_(kDefaultMaxLoopControlPeelCount),
       max_loop_limit_(kDefaultMaxLoopLimit),
@@ -175,6 +179,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       max_number_of_new_parameters_(kDefaultMaxNumberOfNewParameters),
       max_number_of_parameters_replaced_with_struct_(
           kGetDefaultMaxNumberOfParametersReplacedWithStruct),
+      min_limit_of_loop_iterations_when_splitting_loop_(
+          kDefaultMinLimitOfLoopIterationsWhenSplittingLoop),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
   chance_of_accepting_repeated_pass_recommendation_ =

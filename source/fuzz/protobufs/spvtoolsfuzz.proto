@@ -2032,20 +2032,23 @@ message TransformationSplitLoop {
     // Fresh id for a new entry block of the body of the first loop.
     uint32 new_body_entry_block_fresh_id = 8;
 
+    // Fresh id for a conditional block after the first loop merge block.
+    uint32 conditional_block_fresh_id = 9;
+
     // Id for an OpLoad instruction with |run_second|.
-    uint32 load_run_second_fresh_id = 9;
+    uint32 load_run_second_fresh_id = 10;
 
     // Id for a final selection merge block (after the first and the
     // second loop).
-    uint32 selection_merge_block_fresh_id = 10;
+    uint32 selection_merge_block_fresh_id = 11;
 
     // Map that maps from a label in the first loop to the corresponding
     // label in the second loop.
-    repeated UInt32Pair original_label_to_duplicate_label = 11;
+    repeated UInt32Pair original_label_to_duplicate_label = 12;
 
     // Map that maps from a result id in the first loop to the corresponding
     // result id in the second loop.
-    repeated UInt32Pair original_id_to_duplicate_id = 12;
+    repeated UInt32Pair original_id_to_duplicate_id = 13;
 }
 
 

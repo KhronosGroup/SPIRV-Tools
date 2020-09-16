@@ -49,6 +49,12 @@ void FuzzerPassApplyIdSynonyms::Apply() {
     // when considering a given use, we might apply a transformation that will
     // invalidate the def-use manager.
     std::vector<std::pair<opt::Instruction*, uint32_t>> uses;
+
+    if (GetIRContext()->get_def_use_mgr()->GetDef(id_with_known_synonyms) ==
+        nullptr) {
+      continue;
+    }
+
     GetIRContext()->get_def_use_mgr()->ForEachUse(
         id_with_known_synonyms,
         [&uses](opt::Instruction* use_inst, uint32_t use_index) -> void {
@@ -89,6 +95,10 @@ void FuzzerPassApplyIdSynonyms::Apply() {
             MakeDataDescriptor(id_with_known_synonyms, {});
         if (DataDescriptorEquals()(data_descriptor, &descriptor_for_this_id)) {
           // Exclude the fact that the id is synonymous with itself.
+          continue;
+        }
+        if (GetIRContext()->get_def_use_mgr()->GetDef(
+                data_descriptor->object()) == nullptr) {
           continue;
         }
 

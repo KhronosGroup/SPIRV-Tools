@@ -28,9 +28,68 @@ FuzzerPassSplitLoops::FuzzerPassSplitLoops(
 FuzzerPassSplitLoops::~FuzzerPassSplitLoops() = default;
 
 void FuzzerPassSplitLoops::Apply() {
-  if (!GetFuzzerContext()->ChoosePercentage(
-          GetFuzzerContext()->GetChanceOfSplittingLoop())) {
+  for (auto& function : *GetIRContext()->module()) {
+    std::vector<opt::BasicBlock*> function_blocks;
+    for (auto& block : function) {
+      if (&block == &*function.begin()) {
+        continue;
+      }
+      if (block.begin() == --block.end()) {
+        continue;
+      }
+      function_blocks.push_back(&block);
+    }
+    for (auto& block : function_blocks) {
+      if (block->GetLoopMergeInst()) {
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfSplittingLoop())) {
+          continue;
+        }
+        auto merge_block = GetIRContext()->cfg()->block(block->MergeBlockId());
+        auto loop_blocks = TransformationSplitLoop::GetRegionBlocks(
+            GetIRContext(), block, merge_block);
+        std::map<uint32_t, uint32_t> original_label_to_duplicate_label;
+        std::map<uint32_t, uint32_t> original_id_to_duplicate_id;
+        for (auto& loop_block : loop_blocks) {
+          original_label_to_duplicate_label[loop_block->id()] =
+              GetFuzzerContext()->GetFreshId();
+          for (auto& instr : *loop_block) {
+            if (instr.HasResultId()) {
+              original_id_to_duplicate_id[instr.result_id()] =
+                  GetFuzzerContext()->GetFreshId();
+            }
+          }
+        }
+        FindOrCreateIntegerConstant({0}, 32, false, false);
+        FindOrCreateIntegerConstant({1}, 32, false, false);
+        FindOrCreateBoolConstant(true, false);
+        FindOrCreateBoolConstant(false, false);
+        uint32_t constant_limit_id = FindOrCreateIntegerConstant(
+            {GetFuzzerContext()->GetRandomLimitOfIterationsWhenSplittingLoop()},
+            32, false, false);
+
+        uint32_t local_unsigned_int_type = FindOrCreatePointerType(
+            FindOrCreateIntegerType(32, false), SpvStorageClassFunction);
+        uint32_t variable_counter_id = FindOrCreateLocalVariable(
+            local_unsigned_int_type, function.result_id(), false);
+
+        uint32_t local_bool_type = FindOrCreatePointerType(
+            FindOrCreateBoolType(), SpvStorageClassFunction);
+        uint32_t variable_run_second_id = FindOrCreateLocalVariable(
+            local_bool_type, function.result_id(), false);
+        TransformationSplitLoop transformation = TransformationSplitLoop(
+            block->id(), variable_counter_id, variable_run_second_id,
+            constant_limit_id, GetFuzzerContext()->GetFreshId(),
+            GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+            GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+            GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+            std::move(original_label_to_duplicate_label),
+            std::move(original_id_to_duplicate_id));
+        MaybeApplyTransformation(transformation);
+      }
+    }
   }
-}  // namespace fuzz
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

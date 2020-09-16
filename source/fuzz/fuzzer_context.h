@@ -352,6 +352,11 @@ class FuzzerContext {
   int64_t GetRandomValueForStepConstantInLoop() {
     return random_generator_->RandomUint64(UINT64_MAX);
   }
+  uint32_t GetRandomLimitOfIterationsWhenSplittingLoop() {
+    return ChooseBetweenMinAndMax(
+        {min_limit_of_loop_iterations_when_splitting_loop_,
+         max_limit_of_loop_iterations_when_splitting_loop_});
+  }
   uint32_t GetRandomLoopControlPartialCount() {
     return random_generator_->RandomUint32(max_loop_control_partial_count_);
   }
@@ -479,6 +484,7 @@ class FuzzerContext {
   // chosen during fuzzing.
   // Keep them in alphabetical order.
   uint32_t max_equivalence_class_size_for_data_synonym_fact_closure_;
+  uint32_t max_limit_of_loop_iterations_when_splitting_loop_;
   uint32_t max_loop_control_partial_count_;
   uint32_t max_loop_control_peel_count_;
   uint32_t max_loop_limit_;
@@ -486,6 +492,7 @@ class FuzzerContext {
   uint32_t max_number_of_function_parameters_;
   uint32_t max_number_of_new_parameters_;
   uint32_t max_number_of_parameters_replaced_with_struct_;
+  uint32_t min_limit_of_loop_iterations_when_splitting_loop_;
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.
