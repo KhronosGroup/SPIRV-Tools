@@ -94,7 +94,6 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_mutate_pointers.h
         fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_outline_functions.h
-        fuzzer_pass_outline_selection_constructs.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_permute_function_parameters.h
         fuzzer_pass_permute_instructions.h
@@ -115,6 +114,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_swap_commutable_operands.h
         fuzzer_pass_swap_conditional_branch_operands.h
         fuzzer_pass_toggle_access_chain_instruction.h
+        fuzzer_pass_wrap_regions_in_selections.h
         fuzzer_util.h
         id_use_descriptor.h
         instruction_descriptor.h
@@ -184,7 +184,6 @@ if(SPIRV_BUILD_FUZZER)
         transformation_move_instruction_down.h
         transformation_mutate_pointer.h
         transformation_outline_function.h
-        transformation_outline_selection_construct.h
         transformation_permute_function_parameters.h
         transformation_permute_phi_operands.h
         transformation_propagate_instruction_up.h
@@ -213,6 +212,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_conditional_branch_operands.h
         transformation_toggle_access_chain_instruction.h
         transformation_vector_shuffle.h
+        transformation_wrap_region_in_selection.h
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
@@ -272,7 +272,6 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_mutate_pointers.cpp
         fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_outline_functions.cpp
-        fuzzer_pass_outline_selection_constructs.cpp
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_permute_function_parameters.cpp
         fuzzer_pass_permute_instructions.cpp
@@ -293,6 +292,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_swap_commutable_operands.cpp
         fuzzer_pass_swap_conditional_branch_operands.cpp
         fuzzer_pass_toggle_access_chain_instruction.cpp
+        fuzzer_pass_wrap_regions_in_selections.cpp
         fuzzer_util.cpp
         id_use_descriptor.cpp
         instruction_descriptor.cpp
@@ -360,7 +360,6 @@ if(SPIRV_BUILD_FUZZER)
         transformation_move_instruction_down.cpp
         transformation_mutate_pointer.cpp
         transformation_outline_function.cpp
-        transformation_outline_selection_construct.cpp
         transformation_permute_function_parameters.cpp
         transformation_permute_phi_operands.cpp
         transformation_propagate_instruction_up.cpp
@@ -389,6 +388,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_conditional_branch_operands.cpp
         transformation_toggle_access_chain_instruction.cpp
         transformation_vector_shuffle.cpp
+        transformation_wrap_region_in_selection.cpp
         uniform_buffer_element_descriptor.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
         )

@@ -22,27 +22,27 @@ namespace fuzz {
 
 // Randomly outlines a set of blocks in every function into a selection
 // construct.
-class FuzzerPassOutlineSelectionConstructs : public FuzzerPass {
+class FuzzerPassWrapRegionsInSelections : public FuzzerPass {
  public:
-  FuzzerPassOutlineSelectionConstructs(
+  FuzzerPassWrapRegionsInSelections(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassOutlineSelectionConstructs() override;
+  ~FuzzerPassWrapRegionsInSelections() override;
 
   void Apply() override;
 
  private:
   // Tries to adjust |header_block_candidate| such that
-  // TransformationOutlineSelectionConstruct has higher chances of being
+  // TransformationWrapRegionInSelection has higher chances of being
   // applied. In particular, tries to split |header_block_candidate| if it's
   // already a header block of some other construct.
   opt::BasicBlock* MaybeGetHeaderBlockCandidate(
       opt::BasicBlock* header_block_candidate);
 
   // Tries to adjust |merge_block_candidate| such that
-  // TransformationOutlineSelectionConstruct has higher chances of being
+  // TransformationWrapRegionInSelection has higher chances of being
   // applied. In particular, tries to split |merge_block_candidate| if it's
   // already a merge block of some other construct.
   opt::BasicBlock* MaybeGetMergeBlockCandidate(

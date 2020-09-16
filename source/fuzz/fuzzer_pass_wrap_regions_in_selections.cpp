@@ -12,30 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer_pass_outline_selection_constructs.h"
+#include "source/fuzz/fuzzer_pass_wrap_regions_in_selections.h"
 
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_outline_selection_construct.h"
 #include "source/fuzz/transformation_split_block.h"
+#include "source/fuzz/transformation_wrap_region_in_selection.h"
 
 namespace spvtools {
 namespace fuzz {
 
-FuzzerPassOutlineSelectionConstructs::FuzzerPassOutlineSelectionConstructs(
+FuzzerPassWrapRegionsInSelections::FuzzerPassWrapRegionsInSelections(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassOutlineSelectionConstructs::~FuzzerPassOutlineSelectionConstructs() =
+FuzzerPassWrapRegionsInSelections::~FuzzerPassWrapRegionsInSelections() =
     default;
 
-void FuzzerPassOutlineSelectionConstructs::Apply() {
+void FuzzerPassWrapRegionsInSelections::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     if (!GetFuzzerContext()->ChoosePercentage(
-            GetFuzzerContext()->GetChanceOfOutliningSelectionConstruct())) {
+            GetFuzzerContext()->GetChanceOfWrappingRegionInSelection())) {
       continue;
     }
 
@@ -83,7 +83,7 @@ void FuzzerPassOutlineSelectionConstructs::Apply() {
       continue;
     }
 
-    if (!TransformationOutlineSelectionConstruct::IsApplicableToBlockRange(
+    if (!TransformationWrapRegionInSelection::IsApplicableToBlockRange(
             GetIRContext(), header_block_candidate->id(),
             merge_block_candidate->id())) {
       continue;
@@ -92,15 +92,17 @@ void FuzzerPassOutlineSelectionConstructs::Apply() {
     // This boolean constant will be used as a condition for the
     // OpBranchConditional instruction. We mark it as irrelevant to be able to
     // replace it with a more interesting value later.
-    FindOrCreateBoolConstant(true, true);
+    auto branch_condition = GetFuzzerContext()->ChooseEven();
+    FindOrCreateBoolConstant(branch_condition, true);
 
-    ApplyTransformation(TransformationOutlineSelectionConstruct(
-        header_block_candidate->id(), merge_block_candidate->id()));
+    ApplyTransformation(TransformationWrapRegionInSelection(
+        header_block_candidate->id(), merge_block_candidate->id(),
+        branch_condition));
   }
 }
 
 opt::BasicBlock*
-FuzzerPassOutlineSelectionConstructs::MaybeGetHeaderBlockCandidate(
+FuzzerPassWrapRegionsInSelections::MaybeGetHeaderBlockCandidate(
     opt::BasicBlock* header_block_candidate) {
   // Try to create a preheader if |header_block_candidate| is a loop header.
   if (header_block_candidate->IsLoopHeader()) {
@@ -127,13 +129,17 @@ FuzzerPassOutlineSelectionConstructs::MaybeGetHeaderBlockCandidate(
   return header_block_candidate;
 }
 
-opt::BasicBlock*
-FuzzerPassOutlineSelectionConstructs::MaybeGetMergeBlockCandidate(
+opt::BasicBlock* FuzzerPassWrapRegionsInSelections::MaybeGetMergeBlockCandidate(
     opt::BasicBlock* merge_block_candidate) {
   // If |merge_block_candidate| is a merge block of some construct, try to split
   // it and return a newly created block.
   if (GetIRContext()->GetStructuredCFGAnalysis()->IsMergeBlock(
           merge_block_candidate->id())) {
+    if (merge_block_candidate->IsLoopHeader()) {
+      // We can't split a merge block if it's also a loop header.
+      return nullptr;
+    }
+
     auto* split_before_inst = &*merge_block_candidate->begin();
     while (split_before_inst->opcode() == SpvOpPhi) {
       split_before_inst = split_before_inst->NextNode();

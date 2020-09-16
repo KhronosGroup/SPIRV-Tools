@@ -23,13 +23,14 @@
 namespace spvtools {
 namespace fuzz {
 
-class TransformationOutlineSelectionConstruct : public Transformation {
+class TransformationWrapRegionInSelection : public Transformation {
  public:
-  explicit TransformationOutlineSelectionConstruct(
-      const protobufs::TransformationOutlineSelectionConstruct& message);
+  explicit TransformationWrapRegionInSelection(
+      const protobufs::TransformationWrapRegionInSelection& message);
 
-  TransformationOutlineSelectionConstruct(uint32_t new_header_block_id,
-                                          uint32_t new_merge_block_id);
+  TransformationWrapRegionInSelection(uint32_t region_entry_block_id,
+                                      uint32_t region_exit_block_id,
+                                      bool branch_condition);
 
   // TODO
   bool IsApplicable(
@@ -50,7 +51,7 @@ class TransformationOutlineSelectionConstruct : public Transformation {
                                        uint32_t merge_block_candidate_id);
 
  private:
-  protobufs::TransformationOutlineSelectionConstruct message_;
+  protobufs::TransformationWrapRegionInSelection message_;
 };
 
 }  // namespace fuzz

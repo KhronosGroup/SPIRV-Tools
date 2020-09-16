@@ -67,7 +67,6 @@
 #include "source/fuzz/transformation_move_instruction_down.h"
 #include "source/fuzz/transformation_mutate_pointer.h"
 #include "source/fuzz/transformation_outline_function.h"
-#include "source/fuzz/transformation_outline_selection_construct.h"
 #include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
 #include "source/fuzz/transformation_propagate_instruction_up.h"
@@ -96,6 +95,7 @@
 #include "source/fuzz/transformation_swap_conditional_branch_operands.h"
 #include "source/fuzz/transformation_toggle_access_chain_instruction.h"
 #include "source/fuzz/transformation_vector_shuffle.h"
+#include "source/fuzz/transformation_wrap_region_in_selection.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {
@@ -248,10 +248,6 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
       return MakeUnique<TransformationOutlineFunction>(
           message.outline_function());
     case protobufs::Transformation::TransformationCase::
-        kOutlineSelectionConstruct:
-      return MakeUnique<TransformationOutlineSelectionConstruct>(
-          message.outline_selection_construct());
-    case protobufs::Transformation::TransformationCase::
         kPermuteFunctionParameters:
       return MakeUnique<TransformationPermuteFunctionParameters>(
           message.permute_function_parameters());
@@ -347,6 +343,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.toggle_access_chain_instruction());
     case protobufs::Transformation::TransformationCase::kVectorShuffle:
       return MakeUnique<TransformationVectorShuffle>(message.vector_shuffle());
+    case protobufs::Transformation::TransformationCase::kWrapRegionInSelection:
+      return MakeUnique<TransformationWrapRegionInSelection>(
+          message.wrap_region_in_selection());
     case protobufs::Transformation::TRANSFORMATION_NOT_SET:
       assert(false && "An unset transformation was encountered.");
       return nullptr;

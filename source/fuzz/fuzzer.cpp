@@ -63,7 +63,6 @@
 #include "source/fuzz/fuzzer_pass_mutate_pointers.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
-#include "source/fuzz/fuzzer_pass_outline_selection_constructs.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
 #include "source/fuzz/fuzzer_pass_permute_instructions.h"
@@ -84,6 +83,7 @@
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
+#include "source/fuzz/fuzzer_pass_wrap_regions_in_selections.h"
 #include "source/fuzz/pass_management/repeated_pass_manager.h"
 #include "source/fuzz/pass_management/repeated_pass_manager_looped_with_recommendations.h"
 #include "source/fuzz/pass_management/repeated_pass_manager_random_with_recommendations.h"
@@ -265,7 +265,6 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     MaybeAddRepeatedPass<FuzzerPassMutatePointers>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassOutlineFunctions>(&pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassOutlineSelectionConstructs>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteInstructions>(&pass_instances);
@@ -291,6 +290,7 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     MaybeAddRepeatedPass<FuzzerPassSplitBlocks>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassSwapBranchConditionalOperands>(
         &pass_instances);
+    MaybeAddRepeatedPass<FuzzerPassWrapRegionsInSelections>(&pass_instances);
     // There is a theoretical possibility that no pass instances were created
     // until now; loop again if so.
   } while (pass_instances.GetPasses().empty());

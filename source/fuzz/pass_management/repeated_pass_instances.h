@@ -50,7 +50,6 @@
 #include "source/fuzz/fuzzer_pass_mutate_pointers.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
-#include "source/fuzz/fuzzer_pass_outline_selection_constructs.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
 #include "source/fuzz/fuzzer_pass_permute_instructions.h"
@@ -68,6 +67,7 @@
 #include "source/fuzz/fuzzer_pass_replace_params_with_struct.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
+#include "source/fuzz/fuzzer_pass_wrap_regions_in_selections.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -140,7 +140,6 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(MutatePointers);
   REPEATED_PASS_INSTANCE(ObfuscateConstants);
   REPEATED_PASS_INSTANCE(OutlineFunctions);
-  REPEATED_PASS_INSTANCE(OutlineSelectionConstructs);
   REPEATED_PASS_INSTANCE(PermuteBlocks);
   REPEATED_PASS_INSTANCE(PermuteFunctionParameters);
   REPEATED_PASS_INSTANCE(PermuteInstructions);
@@ -158,6 +157,7 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(ReplaceParamsWithStruct);
   REPEATED_PASS_INSTANCE(SplitBlocks);
   REPEATED_PASS_INSTANCE(SwapBranchConditionalOperands);
+  REPEATED_PASS_INSTANCE(WrapRegionsInSelections);
 #undef REPEATED_PASS_INSTANCE
 
  public:

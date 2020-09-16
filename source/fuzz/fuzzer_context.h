@@ -252,9 +252,6 @@ class FuzzerContext {
   uint32_t GetChanceOfOutliningFunction() {
     return chance_of_outlining_function_;
   }
-  uint32_t GetChanceOfOutliningSelectionConstruct() {
-    return chance_of_outlining_selection_construct_;
-  }
   uint32_t GetChanceOfPermutingInstructions() {
     return chance_of_permuting_instructions_;
   }
@@ -309,6 +306,9 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfTogglingAccessChainInstruction() {
     return chance_of_toggling_access_chain_instruction_;
+  }
+  uint32_t GetChanceOfWrappingRegionInSelection() {
+    return chance_of_wrapping_region_in_selection_;
   }
 
   // Other functions to control transformations. Keep them in alphabetical
@@ -456,7 +456,6 @@ class FuzzerContext {
   uint32_t chance_of_mutating_pointer_;
   uint32_t chance_of_obfuscating_constant_;
   uint32_t chance_of_outlining_function_;
-  uint32_t chance_of_outlining_selection_construct_;
   uint32_t chance_of_permuting_instructions_;
   uint32_t chance_of_permuting_parameters_;
   uint32_t chance_of_permuting_phi_operands_;
@@ -476,6 +475,7 @@ class FuzzerContext {
   uint32_t chance_of_splitting_block_;
   uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_toggling_access_chain_instruction_;
+  uint32_t chance_of_wrapping_region_in_selection_;
 
   // Limits associated with various quantities for which random values are
   // chosen during fuzzing.

@@ -12,48 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_outline_selection_construct.h"
+#include "source/fuzz/transformation_wrap_region_in_selection.h"
 
 #include "source/fuzz/fuzzer_util.h"
 
 namespace spvtools {
 namespace fuzz {
 
-TransformationOutlineSelectionConstruct::
-    TransformationOutlineSelectionConstruct(
-        const protobufs::TransformationOutlineSelectionConstruct& message)
+TransformationWrapRegionInSelection::TransformationWrapRegionInSelection(
+    const protobufs::TransformationWrapRegionInSelection& message)
     : message_(message) {}
 
-TransformationOutlineSelectionConstruct::
-    TransformationOutlineSelectionConstruct(uint32_t new_header_block_id,
-                                            uint32_t new_merge_block_id) {
-  message_.set_new_header_block_id(new_header_block_id);
-  message_.set_new_merge_block_id(new_merge_block_id);
+TransformationWrapRegionInSelection::TransformationWrapRegionInSelection(
+    uint32_t region_entry_block_id, uint32_t region_exit_block_id,
+    bool branch_condition) {
+  message_.set_region_entry_block_id(region_entry_block_id);
+  message_.set_region_exit_block_id(region_exit_block_id);
+  message_.set_branch_condition(branch_condition);
 }
 
-bool TransformationOutlineSelectionConstruct::IsApplicable(
+bool TransformationWrapRegionInSelection::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
   // Check that it is possible to outline a region of blocks without breaking
   // domination and structured control flow rules.
-  if (!IsApplicableToBlockRange(ir_context, message_.new_header_block_id(),
-                                message_.new_merge_block_id())) {
+  if (!IsApplicableToBlockRange(ir_context, message_.region_entry_block_id(),
+                                message_.region_exit_block_id())) {
     return false;
   }
 
   // There must exist an irrelevant boolean constant to be used as a condition
   // in the OpBranchConditional instruction.
   return fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
-                                          true, true) != 0;
+                                          message_.branch_condition(),
+                                          true) != 0;
 }
 
-void TransformationOutlineSelectionConstruct::Apply(
+void TransformationWrapRegionInSelection::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
   auto* new_header_block =
-      ir_context->cfg()->block(message_.new_header_block_id());
+      ir_context->cfg()->block(message_.region_entry_block_id());
   assert(new_header_block->terminator()->opcode() == SpvOpBranch &&
-         "Should condition should've been checked in the IsApplicable");
+         "This condition should have been checked in the IsApplicable");
 
   const auto successor_id =
       new_header_block->terminator()->GetSingleWordInOperand(0);
@@ -63,7 +64,7 @@ void TransformationOutlineSelectionConstruct::Apply(
   new_header_block->terminator()->SetInOperands(
       {{SPV_OPERAND_TYPE_ID,
         {fuzzerutil::MaybeGetBoolConstant(ir_context, *transformation_context,
-                                          true, true)}},
+                                          message_.branch_condition(), true)}},
        {SPV_OPERAND_TYPE_ID, {successor_id}},
        {SPV_OPERAND_TYPE_ID, {successor_id}}});
 
@@ -71,7 +72,7 @@ void TransformationOutlineSelectionConstruct::Apply(
   new_header_block->terminator()->InsertBefore(MakeUnique<opt::Instruction>(
       ir_context, SpvOpSelectionMerge, 0, 0,
       opt::Instruction::OperandList{
-          {SPV_OPERAND_TYPE_ID, {message_.new_merge_block_id()}},
+          {SPV_OPERAND_TYPE_ID, {message_.region_exit_block_id()}},
           {SPV_OPERAND_TYPE_SELECTION_CONTROL,
            {SpvSelectionControlMaskNone}}}));
 
@@ -79,29 +80,29 @@ void TransformationOutlineSelectionConstruct::Apply(
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
-protobufs::Transformation TransformationOutlineSelectionConstruct::ToMessage()
+protobufs::Transformation TransformationWrapRegionInSelection::ToMessage()
     const {
   protobufs::Transformation result;
-  *result.mutable_outline_selection_construct() = message_;
+  *result.mutable_wrap_region_in_selection() = message_;
   return result;
 }
 
-bool TransformationOutlineSelectionConstruct::IsApplicableToBlockRange(
+bool TransformationWrapRegionInSelection::IsApplicableToBlockRange(
     opt::IRContext* ir_context, uint32_t header_block_candidate_id,
     uint32_t merge_block_candidate_id) {
   // Check that |header_block_candidate_id| and |merge_block_candidate_id| are
   // valid.
-  for (auto block_id : {header_block_candidate_id, merge_block_candidate_id}) {
-    const auto* label_inst = ir_context->get_def_use_mgr()->GetDef(block_id);
-    if (!label_inst || label_inst->opcode() != SpvOpLabel) {
-      return false;
-    }
+  const auto* header_block_candidate =
+      fuzzerutil::MaybeFindBlock(ir_context, header_block_candidate_id);
+  if (!header_block_candidate) {
+    return false;
   }
 
-  const auto* header_block_candidate =
-      ir_context->cfg()->block(header_block_candidate_id);
   const auto* merge_block_candidate =
-      ir_context->cfg()->block(merge_block_candidate_id);
+      fuzzerutil::MaybeFindBlock(ir_context, merge_block_candidate_id);
+  if (!merge_block_candidate) {
+    return false;
+  }
 
   // |header_block_candidate| and |merge_block_candidate| must be from the same
   // function.
@@ -133,9 +134,8 @@ bool TransformationOutlineSelectionConstruct::IsApplicableToBlockRange(
     return false;
   }
 
-  // Every header block must have a unique merge block. This rule will be
-  // violated if we make |merge_block_candidate| a merge block of a newly
-  // created header.
+  // Every header block must have a unique merge block. Thus,
+  // |merge_block_candidate| can't be a merge block of some other header.
   if (ir_context->GetStructuredCFGAnalysis()->IsMergeBlock(
           merge_block_candidate_id)) {
     return false;
@@ -166,8 +166,10 @@ bool TransformationOutlineSelectionConstruct::IsApplicableToBlockRange(
     }
   }
 
-  // |header_block_candidate| can be a merge block of some construct.
-  // |merge_block_candidate| can be a header block of some construct.
+  // Take into account that:
+  // - |header_block_candidate| can be a merge block of some construct.
+  // - |merge_block_candidate| can be a header block of some construct.
+  // These are the two cases when the transformation can still be applied.
   assert(!outlined_block_ids.count(header_block_candidate_id) &&
          !outlined_block_ids.count(merge_block_candidate_id) &&
          "Guaranteed by the call to the StrictlyDominates method");
