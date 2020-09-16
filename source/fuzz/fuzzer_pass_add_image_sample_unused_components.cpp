@@ -178,8 +178,6 @@ void FuzzerPassAddImageSampleUnusedComponents::Apply() {
     // %22 = OpCompositeConstruct %6 %17 %21
     uint32_t coordinate_with_unused_components_id =
         GetFuzzerContext()->GetFreshId();
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3808): Should the
-    //  zero that gets created here have the "id is irrelevant" fact?
     ApplyTransformation(TransformationCompositeConstruct(
         coordinate_with_unused_components_type_id,
         {coordinate_instruction->result_id(),

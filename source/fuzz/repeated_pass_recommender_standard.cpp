@@ -98,11 +98,9 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
                                   pass_instances_->GetAddStores()});
   }
   if (&pass == pass_instances_->GetAddImageSampleUnusedComponents()) {
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3808): If this
-    //  transformation is changed to create an irrelevant id then we should
-    //  recommend ReplaceIrrelevantIds.
-    // No obvious follow-on passes
-    return {};
+    // - This introduces an unused component whose id is irrelevant and can be
+    //   replaced
+    return RandomOrderAndNonNull({pass_instances_->GetReplaceIrrelevantIds()});
   }
   if (&pass == pass_instances_->GetAddLoads()) {
     // - Loads might end up with corresponding stores, so that pairs can be
