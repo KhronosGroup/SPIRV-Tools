@@ -1656,7 +1656,8 @@ void RunFuzzerAndReplayer(const std::string& shader,
 
     // Cycle the repeated pass strategy so that we try a different one next time
     // we run the fuzzer.
-    strategy_index = (strategy_index + 1) % strategies.size();
+    strategy_index =
+        (strategy_index + 1) % static_cast<uint32_t>(strategies.size());
 
     fuzzer.SetMessageConsumer(kConsoleMessageConsumer);
     auto fuzzer_result_status =

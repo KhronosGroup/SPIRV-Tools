@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_REPEATED_PASS_MANAGER_RANDOM_WITH_RECOMMENDATIONS_
-#define SOURCE_FUZZ_REPEATED_PASS_MANAGER_RANDOM_WITH_RECOMMENDATIONS_
+#ifndef SOURCE_FUZZ_REPEATED_PASS_MANAGER_RANDOM_WITH_RECOMMENDATIONS_H_
+#define SOURCE_FUZZ_REPEATED_PASS_MANAGER_RANDOM_WITH_RECOMMENDATIONS_H_
 
 #include <deque>
 
@@ -56,4 +56,4 @@ class RepeatedPassManagerRandomWithRecommendations
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_REPEATED_PASS_MANAGER_RANDOM_WITH_RECOMMENDATIONS_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_MANAGER_RANDOM_WITH_RECOMMENDATIONS_H_

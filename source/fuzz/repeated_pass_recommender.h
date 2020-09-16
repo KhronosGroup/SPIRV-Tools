@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_
-#define SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_
+#ifndef SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_H_
+#define SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_H_
 
 #include <vector>
 
@@ -39,4 +39,4 @@ class RepeatedPassRecommender {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_H_

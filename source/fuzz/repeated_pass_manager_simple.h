@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_REPEATED_PASS_MANAGER_SIMPLE_
-#define SOURCE_FUZZ_REPEATED_PASS_MANAGER_SIMPLE_
+#ifndef SOURCE_FUZZ_REPEATED_PASS_MANAGER_SIMPLE_H_
+#define SOURCE_FUZZ_REPEATED_PASS_MANAGER_SIMPLE_H_
 
 #include "source/fuzz/repeated_pass_manager.h"
 
@@ -35,4 +35,4 @@ class RepeatedPassManagerSimple : public RepeatedPassManager {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_REPEATED_PASS_MANAGER_SIMPLE_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_MANAGER_SIMPLE_H_

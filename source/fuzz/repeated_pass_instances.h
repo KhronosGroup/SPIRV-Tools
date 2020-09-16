@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_REPEATED_REPEATED_PASS_INSTANCES_
-#define SOURCE_FUZZ_REPEATED_REPEATED_PASS_INSTANCES_
+#ifndef SOURCE_FUZZ_REPEATED_PASS_INSTANCES_H_
+#define SOURCE_FUZZ_REPEATED_PASS_INSTANCES_H_
 
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 #include "source/fuzz/fuzzer_pass_add_bit_instruction_synonyms.h"
@@ -85,15 +85,15 @@ class RepeatedPassInstances {
 //
 // // Requires that SetPass has not been called previously with FuzzerPassFoo.
 // // Adds |pass| to the set of known pass instances.
-// void SetPass(std::unique_ptr<FuzzerPassFoo pass);
+// void SetPass(std::unique_ptr<FuzzerPassFoo> pass);
 //
 // // Returns a pointer to a pass instance of type FuzzerPassFoo that was
 // // previously registered via SetPass(), or nullptr if no such instance was
 // // registered
-// FuzzerPassFoo* GetFoo(); <-- Returns nullptr if no instance
+// FuzzerPassFoo* GetFoo();
 #define REPEATED_PASS_INSTANCE(NAME)                                     \
  public:                                                                 \
-  FuzzerPass##NAME* Get##NAME() { return NAME##_; }                      \
+  FuzzerPass##NAME* Get##NAME() const { return NAME##_; }                \
   void SetPass(std::unique_ptr<FuzzerPass##NAME> pass) {                 \
     assert(NAME##_ == nullptr && "Attempt to set pass multiple times."); \
     NAME##_ = pass.get();                                                \
@@ -101,7 +101,7 @@ class RepeatedPassInstances {
   }                                                                      \
                                                                          \
  private:                                                                \
-  FuzzerPass##NAME* NAME##_
+  FuzzerPass##NAME* NAME##_ = nullptr
 
   REPEATED_PASS_INSTANCE(AddAccessChains);
   REPEATED_PASS_INSTANCE(AddBitInstructionSynonyms);
@@ -170,4 +170,4 @@ class RepeatedPassInstances {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_REPEATED_REPEATED_PASS_INSTANCES_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_INSTANCES_H_

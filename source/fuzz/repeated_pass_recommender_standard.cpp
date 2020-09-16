@@ -302,6 +302,7 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     return {};
   }
   assert(false && "Unreachable: every fuzzer pass should be dealt with.");
+  return {};
 }
 
 std::vector<FuzzerPass*> RepeatedPassRecommenderStandard::RandomOrderAndNonNull(

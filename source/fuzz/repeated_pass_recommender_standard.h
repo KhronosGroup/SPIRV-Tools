@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_
-#define SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_
+#ifndef SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_H_
+#define SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_H_
 
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/repeated_pass_instances.h"
@@ -47,4 +47,4 @@ class RepeatedPassRecommenderStandard : public RepeatedPassRecommender {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_H_
