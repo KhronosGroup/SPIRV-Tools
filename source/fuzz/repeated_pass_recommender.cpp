@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/pass_recommender.h"
+#include "source/fuzz/repeated_pass_recommender.h"
 
 namespace spvtools {
 namespace fuzz {
 
-PassRecommender::~PassRecommender() = default;
+RepeatedPassRecommender::~RepeatedPassRecommender() = default;
 
 }  // namespace fuzz
 }  // namespace spvtools

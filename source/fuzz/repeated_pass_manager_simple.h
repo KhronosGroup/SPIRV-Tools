@@ -20,16 +20,16 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO COMMENT.
+// Selects the next pass to run uniformly at random from the enabled repeated
+// passes.  Recommendations are not used.
 class RepeatedPassManagerSimple : public RepeatedPassManager {
  public:
-  RepeatedPassManagerSimple(FuzzerContext* fuzzer_context, PassInstances* pass_instances);
+  RepeatedPassManagerSimple(FuzzerContext* fuzzer_context,
+                            RepeatedPassInstances* pass_instances);
 
   ~RepeatedPassManagerSimple() override;
 
-  // TODO COMMENT.
   FuzzerPass* ChoosePass() override;
-
 };
 
 }  // namespace fuzz

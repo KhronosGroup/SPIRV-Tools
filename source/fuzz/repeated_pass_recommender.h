@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_PASS_RECOMMENDER_
-#define SOURCE_FUZZ_PASS_RECOMMENDER_
+#ifndef SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_
+#define SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_
 
 #include <vector>
 
@@ -22,17 +22,21 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO COMMENT.
-class PassRecommender {
+// Interface for influencing interactions between repeated fuzzer passes, by
+// allowing hints as to which passes are recommended to be run after one
+// another.
+class RepeatedPassRecommender {
  public:
-  virtual ~PassRecommender();
+  virtual ~RepeatedPassRecommender();
 
-  // TODO COMMENT.
-  virtual std::vector<FuzzerPass*> GetFuturePassRecommendations(const FuzzerPass& pass) = 0;
-
+  // Given a reference to a repeated pass, |pass|, returns a sequence of
+  // repeated pass instances that might be worth running soon after having
+  // run |pass|.
+  virtual std::vector<FuzzerPass*> GetFuturePassRecommendations(
+      const FuzzerPass& pass) = 0;
 };
 
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_PASS_RECOMMENDER_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_

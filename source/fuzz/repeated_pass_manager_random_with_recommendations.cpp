@@ -17,10 +17,15 @@
 namespace spvtools {
 namespace fuzz {
 
-RepeatedPassManagerRandomWithRecommendations::RepeatedPassManagerRandomWithRecommendations(FuzzerContext* fuzzer_context, PassInstances* pass_instances,
-  PassRecommender* pass_recommender) : RepeatedPassManager(fuzzer_context, pass_instances), pass_recommender_(pass_recommender) {}
+RepeatedPassManagerRandomWithRecommendations::
+    RepeatedPassManagerRandomWithRecommendations(
+        FuzzerContext* fuzzer_context, RepeatedPassInstances* pass_instances,
+        RepeatedPassRecommender* pass_recommender)
+    : RepeatedPassManager(fuzzer_context, pass_instances),
+      pass_recommender_(pass_recommender) {}
 
-RepeatedPassManagerRandomWithRecommendations::~RepeatedPassManagerRandomWithRecommendations() = default;
+RepeatedPassManagerRandomWithRecommendations::
+    ~RepeatedPassManagerRandomWithRecommendations() = default;
 
 FuzzerPass* RepeatedPassManagerRandomWithRecommendations::ChoosePass() {
   FuzzerPass* result;
@@ -31,7 +36,8 @@ FuzzerPass* RepeatedPassManagerRandomWithRecommendations::ChoosePass() {
     result = recommended_passes_.front();
     recommended_passes_.pop_front();
   }
-  for (auto future_pass : pass_recommender_->GetFuturePassRecommendations(*result)) {
+  for (auto future_pass :
+       pass_recommender_->GetFuturePassRecommendations(*result)) {
     recommended_passes_.push_back(future_pass);
   }
   return result;

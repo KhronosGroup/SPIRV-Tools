@@ -17,32 +17,36 @@
 
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass.h"
-#include "source/fuzz/pass_instances.h"
+#include "source/fuzz/repeated_pass_instances.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// TODO COMMENT.
+// An interface to encapsulate the manner in which the sequence of repeated
+// passes that are applied during fuzzing is chosen.  An implementation of this
+// interface could, for example, keep track of the history of passes that have
+// been run and bias the selection of future passes according to this history.
 class RepeatedPassManager {
  public:
-  RepeatedPassManager(FuzzerContext* fuzzer_context, PassInstances* pass_instances);
+  RepeatedPassManager(FuzzerContext* fuzzer_context,
+                      RepeatedPassInstances* pass_instances);
 
   virtual ~RepeatedPassManager();
 
-  // TODO COMMENT.
+  // Returns the fuzzer pass instance that should be run next.
   virtual FuzzerPass* ChoosePass() = 0;
 
  protected:
   FuzzerContext* GetFuzzerContext() { return fuzzer_context_; }
 
-  PassInstances* GetPassInstances() { return pass_instances_; }
+  RepeatedPassInstances* GetPassInstances() { return pass_instances_; }
 
  private:
-  // TODO comment
+  // Provided in order to allow the pass manager to make random decisions.
   FuzzerContext* fuzzer_context_;
 
-  // TODO comment
-  PassInstances* pass_instances_;
+  // The repeated fuzzer passes that are enabled.
+  RepeatedPassInstances* pass_instances_;
 };
 
 }  // namespace fuzz

@@ -17,7 +17,9 @@
 namespace spvtools {
 namespace fuzz {
 
-RepeatedPassManagerSimple::RepeatedPassManagerSimple(FuzzerContext* fuzzer_context, PassInstances* pass_instances) : RepeatedPassManager(fuzzer_context, pass_instances) {}
+RepeatedPassManagerSimple::RepeatedPassManagerSimple(
+    FuzzerContext* fuzzer_context, RepeatedPassInstances* pass_instances)
+    : RepeatedPassManager(fuzzer_context, pass_instances) {}
 
 RepeatedPassManagerSimple::~RepeatedPassManagerSimple() = default;
 

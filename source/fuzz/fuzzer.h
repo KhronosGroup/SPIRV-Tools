@@ -21,9 +21,9 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass.h"
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/pass_instances.h"
-#include "source/fuzz/pass_recommender.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/repeated_pass_instances.h"
+#include "source/fuzz/repeated_pass_recommender.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
@@ -41,7 +41,9 @@ class Fuzzer {
     kInitialBinaryInvalid,
   };
 
-  // TODO comment
+  // Each field of this enum corresponds to an available repeated pass
+  // strategy, and is used to decide which kind of RepeatedPassManager object
+  // to create.
   enum class RepeatedPassStrategy {
     kSimple,
     kRandomWithRecommendations,
@@ -86,31 +88,33 @@ class Fuzzer {
       protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:
-
-  // TODO revise comment and consider renaming.
-  // A convenience method to add a fuzzer pass to |passes| with probability 0.5.
+  // A convenience method to add a repeated fuzzer pass to |pass_instances| with
+  // probability 0.5.
+  //
   // All fuzzer passes take |ir_context|, |transformation_context|,
   // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
   // arguments can be provided via |extra_args|.
-  //
-  // If the fuzzer pass is added, a pointer to the pass is returned.  Otherwise
-  // |nullptr| is returned.
-  template <typename T, typename... Args>
-  void MaybeAddPassInstance(PassInstances* pass_instances,
-                          opt::IRContext* ir_context,
-                          TransformationContext* transformation_context,
-                          FuzzerContext* fuzzer_context,
-                          protobufs::TransformationSequence* transformation_sequence_out,
-                          Args&&... extra_args) const;
+  template <typename FuzzerPassT, typename... Args>
+  void MaybeAddRepeatedPass(
+      RepeatedPassInstances* pass_instances, opt::IRContext* ir_context,
+      TransformationContext* transformation_context,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformation_sequence_out,
+      Args&&... extra_args) const;
 
-  // TODO consider renaming
-  template <typename T, typename... Args>
-  void MaybeAddPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
-                            opt::IRContext* ir_context,
-                            TransformationContext* transformation_context,
-                            FuzzerContext* fuzzer_context,
-                            protobufs::TransformationSequence* transformation_sequence_out,
-                            Args&&... extra_args) const;
+  // A convenience method to add a final fuzzer pass to |passes| with
+  // probability 0.5.
+  //
+  // All fuzzer passes take |ir_context|, |transformation_context|,
+  // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
+  // arguments can be provided via |extra_args|.
+  template <typename FuzzerPassT, typename... Args>
+  void MaybeAddFinalPass(
+      std::vector<std::unique_ptr<FuzzerPass>>* passes,
+      opt::IRContext* ir_context, TransformationContext* transformation_context,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformation_sequence_out,
+      Args&&... extra_args) const;
 
   bool ContinueFuzzing(
       const protobufs::TransformationSequence& transformation_sequence_out,
@@ -136,7 +140,7 @@ class Fuzzer {
   // probabilistically enabled.
   bool enable_all_passes_;
 
-  // TODO comment
+  // Controls which type of RepeatedPassManager object to create.
   RepeatedPassStrategy repeated_pass_strategy_;
 
   // Determines whether the validator should be invoked after every fuzzer pass.

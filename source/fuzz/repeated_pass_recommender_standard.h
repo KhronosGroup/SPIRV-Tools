@@ -12,38 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_PASS_RECOMMENDER_STANDARD_
-#define SOURCE_FUZZ_PASS_RECOMMENDER_STANDARD_
+#ifndef SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_
+#define SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_
 
 #include "source/fuzz/fuzzer_context.h"
-#include "source/fuzz/pass_instances.h"
-#include "source/fuzz/pass_recommender.h"
+#include "source/fuzz/repeated_pass_instances.h"
+#include "source/fuzz/repeated_pass_recommender.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// TODO COMMENT.
-class PassRecommenderStandard : public PassRecommender {
+// A manually-crafter recommender of repeated passes, designed based on
+// knowledge of how the various fuzzer passes work and speculation as to how
+// they might interact in interesting ways.
+class RepeatedPassRecommenderStandard : public RepeatedPassRecommender {
  public:
-  PassRecommenderStandard(PassInstances* pass_instances, FuzzerContext* fuzzer_context);
+  RepeatedPassRecommenderStandard(RepeatedPassInstances* pass_instances,
+                                  FuzzerContext* fuzzer_context);
 
-  ~PassRecommenderStandard();
+  ~RepeatedPassRecommenderStandard();
 
-  // TODO COMMENT.
-  std::vector<FuzzerPass*> GetFuturePassRecommendations(const FuzzerPass& pass) override;
+  std::vector<FuzzerPass*> GetFuturePassRecommendations(
+      const FuzzerPass& pass) override;
 
  private:
-
   std::vector<FuzzerPass*> RandomOrderAndNonNull(
       const std::vector<FuzzerPass*>& passes);
 
-  PassInstances* pass_instances_;
+  RepeatedPassInstances* pass_instances_;
 
   FuzzerContext* fuzzer_context_;
-
 };
 
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_PASS_RECOMMENDER_STANDARD_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_

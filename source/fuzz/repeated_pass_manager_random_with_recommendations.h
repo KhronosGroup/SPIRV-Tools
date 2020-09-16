@@ -17,30 +17,40 @@
 
 #include <deque>
 
-#include "source/fuzz/pass_recommender.h"
 #include "source/fuzz/repeated_pass_manager.h"
+#include "source/fuzz/repeated_pass_recommender.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// TODO COMMENT.
-class RepeatedPassManagerRandomWithRecommendations : public RepeatedPassManager {
+// This repeated pass manager uses a pass recommender to recommend future passes
+// each time a fuzzer pass is run.  It keeps a queue of recommended passes.
+//
+// Each time a fuzzer pass is requested, the manager either selects an enabled
+// fuzzer pass at random, or selects the pass at the front of the recommendation
+// queue, removing it from the queue.  The decision of which of these pass
+// selection methods to use is made randomly each time ChoosePass is called.
+//
+// Either way, recommended follow-on passes for the chosen pass are added to
+// the recommendation queue.
+class RepeatedPassManagerRandomWithRecommendations
+    : public RepeatedPassManager {
  public:
-  RepeatedPassManagerRandomWithRecommendations(FuzzerContext* fuzzer_context, PassInstances* pass_instances,
-                                               PassRecommender* pass_recommender);
+  RepeatedPassManagerRandomWithRecommendations(
+      FuzzerContext* fuzzer_context, RepeatedPassInstances* pass_instances,
+      RepeatedPassRecommender* pass_recommender);
 
   ~RepeatedPassManagerRandomWithRecommendations() override;
 
-  // TODO COMMENT.
   FuzzerPass* ChoosePass() override;
 
  private:
-  // TODO comment
+  // The queue of passes that have been recommended based on previously-chosen
+  // passes.
   std::deque<FuzzerPass*> recommended_passes_;
 
-  // TODO comment
-  PassRecommender* pass_recommender_;
-
+  // Used to recommend future passes.
+  RepeatedPassRecommender* pass_recommender_;
 };
 
 }  // namespace fuzz

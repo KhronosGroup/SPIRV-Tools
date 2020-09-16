@@ -82,13 +82,13 @@
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
-#include "source/fuzz/pass_recommender_standard.h"
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/repeated_pass_manager.h"
 #include "source/fuzz/repeated_pass_manager_looped_with_recommendations.h"
 #include "source/fuzz/repeated_pass_manager_random_with_recommendations.h"
 #include "source/fuzz/repeated_pass_manager_simple.h"
-#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
-#include "source/fuzz/pseudo_random_generator.h"
+#include "source/fuzz/repeated_pass_recommender_standard.h"
 #include "source/fuzz/transformation_context.h"
 #include "source/opt/build_module.h"
 #include "source/spirv_fuzzer_options.h"
@@ -104,8 +104,7 @@ const uint32_t kTransformationLimit = 2000;
 
 }  // namespace
 
-Fuzzer::Fuzzer(spv_target_env target_env, uint32_t seed,
-               bool enable_all_passes,
+Fuzzer::Fuzzer(spv_target_env target_env, uint32_t seed, bool enable_all_passes,
                RepeatedPassStrategy repeated_pass_strategy,
                bool validate_after_each_fuzzer_pass,
                spv_validator_options validator_options)
@@ -122,31 +121,31 @@ void Fuzzer::SetMessageConsumer(MessageConsumer consumer) {
   consumer_ = std::move(consumer);
 }
 
-template <typename T, typename... Args>
-void Fuzzer::MaybeAddPassInstance(PassInstances* pass_instances,
-                        opt::IRContext* ir_context,
-                        TransformationContext* transformation_context,
-                        FuzzerContext* fuzzer_context,
-                        protobufs::TransformationSequence* transformation_sequence_out,
-                        Args&&... extra_args) const {
+template <typename FuzzerPassT, typename... Args>
+void Fuzzer::MaybeAddRepeatedPass(
+    RepeatedPassInstances* pass_instances, opt::IRContext* ir_context,
+    TransformationContext* transformation_context,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformation_sequence_out,
+    Args&&... extra_args) const {
   if (enable_all_passes_ || fuzzer_context->ChooseEven()) {
-    pass_instances->SetPass(MakeUnique<T>(ir_context, transformation_context,
-                              fuzzer_context, transformation_sequence_out,
-                              std::forward<Args>(extra_args)...));
+    pass_instances->SetPass(MakeUnique<FuzzerPassT>(
+        ir_context, transformation_context, fuzzer_context,
+        transformation_sequence_out, std::forward<Args>(extra_args)...));
   }
 }
 
-template <typename T, typename... Args>
-void Fuzzer::MaybeAddPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
-                          opt::IRContext* ir_context,
-                                  TransformationContext* transformation_context,
-                                  FuzzerContext* fuzzer_context,
-                                  protobufs::TransformationSequence* transformation_sequence_out,
-                                  Args&&... extra_args) const {
+template <typename FuzzerPassT, typename... Args>
+void Fuzzer::MaybeAddFinalPass(
+    std::vector<std::unique_ptr<FuzzerPass>>* passes,
+    opt::IRContext* ir_context, TransformationContext* transformation_context,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformation_sequence_out,
+    Args&&... extra_args) const {
   if (enable_all_passes_ || fuzzer_context->ChooseEven()) {
-    passes->push_back(MakeUnique<T>(ir_context, transformation_context,
-                                          fuzzer_context, transformation_sequence_out,
-                                          std::forward<Args>(extra_args)...));
+    passes->push_back(MakeUnique<FuzzerPassT>(
+        ir_context, transformation_context, fuzzer_context,
+        transformation_sequence_out, std::forward<Args>(extra_args)...));
   }
 }
 
@@ -216,166 +215,186 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   TransformationContext transformation_context(&fact_manager,
                                                validator_options_);
 
-  // Each fuzzer pass field will be set to |nullptr| if the corresponding fuzzer
-  // pass is not available, and otherwise will be a pointer to an instance of
-  // the fuzzer pass.  The sequence of enabled passes is also stored.
-  PassInstances pass_instances{};
-
+  RepeatedPassInstances pass_instances{};
   do {
-    // Each call to MaybeAddPass randomly decides whether the given pass should
-    // be enabled or not.
-    //
-    // Each pass that *is* enabled is added to |passes|, and a pointer to the
-    // pass is set in the corresponding field of |pass_instances| to allow us
-    // to refer to the instance by name.
-    MaybeAddPassInstance<FuzzerPassAddAccessChains>(
+    // Each call to MaybeAddRepeatedPass randomly decides whether the given pass
+    // should be enabled, and adds an instance of the pass to |pass_instances|
+    // if it is enabled.
+    MaybeAddRepeatedPass<FuzzerPassAddAccessChains>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddCompositeInserts>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddCompositeTypes>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddCopyMemory>(
+    MaybeAddRepeatedPass<FuzzerPassAddBitInstructionSynonyms>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddDeadBlocks>(
+    MaybeAddRepeatedPass<FuzzerPassAddCompositeInserts>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddDeadBreaks>(
+    MaybeAddRepeatedPass<FuzzerPassAddCompositeTypes>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddDeadContinues>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddEquationInstructions>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddFunctionCalls>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddGlobalVariables>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddImageSampleUnusedComponents>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddLoads>(
+    MaybeAddRepeatedPass<FuzzerPassAddCopyMemory>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddLocalVariables>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddLoopPreheaders>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddOpPhiSynonyms>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddParameters>(
+    MaybeAddRepeatedPass<FuzzerPassAddDeadBlocks>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddRelaxedDecorations>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddStores>(
+    MaybeAddRepeatedPass<FuzzerPassAddDeadBreaks>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddSynonyms>(
+    MaybeAddRepeatedPass<FuzzerPassAddDeadContinues>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassAddVectorShuffleInstructions>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassApplyIdSynonyms>(
+    MaybeAddRepeatedPass<FuzzerPassAddEquationInstructions>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassConstructComposites>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassCopyObjects>(
+    MaybeAddRepeatedPass<FuzzerPassAddFunctionCalls>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassDonateModules>(
+    MaybeAddRepeatedPass<FuzzerPassAddGlobalVariables>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddImageSampleUnusedComponents>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddLoads>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddLocalVariables>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddLoopPreheaders>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddOpPhiSynonyms>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddParameters>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddRelaxedDecorations>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddStores>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddSynonyms>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassAddVectorShuffleInstructions>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassApplyIdSynonyms>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassConstructComposites>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassCopyObjects>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassDonateModules>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out, donor_suppliers);
-    MaybeAddPassInstance<FuzzerPassInlineFunctions>(
+    MaybeAddRepeatedPass<FuzzerPassDuplicateRegionsWithSelections>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassInvertComparisonOperators>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassMakeVectorOperationsDynamic>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassMergeBlocks>(
+    MaybeAddRepeatedPass<FuzzerPassFlattenConditionalBranches>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassObfuscateConstants>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassOutlineFunctions>(
+    MaybeAddRepeatedPass<FuzzerPassInlineFunctions>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassPermuteBlocks>(
+    MaybeAddRepeatedPass<FuzzerPassInvertComparisonOperators>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassPermuteFunctionParameters>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassPermuteInstructions>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassPropagateInstructionsUp>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassPushIdsThroughVariables>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassReplaceAddsSubsMulsWithCarryingExtended>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassReplaceCopyMemoriesWithLoadsStores>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassReplaceCopyObjectsWithStoresLoads>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassReplaceLoadsStoresWithCopyMemories>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassReplaceParameterWithGlobal>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassReplaceLinearAlgebraInstructions>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassReplaceParamsWithStruct>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassSplitBlocks>(
+    MaybeAddRepeatedPass<FuzzerPassMakeVectorOperationsDynamic>(
         &pass_instances, ir_context.get(), &transformation_context,
         &fuzzer_context, transformation_sequence_out);
-    MaybeAddPassInstance<FuzzerPassSwapBranchConditionalOperands>(
-            &pass_instances, ir_context.get(), &transformation_context,
-            &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassMergeBlocks>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassMutatePointers>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassOutlineFunctions>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassPermuteInstructions>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsUp>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassPushIdsThroughVariables>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceAddsSubsMulsWithCarryingExtended>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceCopyMemoriesWithLoadsStores>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceCopyObjectsWithStoresLoads>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceLoadsStoresWithCopyMemories>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceParameterWithGlobal>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceLinearAlgebraInstructions>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceIrrelevantIds>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceOpSelectsWithConditionalBranches>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassReplaceParamsWithStruct>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassSplitBlocks>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
+    MaybeAddRepeatedPass<FuzzerPassSwapBranchConditionalOperands>(
+        &pass_instances, ir_context.get(), &transformation_context,
+        &fuzzer_context, transformation_sequence_out);
     // There is a theoretical possibility that no pass instances were created
     // until now; loop again if so.
   } while (pass_instances.GetPasses().empty());
 
-  PassRecommenderStandard pass_recommender(&pass_instances, &fuzzer_context);
+  RepeatedPassRecommenderStandard pass_recommender(&pass_instances,
+                                                   &fuzzer_context);
 
   std::unique_ptr<RepeatedPassManager> repeated_pass_manager = nullptr;
   switch (repeated_pass_strategy_) {
     case RepeatedPassStrategy::kSimple:
-      repeated_pass_manager = MakeUnique<RepeatedPassManagerSimple>(&fuzzer_context, &pass_instances);
+      repeated_pass_manager = MakeUnique<RepeatedPassManagerSimple>(
+          &fuzzer_context, &pass_instances);
       break;
     case RepeatedPassStrategy::kLoopedWithRecommendations:
-      repeated_pass_manager = MakeUnique<RepeatedPassManagerLoopedWithRecommendations>(&fuzzer_context, &pass_instances, &pass_recommender);
+      repeated_pass_manager =
+          MakeUnique<RepeatedPassManagerLoopedWithRecommendations>(
+              &fuzzer_context, &pass_instances, &pass_recommender);
       break;
     case RepeatedPassStrategy::kRandomWithRecommendations:
-      repeated_pass_manager = MakeUnique<RepeatedPassManagerRandomWithRecommendations>(&fuzzer_context, &pass_instances, &pass_recommender);
+      repeated_pass_manager =
+          MakeUnique<RepeatedPassManagerRandomWithRecommendations>(
+              &fuzzer_context, &pass_instances, &pass_recommender);
       break;
     default:
       assert(false && "Invalid repeated pass manager.");
@@ -383,7 +402,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   }
 
   do {
-    if (!ApplyPassAndCheckValidity(repeated_pass_manager->ChoosePass(), *ir_context, tools)) {
+    if (!ApplyPassAndCheckValidity(repeated_pass_manager->ChoosePass(),
+                                   *ir_context, tools)) {
       return Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule;
     }
   } while (ContinueFuzzing(*transformation_sequence_out, &fuzzer_context));
@@ -391,43 +411,37 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // Now apply some passes that it does not make sense to apply repeatedly,
   // as they do not unlock other passes.
   std::vector<std::unique_ptr<FuzzerPass>> final_passes;
-  MaybeAddPass<FuzzerPassAdjustBranchWeights>(
+  MaybeAddFinalPass<FuzzerPassAdjustBranchWeights>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassAdjustFunctionControls>(
+  MaybeAddFinalPass<FuzzerPassAdjustFunctionControls>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassAdjustLoopControls>(
+  MaybeAddFinalPass<FuzzerPassAdjustLoopControls>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassAdjustMemoryOperandsMasks>(
+  MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassAdjustSelectionControls>(
+  MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassAddNoContractionDecorations>(
+  MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
+  MaybeAddFinalPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassInterchangeZeroLikeConstants>(
+  MaybeAddFinalPass<FuzzerPassInterchangeZeroLikeConstants>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassPermutePhiOperands>(
+  MaybeAddFinalPass<FuzzerPassPermutePhiOperands>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
+  MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
-  MaybeAddPass<FuzzerPassReplaceIrrelevantIds>(
-      &passes, ir_context.get(), &transformation_context, &fuzzer_context,
-      transformation_sequence_out);
-  MaybeAddPass<FuzzerPassSwapCommutableOperands>(
-      &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
-      transformation_sequence_out);
-  MaybeAddPass<FuzzerPassToggleAccessChainInstruction>(
+  MaybeAddFinalPass<FuzzerPassToggleAccessChainInstruction>(
       &final_passes, ir_context.get(), &transformation_context, &fuzzer_context,
       transformation_sequence_out);
   for (auto& pass : final_passes) {

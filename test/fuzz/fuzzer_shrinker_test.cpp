@@ -1048,12 +1048,15 @@ void RunFuzzerAndShrinker(const std::string& shader,
   if ((seed % 3) == 0) {
     repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kSimple;
   } else if ((seed % 3) == 1) {
-    repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
+    repeated_pass_strategy =
+        Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
   } else {
-    repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kRandomWithRecommendations;
+    repeated_pass_strategy =
+        Fuzzer::RepeatedPassStrategy::kRandomWithRecommendations;
   }
 
-  Fuzzer fuzzer(env, seed, enable_all_passes, repeated_pass_strategy, true, validator_options);
+  Fuzzer fuzzer(env, seed, enable_all_passes, repeated_pass_strategy, true,
+                validator_options);
   fuzzer.SetMessageConsumer(kSilentConsumer);
   auto fuzzer_result_status =
       fuzzer.Run(binary_in, initial_facts, donor_suppliers, &fuzzer_binary_out,

@@ -17,28 +17,39 @@
 
 #include <vector>
 
-#include "source/fuzz/pass_recommender.h"
 #include "source/fuzz/repeated_pass_manager.h"
+#include "source/fuzz/repeated_pass_recommender.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// TODO COMMENT.
-class RepeatedPassManagerLoopedWithRecommendations : public RepeatedPassManager {
+// On construction, this pass manager creates a sequence of fuzzer passes which
+// is not changed thereafter.  Passes from this sequence are served up in round
+// robin fashion each time ChoosePass is invoked - i.e., the sequence is a "pass
+// loop".
+//
+// The pass loop is constructed by repeatedly:
+// - Randomly adding an enabled pass
+// - Adding all recommended follow-on passes for this pass
+// and probabilistically terminating this process.
+class RepeatedPassManagerLoopedWithRecommendations
+    : public RepeatedPassManager {
  public:
-  RepeatedPassManagerLoopedWithRecommendations(FuzzerContext* fuzzer_context, PassInstances* pass_instances, PassRecommender* pass_recommender);
+  RepeatedPassManagerLoopedWithRecommendations(
+      FuzzerContext* fuzzer_context, RepeatedPassInstances* pass_instances,
+      RepeatedPassRecommender* pass_recommender);
 
-  ~RepeatedPassManagerLoopedWithRecommendations();
+  ~RepeatedPassManagerLoopedWithRecommendations() override;
 
-  // TODO COMMENT.
   FuzzerPass* ChoosePass() override;
 
  private:
-  // TODO comment
+  // The loop of fuzzer passes to be applied, populated on construction.
   std::vector<FuzzerPass*> pass_loop_;
 
+  // An index into |pass_loop_| specifying which pass should be served up next
+  // time ChoosePass is invoked.
   uint32_t next_pass_index_;
-
 };
 
 }  // namespace fuzz

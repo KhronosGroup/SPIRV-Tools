@@ -81,8 +81,7 @@ void FuzzerPassAddCompositeInserts::Apply() {
                   }
 
                   // No components of the composite can be pointers.
-                  // TODO:
-                  // (https://github.com/KhronosGroup/SPIRV-Tools/issues/3658)
+                  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3658):
                   //       Structs can have components of pointer type.
                   //       FindOrCreateZeroConstant cannot be called on a
                   //       pointer. We ignore pointers for now. Consider adding

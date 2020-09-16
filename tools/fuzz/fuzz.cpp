@@ -178,20 +178,22 @@ void FuzzDiagnostic(spv_message_level_t level, const char* /*source*/,
   fprintf(stderr, "%s\n", message);
 }
 
-FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
-                      std::string* out_binary_file, std::string* donors_file,
-                      std::string* replay_transformations_file,
-                      std::vector<std::string>* interestingness_test,
-                      std::string* shrink_transformations_file,
-                      std::string* shrink_temp_file_prefix,
-                      spvtools::fuzz::Fuzzer::RepeatedPassStrategy* repeated_pass_strategy,
-                      spvtools::FuzzerOptions* fuzzer_options,
-                      spvtools::ValidatorOptions* validator_options) {
+FuzzStatus ParseFlags(
+    int argc, const char** argv, std::string* in_binary_file,
+    std::string* out_binary_file, std::string* donors_file,
+    std::string* replay_transformations_file,
+    std::vector<std::string>* interestingness_test,
+    std::string* shrink_transformations_file,
+    std::string* shrink_temp_file_prefix,
+    spvtools::fuzz::Fuzzer::RepeatedPassStrategy* repeated_pass_strategy,
+    spvtools::FuzzerOptions* fuzzer_options,
+    spvtools::ValidatorOptions* validator_options) {
   uint32_t positional_arg_index = 0;
   bool only_positional_arguments_remain = false;
   bool force_render_red = false;
 
-  *repeated_pass_strategy = spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
+  *repeated_pass_strategy =
+      spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -213,7 +215,8 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
       } else if (0 == strncmp(cur_arg, "--donors=", sizeof("--donors=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *donors_file = std::string(split_flag.second);
-      } else if (0 == strncmp(cur_arg, "--enable-all-passes", sizeof("--enable-all-passes") - 1)) {
+      } else if (0 == strncmp(cur_arg, "--enable-all-passes",
+                              sizeof("--enable-all-passes") - 1)) {
         fuzzer_options->enable_all_passes();
       } else if (0 == strncmp(cur_arg, "--force-render-red",
                               sizeof("--force-render-red") - 1)) {
@@ -221,17 +224,21 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
       } else if (0 == strncmp(cur_arg, "--fuzzer-pass-validation",
                               sizeof("--fuzzer-pass-validation") - 1)) {
         fuzzer_options->enable_fuzzer_pass_validation();
-      } else if (0 == strncmp(cur_arg, "--repeated-pass-strategy=", sizeof("--repeated-pass-strategy=") - 1)) {
+      } else if (0 == strncmp(cur_arg, "--repeated-pass-strategy=",
+                              sizeof("--repeated-pass-strategy=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file = std::string(split_flag.second);
       } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         std::string strategy = spvtools::utils::SplitFlagArgs(cur_arg).second;
         if (strategy == "simple") {
-          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kSimple;
+          *repeated_pass_strategy =
+              spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kSimple;
         } else if (strategy == "random") {
-          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kRandomWithRecommendations;
+          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
+              RepeatedPassStrategy::kRandomWithRecommendations;
         } else if (strategy == "looped") {
-          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
+          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
+              RepeatedPassStrategy::kLoopedWithRecommendations;
         } else {
           std::stringstream ss;
           ss << "Unknown repeated pass strategy '" << strategy << "'";
@@ -551,8 +558,7 @@ bool Fuzz(const spv_target_env& target_env,
       fuzzer_options->has_random_seed
           ? fuzzer_options->random_seed
           : static_cast<uint32_t>(std::random_device()()),
-      fuzzer_options->all_passes_enabled,
-      repeated_pass_strategy,
+      fuzzer_options->all_passes_enabled, repeated_pass_strategy,
       fuzzer_options->fuzzer_pass_validation_enabled, validator_options);
   fuzzer.SetMessageConsumer(message_consumer);
   auto fuzz_result_status =
@@ -604,8 +610,7 @@ int main(int argc, const char** argv) {
       ParseFlags(argc, argv, &in_binary_file, &out_binary_file, &donors_file,
                  &replay_transformations_file, &interestingness_test,
                  &shrink_transformations_file, &shrink_temp_file_prefix,
-                 &repeated_pass_strategy,
-                 &fuzzer_options, &validator_options);
+                 &repeated_pass_strategy, &fuzzer_options, &validator_options);
 
   if (status.action == FuzzActions::STOP) {
     return status.code;
