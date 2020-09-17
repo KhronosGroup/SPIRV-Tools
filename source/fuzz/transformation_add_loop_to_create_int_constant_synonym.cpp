@@ -109,9 +109,9 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
 
   // Check that the number of iterations is > 0 and <= 32.
   int32_t num_iterations_value =
-      num_iterations->AsIntConstant()->GetS32BitValue();
+      num_iterations->AsIntConstant()->GetU32BitValue();
 
-  if (num_iterations_value <= 0 || num_iterations_value > 32) {
+  if (num_iterations_value > 32) {
     return false;
   }
 
@@ -364,6 +364,11 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
   ir_context->get_def_use_mgr()->ForEachUse(
       message_.block_after_loop_id(),
       [this](opt::Instruction* instruction, uint32_t operand_index) {
+        assert(instruction->opcode() != SpvOpLoopMerge &&
+               instruction->opcode() != SpvOpSelectionMerge &&
+               instruction->opcode() != SpvOpSwitch &&
+               "The block should not be referenced by OpLoopMerge, "
+               "OpSelectionMerge or OpSwitch instructions, by construction.");
         // Replace all uses of the label inside branch instructions.
         if (instruction->opcode() == SpvOpBranch ||
             instruction->opcode() == SpvOpBranchConditional) {
