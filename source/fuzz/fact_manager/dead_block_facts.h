@@ -33,7 +33,7 @@ class DeadBlockFacts {
   // See method in FactManager which delegates to this method.
   bool BlockIsDead(uint32_t block_id) const;
 
-  // Returns an unordered set of all the block ids that have been declared dead.
+  // Returns a set of all the block ids that have been declared dead.
   const std::unordered_set<uint32_t>& GetDeadBlocks() const;
 
  private:

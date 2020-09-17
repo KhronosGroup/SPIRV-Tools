@@ -84,6 +84,8 @@ std::unordered_set<uint32_t> IrrelevantValueFacts::GetIrrelevantIds(
   // Get all the ids declared in dead blocks.
   for (uint32_t block_id : dead_block_facts.GetDeadBlocks()) {
     auto block = fuzzerutil::MaybeFindBlock(context, block_id);
+    // It is possible and allowed for the block not to exist, e.g. it could have
+    // been merged with another block.
     if (!block) {
       continue;
     }
