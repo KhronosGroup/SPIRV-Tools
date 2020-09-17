@@ -2255,6 +2255,40 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
 
+INSTANTIATE_TEST_SUITE_P(
+    DeviceIndexSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("DeviceIndex"),
+            Values("Fragment", "Vertex", "Geometry", "TessellationControl",
+                   "TessellationEvaluation", "GLCompute"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability DeviceGroup\n"),
+            Values("OpExtension \"SPV_KHR_device_group\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    DeviceIndexNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("DeviceIndex"), Values("Fragment", "Vertex", "GLCompute"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability DeviceGroup\n"),
+            Values("OpExtension \"SPV_KHR_device_group\"\n"),
+            Values("VUID-DeviceIndex-DeviceIndex-04205"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    DeviceIndexNotIntScalar,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("DeviceIndex"), Values("Fragment", "Vertex", "GLCompute"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability DeviceGroup\n"),
+            Values("OpExtension \"SPV_KHR_device_group\"\n"),
+            Values("VUID-DeviceIndex-DeviceIndex-04206"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
 CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
                                               const char* const built_in,
                                               const char* const execution_model,
