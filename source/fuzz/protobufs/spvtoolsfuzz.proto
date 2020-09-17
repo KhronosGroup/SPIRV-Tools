@@ -2023,10 +2023,10 @@ message TransformationSplitLoop {
     // Fresh id for an OpLoad instruction with |counter|.
     uint32 load_counter_fresh_id = 5;
 
-    // Fresh id for incrementation of the counter.
+    // Fresh id for incrementation of |counter|.
     uint32 increment_counter_fresh_id = 6;
 
-    // Fresh id for a boolean condition on the value |counter|.
+    // Fresh id for a boolean condition on the value of |counter|.
     uint32 condition_counter_fresh_id = 7;
 
     // Fresh id for a new entry block of the body of the first loop.

@@ -460,6 +460,116 @@ TEST(TransformationSplitLoopTest, FuzzerPassBasicTest) {
     fuzzer_pass.Apply();
   }
 
+  ASSERT_TRUE(IsValid(env, context.get()));
+}
+TEST(TransformationSplitLoopTest, DesignDocTest) {
+  // This is a simple transformation and this test handles the main cases.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "s"
+               OpName %10 "i"
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %16 RelaxedPrecision
+               OpDecorate %20 RelaxedPrecision
+               OpDecorate %21 RelaxedPrecision
+               OpDecorate %22 RelaxedPrecision
+               OpDecorate %23 RelaxedPrecision
+               OpDecorate %29 RelaxedPrecision
+               OpDecorate %31 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %17 = OpConstant %6 10
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+         %18 = OpTypeBool
+         %58 = OpConstantTrue %18
+         %59 = OpConstantFalse %18
+         %52 = OpTypePointer Function %18
+         %24 = OpConstant %6 5
+         %30 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpStore %8 %9
+               OpStore %10 %9
+               OpBranch %11
+         %11 = OpLabel
+               OpLoopMerge %13 %14 None
+               OpBranch %15
+         %15 = OpLabel
+         %16 = OpLoad %6 %10
+         %19 = OpSLessThan %18 %16 %17
+               OpBranchConditional %19 %12 %13
+         %12 = OpLabel
+         %20 = OpLoad %6 %10
+         %21 = OpLoad %6 %8
+         %22 = OpIAdd %6 %21 %20
+               OpStore %8 %22
+         %23 = OpLoad %6 %10
+         %25 = OpIEqual %18 %23 %24
+               OpSelectionMerge %27 None
+               OpBranchConditional %25 %26 %27
+         %26 = OpLabel
+               OpBranch %13
+         %27 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+         %29 = OpLoad %6 %10
+         %31 = OpIAdd %6 %29 %30
+               OpStore %10 %31
+               OpBranch %11
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  auto transformation =
+      TransformationSplitLoop(11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
+                              {{11, 201},
+                               {15, 202},
+                               {12, 203},
+                               {13, 204},
+                               {26, 205},
+                               {27, 206},
+                               {14, 207}},
+                              {{16, 301},
+                               {19, 302},
+                               {20, 303},
+                               {21, 304},
+                               {22, 305},
+                               {23, 306},
+                               {25, 307},
+                               {29, 308},
+                               {31, 309}});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+
   std::vector<uint32_t> actual_binary;
   context.get()->module()->ToBinary(&actual_binary, false);
   SpirvTools t(env);
