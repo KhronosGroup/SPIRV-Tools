@@ -204,10 +204,8 @@ void FactManager::AddFactFunctionIsLivesafe(uint32_t function_id) {
   livesafe_function_facts_.AddFact(fact);
 }
 
-bool FactManager::PointeeValueIsIrrelevant(uint32_t pointer_id,
-                                           opt::IRContext* context) const {
-  return irrelevant_value_facts_.PointeeValueIsIrrelevant(
-      pointer_id, dead_block_facts_, context);
+bool FactManager::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
+  return irrelevant_value_facts_.PointeeValueIsIrrelevant(pointer_id);
 }
 
 bool FactManager::IdIsIrrelevant(uint32_t result_id,

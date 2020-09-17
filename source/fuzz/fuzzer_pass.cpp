@@ -655,8 +655,7 @@ uint32_t FuzzerPass::FindOrCreateLocalVariable(
     // Check if the found variable is marked with PointeeValueIsIrrelevant
     // according to |pointee_value_is_irrelevant|.
     if (GetTransformationContext()->GetFactManager()->PointeeValueIsIrrelevant(
-            instruction.result_id(), GetIRContext()) !=
-        pointee_value_is_irrelevant) {
+            instruction.result_id()) != pointee_value_is_irrelevant) {
       continue;
     }
     return instruction.result_id();
@@ -698,8 +697,7 @@ uint32_t FuzzerPass::FindOrCreateGlobalVariable(
     // Check if the found variable is marked with PointeeValueIsIrrelevant
     // according to |pointee_value_is_irrelevant|.
     if (GetTransformationContext()->GetFactManager()->PointeeValueIsIrrelevant(
-            instruction.result_id(), GetIRContext()) !=
-        pointee_value_is_irrelevant) {
+            instruction.result_id()) != pointee_value_is_irrelevant) {
       continue;
     }
     return instruction.result_id();

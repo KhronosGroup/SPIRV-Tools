@@ -337,7 +337,7 @@ void TransformationAccessChain::Apply(
   // If the base pointer's pointee value was irrelevant, the same is true of
   // the pointee value of the result of this access chain.
   if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
-          message_.pointer_id(), ir_context)) {
+          message_.pointer_id())) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
         message_.fresh_id(), ir_context);
   }

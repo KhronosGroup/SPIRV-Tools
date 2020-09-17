@@ -125,8 +125,7 @@ std::vector<uint32_t> FuzzerPassAddFunctionCalls::ChooseFunctionCallArguments(
                    caller_block->id()) ||
                GetTransformationContext()
                    ->GetFactManager()
-                   ->PointeeValueIsIrrelevant(inst->result_id(),
-                                              GetIRContext());
+                   ->PointeeValueIsIrrelevant(inst->result_id());
       });
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> type_id_to_result_id;

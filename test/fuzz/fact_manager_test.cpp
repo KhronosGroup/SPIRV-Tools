@@ -1583,27 +1583,25 @@ TEST(FactManagerTest, IdsFromDeadBlocksAreIrrelevant) {
   ASSERT_FALSE(fact_manager.BlockIsDead(14));
   ASSERT_FALSE(fact_manager.BlockIsDead(19));
 
-  // Initially no id or pointee value is irrelevant.
-  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(15, context.get()));
+  // Initially no id is irrelevant.
   ASSERT_FALSE(fact_manager.IdIsIrrelevant(16, context.get()));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(17, context.get()));
   ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
             std::unordered_set<uint32_t>({}));
 
   fact_manager.AddFactBlockIsDead(14);
 
-  // %16 and the value pointed to by %15 should now be considered irrelevant.
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(15, context.get()));
+  // %16 and %17 should now be considered irrelevant.
   ASSERT_TRUE(fact_manager.IdIsIrrelevant(16, context.get()));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(17, context.get()));
   ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
             std::unordered_set<uint32_t>({16, 17}));
 
-  // Similarly for %20 and %21.
-  ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(20, context.get()));
+  // Similarly for %21.
   ASSERT_FALSE(fact_manager.IdIsIrrelevant(21, context.get()));
 
   fact_manager.AddFactBlockIsDead(19);
 
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(20, context.get()));
   ASSERT_TRUE(fact_manager.IdIsIrrelevant(21, context.get()));
   ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
             std::unordered_set<uint32_t>({16, 17, 21}));

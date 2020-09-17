@@ -337,14 +337,14 @@ TEST(TransformationReplaceParameterWithGlobalTest,
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(21, context.get()));
+    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(21));
   }
   {
     TransformationReplaceParameterWithGlobal transformation(22, 11, 23);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
-    ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(23, context.get()));
+    ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(23));
   }
 }
 

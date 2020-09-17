@@ -58,35 +58,14 @@ void IrrelevantValueFacts::AddFact(
   irrelevant_ids_.insert(fact.result_id());
 }
 
-bool IrrelevantValueFacts::PointeeValueIsIrrelevant(
-    uint32_t pointer_id, const DeadBlockFacts& dead_block_facts,
-    opt::IRContext* context) const {
-  // The pointee value is irrelevant if it has been declared irrelevant.
-  if (pointers_to_irrelevant_pointees_ids_.count(pointer_id)) {
-    return true;
-  }
-
-  // |pointer_id| must be a pointer.
-  auto def = context->get_def_use_mgr()->GetDef(pointer_id);
-  if (!def) {
-    return false;
-  }
-  auto type = context->get_type_mgr()->GetType(def->type_id());
-  if (!type || !type->AsPointer()) {
-    return false;
-  }
-
-  // The pointee value is irrelevant if |pointer_id| is declared in a dead
-  // block.
-  return context->get_instr_block(pointer_id) &&
-         dead_block_facts.BlockIsDead(
-             context->get_instr_block(pointer_id)->id());
+bool IrrelevantValueFacts::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
+  return pointers_to_irrelevant_pointees_ids_.count(pointer_id) != 0;
 }
 
 bool IrrelevantValueFacts::IdIsIrrelevant(
     uint32_t result_id, const DeadBlockFacts& dead_block_facts,
     opt::IRContext* context) const {
-  // An id is irrelevant if it has been declared irrelevant.
+  // The id is irrelevant if it has been declared irrelevant.
   if (irrelevant_ids_.count(result_id)) {
     return true;
   }
@@ -101,7 +80,7 @@ bool IrrelevantValueFacts::IdIsIrrelevant(
     return false;
   }
 
-  // The id is irrelevant if it is declared in a dead block.
+  // The id is irrelevant if it is in a dead block.
   return context->get_instr_block(result_id) &&
          dead_block_facts.BlockIsDead(
              context->get_instr_block(result_id)->id());

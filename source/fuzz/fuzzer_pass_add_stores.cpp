@@ -88,7 +88,7 @@ void FuzzerPassAddStores::Apply() {
                          GetTransformationContext()
                              ->GetFactManager()
                              ->PointeeValueIsIrrelevant(
-                                 instruction->result_id(), GetIRContext());
+                                 instruction->result_id());
                 });
 
         // At this point, |relevant_pointers| contains all the pointers we might

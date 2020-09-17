@@ -1050,7 +1050,7 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Function).
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(70, context.get()));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(70));
 
   TransformationAddParameter transformation_good_2(10, 72, 19,
                                                    {{{28, 20}, {32, 20}}}, 73);
@@ -1061,7 +1061,7 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Private).
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(72, context.get()));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(72));
 
   TransformationAddParameter transformation_good_3(10, 74, 50,
                                                    {{{28, 51}, {32, 51}}}, 75);
@@ -1072,7 +1072,7 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Workgroup).
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(74, context.get()));
+  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(74));
 }
 
 }  // namespace

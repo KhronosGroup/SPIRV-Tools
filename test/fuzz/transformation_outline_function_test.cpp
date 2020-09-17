@@ -2059,23 +2059,21 @@ TEST(TransformationOutlineFunctionTest, OutlineLivesafe) {
   // The outlined function should be livesafe.
   ASSERT_TRUE(transformation_context.GetFactManager()->FunctionIsLivesafe(402));
   // The variable and parameter that were originally irrelevant should still be.
-  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-      200, context.get()));
-  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-      201, context.get()));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(200));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(201));
   // The loop limiter should still be non-irrelevant.
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-          100, context.get()));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
   // The parameters for the original irrelevant variables should be irrelevant.
-  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-      408, context.get()));
-  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-      409, context.get()));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(408));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(409));
   // The parameter for the loop limiter should not be irrelevant.
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-          407, context.get()));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(407));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -2457,7 +2455,7 @@ TEST(TransformationOutlineFunctionTest,
   for (uint32_t variable_id : {9u, 14u, 206u, 208u}) {
     ASSERT_TRUE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            variable_id, context.get()));
+            variable_id));
   }
   for (uint32_t variable_id : {10u, 20u, 207u, 209u}) {
     ASSERT_FALSE(

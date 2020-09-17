@@ -220,8 +220,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            100, context.get()));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
   }
 
   {
@@ -232,8 +231,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            101, context.get()));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
   }
 
   {
@@ -244,8 +242,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            103, context.get()));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
   }
 
   {
@@ -256,8 +253,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            104, context.get()));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(104));
   }
 
   {
@@ -268,8 +264,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            105, context.get()));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(105));
   }
 
   {
@@ -280,8 +275,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            106, context.get()));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(106));
   }
 
   {
@@ -292,8 +286,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-            107, context.get()));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(107));
   }
 
   std::string after_transformation = R"(

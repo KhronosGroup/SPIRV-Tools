@@ -80,7 +80,7 @@ bool AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       if (context->get_def_use_mgr()->GetDef(inst->type_id())->opcode() ==
               SpvOpTypePointer &&
           !transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-              inst->result_id(), context)) {
+              inst->result_id())) {
         found_non_irrelevant_parameter = true;
       }
     });
@@ -99,7 +99,7 @@ bool AllVariablesAndParametersExceptLoopLimiterAreIrrelevant(
       // limiter.
       if ((inst.result_id() == loop_limiter_id) ==
           transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-              inst.result_id(), context)) {
+              inst.result_id())) {
         return false;
       }
     }

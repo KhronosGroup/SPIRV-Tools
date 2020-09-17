@@ -50,9 +50,7 @@ class IrrelevantValueFacts {
       opt::IRContext* context);
 
   // See method in FactManager which delegates to this method.
-  bool PointeeValueIsIrrelevant(uint32_t pointer_id,
-                                const DeadBlockFacts& dead_block_facts,
-                                opt::IRContext* context) const;
+  bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;
 
   // See method in FactManager which delegates to this method.
   // |dead_block_facts| and |context| are passed to check whether |result_id| is

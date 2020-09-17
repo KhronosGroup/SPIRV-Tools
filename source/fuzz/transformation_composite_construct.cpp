@@ -137,13 +137,6 @@ void TransformationCompositeConstruct::Apply(
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // We can only add synonym facts if the new id is not irrelevant (it could
-  // be if it is declared in a dead block).
-  if (transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.fresh_id(), ir_context)) {
-    return;
-  }
-
   // Inform the fact manager that we now have new synonyms: every component of
   // the composite is synonymous with the id used to construct that component,
   // except in the case of a vector where a single vector id can span multiple
