@@ -192,7 +192,8 @@ class FactManager {
 
   // Returns true if and ony if the value of the pointee associated with
   // |pointer_id| is irrelevant.
-  bool PointeeValueIsIrrelevant(uint32_t pointer_id) const;
+  bool PointeeValueIsIrrelevant(uint32_t pointer_id,
+                                opt::IRContext* context) const;
 
   // Returns true if there exists a fact that the |result_id| is irrelevant or
   // if |result_id| is declared in a block that has been declared dead.

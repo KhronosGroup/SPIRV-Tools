@@ -143,17 +143,20 @@ TEST(TransformationAddLocalVariableTest, BasicTest) {
   }
 
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          100, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      101, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          102, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      103, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(104));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(105));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          104, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      105, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader

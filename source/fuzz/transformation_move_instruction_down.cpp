@@ -694,7 +694,7 @@ bool TransformationMoveInstructionDown::CanSafelySwapInstructions(
       return false;
     }
 
-    return fact_manager.PointeeValueIsIrrelevant(id);
+    return fact_manager.PointeeValueIsIrrelevant(id, ir_context);
   };
 
   if (IsMemoryWriteInstruction(ir_context, a) &&

@@ -106,7 +106,7 @@ void TransformationAddSynonym::Apply(
   assert(new_synonym_type && "New synonym should have a valid type");
 
   if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
-          message_.result_id()) &&
+          message_.result_id(), ir_context) &&
       new_synonym_type->AsPointer()) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
         message_.synonym_fresh_id(), ir_context);

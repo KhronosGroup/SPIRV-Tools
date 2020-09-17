@@ -128,7 +128,7 @@ bool TransformationFunctionCall::IsApplicable(
       }
       if (!block_is_dead &&
           !transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-              arg_inst->result_id())) {
+              arg_inst->result_id(), ir_context)) {
         // This is not a dead block, so pointer parameters passed to the called
         // function might really have their contents modified. We thus require
         // such pointers to be to arbitrary-valued variables, which this is not.

@@ -243,7 +243,7 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(fresh_id));
+    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(fresh_id, context.get()));
     fresh_id++;
   }
 

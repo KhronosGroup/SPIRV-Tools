@@ -147,18 +147,21 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(104));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      100, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      102, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      104, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          101, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          103, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(105));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          105, context.get()));
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -271,12 +274,13 @@ TEST(TransformationAddGlobalVariableTest, TestEntryPointInterfaceEnlargement) {
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      100, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      102, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          101, context.get()));
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -371,10 +375,11 @@ TEST(TransformationAddGlobalVariableTest, TestAddingWorkgroupGlobals) {
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
   }
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(8));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      8, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(10));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          10, context.get()));
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(

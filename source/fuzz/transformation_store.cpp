@@ -82,7 +82,7 @@ bool TransformationStore::IsApplicable(
   if (!transformation_context.GetFactManager()->BlockIsDead(
           ir_context->get_instr_block(insert_before)->id()) &&
       !transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
-          message_.pointer_id())) {
+          message_.pointer_id(), ir_context)) {
     return false;
   }
 

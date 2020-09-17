@@ -649,7 +649,7 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
     // If the input id is an irrelevant-valued variable, the same should be true
     // of the corresponding parameter.
     if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
-            id)) {
+            id, ir_context)) {
       transformation_context->GetFactManager()
           ->AddFactValueOfPointeeIsIrrelevant(input_id_to_fresh_id_map.at(id),
                                               ir_context);

@@ -1323,16 +1323,18 @@ TEST(TransformationAddSynonymTest, PropagateIrrelevantPointeeFact) {
       transformation3.IsApplicable(context.get(), transformation_context));
   transformation3.Apply(context.get(), &transformation_context);
 
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(8));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
-  ASSERT_TRUE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      8, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      100, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+      102, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(9));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          9, context.get()));
   ASSERT_FALSE(
-      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+          101, context.get()));
 }
 
 TEST(TransformationAddSynonym, DoNotCopyOpSampledImage) {

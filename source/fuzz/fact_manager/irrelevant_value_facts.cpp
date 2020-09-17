@@ -58,8 +58,29 @@ void IrrelevantValueFacts::AddFact(
   irrelevant_ids_.insert(fact.result_id());
 }
 
-bool IrrelevantValueFacts::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
-  return pointers_to_irrelevant_pointees_ids_.count(pointer_id) != 0;
+bool IrrelevantValueFacts::PointeeValueIsIrrelevant(
+    uint32_t pointer_id, const DeadBlockFacts& dead_block_facts,
+    opt::IRContext* context) const {
+  // The pointee value is irrelevant if it has been declared irrelevant.
+  if (pointers_to_irrelevant_pointees_ids_.count(pointer_id)) {
+    return true;
+  }
+
+  // |pointer_id| must be a pointer.
+  auto def = context->get_def_use_mgr()->GetDef(pointer_id);
+  if (!def) {
+    return false;
+  }
+  auto type = context->get_type_mgr()->GetType(def->type_id());
+  if (!type || !type->AsPointer()) {
+    return false;
+  }
+
+  // The pointee value is irrelevant if |pointer_id| is declared in a dead
+  // block.
+  return context->get_instr_block(pointer_id) &&
+         dead_block_facts.BlockIsDead(
+             context->get_instr_block(pointer_id)->id());
 }
 
 bool IrrelevantValueFacts::IdIsIrrelevant(
@@ -70,7 +91,17 @@ bool IrrelevantValueFacts::IdIsIrrelevant(
     return true;
   }
 
-  // An id is irrelevant if it is in a dead block.
+  // The id must have a non-pointer type to be irrelevant.
+  auto def = context->get_def_use_mgr()->GetDef(result_id);
+  if (!def) {
+    return false;
+  }
+  auto type = context->get_type_mgr()->GetType(def->type_id());
+  if (!type || type->AsPointer()) {
+    return false;
+  }
+
+  // The id is irrelevant if it is declared in a dead block.
   return context->get_instr_block(result_id) &&
          dead_block_facts.BlockIsDead(
              context->get_instr_block(result_id)->id());
@@ -81,7 +112,7 @@ std::unordered_set<uint32_t> IrrelevantValueFacts::GetIrrelevantIds(
   // Get all the ids that have been declared irrelevant.
   auto irrelevant_ids = irrelevant_ids_;
 
-  // Get all the ids declared in dead blocks.
+  // Get all the non-pointer ids declared in dead blocks that have a type.
   for (uint32_t block_id : dead_block_facts.GetDeadBlocks()) {
     auto block = fuzzerutil::MaybeFindBlock(context, block_id);
     // It is possible and allowed for the block not to exist, e.g. it could have
@@ -89,8 +120,11 @@ std::unordered_set<uint32_t> IrrelevantValueFacts::GetIrrelevantIds(
     if (!block) {
       continue;
     }
-    block->ForEachInst([&irrelevant_ids](opt::Instruction* inst) {
-      if (inst->HasResultId() && inst->type_id()) {
+    block->ForEachInst([context, &irrelevant_ids](opt::Instruction* inst) {
+      // The instruction must have a result id and a type, and it must not be a
+      // pointer.
+      if (inst->HasResultId() && inst->type_id() &&
+          !context->get_type_mgr()->GetType(inst->type_id())->AsPointer()) {
         irrelevant_ids.emplace(inst->result_id());
       }
     });
