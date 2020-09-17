@@ -1599,6 +1599,87 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     ContinueExitBlockNotApplicable) {
+  // This test handles a case where the exit block is the continue target and
+  // the transformation is not applicable.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "s"
+               OpName %10 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %17 = OpConstant %6 10
+         %18 = OpTypeBool
+         %24 = OpConstant %6 5
+         %30 = OpConstant %6 1
+         %50 = OpConstantTrue %18
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %9
+               OpBranch %11
+         %11 = OpLabel
+               OpLoopMerge %13 %14 None
+               OpBranch %15
+         %15 = OpLabel
+         %16 = OpLoad %6 %10
+         %19 = OpSLessThan %18 %16 %17
+               OpBranchConditional %19 %12 %13
+         %12 = OpLabel
+         %20 = OpLoad %6 %10
+         %21 = OpLoad %6 %8
+         %22 = OpIAdd %6 %21 %20
+               OpStore %8 %22
+         %23 = OpLoad %6 %10
+         %25 = OpIEqual %18 %23 %24
+               OpSelectionMerge %27 None
+               OpBranchConditional %25 %26 %27
+         %26 = OpLabel
+               OpBranch %13
+         %27 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+         %29 = OpLoad %6 %10
+         %31 = OpIAdd %6 %29 %30
+               OpStore %10 %31
+               OpBranch %11
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  TransformationDuplicateRegionWithSelection transformation_bad =
+      TransformationDuplicateRegionWithSelection(
+          500, 50, 501, 27, 14, {{27, 101}, {14, 102}}, {{29, 201}, {31, 202}},
+          {{29, 301}, {31, 302}});
+
+  ASSERT_FALSE(
+      transformation_bad.IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

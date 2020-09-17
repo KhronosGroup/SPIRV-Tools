@@ -503,9 +503,8 @@ void TransformationDuplicateRegionWithSelection::Apply(
       opt::Instruction::OperandList(
           {{SPV_OPERAND_TYPE_ID, {message_.merge_label_fresh_id()}}}));
   exit_block->AddInstruction(MakeUnique<opt::Instruction>(merge_branch_instr));
-  auto merge_branch_instr_cloned = merge_branch_instr.Clone(ir_context);
   duplicated_exit_block->AddInstruction(
-      std::unique_ptr<opt::Instruction>(merge_branch_instr_cloned));
+      std::unique_ptr<opt::Instruction>(merge_branch_instr.Clone(ir_context)));
 
   // Execution needs to start in the |new_entry_block|. Change all
   // the uses of |entry_block_label_instr| outside of the original
