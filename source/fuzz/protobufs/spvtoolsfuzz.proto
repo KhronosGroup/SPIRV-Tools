@@ -422,7 +422,7 @@ message ReturnMergingInfo {
   uint32 is_returning_id = 2;
 
   // A fresh id that will get the value being returned, if the function is
-  // returning. If the function type is void, this is ignored.
+  // returning. If the function return type is void, this is ignored.
   uint32 maybe_return_val_id = 3;
 
   // A mapping from each existing OpPhi id to a suitable id of the same type
@@ -1540,8 +1540,8 @@ message TransformationMergeBlocks {
 
 message TransformationMergeFunctionReturns {
 
-  // A transformation that modifies a function so that it only has one return
-  // block.
+  // A transformation that modifies a function so that it does not return early,
+  // so it only has one return statement (ignoring unreachable blocks).
   //
   // The function is enclosed inside an outer loop, that is only executed once,
   // and whose merge block is the new return block of the function.
@@ -1577,12 +1577,12 @@ message TransformationMergeFunctionReturns {
   uint32 outer_return_id = 3;
 
   // A fresh id for the value that will be returned.
-  // This must be 0 if the function has void type.
+  // This is ignored if the function has void return type.
   uint32 return_val_id = 4;
 
   // An existing id of the same type as the return value,
-  // which is available to use in all blocks of the
-  // function, except, at most, in the entry block.
+  // which is available to use at the end of the entry block.
+  // This is ignored if the function has void return type.
   uint32 any_returnable_val_id = 5;
 
   // The information needed to modify the merge blocks of

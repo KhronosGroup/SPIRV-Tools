@@ -1673,6 +1673,23 @@ bool InstructionHasNoSideEffects(const opt::Instruction& instruction) {
   }
 }
 
+std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
+                                            uint32_t function_id) {
+  auto function = ir_context->GetFunction(function_id);
+  assert(function && "The function |function_id| must exist.");
+
+  std::set<uint32_t> result;
+
+  ir_context->cfg()->ForEachBlockInPostOrder(function->entry().get(),
+                                             [&result](opt::BasicBlock* block) {
+                                               if (block->IsReturn()) {
+                                                 result.emplace(block->id());
+                                               }
+                                             });
+
+  return result;
+}
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools

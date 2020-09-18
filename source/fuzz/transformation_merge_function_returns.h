@@ -38,7 +38,27 @@ class TransformationMergeFunctionReturns : public Transformation {
       uint32_t return_val_id, uint32_t any_returnable_val_id,
       const std::vector<protobufs::ReturnMergingInfo>& returns_merging_info);
 
-  // TODO: Comment.
+  // - |message_.function_id| is the id of a function.
+  // - The entry block of |message_.function_id| branches unconditionally to
+  //   another block.
+  // - |message_.any_returnable_val_id| is an id whose type is the same as the
+  //   return type of the function and which is available at the end of the
+  //   entry block. If this id is not found in the module, the transformation
+  //   will try to find a suitable one.
+  // - Merge blocks of reachable loops that contain return statements do not
+  //   contain instructions other than OpLabel, OpPhi or OpBranch.
+  // - The model contains OpConstantTrue and OpConstantFalse instructions.
+  // - For all merge blocks of reachable loops that contain return statements,
+  //   either:
+  //   - a mapping is provided in |message_.return_merging_info|, all of the
+  //     corresponding fresh ids are valid and, for each OpPhi instruction in
+  //     the block, there is a mapping to an available id of the same type in
+  //     |opphi_to_suitable_id| or a suitable id can be found in the module.
+  //   - there is no mapping, but overflow ids are available and, for every
+  //     OpPhi instruction in the merge blocks that needs to be modified, a
+  //     suitable id, available at the end of the entry block, can be found.
+  // - All of the fresh ids that are provided and needed by the transformation
+  //   are valid.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -50,6 +70,17 @@ class TransformationMergeFunctionReturns : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
+  // Returns a map from merge block ids to the corresponding info in
+  // |message_.return_merging_info|.
+  std::map<uint32_t, protobufs::ReturnMergingInfo>
+  GetMappingOfMergeBlocksToInfo() const;
+
+  // Returns a map from type ids to an id with that type and which is available
+  // at the end of the entry block of |message_.function_id|.
+  // Assumes that the function exists.
+  std::map<uint32_t, uint32_t> GetTypesToIdAvailableAfterEntryBlock(
+      opt::IRContext* ir_context) const;
+
   protobufs::TransformationMergeFunctionReturns message_;
 };
 }  // namespace fuzz

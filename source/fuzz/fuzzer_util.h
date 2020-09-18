@@ -547,6 +547,12 @@ bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
 //  (called using OpExtInst) have not been considered.
 bool InstructionHasNoSideEffects(const opt::Instruction& instruction);
 
+// Returns a set of the ids of all the return blocks that are reachable from
+// the entry block of |function_id|.
+// Assumes that the function exists in the module.
+std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
+                                            uint32_t function_id);
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools
