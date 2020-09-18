@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_
-#define SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -48,4 +48,4 @@ class FuzzerPassInterchangeSignednessOfIntegerOperands : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_INTERCHANGE_SIGNEDNESS_OF_INTEGER_OPERANDS_H_
