@@ -59,7 +59,7 @@ bool TransformationVectorShuffle::IsApplicable(
   }
   // We should be able to create a synonym of |vector1| if it's not irrelevant.
   if (!transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.vector1()) &&
+          message_.vector1(), ir_context) &&
       !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
                                     vector1_instruction)) {
     return false;
@@ -72,7 +72,7 @@ bool TransformationVectorShuffle::IsApplicable(
   }
   // We should be able to create a synonym of |vector2| if it's not irrelevant.
   if (!transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.vector2()) &&
+          message_.vector2(), ir_context) &&
       !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
                                     vector2_instruction)) {
     return false;
@@ -153,6 +153,13 @@ void TransformationVectorShuffle::Apply(
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
 
+  // If the new instruction is irrelevant (because it is in a dead block), it
+  // cannot participate in any DataSynonym fact.
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.fresh_id(), ir_context)) {
+    return;
+  }
+
   // Add synonym facts relating the defined elements of the shuffle result to
   // the vector components that they come from.
   for (uint32_t component_index = 0;
@@ -178,7 +185,7 @@ void TransformationVectorShuffle::Apply(
         GetVectorType(ir_context, message_.vector1())->element_count()) {
       // Irrelevant id cannot participate in DataSynonym facts.
       if (transformation_context->GetFactManager()->IdIsIrrelevant(
-              message_.vector1())) {
+              message_.vector1(), ir_context)) {
         continue;
       }
 
@@ -187,7 +194,7 @@ void TransformationVectorShuffle::Apply(
     } else {
       // Irrelevant id cannot participate in DataSynonym facts.
       if (transformation_context->GetFactManager()->IdIsIrrelevant(
-              message_.vector2())) {
+              message_.vector2(), ir_context)) {
         continue;
       }
 

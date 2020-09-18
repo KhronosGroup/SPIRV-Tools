@@ -73,7 +73,7 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
   for (auto constant : GetIRContext()->GetConstants()) {
     uint32_t constant_id = constant->result_id();
     if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-            constant_id)) {
+            constant_id, GetIRContext())) {
       continue;
     }
 
@@ -84,7 +84,7 @@ void FuzzerPassInterchangeZeroLikeConstants::Apply() {
     }
 
     assert(!GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-               toggled_id) &&
+               toggled_id, GetIRContext()) &&
            "FindOrCreateToggledConstant can't produce an irrelevant id");
 
     // Record synonymous constants

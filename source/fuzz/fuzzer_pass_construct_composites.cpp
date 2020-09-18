@@ -77,7 +77,7 @@ void FuzzerPassConstructComposites::Apply() {
               // to produce a synonym out of the id.
               return GetTransformationContext()
                          ->GetFactManager()
-                         ->IdIsIrrelevant(inst->result_id()) ||
+                         ->IdIsIrrelevant(inst->result_id(), GetIRContext()) ||
                      fuzzerutil::CanMakeSynonymOf(
                          ir_context, *GetTransformationContext(), inst);
             });

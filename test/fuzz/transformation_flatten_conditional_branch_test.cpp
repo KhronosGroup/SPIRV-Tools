@@ -490,7 +490,8 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   transformation1.Apply(context.get(), &transformation_context);
 
   // Check that the placeholder id was marked as irrelevant.
-  ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(103));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(
+      103, context.get()));
 
   // Make a new transformation context with a source of overflow ids.
   TransformationContext new_transformation_context(

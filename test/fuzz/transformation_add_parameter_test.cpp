@@ -136,28 +136,28 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(60));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(60, context.get()));
   }
   {
     TransformationAddParameter correct(17, 62, 7, {{}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(62));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(62, context.get()));
   }
   {
     TransformationAddParameter correct(29, 64, 31, {{}}, 65);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(64));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(64, context.get()));
   }
   {
     TransformationAddParameter correct(34, 66, 7, {{}}, 67);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(66));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(66, context.get()));
   }
 
   std::string expected_shader = R"(

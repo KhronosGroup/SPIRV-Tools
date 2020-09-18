@@ -135,11 +135,11 @@ TEST(TransformationAddConstantCompositeTest, BasicTest) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   for (uint32_t id = 100; id <= 106; ++id) {
-    ASSERT_FALSE(fact_manager.IdIsIrrelevant(id));
+    ASSERT_FALSE(fact_manager.IdIsIrrelevant(id, context.get()));
   }
 
   for (uint32_t id = 107; id <= 113; ++id) {
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(id));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(id, context.get()));
   }
 
   std::string after_transformation = R"(

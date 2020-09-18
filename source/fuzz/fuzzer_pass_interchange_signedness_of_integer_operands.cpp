@@ -48,7 +48,7 @@ void FuzzerPassInterchangeSignednessOfIntegerOperands::Apply() {
     // constant with opposite signedness, and this can only be done if they are
     // not irrelevant.
     if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-            constant_id)) {
+            constant_id, GetIRContext())) {
       continue;
     }
 
@@ -60,7 +60,7 @@ void FuzzerPassInterchangeSignednessOfIntegerOperands::Apply() {
     }
 
     assert(!GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-               toggled_id) &&
+               toggled_id, GetIRContext()) &&
            "FindOrCreateToggledConstant can't produce an irrelevant id");
 
     // Record synonymous constants

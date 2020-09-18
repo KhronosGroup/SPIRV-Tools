@@ -53,11 +53,15 @@ bool DataSynonymAndIdEquationFacts::OperationEquals::operator()(
 
 void DataSynonymAndIdEquationFacts::AddFact(
     const protobufs::FactDataSynonym& fact,
+    const DeadBlockFacts& dead_block_facts,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
+  (void)dead_block_facts;        // Keep release compilers happy.
   (void)irrelevant_value_facts;  // Keep release compilers happy.
-  assert(!irrelevant_value_facts.IdIsIrrelevant(fact.data1().object()) &&
-         !irrelevant_value_facts.IdIsIrrelevant(fact.data2().object()) &&
+  assert(!irrelevant_value_facts.IdIsIrrelevant(fact.data1().object(),
+                                                dead_block_facts, context) &&
+         !irrelevant_value_facts.IdIsIrrelevant(fact.data2().object(),
+                                                dead_block_facts, context) &&
          "Irrelevant ids cannot be synonymous with other ids.");
 
   // Add the fact, including all facts relating sub-components of the data
@@ -67,10 +71,13 @@ void DataSynonymAndIdEquationFacts::AddFact(
 
 void DataSynonymAndIdEquationFacts::AddFact(
     const protobufs::FactIdEquation& fact,
+    const DeadBlockFacts& dead_block_facts,
     const IrrelevantValueFacts& irrelevant_value_facts,
     opt::IRContext* context) {
+  (void)dead_block_facts;        // Keep release compilers happy.
   (void)irrelevant_value_facts;  // Keep release compilers happy.
-  assert(!irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id()) &&
+  assert(!irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id(), dead_block_facts,
+                                                context) &&
          "Irrelevant ids are not allowed.");
 
   protobufs::DataDescriptor lhs_dd = MakeDataDescriptor(fact.lhs_id(), {});
@@ -82,7 +89,8 @@ void DataSynonymAndIdEquationFacts::AddFact(
   // equation.
   std::vector<const protobufs::DataDescriptor*> rhs_dds;
   for (auto rhs_id : fact.rhs_id()) {
-    assert(!irrelevant_value_facts.IdIsIrrelevant(rhs_id) &&
+    assert(!irrelevant_value_facts.IdIsIrrelevant(rhs_id, dead_block_facts,
+                                                  context) &&
            "Irrelevant ids are not allowed.");
 
     // Register a data descriptor based on this id in the equivalence relation
