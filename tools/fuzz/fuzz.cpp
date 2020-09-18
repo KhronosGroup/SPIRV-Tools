@@ -16,7 +16,6 @@
 #include <cerrno>
 #include <cstring>
 #include <fstream>
-#include <functional>
 #include <random>
 #include <sstream>
 #include <string>
@@ -107,6 +106,14 @@ Options (in lexicographical order):
                provided if the tool is invoked in fuzzing mode; incompatible
                with replay and shrink modes.  The file should be empty if no
                donors are to be used.
+  --enable-all-passes
+               By default, spirv-fuzz follows the philosophy of "swarm testing"
+               (Groce et al., 2012): only a subset of fuzzer passes are enabled
+               on any given fuzzer run, with the subset being chosen randomly.
+               This flag instead forces *all* fuzzer passes to be enabled.  When
+               running spirv-fuzz many times this is likely to produce *less*
+               diverse fuzzed modules than when swarm testing is used.  The
+               purpose of the flag is to allow that hypothesis to be tested.
   --force-render-red
                Transforms the input shader into a shader that writes red to the
                output buffer, and then captures the original shader as the body
@@ -118,6 +125,19 @@ Options (in lexicographical order):
                Run the validator after applying each fuzzer pass during
                fuzzing.  Aborts fuzzing early if an invalid binary is created.
                Useful for debugging spirv-fuzz.
+  --repeated-pass-strategy=
+               Available strategies are:
+               - looped (the default): a sequence of fuzzer passes is chosen at
+                 the start of fuzzing, via randomly choosing enabled passes, and
+                 augmenting these choices with fuzzer passes that it is
+                 recommended to run subsequently.  Fuzzing then involves
+                 repeatedly applying this fixed sequence of passes.
+               - random: each time a fuzzer pass is requested, this strategy
+                 either provides one at random from the set of enabled passes,
+                 or provides a pass that has been recommended based on a pass
+                 that was used previously.
+               - simple: each time a fuzzer pass is requested, one is provided
+                 at random from the set of enabled passes.
   --replay
                File from which to read a sequence of transformations to replay
                (instead of fuzzing)
@@ -174,17 +194,22 @@ void FuzzDiagnostic(spv_message_level_t level, const char* /*source*/,
   fprintf(stderr, "%s\n", message);
 }
 
-FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
-                      std::string* out_binary_file, std::string* donors_file,
-                      std::string* replay_transformations_file,
-                      std::vector<std::string>* interestingness_test,
-                      std::string* shrink_transformations_file,
-                      std::string* shrink_temp_file_prefix,
-                      spvtools::FuzzerOptions* fuzzer_options,
-                      spvtools::ValidatorOptions* validator_options) {
+FuzzStatus ParseFlags(
+    int argc, const char** argv, std::string* in_binary_file,
+    std::string* out_binary_file, std::string* donors_file,
+    std::string* replay_transformations_file,
+    std::vector<std::string>* interestingness_test,
+    std::string* shrink_transformations_file,
+    std::string* shrink_temp_file_prefix,
+    spvtools::fuzz::Fuzzer::RepeatedPassStrategy* repeated_pass_strategy,
+    spvtools::FuzzerOptions* fuzzer_options,
+    spvtools::ValidatorOptions* validator_options) {
   uint32_t positional_arg_index = 0;
   bool only_positional_arguments_remain = false;
   bool force_render_red = false;
+
+  *repeated_pass_strategy =
+      spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -206,6 +231,9 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
       } else if (0 == strncmp(cur_arg, "--donors=", sizeof("--donors=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *donors_file = std::string(split_flag.second);
+      } else if (0 == strncmp(cur_arg, "--enable-all-passes",
+                              sizeof("--enable-all-passes") - 1)) {
+        fuzzer_options->enable_all_passes();
       } else if (0 == strncmp(cur_arg, "--force-render-red",
                               sizeof("--force-render-red") - 1)) {
         force_render_red = true;
@@ -215,6 +243,26 @@ FuzzStatus ParseFlags(int argc, const char** argv, std::string* in_binary_file,
       } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         *replay_transformations_file = std::string(split_flag.second);
+      } else if (0 == strncmp(cur_arg, "--repeated-pass-strategy=",
+                              sizeof("--repeated-pass-strategy=") - 1)) {
+        std::string strategy = spvtools::utils::SplitFlagArgs(cur_arg).second;
+        if (strategy == "looped") {
+          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
+              RepeatedPassStrategy::kLoopedWithRecommendations;
+        } else if (strategy == "random") {
+          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
+              RepeatedPassStrategy::kRandomWithRecommendations;
+        } else if (strategy == "simple") {
+          *repeated_pass_strategy =
+              spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kSimple;
+        } else {
+          std::stringstream ss;
+          ss << "Unknown repeated pass strategy '" << strategy << "'"
+             << std::endl;
+          ss << "Valid options are 'looped', 'random' and 'simple'.";
+          spvtools::Error(FuzzDiagnostic, nullptr, {}, ss.str().c_str());
+          return {FuzzActions::STOP, 1};
+        }
       } else if (0 == strncmp(cur_arg, "--replay-range=",
                               sizeof("--replay-range=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
@@ -493,7 +541,9 @@ bool Fuzz(const spv_target_env& target_env,
           spv_validator_options validator_options,
           const std::vector<uint32_t>& binary_in,
           const spvtools::fuzz::protobufs::FactSequence& initial_facts,
-          const std::string& donors, std::vector<uint32_t>* binary_out,
+          const std::string& donors,
+          spvtools::fuzz::Fuzzer::RepeatedPassStrategy repeated_pass_strategy,
+          std::vector<uint32_t>* binary_out,
           spvtools::fuzz::protobufs::TransformationSequence*
               transformations_applied) {
   auto message_consumer = spvtools::utils::CLIMessageConsumer;
@@ -526,6 +576,7 @@ bool Fuzz(const spv_target_env& target_env,
       fuzzer_options->has_random_seed
           ? fuzzer_options->random_seed
           : static_cast<uint32_t>(std::random_device()()),
+      fuzzer_options->all_passes_enabled, repeated_pass_strategy,
       fuzzer_options->fuzzer_pass_validation_enabled, validator_options);
   fuzzer.SetMessageConsumer(message_consumer);
   auto fuzz_result_status =
@@ -568,6 +619,7 @@ int main(int argc, const char** argv) {
   std::vector<std::string> interestingness_test;
   std::string shrink_transformations_file;
   std::string shrink_temp_file_prefix = "temp_";
+  spvtools::fuzz::Fuzzer::RepeatedPassStrategy repeated_pass_strategy;
 
   spvtools::FuzzerOptions fuzzer_options;
   spvtools::ValidatorOptions validator_options;
@@ -576,7 +628,7 @@ int main(int argc, const char** argv) {
       ParseFlags(argc, argv, &in_binary_file, &out_binary_file, &donors_file,
                  &replay_transformations_file, &interestingness_test,
                  &shrink_transformations_file, &shrink_temp_file_prefix,
-                 &fuzzer_options, &validator_options);
+                 &repeated_pass_strategy, &fuzzer_options, &validator_options);
 
   if (status.action == FuzzActions::STOP) {
     return status.code;
@@ -622,7 +674,7 @@ int main(int argc, const char** argv) {
       break;
     case FuzzActions::FUZZ:
       if (!Fuzz(target_env, fuzzer_options, validator_options, binary_in,
-                initial_facts, donors_file, &binary_out,
+                initial_facts, donors_file, repeated_pass_strategy, &binary_out,
                 &transformations_applied)) {
         return 1;
       }
