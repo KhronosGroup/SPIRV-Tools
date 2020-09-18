@@ -16,16 +16,7 @@
 #define SOURCE_FUZZ_TRANSFORMATION_MERGE_FUNCTION_RETURNS_
 
 #include "source/fuzz/transformation.h"
-/*
- *
-  // function, except, at most, in the entry block.
-  uint32 any_returnable_val_id = 5;
 
-  // The information needed to modify the merge blocks of
-  // loops containing return instructions.
-  repeated ReturnMergingInfo return_merging_info = 6;
-
- */
 namespace spvtools {
 namespace fuzz {
 class TransformationMergeFunctionReturns : public Transformation {
