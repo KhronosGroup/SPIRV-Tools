@@ -113,7 +113,8 @@ Fuzzer::Fuzzer(spv_target_env target_env, uint32_t seed, bool enable_all_passes,
       enable_all_passes_(enable_all_passes),
       repeated_pass_strategy_(repeated_pass_strategy),
       validate_after_each_fuzzer_pass_(validate_after_each_fuzzer_pass),
-      validator_options_(validator_options) {}
+      validator_options_(validator_options),
+      num_repeated_passes_applied_(0) {}
 
 Fuzzer::~Fuzzer() = default;
 
@@ -172,7 +173,7 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
     const protobufs::FactSequence& initial_facts,
     const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers,
     std::vector<uint32_t>* binary_out,
-    protobufs::TransformationSequence* transformation_sequence_out) const {
+    protobufs::TransformationSequence* transformation_sequence_out) {
   // Check compatibility between the library version being linked with and the
   // header files being used.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -405,7 +406,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
                                    *ir_context, tools)) {
       return Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule;
     }
-  } while (ContinueFuzzing(*transformation_sequence_out, &fuzzer_context));
+  } while (
+      ShouldContinueFuzzing(*transformation_sequence_out, &fuzzer_context));
 
   // Now apply some passes that it does not make sense to apply repeatedly,
   // as they do not unlock other passes.
@@ -455,18 +457,37 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   return Fuzzer::FuzzerResultStatus::kComplete;
 }
 
-bool Fuzzer::ContinueFuzzing(
+bool Fuzzer::ShouldContinueFuzzing(
     const protobufs::TransformationSequence& transformation_sequence_out,
-    FuzzerContext* fuzzer_context) const {
+    FuzzerContext* fuzzer_context) {
+  // There's a risk that fuzzing could get stuck, if none of the enabled fuzzer
+  // passes are able to apply any transformations.  To guard against this we
+  // count the number of times some repeated pass has been applied and ensure
+  // that fuzzing stops if the number of repeated passes hits the limit on the
+  // number of transformations that can be applied.
+  assert(
+      num_repeated_passes_applied_ <= kTransformationLimit &&
+      "The number of repeated passes applied must not exceed its upper limit.");
+  if (num_repeated_passes_applied_ == kTransformationLimit) {
+    // Stop because fuzzing has got stuck.
+    return false;
+  }
   auto transformations_applied_so_far =
       static_cast<uint32_t>(transformation_sequence_out.transformation_size());
   if (transformations_applied_so_far >= kTransformationLimit) {
+    // Stop because we have reached the transformation limit.
     return false;
   }
   auto chance_of_continuing = static_cast<uint32_t>(
       100.0 * (1.0 - (static_cast<double>(transformations_applied_so_far) /
                       static_cast<double>(kTransformationLimit))));
-  return fuzzer_context->ChoosePercentage(chance_of_continuing);
+  if (!fuzzer_context->ChoosePercentage(chance_of_continuing)) {
+    // We have probabilistically decided to stop.
+    return false;
+  }
+  // Continue fuzzing!
+  num_repeated_passes_applied_++;
+  return true;
 }
 
 }  // namespace fuzz

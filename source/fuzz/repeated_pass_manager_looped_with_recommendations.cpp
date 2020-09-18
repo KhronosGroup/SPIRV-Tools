@@ -31,7 +31,8 @@ RepeatedPassManagerLoopedWithRecommendations::
          pass_recommender->GetFuturePassRecommendations(*current_pass)) {
       pass_loop_.push_back(future_pass);
     }
-  } while (fuzzer_context->GetChanceOfAddingAnotherPassToPassLoop());
+  } while (fuzzer_context->ChoosePercentage(
+      fuzzer_context->GetChanceOfAddingAnotherPassToPassLoop()));
 }
 
 RepeatedPassManagerLoopedWithRecommendations::

@@ -116,8 +116,11 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
                                   pass_instances_->GetAddStores()});
   }
   if (&pass == pass_instances_->GetAddLoopPreheaders()) {
-    // - No obvious follow-on passes
-    return {};
+    // - The loop preheader provides more scope for duplicating regions and
+    //   outlining functions.
+    return RandomOrderAndNonNull(
+        {pass_instances_->GetDuplicateRegionsWithSelections(),
+         pass_instances_->GetOutlineFunctions()});
   }
   if (&pass == pass_instances_->GetAddOpPhiSynonyms()) {
     // - New synonyms can be applied
@@ -128,8 +131,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
          pass_instances_->GetReplaceOpPhiIdsFromDeadPredecessors()});
   }
   if (&pass == pass_instances_->GetAddParameters()) {
+    // - We might be able to create interesting synonyms of new parameters.
     // - This introduces irrelevant ids, which can be replaced
-    return RandomOrderAndNonNull({pass_instances_->GetReplaceIrrelevantIds()});
+    return RandomOrderAndNonNull({pass_instances_->GetAddSynonyms(),
+                                  pass_instances_->GetReplaceIrrelevantIds()});
   }
   if (&pass == pass_instances_->GetAddRelaxedDecorations()) {
     // - No obvious follow-on passes

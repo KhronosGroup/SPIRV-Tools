@@ -85,11 +85,11 @@ class Fuzzer {
       const protobufs::FactSequence& initial_facts,
       const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers,
       std::vector<uint32_t>* binary_out,
-      protobufs::TransformationSequence* transformation_sequence_out) const;
+      protobufs::TransformationSequence* transformation_sequence_out);
 
  private:
   // A convenience method to add a repeated fuzzer pass to |pass_instances| with
-  // probability 0.5.
+  // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
   //
   // All fuzzer passes take |ir_context|, |transformation_context|,
   // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
@@ -103,7 +103,7 @@ class Fuzzer {
       Args&&... extra_args) const;
 
   // A convenience method to add a final fuzzer pass to |passes| with
-  // probability 0.5.
+  // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
   //
   // All fuzzer passes take |ir_context|, |transformation_context|,
   // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
@@ -116,9 +116,11 @@ class Fuzzer {
       protobufs::TransformationSequence* transformation_sequence_out,
       Args&&... extra_args) const;
 
-  bool ContinueFuzzing(
+  // Decides whether to apply more repeated passes. The probability decreases as
+  // the number of transformations that have been applied increases.
+  bool ShouldContinueFuzzing(
       const protobufs::TransformationSequence& transformation_sequence_out,
-      FuzzerContext* fuzzer_context) const;
+      FuzzerContext* fuzzer_context);
 
   // Applies |pass|, which must be a pass constructed with |ir_context|, and
   // then returns true if and only if |ir_context| is valid.  |tools| is used to
@@ -148,6 +150,11 @@ class Fuzzer {
 
   // Options to control validation.
   spv_validator_options validator_options_;
+
+  // The number of repeated fuzzer passes that have been applied is kept track
+  // of, in order to enforce a hard limit on the number of times such passes
+  // can be applied.
+  uint32_t num_repeated_passes_applied_;
 };
 
 }  // namespace fuzz
