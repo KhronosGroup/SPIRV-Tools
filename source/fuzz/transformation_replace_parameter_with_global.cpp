@@ -184,7 +184,7 @@ void TransformationReplaceParameterWithGlobal::Apply(
   // Mark the pointee of the global variable storing the parameter's value as
   // irrelevant if replaced parameter is irrelevant.
   if (transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.parameter_id())) {
+          message_.parameter_id(), ir_context)) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
         message_.global_variable_fresh_id(), ir_context);
   }

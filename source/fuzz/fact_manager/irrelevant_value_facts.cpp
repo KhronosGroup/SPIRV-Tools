@@ -16,6 +16,8 @@
 
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/fact_manager/data_synonym_and_id_equation_facts.h"
+#include "source/fuzz/fact_manager/dead_block_facts.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -60,13 +62,54 @@ bool IrrelevantValueFacts::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
   return pointers_to_irrelevant_pointees_ids_.count(pointer_id) != 0;
 }
 
-bool IrrelevantValueFacts::IdIsIrrelevant(uint32_t pointer_id) const {
-  return irrelevant_ids_.count(pointer_id) != 0;
+bool IrrelevantValueFacts::IdIsIrrelevant(
+    uint32_t result_id, const DeadBlockFacts& dead_block_facts,
+    opt::IRContext* context) const {
+  // The id is irrelevant if it has been declared irrelevant.
+  if (irrelevant_ids_.count(result_id)) {
+    return true;
+  }
+
+  // The id must have a non-pointer type to be irrelevant.
+  auto def = context->get_def_use_mgr()->GetDef(result_id);
+  if (!def) {
+    return false;
+  }
+  auto type = context->get_type_mgr()->GetType(def->type_id());
+  if (!type || type->AsPointer()) {
+    return false;
+  }
+
+  // The id is irrelevant if it is in a dead block.
+  return context->get_instr_block(result_id) &&
+         dead_block_facts.BlockIsDead(
+             context->get_instr_block(result_id)->id());
 }
 
-const std::unordered_set<uint32_t>& IrrelevantValueFacts::GetIrrelevantIds()
-    const {
-  return irrelevant_ids_;
+std::unordered_set<uint32_t> IrrelevantValueFacts::GetIrrelevantIds(
+    const DeadBlockFacts& dead_block_facts, opt::IRContext* context) const {
+  // Get all the ids that have been declared irrelevant.
+  auto irrelevant_ids = irrelevant_ids_;
+
+  // Get all the non-pointer ids declared in dead blocks that have a type.
+  for (uint32_t block_id : dead_block_facts.GetDeadBlocks()) {
+    auto block = fuzzerutil::MaybeFindBlock(context, block_id);
+    // It is possible and allowed for the block not to exist, e.g. it could have
+    // been merged with another block.
+    if (!block) {
+      continue;
+    }
+    block->ForEachInst([context, &irrelevant_ids](opt::Instruction* inst) {
+      // The instruction must have a result id and a type, and it must not be a
+      // pointer.
+      if (inst->HasResultId() && inst->type_id() &&
+          !context->get_type_mgr()->GetType(inst->type_id())->AsPointer()) {
+        irrelevant_ids.emplace(inst->result_id());
+      }
+    });
+  }
+
+  return irrelevant_ids;
 }
 
 }  // namespace fact_manager

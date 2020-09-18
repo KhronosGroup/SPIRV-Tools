@@ -272,11 +272,11 @@ TEST(TransformationAddConstantScalarTest, Apply) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   for (uint32_t result_id = 19; result_id <= 24; ++result_id) {
-    ASSERT_FALSE(fact_manager.IdIsIrrelevant(result_id));
+    ASSERT_FALSE(fact_manager.IdIsIrrelevant(result_id, context.get()));
   }
 
   for (uint32_t result_id = 25; result_id <= 30; ++result_id) {
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(result_id));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(result_id, context.get()));
   }
 
   std::string variant_shader = R"(

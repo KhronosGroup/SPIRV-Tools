@@ -96,7 +96,8 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
                   // able to produce a synonym out of the id.
                   if (!GetTransformationContext()
                            ->GetFactManager()
-                           ->IdIsIrrelevant(instruction->result_id()) &&
+                           ->IdIsIrrelevant(instruction->result_id(),
+                                            GetIRContext()) &&
                       !fuzzerutil::CanMakeSynonymOf(ir_context,
                                                     *GetTransformationContext(),
                                                     instruction)) {
