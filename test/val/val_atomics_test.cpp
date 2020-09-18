@@ -95,6 +95,7 @@ OpFunctionEnd)";
 std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
+    const std::string& extra_defs = "",
     const std::string& memory_model = "GLSL450") {
   const std::string execution = R"(
 OpEntryPoint Fragment %main "main"
@@ -113,7 +114,8 @@ OpExecutionMode %main OriginUpperLeft
 %s64_var = OpVariable %s64_ptr Workgroup
 )";
   return GenerateShaderCodeImpl(
-      body, "OpCapability Int64\n" + capabilities_and_extensions, defintions,
+      body, "OpCapability Int64\n" + capabilities_and_extensions,
+      defintions + extra_defs,
       memory_model, execution);
 }
 
@@ -1479,7 +1481,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1498,7 +1500,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1518,7 +1520,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1538,7 +1540,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1558,7 +1560,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1578,7 +1580,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1598,7 +1600,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1617,7 +1619,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1636,7 +1638,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1655,7 +1657,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1674,7 +1676,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1693,7 +1695,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1712,7 +1714,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1731,7 +1733,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1750,7 +1752,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1769,7 +1771,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1993,7 +1995,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
@@ -2121,7 +2123,7 @@ TEST_F(ValidateAtomics, VulkanMemoryModelDeviceScopeBad) {
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -2141,7 +2143,7 @@ OpCapability VulkanMemoryModelDeviceScopeKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
