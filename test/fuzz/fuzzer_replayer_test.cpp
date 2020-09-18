@@ -1663,18 +1663,16 @@ void RunFuzzerAndReplayer(const std::string& shader,
     ASSERT_EQ(Fuzzer::FuzzerResultStatus::kComplete, fuzzer_result.status);
     ASSERT_TRUE(t.Validate(fuzzer_result.transformed_binary));
 
-    std::vector<uint32_t> replayer_binary_out;
-    protobufs::TransformationSequence replayer_transformation_sequence_out;
-
-    Replayer replayer(env, false, validator_options);
-    replayer.SetMessageConsumer(kConsoleMessageConsumer);
-    auto replayer_result_status = replayer.Run(
-        binary_in, initial_facts, fuzzer_result.applied_transformations,
-        static_cast<uint32_t>(
-            fuzzer_result.applied_transformations.transformation_size()),
-        0, &replayer_binary_out, &replayer_transformation_sequence_out);
+    auto replayer_result =
+        Replayer(
+            env, kConsoleMessageConsumer, binary_in, initial_facts,
+            fuzzer_result.applied_transformations,
+            static_cast<uint32_t>(
+                fuzzer_result.applied_transformations.transformation_size()),
+            0, false, validator_options)
+            .Run();
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
-              replayer_result_status);
+              replayer_result.status);
 
     // After replaying the transformations applied by the fuzzer, exactly those
     // transformations should have been applied, and the binary resulting from
@@ -1683,10 +1681,11 @@ void RunFuzzerAndReplayer(const std::string& shader,
     std::string replayer_transformations_string;
     fuzzer_result.applied_transformations.SerializeToString(
         &fuzzer_transformations_string);
-    replayer_transformation_sequence_out.SerializeToString(
+    replayer_result.applied_transformations.SerializeToString(
         &replayer_transformations_string);
     ASSERT_EQ(fuzzer_transformations_string, replayer_transformations_string);
-    ASSERT_EQ(fuzzer_result.transformed_binary, replayer_binary_out);
+    ASSERT_EQ(fuzzer_result.transformed_binary,
+              replayer_result.transformed_binary);
   }
 }
 

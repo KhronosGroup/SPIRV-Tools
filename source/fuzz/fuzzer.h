@@ -58,14 +58,6 @@ class Fuzzer {
     kLoopedWithRecommendations
   };
 
-  // TODO revise comment
-  // Constructs a fuzzer from the given target environment |target_env|.  |seed|
-  // is a seed for pseudo-random number generation.  If |enable_all_passes| is
-  // true then all fuzzer passes will be enabled, otherwise a random subset of
-  // fuzzer passes will be enabled.  |validate_after_each_fuzzer_pass| controls
-  // whether the validator will be invoked after every fuzzer pass is applied,
-  // and |validator_options| provides the options that should be used during
-  // validation if so.
   Fuzzer(spv_target_env target_env, MessageConsumer consumer,
          const std::vector<uint32_t>& binary_in,
          const protobufs::FactSequence& initial_facts,
@@ -83,33 +75,30 @@ class Fuzzer {
 
   ~Fuzzer();
 
-  // TODO revise comment
-  // Transforms |binary_in| to |binary_out| by running a number of randomized
-  // fuzzer passes.  Initial facts about the input binary and the context in
-  // which it will execute are provided via |initial_facts|.  A source of donor
-  // modules to be used by transformations is provided via |donor_suppliers|.
-  // The transformation sequence that was applied is returned via
-  // |transformation_sequence_out|.
+  // Transforms |binary_in_| by running a number of randomized fuzzer passes.
+  // Initial facts about the input binary and the context in which it will
+  // execute are provided via |initial_facts_|.  A source of donor modules to be
+  // used by transformations is provided via |donor_suppliers_|.  On success,
+  // returns the transformed binary and the sequence of transformations that
+  // were applied.
   FuzzerResult Run();
 
  private:
-  // TODO revise comment
   // A convenience method to add a repeated fuzzer pass to |pass_instances| with
   // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
   //
-  // All fuzzer passes take |ir_context|, |transformation_context|,
-  // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
+  // All fuzzer passes take members |ir_context_|, |transformation_context_|,
+  // |fuzzer_context_| and |transformation_sequence_out_| as parameters.  Extra
   // arguments can be provided via |extra_args|.
   template <typename FuzzerPassT, typename... Args>
   void MaybeAddRepeatedPass(RepeatedPassInstances* pass_instances,
                             Args&&... extra_args);
 
-  // TODO revise comment
   // A convenience method to add a final fuzzer pass to |passes| with
   // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
   //
-  // All fuzzer passes take |ir_context|, |transformation_context|,
-  // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
+  // All fuzzer passes take members |ir_context_|, |transformation_context_|,
+  // |fuzzer_context_| and |transformation_sequence_out_| as parameters.  Extra
   // arguments can be provided via |extra_args|.
   template <typename FuzzerPassT, typename... Args>
   void MaybeAddFinalPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
@@ -132,13 +121,14 @@ class Fuzzer {
   // from the library.
   MessageConsumer consumer_;
 
-  // TODO comment
+  // The initial binary to which fuzzing should be applied.
   const std::vector<uint32_t>& binary_in_;
 
-  // TODO comment
+  // Initial facts known to hold in advance of applying any transformations.
   const protobufs::FactSequence& initial_facts_;
 
-  // TODO comment
+  // A source of modules whose contents can be donated into the module being
+  // fuzzed.
   const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers_;
 
   // Random number generator to control decision making during fuzzing.
@@ -162,16 +152,18 @@ class Fuzzer {
   // can be applied.
   uint32_t num_repeated_passes_applied_;
 
-  // TODO comment
+  // Intermediate representation for the module being fuzzed, which gets
+  // mutated as fuzzing proceeds.
   std::unique_ptr<opt::IRContext> ir_context_;
 
-  // TODO comment
+  // Provides probabilities that control the fuzzing process.
   std::unique_ptr<FuzzerContext> fuzzer_context_;
 
-  // TODO comment
+  // Contextual information that is required in order to apply transformations.
   std::unique_ptr<TransformationContext> transformation_context_;
 
-  // TODO comment
+  // The sequence of transformations that have been applied during fuzzing.  It
+  // is initially empty and grows as fuzzer passes are applied.
   protobufs::TransformationSequence transformation_sequence_out_;
 };
 

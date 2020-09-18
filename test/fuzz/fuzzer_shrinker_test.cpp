@@ -991,25 +991,25 @@ void RunAndCheckShrinker(
     uint32_t expected_transformations_out_size, uint32_t step_limit,
     spv_validator_options validator_options) {
   // Run the shrinker.
-  Shrinker shrinker(target_env, step_limit, false, validator_options);
-  shrinker.SetMessageConsumer(kSilentConsumer);
+  auto shrinker_result =
+      Shrinker(target_env, kSilentConsumer, binary_in, initial_facts,
+               transformation_sequence_in, interestingness_function, step_limit,
+               false, validator_options)
+          .Run();
 
-  std::vector<uint32_t> binary_out;
-  protobufs::TransformationSequence transformations_out;
-  Shrinker::ShrinkerResultStatus shrinker_result_status =
-      shrinker.Run(binary_in, initial_facts, transformation_sequence_in,
-                   interestingness_function, &binary_out, &transformations_out);
   ASSERT_TRUE(Shrinker::ShrinkerResultStatus::kComplete ==
-                  shrinker_result_status ||
+                  shrinker_result.status ||
               Shrinker::ShrinkerResultStatus::kStepLimitReached ==
-                  shrinker_result_status);
+                  shrinker_result.status);
 
   // If a non-empty expected binary was provided, check that it matches the
   // result of shrinking and that the expected number of transformations remain.
   if (!expected_binary_out.empty()) {
-    ASSERT_EQ(expected_binary_out, binary_out);
-    ASSERT_EQ(expected_transformations_out_size,
-              static_cast<uint32_t>(transformations_out.transformation_size()));
+    ASSERT_EQ(expected_binary_out, shrinker_result.transformed_binary);
+    ASSERT_EQ(
+        expected_transformations_out_size,
+        static_cast<uint32_t>(
+            shrinker_result.applied_transformations.transformation_size()));
   }
 }
 

@@ -172,9 +172,9 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
   // header files being used.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  // TODO same for other fields.
-  assert(ir_context_ == nullptr && "'Run' must not be invoked more than once.");
-  assert(transformation_sequence_out_.transformation_size() == 0 &&
+  assert(ir_context_ == nullptr && fuzzer_context_ == nullptr &&
+         transformation_context_ == nullptr &&
+         transformation_sequence_out_.transformation_size() == 0 &&
          "'Run' must not be invoked more than once.");
 
   spvtools::SpirvTools tools(target_env_);

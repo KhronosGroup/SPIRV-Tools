@@ -456,9 +456,6 @@ bool Replay(const spv_target_env& target_env,
                             &transformation_sequence)) {
     return false;
   }
-  spvtools::fuzz::Replayer replayer(
-      target_env, fuzzer_options->replay_validation_enabled, validator_options);
-  replayer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   uint32_t num_transformations_to_apply;
   if (fuzzer_options->replay_range > 0) {
@@ -477,11 +474,17 @@ bool Replay(const spv_target_env& target_env,
                         fuzzer_options->replay_range));
   }
 
-  auto replay_result_status = replayer.Run(
-      binary_in, initial_facts, transformation_sequence,
-      num_transformations_to_apply, 0, binary_out, transformations_applied);
-  return !(replay_result_status !=
-           spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete);
+  auto replay_result =
+      spvtools::fuzz::Replayer(
+          target_env, spvtools::utils::CLIMessageConsumer, binary_in,
+          initial_facts, transformation_sequence, num_transformations_to_apply,
+          0, fuzzer_options->replay_validation_enabled, validator_options)
+          .Run();
+
+  *binary_out = std::move(replay_result.transformed_binary);
+  *transformations_applied = std::move(replay_result.applied_transformations);
+  return replay_result.status ==
+         spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete;
 }
 
 bool Shrink(const spv_target_env& target_env,
@@ -500,11 +503,6 @@ bool Shrink(const spv_target_env& target_env,
                             &transformation_sequence)) {
     return false;
   }
-  spvtools::fuzz::Shrinker shrinker(
-      target_env, fuzzer_options->shrinker_step_limit,
-      fuzzer_options->replay_validation_enabled, validator_options);
-  shrinker.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
-
   assert(!interestingness_command.empty() &&
          "An error should have been raised because the interestingness_command "
          "is empty.");
@@ -530,13 +528,20 @@ bool Shrink(const spv_target_env& target_env,
     return ExecuteCommand(command);
   };
 
-  auto shrink_result_status = shrinker.Run(
-      binary_in, initial_facts, transformation_sequence,
-      interestingness_function, binary_out, transformations_applied);
+  auto shrink_result =
+      spvtools::fuzz::Shrinker(
+          target_env, spvtools::utils::CLIMessageConsumer, binary_in,
+          initial_facts, transformation_sequence, interestingness_function,
+          fuzzer_options->shrinker_step_limit,
+          fuzzer_options->replay_validation_enabled, validator_options)
+          .Run();
+
+  *binary_out = std::move(shrink_result.transformed_binary);
+  *transformations_applied = std::move(shrink_result.applied_transformations);
   return spvtools::fuzz::Shrinker::ShrinkerResultStatus::kComplete ==
-             shrink_result_status ||
+             shrink_result.status ||
          spvtools::fuzz::Shrinker::ShrinkerResultStatus::kStepLimitReached ==
-             shrink_result_status;
+             shrink_result.status;
 }
 
 bool Fuzz(const spv_target_env& target_env,
