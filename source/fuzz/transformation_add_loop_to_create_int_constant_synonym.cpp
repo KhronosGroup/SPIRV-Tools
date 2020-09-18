@@ -17,6 +17,9 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace {
+uint32_t kMaxNumOfIterations = 32;
+}
 
 TransformationAddLoopToCreateIntConstantSynonym::
     TransformationAddLoopToCreateIntConstantSynonym(
@@ -108,10 +111,10 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   }
 
   // Check that the number of iterations is > 0 and <= 32.
-  int32_t num_iterations_value =
+  uint32_t num_iterations_value =
       num_iterations->AsIntConstant()->GetU32BitValue();
 
-  if (num_iterations_value > 32) {
+  if (num_iterations_value == 0 || num_iterations_value > kMaxNumOfIterations) {
     return false;
   }
 
