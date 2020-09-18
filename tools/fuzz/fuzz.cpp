@@ -16,6 +16,7 @@
 #include <cerrno>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <random>
 #include <sstream>
 #include <string>
@@ -24,12 +25,14 @@
 #include "source/fuzz/fuzzer.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/replayer.h"
 #include "source/fuzz/shrinker.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/log.h"
 #include "source/spirv_fuzzer_options.h"
+#include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
@@ -571,18 +574,20 @@ bool Fuzz(const spv_target_env& target_env,
         });
   }
 
-  spvtools::fuzz::Fuzzer fuzzer(
-      target_env,
-      fuzzer_options->has_random_seed
-          ? fuzzer_options->random_seed
-          : static_cast<uint32_t>(std::random_device()()),
-      fuzzer_options->all_passes_enabled, repeated_pass_strategy,
-      fuzzer_options->fuzzer_pass_validation_enabled, validator_options);
-  fuzzer.SetMessageConsumer(message_consumer);
-  auto fuzz_result_status =
-      fuzzer.Run(binary_in, initial_facts, donor_suppliers, binary_out,
-                 transformations_applied);
-  if (fuzz_result_status !=
+  auto fuzz_result =
+      spvtools::fuzz::Fuzzer(
+          target_env, message_consumer, binary_in, initial_facts,
+          donor_suppliers,
+          spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
+              fuzzer_options->has_random_seed
+                  ? fuzzer_options->random_seed
+                  : static_cast<uint32_t>(std::random_device()())),
+          fuzzer_options->all_passes_enabled, repeated_pass_strategy,
+          fuzzer_options->fuzzer_pass_validation_enabled, validator_options)
+          .Run();
+  *binary_out = std::move(fuzz_result.transformed_binary);
+  *transformations_applied = std::move(fuzz_result.applied_transformations);
+  if (fuzz_result.status !=
       spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error running fuzzer");
     return false;
