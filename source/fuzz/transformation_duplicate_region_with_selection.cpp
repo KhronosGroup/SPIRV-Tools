@@ -167,9 +167,11 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
           ir_context->cfg()->block(loop_merge->GetSingleWordOperand(1));
       // The continue target is a single-entry, single-exit region. Therefore,
       // if the continue target is the exit block, the region might not contain
-      // the loop header.
-      if (continue_target != exit_block &&
-          region_set.count(&block) != region_set.count(continue_target)) {
+      // the loop header. However, we would like to exclude this situation,
+      // since it would be impossible for the modified exit block to branch to
+      // the new selection merge block. In this scenario the exit block is
+      // required to branch to the loop header.
+      if (region_set.count(&block) != region_set.count(continue_target)) {
         return false;
       }
     }
@@ -325,7 +327,7 @@ void TransformationDuplicateRegionWithSelection::Apply(
   uint32_t entry_block_pred_id =
       ir_context->get_instr_block(entry_block_preds[0])->id();
   // Update all the OpPhi instructions in the |entry_block|. Change every
-  // occurence of |entry_block_pred_id| to the id of |new_entry|, because we
+  // occurrence of |entry_block_pred_id| to the id of |new_entry|, because we
   // will insert |new_entry| before |entry_block|.
   for (auto& instr : *entry_block) {
     if (instr.opcode() == SpvOpPhi) {
@@ -345,6 +347,7 @@ void TransformationDuplicateRegionWithSelection::Apply(
   }
 
   opt::BasicBlock* previous_block = nullptr;
+  opt::BasicBlock* duplicated_exit_block = nullptr;
   // Iterate over all blocks of the function to duplicate blocks of the original
   // region and their instructions.
   for (auto& block : blocks) {
@@ -414,11 +417,12 @@ void TransformationDuplicateRegionWithSelection::Apply(
                                                 exit_block);
     }
     previous_block = duplicated_block_ptr;
+    if (block == exit_block) {
+      // After execution of the loop, this variable stores a pointer to the last
+      // duplicated block.
+      duplicated_exit_block = duplicated_block_ptr;
+    }
   }
-
-  // After execution of the loop, this variable stores a pointer to the last
-  // duplicated block.
-  auto duplicated_exit_block = previous_block;
 
   for (auto& block : region_blocks) {
     for (auto& instr : *block) {
@@ -500,7 +504,7 @@ void TransformationDuplicateRegionWithSelection::Apply(
           {{SPV_OPERAND_TYPE_ID, {message_.merge_label_fresh_id()}}}));
   exit_block->AddInstruction(MakeUnique<opt::Instruction>(merge_branch_instr));
   duplicated_exit_block->AddInstruction(
-      MakeUnique<opt::Instruction>(merge_branch_instr));
+      std::unique_ptr<opt::Instruction>(merge_branch_instr.Clone(ir_context)));
 
   // Execution needs to start in the |new_entry_block|. Change all
   // the uses of |entry_block_label_instr| outside of the original
