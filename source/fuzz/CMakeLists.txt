@@ -180,6 +180,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_load.h
         transformation_make_vector_operation_dynamic.h
         transformation_merge_blocks.h
+        transformation_merge_function_returns.h
         transformation_move_block_down.h
         transformation_move_instruction_down.h
         transformation_mutate_pointer.h
@@ -356,6 +357,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_load.cpp
         transformation_make_vector_operation_dynamic.cpp
         transformation_merge_blocks.cpp
+        transformation_merge_function_returns.cpp
         transformation_move_block_down.cpp
         transformation_move_instruction_down.cpp
         transformation_mutate_pointer.cpp
