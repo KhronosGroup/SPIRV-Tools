@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/repeated_pass_recommender_standard.h"
+#include "source/fuzz/pass_management/repeated_pass_recommender_standard.h"
 
 #include <numeric>
 

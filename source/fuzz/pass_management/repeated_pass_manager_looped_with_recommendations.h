@@ -17,8 +17,8 @@
 
 #include <vector>
 
-#include "source/fuzz/repeated_pass_manager.h"
-#include "source/fuzz/repeated_pass_recommender.h"
+#include "source/fuzz/pass_management/repeated_pass_manager.h"
+#include "source/fuzz/pass_management/repeated_pass_recommender.h"
 
 namespace spvtools {
 namespace fuzz {

@@ -16,8 +16,8 @@
 #define SOURCE_FUZZ_REPEATED_PASS_RECOMMENDER_STANDARD_H_
 
 #include "source/fuzz/fuzzer_context.h"
-#include "source/fuzz/repeated_pass_instances.h"
-#include "source/fuzz/repeated_pass_recommender.h"
+#include "source/fuzz/pass_management/repeated_pass_instances.h"
+#include "source/fuzz/pass_management/repeated_pass_recommender.h"
 
 namespace spvtools {
 namespace fuzz {

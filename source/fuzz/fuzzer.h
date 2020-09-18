@@ -21,9 +21,9 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass.h"
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/pass_management/repeated_pass_instances.h"
+#include "source/fuzz/pass_management/repeated_pass_recommender.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
-#include "source/fuzz/repeated_pass_instances.h"
-#include "source/fuzz/repeated_pass_recommender.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

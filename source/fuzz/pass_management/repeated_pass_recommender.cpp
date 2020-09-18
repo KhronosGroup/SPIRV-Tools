@@ -12,21 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/repeated_pass_manager_simple.h"
+#include "source/fuzz/pass_management/repeated_pass_recommender.h"
 
 namespace spvtools {
 namespace fuzz {
 
-RepeatedPassManagerSimple::RepeatedPassManagerSimple(
-    FuzzerContext* fuzzer_context, RepeatedPassInstances* pass_instances)
-    : RepeatedPassManager(fuzzer_context, pass_instances) {}
-
-RepeatedPassManagerSimple::~RepeatedPassManagerSimple() = default;
-
-FuzzerPass* RepeatedPassManagerSimple::ChoosePass() {
-  auto& passes = GetPassInstances()->GetPasses();
-  return passes[GetFuzzerContext()->RandomIndex(passes)].get();
-}
+RepeatedPassRecommender::~RepeatedPassRecommender() = default;
 
 }  // namespace fuzz
 }  // namespace spvtools

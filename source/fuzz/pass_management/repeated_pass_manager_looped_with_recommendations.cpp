@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/repeated_pass_manager_looped_with_recommendations.h"
+#include "source/fuzz/pass_management/repeated_pass_manager_looped_with_recommendations.h"
 
 namespace spvtools {
 namespace fuzz {
