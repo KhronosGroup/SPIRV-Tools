@@ -114,19 +114,15 @@ void TransformationSplitLoop::Apply(
   auto const_true_id = fuzzerutil::MaybeGetBoolConstant(
       ir_context, *transformation_context, true, false);
 
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.load_counter_fresh_id());
-  fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  message_.increment_counter_fresh_id());
-  fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  message_.condition_counter_fresh_id());
-  fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  message_.new_body_entry_block_fresh_id());
-  fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  message_.conditional_block_fresh_id());
-  fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  message_.load_run_second_fresh_id());
-  fuzzerutil::UpdateModuleIdBound(ir_context,
-                                  message_.selection_merge_block_fresh_id());
+  for (uint32_t id :
+       {message_.load_counter_fresh_id(), message_.increment_counter_fresh_id(),
+        message_.condition_counter_fresh_id(),
+        message_.new_body_entry_block_fresh_id(),
+        message_.conditional_block_fresh_id(),
+        message_.load_run_second_fresh_id(),
+        message_.selection_merge_block_fresh_id()}) {
+    fuzzerutil::UpdateModuleIdBound(ir_context, id);
+  }
 
   auto loop_header_block = ir_context->cfg()->block(message_.loop_header_id());
   auto merge_block =
