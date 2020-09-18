@@ -166,7 +166,7 @@ void TransformationCompositeInsert::Apply(
         continue;
       }
       current_index.push_back(i);
-      // TODO: (https://github.com/KhronosGroup/SPIRV-Tools/issues/3659)
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3659):
       //       Google C++ guide restricts the use of r-value references.
       //       https://google.github.io/styleguide/cppguide.html#Rvalue_references
       //       Consider changing the signature of MakeDataDescriptor()

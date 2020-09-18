@@ -1040,7 +1040,23 @@ void RunFuzzerAndShrinker(const std::string& shader,
   std::vector<uint32_t> fuzzer_binary_out;
   protobufs::TransformationSequence fuzzer_transformation_sequence_out;
   spvtools::ValidatorOptions validator_options;
-  Fuzzer fuzzer(env, seed, true, validator_options);
+
+  // Depending on the seed, decide whether to enable all passes and which
+  // repeated pass manager to use.
+  bool enable_all_passes = (seed % 4) == 0;
+  Fuzzer::RepeatedPassStrategy repeated_pass_strategy;
+  if ((seed % 3) == 0) {
+    repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kSimple;
+  } else if ((seed % 3) == 1) {
+    repeated_pass_strategy =
+        Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
+  } else {
+    repeated_pass_strategy =
+        Fuzzer::RepeatedPassStrategy::kRandomWithRecommendations;
+  }
+
+  Fuzzer fuzzer(env, seed, enable_all_passes, repeated_pass_strategy, true,
+                validator_options);
   fuzzer.SetMessageConsumer(kSilentConsumer);
   auto fuzzer_result_status =
       fuzzer.Run(binary_in, initial_facts, donor_suppliers, &fuzzer_binary_out,

@@ -18,8 +18,11 @@
 #include <memory>
 #include <vector>
 
+#include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass.h"
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/pass_management/repeated_pass_instances.h"
+#include "source/fuzz/pass_management/repeated_pass_recommender.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "spirv-tools/libspirv.hpp"
 
@@ -38,11 +41,24 @@ class Fuzzer {
     kInitialBinaryInvalid,
   };
 
+  // Each field of this enum corresponds to an available repeated pass
+  // strategy, and is used to decide which kind of RepeatedPassManager object
+  // to create.
+  enum class RepeatedPassStrategy {
+    kSimple,
+    kRandomWithRecommendations,
+    kLoopedWithRecommendations
+  };
+
   // Constructs a fuzzer from the given target environment |target_env|.  |seed|
-  // is a seed for pseudo-random number generation.
-  // |validate_after_each_fuzzer_pass| controls whether the validator will be
-  // invoked after every fuzzer pass is applied.
-  Fuzzer(spv_target_env target_env, uint32_t seed,
+  // is a seed for pseudo-random number generation.  If |enable_all_passes| is
+  // true then all fuzzer passes will be enabled, otherwise a random subset of
+  // fuzzer passes will be enabled.  |validate_after_each_fuzzer_pass| controls
+  // whether the validator will be invoked after every fuzzer pass is applied,
+  // and |validator_options| provides the options that should be used during
+  // validation if so.
+  Fuzzer(spv_target_env target_env, uint32_t seed, bool enable_all_passes,
+         RepeatedPassStrategy repeated_pass_strategy,
          bool validate_after_each_fuzzer_pass,
          spv_validator_options validator_options);
 
@@ -69,9 +85,43 @@ class Fuzzer {
       const protobufs::FactSequence& initial_facts,
       const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers,
       std::vector<uint32_t>* binary_out,
-      protobufs::TransformationSequence* transformation_sequence_out) const;
+      protobufs::TransformationSequence* transformation_sequence_out);
 
  private:
+  // A convenience method to add a repeated fuzzer pass to |pass_instances| with
+  // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
+  //
+  // All fuzzer passes take |ir_context|, |transformation_context|,
+  // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
+  // arguments can be provided via |extra_args|.
+  template <typename FuzzerPassT, typename... Args>
+  void MaybeAddRepeatedPass(
+      RepeatedPassInstances* pass_instances, opt::IRContext* ir_context,
+      TransformationContext* transformation_context,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformation_sequence_out,
+      Args&&... extra_args) const;
+
+  // A convenience method to add a final fuzzer pass to |passes| with
+  // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
+  //
+  // All fuzzer passes take |ir_context|, |transformation_context|,
+  // |fuzzer_context| and |transformation_sequence_out| as parameters.  Extra
+  // arguments can be provided via |extra_args|.
+  template <typename FuzzerPassT, typename... Args>
+  void MaybeAddFinalPass(
+      std::vector<std::unique_ptr<FuzzerPass>>* passes,
+      opt::IRContext* ir_context, TransformationContext* transformation_context,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformation_sequence_out,
+      Args&&... extra_args) const;
+
+  // Decides whether to apply more repeated passes. The probability decreases as
+  // the number of transformations that have been applied increases.
+  bool ShouldContinueFuzzing(
+      const protobufs::TransformationSequence& transformation_sequence_out,
+      FuzzerContext* fuzzer_context);
+
   // Applies |pass|, which must be a pass constructed with |ir_context|, and
   // then returns true if and only if |ir_context| is valid.  |tools| is used to
   // check validity.
@@ -88,11 +138,23 @@ class Fuzzer {
   // Seed for random number generator.
   const uint32_t seed_;
 
+  // Determines whether all passes should be enabled, vs. having passes be
+  // probabilistically enabled.
+  bool enable_all_passes_;
+
+  // Controls which type of RepeatedPassManager object to create.
+  RepeatedPassStrategy repeated_pass_strategy_;
+
   // Determines whether the validator should be invoked after every fuzzer pass.
   bool validate_after_each_fuzzer_pass_;
 
   // Options to control validation.
   spv_validator_options validator_options_;
+
+  // The number of repeated fuzzer passes that have been applied is kept track
+  // of, in order to enforce a hard limit on the number of times such passes
+  // can be applied.
+  uint32_t num_repeated_passes_applied_;
 };
 
 }  // namespace fuzz

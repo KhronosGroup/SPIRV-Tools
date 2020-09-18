@@ -110,7 +110,7 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
     return false;
   }
 
-  // TODO (https://github.com/KhronosGroup/SPIRV-Tools/issues/3785):
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3785):
   //     The following code has been copied from TransformationOutlineFunction.
   //     Consider refactoring to avoid duplication.
   auto region_set = GetRegionBlocks(ir_context, entry_block, exit_block);
@@ -555,7 +555,7 @@ void TransformationDuplicateRegionWithSelection::Apply(
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
-// TODO (https://github.com/KhronosGroup/SPIRV-Tools/issues/3785):
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3785):
 //     The following method has been copied from
 //     TransformationOutlineFunction. Consider refactoring to avoid
 //     duplication.

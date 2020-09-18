@@ -23,7 +23,11 @@ namespace {
 // Default <minimum, maximum> pairs of probabilities for applying various
 // transformations. All values are percentages. Keep them in alphabetical order.
 
+const std::pair<uint32_t, uint32_t>
+    kChanceOfAcceptingRepeatedPassRecommendation = {70, 100};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAccessChain = {5, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherPassToPassLoop = {85,
+                                                                            95};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
@@ -168,8 +172,12 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
           kGetDefaultMaxNumberOfParametersReplacedWithStruct),
       go_deeper_in_constant_obfuscation_(
           kDefaultGoDeeperInConstantObfuscation) {
+  chance_of_accepting_repeated_pass_recommendation_ =
+      ChooseBetweenMinAndMax(kChanceOfAcceptingRepeatedPassRecommendation);
   chance_of_adding_access_chain_ =
       ChooseBetweenMinAndMax(kChanceOfAddingAccessChain);
+  chance_of_adding_another_pass_to_pass_loop_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingAnotherPassToPassLoop);
   chance_of_adding_another_struct_field_ =
       ChooseBetweenMinAndMax(kChanceOfAddingAnotherStructField);
   chance_of_adding_array_or_struct_type_ =

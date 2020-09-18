@@ -247,6 +247,9 @@ class FuzzerOptions {
     spvFuzzerOptionsEnableFuzzerPassValidation(options_);
   }
 
+  // See spvFuzzerOptionsEnableAllPasses.
+  void enable_all_passes() { spvFuzzerOptionsEnableAllPasses(options_); }
+
  private:
   spv_fuzzer_options options_;
 };
