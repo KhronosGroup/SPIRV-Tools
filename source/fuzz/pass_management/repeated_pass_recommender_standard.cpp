@@ -120,7 +120,8 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     //   outlining functions.
     return RandomOrderAndNonNull(
         {pass_instances_->GetDuplicateRegionsWithSelections(),
-         pass_instances_->GetOutlineFunctions()});
+         pass_instances_->GetOutlineFunctions(),
+         pass_instances_->GetWrapRegionsInSelections()});
   }
   if (&pass == pass_instances_->GetAddLoopsToCreateIntConstantSynonyms()) {
     // - New synonyms can be applied

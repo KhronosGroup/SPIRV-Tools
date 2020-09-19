@@ -2080,6 +2080,18 @@ message TransformationWrapRegionInSelection {
   // if (|branch_condition|) { R } else { R }
   // The entry block for R becomes a selection header and
   // the exit block - a selection merge.
+  //
+  // Note that the region R is not duplicated. Thus, the effect of
+  // this transformation can be represented as follows:
+  //              entry
+  //  entry        / \
+  //    |          \ /
+  //    R   -->     R
+  //    |           |
+  //   exit        exit
+
+  // This behaviour is different from TransformationDuplicateRegionWithSelection
+  // that copies the blocks in R.
 
   // The entry block for the region R.
   uint32 region_entry_block_id = 1;

@@ -134,7 +134,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
     {10, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
     20, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfWrappingRegionInSelection = {10,
+const std::pair<uint32_t, uint32_t> kChanceOfWrappingRegionInSelection = {70,
                                                                           90};
 
 // Default limits for various quantities that are chosen during fuzzing.
