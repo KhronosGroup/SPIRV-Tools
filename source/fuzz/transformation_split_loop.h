@@ -36,6 +36,7 @@ class TransformationSplitLoop : public Transformation {
       uint32_t new_body_entry_block_fresh_id,
       uint32_t conditional_block_fresh_id, uint32_t load_run_second_fresh_id,
       uint32_t selection_merge_block_fresh_id,
+      const std::vector<uint32_t>& logical_not_fresh_ids,
       const std::map<uint32_t, uint32_t>& original_label_to_duplicate_label,
       const std::map<uint32_t, uint32_t>& original_id_to_duplicate_id);
 

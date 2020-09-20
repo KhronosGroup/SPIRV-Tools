@@ -112,6 +112,10 @@ void FuzzerPassApplyIdSynonyms::Apply() {
         auto synonym_to_try =
             GetFuzzerContext()->RemoveAtRandomIndex(&synonyms_to_try);
 
+        if (GetIRContext()->get_def_use_mgr()->GetDef(
+                synonym_to_try->object()) == nullptr) {
+          continue;
+        }
         // If the synonym's |index_size| is zero, the synonym represents an id.
         // Otherwise it represents some element of a composite structure, in
         // which case we need to be able to add an extract instruction to get

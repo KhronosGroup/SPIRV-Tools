@@ -50,6 +50,7 @@ void FuzzerPassSplitLoops::Apply() {
             GetIRContext(), block, merge_block);
         std::map<uint32_t, uint32_t> original_label_to_duplicate_label;
         std::map<uint32_t, uint32_t> original_id_to_duplicate_id;
+        std::vector<uint32_t> logical_not_fresh_ids;
         for (auto& loop_block : loop_blocks) {
           original_label_to_duplicate_label[loop_block->id()] =
               GetFuzzerContext()->GetFreshId();
@@ -83,6 +84,7 @@ void FuzzerPassSplitLoops::Apply() {
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
+            std::move(logical_not_fresh_ids),
             std::move(original_label_to_duplicate_label),
             std::move(original_id_to_duplicate_id));
         MaybeApplyTransformation(transformation);
