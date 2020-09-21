@@ -66,6 +66,7 @@
 #include "source/fuzz/fuzzer_pass_replace_parameter_with_global.h"
 #include "source/fuzz/fuzzer_pass_replace_params_with_struct.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
+#include "source/fuzz/fuzzer_pass_split_loops.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
 
 namespace spvtools {
@@ -155,6 +156,7 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(ReplaceLinearAlgebraInstructions);
   REPEATED_PASS_INSTANCE(ReplaceParamsWithStruct);
   REPEATED_PASS_INSTANCE(SplitBlocks);
+  REPEATED_PASS_INSTANCE(SplitLoops);
   REPEATED_PASS_INSTANCE(SwapBranchConditionalOperands);
 #undef REPEATED_PASS_INSTANCE
 

@@ -321,21 +321,21 @@ void TransformationDuplicateRegionWithSelection::Apply(
   // We know that |entry_block| has only one predecessor, since the region is
   // single-entry, single-exit and its constructs and their merge blocks must be
   // either wholly within or wholly outside of the region.
-
-  for (auto entry_block_pred : entry_block_preds) {
-    uint32_t entry_block_pred_id =
-        ir_context->get_instr_block(entry_block_pred)->id();
-    // Update all the OpPhi instructions in the |entry_block|. Change every
-    // occurrence of |entry_block_pred_id| to the id of |new_entry|, because we
-    // will insert |new_entry| before |entry_block|.
-    for (auto& instr : *entry_block) {
-      if (instr.opcode() == SpvOpPhi) {
-        instr.ForEachId([this, entry_block_pred_id](uint32_t* id) {
-          if (*id == entry_block_pred_id) {
-            *id = message_.new_entry_fresh_id();
-          }
-        });
-      }
+  assert(entry_block_preds.size() == 1 &&
+         "The entry of the region to be duplicated can have only one "
+         "predecessor.");
+  uint32_t entry_block_pred_id =
+      ir_context->get_instr_block(entry_block_preds[0])->id();
+  // Update all the OpPhi instructions in the |entry_block|. Change every
+  // occurrence of |entry_block_pred_id| to the id of |new_entry|, because we
+  // will insert |new_entry| before |entry_block|.
+  for (auto& instr : *entry_block) {
+    if (instr.opcode() == SpvOpPhi) {
+      instr.ForEachId([this, entry_block_pred_id](uint32_t* id) {
+        if (*id == entry_block_pred_id) {
+          *id = message_.new_entry_fresh_id();
+        }
+      });
     }
   }
 
