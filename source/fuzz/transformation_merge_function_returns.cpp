@@ -207,7 +207,7 @@ bool TransformationMergeFunctionReturns::IsApplicable(
         });
   }
 
-  return false;
+  return true;
 }
 
 void TransformationMergeFunctionReturns::Apply(
