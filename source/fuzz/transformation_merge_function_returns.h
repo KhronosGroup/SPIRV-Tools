@@ -44,9 +44,10 @@ class TransformationMergeFunctionReturns : public Transformation {
   //   - a mapping is provided in |message_.return_merging_info|, all of the
   //     corresponding fresh ids are valid and, for each OpPhi instruction in
   //     the block, there is a mapping to an available id of the same type in
-  //     |opphi_to_suitable_id| or a suitable id can be found in the module.
+  //     |opphi_to_suitable_id| or a suitable id, available at the end of the
+  //     entry block, can be found in the module.
   //   - there is no mapping, but overflow ids are available and, for every
-  //     OpPhi instruction in the merge blocks that needs to be modified, a
+  //     OpPhi instruction in the merge blocks that need to be modified, a
   //     suitable id, available at the end of the entry block, can be found.
   // - All of the fresh ids that are provided and needed by the transformation
   //   are valid.

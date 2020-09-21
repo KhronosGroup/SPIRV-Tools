@@ -126,16 +126,17 @@ bool TransformationMergeFunctionReturns::IsApplicable(
   // Check that the fresh ids provided are fresh and distinct.
   std::set<uint32_t> used_fresh_ids;
   for (uint32_t id : {message_.outer_header_id(), message_.outer_return_id()}) {
-    if (!CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                      &used_fresh_ids)) {
+    if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                             &used_fresh_ids)) {
       return false;
     }
   }
 
-  // Check the additional fresh id required when the function is not void.
+  // Check the additional fresh id required if the function is not void.
   if (!function_type->AsVoid() &&
-      !CheckIdIsFreshAndNotUsedByThisTransformation(
-          message_.return_val_id(), ir_context, &used_fresh_ids)) {
+      (!message_.return_val_id() ||
+       !CheckIdIsFreshAndNotUsedByThisTransformation(
+           message_.return_val_id(), ir_context, &used_fresh_ids))) {
     return false;
   }
 
@@ -151,14 +152,16 @@ bool TransformationMergeFunctionReturns::IsApplicable(
       // If the map contains an entry for the merge block, check that the fresh
       // ids are fresh and distinct.
       auto info = merge_blocks_to_info[merge_block];
-      if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+      if (!info.is_returning_id() ||
+          !CheckIdIsFreshAndNotUsedByThisTransformation(
               info.is_returning_id(), ir_context, &used_fresh_ids)) {
         return false;
       }
 
       if (!function_type->AsVoid() &&
-          !CheckIdIsFreshAndNotUsedByThisTransformation(
-              info.maybe_return_val_id(), ir_context, &used_fresh_ids)) {
+          (!info.maybe_return_val_id() ||
+           !CheckIdIsFreshAndNotUsedByThisTransformation(
+               info.maybe_return_val_id(), ir_context, &used_fresh_ids))) {
         return false;
       }
 
