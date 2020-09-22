@@ -79,8 +79,10 @@ class Fuzzer {
   // Initial facts about the input binary and the context in which it will
   // execute are provided via |initial_facts_|.  A source of donor modules to be
   // used by transformations is provided via |donor_suppliers_|.  On success,
-  // returns the transformed binary and the sequence of transformations that
-  // were applied.
+  // returns a successful result status together with the transformed binary and
+  // the sequence of transformations that were applied.  Otherwise, returns an
+  // appropriate result status together with an empty binary and empty
+  // transformation sequence.
   FuzzerResult Run();
 
  private:

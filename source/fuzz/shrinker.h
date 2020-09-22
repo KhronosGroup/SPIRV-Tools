@@ -75,10 +75,15 @@ class Shrinker {
   // with initial facts |initial_facts_|, the resulting binary is interesting
   // according to |interestingness_function_|.
   //
-  // Returns a subsequence of |transformation_sequence_in_| that, when applied
+  // If shrinking succeeded -- possibly terminating early due to reaching the
+  // shrinker's step limit -- an associated result status is returned together
+  // with a subsequence of |transformation_sequence_in_| that, when applied
   // to |binary_in_| with initial facts |initial_facts_|, produces a binary
   // that is also interesting according to |interestingness_function_|; this
   // binary is also returned.
+  //
+  // If shrinking failed for some reason, an appropriate result status is
+  // returned together with an empty binary and empty transformation sequence.
   ShrinkerResult Run();
 
  private:

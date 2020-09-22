@@ -254,10 +254,12 @@ Shrinker::ShrinkerResult Shrinker::Run() {
               << " was reached.";
     consumer_(SPV_MSG_WARNING, nullptr, {}, strstream.str().c_str());
     return {Shrinker::ShrinkerResultStatus::kStepLimitReached,
-            current_best_binary, current_best_transformations};
+            std::move(current_best_binary),
+            std::move(current_best_transformations)};
   }
-  return {Shrinker::ShrinkerResultStatus::kComplete, current_best_binary,
-          current_best_transformations};
+  return {Shrinker::ShrinkerResultStatus::kComplete,
+          std::move(current_best_binary),
+          std::move(current_best_transformations)};
 }
 
 uint32_t Shrinker::GetIdBound(const std::vector<uint32_t>& binary) const {

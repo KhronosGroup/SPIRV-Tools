@@ -69,8 +69,10 @@ class Replayer {
   // referred to in |binary_in_| or |transformation_sequence_in_|, and overflow
   // ids will be available during replay starting from this value.
   //
-  // On success, returns the transformations that were successfully applied,
-  // together with the binary resulting from applying them.
+  // On success, returns a successful result status together with the
+  // transformations that were successfully applied and the binary resulting
+  // from applying them.  Otherwise, returns an appropriate result status
+  // together with an empty binary and empty transformation sequence.
   ReplayerResult Run();
 
  private:
