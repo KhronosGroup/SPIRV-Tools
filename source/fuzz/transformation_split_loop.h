@@ -40,15 +40,37 @@ class TransformationSplitLoop : public Transformation {
       const std::map<uint32_t, uint32_t>& original_label_to_duplicate_label,
       const std::map<uint32_t, uint32_t>& original_id_to_duplicate_id);
 
+  // - |loop_header_id| must refer to an existing loop header.
+  // - |variable_counter_id| must refer to a variable of type integer.
+  // - |variable_run_second_id| must refer to a variable of type bool.
+  // - |constant_limit_id| must correspond to an integer constant (the limit of
+  //   iterations in the first loop).
+  // - |load_counter_fresh_id|, |increment_counter_fresh_id|,
+  //   |condition_counter_fresh_id|, |new_body_entry_block_fresh_id|,
+  //   |conditional_block_fresh_id|, |load_run_second_fresh_id|,
+  //   |selection_merge_block_fresh_id| must be distinct, fresh ids.
+  // - |logical_not_fresh_ids| must contain at least as many distinct fresh ids
+  //   as there are terminators of form "OpBranchConditional %cond %merge
+  //   %other" in the loop.
+  // - |original_label_to_duplicate_label| must contain at least a key for every
+  //   block in the original loop.
+  // - |original_id_to_duplicate_id| must contain at least a key for every
+  //   result id in the original loop.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // A transformation that replaces a loop with two loops, which in total
+  // iterate over the same loop body with the same condition of iteration.
+  // The first loop is executed up to a constant number of times. If more
+  // iterations are required, they are performed in the second loop.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
 
+  // Returns the set of blocks dominated by |entry_block| and post-dominated
+  // by |exit_block|.
   static std::set<opt::BasicBlock*> GetRegionBlocks(
       opt::IRContext* ir_context, opt::BasicBlock* entry_block,
       opt::BasicBlock* exit_block);

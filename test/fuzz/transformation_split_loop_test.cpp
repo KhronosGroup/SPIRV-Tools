@@ -15,16 +15,12 @@
 #include "source/fuzz/transformation_split_loop.h"
 #include "test/fuzz/fuzz_test_util.h"
 
-// to be removed
-#include "source/fuzz/fuzzer_pass_split_loops.h"
-#include "source/fuzz/pseudo_random_generator.h"
-
 namespace spvtools {
 namespace fuzz {
 namespace {
 
 TEST(TransformationSplitLoopTest, BasicScenarios) {
-  // This is a simple transformation and this test handles the main cases.
+  // In this test scenario we have a simple loop.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -124,7 +120,7 @@ TEST(TransformationSplitLoopTest, BasicScenarios) {
 }
 
 TEST(TransformationSplitLoopTest, TestShaderFirstLoop) {
-  // This is a simple transformation and this test handles the main cases.
+  // In this test scenario we process the first loop from the test shader.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -223,8 +219,6 @@ TEST(TransformationSplitLoopTest, TestShaderFirstLoop) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
-
-  // First loop.
 
   auto transformation = TransformationSplitLoop(12, 100, 102, 9, 201, 202, 203,
                                                 204, 205, 206, 207, {{}},
@@ -259,7 +253,7 @@ TEST(TransformationSplitLoopTest, TestShaderFirstLoop) {
 }
 
 TEST(TransformationSplitLoopTest, TestShaderSecondLoop) {
-  // This is a simple transformation and this test handles the main cases.
+  // In this test scenario we process the second loop from the test shader.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -359,8 +353,6 @@ TEST(TransformationSplitLoopTest, TestShaderSecondLoop) {
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  // Second loop.
-
   auto transformation = TransformationSplitLoop(
       42, 100, 102, 9, 201, 202, 203, 204, 205, 206, 207, {{}},
       {{42, 301}, {43, 302}, {44, 303}, {45, 304}},
@@ -373,217 +365,9 @@ TEST(TransformationSplitLoopTest, TestShaderSecondLoop) {
   ASSERT_TRUE(IsValid(env, context.get()));
 }
 
-TEST(TransformationSplitLoopTest, FuzzerPassBasicTest) {
-  // This is a simple transformation and this test handles the main cases.
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-               OpName %8 "s"
-               OpName %10 "i"
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-         %60 = OpTypeInt 32 0
-          %7 = OpTypePointer Function %6
-         %61 = OpTypePointer Function %60
-          %9 = OpConstant %60 0
-         %17 = OpConstant %60 10
-         %18 = OpTypeBool
-         %55 = OpConstantTrue %18
-         %56 = OpConstantFalse %18
-         %53 = OpTypePointer Function %18
-         %24 = OpConstant %60 3
-         %30 = OpConstant %60 1
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-          %8 = OpVariable %61 Function
-         %10 = OpVariable %61 Function
-         %50 = OpVariable %61 Function
-         %54 = OpVariable %53 Function
-               OpStore %8 %9
-               OpStore %10 %9
-               OpBranch %11
-         %11 = OpLabel
-               OpLoopMerge %13 %14 None
-               OpBranch %15
-         %15 = OpLabel
-         %16 = OpLoad %60 %10
-         %19 = OpSLessThan %18 %16 %17
-               OpBranchConditional %19 %12 %13
-         %12 = OpLabel
-         %20 = OpLoad %60 %10
-         %21 = OpLoad %60 %8
-         %22 = OpIAdd %60 %21 %20
-               OpStore %8 %22
-         %23 = OpLoad %60 %10
-         %25 = OpIEqual %18 %23 %24
-               OpSelectionMerge %27 None
-               OpBranchConditional %25 %26 %27
-         %26 = OpLabel
-               OpBranch %13
-         %27 = OpLabel
-               OpBranch %14
-         %14 = OpLabel
-         %29 = OpLoad %60 %10
-         %31 = OpIAdd %60 %29 %30
-               OpStore %10 %31
-               OpBranch %11
-         %13 = OpLabel
-               OpReturn
-               OpFunctionEnd
-      )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_4;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  auto prng = MakeUnique<PseudoRandomGenerator>(0);
-
-  FuzzerContext fuzzer_context(prng.get(), 100);
-  protobufs::TransformationSequence transformation_sequence;
-
-  for (int i = 0; i < 20; i++) {
-    FuzzerPassSplitLoops fuzzer_pass(context.get(), &transformation_context,
-                                     &fuzzer_context, &transformation_sequence);
-
-    fuzzer_pass.Apply();
-  }
-
-  ASSERT_TRUE(IsValid(env, context.get()));
-}
-
-TEST(TransformationSplitLoopTest, DesignDocTest) {
-  // This is a simple transformation and this test handles the main cases.
-  std::string shader = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 310
-               OpName %4 "main"
-               OpName %8 "s"
-               OpName %10 "i"
-               OpDecorate %8 RelaxedPrecision
-               OpDecorate %10 RelaxedPrecision
-               OpDecorate %16 RelaxedPrecision
-               OpDecorate %20 RelaxedPrecision
-               OpDecorate %21 RelaxedPrecision
-               OpDecorate %22 RelaxedPrecision
-               OpDecorate %23 RelaxedPrecision
-               OpDecorate %29 RelaxedPrecision
-               OpDecorate %31 RelaxedPrecision
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1
-         %50 = OpTypeInt 32 0
-         %51 = OpTypePointer Function %50
-          %7 = OpTypePointer Function %6
-          %9 = OpConstant %6 0
-         %17 = OpConstant %6 10
-         %55 = OpConstant %50 4
-         %56 = OpConstant %50 0
-         %57 = OpConstant %50 1
-         %18 = OpTypeBool
-         %58 = OpConstantTrue %18
-         %59 = OpConstantFalse %18
-         %52 = OpTypePointer Function %18
-         %24 = OpConstant %6 5
-         %30 = OpConstant %6 1
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-          %8 = OpVariable %7 Function
-         %10 = OpVariable %7 Function
-         %53 = OpVariable %51 Function
-         %54 = OpVariable %52 Function
-               OpStore %8 %9
-               OpStore %10 %9
-               OpBranch %11
-         %11 = OpLabel
-               OpLoopMerge %13 %14 None
-               OpBranch %15
-         %15 = OpLabel
-         %16 = OpLoad %6 %10
-         %19 = OpSLessThan %18 %16 %17
-               OpBranchConditional %19 %12 %13
-         %12 = OpLabel
-         %20 = OpLoad %6 %10
-         %21 = OpLoad %6 %8
-         %22 = OpIAdd %6 %21 %20
-               OpStore %8 %22
-         %23 = OpLoad %6 %10
-         %25 = OpIEqual %18 %23 %24
-               OpSelectionMerge %27 None
-               OpBranchConditional %25 %26 %27
-         %26 = OpLabel
-               OpBranch %13
-         %27 = OpLabel
-               OpBranch %14
-         %14 = OpLabel
-         %29 = OpLoad %6 %10
-         %31 = OpIAdd %6 %29 %30
-               OpStore %10 %31
-               OpBranch %11
-         %13 = OpLabel
-               OpReturn
-               OpFunctionEnd
-      )";
-
-  const auto env = SPV_ENV_UNIVERSAL_1_4;
-  const auto consumer = nullptr;
-  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-  auto transformation = TransformationSplitLoop(11, 53, 54, 55, 101, 102, 103,
-                                                104, 105, 106, 107, {{}},
-                                                {{11, 201},
-                                                 {15, 202},
-                                                 {12, 203},
-                                                 {13, 204},
-                                                 {26, 205},
-                                                 {27, 206},
-                                                 {14, 207}},
-                                                {{16, 301},
-                                                 {19, 302},
-                                                 {20, 303},
-                                                 {21, 304},
-                                                 {22, 305},
-                                                 {23, 306},
-                                                 {25, 307},
-                                                 {29, 308},
-                                                 {31, 309}});
-  ASSERT_TRUE(
-      transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
-
-  /*std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled << std::endl;*/
-
-  ASSERT_TRUE(IsValid(env, context.get()));
-}
-
 TEST(TransformationSplitLoopTest, HeaderIsContinueTargetTest) {
   // This test handles a case where the header of the loop is also the continue
-  // target of the loop
+  // target of the loop.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -644,13 +428,6 @@ TEST(TransformationSplitLoopTest, HeaderIsContinueTargetTest) {
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
-
-  /*std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled << std::endl;*/
 
   ASSERT_TRUE(IsValid(env, context.get()));
 }
@@ -721,14 +498,761 @@ TEST(TransformationSplitLoopTest, BranchConditionalContinueTargetTest) {
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
 
-  std::vector<uint32_t> actual_binary;
-  context.get()->module()->ToBinary(&actual_binary, false);
-  SpirvTools t(env);
-  std::string actual_disassembled;
-  t.Disassemble(actual_binary, &actual_disassembled, kFuzzDisassembleOption);
-  std::cout << actual_disassembled << std::endl;
-
   ASSERT_TRUE(IsValid(env, context.get()));
+}
+
+TEST(TransformationSplitLoopTest, NotApplicableScenarios) {
+  // This test handles some cases where the transformation is not applicable.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "s"
+               OpName %10 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %17 = OpConstant %6 10
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+         %18 = OpTypeBool
+         %58 = OpConstantTrue %18
+         %59 = OpConstantFalse %18
+         %52 = OpTypePointer Function %18
+         %24 = OpConstant %6 5
+         %30 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpStore %8 %9
+               OpStore %10 %9
+               OpBranch %11
+         %11 = OpLabel
+               OpLoopMerge %13 %14 None
+               OpBranchConditional %58 %13 %14
+         %14 = OpLabel
+         %70 = OpCopyObject %18 %58
+               OpBranch %11
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  // Bad: |load_counter_fresh_id| is not fresh.
+  auto transformation_bad_1 = TransformationSplitLoop(
+      11, 53, 54, 55, 55, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |increment_counter_fresh_id| is not fresh.
+  auto transformation_bad_2 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 55, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_2.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |condition_counter_fresh_id| is not fresh.
+  auto transformation_bad_3 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 102, 55, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_3.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |new_body_entry_block_fresh_id| is not fresh.
+  auto transformation_bad_4 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 102, 103, 55, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_4.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |conditional_block_fresh_id| is not fresh.
+  auto transformation_bad_5 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 102, 103, 104, 55, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_5.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |load_run_second_id| is not fresh.
+  auto transformation_bad_6 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 102, 103, 104, 105, 55, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_6.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |selection_merge_fresh_block_fresh_id| is not fresh.
+  auto transformation_bad_7 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 55, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_7.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |variable_counter_id| does not refer to an existing instruction.
+  auto transformation_bad_8 = TransformationSplitLoop(
+      11, 90, 54, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_8.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |variable_counter_id| does not refer to an OpVariable.
+  auto transformation_bad_9 = TransformationSplitLoop(
+      11, 55, 54, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(
+      transformation_bad_9.IsApplicable(context.get(), transformation_context));
+
+  // Bad: |variable_counter_id| does not refer to an integer variable.
+  auto transformation_bad_10 = TransformationSplitLoop(
+      11, 54, 54, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_10.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: |variable_run_second| does not refer to an existing instruction.
+  auto transformation_bad_11 = TransformationSplitLoop(
+      11, 53, 90, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_11.IsApplicable(context.get(),
+                                                  transformation_context));
+  // Bad: |variable_run_second| does not refer to an OpVariable
+  auto transformation_bad_12 = TransformationSplitLoop(
+      11, 53, 55, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_12.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: |variable_run_second| does not refer to a boolean variable
+  auto transformation_bad_13 = TransformationSplitLoop(
+      11, 53, 53, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_13.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: |constant_limit_id| does not refer to an existing instruction.
+  auto transformation_bad_14 = TransformationSplitLoop(
+      11, 53, 54, 90, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_14.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: |constant_limit_id| does not refer to an integer value.
+  auto transformation_bad_15 = TransformationSplitLoop(
+      11, 53, 54, 58, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_15.IsApplicable(context.get(),
+                                                  transformation_context));
+  // Bad: |loop_header_id| does not refer to a loop header.
+  auto transformation_bad_16 = TransformationSplitLoop(
+      14, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_16.IsApplicable(context.get(),
+                                                  transformation_context));
+  // Bad: There is no entry for block with id 13 in
+  // |original_label_to_duplicate_label|.
+  auto transformation_bad_17 =
+      TransformationSplitLoop(11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
+                              {108}, {{11, 201}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_17.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: Value of id 13 in |original_label_to_duplicate_label| is not a fresh
+  // id.
+  auto transformation_bad_18 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 55}, {14, 203}}, {{70, 301}});
+  ASSERT_FALSE(transformation_bad_18.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: There is no entry for instruction with id 70 in
+  // |original_id_to_duplicate_id|.
+  auto transformation_bad_19 =
+      TransformationSplitLoop(11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
+                              {108}, {{11, 201}, {13, 202}, {14, 203}}, {{}});
+  ASSERT_FALSE(transformation_bad_19.IsApplicable(context.get(),
+                                                  transformation_context));
+
+  // Bad: Value of id 70 in |original_id_to_duplicate_id| is not a fresh id.
+  auto transformation_bad_20 = TransformationSplitLoop(
+      11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {108},
+      {{11, 201}, {13, 202}, {14, 203}}, {{70, 55}});
+  ASSERT_FALSE(transformation_bad_20.IsApplicable(context.get(),
+                                                  transformation_context));
+}
+
+TEST(TransformationSplitLoopTest, ResolvingOpPhiMergeBlock) {
+  // This test handles a case where there is a OpPhi instruction referring to
+  // the merge block. Its id must be replaced by the id of the
+  // |selection_merge_block|.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %11 %10
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+         %70 = OpCopyObject %13 %14
+               OpBranch %20
+         %20 = OpLabel
+         %71 = OpPhi %13 %70 %10
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  auto transformation_good_1 = TransformationSplitLoop(
+      8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
+      {{8, 201}, {11, 202}, {10, 203}}, {{70, 301}});
+
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpStore %53 %56
+               OpStore %54 %14
+               OpBranch %8
+          %8 = OpLabel
+               OpStore %54 %14
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %104 %10
+        %104 = OpLabel
+        %101 = OpLoad %50 %53
+        %102 = OpIAdd %50 %101 %57
+               OpStore %53 %102
+        %103 = OpULessThan %13 %102 %55
+               OpBranchConditional %103 %11 %10
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+         %70 = OpCopyObject %13 %14
+               OpBranch %105
+        %105 = OpLabel
+        %106 = OpLoad %13 %54
+               OpSelectionMerge %107 None
+               OpBranchConditional %106 %201 %107
+        %201 = OpLabel
+               OpLoopMerge %203 %202 None
+               OpBranchConditional %14 %202 %203
+        %202 = OpLabel
+               OpBranch %201
+        %203 = OpLabel
+        %301 = OpCopyObject %13 %14
+               OpBranch %107
+        %107 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+         %71 = OpPhi %13 %70 %107
+               OpReturn
+               OpFunctionEnd
+      )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationSplitLoopTest, ResolvingOpPhiHeaderBlock) {
+  // This test handles a case where there is a OpPhi instruction referring to
+  // the predecessor of the header block. Its id must be replaced by the id of
+  // the |conditional_block|.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpBranch %70
+         %70 = OpLabel
+         %71 = OpCopyObject %13 %14
+               OpBranch %8
+          %8 = OpLabel
+         %72 = OpPhi %13 %71 %70 %71 %11
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %11 %10
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  auto transformation_good_1 = TransformationSplitLoop(
+      8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
+      {{8, 201}, {11, 202}, {10, 203}}, {{72, 301}});
+
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpStore %53 %56
+               OpStore %54 %14
+               OpBranch %70
+         %70 = OpLabel
+         %71 = OpCopyObject %13 %14
+               OpBranch %8
+          %8 = OpLabel
+         %72 = OpPhi %13 %71 %70 %71 %11
+               OpStore %54 %14
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %104 %10
+        %104 = OpLabel
+        %101 = OpLoad %50 %53
+        %102 = OpIAdd %50 %101 %57
+               OpStore %53 %102
+        %103 = OpULessThan %13 %102 %55
+               OpBranchConditional %103 %11 %10
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+               OpBranch %105
+        %105 = OpLabel
+        %106 = OpLoad %13 %54
+               OpSelectionMerge %107 None
+               OpBranchConditional %106 %201 %107
+        %201 = OpLabel
+        %301 = OpPhi %13 %71 %105 %71 %202
+               OpLoopMerge %203 %202 None
+               OpBranchConditional %14 %202 %203
+        %202 = OpLabel
+               OpBranch %201
+        %203 = OpLabel
+               OpBranch %107
+        %107 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationSplitLoopTest, ResolvingOpPhiBodyBlock) {
+  // This test handles a case where there is an OpPhi instruction referring to
+  // the header in the body. In the first loop this id must be replaced by the
+  // id of |new_body_entry_block|.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpBranch %8
+          %8 = OpLabel
+         %70 = OpCopyObject %13 %14
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %30 %10
+         %30 = OpLabel
+         %71 = OpPhi %13 %70 %8
+               OpBranch %11
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  auto transformation_good_1 = TransformationSplitLoop(
+      8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
+      {{8, 201}, {11, 202}, {10, 203}, {30, 204}}, {{70, 301}, {71, 302}});
+
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  transformation_good_1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpStore %53 %56
+               OpStore %54 %14
+               OpBranch %8
+          %8 = OpLabel
+         %70 = OpCopyObject %13 %14
+               OpStore %54 %14
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %104 %10
+        %104 = OpLabel
+        %101 = OpLoad %50 %53
+        %102 = OpIAdd %50 %101 %57
+               OpStore %53 %102
+        %103 = OpULessThan %13 %102 %55
+               OpBranchConditional %103 %30 %10
+         %30 = OpLabel
+         %71 = OpPhi %13 %70 %104
+               OpBranch %11
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+               OpBranch %105
+        %105 = OpLabel
+        %106 = OpLoad %13 %54
+               OpSelectionMerge %107 None
+               OpBranchConditional %106 %201 %107
+        %201 = OpLabel
+        %301 = OpCopyObject %13 %14
+               OpLoopMerge %203 %202 None
+               OpBranchConditional %14 %204 %203
+        %204 = OpLabel
+        %302 = OpPhi %13 %301 %201
+               OpBranch %202
+        %202 = OpLabel
+               OpBranch %201
+        %203 = OpLabel
+               OpBranch %107
+        %107 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationSplitLoopTest, OpPhiInMergeBlockNotApplicable) {
+  // This test handles a case where there is an OpPhi instruction in the
+  // the merge block. We currently exclude this case and the transformation is
+  // not applicable.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpBranch %8
+          %8 = OpLabel
+         %70 = OpCopyObject %13 %14
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %11 %10
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+         %71 = OpPhi %13 %70 %8
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  auto transformation_bad = TransformationSplitLoop(
+      8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
+      {{8, 201}, {11, 202}, {10, 203}}, {{70, 301}, {71, 302}});
+
+  ASSERT_FALSE(
+      transformation_bad.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationSplitLoopTest, LogicalNotFreshIdsNotApplicable) {
+  // This test handles cases where the ids provided as |logical_not_fresh_ids|
+  // are not fresh or their number is insufficient.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "a("
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %52 = OpTypePointer Function %13
+         %50 = OpTypeInt 32 0
+         %51 = OpTypePointer Function %50
+         %14 = OpConstantTrue %13
+         %59 = OpConstantFalse %13
+         %55 = OpConstant %50 4
+         %56 = OpConstant %50 0
+         %57 = OpConstant %50 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %53 = OpVariable %51 Function
+         %54 = OpVariable %52 Function
+               OpBranch %70
+         %70 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %14 %10 %11
+         %11 = OpLabel
+               OpBranch %8
+         %10 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+      )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+  // Bad: Insufficient number of fresh ids as |logical_not_fresh_ids|.
+  auto transformation_bad_1 =
+      TransformationSplitLoop(8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
+                              {}, {{8, 201}, {11, 202}, {10, 203}}, {{}});
+
+  ASSERT_FALSE(
+      transformation_bad_1.IsApplicable(context.get(), transformation_context));
+
+  // Bad: The id in |logical_not_fresh_ids| is not fresh.
+  auto transformation_bad_2 =
+      TransformationSplitLoop(8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
+                              {55}, {{8, 201}, {11, 202}, {10, 203}}, {{}});
+  ASSERT_FALSE(
+      transformation_bad_2.IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace

@@ -2003,6 +2003,7 @@ message TransformationSplitBlock {
 }
 
 message TransformationSplitLoop {
+
     // A transformation that replaces a loop with two loops, which in total
     // iterate over the same loop body with the same condition of iteration.
     // The first loop is executed up to a constant number of times. If more

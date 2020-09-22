@@ -34,12 +34,10 @@ void FuzzerPassSplitLoops::Apply() {
       if (&block == &*function.begin()) {
         continue;
       }
-      if (block.begin() == --block.end()) {
-        continue;
-      }
       function_blocks.push_back(&block);
     }
     for (auto& block : function_blocks) {
+      // The starting block must be a loop header.
       if (block->GetLoopMergeInst()) {
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfSplittingLoop())) {
@@ -51,6 +49,9 @@ void FuzzerPassSplitLoops::Apply() {
         std::map<uint32_t, uint32_t> original_label_to_duplicate_label;
         std::map<uint32_t, uint32_t> original_id_to_duplicate_id;
         std::vector<uint32_t> logical_not_fresh_ids;
+
+        // Add elements to maps |original_label_to_duplicate_label|,
+        // |original_id_to_duplicate_id|.
         for (auto& loop_block : loop_blocks) {
           original_label_to_duplicate_label[loop_block->id()] =
               GetFuzzerContext()->GetFreshId();
@@ -61,6 +62,7 @@ void FuzzerPassSplitLoops::Apply() {
             }
           }
         }
+        // Create the required constants and variables.
         FindOrCreateIntegerConstant({0}, 32, false, false);
         FindOrCreateIntegerConstant({1}, 32, false, false);
         FindOrCreateBoolConstant(true, false);
@@ -78,6 +80,8 @@ void FuzzerPassSplitLoops::Apply() {
             FindOrCreateBoolType(), SpvStorageClassFunction);
         uint32_t variable_run_second_id = FindOrCreateLocalVariable(
             local_bool_type, function.result_id(), false);
+
+        // Apply the transformation.
         TransformationSplitLoop transformation = TransformationSplitLoop(
             block->id(), variable_counter_id, variable_run_second_id,
             constant_limit_id, GetFuzzerContext()->GetFreshId(),

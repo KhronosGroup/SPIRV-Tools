@@ -162,15 +162,16 @@ bool TransformationSplitLoop::IsApplicable(
   auto continue_id = loop_header_block->ContinueBlockId();
   auto entry_block_pred_ids = ir_context->cfg()->preds(loop_header_block->id());
   std::sort(entry_block_pred_ids.begin(), entry_block_pred_ids.end());
-
   entry_block_pred_ids.erase(
       unique(entry_block_pred_ids.begin(), entry_block_pred_ids.end()),
       entry_block_pred_ids.end());
 
+  // We remove a back edge from the continue block.
   entry_block_pred_ids.erase(
       std::remove(entry_block_pred_ids.begin(), entry_block_pred_ids.end(),
                   continue_id),
       entry_block_pred_ids.end());
+
   // Because the duplicated loop will have only one predecessor, to make
   // resolving OpPhi instructions easier, we require that the entry block has
   // only one predecessor.
@@ -190,6 +191,14 @@ bool TransformationSplitLoop::IsApplicable(
     default:
       return false;
   }
+  // We don't allow OpPhi instructions in merge block, since the
+  // |new_body_entry_block| will branch to the merge block and resolving these
+  // OpPhi instructions can be complicated.
+  for (auto instr : *merge_block) {
+    if (instr.opcode() == SpvOpPhi) {
+      return false;
+    }
+  }
 
   std::map<uint32_t, uint32_t> original_label_to_duplicate_label =
       fuzzerutil::RepeatedUInt32PairToMap(
@@ -199,10 +208,28 @@ bool TransformationSplitLoop::IsApplicable(
       fuzzerutil::RepeatedUInt32PairToMap(
           message_.original_id_to_duplicate_id());
 
+  std::vector<uint32_t> logical_not_fresh_ids =
+      fuzzerutil::RepeatedFieldToVector(message_.logical_not_fresh_ids());
+
+  for (auto logical_not_fresh_id : logical_not_fresh_ids) {
+    if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+            logical_not_fresh_id, ir_context,
+            &ids_used_by_this_transformation)) {
+      return false;
+    }
+  }
+
   auto region_set = TransformationSplitLoop::GetRegionBlocks(
       ir_context, loop_header_block, merge_block);
 
+  uint32_t needed_logical_not_fresh_ids = 0;
   for (auto block : region_set) {
+    // If we have a terminator of form: "OpBranchConditional %cond %merge
+    // %other" then we need a fresh id for OpLogicalNot instruction.
+    if (block->terminator()->opcode() == SpvOpBranchConditional &&
+        block->terminator()->GetSingleWordInOperand(1) == merge_block->id()) {
+      needed_logical_not_fresh_ids++;
+    }
     auto label =
         ir_context->get_def_use_mgr()->GetDef(block->id())->result_id();
     // The label of every block in the region must be present in the map
@@ -234,6 +261,10 @@ bool TransformationSplitLoop::IsApplicable(
         return false;
       }
     }
+  }
+  // There is not enough fresh ids provided in the protobuf.
+  if (needed_logical_not_fresh_ids > logical_not_fresh_ids.size()) {
+    return false;
   }
   return true;
 }
@@ -571,8 +602,7 @@ void TransformationSplitLoop::Apply(
   if (loop_header_terminator->opcode() == SpvOpBranch) {
     next_not_merge_id = loop_header_terminator->GetSingleWordInOperand(0);
     next_not_merge_pos = 0;
-  } else  // SpvOpBranchConditional
-  {
+  } else /*SpvOpBranchConditional*/ {
     uint32_t first_id = loop_header_terminator->GetSingleWordInOperand(1);
     uint32_t second_id = loop_header_terminator->GetSingleWordInOperand(2);
     if (first_id != merge_block->id()) {

@@ -20,6 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
+// A fuzzer pass that iterates over the whole module. For each function it finds
+// loop headers. For each loop it randomly decides whether to apply the
+// corresponding transformation SplitLoops.
 class FuzzerPassSplitLoops : public FuzzerPass {
  public:
   FuzzerPassSplitLoops(opt::IRContext* ir_context,
