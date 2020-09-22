@@ -32,20 +32,46 @@ class TransformationWrapRegionInSelection : public Transformation {
                                       uint32_t region_exit_block_id,
                                       bool branch_condition);
 
-  // TODO
+  // - It should be possible to apply this transformation to a
+  //   single-exit-single-entry region of blocks dominated by
+  //   |region_entry_block_id| and postdominated by |region_exit_block_id|
+  //   (see IsApplicableToBlockRange method for further details).
+  //
+  //   TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3828):
+  //    Consider applying this transformation to non-single-entry-single-exit
+  //    regions of blocks.
+  // - There must exist an irrelevant boolean constant with value
+  //   |branch_condition|.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO
+  // - Transforms |region_entry_block_id| into a selection header with both
+  //   branches pointing to the block's successor.
+  // - |branch_condition| is used as a condition in the header's
+  //   OpBranchConditional instruction.
+  // - Transforms |region_exit_block_id| into a merge block of the selection's
+  //   header.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   protobufs::Transformation ToMessage() const override;
 
-  // Returns true if |header_block_candidate_id| can be transformed into a
-  // selection header block with |merge_block_candidate_id| as it's merge block
-  // without changing the semantics of the module.
+  // Returns true if it's possible to apply this transformation to the
+  // single-exit-single-entry region of blocks starting with
+  // |header_block_candidate_id| and ending with |merge_block_candidate_id|.
+  // Concretely:
+  // - Both |header_block_candidate_id| and |merge_block_candidate_id| must be
+  //   result ids of some blocks in the module.
+  // - Both blocks must belong to the same function.
+  // - |header_block_candidate_id| must strictly dominate
+  //   |merge_block_candidate_id| and |merge_block_candidate_id| must strictly
+  //   postdominate |header_block_candidate_id|.
+  // - |header_block_candidate_id| can't be a header block of any construct.
+  // - |header_block_candidate_id|'s terminator must be an OpBranch.
+  // - |merge_block_candidate_id| can't be a merge block of any other construct.
+  // - Both |header_block_candidate_id| and |merge_block_candidate_id| must be
+  //   inside the same construct if any.
   static bool IsApplicableToBlockRange(opt::IRContext* ir_context,
                                        uint32_t header_block_candidate_id,
                                        uint32_t merge_block_candidate_id);

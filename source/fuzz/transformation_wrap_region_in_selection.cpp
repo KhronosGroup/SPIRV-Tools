@@ -136,8 +136,8 @@ bool TransformationWrapRegionInSelection::IsApplicableToBlockRange(
 
   // Every header block must have a unique merge block. Thus,
   // |merge_block_candidate| can't be a merge block of some other header.
-  if (ir_context->GetStructuredCFGAnalysis()->IsMergeBlock(
-          merge_block_candidate_id)) {
+  auto* structured_cfg = ir_context->GetStructuredCFGAnalysis();
+  if (structured_cfg->IsMergeBlock(merge_block_candidate_id)) {
     return false;
   }
 
@@ -147,46 +147,11 @@ bool TransformationWrapRegionInSelection::IsApplicableToBlockRange(
   // ContainingConstruct will return the id of a loop header for a block in the
   // loop's continue construct. Thus, we must also check the case when one of
   // the candidates is in continue construct and the other one is not.
-  auto* structured_cfg = ir_context->GetStructuredCFGAnalysis();
   if (structured_cfg->ContainingConstruct(header_block_candidate_id) !=
           structured_cfg->ContainingConstruct(merge_block_candidate_id) ||
       structured_cfg->IsInContinueConstruct(header_block_candidate_id) !=
           structured_cfg->IsInContinueConstruct(merge_block_candidate_id)) {
     return false;
-  }
-
-  // Compute a set of blocks, dominated by |header_block_candidate| and
-  // postdominated by |merge_block_candidate|.
-  std::unordered_set<uint32_t> outlined_block_ids;
-  for (const auto& block : *header_block_candidate->GetParent()) {
-    if (dominator_analysis->StrictlyDominates(header_block_candidate, &block) &&
-        postdominator_analysis->StrictlyDominates(merge_block_candidate,
-                                                  &block)) {
-      outlined_block_ids.insert(block.id());
-    }
-  }
-
-  // Take into account that:
-  // - |header_block_candidate| can be a merge block of some construct.
-  // - |merge_block_candidate| can be a header block of some construct.
-  // These are the two cases when the transformation can still be applied.
-  assert(!outlined_block_ids.count(header_block_candidate_id) &&
-         !outlined_block_ids.count(merge_block_candidate_id) &&
-         "Guaranteed by the call to the StrictlyDominates method");
-
-  // Make sure that every construct is either completely included in the
-  // |outlined_block_ids| or completely excluded out of it.
-  for (const auto& block : *header_block_candidate->GetParent()) {
-    if (const auto* merge_inst = block.GetMergeInst()) {
-      // |block| is a header block - make sure it and its merge block either are
-      // both outlined or both not.
-      auto merge_block_id = merge_inst->GetSingleWordInOperand(0);
-      if (dominator_analysis->IsReachable(merge_block_id) &&
-          outlined_block_ids.count(merge_block_id) !=
-              outlined_block_ids.count(block.id())) {
-        return false;
-      }
-    }
   }
 
   return true;
