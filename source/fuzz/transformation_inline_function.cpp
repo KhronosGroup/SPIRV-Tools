@@ -211,31 +211,46 @@ void TransformationInlineFunction::AdaptInlinedInstruction(
   const auto result_id_map =
       fuzzerutil::RepeatedUInt32PairToMap(message_.result_id_map());
 
-  // Replaces the operand ids with their mapped result ids.
-  instruction_to_be_inlined->ForEachInId([called_function,
-                                          function_call_instruction,
-                                          &result_id_map](uint32_t* id) {
-    // If |id| is mapped, then set it to its mapped value.
-    if (result_id_map.count(*id)) {
-      *id = result_id_map.at(*id);
-      return;
-    }
+  const auto* function_call_block =
+      ir_context->get_instr_block(function_call_instruction);
+  assert(function_call_block && "OpFunctionCall must belong to some block");
 
-    uint32_t parameter_index = 0;
-    called_function->ForEachParam(
-        [id, function_call_instruction,
-         &parameter_index](opt::Instruction* parameter_instruction) {
-          // If the id is a function parameter, then set it to the
-          // parameter value passed in the function call instruction.
-          if (*id == parameter_instruction->result_id()) {
-            // We do + 1 because the first in-operand for OpFunctionCall is
-            // the function id that is being called.
-            *id = function_call_instruction->GetSingleWordInOperand(
-                parameter_index + 1);
-          }
-          parameter_index++;
-        });
-  });
+  // Replaces the operand ids with their mapped result ids.
+  instruction_to_be_inlined->ForEachInId(
+      [called_function, function_call_instruction, &result_id_map,
+       function_call_block](uint32_t* id) {
+        // We are not inlining the entry block of the |called_function|.
+        //
+        // We must check this condition first since we can't use the fresh id
+        // from |result_id_map| even if it has one. This is because that fresh
+        // id will never be added to the module since entry blocks are not
+        // inlined.
+        if (*id == called_function->entry()->id()) {
+          *id = function_call_block->id();
+          return;
+        }
+
+        // If |id| is mapped, then set it to its mapped value.
+        if (result_id_map.count(*id)) {
+          *id = result_id_map.at(*id);
+          return;
+        }
+
+        uint32_t parameter_index = 0;
+        called_function->ForEachParam(
+            [id, function_call_instruction,
+             &parameter_index](opt::Instruction* parameter_instruction) {
+              // If the id is a function parameter, then set it to the
+              // parameter value passed in the function call instruction.
+              if (*id == parameter_instruction->result_id()) {
+                // We do + 1 because the first in-operand for OpFunctionCall is
+                // the function id that is being called.
+                *id = function_call_instruction->GetSingleWordInOperand(
+                    parameter_index + 1);
+              }
+              parameter_index++;
+            });
+      });
 
   // If |instruction_to_be_inlined| has result id, then set it to its mapped
   // value.
