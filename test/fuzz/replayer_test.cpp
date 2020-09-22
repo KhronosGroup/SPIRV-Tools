@@ -89,20 +89,17 @@ TEST(ReplayerTest, PartialReplay) {
 
   {
     // Full replay
-    protobufs::TransformationSequence transformations_out;
     protobufs::FactSequence empty_facts;
-    std::vector<uint32_t> binary_out;
-    Replayer replayer(env, true, validator_options);
-    replayer.SetMessageConsumer(kSilentConsumer);
-    auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 11, 0,
-                     &binary_out, &transformations_out);
+    auto replayer_result =
+        Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
+                 11, 0, true, validator_options)
+            .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
-              replayer_result_status);
+              replayer_result.status);
     // All transformations should be applied.
     ASSERT_TRUE(google::protobuf::util::MessageDifferencer::Equals(
-        transformations, transformations_out));
+        transformations, replayer_result.applied_transformations));
 
     const std::string kFullySplitShader = R"(
                OpCapability Shader
@@ -172,28 +169,26 @@ TEST(ReplayerTest, PartialReplay) {
                OpReturn
                OpFunctionEnd
     )";
-    ASSERT_TRUE(IsEqual(env, kFullySplitShader, binary_out));
+    ASSERT_TRUE(
+        IsEqual(env, kFullySplitShader, replayer_result.transformed_binary));
   }
 
   {
     // Half replay
-    protobufs::TransformationSequence transformations_out;
     protobufs::FactSequence empty_facts;
-    std::vector<uint32_t> binary_out;
-    Replayer replayer(env, true, validator_options);
-    replayer.SetMessageConsumer(kSilentConsumer);
-    auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 5, 0, &binary_out,
-                     &transformations_out);
+    auto replayer_result =
+        Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
+                 5, 0, true, validator_options)
+            .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
-              replayer_result_status);
+              replayer_result.status);
     // The first 5 transformations should be applied
-    ASSERT_EQ(5, transformations_out.transformation_size());
+    ASSERT_EQ(5, replayer_result.applied_transformations.transformation_size());
     for (uint32_t i = 0; i < 5; i++) {
       ASSERT_TRUE(google::protobuf::util::MessageDifferencer::Equals(
           transformations.transformation(i),
-          transformations_out.transformation(i)));
+          replayer_result.applied_transformations.transformation(i)));
     }
 
     const std::string kHalfSplitShader = R"(
@@ -252,47 +247,42 @@ TEST(ReplayerTest, PartialReplay) {
                OpReturn
                OpFunctionEnd
     )";
-    ASSERT_TRUE(IsEqual(env, kHalfSplitShader, binary_out));
+    ASSERT_TRUE(
+        IsEqual(env, kHalfSplitShader, replayer_result.transformed_binary));
   }
 
   {
     // Empty replay
-    protobufs::TransformationSequence transformations_out;
     protobufs::FactSequence empty_facts;
-    std::vector<uint32_t> binary_out;
-    Replayer replayer(env, true, validator_options);
-    replayer.SetMessageConsumer(kSilentConsumer);
-    auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 0, 0, &binary_out,
-                     &transformations_out);
+    auto replayer_result =
+        Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
+                 0, 0, true, validator_options)
+            .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
-              replayer_result_status);
+              replayer_result.status);
     // No transformations should be applied
-    ASSERT_EQ(0, transformations_out.transformation_size());
-    ASSERT_TRUE(IsEqual(env, kTestShader, binary_out));
+    ASSERT_EQ(0, replayer_result.applied_transformations.transformation_size());
+    ASSERT_TRUE(IsEqual(env, kTestShader, replayer_result.transformed_binary));
   }
 
   {
     // Invalid replay: too many transformations
-    protobufs::TransformationSequence transformations_out;
     protobufs::FactSequence empty_facts;
-    std::vector<uint32_t> binary_out;
     // The number of transformations requested to be applied exceeds the number
     // of transformations
-    Replayer replayer(env, true, validator_options);
-    replayer.SetMessageConsumer(kSilentConsumer);
-    auto replayer_result_status =
-        replayer.Run(binary_in, empty_facts, transformations, 12, 0,
-                     &binary_out, &transformations_out);
+    auto replayer_result =
+        Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
+                 12, 0, true, validator_options)
+            .Run();
 
     // Replay should not succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kTooManyTransformationsRequested,
-              replayer_result_status);
+              replayer_result.status);
     // No transformations should be applied
-    ASSERT_EQ(0, transformations_out.transformation_size());
+    ASSERT_EQ(0, replayer_result.applied_transformations.transformation_size());
     // The output binary should be empty
-    ASSERT_TRUE(binary_out.empty());
+    ASSERT_TRUE(replayer_result.transformed_binary.empty());
   }
 }
 

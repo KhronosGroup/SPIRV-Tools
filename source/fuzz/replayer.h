@@ -29,7 +29,7 @@ namespace fuzz {
 class Replayer {
  public:
   // Possible statuses that can result from running the replayer.
-  enum ReplayerResultStatus {
+  enum class ReplayerResultStatus {
     kComplete,
     kFailedToCreateSpirvToolsInterface,
     kInitialBinaryInvalid,
@@ -37,8 +37,18 @@ class Replayer {
     kTooManyTransformationsRequested,
   };
 
-  // Constructs a replayer from the given target environment.
-  Replayer(spv_target_env target_env, bool validate_during_replay,
+  struct ReplayerResult {
+    ReplayerResultStatus status;
+    std::vector<uint32_t> transformed_binary;
+    protobufs::TransformationSequence applied_transformations;
+  };
+
+  Replayer(spv_target_env target_env, MessageConsumer consumer,
+           const std::vector<uint32_t>& binary_in,
+           const protobufs::FactSequence& initial_facts,
+           const protobufs::TransformationSequence& transformation_sequence_in,
+           uint32_t num_transformations_to_apply, uint32_t first_overflow_id,
+           bool validate_during_replay,
            spv_validator_options validator_options);
 
   // Disables copy/move constructor/assignment operations.
@@ -49,31 +59,21 @@ class Replayer {
 
   ~Replayer();
 
-  // Sets the message consumer to the given |consumer|. The |consumer| will be
-  // invoked once for each message communicated from the library.
-  void SetMessageConsumer(MessageConsumer consumer);
-
-  // Transforms |binary_in| to |binary_out| by attempting to apply the first
-  // |num_transformations_to_apply| transformations from
-  // |transformation_sequence_in|.
+  // Attempts to apply the first |num_transformations_to_apply_| transformations
+  // from |transformation_sequence_in_| to |binary_in_|.  Initial facts about
+  // the input binary and the context in which it will execute are provided via
+  // |initial_facts_|.
   //
-  // Initial facts about the input binary and the context in which it will
-  // execute are provided via |initial_facts|.
-  //
-  // |first_overflow_id| should be set to 0 if overflow ids are not available
-  // during replay.  Otherwise |first_overflow_id| must be larger than any id
-  // referred to in |binary_in| or |transformation_sequence_in|, and overflow
+  // |first_overflow_id_| should be set to 0 if overflow ids are not available
+  // during replay.  Otherwise |first_overflow_id_| must be larger than any id
+  // referred to in |binary_in_| or |transformation_sequence_in_|, and overflow
   // ids will be available during replay starting from this value.
   //
-  // The transformations that were successfully applied are returned via
-  // |transformation_sequence_out|.
-  ReplayerResultStatus Run(
-      const std::vector<uint32_t>& binary_in,
-      const protobufs::FactSequence& initial_facts,
-      const protobufs::TransformationSequence& transformation_sequence_in,
-      uint32_t num_transformations_to_apply, uint32_t first_overflow_id,
-      std::vector<uint32_t>* binary_out,
-      protobufs::TransformationSequence* transformation_sequence_out) const;
+  // On success, returns a successful result status together with the
+  // transformations that were successfully applied and the binary resulting
+  // from applying them.  Otherwise, returns an appropriate result status
+  // together with an empty binary and empty transformation sequence.
+  ReplayerResult Run();
 
  private:
   // Target environment.
@@ -81,6 +81,22 @@ class Replayer {
 
   // Message consumer.
   MessageConsumer consumer_;
+
+  // The binary to which transformations are to be applied.
+  const std::vector<uint32_t>& binary_in_;
+
+  // Initial facts known to hold in advance of applying any transformations.
+  const protobufs::FactSequence& initial_facts_;
+
+  // The transformations to be replayed.
+  const protobufs::TransformationSequence& transformation_sequence_in_;
+
+  // The number of transformations that should be replayed.
+  const uint32_t num_transformations_to_apply_;
+
+  // Zero if overflow ids are not available, otherwise hold the value of the
+  // smallest id that may be used for overflow purposes.
+  const uint32_t first_overflow_id_;
 
   // Controls whether the validator should be run after every replay step.
   const bool validate_during_replay_;

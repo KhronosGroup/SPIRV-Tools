@@ -28,81 +28,88 @@
 namespace spvtools {
 namespace fuzz {
 
-Replayer::Replayer(spv_target_env target_env, bool validate_during_replay,
-                   spv_validator_options validator_options)
+Replayer::Replayer(
+    spv_target_env target_env, MessageConsumer consumer,
+    const std::vector<uint32_t>& binary_in,
+    const protobufs::FactSequence& initial_facts,
+    const protobufs::TransformationSequence& transformation_sequence_in,
+    uint32_t num_transformations_to_apply, uint32_t first_overflow_id,
+    bool validate_during_replay, spv_validator_options validator_options)
     : target_env_(target_env),
+      consumer_(std::move(consumer)),
+      binary_in_(binary_in),
+      initial_facts_(initial_facts),
+      transformation_sequence_in_(transformation_sequence_in),
+      num_transformations_to_apply_(num_transformations_to_apply),
+      first_overflow_id_(first_overflow_id),
       validate_during_replay_(validate_during_replay),
       validator_options_(validator_options) {}
 
 Replayer::~Replayer() = default;
 
-void Replayer::SetMessageConsumer(MessageConsumer consumer) {
-  consumer_ = std::move(consumer);
-}
-
-Replayer::ReplayerResultStatus Replayer::Run(
-    const std::vector<uint32_t>& binary_in,
-    const protobufs::FactSequence& initial_facts,
-    const protobufs::TransformationSequence& transformation_sequence_in,
-    uint32_t num_transformations_to_apply, uint32_t first_overflow_id,
-    std::vector<uint32_t>* binary_out,
-    protobufs::TransformationSequence* transformation_sequence_out) const {
+Replayer::ReplayerResult Replayer::Run() {
   // Check compatibility between the library version being linked with and the
   // header files being used.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  if (num_transformations_to_apply >
-      static_cast<uint32_t>(transformation_sequence_in.transformation_size())) {
+  if (num_transformations_to_apply_ >
+      static_cast<uint32_t>(
+          transformation_sequence_in_.transformation_size())) {
     consumer_(SPV_MSG_ERROR, nullptr, {},
               "The number of transformations to be replayed must not "
               "exceed the size of the transformation sequence.");
-    return Replayer::ReplayerResultStatus::kTooManyTransformationsRequested;
+    return {Replayer::ReplayerResultStatus::kTooManyTransformationsRequested,
+            std::vector<uint32_t>(), protobufs::TransformationSequence()};
   }
 
   spvtools::SpirvTools tools(target_env_);
   if (!tools.IsValid()) {
     consumer_(SPV_MSG_ERROR, nullptr, {},
               "Failed to create SPIRV-Tools interface; stopping.");
-    return Replayer::ReplayerResultStatus::kFailedToCreateSpirvToolsInterface;
+    return {Replayer::ReplayerResultStatus::kFailedToCreateSpirvToolsInterface,
+            std::vector<uint32_t>(), protobufs::TransformationSequence()};
   }
 
   // Initial binary should be valid.
-  if (!tools.Validate(&binary_in[0], binary_in.size(), validator_options_)) {
+  if (!tools.Validate(&binary_in_[0], binary_in_.size(), validator_options_)) {
     consumer_(SPV_MSG_INFO, nullptr, {},
               "Initial binary is invalid; stopping.");
-    return Replayer::ReplayerResultStatus::kInitialBinaryInvalid;
+    return {Replayer::ReplayerResultStatus::kInitialBinaryInvalid,
+            std::vector<uint32_t>(), protobufs::TransformationSequence()};
   }
 
   // Build the module from the input binary.
   std::unique_ptr<opt::IRContext> ir_context =
-      BuildModule(target_env_, consumer_, binary_in.data(), binary_in.size());
+      BuildModule(target_env_, consumer_, binary_in_.data(), binary_in_.size());
   assert(ir_context);
 
   // For replay validation, we track the last valid SPIR-V binary that was
   // observed. Initially this is the input binary.
   std::vector<uint32_t> last_valid_binary;
   if (validate_during_replay_) {
-    last_valid_binary = binary_in;
+    last_valid_binary = binary_in_;
   }
 
   FactManager fact_manager;
-  fact_manager.AddFacts(consumer_, initial_facts, ir_context.get());
+  fact_manager.AddFacts(consumer_, initial_facts_, ir_context.get());
   std::unique_ptr<TransformationContext> transformation_context =
-      first_overflow_id == 0
+      first_overflow_id_ == 0
           ? MakeUnique<TransformationContext>(&fact_manager, validator_options_)
           : MakeUnique<TransformationContext>(
                 &fact_manager, validator_options_,
-                MakeUnique<CounterOverflowIdSource>(first_overflow_id));
+                MakeUnique<CounterOverflowIdSource>(first_overflow_id_));
 
   // We track the largest id bound observed, to ensure that it only increases
   // as transformations are applied.
   uint32_t max_observed_id_bound = ir_context->module()->id_bound();
   (void)(max_observed_id_bound);  // Keep release-mode compilers happy.
 
+  protobufs::TransformationSequence transformation_sequence_out;
+
   // Consider the transformation proto messages in turn.
   uint32_t counter = 0;
-  for (auto& message : transformation_sequence_in.transformation()) {
-    if (counter >= num_transformations_to_apply) {
+  for (auto& message : transformation_sequence_in_.transformation()) {
+    if (counter >= num_transformations_to_apply_) {
       break;
     }
     counter++;
@@ -115,7 +122,7 @@ Replayer::ReplayerResultStatus Replayer::Run(
       // The transformation is applicable, so apply it, and copy it to the
       // sequence of transformations that were applied.
       transformation->Apply(ir_context.get(), transformation_context.get());
-      *transformation_sequence_out->add_transformation() = message;
+      *transformation_sequence_out.add_transformation() = message;
 
       assert(ir_context->module()->id_bound() >= max_observed_id_bound &&
              "The module's id bound should only increase due to applying "
@@ -132,7 +139,8 @@ Replayer::ReplayerResultStatus Replayer::Run(
           consumer_(SPV_MSG_INFO, nullptr, {},
                     "Binary became invalid during replay (set a "
                     "breakpoint to inspect); stopping.");
-          return Replayer::ReplayerResultStatus::kReplayValidationFailure;
+          return {Replayer::ReplayerResultStatus::kReplayValidationFailure,
+                  std::vector<uint32_t>(), protobufs::TransformationSequence()};
         }
 
         // The binary was valid, so it becomes the latest valid binary.
@@ -142,8 +150,10 @@ Replayer::ReplayerResultStatus Replayer::Run(
   }
 
   // Write out the module as a binary.
-  ir_context->module()->ToBinary(binary_out, false);
-  return Replayer::ReplayerResultStatus::kComplete;
+  std::vector<uint32_t> binary_out;
+  ir_context->module()->ToBinary(&binary_out, false);
+  return {Replayer::ReplayerResultStatus::kComplete, std::move(binary_out),
+          std::move(transformation_sequence_out)};
 }
 
 }  // namespace fuzz
