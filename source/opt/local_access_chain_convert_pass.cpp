@@ -95,6 +95,8 @@ bool LocalAccessChainConvertPass::ReplaceAccessChainLoad(
     return false;
   }
 
+  new_inst[0]->UpdateDebugInfoFrom(original_load);
+
   context()->get_decoration_mgr()->CloneDecorations(
       original_load->result_id(), ldResultId, {SpvDecorationRelaxedPrecision});
   original_load->InsertBefore(std::move(new_inst));
@@ -112,6 +114,9 @@ bool LocalAccessChainConvertPass::ReplaceAccessChainLoad(
   original_load->SetOpcode(SpvOpCompositeExtract);
   original_load->ReplaceOperands(new_operands);
   context()->UpdateDefUse(original_load);
+  context()->get_debug_info_mgr()->AnalyzeDebugInst(original_load);
+  context()->get_debug_info_mgr()->AnalyzeDebugInst(
+      original_load->PreviousNode());
   return true;
 }
 
@@ -236,6 +241,16 @@ void LocalAccessChainConvertPass::FindTargetVars(Function* func) {
   }
 }
 
+bool LocalAccessChainConvertPass::HasNoOpenCL100DebugRef(
+    Instruction* inst) const {
+  return !get_def_use_mgr()->WhileEachUser(inst, [this](Instruction* user) {
+    if (user->IsOpenCL100DebugInstr()) {
+      return false;
+    }
+    return true;
+  });
+}
+
 Pass::Status LocalAccessChainConvertPass::ConvertLocalAccessChains(
     Function* func) {
   FindTargetVars(func);
@@ -247,9 +262,11 @@ Pass::Status LocalAccessChainConvertPass::ConvertLocalAccessChains(
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       switch (ii->opcode()) {
         case SpvOpLoad: {
+          if (HasNoOpenCL100DebugRef(&*ii)) break;
           uint32_t varId;
           Instruction* ptrInst = GetPtr(&*ii, &varId);
           if (!IsNonPtrAccessChain(ptrInst->opcode())) break;
+          if (HasNoOpenCL100DebugRef(ptrInst)) break;
           if (!IsTargetVar(varId)) break;
           std::vector<std::unique_ptr<Instruction>> newInsts;
           if (!ReplaceAccessChainLoad(ptrInst, &*ii)) {
@@ -259,21 +276,25 @@ Pass::Status LocalAccessChainConvertPass::ConvertLocalAccessChains(
         } break;
         case SpvOpStore: {
           uint32_t varId;
-          Instruction* ptrInst = GetPtr(&*ii, &varId);
+          Instruction* store = &*ii;
+          Instruction* ptrInst = GetPtr(store, &varId);
           if (!IsNonPtrAccessChain(ptrInst->opcode())) break;
+          if (HasNoOpenCL100DebugRef(ptrInst)) break;
           if (!IsTargetVar(varId)) break;
           std::vector<std::unique_ptr<Instruction>> newInsts;
-          uint32_t valId = ii->GetSingleWordInOperand(kStoreValIdInIdx);
+          uint32_t valId = store->GetSingleWordInOperand(kStoreValIdInIdx);
           if (!GenAccessChainStoreReplacement(ptrInst, valId, &newInsts)) {
             return Status::Failure;
           }
           size_t num_of_instructions_to_skip = newInsts.size() - 1;
-          dead_instructions.push_back(&*ii);
+          dead_instructions.push_back(store);
           ++ii;
           ii = ii.InsertBefore(std::move(newInsts));
           for (size_t i = 0; i < num_of_instructions_to_skip; ++i) {
+            ii->UpdateDebugInfoFrom(store);
             ++ii;
           }
+          ii->UpdateDebugInfoFrom(store);
           modified = true;
         } break;
         default:
