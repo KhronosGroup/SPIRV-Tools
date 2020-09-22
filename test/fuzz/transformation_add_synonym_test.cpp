@@ -1334,7 +1334,7 @@ TEST(TransformationAddSynonymTest, PropagateIrrelevantPointeeFact) {
       transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
 }
 
-TEST(TransformationAddSynonym, DoNotCopyOpSampledImage) {
+TEST(TransformationAddSynonymTest, DoNotCopyOpSampledImage) {
   // This checks that we do not try to copy the result id of an OpSampledImage
   // instruction.
   std::string shader = R"(
@@ -1392,7 +1392,7 @@ TEST(TransformationAddSynonym, DoNotCopyOpSampledImage) {
           .IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationAddSynonym, DoNotCopyVoidRunctionResult) {
+TEST(TransformationAddSynonymTest, DoNotCopyVoidRunctionResult) {
   // This checks that we do not try to copy the result of a void function.
   std::string shader = R"(
                OpCapability Shader
@@ -1429,6 +1429,92 @@ TEST(TransformationAddSynonym, DoNotCopyVoidRunctionResult) {
                    8, protobufs::TransformationAddSynonym::COPY_OBJECT, 500,
                    MakeInstructionDescriptor(8, SpvOpReturn, 0))
                    .IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddSynonymTest, HandlesDeadBlocks) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+         %11 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %12 = OpVariable %11 Function
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+               OpBranch %10
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  FactManager fact_manager;
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(&fact_manager,
+                                               validator_options);
+
+  fact_manager.AddFactBlockIsDead(9);
+
+  auto insert_before = MakeInstructionDescriptor(9, SpvOpBranch, 0);
+
+  ASSERT_FALSE(TransformationAddSynonym(
+                   7, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,
+                   insert_before)
+                   .IsApplicable(context.get(), transformation_context));
+
+  TransformationAddSynonym transformation(
+      12, protobufs::TransformationAddSynonym::COPY_OBJECT, 100, insert_before);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(12, {}),
+                                        MakeDataDescriptor(100, {})));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(100, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+         %11 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %12 = OpVariable %11 Function
+               OpSelectionMerge %10 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+               OpBranch %10
+          %9 = OpLabel
+        %100 = OpCopyObject %11 %12
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace

@@ -36,6 +36,14 @@ void FuzzerPassAddSynonyms::Apply() {
       [this](opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor) {
+        // We don't insert synonyms into dead blocks since all non-pointer ids
+        // there are considered irrelevant and we can't create a synonym of an
+        // irrelevant id.
+        if (GetTransformationContext()->GetFactManager()->BlockIsDead(
+                block->id())) {
+          return;
+        }
+
         // Skip |inst_it| if we can't insert anything above it. OpIAdd is just
         // a representative of some instruction that might be produced by the
         // transformation.
@@ -53,12 +61,19 @@ void FuzzerPassAddSynonyms::Apply() {
         // Select all instructions that can be used to create a synonym to.
         auto available_instructions = FindAvailableInstructions(
             function, block, inst_it,
-            [synonym_type, this](opt::IRContext* ir_context,
-                                 opt::Instruction* inst) {
+            [synonym_type, this, block](opt::IRContext* ir_context,
+                                        opt::Instruction* inst) {
               // Check that we can create a synonym to |inst| as described by
               // the |synonym_type| and insert it before |inst_it|.
               return TransformationAddSynonym::IsInstructionValid(
-                  ir_context, *GetTransformationContext(), inst, synonym_type);
+                         ir_context, *GetTransformationContext(), inst,
+                         synonym_type) &&
+                     (!GetTransformationContext()
+                           ->GetFactManager()
+                           ->BlockIsDead(block->id()) ||
+                      ir_context->get_type_mgr()
+                          ->GetType(inst->type_id())
+                          ->AsPointer());
             });
 
         if (available_instructions.empty()) {

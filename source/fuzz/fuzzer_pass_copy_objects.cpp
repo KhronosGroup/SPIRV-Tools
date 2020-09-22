@@ -56,10 +56,16 @@ void FuzzerPassCopyObjects::Apply() {
 
         const auto relevant_instructions = FindAvailableInstructions(
             function, block, inst_it,
-            [this](opt::IRContext* ir_context, opt::Instruction* inst) {
+            [this, block](opt::IRContext* ir_context, opt::Instruction* inst) {
               return TransformationAddSynonym::IsInstructionValid(
-                  ir_context, *GetTransformationContext(), inst,
-                  protobufs::TransformationAddSynonym::COPY_OBJECT);
+                         ir_context, *GetTransformationContext(), inst,
+                         protobufs::TransformationAddSynonym::COPY_OBJECT) &&
+                     (!GetTransformationContext()
+                           ->GetFactManager()
+                           ->BlockIsDead(block->id()) ||
+                      ir_context->get_type_mgr()
+                          ->GetType(inst->type_id())
+                          ->AsPointer());
             });
 
         // At this point, |relevant_instructions| contains all the instructions
