@@ -76,6 +76,7 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     } else if (!fuzzerutil::IdIsAvailableBeforeInstruction(
                    ir_context, function->entry()->terminator(),
                    message_.any_returnable_val_id())) {
+      // The id must be available at the end of the entry block.
       return false;
     }
   }
@@ -178,33 +179,38 @@ bool TransformationMergeFunctionReturns::IsApplicable(
 
     // For each OpPhi instruction, check that a suitable placeholder id is
     // available.
-    ir_context->get_instr_block(merge_block)
-        ->WhileEachPhiInst([ir_context, &phi_to_id,
-                            &types_to_available_ids](opt::Instruction* inst) {
-          if (phi_to_id.count(inst->result_id()) > 0) {
-            // If there exists a mapping for this instruction, check that the
-            // corresponding placeholder id exists in the module, has the
-            // correct type and is available before the instruction.
-            auto placeholder_def = ir_context->get_def_use_mgr()->GetDef(
-                phi_to_id[inst->result_id()]);
-            if (!placeholder_def) {
-              return false;
-            }
-            if (inst->type_id() != placeholder_def->type_id()) {
-              return false;
-            }
-            if (!fuzzerutil::IdIsAvailableBeforeInstruction(
-                    ir_context, inst, placeholder_def->result_id())) {
-              return false;
-            }
+    bool suitable_info_for_phi =
+        ir_context->get_instr_block(merge_block)
+            ->WhileEachPhiInst([ir_context, &phi_to_id,
+                                &types_to_available_ids](
+                                   opt::Instruction* inst) {
+              if (phi_to_id.count(inst->result_id()) > 0) {
+                // If there exists a mapping for this instruction and the
+                // placeholder id exists in the module, check that it has the
+                // correct type and it is available before the instruction.
+                auto placeholder_def = ir_context->get_def_use_mgr()->GetDef(
+                    phi_to_id[inst->result_id()]);
+                if (placeholder_def) {
+                  if (inst->type_id() != placeholder_def->type_id()) {
+                    return false;
+                  }
+                  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+                          ir_context, inst, placeholder_def->result_id())) {
+                    return false;
+                  }
 
-            return true;
-          }
+                  return true;
+                }
+              }
 
-          // If there is no mapping, check if there is a suitable id available
-          // at the end of the entry block.
-          return types_to_available_ids.count(inst->type_id()) > 0;
-        });
+              // If there is no mapping, check if there is a suitable id
+              // available at the end of the entry block.
+              return types_to_available_ids.count(inst->type_id()) > 0;
+            });
+
+    if (!suitable_info_for_phi) {
+      return false;
+    }
   }
 
   return true;
