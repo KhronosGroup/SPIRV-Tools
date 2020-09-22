@@ -30,13 +30,19 @@ namespace fuzz {
 class Shrinker {
  public:
   // Possible statuses that can result from running the shrinker.
-  enum ShrinkerResultStatus {
+  enum class ShrinkerResultStatus {
     kComplete,
     kFailedToCreateSpirvToolsInterface,
     kInitialBinaryInvalid,
     kInitialBinaryNotInteresting,
     kReplayFailed,
     kStepLimitReached,
+  };
+
+  struct ShrinkerResult {
+    ShrinkerResultStatus status;
+    std::vector<uint32_t> transformed_binary;
+    protobufs::TransformationSequence applied_transformations;
   };
 
   // The type for a function that will take a binary, |binary|, and return true
@@ -49,8 +55,12 @@ class Shrinker {
   using InterestingnessFunction = std::function<bool(
       const std::vector<uint32_t>& binary, uint32_t counter)>;
 
-  Shrinker(spv_target_env target_env, uint32_t step_limit,
-           bool validate_during_replay,
+  Shrinker(spv_target_env target_env, MessageConsumer consumer,
+           const std::vector<uint32_t>& binary_in,
+           const protobufs::FactSequence& initial_facts,
+           const protobufs::TransformationSequence& transformation_sequence_in,
+           const InterestingnessFunction& interestingness_function,
+           uint32_t step_limit, bool validate_during_replay,
            spv_validator_options validator_options);
 
   // Disables copy/move constructor/assignment operations.
@@ -61,25 +71,20 @@ class Shrinker {
 
   ~Shrinker();
 
-  // Sets the message consumer to the given |consumer|. The |consumer| will be
-  // invoked once for each message communicated from the library.
-  void SetMessageConsumer(MessageConsumer consumer);
-
-  // Requires that when |transformation_sequence_in| is applied to |binary_in|
-  // with initial facts |initial_facts|, the resulting binary is interesting
-  // according to |interestingness_function|.
+  // Requires that when |transformation_sequence_in_| is applied to |binary_in_|
+  // with initial facts |initial_facts_|, the resulting binary is interesting
+  // according to |interestingness_function_|.
   //
-  // Produces, via |transformation_sequence_out|, a subsequence of
-  // |transformation_sequence_in| that, when applied with initial facts
-  // |initial_facts|, produces a binary (captured via |binary_out|) that is
-  // also interesting according to |interestingness_function|.
-  ShrinkerResultStatus Run(
-      const std::vector<uint32_t>& binary_in,
-      const protobufs::FactSequence& initial_facts,
-      const protobufs::TransformationSequence& transformation_sequence_in,
-      const InterestingnessFunction& interestingness_function,
-      std::vector<uint32_t>* binary_out,
-      protobufs::TransformationSequence* transformation_sequence_out) const;
+  // If shrinking succeeded -- possibly terminating early due to reaching the
+  // shrinker's step limit -- an associated result status is returned together
+  // with a subsequence of |transformation_sequence_in_| that, when applied
+  // to |binary_in_| with initial facts |initial_facts_|, produces a binary
+  // that is also interesting according to |interestingness_function_|; this
+  // binary is also returned.
+  //
+  // If shrinking failed for some reason, an appropriate result status is
+  // returned together with an empty binary and empty transformation sequence.
+  ShrinkerResult Run();
 
  private:
   // Returns the id bound for the given SPIR-V binary, which is assumed to be
@@ -89,8 +94,21 @@ class Shrinker {
   // Target environment.
   const spv_target_env target_env_;
 
-  // Message consumer.
+  // Message consumer that will be invoked once for each message communicated
+  // from the library.
   MessageConsumer consumer_;
+
+  // The binary to which transformations are to be applied.
+  const std::vector<uint32_t>& binary_in_;
+
+  // Initial facts known to hold in advance of applying any transformations.
+  const protobufs::FactSequence& initial_facts_;
+
+  // The series of transformations to be shrunk.
+  const protobufs::TransformationSequence& transformation_sequence_in_;
+
+  // Function that decides whether a given binary is interesting.
+  const InterestingnessFunction& interestingness_function_;
 
   // Step limit to decide when to terminate shrinking early.
   const uint32_t step_limit_;

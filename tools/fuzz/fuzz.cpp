@@ -16,6 +16,7 @@
 #include <cerrno>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <random>
 #include <sstream>
 #include <string>
@@ -24,12 +25,14 @@
 #include "source/fuzz/fuzzer.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/replayer.h"
 #include "source/fuzz/shrinker.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/log.h"
 #include "source/spirv_fuzzer_options.h"
+#include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
@@ -453,9 +456,6 @@ bool Replay(const spv_target_env& target_env,
                             &transformation_sequence)) {
     return false;
   }
-  spvtools::fuzz::Replayer replayer(
-      target_env, fuzzer_options->replay_validation_enabled, validator_options);
-  replayer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   uint32_t num_transformations_to_apply;
   if (fuzzer_options->replay_range > 0) {
@@ -474,11 +474,17 @@ bool Replay(const spv_target_env& target_env,
                         fuzzer_options->replay_range));
   }
 
-  auto replay_result_status = replayer.Run(
-      binary_in, initial_facts, transformation_sequence,
-      num_transformations_to_apply, 0, binary_out, transformations_applied);
-  return !(replay_result_status !=
-           spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete);
+  auto replay_result =
+      spvtools::fuzz::Replayer(
+          target_env, spvtools::utils::CLIMessageConsumer, binary_in,
+          initial_facts, transformation_sequence, num_transformations_to_apply,
+          0, fuzzer_options->replay_validation_enabled, validator_options)
+          .Run();
+
+  *binary_out = std::move(replay_result.transformed_binary);
+  *transformations_applied = std::move(replay_result.applied_transformations);
+  return replay_result.status ==
+         spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete;
 }
 
 bool Shrink(const spv_target_env& target_env,
@@ -497,11 +503,6 @@ bool Shrink(const spv_target_env& target_env,
                             &transformation_sequence)) {
     return false;
   }
-  spvtools::fuzz::Shrinker shrinker(
-      target_env, fuzzer_options->shrinker_step_limit,
-      fuzzer_options->replay_validation_enabled, validator_options);
-  shrinker.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
-
   assert(!interestingness_command.empty() &&
          "An error should have been raised because the interestingness_command "
          "is empty.");
@@ -527,13 +528,20 @@ bool Shrink(const spv_target_env& target_env,
     return ExecuteCommand(command);
   };
 
-  auto shrink_result_status = shrinker.Run(
-      binary_in, initial_facts, transformation_sequence,
-      interestingness_function, binary_out, transformations_applied);
+  auto shrink_result =
+      spvtools::fuzz::Shrinker(
+          target_env, spvtools::utils::CLIMessageConsumer, binary_in,
+          initial_facts, transformation_sequence, interestingness_function,
+          fuzzer_options->shrinker_step_limit,
+          fuzzer_options->replay_validation_enabled, validator_options)
+          .Run();
+
+  *binary_out = std::move(shrink_result.transformed_binary);
+  *transformations_applied = std::move(shrink_result.applied_transformations);
   return spvtools::fuzz::Shrinker::ShrinkerResultStatus::kComplete ==
-             shrink_result_status ||
+             shrink_result.status ||
          spvtools::fuzz::Shrinker::ShrinkerResultStatus::kStepLimitReached ==
-             shrink_result_status;
+             shrink_result.status;
 }
 
 bool Fuzz(const spv_target_env& target_env,
@@ -571,18 +579,20 @@ bool Fuzz(const spv_target_env& target_env,
         });
   }
 
-  spvtools::fuzz::Fuzzer fuzzer(
-      target_env,
-      fuzzer_options->has_random_seed
-          ? fuzzer_options->random_seed
-          : static_cast<uint32_t>(std::random_device()()),
-      fuzzer_options->all_passes_enabled, repeated_pass_strategy,
-      fuzzer_options->fuzzer_pass_validation_enabled, validator_options);
-  fuzzer.SetMessageConsumer(message_consumer);
-  auto fuzz_result_status =
-      fuzzer.Run(binary_in, initial_facts, donor_suppliers, binary_out,
-                 transformations_applied);
-  if (fuzz_result_status !=
+  auto fuzz_result =
+      spvtools::fuzz::Fuzzer(
+          target_env, message_consumer, binary_in, initial_facts,
+          donor_suppliers,
+          spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
+              fuzzer_options->has_random_seed
+                  ? fuzzer_options->random_seed
+                  : static_cast<uint32_t>(std::random_device()())),
+          fuzzer_options->all_passes_enabled, repeated_pass_strategy,
+          fuzzer_options->fuzzer_pass_validation_enabled, validator_options)
+          .Run();
+  *binary_out = std::move(fuzz_result.transformed_binary);
+  *transformations_applied = std::move(fuzz_result.applied_transformations);
+  if (fuzz_result.status !=
       spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error running fuzzer");
     return false;

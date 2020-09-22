@@ -61,35 +61,27 @@ protobufs::TransformationSequence RemoveChunk(
 
 }  // namespace
 
-uint32_t Shrinker::GetIdBound(const std::vector<uint32_t>& binary) const {
-  // Build the module from the input binary.
-  std::unique_ptr<opt::IRContext> ir_context =
-      BuildModule(target_env_, consumer_, binary.data(), binary.size());
-  assert(ir_context && "Error building module.");
-  return ir_context->module()->id_bound();
-}
-
-Shrinker::Shrinker(spv_target_env target_env, uint32_t step_limit,
-                   bool validate_during_replay,
-                   spv_validator_options validator_options)
+Shrinker::Shrinker(
+    spv_target_env target_env, MessageConsumer consumer,
+    const std::vector<uint32_t>& binary_in,
+    const protobufs::FactSequence& initial_facts,
+    const protobufs::TransformationSequence& transformation_sequence_in,
+    const InterestingnessFunction& interestingness_function,
+    uint32_t step_limit, bool validate_during_replay,
+    spv_validator_options validator_options)
     : target_env_(target_env),
+      consumer_(consumer),
+      binary_in_(binary_in),
+      initial_facts_(initial_facts),
+      transformation_sequence_in_(transformation_sequence_in),
+      interestingness_function_(interestingness_function),
       step_limit_(step_limit),
       validate_during_replay_(validate_during_replay),
       validator_options_(validator_options) {}
 
 Shrinker::~Shrinker() = default;
 
-void Shrinker::SetMessageConsumer(MessageConsumer consumer) {
-  consumer_ = std::move(consumer);
-}
-
-Shrinker::ShrinkerResultStatus Shrinker::Run(
-    const std::vector<uint32_t>& binary_in,
-    const protobufs::FactSequence& initial_facts,
-    const protobufs::TransformationSequence& transformation_sequence_in,
-    const Shrinker::InterestingnessFunction& interestingness_function,
-    std::vector<uint32_t>* binary_out,
-    protobufs::TransformationSequence* transformation_sequence_out) const {
+Shrinker::ShrinkerResult Shrinker::Run() {
   // Check compatibility between the library version being linked with and the
   // header files being used.
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -98,46 +90,54 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
   if (!tools.IsValid()) {
     consumer_(SPV_MSG_ERROR, nullptr, {},
               "Failed to create SPIRV-Tools interface; stopping.");
-    return Shrinker::ShrinkerResultStatus::kFailedToCreateSpirvToolsInterface;
+    return {Shrinker::ShrinkerResultStatus::kFailedToCreateSpirvToolsInterface,
+            std::vector<uint32_t>(), protobufs::TransformationSequence()};
   }
 
   // Initial binary should be valid.
-  if (!tools.Validate(&binary_in[0], binary_in.size(), validator_options_)) {
+  if (!tools.Validate(&binary_in_[0], binary_in_.size(), validator_options_)) {
     consumer_(SPV_MSG_INFO, nullptr, {},
               "Initial binary is invalid; stopping.");
-    return Shrinker::ShrinkerResultStatus::kInitialBinaryInvalid;
+    return {Shrinker::ShrinkerResultStatus::kInitialBinaryInvalid,
+            std::vector<uint32_t>(), protobufs::TransformationSequence()};
   }
 
-  std::vector<uint32_t> current_best_binary;
-  protobufs::TransformationSequence current_best_transformations;
-
-  // Run a replay of the initial transformation sequence to (a) check that it
-  // succeeds, (b) get the binary that results from running these
-  // transformations, and (c) get the subsequence of the initial transformations
-  // that actually apply (in principle this could be a strict subsequence).
-  Replayer replayer(target_env_, validate_during_replay_, validator_options_);
-  replayer.SetMessageConsumer(consumer_);
-  if (replayer.Run(binary_in, initial_facts, transformation_sequence_in,
-                   static_cast<uint32_t>(
-                       transformation_sequence_in.transformation_size()),
-                   /* No overflow ids */ 0, &current_best_binary,
-                   &current_best_transformations) !=
+  // Run a replay of the initial transformation sequence to check that it
+  // succeeds.
+  auto initial_replay_result =
+      Replayer(target_env_, consumer_, binary_in_, initial_facts_,
+               transformation_sequence_in_,
+               static_cast<uint32_t>(
+                   transformation_sequence_in_.transformation_size()),
+               /* No overflow ids */ 0, validate_during_replay_,
+               validator_options_)
+          .Run();
+  if (initial_replay_result.status !=
       Replayer::ReplayerResultStatus::kComplete) {
-    return ShrinkerResultStatus::kReplayFailed;
+    return {ShrinkerResultStatus::kReplayFailed, std::vector<uint32_t>(),
+            protobufs::TransformationSequence()};
   }
+  // Get the binary that results from running these transformations, and the
+  // subsequence of the initial transformations that actually apply (in
+  // principle this could be a strict subsequence).
+  std::vector<uint32_t> current_best_binary =
+      std::move(initial_replay_result.transformed_binary);
+  protobufs::TransformationSequence current_best_transformations =
+      std::move(initial_replay_result.applied_transformations);
 
   // Check that the binary produced by applying the initial transformations is
   // indeed interesting.
-  if (!interestingness_function(current_best_binary, 0)) {
+  if (!interestingness_function_(current_best_binary, 0)) {
     consumer_(SPV_MSG_INFO, nullptr, {},
               "Initial binary is not interesting; stopping.");
-    return ShrinkerResultStatus::kInitialBinaryNotInteresting;
+    return {ShrinkerResultStatus::kInitialBinaryNotInteresting,
+            std::vector<uint32_t>(), protobufs::TransformationSequence()};
   }
 
   // The largest id used by the module before any shrinking has been applied
   // serves as the first id that can be used for overflow purposes.
   const uint32_t first_overflow_id = GetIdBound(current_best_binary);
-  assert(first_overflow_id >= GetIdBound(binary_in) &&
+  assert(first_overflow_id >= GetIdBound(binary_in_) &&
          "Applying transformations should only increase a module's id bound.");
 
   uint32_t attempt = 0;  // Keeps track of the number of shrink attempts that
@@ -195,29 +195,34 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
       // replay might be even smaller than the transformations with the chunk
       // removed, because removing those transformations might make further
       // transformations inapplicable.
-      std::vector<uint32_t> next_binary;
-      protobufs::TransformationSequence next_transformation_sequence;
-      if (replayer.Run(
-              binary_in, initial_facts, transformations_with_chunk_removed,
+      auto replay_result =
+          Replayer(
+              target_env_, consumer_, binary_in_, initial_facts_,
+              transformations_with_chunk_removed,
               static_cast<uint32_t>(
                   transformations_with_chunk_removed.transformation_size()),
-              first_overflow_id, &next_binary, &next_transformation_sequence) !=
-          Replayer::ReplayerResultStatus::kComplete) {
+              first_overflow_id, validate_during_replay_, validator_options_)
+              .Run();
+      if (replay_result.status != Replayer::ReplayerResultStatus::kComplete) {
         // Replay should not fail; if it does, we need to abort shrinking.
-        return ShrinkerResultStatus::kReplayFailed;
+        return {ShrinkerResultStatus::kReplayFailed, std::vector<uint32_t>(),
+                protobufs::TransformationSequence()};
       }
 
-      assert(NumRemainingTransformations(next_transformation_sequence) >=
-                 chunk_index * chunk_size &&
-             "Removing this chunk of transformations should not have an effect "
-             "on earlier chunks.");
+      assert(
+          NumRemainingTransformations(replay_result.applied_transformations) >=
+              chunk_index * chunk_size &&
+          "Removing this chunk of transformations should not have an effect "
+          "on earlier chunks.");
 
-      if (interestingness_function(next_binary, attempt)) {
+      if (interestingness_function_(replay_result.transformed_binary,
+                                    attempt)) {
         // If the binary arising from the smaller transformation sequence is
         // interesting, this becomes our current best binary and transformation
         // sequence.
-        current_best_binary = next_binary;
-        current_best_transformations = next_transformation_sequence;
+        current_best_binary = std::move(replay_result.transformed_binary);
+        current_best_transformations =
+            std::move(replay_result.applied_transformations);
         progress_this_round = true;
       }
       // Either way, this was a shrink attempt, so increment our count of shrink
@@ -237,22 +242,32 @@ Shrinker::ShrinkerResultStatus Shrinker::Run(
     }
   }
 
-  // The output from the shrinker is the best binary we saw, and the
-  // transformations that led to it.
-  *binary_out = current_best_binary;
-  *transformation_sequence_out = current_best_transformations;
-
   // Indicate whether shrinking completed or was truncated due to reaching the
   // step limit.
+  //
+  // Either way, the output from the shrinker is the best binary we saw, and the
+  // transformations that led to it.
   assert(attempt <= step_limit_);
   if (attempt == step_limit_) {
     std::stringstream strstream;
     strstream << "Shrinking did not complete; step limit " << step_limit_
               << " was reached.";
     consumer_(SPV_MSG_WARNING, nullptr, {}, strstream.str().c_str());
-    return Shrinker::ShrinkerResultStatus::kStepLimitReached;
+    return {Shrinker::ShrinkerResultStatus::kStepLimitReached,
+            std::move(current_best_binary),
+            std::move(current_best_transformations)};
   }
-  return Shrinker::ShrinkerResultStatus::kComplete;
+  return {Shrinker::ShrinkerResultStatus::kComplete,
+          std::move(current_best_binary),
+          std::move(current_best_transformations)};
+}
+
+uint32_t Shrinker::GetIdBound(const std::vector<uint32_t>& binary) const {
+  // Build the module from the input binary.
+  std::unique_ptr<opt::IRContext> ir_context =
+      BuildModule(target_env_, consumer_, binary.data(), binary.size());
+  assert(ir_context && "Error building module.");
+  return ir_context->module()->id_bound();
 }
 
 }  // namespace fuzz
