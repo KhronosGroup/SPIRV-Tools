@@ -243,7 +243,7 @@ void LocalAccessChainConvertPass::FindTargetVars(Function* func) {
 
 bool LocalAccessChainConvertPass::HasNoOpenCL100DebugRef(
     Instruction* inst) const {
-  return !get_def_use_mgr()->WhileEachUser(inst, [this](Instruction* user) {
+  return !get_def_use_mgr()->WhileEachUser(inst, [](Instruction* user) {
     if (user->IsOpenCL100DebugInstr()) {
       return false;
     }
