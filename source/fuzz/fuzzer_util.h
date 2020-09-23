@@ -474,6 +474,17 @@ void AddVectorType(opt::IRContext* ir_context, uint32_t result_id,
 void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
                    const std::vector<uint32_t>& component_type_ids);
 
+// Returns a vector of words representing the integer |value|, only considering
+// the last |width| bits. The last |width| bits are sign-extended if the value
+// is signed, zero-extended if it is unsigned.
+// |width| must be <= 64.
+// If |width| <= 32, returns a vector containing one value. If |width| > 64,
+// returns a vector containing two values, with the first one representing the
+// lower-order word of the value and the second one representing the
+// higher-order word.
+std::vector<uint32_t> IntToWords(uint64_t value, uint32_t width,
+                                 bool is_signed);
+
 // Returns a bit pattern that represents a floating-point |value|.
 inline uint32_t FloatToWord(float value) {
   uint32_t result;

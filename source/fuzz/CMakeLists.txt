@@ -63,15 +63,16 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_function_calls.h
         fuzzer_pass_add_global_variables.h
         fuzzer_pass_add_image_sample_unused_components.h
-        fuzzer_pass_add_synonyms.h
         fuzzer_pass_add_loads.h
         fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_loop_preheaders.h
+        fuzzer_pass_add_loops_to_create_int_constant_synonyms.h
         fuzzer_pass_add_no_contraction_decorations.h
         fuzzer_pass_add_opphi_synonyms.h
         fuzzer_pass_add_parameters.h
         fuzzer_pass_add_relaxed_decorations.h
         fuzzer_pass_add_stores.h
+        fuzzer_pass_add_synonyms.h
         fuzzer_pass_add_vector_shuffle_instructions.h
         fuzzer_pass_adjust_branch_weights.h
         fuzzer_pass_adjust_function_controls.h
@@ -147,6 +148,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_image_sample_unused_components.h
         transformation_add_local_variable.h
         transformation_add_loop_preheader.h
+        transformation_add_loop_to_create_int_constant_synonym.h
         transformation_add_no_contraction_decoration.h
         transformation_add_opphi_synonym.h
         transformation_add_parameter.h
@@ -237,15 +239,16 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_function_calls.cpp
         fuzzer_pass_add_global_variables.cpp
         fuzzer_pass_add_image_sample_unused_components.cpp
-        fuzzer_pass_add_synonyms.cpp
         fuzzer_pass_add_loads.cpp
         fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_loop_preheaders.cpp
+        fuzzer_pass_add_loops_to_create_int_constant_synonyms.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
         fuzzer_pass_add_opphi_synonyms.cpp
         fuzzer_pass_add_parameters.cpp
         fuzzer_pass_add_relaxed_decorations.cpp
         fuzzer_pass_add_stores.cpp
+        fuzzer_pass_add_synonyms.cpp
         fuzzer_pass_add_vector_shuffle_instructions.cpp
         fuzzer_pass_adjust_branch_weights.cpp
         fuzzer_pass_adjust_function_controls.cpp
@@ -319,6 +322,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_image_sample_unused_components.cpp
         transformation_add_local_variable.cpp
         transformation_add_loop_preheader.cpp
+        transformation_add_loop_to_create_int_constant_synonym.cpp
         transformation_add_no_contraction_decoration.cpp
         transformation_add_opphi_synonym.cpp
         transformation_add_parameter.cpp

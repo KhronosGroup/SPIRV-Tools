@@ -75,6 +75,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
     50, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfCreatingIntSynonymsUsingLoops = {
+    5, 10};
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDuplicatingRegionWithSelection = {
     20, 50};
@@ -84,6 +86,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperToInsertInComposite = {
     30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
     {50, 95};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfHavingTwoBlocksInLoopToCreateIntSynonym = {50, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfInliningFunction = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfInterchangingZeroLikeConstants = {
     10, 90};
@@ -244,6 +248,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_constructing_composite_ =
       ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
+  chance_of_creating_int_synonyms_using_loops_ =
+      ChooseBetweenMinAndMax(kChanceOfCreatingIntSynonymsUsingLoops);
   chance_of_donating_additional_module_ =
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
   chance_of_duplicating_region_with_selection_ =
@@ -254,6 +260,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperToInsertInComposite);
   chance_of_going_deeper_when_making_access_chain_ =
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperWhenMakingAccessChain);
+  chance_of_having_two_blocks_in_loop_to_create_int_synonym_ =
+      ChooseBetweenMinAndMax(kChanceOfHavingTwoBlocksInLoopToCreateIntSynonym);
   chance_of_inlining_function_ =
       ChooseBetweenMinAndMax(kChanceOfInliningFunction);
   chance_of_interchanging_signedness_of_integer_operands_ =

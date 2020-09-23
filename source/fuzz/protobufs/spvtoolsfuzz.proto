@@ -497,6 +497,7 @@ message Transformation {
     TransformationDuplicateRegionWithSelection duplicate_region_with_selection = 75;
     TransformationFlattenConditionalBranch flatten_conditional_branch = 76;
     TransformationAddBitInstructionSynonym add_bit_instruction_synonym = 77;
+    TransformationAddLoopToCreateIntConstantSynonym add_loop_to_create_int_constant_synonym = 78;
     // Add additional option using the next available number.
   }
 }
@@ -845,6 +846,97 @@ message TransformationAddLoopPreheader {
   //                 %id1 = OpPhi %type %phi_id1 %fresh_id %val3 %backedge_block_id
   repeated uint32 phi_id = 3;
 
+}
+
+message TransformationAddLoopToCreateIntConstantSynonym {
+  // A transformation that uses a loop to create a synonym for an integer
+  // constant C (scalar or vector) using an initial value I, a step value S and
+  // a number of iterations N such that C = I - N * S. For each iteration, S is
+  // added to the total.
+  // The loop can be made up of one or two blocks, and it is inserted before a
+  // block with a single predecessor. In the one-block case, it is of the form:
+  //
+  //            %loop_id = OpLabel
+  //             %ctr_id = OpPhi %int %int_0 %pred %incremented_ctr_id %loop_id
+  //            %temp_id = OpPhi %type_of_I %I %pred %eventual_syn_id %loop_id
+  //    %eventual_syn_id = OpISub %type_of_I %temp_id %step_val_id
+  // %incremented_ctr_id = OpIAdd %int %ctr_id %int_1
+  //            %cond_id = OpSLessThan %bool %incremented_ctr_id %num_iterations_id
+  //                       OpLoopMerge %block_after_loop_id %loop_id %none
+  //                       OpBranchConditional %cond_id %loop_id %block_after_loop_id
+  //
+  // A new OpPhi instruction is then added to %block_after_loop_id, as follows:
+  //
+  //  %block_after_loop_id = OpLabel
+  //               %syn_id = OpPhi %type_of_I %eventual_syn_id %loop_id
+  //
+  // This can be translated, assuming that N > 0, to:
+  // int syn = I;
+  // for (int ctr = 0; ctr < N; ctr++) syn = syn - S;
+  //
+  // All existing OpPhi instructions in %block_after_loop_id are also updated
+  // to reflect the fact that its predecessor is now %loop_id.
+
+  // The following are existing ids.
+
+  // The id of the integer constant C that we want a synonym of.
+  uint32 constant_id = 1;
+
+  // The id of the initial value integer constant I.
+  uint32 initial_val_id = 2;
+
+  // The id of the step value integer constant S.
+  uint32 step_val_id = 3;
+
+  // The id of the integer scalar constant, its value being the number of
+  // iterations N.
+  uint32 num_iterations_id = 4;
+
+  // The label id of the block before which the loop must be inserted.
+  uint32 block_after_loop_id = 5;
+
+
+  // The following are fresh ids.
+
+  // A fresh id for the synonym.
+  uint32 syn_id = 6;
+
+  // A fresh id for the label of the loop,
+  uint32 loop_id = 7;
+
+  // A fresh id for the counter.
+  uint32 ctr_id = 8;
+
+  // A fresh id taking the value I - S * ctr at the ctr-th iteration.
+  uint32 temp_id = 9;
+
+  // A fresh id taking the value I - S * (ctr + 1) at the ctr-th iteration, and
+  // thus I - S * N at the last iteration.
+  uint32 eventual_syn_id = 10;
+
+  // A fresh id for the incremented counter.
+  uint32 incremented_ctr_id = 11;
+
+  // A fresh id for the loop condition.
+  uint32 cond_id = 12;
+
+  // The instructions in the loop can also be laid out in two basic blocks, as follows:
+  //
+  //  %loop_id = OpLabel
+  //   %ctr_id = OpPhi %int %int_0 %pred %incremented_ctr_id %loop_id
+  //  %temp_id = OpPhi %type_of_I %I %pred %eventual_syn_id %loop_id
+  //             OpLoopMerge %block_after_loop_id %additional_block_id None
+  //             OpBranch %additional_block_id
+  //
+  //  %additional_block_id = OpLabel
+  //      %eventual_syn_id = OpISub %type_of_I %temp_id %step_val_id
+  //   %incremented_ctr_id = OpIAdd %int %ctr_id %int_1
+  //              %cond_id = OpSLessThan %bool %incremented_ctr_id %num_iterations_id
+  //                         OpBranchConditional %cond_id %loop_id %block_after_loop_id
+
+  // A fresh id for the additional block. If this is 0, it means that only one
+  // block is to be created.
+  uint32 additional_block_id = 13;
 }
 
 message TransformationAddNoContractionDecoration {

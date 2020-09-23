@@ -1306,6 +1306,30 @@ void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
   UpdateModuleIdBound(ir_context, result_id);
 }
 
+std::vector<uint32_t> IntToWords(uint64_t value, uint32_t width,
+                                 bool is_signed) {
+  assert(width <= 64 && "The bit width should not be more than 64 bits");
+
+  // Sign-extend or zero-extend the last |width| bits of |value|, depending on
+  // |is_signed|.
+  if (is_signed) {
+    // Sign-extend by shifting left and then shifting right, interpreting the
+    // integer as signed.
+    value = static_cast<int64_t>(value << (64 - width)) >> (64 - width);
+  } else {
+    // Zero-extend by shifting left and then shifting right, interpreting the
+    // integer as unsigned.
+    value = (value << (64 - width)) >> (64 - width);
+  }
+
+  std::vector<uint32_t> result;
+  result.push_back(static_cast<uint32_t>(value));
+  if (width > 32) {
+    result.push_back(static_cast<uint32_t>(value >> 32));
+  }
+  return result;
+}
+
 bool TypesAreEqualUpToSign(opt::IRContext* ir_context, uint32_t type1_id,
                            uint32_t type2_id) {
   if (type1_id == type2_id) {

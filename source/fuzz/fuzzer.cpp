@@ -35,6 +35,7 @@
 #include "source/fuzz/fuzzer_pass_add_loads.h"
 #include "source/fuzz/fuzzer_pass_add_local_variables.h"
 #include "source/fuzz/fuzzer_pass_add_loop_preheaders.h"
+#include "source/fuzz/fuzzer_pass_add_loops_to_create_int_constant_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_no_contraction_decorations.h"
 #include "source/fuzz/fuzzer_pass_add_opphi_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
@@ -238,6 +239,8 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     MaybeAddRepeatedPass<FuzzerPassAddLoads>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddLocalVariables>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddLoopPreheaders>(&pass_instances);
+    MaybeAddRepeatedPass<FuzzerPassAddLoopsToCreateIntConstantSynonyms>(
+        &pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddOpPhiSynonyms>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddParameters>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddRelaxedDecorations>(&pass_instances);
