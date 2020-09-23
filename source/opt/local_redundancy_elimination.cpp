@@ -14,7 +14,12 @@
 
 #include "source/opt/local_redundancy_elimination.h"
 
+#include <unordered_map>
+
 #include "source/opt/value_number_table.h"
+
+static const uint32_t kDebugValueOperandLocalVariableIndex = 4;
+static const uint32_t kDebugValueOperandValueIndex = 5;
 
 namespace spvtools {
 namespace opt {
@@ -41,7 +46,9 @@ bool LocalRedundancyEliminationPass::EliminateRedundanciesInBB(
     std::map<uint32_t, uint32_t>* value_to_ids) {
   bool modified = false;
 
-  auto func = [this, &vnTable, &modified, value_to_ids](Instruction* inst) {
+  std::unordered_map<uint32_t, Instruction*> var_id_to_dbgdecl_dbgval;
+  auto func = [this, &vnTable, &modified, value_to_ids,
+               &var_id_to_dbgdecl_dbgval](Instruction* inst) {
     if (inst->result_id() == 0) {
       return;
     }
@@ -58,6 +65,22 @@ bool LocalRedundancyEliminationPass::EliminateRedundanciesInBB(
       context()->ReplaceAllUsesWith(inst->result_id(), candidate.first->second);
       context()->KillInst(inst);
       modified = true;
+    } else if (inst->GetOpenCL100DebugOpcode() ==
+                   OpenCLDebugInfo100DebugDeclare ||
+               inst->GetOpenCL100DebugOpcode() ==
+                   OpenCLDebugInfo100DebugValue) {
+      uint32_t var_id =
+          inst->GetSingleWordOperand(kDebugValueOperandLocalVariableIndex);
+      auto var_id_and_dbgval = var_id_to_dbgdecl_dbgval.insert({var_id, inst});
+      if (var_id_and_dbgval.second) {
+        return;
+      }
+      if (var_id_and_dbgval.first->second->GetSingleWordOperand(
+              kDebugValueOperandValueIndex) ==
+          inst->GetSingleWordOperand(kDebugValueOperandValueIndex)) {
+        context()->KillInst(inst);
+        modified = true;
+      }
     }
   };
   block->ForEachInst(func);
