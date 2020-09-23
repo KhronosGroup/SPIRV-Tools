@@ -55,7 +55,12 @@ class TransformationMergeFunctionReturns : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO: Comment.
+  // Changes the function so that there is only one reachable return
+  // instruction. The function is enclosed by an outer loop, whose merge block
+  // is the new return block. All existing return statements are replaced by
+  // branch instructions to the merge block of the loop enclosing them, and
+  // OpPhi instructions are used to keep track of the return value and of
+  // whether the function is returning.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
