@@ -15,10 +15,10 @@
 #ifndef SOURCE_FUZZ_DATA_DESCRIPTOR_H_
 #define SOURCE_FUZZ_DATA_DESCRIPTOR_H_
 
-#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
-
 #include <ostream>
 #include <vector>
+
+#include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 
 namespace spvtools {
 namespace fuzz {

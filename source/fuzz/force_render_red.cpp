@@ -150,7 +150,7 @@ MakeConstantUniformReplacement(opt::IRContext* ir_context,
                           MakeInstructionDescriptor(greater_than_instruction,
                                                     SpvOpFOrdGreaterThan, 0),
                           in_operand_index),
-      fact_manager.GetUniformDescriptorsForConstant(ir_context, constant_id)[0],
+      fact_manager.GetUniformDescriptorsForConstant(constant_id)[0],
       ir_context->TakeNextId(), ir_context->TakeNextId());
 }
 
@@ -182,9 +182,9 @@ bool ForceRenderRed(
   assert(ir_context);
 
   // Set up a fact manager with any given initial facts.
-  FactManager fact_manager;
+  FactManager fact_manager(ir_context.get());
   for (auto& fact : initial_facts.fact()) {
-    fact_manager.AddFact(fact, ir_context.get());
+    fact_manager.AddFact(fact);
   }
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -273,8 +273,7 @@ bool ForceRenderRed(
       // We have at least one float uniform; let's see whether we have at least
       // two.
       auto available_constants =
-          fact_manager.GetConstantsAvailableFromUniformsForType(
-              ir_context.get(), float_type_id);
+          fact_manager.GetConstantsAvailableFromUniformsForType(float_type_id);
       if (available_constants.size() > 1) {
         // Grab the float constants associated with the first two known float
         // uniforms.

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_compute_data_synonym_fact_closure.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -122,7 +123,7 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -140,7 +141,7 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
                                          MakeDataDescriptor(101, {1})));
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(24, {}),
-                                  MakeDataDescriptor(101, {}), context.get());
+                                  MakeDataDescriptor(101, {}));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {}),
                                         MakeDataDescriptor(101, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {0}),
@@ -157,7 +158,7 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {1}),
                                          MakeDataDescriptor(102, {1})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(27, {0}),
-                                  MakeDataDescriptor(102, {0}), context.get());
+                                  MakeDataDescriptor(102, {0}));
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {}),
                                          MakeDataDescriptor(102, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {0}),
@@ -165,7 +166,7 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {1}),
                                          MakeDataDescriptor(102, {1})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(27, {1}),
-                                  MakeDataDescriptor(102, {1}), context.get());
+                                  MakeDataDescriptor(102, {1}));
 
   TransformationComputeDataSynonymFactClosure(100).Apply(
       context.get(), &transformation_context);
@@ -200,15 +201,15 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {3}),
                                          MakeDataDescriptor(105, {3})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(30, {}),
-                                  MakeDataDescriptor(103, {}), context.get());
+                                  MakeDataDescriptor(103, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(33, {}),
-                                  MakeDataDescriptor(104, {}), context.get());
+                                  MakeDataDescriptor(104, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {0}),
-                                  MakeDataDescriptor(105, {0}), context.get());
+                                  MakeDataDescriptor(105, {0}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {1}),
-                                  MakeDataDescriptor(105, {1}), context.get());
+                                  MakeDataDescriptor(105, {1}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {2}),
-                                  MakeDataDescriptor(105, {2}), context.get());
+                                  MakeDataDescriptor(105, {2}));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {}),
                                         MakeDataDescriptor(103, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {0}),
@@ -233,7 +234,7 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
                                          MakeDataDescriptor(105, {3})));
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {3}),
-                                  MakeDataDescriptor(105, {3}), context.get());
+                                  MakeDataDescriptor(105, {3}));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {0}),
                                         MakeDataDescriptor(104, {0})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {3}),
@@ -242,15 +243,15 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
                                          MakeDataDescriptor(100, {})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {0}),
-                                  MakeDataDescriptor(100, {0}), context.get());
+                                  MakeDataDescriptor(100, {0}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {1}),
-                                  MakeDataDescriptor(100, {1}), context.get());
+                                  MakeDataDescriptor(100, {1}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {2}),
-                                  MakeDataDescriptor(100, {2}), context.get());
+                                  MakeDataDescriptor(100, {2}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {3}),
-                                  MakeDataDescriptor(100, {3}), context.get());
+                                  MakeDataDescriptor(100, {3}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {4}),
-                                  MakeDataDescriptor(100, {4}), context.get());
+                                  MakeDataDescriptor(100, {4}));
 
   TransformationComputeDataSynonymFactClosure(100).Apply(
       context.get(), &transformation_context);
@@ -263,7 +264,7 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(35, {}),
                                          MakeDataDescriptor(39, {0})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(39, {0}),
-                                  MakeDataDescriptor(35, {}), context.get());
+                                  MakeDataDescriptor(35, {}));
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(39, {0}),
                                          MakeDataDescriptor(107, {0})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(35, {}),
@@ -280,13 +281,13 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(38, {}),
                                          MakeDataDescriptor(106, {})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(38, {0}),
-                                  MakeDataDescriptor(36, {}), context.get());
+                                  MakeDataDescriptor(36, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(106, {0}),
-                                  MakeDataDescriptor(36, {}), context.get());
+                                  MakeDataDescriptor(36, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(38, {1}),
-                                  MakeDataDescriptor(37, {}), context.get());
+                                  MakeDataDescriptor(37, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(106, {1}),
-                                  MakeDataDescriptor(37, {}), context.get());
+                                  MakeDataDescriptor(37, {}));
 
   TransformationComputeDataSynonymFactClosure(100).Apply(
       context.get(), &transformation_context);
@@ -305,13 +306,13 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {}),
                                          MakeDataDescriptor(108, {})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(107, {0}),
-                                  MakeDataDescriptor(35, {}), context.get());
+                                  MakeDataDescriptor(35, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {0}),
-                                  MakeDataDescriptor(108, {0}), context.get());
+                                  MakeDataDescriptor(108, {0}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {1}),
-                                  MakeDataDescriptor(108, {1}), context.get());
+                                  MakeDataDescriptor(108, {1}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {2}),
-                                  MakeDataDescriptor(108, {2}), context.get());
+                                  MakeDataDescriptor(108, {2}));
 
   TransformationComputeDataSynonymFactClosure(100).Apply(
       context.get(), &transformation_context);

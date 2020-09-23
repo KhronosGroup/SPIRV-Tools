@@ -15,7 +15,6 @@
 #include "source/fuzz/transformation_replace_add_sub_mul_with_carrying_extended.h"
 
 #include "source/fuzz/fuzzer_util.h"
-
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -60,7 +59,7 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -148,7 +147,7 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -245,7 +244,7 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -408,7 +407,7 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

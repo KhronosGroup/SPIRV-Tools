@@ -33,8 +33,7 @@ TransformationToggleAccessChainInstruction::
 }
 
 bool TransformationToggleAccessChainInstruction::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/
-    ) const {
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   auto instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
   if (instruction == nullptr) {
@@ -56,8 +55,7 @@ bool TransformationToggleAccessChainInstruction::IsApplicable(
 }
 
 void TransformationToggleAccessChainInstruction::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/
-    ) const {
+    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   auto instruction =
       FindInstruction(message_.instruction_descriptor(), ir_context);
   SpvOp opcode = instruction->opcode();

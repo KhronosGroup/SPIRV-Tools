@@ -358,7 +358,7 @@ void TransformationFlattenConditionalBranch::Apply(
   }
   for (auto irrelevant_id : irrelevant_ids) {
     transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
-        irrelevant_id, ir_context);
+        irrelevant_id);
   }
 }
 

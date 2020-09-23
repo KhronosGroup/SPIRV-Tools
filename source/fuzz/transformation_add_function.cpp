@@ -203,14 +203,12 @@ void TransformationAddFunction::Apply(
                 ->GetDef(instruction.result_type_id())
                 ->opcode() == SpvOpTypePointer) {
           transformation_context->GetFactManager()
-              ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id(),
-                                                  ir_context);
+              ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id());
         }
         break;
       case SpvOpVariable:
         transformation_context->GetFactManager()
-            ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id(),
-                                                ir_context);
+            ->AddFactValueOfPointeeIsIrrelevant(instruction.result_id());
         break;
       default:
         break;

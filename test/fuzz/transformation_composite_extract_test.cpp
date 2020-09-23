@@ -96,7 +96,7 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -351,7 +351,7 @@ TEST(TransformationCompositeExtractTest, IllegalInsertionPoints) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -475,7 +475,7 @@ TEST(TransformationCompositeExtractTest, AddSynonymsForRelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -564,12 +564,12 @@ TEST(TransformationCompositeExtractTest, DontAddSynonymsForIrrelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(100, context.get());
+  fact_manager.AddFactIdIsIrrelevant(100);
   TransformationCompositeExtract transformation(
       MakeInstructionDescriptor(36, SpvOpConvertFToS, 0), 201, 100, {2});
   ASSERT_TRUE(

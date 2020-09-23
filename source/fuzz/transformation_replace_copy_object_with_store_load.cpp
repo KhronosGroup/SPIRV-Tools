@@ -133,7 +133,7 @@ void TransformationReplaceCopyObjectWithStoreLoad::Apply(
   // and src_operand (id used by OpCopyObject) are synonymous.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.copy_object_result_id(), {}),
-      MakeDataDescriptor(src_operand, {}), ir_context);
+      MakeDataDescriptor(src_operand, {}));
 }
 
 protobufs::Transformation

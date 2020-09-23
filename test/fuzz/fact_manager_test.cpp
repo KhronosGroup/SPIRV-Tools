@@ -35,8 +35,7 @@ using opt::analysis::Integer;
 using opt::analysis::Type;
 
 bool AddFactHelper(
-    FactManager* fact_manager, opt::IRContext* context,
-    std::vector<uint32_t>&& words,
+    FactManager* fact_manager, const std::vector<uint32_t>& words,
     const protobufs::UniformBufferElementDescriptor& descriptor) {
   protobufs::FactConstantUniform constant_uniform_fact;
   for (auto word : words) {
@@ -46,7 +45,7 @@ bool AddFactHelper(
       descriptor;
   protobufs::Fact fact;
   *fact.mutable_constant_uniform_fact() = constant_uniform_fact;
-  return fact_manager->AddFact(fact, context);
+  return fact_manager->AddFact(fact);
 }
 
 TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
@@ -256,7 +255,7 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
     std::memcpy(&buffer_double_20, &temp, sizeof(temp));
   }
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   uint32_t type_int32_id = 11;
   uint32_t type_int64_id = 13;
@@ -266,103 +265,100 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   uint32_t type_double_id = 16;
 
   // Initially there should be no facts about uniforms.
-  ASSERT_TRUE(fact_manager
-                  .GetConstantsAvailableFromUniformsForType(context.get(),
-                                                            type_uint32_id)
-                  .empty());
+  ASSERT_TRUE(
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_id)
+          .empty());
 
   // In the comments that follow we write v[...][...] to refer to uniform
   // variable v indexed with some given indices, when in practice v is
   // identified via a (descriptor set, binding) pair.
 
   // 100[2][3] == int(1)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
+  ASSERT_TRUE(AddFactHelper(&fact_manager, {1},
                             MakeUniformBufferElementDescriptor(0, 0, {2, 3})));
 
   // 200[1][2][3] == int(1)
-  ASSERT_TRUE(
-      AddFactHelper(&fact_manager, context.get(), {1},
-                    MakeUniformBufferElementDescriptor(0, 1, {1, 2, 3})));
+  ASSERT_TRUE(AddFactHelper(
+      &fact_manager, {1}, MakeUniformBufferElementDescriptor(0, 1, {1, 2, 3})));
 
   // 300[1][0][2][3] == int(1)
   ASSERT_TRUE(
-      AddFactHelper(&fact_manager, context.get(), {1},
+      AddFactHelper(&fact_manager, {1},
                     MakeUniformBufferElementDescriptor(0, 2, {1, 0, 2, 3})));
 
   // 400[2][3] = int32_min
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_int32_min[0]},
+  ASSERT_TRUE(AddFactHelper(&fact_manager, {buffer_int32_min[0]},
                             MakeUniformBufferElementDescriptor(0, 3, {2, 3})));
 
   // 500[1][2][3] = int32_min
   ASSERT_TRUE(
-      AddFactHelper(&fact_manager, context.get(), {buffer_int32_min[0]},
+      AddFactHelper(&fact_manager, {buffer_int32_min[0]},
                     MakeUniformBufferElementDescriptor(0, 4, {1, 2, 3})));
 
   // 600[1][2][3] = int64_max
-  ASSERT_TRUE(AddFactHelper(
-      &fact_manager, context.get(), {buffer_int64_max[0], buffer_int64_max[1]},
-      MakeUniformBufferElementDescriptor(0, 5, {1, 2, 3})));
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, {buffer_int64_max[0], buffer_int64_max[1]},
+                    MakeUniformBufferElementDescriptor(0, 5, {1, 2, 3})));
 
   // 700[1][1] = int64_max
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+  ASSERT_TRUE(AddFactHelper(&fact_manager,
                             {buffer_int64_max[0], buffer_int64_max[1]},
                             MakeUniformBufferElementDescriptor(0, 6, {1, 1})));
 
   // 800[2][3] = uint(1)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
+  ASSERT_TRUE(AddFactHelper(&fact_manager, {1},
                             MakeUniformBufferElementDescriptor(1, 0, {2, 3})));
 
   // 900[1][2][3] = uint(1)
-  ASSERT_TRUE(
-      AddFactHelper(&fact_manager, context.get(), {1},
-                    MakeUniformBufferElementDescriptor(1, 1, {1, 2, 3})));
+  ASSERT_TRUE(AddFactHelper(
+      &fact_manager, {1}, MakeUniformBufferElementDescriptor(1, 1, {1, 2, 3})));
 
   // 1000[1][0][2][3] = uint(1)
   ASSERT_TRUE(
-      AddFactHelper(&fact_manager, context.get(), {1},
+      AddFactHelper(&fact_manager, {1},
                     MakeUniformBufferElementDescriptor(1, 2, {1, 0, 2, 3})));
 
   // 1100[0] = uint64(1)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+  ASSERT_TRUE(AddFactHelper(&fact_manager,
                             {buffer_uint64_1[0], buffer_uint64_1[1]},
                             MakeUniformBufferElementDescriptor(1, 3, {0})));
 
   // 1200[0][0] = uint64_max
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+  ASSERT_TRUE(AddFactHelper(&fact_manager,
                             {buffer_uint64_max[0], buffer_uint64_max[1]},
                             MakeUniformBufferElementDescriptor(1, 4, {0, 0})));
 
   // 1300[1][0] = uint64_max
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(),
+  ASSERT_TRUE(AddFactHelper(&fact_manager,
                             {buffer_uint64_max[0], buffer_uint64_max[1]},
                             MakeUniformBufferElementDescriptor(1, 5, {1, 0})));
 
   // 1400[6] = float(10.0)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_float_10[0]},
+  ASSERT_TRUE(AddFactHelper(&fact_manager, {buffer_float_10[0]},
                             MakeUniformBufferElementDescriptor(1, 6, {6})));
 
   // 1500[7] = float(10.0)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_float_10[0]},
+  ASSERT_TRUE(AddFactHelper(&fact_manager, {buffer_float_10[0]},
                             MakeUniformBufferElementDescriptor(2, 0, {7})));
 
   // 1600[9][9] = float(10.0)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {buffer_float_10[0]},
+  ASSERT_TRUE(AddFactHelper(&fact_manager, {buffer_float_10[0]},
                             MakeUniformBufferElementDescriptor(2, 1, {9, 9})));
 
   // 1700[9][9][1] = double(10.0)
-  ASSERT_TRUE(AddFactHelper(
-      &fact_manager, context.get(), {buffer_double_10[0], buffer_double_10[1]},
-      MakeUniformBufferElementDescriptor(2, 2, {9, 9, 1})));
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, {buffer_double_10[0], buffer_double_10[1]},
+                    MakeUniformBufferElementDescriptor(2, 2, {9, 9, 1})));
 
   // 1800[9][9][2] = double(10.0)
-  ASSERT_TRUE(AddFactHelper(
-      &fact_manager, context.get(), {buffer_double_10[0], buffer_double_10[1]},
-      MakeUniformBufferElementDescriptor(2, 3, {9, 9, 2})));
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, {buffer_double_10[0], buffer_double_10[1]},
+                    MakeUniformBufferElementDescriptor(2, 3, {9, 9, 2})));
 
   // 1900[0][0][0][0][0] = double(20.0)
-  ASSERT_TRUE(AddFactHelper(
-      &fact_manager, context.get(), {buffer_double_20[0], buffer_double_20[1]},
-      MakeUniformBufferElementDescriptor(2, 4, {0, 0, 0, 0, 0})));
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, {buffer_double_20[0], buffer_double_20[1]},
+                    MakeUniformBufferElementDescriptor(2, 4, {0, 0, 0, 0, 0})));
 
   opt::Instruction::OperandList operands = {
       {SPV_OPERAND_TYPE_LITERAL_INTEGER, {1}}};
@@ -406,59 +402,52 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   context->InvalidateAnalysesExceptFor(opt::IRContext::Analysis::kAnalysisNone);
 
   // Constants 1 and int32_min are available.
-  ASSERT_EQ(2, fact_manager
-                   .GetConstantsAvailableFromUniformsForType(context.get(),
-                                                             type_int32_id)
-                   .size());
+  ASSERT_EQ(2,
+            fact_manager.GetConstantsAvailableFromUniformsForType(type_int32_id)
+                .size());
   // Constant int64_max is available.
-  ASSERT_EQ(1, fact_manager
-                   .GetConstantsAvailableFromUniformsForType(context.get(),
-                                                             type_int64_id)
-                   .size());
+  ASSERT_EQ(1,
+            fact_manager.GetConstantsAvailableFromUniformsForType(type_int64_id)
+                .size());
   // Constant 1u is available.
-  ASSERT_EQ(1, fact_manager
-                   .GetConstantsAvailableFromUniformsForType(context.get(),
-                                                             type_uint32_id)
-                   .size());
+  ASSERT_EQ(
+      1, fact_manager.GetConstantsAvailableFromUniformsForType(type_uint32_id)
+             .size());
   // Constants 1u and uint64_max are available.
-  ASSERT_EQ(2, fact_manager
-                   .GetConstantsAvailableFromUniformsForType(context.get(),
-                                                             type_uint64_id)
-                   .size());
+  ASSERT_EQ(
+      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_uint64_id)
+             .size());
   // Constant 10.0 is available.
-  ASSERT_EQ(1, fact_manager
-                   .GetConstantsAvailableFromUniformsForType(context.get(),
-                                                             type_float_id)
-                   .size());
+  ASSERT_EQ(1,
+            fact_manager.GetConstantsAvailableFromUniformsForType(type_float_id)
+                .size());
   // Constants 10.0 and 20.0 are available.
-  ASSERT_EQ(2, fact_manager
-                   .GetConstantsAvailableFromUniformsForType(context.get(),
-                                                             type_double_id)
-                   .size());
+  ASSERT_EQ(
+      2, fact_manager.GetConstantsAvailableFromUniformsForType(type_double_id)
+             .size());
 
   ASSERT_EQ(std::numeric_limits<int64_t>::max(),
             context->get_constant_mgr()
                 ->FindDeclaredConstant(
                     fact_manager.GetConstantsAvailableFromUniformsForType(
-                        context.get(), type_int64_id)[0])
+                        type_int64_id)[0])
                 ->AsIntConstant()
                 ->GetS64());
   ASSERT_EQ(1, context->get_constant_mgr()
                    ->FindDeclaredConstant(
                        fact_manager.GetConstantsAvailableFromUniformsForType(
-                           context.get(), type_uint32_id)[0])
+                           type_uint32_id)[0])
                    ->AsIntConstant()
                    ->GetU32());
   ASSERT_EQ(10.0f,
             context->get_constant_mgr()
                 ->FindDeclaredConstant(
                     fact_manager.GetConstantsAvailableFromUniformsForType(
-                        context.get(), type_float_id)[0])
+                        type_float_id)[0])
                 ->AsFloatConstant()
                 ->GetFloat());
   const std::vector<uint32_t>& double_constant_ids =
-      fact_manager.GetConstantsAvailableFromUniformsForType(context.get(),
-                                                            type_double_id);
+      fact_manager.GetConstantsAvailableFromUniformsForType(type_double_id);
   ASSERT_EQ(10.0, context->get_constant_mgr()
                       ->FindDeclaredConstant(double_constant_ids[0])
                       ->AsFloatConstant()
@@ -469,8 +458,8 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
                       ->GetDouble());
 
   const std::vector<protobufs::UniformBufferElementDescriptor>
-      descriptors_for_double_10 = fact_manager.GetUniformDescriptorsForConstant(
-          context.get(), double_constant_ids[0]);
+      descriptors_for_double_10 =
+          fact_manager.GetUniformDescriptorsForConstant(double_constant_ids[0]);
   ASSERT_EQ(2, descriptors_for_double_10.size());
   {
     auto temp = MakeUniformBufferElementDescriptor(2, 2, {9, 9, 1});
@@ -483,8 +472,8 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
         &temp, &descriptors_for_double_10[1]));
   }
   const std::vector<protobufs::UniformBufferElementDescriptor>
-      descriptors_for_double_20 = fact_manager.GetUniformDescriptorsForConstant(
-          context.get(), double_constant_ids[1]);
+      descriptors_for_double_20 =
+          fact_manager.GetUniformDescriptorsForConstant(double_constant_ids[1]);
   ASSERT_EQ(1, descriptors_for_double_20.size());
   {
     auto temp = MakeUniformBufferElementDescriptor(2, 4, {0, 0, 0, 0, 0});
@@ -493,11 +482,11 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   }
 
   auto constant_1_id = fact_manager.GetConstantFromUniformDescriptor(
-      context.get(), MakeUniformBufferElementDescriptor(2, 3, {9, 9, 2}));
+      MakeUniformBufferElementDescriptor(2, 3, {9, 9, 2}));
   ASSERT_TRUE(constant_1_id);
 
   auto constant_2_id = fact_manager.GetConstantFromUniformDescriptor(
-      context.get(), MakeUniformBufferElementDescriptor(2, 4, {0, 0, 0, 0, 0}));
+      MakeUniformBufferElementDescriptor(2, 4, {0, 0, 0, 0, 0}));
   ASSERT_TRUE(constant_2_id);
 
   ASSERT_EQ(double_constant_ids[0], constant_1_id);
@@ -546,29 +535,28 @@ TEST(FactManagerTest, TwoConstantsWithSameValue) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   auto uniform_buffer_element_descriptor =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
   // (0, 0, [0]) = int(1)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
-                            uniform_buffer_element_descriptor));
-  auto constants =
-      fact_manager.GetConstantsAvailableFromUniformsForType(context.get(), 6);
+  ASSERT_TRUE(
+      AddFactHelper(&fact_manager, {1}, uniform_buffer_element_descriptor));
+  auto constants = fact_manager.GetConstantsAvailableFromUniformsForType(6);
   ASSERT_EQ(1, constants.size());
   ASSERT_TRUE(constants[0] == 9 || constants[0] == 20);
 
   auto constant = fact_manager.GetConstantFromUniformDescriptor(
-      context.get(), uniform_buffer_element_descriptor);
+      uniform_buffer_element_descriptor);
   ASSERT_TRUE(constant == 9 || constant == 20);
 
   // Because the constants with ids 9 and 20 are equal, we should get the same
   // single uniform buffer element descriptor when we look up the descriptors
   // for either one of them.
   for (auto constant_id : {9u, 20u}) {
-    auto descriptors = fact_manager.GetUniformDescriptorsForConstant(
-        context.get(), constant_id);
+    auto descriptors =
+        fact_manager.GetUniformDescriptorsForConstant(constant_id);
     ASSERT_EQ(1, descriptors.size());
     ASSERT_TRUE(UniformBufferElementDescriptorEquals()(
         &uniform_buffer_element_descriptor, &descriptors[0]));
@@ -612,7 +600,7 @@ TEST(FactManagerTest, NonFiniteFactsAreNotValid) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   auto uniform_buffer_element_descriptor_f =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
@@ -624,12 +612,12 @@ TEST(FactManagerTest, NonFiniteFactsAreNotValid) {
     float positive_infinity_float = std::numeric_limits<float>::infinity();
     uint32_t words[1];
     memcpy(words, &positive_infinity_float, sizeof(float));
-    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(), {words[0]},
+    ASSERT_FALSE(AddFactHelper(&fact_manager, {words[0]},
                                uniform_buffer_element_descriptor_f));
     // f == -inf
     float negative_infinity_float = std::numeric_limits<float>::infinity();
     memcpy(words, &negative_infinity_float, sizeof(float));
-    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(), {words[0]},
+    ASSERT_FALSE(AddFactHelper(&fact_manager, {words[0]},
                                uniform_buffer_element_descriptor_f));
   }
 
@@ -638,7 +626,7 @@ TEST(FactManagerTest, NonFiniteFactsAreNotValid) {
     float quiet_nan_float = std::numeric_limits<float>::quiet_NaN();
     uint32_t words[1];
     memcpy(words, &quiet_nan_float, sizeof(float));
-    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(), {words[0]},
+    ASSERT_FALSE(AddFactHelper(&fact_manager, {words[0]},
                                uniform_buffer_element_descriptor_f));
   }
 
@@ -647,14 +635,12 @@ TEST(FactManagerTest, NonFiniteFactsAreNotValid) {
     double positive_infinity_double = std::numeric_limits<double>::infinity();
     uint32_t words[2];
     memcpy(words, &positive_infinity_double, sizeof(double));
-    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(),
-                               {words[0], words[1]},
+    ASSERT_FALSE(AddFactHelper(&fact_manager, {words[0], words[1]},
                                uniform_buffer_element_descriptor_d));
     // d == -inf
     double negative_infinity_double = -std::numeric_limits<double>::infinity();
     memcpy(words, &negative_infinity_double, sizeof(double));
-    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(),
-                               {words[0], words[1]},
+    ASSERT_FALSE(AddFactHelper(&fact_manager, {words[0], words[1]},
                                uniform_buffer_element_descriptor_d));
   }
 
@@ -663,8 +649,7 @@ TEST(FactManagerTest, NonFiniteFactsAreNotValid) {
     double quiet_nan_double = std::numeric_limits<double>::quiet_NaN();
     uint32_t words[2];
     memcpy(words, &quiet_nan_double, sizeof(double));
-    ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(),
-                               {words[0], words[1]},
+    ASSERT_FALSE(AddFactHelper(&fact_manager, {words[0], words[1]},
                                uniform_buffer_element_descriptor_d));
   }
 }
@@ -730,14 +715,14 @@ TEST(FactManagerTest, AmbiguousFact) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   auto uniform_buffer_element_descriptor =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
   // The fact cannot be added because it is ambiguous: there are two uniforms
   // with descriptor set 0 and binding 0.
-  ASSERT_FALSE(AddFactHelper(&fact_manager, context.get(), {1},
-                             uniform_buffer_element_descriptor));
+  ASSERT_FALSE(
+      AddFactHelper(&fact_manager, {1}, uniform_buffer_element_descriptor));
 }
 
 TEST(FactManagerTest, RecursiveAdditionOfFacts) {
@@ -767,10 +752,10 @@ TEST(FactManagerTest, RecursiveAdditionOfFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(10, {}),
-                                  MakeDataDescriptor(11, {2}), context.get());
+                                  MakeDataDescriptor(11, {2}));
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(10, {}),
                                         MakeDataDescriptor(11, {2})));
@@ -829,43 +814,43 @@ TEST(FactManagerTest, CorollaryConversionFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   // Add equation facts
-  fact_manager.AddFactIdEquation(24, SpvOpConvertSToF, {15}, context.get());
-  fact_manager.AddFactIdEquation(25, SpvOpConvertSToF, {16}, context.get());
-  fact_manager.AddFactIdEquation(26, SpvOpConvertUToF, {17}, context.get());
-  fact_manager.AddFactIdEquation(27, SpvOpConvertSToF, {18}, context.get());
-  fact_manager.AddFactIdEquation(28, SpvOpConvertUToF, {19}, context.get());
-  fact_manager.AddFactIdEquation(29, SpvOpConvertUToF, {20}, context.get());
-  fact_manager.AddFactIdEquation(30, SpvOpConvertSToF, {21}, context.get());
-  fact_manager.AddFactIdEquation(31, SpvOpConvertUToF, {22}, context.get());
-  fact_manager.AddFactIdEquation(32, SpvOpConvertUToF, {23}, context.get());
+  fact_manager.AddFactIdEquation(24, SpvOpConvertSToF, {15});
+  fact_manager.AddFactIdEquation(25, SpvOpConvertSToF, {16});
+  fact_manager.AddFactIdEquation(26, SpvOpConvertUToF, {17});
+  fact_manager.AddFactIdEquation(27, SpvOpConvertSToF, {18});
+  fact_manager.AddFactIdEquation(28, SpvOpConvertUToF, {19});
+  fact_manager.AddFactIdEquation(29, SpvOpConvertUToF, {20});
+  fact_manager.AddFactIdEquation(30, SpvOpConvertSToF, {21});
+  fact_manager.AddFactIdEquation(31, SpvOpConvertUToF, {22});
+  fact_manager.AddFactIdEquation(32, SpvOpConvertUToF, {23});
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(15, {}),
-                                  MakeDataDescriptor(16, {}), context.get());
+                                  MakeDataDescriptor(16, {}));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {}),
                                         MakeDataDescriptor(25, {})));
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(17, {}),
-                                  MakeDataDescriptor(18, {}), context.get());
+                                  MakeDataDescriptor(18, {}));
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(26, {}),
                                          MakeDataDescriptor(27, {})));
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(19, {}),
-                                  MakeDataDescriptor(20, {}), context.get());
+                                  MakeDataDescriptor(20, {}));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(28, {}),
                                         MakeDataDescriptor(29, {})));
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {}),
-                                  MakeDataDescriptor(22, {}), context.get());
+                                  MakeDataDescriptor(22, {}));
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {}),
                                          MakeDataDescriptor(31, {})));
 
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(32, {}),
                                          MakeDataDescriptor(28, {})));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(23, {}),
-                                  MakeDataDescriptor(19, {}), context.get());
+                                  MakeDataDescriptor(19, {}));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(32, {}),
                                         MakeDataDescriptor(28, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(32, {}),
@@ -902,12 +887,12 @@ TEST(FactManagerTest, HandlesCorollariesWithInvalidIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   // Add required facts.
-  fact_manager.AddFactIdEquation(14, SpvOpConvertSToF, {9}, context.get());
+  fact_manager.AddFactIdEquation(14, SpvOpConvertSToF, {9});
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(14, {}),
-                                  MakeDataDescriptor(17, {}), context.get());
+                                  MakeDataDescriptor(17, {}));
 
   // Apply TransformationMergeBlocks which will remove %17 from the module.
   spvtools::ValidatorOptions validator_options;
@@ -922,7 +907,7 @@ TEST(FactManagerTest, HandlesCorollariesWithInvalidIds) {
   ASSERT_EQ(context->get_def_use_mgr()->GetDef(17), nullptr);
 
   // Add another equation.
-  fact_manager.AddFactIdEquation(15, SpvOpConvertSToF, {9}, context.get());
+  fact_manager.AddFactIdEquation(15, SpvOpConvertSToF, {9});
 
   // Check that two ids are synonymous even though one of them doesn't exist in
   // the module (%17).
@@ -936,7 +921,7 @@ TEST(FactManagerTest, HandlesCorollariesWithInvalidIds) {
   ASSERT_TRUE(context->KillDef(14));
   ASSERT_TRUE(context->KillDef(15));
 
-  fact_manager.AddFactIdEquation(18, SpvOpConvertSToF, {9}, context.get());
+  fact_manager.AddFactIdEquation(18, SpvOpConvertSToF, {9});
 
   // We don't create synonyms if at least one of the equivalence classes has no
   // valid members.
@@ -971,14 +956,14 @@ TEST(FactManagerTest, LogicalNotEquationFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(15, {}),
-                                  MakeDataDescriptor(7, {}), context.get());
+                                  MakeDataDescriptor(7, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(16, {}),
-                                  MakeDataDescriptor(14, {}), context.get());
-  fact_manager.AddFactIdEquation(14, SpvOpLogicalNot, {7}, context.get());
-  fact_manager.AddFactIdEquation(17, SpvOpLogicalNot, {16}, context.get());
+                                  MakeDataDescriptor(14, {}));
+  fact_manager.AddFactIdEquation(14, SpvOpLogicalNot, {7});
+  fact_manager.AddFactIdEquation(17, SpvOpLogicalNot, {16});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
                                         MakeDataDescriptor(7, {})));
@@ -1015,10 +1000,10 @@ TEST(FactManagerTest, SignedNegateEquationFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
-  fact_manager.AddFactIdEquation(14, SpvOpSNegate, {7}, context.get());
-  fact_manager.AddFactIdEquation(15, SpvOpSNegate, {14}, context.get());
+  fact_manager.AddFactIdEquation(14, SpvOpSNegate, {7});
+  fact_manager.AddFactIdEquation(15, SpvOpSNegate, {14});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(7, {}),
                                         MakeDataDescriptor(15, {})));
@@ -1057,21 +1042,21 @@ TEST(FactManagerTest, AddSubNegateFacts1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
-  fact_manager.AddFactIdEquation(14, SpvOpIAdd, {15, 16}, context.get());
+  fact_manager.AddFactIdEquation(14, SpvOpIAdd, {15, 16});
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(17, {}),
-                                  MakeDataDescriptor(15, {}), context.get());
+                                  MakeDataDescriptor(15, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(18, {}),
-                                  MakeDataDescriptor(16, {}), context.get());
-  fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 18}, context.get());
-  fact_manager.AddFactIdEquation(20, SpvOpISub, {14, 17}, context.get());
+                                  MakeDataDescriptor(16, {}));
+  fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 18});
+  fact_manager.AddFactIdEquation(20, SpvOpISub, {14, 17});
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {}),
-                                  MakeDataDescriptor(14, {}), context.get());
-  fact_manager.AddFactIdEquation(22, SpvOpISub, {16, 21}, context.get());
+                                  MakeDataDescriptor(14, {}));
+  fact_manager.AddFactIdEquation(22, SpvOpISub, {16, 21});
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(23, {}),
-                                  MakeDataDescriptor(22, {}), context.get());
-  fact_manager.AddFactIdEquation(24, SpvOpSNegate, {23}, context.get());
+                                  MakeDataDescriptor(22, {}));
+  fact_manager.AddFactIdEquation(24, SpvOpSNegate, {23});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(19, {}),
                                         MakeDataDescriptor(15, {})));
@@ -1113,33 +1098,33 @@ TEST(FactManagerTest, AddSubNegateFacts2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
-  fact_manager.AddFactIdEquation(14, SpvOpISub, {15, 16}, context.get());
-  fact_manager.AddFactIdEquation(17, SpvOpIAdd, {14, 16}, context.get());
+  fact_manager.AddFactIdEquation(14, SpvOpISub, {15, 16});
+  fact_manager.AddFactIdEquation(17, SpvOpIAdd, {14, 16});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(17, {}),
                                         MakeDataDescriptor(15, {})));
 
-  fact_manager.AddFactIdEquation(18, SpvOpIAdd, {16, 14}, context.get());
+  fact_manager.AddFactIdEquation(18, SpvOpIAdd, {16, 14});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
                                         MakeDataDescriptor(15, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(17, {}),
                                         MakeDataDescriptor(18, {})));
 
-  fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 15}, context.get());
-  fact_manager.AddFactIdEquation(20, SpvOpSNegate, {19}, context.get());
+  fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 15});
+  fact_manager.AddFactIdEquation(20, SpvOpSNegate, {19});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(20, {}),
                                         MakeDataDescriptor(16, {})));
 
-  fact_manager.AddFactIdEquation(21, SpvOpISub, {14, 19}, context.get());
+  fact_manager.AddFactIdEquation(21, SpvOpISub, {14, 19});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
                                         MakeDataDescriptor(15, {})));
 
-  fact_manager.AddFactIdEquation(22, SpvOpISub, {14, 18}, context.get());
-  fact_manager.AddFactIdEquation(23, SpvOpSNegate, {22}, context.get());
+  fact_manager.AddFactIdEquation(22, SpvOpISub, {14, 18});
+  fact_manager.AddFactIdEquation(23, SpvOpSNegate, {22});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(23, {}),
                                         MakeDataDescriptor(16, {})));
 }
@@ -1189,42 +1174,42 @@ TEST(FactManagerTest, ConversionEquations) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(16, {}),
-                                  MakeDataDescriptor(17, {}), context.get());
+                                  MakeDataDescriptor(17, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(18, {}),
-                                  MakeDataDescriptor(19, {}), context.get());
+                                  MakeDataDescriptor(19, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(20, {}),
-                                  MakeDataDescriptor(21, {}), context.get());
+                                  MakeDataDescriptor(21, {}));
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(22, {}),
-                                  MakeDataDescriptor(23, {}), context.get());
+                                  MakeDataDescriptor(23, {}));
 
-  fact_manager.AddFactIdEquation(25, SpvOpConvertUToF, {16}, context.get());
-  fact_manager.AddFactIdEquation(26, SpvOpConvertUToF, {17}, context.get());
+  fact_manager.AddFactIdEquation(25, SpvOpConvertUToF, {16});
+  fact_manager.AddFactIdEquation(26, SpvOpConvertUToF, {17});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(25, {}),
                                         MakeDataDescriptor(26, {})));
 
-  fact_manager.AddFactIdEquation(27, SpvOpConvertSToF, {20}, context.get());
-  fact_manager.AddFactIdEquation(28, SpvOpConvertUToF, {21}, context.get());
+  fact_manager.AddFactIdEquation(27, SpvOpConvertSToF, {20});
+  fact_manager.AddFactIdEquation(28, SpvOpConvertUToF, {21});
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {}),
                                          MakeDataDescriptor(28, {})));
 
-  fact_manager.AddFactIdEquation(29, SpvOpConvertSToF, {18}, context.get());
-  fact_manager.AddFactIdEquation(30, SpvOpConvertUToF, {19}, context.get());
+  fact_manager.AddFactIdEquation(29, SpvOpConvertSToF, {18});
+  fact_manager.AddFactIdEquation(30, SpvOpConvertUToF, {19});
   ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(29, {}),
                                          MakeDataDescriptor(30, {})));
 
-  fact_manager.AddFactIdEquation(31, SpvOpConvertSToF, {22}, context.get());
-  fact_manager.AddFactIdEquation(32, SpvOpConvertSToF, {23}, context.get());
+  fact_manager.AddFactIdEquation(31, SpvOpConvertSToF, {22});
+  fact_manager.AddFactIdEquation(32, SpvOpConvertSToF, {23});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(31, {}),
                                         MakeDataDescriptor(32, {})));
 
-  fact_manager.AddFactIdEquation(33, SpvOpConvertUToF, {17}, context.get());
+  fact_manager.AddFactIdEquation(33, SpvOpConvertUToF, {17});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {}),
                                         MakeDataDescriptor(26, {})));
 
-  fact_manager.AddFactIdEquation(34, SpvOpConvertSToF, {23}, context.get());
+  fact_manager.AddFactIdEquation(34, SpvOpConvertSToF, {23});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(32, {}),
                                         MakeDataDescriptor(34, {})));
 }
@@ -1274,12 +1259,11 @@ TEST(FactManagerTest, BitcastEquationFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   uint32_t lhs_id = 30;
   for (uint32_t rhs_id : {6, 6, 7, 7, 19, 19, 20, 20, 21, 21, 22, 22}) {
-    fact_manager.AddFactIdEquation(lhs_id, SpvOpBitcast, {rhs_id},
-                                   context.get());
+    fact_manager.AddFactIdEquation(lhs_id, SpvOpBitcast, {rhs_id});
     ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(lhs_id, {}),
                                           MakeDataDescriptor(rhs_id, {})));
     ++lhs_id;
@@ -1321,39 +1305,39 @@ TEST(FactManagerTest, EquationAndEquivalenceFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
-  fact_manager.AddFactIdEquation(14, SpvOpISub, {15, 16}, context.get());
+  fact_manager.AddFactIdEquation(14, SpvOpISub, {15, 16});
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(114, {}),
-                                  MakeDataDescriptor(14, {}), context.get());
-  fact_manager.AddFactIdEquation(17, SpvOpIAdd, {114, 16}, context.get());
+                                  MakeDataDescriptor(14, {}));
+  fact_manager.AddFactIdEquation(17, SpvOpIAdd, {114, 16});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(17, {}),
                                         MakeDataDescriptor(15, {})));
 
-  fact_manager.AddFactIdEquation(18, SpvOpIAdd, {16, 114}, context.get());
+  fact_manager.AddFactIdEquation(18, SpvOpIAdd, {16, 114});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(18, {}),
                                         MakeDataDescriptor(15, {})));
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(17, {}),
                                         MakeDataDescriptor(18, {})));
 
-  fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 15}, context.get());
+  fact_manager.AddFactIdEquation(19, SpvOpISub, {14, 15});
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(119, {}),
-                                  MakeDataDescriptor(19, {}), context.get());
-  fact_manager.AddFactIdEquation(20, SpvOpSNegate, {119}, context.get());
+                                  MakeDataDescriptor(19, {}));
+  fact_manager.AddFactIdEquation(20, SpvOpSNegate, {119});
 
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(20, {}),
                                         MakeDataDescriptor(16, {})));
 
-  fact_manager.AddFactIdEquation(21, SpvOpISub, {14, 19}, context.get());
+  fact_manager.AddFactIdEquation(21, SpvOpISub, {14, 19});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
                                         MakeDataDescriptor(15, {})));
 
-  fact_manager.AddFactIdEquation(22, SpvOpISub, {14, 18}, context.get());
+  fact_manager.AddFactIdEquation(22, SpvOpISub, {14, 18});
   fact_manager.AddFactDataSynonym(MakeDataDescriptor(22, {}),
-                                  MakeDataDescriptor(220, {}), context.get());
-  fact_manager.AddFactIdEquation(23, SpvOpSNegate, {220}, context.get());
+                                  MakeDataDescriptor(220, {}));
+  fact_manager.AddFactIdEquation(23, SpvOpSNegate, {220});
   ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(23, {}),
                                         MakeDataDescriptor(16, {})));
 }
@@ -1394,10 +1378,10 @@ TEST(FactManagerTest, CheckingFactsDoesNotAddConstants) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   // 8[0] == int(1)
-  ASSERT_TRUE(AddFactHelper(&fact_manager, context.get(), {1},
+  ASSERT_TRUE(AddFactHelper(&fact_manager, {1},
                             MakeUniformBufferElementDescriptor(0, 0, {0})));
 
   // Although 8[0] has the value 1, we do not have the constant 1 in the module.
@@ -1408,7 +1392,7 @@ TEST(FactManagerTest, CheckingFactsDoesNotAddConstants) {
   opt::analysis::IntConstant constant_one(int_type, {1});
   ASSERT_FALSE(context->get_constant_mgr()->FindConstant(&constant_one));
   auto available_constants =
-      fact_manager.GetConstantsAvailableFromUniformsForType(context.get(), 6);
+      fact_manager.GetConstantsAvailableFromUniformsForType(6);
   ASSERT_EQ(0, available_constants.size());
   ASSERT_TRUE(IsEqual(env, shader, context.get()));
   ASSERT_FALSE(context->get_constant_mgr()->FindConstant(&constant_one));
@@ -1438,15 +1422,15 @@ TEST(FactManagerTest, IdIsIrrelevant) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(12, context.get()));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13, context.get()));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(12));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13));
 
-  fact_manager.AddFactIdIsIrrelevant(12, context.get());
+  fact_manager.AddFactIdIsIrrelevant(12);
 
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(12, context.get()));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13, context.get()));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(12));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(13));
 }
 
 TEST(FactManagerTest, GetIrrelevantIds) {
@@ -1474,19 +1458,18 @@ TEST(FactManagerTest, GetIrrelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
-  ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
-            std::unordered_set<uint32_t>({}));
+  ASSERT_EQ(fact_manager.GetIrrelevantIds(), std::unordered_set<uint32_t>({}));
 
-  fact_manager.AddFactIdIsIrrelevant(12, context.get());
+  fact_manager.AddFactIdIsIrrelevant(12);
 
-  ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
+  ASSERT_EQ(fact_manager.GetIrrelevantIds(),
             std::unordered_set<uint32_t>({12}));
 
-  fact_manager.AddFactIdIsIrrelevant(13, context.get());
+  fact_manager.AddFactIdIsIrrelevant(13);
 
-  ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
+  ASSERT_EQ(fact_manager.GetIrrelevantIds(),
             std::unordered_set<uint32_t>({12, 13}));
 }
 
@@ -1522,7 +1505,7 @@ TEST(FactManagerTest, BlockIsDead) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   ASSERT_FALSE(fact_manager.BlockIsDead(9));
   ASSERT_FALSE(fact_manager.BlockIsDead(11));
@@ -1578,32 +1561,31 @@ TEST(FactManagerTest, IdsFromDeadBlocksAreIrrelevant) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
 
   ASSERT_FALSE(fact_manager.BlockIsDead(14));
   ASSERT_FALSE(fact_manager.BlockIsDead(19));
 
   // Initially no id is irrelevant.
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(16, context.get()));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(17, context.get()));
-  ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
-            std::unordered_set<uint32_t>({}));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(16));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(17));
+  ASSERT_EQ(fact_manager.GetIrrelevantIds(), std::unordered_set<uint32_t>({}));
 
   fact_manager.AddFactBlockIsDead(14);
 
   // %16 and %17 should now be considered irrelevant.
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(16, context.get()));
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(17, context.get()));
-  ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(16));
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(17));
+  ASSERT_EQ(fact_manager.GetIrrelevantIds(),
             std::unordered_set<uint32_t>({16, 17}));
 
   // Similarly for %21.
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(21, context.get()));
+  ASSERT_FALSE(fact_manager.IdIsIrrelevant(21));
 
   fact_manager.AddFactBlockIsDead(19);
 
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(21, context.get()));
-  ASSERT_EQ(fact_manager.GetIrrelevantIds(context.get()),
+  ASSERT_TRUE(fact_manager.IdIsIrrelevant(21));
+  ASSERT_EQ(fact_manager.GetIrrelevantIds(),
             std::unordered_set<uint32_t>({16, 17, 21}));
 }
 }  // namespace

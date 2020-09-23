@@ -221,7 +221,7 @@ void TransformationAddBitInstructionSynonym::AddBitwiseSynonym(
   // |bit_instruction|.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(bit_insert.result_id(), {}),
-      MakeDataDescriptor(bit_instruction->result_id(), {}), ir_context);
+      MakeDataDescriptor(bit_instruction->result_id(), {}));
 }
 
 }  // namespace fuzz

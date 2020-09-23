@@ -28,22 +28,21 @@ namespace fact_manager {
 // facts about uniform constants.
 class ConstantUniformFacts {
  public:
+  explicit ConstantUniformFacts(opt::IRContext* ir_context);
+
   // See method in FactManager which delegates to this method.
-  bool AddFact(const protobufs::FactConstantUniform& fact,
-               opt::IRContext* context);
+  bool AddFact(const protobufs::FactConstantUniform& fact);
 
   // See method in FactManager which delegates to this method.
   std::vector<uint32_t> GetConstantsAvailableFromUniformsForType(
-      opt::IRContext* ir_context, uint32_t type_id) const;
+      uint32_t type_id) const;
 
   // See method in FactManager which delegates to this method.
   std::vector<protobufs::UniformBufferElementDescriptor>
-  GetUniformDescriptorsForConstant(opt::IRContext* ir_context,
-                                   uint32_t constant_id) const;
+  GetUniformDescriptorsForConstant(uint32_t constant_id) const;
 
   // See method in FactManager which delegates to this method.
   uint32_t GetConstantFromUniformDescriptor(
-      opt::IRContext* context,
       const protobufs::UniformBufferElementDescriptor& uniform_descriptor)
       const;
 
@@ -69,10 +68,9 @@ class ConstantUniformFacts {
   // Yields the id of a constant of type |type_id| whose data matches the
   // constant data in |constant_uniform_fact|, or 0 if no such constant is
   // declared.
-  static uint32_t GetConstantId(
-      opt::IRContext* context,
+  uint32_t GetConstantId(
       const protobufs::FactConstantUniform& constant_uniform_fact,
-      uint32_t type_id);
+      uint32_t type_id) const;
 
   // Checks that the width of a floating-point constant is supported, and that
   // the constant is finite.
@@ -81,6 +79,8 @@ class ConstantUniformFacts {
 
   std::vector<std::pair<protobufs::FactConstantUniform, uint32_t>>
       facts_and_type_ids_;
+
+  opt::IRContext* ir_context_;
 };
 
 }  // namespace fact_manager

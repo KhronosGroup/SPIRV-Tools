@@ -109,13 +109,13 @@ void TransformationAddSynonym::Apply(
           message_.result_id()) &&
       new_synonym_type->AsPointer()) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        message_.synonym_fresh_id(), ir_context);
+        message_.synonym_fresh_id());
   }
 
   // Mark two ids as synonymous.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.result_id(), {}),
-      MakeDataDescriptor(message_.synonym_fresh_id(), {}), ir_context);
+      MakeDataDescriptor(message_.synonym_fresh_id(), {}));
 }
 
 protobufs::Transformation TransformationAddSynonym::ToMessage() const {

@@ -15,10 +15,9 @@
 #ifndef TEST_FUZZ_FUZZ_TEST_UTIL_H_
 #define TEST_FUZZ_FUZZ_TEST_UTIL_H_
 
-#include "gtest/gtest.h"
-
 #include <vector>
 
+#include "gtest/gtest.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"

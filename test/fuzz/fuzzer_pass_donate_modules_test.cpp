@@ -196,7 +196,7 @@ TEST(FuzzerPassDonateModulesTest, BasicDonation) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -274,7 +274,7 @@ TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -402,7 +402,7 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -494,7 +494,7 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -561,7 +561,7 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -686,7 +686,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImages) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -779,7 +779,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesSampler) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -908,7 +908,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageStructField) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1041,7 +1041,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1120,7 +1120,7 @@ TEST(FuzzerPassDonateModulesTest, DonateShaderWithImageStorageClass) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1204,7 +1204,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArray) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1305,7 +1305,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArrayLivesafe) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1374,7 +1374,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithWorkgroupVariables) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1481,7 +1481,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithAtomics) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1662,7 +1662,7 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1731,7 +1731,7 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1885,7 +1885,7 @@ TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1955,7 +1955,7 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -2185,7 +2185,7 @@ TEST(FuzzerPassDonateModulesTest, HandlesOpPhisInMergeBlock) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

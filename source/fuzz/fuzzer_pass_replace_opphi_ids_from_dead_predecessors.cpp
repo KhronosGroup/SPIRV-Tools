@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_replace_opphi_ids_from_dead_predecessors.h"
+
 #include "source/fuzz/transformation_replace_opphi_id_from_dead_predecessor.h"
 
 namespace spvtools {
@@ -80,7 +81,6 @@ void FuzzerPassReplaceOpPhiIdsFromDeadPredecessors::Apply() {
                 &function, &block, block.end(),
                 [type_id, current_id](opt::IRContext* /* unused */,
                                       opt::Instruction* candidate) -> bool {
-
                   // Only consider instructions with a result id different from
                   // the currently-used one, and with the right type.
                   return candidate->HasResultId() &&

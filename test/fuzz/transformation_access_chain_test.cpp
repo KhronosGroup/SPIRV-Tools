@@ -117,13 +117,13 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   // Indices 0-5 are in ids 80-85
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      54, context.get());
+      54);
 
   // Bad: id is not fresh
   ASSERT_FALSE(TransformationAccessChain(
@@ -403,7 +403,7 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -511,7 +511,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

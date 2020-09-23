@@ -84,7 +84,7 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -201,7 +201,7 @@ TEST(TransformationRecordSynonymousConstantsTest, BoolConstants) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -293,7 +293,7 @@ TEST(TransformationRecordSynonymousConstantsTest, FloatConstants) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -399,7 +399,7 @@ TEST(TransformationRecordSynonymousConstantsTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -536,7 +536,7 @@ TEST(TransformationRecordSynonymousConstantsTest, StructCompositeConstants) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -634,7 +634,7 @@ TEST(TransformationRecordSynonymousConstantsTest, ArrayCompositeConstants) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -725,7 +725,7 @@ TEST(TransformationRecordSynonymousConstantsTest, IntVectors) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -806,7 +806,7 @@ TEST(TransformationRecordSynonymousConstantsTest, FirstIrrelevantConstant) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -814,7 +814,7 @@ TEST(TransformationRecordSynonymousConstantsTest, FirstIrrelevantConstant) {
   ASSERT_TRUE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(7, context.get());
+  fact_manager.AddFactIdIsIrrelevant(7);
   ASSERT_FALSE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 }
@@ -843,7 +843,7 @@ TEST(TransformationRecordSynonymousConstantsTest, SecondIrrelevantConstant) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -851,7 +851,7 @@ TEST(TransformationRecordSynonymousConstantsTest, SecondIrrelevantConstant) {
   ASSERT_TRUE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(8, context.get());
+  fact_manager.AddFactIdIsIrrelevant(8);
   ASSERT_FALSE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
       context.get(), transformation_context));
 }
@@ -879,7 +879,7 @@ TEST(TransformationRecordSynonymousConstantsTest, InvalidIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
