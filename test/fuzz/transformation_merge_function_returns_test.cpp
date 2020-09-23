@@ -563,6 +563,8 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
       TransformationMergeFunctionReturns(14, 100, 101, 0, 0, {{}});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
+  transformation1.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // %12 is available at the end of the entry block of %19 (it is a global
   // variable).
@@ -575,6 +577,8 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
       TransformationMergeFunctionReturns(19, 110, 111, 112, 1000, {{}});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
+  transformation2.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // %27 is available at the end of the entry block of %26 (it is a function
   // parameter).
@@ -587,18 +591,122 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
       TransformationMergeFunctionReturns(26, 120, 121, 122, 1000, {{}});
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
+  transformation3.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // %35 is available at the end of the entry block of %33 (it is in the entry
   // block).
-  ASSERT_TRUE(TransformationMergeFunctionReturns(26, 120, 121, 122, 27, {{}})
+  ASSERT_TRUE(TransformationMergeFunctionReturns(26, 130, 131, 132, 27, {{}})
                   .IsApplicable(context.get(), transformation_context));
 
   // %1000 cannot be found in the module, but there is a suitable id available
   // at the end of the entry block (%35).
   auto transformation4 =
-      TransformationMergeFunctionReturns(33, 120, 121, 122, 1000, {{}});
+      TransformationMergeFunctionReturns(33, 130, 131, 132, 1000, {{}});
   ASSERT_TRUE(
-      transformation3.IsApplicable(context.get(), transformation_context));
+      transformation4.IsApplicable(context.get(), transformation_context));
+  transformation4.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+          %6 = OpTypeFunction %5
+          %7 = OpTypeFloat 32
+          %8 = OpTypeFunction %7 %7
+          %9 = OpTypeFunction %7
+         %10 = OpTypeBool
+         %11 = OpConstantTrue %10
+         %40 = OpConstantFalse %10
+         %12 = OpConstant %5 1
+          %2 = OpFunction %3 None %4
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %14 = OpFunction %3 None %4
+         %15 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %100 None
+               OpBranchConditional %11 %16 %100
+         %16 = OpLabel
+               OpSelectionMerge %17 None
+               OpBranchConditional %11 %18 %17
+         %18 = OpLabel
+               OpBranch %101
+         %17 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %19 = OpFunction %5 None %6
+         %20 = OpLabel
+               OpBranch %110
+        %110 = OpLabel
+               OpLoopMerge %111 %110 None
+               OpBranchConditional %11 %21 %110
+         %21 = OpLabel
+               OpSelectionMerge %22 None
+               OpBranchConditional %11 %23 %24
+         %23 = OpLabel
+               OpBranch %111
+         %24 = OpLabel
+         %25 = OpIAdd %5 %12 %12
+               OpBranch %111
+         %22 = OpLabel
+               OpUnreachable
+        %111 = OpLabel
+        %112 = OpPhi %5 %12 %23 %25 %24
+               OpReturnValue %112
+               OpFunctionEnd
+         %26 = OpFunction %7 None %8
+         %27 = OpFunctionParameter %7
+         %28 = OpLabel
+               OpBranch %120
+        %120 = OpLabel
+               OpLoopMerge %121 %120 None
+               OpBranchConditional %11 %29 %120
+         %29 = OpLabel
+               OpSelectionMerge %30 None
+               OpBranchConditional %11 %31 %30
+         %31 = OpLabel
+         %32 = OpFAdd %7 %27 %27
+               OpBranch %121
+         %30 = OpLabel
+               OpBranch %121
+        %121 = OpLabel
+        %122 = OpPhi %7 %27 %30 %32 %31
+               OpReturnValue %122
+               OpFunctionEnd
+         %33 = OpFunction %7 None %9
+         %34 = OpLabel
+         %35 = OpConvertSToF %7 %12
+               OpBranch %130
+        %130 = OpLabel
+               OpLoopMerge %131 %130 None
+               OpBranchConditional %11 %36 %130
+         %36 = OpLabel
+               OpSelectionMerge %37 None
+               OpBranchConditional %11 %38 %37
+         %38 = OpLabel
+         %39 = OpFAdd %7 %35 %35
+               OpBranch %131
+         %37 = OpLabel
+               OpBranch %131
+        %131 = OpLabel
+        %132 = OpPhi %7 %35 %37 %39 %38
+               OpReturnValue %132
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationMergeFunctionReturnsTest, NestedLoops) {
@@ -627,37 +735,54 @@ TEST(TransformationMergeFunctionReturnsTest, NestedLoops) {
          %15 = OpLabel
                OpBranch %16
          %16 = OpLabel
-               OpLoopMerge %17 %18 None
-               OpBranch %19
-         %19 = OpLabel
-               OpBranchConditional %8 %20 %17
-         %20 = OpLabel
-               OpSelectionMerge %21 None
-               OpBranchConditional %9 %22 %21
-         %22 = OpLabel
-               OpBranch %23
-         %23 = OpLabel
-               OpLoopMerge %24 %25 None
-               OpBranch %26
-         %26 = OpLabel
-               OpBranchConditional %9 %27 %24
-         %27 = OpLabel
-               OpReturnValue %10
-         %25 = OpLabel
-               OpBranch %23
-         %24 = OpLabel
-         %28 = OpPhi %5 %11 %26
-         %29 = OpPhi %5 %10 %26
-               OpBranch %30
-         %30 = OpLabel
-               OpReturnValue %28
-         %21 = OpLabel
-               OpBranch %18
+               OpLoopMerge %17 %16 None
+               OpBranchConditional %8 %18 %16
          %18 = OpLabel
-               OpBranch %16
+               OpLoopMerge %19 %20 None
+               OpBranchConditional %8 %19 %21
+         %19 = OpLabel
+               OpBranch %17
+         %21 = OpLabel
+               OpReturnValue %12
          %17 = OpLabel
-               OpBranch %31
+               OpBranch %22
+         %20 = OpLabel
+               OpBranch %18
+         %22 = OpLabel
+               OpLoopMerge %23 %24 None
+               OpBranch %25
+         %25 = OpLabel
+               OpBranchConditional %8 %26 %23
+         %26 = OpLabel
+               OpSelectionMerge %27 None
+               OpBranchConditional %9 %28 %27
+         %28 = OpLabel
+               OpBranch %29
+         %29 = OpLabel
+               OpLoopMerge %30 %29 None
+               OpBranchConditional %8 %30 %29
+         %30 = OpLabel
+               OpLoopMerge %31 %32 None
+               OpBranch %33
+         %33 = OpLabel
+               OpBranchConditional %9 %34 %31
+         %34 = OpLabel
+               OpReturnValue %10
+         %32 = OpLabel
+               OpBranch %30
          %31 = OpLabel
+         %35 = OpPhi %5 %11 %33
+         %36 = OpPhi %5 %10 %33
+               OpBranch %37
+         %37 = OpLabel
+               OpReturnValue %35
+         %27 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpBranch %22
+         %23 = OpLabel
+               OpBranch %38
+         %38 = OpLabel
                OpReturnValue %12
                OpFunctionEnd
 )";
@@ -674,10 +799,107 @@ TEST(TransformationMergeFunctionReturnsTest, NestedLoops) {
 
   auto transformation = TransformationMergeFunctionReturns(
       14, 100, 101, 102, 11,
-      {{MakeReturnMergingInfo(24, 103, 104, {{{28, 10}, {29, 12}}}),
-        MakeReturnMergingInfo(17, 105, 106, {})}});
+      {{MakeReturnMergingInfo(19, 103, 104, {{}}),
+        MakeReturnMergingInfo(17, 105, 106, {{}}),
+        MakeReturnMergingInfo(31, 107, 108, {{{35, 10}, {36, 12}}}),
+        MakeReturnMergingInfo(23, 109, 110, {})}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+          %6 = OpTypeFunction %5
+          %7 = OpTypeBool
+          %8 = OpConstantTrue %7
+          %9 = OpConstantFalse %7
+         %10 = OpConstant %5 2
+         %11 = OpConstant %5 1
+         %12 = OpConstant %5 3
+          %2 = OpFunction %3 None %4
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %14 = OpFunction %5 None %6
+         %15 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %100 None
+               OpBranchConditional %8 %16 %100
+         %16 = OpLabel
+               OpLoopMerge %17 %16 None
+               OpBranchConditional %8 %18 %16
+         %18 = OpLabel
+               OpLoopMerge %19 %20 None
+               OpBranchConditional %8 %19 %21
+         %19 = OpLabel
+        %103 = OpPhi %7 %8 %21 %9 %18
+        %104 = OpPhi %5 %12 %21 %11 %18
+               OpBranch %17
+         %21 = OpLabel
+               OpBranch %19
+         %17 = OpLabel
+        %105 = OpPhi %7 %103 %19
+        %106 = OpPhi %5 %104 %19
+               OpBranchConditional %105 %101 %22
+         %20 = OpLabel
+               OpBranch %18
+         %22 = OpLabel
+               OpLoopMerge %23 %24 None
+               OpBranch %25
+         %25 = OpLabel
+               OpBranchConditional %8 %26 %23
+         %26 = OpLabel
+               OpSelectionMerge %27 None
+               OpBranchConditional %9 %28 %27
+         %28 = OpLabel
+               OpBranch %29
+         %29 = OpLabel
+               OpLoopMerge %30 %29 None
+               OpBranchConditional %8 %30 %29
+         %30 = OpLabel
+               OpLoopMerge %31 %32 None
+               OpBranch %33
+         %33 = OpLabel
+               OpBranchConditional %9 %34 %31
+         %34 = OpLabel
+               OpBranch %31
+         %32 = OpLabel
+               OpBranch %30
+         %31 = OpLabel
+        %107 = OpPhi %7 %8 %34 %9 %33
+        %108 = OpPhi %5 %10 %34 %11 %33
+         %35 = OpPhi %5 %11 %33 %10 %34
+         %36 = OpPhi %5 %10 %33 %12 %34
+               OpBranchConditional %107 %23 %37
+         %37 = OpLabel
+               OpBranch %23
+         %27 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpBranch %22
+         %23 = OpLabel
+        %109 = OpPhi %7 %107 %31 %8 %37 %9 %25
+        %110 = OpPhi %5 %108 %31 %35 %37 %11 %25
+               OpBranchConditional %109 %101 %38
+         %38 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+        %102 = OpPhi %5 %106 %17 %110 %23 %12 %38
+               OpReturnValue %102
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationMergeFunctionReturnsTest, OverflowIds) {
@@ -776,6 +998,9 @@ TEST(TransformationMergeFunctionReturnsTest, OverflowIds) {
 
   ASSERT_TRUE(transformation1.IsApplicable(
       context.get(), transformation_context_with_overflow_ids));
+  transformation1.Apply(context.get(),
+                        &transformation_context_with_overflow_ids);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
   // No mapping from merge block %27 to fresh ids is given, so overflow ids are
   // needed.
@@ -790,6 +1015,93 @@ TEST(TransformationMergeFunctionReturnsTest, OverflowIds) {
 
   ASSERT_TRUE(transformation2.IsApplicable(
       context.get(), transformation_context_with_overflow_ids));
+  transformation2.Apply(context.get(),
+                        &transformation_context_with_overflow_ids);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+          %6 = OpTypeFunction %5
+          %7 = OpTypeBool
+          %8 = OpConstantTrue %7
+          %9 = OpConstantFalse %7
+         %10 = OpConstant %5 1
+          %2 = OpFunction %3 None %4
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %5 None %6
+         %13 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %100 None
+               OpBranchConditional %8 %14 %100
+         %14 = OpLabel
+         %15 = OpIAdd %5 %10 %10
+               OpLoopMerge %16 %17 None
+               OpBranch %18
+         %18 = OpLabel
+               OpBranchConditional %8 %19 %16
+         %19 = OpLabel
+               OpSelectionMerge %20 None
+               OpBranchConditional %9 %21 %20
+         %21 = OpLabel
+               OpBranch %16
+         %20 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+               OpBranchConditional %8 %14 %16
+         %16 = OpLabel
+       %1000 = OpPhi %7 %8 %21 %9 %17 %9 %18
+       %1001 = OpPhi %5 %10 %21 %10 %17 %10 %18
+         %22 = OpPhi %5 %15 %17 %10 %18 %10 %21
+               OpBranchConditional %1000 %101 %23
+         %23 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+        %102 = OpPhi %5 %1001 %16 %22 %23
+               OpReturnValue %102
+               OpFunctionEnd
+         %24 = OpFunction %3 None %4
+         %25 = OpLabel
+               OpBranch %110
+        %110 = OpLabel
+               OpLoopMerge %111 %110 None
+               OpBranchConditional %8 %26 %110
+         %26 = OpLabel
+               OpLoopMerge %27 %28 None
+               OpBranch %29
+         %29 = OpLabel
+               OpBranchConditional %8 %30 %27
+         %30 = OpLabel
+               OpSelectionMerge %31 None
+               OpBranchConditional %9 %32 %31
+         %32 = OpLabel
+               OpBranch %27
+         %31 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+               OpBranch %26
+         %27 = OpLabel
+       %1002 = OpPhi %7 %8 %32 %9 %29
+         %33 = OpPhi %5 %10 %29 %10 %32
+               OpBranchConditional %1002 %111 %34
+         %34 = OpLabel
+               OpBranch %111
+        %111 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
 }
 
 TEST(TransformationMergeFunctionReturnsTest, MissingIdsForOpPhi) {
@@ -860,6 +1172,64 @@ TEST(TransformationMergeFunctionReturnsTest, MissingIdsForOpPhi) {
       {{MakeReturnMergingInfo(17, 103, 0, {{{25, 7}, {35, 8}}})}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %8 = OpTypeInt 32 1
+          %9 = OpTypeFunction %3 %8
+         %10 = OpTypeFloat 32
+          %2 = OpFunction %3 None %4
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %3 None %9
+         %13 = OpFunctionParameter %8
+         %14 = OpLabel
+         %15 = OpConvertSToF %10 %13
+               OpBranch %101
+        %101 = OpLabel
+               OpLoopMerge %102 %101 None
+               OpBranchConditional %6 %16 %101
+         %16 = OpLabel
+               OpLoopMerge %17 %18 None
+               OpBranch %19
+         %19 = OpLabel
+               OpBranchConditional %6 %20 %17
+         %20 = OpLabel
+               OpSelectionMerge %21 None
+               OpBranchConditional %7 %22 %21
+         %22 = OpLabel
+               OpBranch %17
+         %21 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+               OpBranch %16
+         %17 = OpLabel
+        %103 = OpPhi %5 %6 %22 %7 %19
+         %23 = OpPhi %8 %13 %19 %13 %22
+         %24 = OpPhi %10 %15 %19 %15 %22
+         %25 = OpPhi %5 %6 %19 %7 %22
+               OpBranchConditional %103 %102 %26
+         %26 = OpLabel
+               OpBranch %102
+        %102 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 }  // namespace
 }  // namespace fuzz

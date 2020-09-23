@@ -94,7 +94,7 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     while (merge_block != 0 && !merge_blocks.count(merge_block)) {
       merge_blocks.emplace(merge_block);
       merge_block =
-          ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(block);
+          ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(merge_block);
     }
   }
 
@@ -272,8 +272,8 @@ void TransformationMergeFunctionReturns::Apply(
            !merge_blocks_to_returning_predecessors.count(merge_block_id)) {
       merge_blocks_to_returning_predecessors.emplace(
           merge_block_id, std::map<uint32_t, std::pair<uint32_t, uint32_t>>());
-      merge_block_id =
-          ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(ret_block_id);
+      merge_block_id = ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(
+          merge_block_id);
     }
   }
 
@@ -303,12 +303,11 @@ void TransformationMergeFunctionReturns::Apply(
           ret_block_id,
           std::pair<uint32_t, uint32_t>(ret_val_id, constant_true));
     } else {
+      // If there is no enclosing loop, the block will branch to the merge block
+      // of the new outer loop.
+      merge_block_id = message_.outer_return_id();
       outer_merge_predecessors.emplace(ret_block_id, ret_val_id);
     }
-
-    // If there is no enclosing loop, the block will branch to the merge block
-    // of the new outer loop.
-    merge_block_id = message_.outer_return_id();
 
     // Replace the return instruction with an unconditional branch.
     ret_block->terminator()->SetOpcode(SpvOpBranch);
@@ -317,8 +316,8 @@ void TransformationMergeFunctionReturns::Apply(
   }
 
   // Get a list of all the relevant merge blocks.
-  std::vector<uint32_t> merge_blocks(
-      merge_blocks_to_returning_predecessors.size());
+  std::vector<uint32_t> merge_blocks;
+  merge_blocks.reserve(merge_blocks_to_returning_predecessors.size());
   for (const auto& entry : merge_blocks_to_returning_predecessors) {
     merge_blocks.emplace_back(entry.first);
   }
@@ -502,7 +501,7 @@ void TransformationMergeFunctionReturns::Apply(
 
     // The block should branch to |enclosing_merge| if |is_returning_id| is
     // true, to |original_succ| otherwise.
-    merge_block->terminator()->SetOpcode(SpvOpBranch);
+    merge_block->terminator()->SetOpcode(SpvOpBranchConditional);
     merge_block->terminator()->SetInOperands(
         {{SPV_OPERAND_TYPE_RESULT_ID, {is_returning_id}},
          {SPV_OPERAND_TYPE_RESULT_ID, {enclosing_merge}},
