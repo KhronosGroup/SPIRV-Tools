@@ -122,6 +122,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
         {pass_instances_->GetDuplicateRegionsWithSelections(),
          pass_instances_->GetOutlineFunctions()});
   }
+  if (&pass == pass_instances_->GetAddLoopsToCreateIntConstantSynonyms()) {
+    // - New synonyms can be applied
+    return RandomOrderAndNonNull({pass_instances_->GetApplyIdSynonyms()});
+  }
   if (&pass == pass_instances_->GetAddOpPhiSynonyms()) {
     // - New synonyms can be applied
     // - If OpPhi synonyms are introduced for blocks with dead predecessors, the

@@ -293,6 +293,11 @@ class FuzzerPass {
   // reachable in the CFG (and thus has at least 2 predecessors).
   opt::BasicBlock* GetOrCreateSimpleLoopPreheader(uint32_t header_id);
 
+  // Returns the second block in the pair obtained by splitting |block_id| just
+  // after the last OpPhi or OpVariable instruction in it. Assumes that the
+  // block is not a loop header.
+  opt::BasicBlock* SplitBlockAfterOpPhiOrOpVariable(uint32_t block_id);
+
   // Returns the id of an available local variable (storage class Function) with
   // the fact PointeeValueIsIrrelevant set according to
   // |pointee_value_is_irrelevant|. If there is no such variable, it creates one

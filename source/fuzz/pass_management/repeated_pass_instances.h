@@ -30,6 +30,7 @@
 #include "source/fuzz/fuzzer_pass_add_loads.h"
 #include "source/fuzz/fuzzer_pass_add_local_variables.h"
 #include "source/fuzz/fuzzer_pass_add_loop_preheaders.h"
+#include "source/fuzz/fuzzer_pass_add_loops_to_create_int_constant_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_opphi_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
 #include "source/fuzz/fuzzer_pass_add_relaxed_decorations.h"
@@ -118,6 +119,7 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(AddLoads);
   REPEATED_PASS_INSTANCE(AddLocalVariables);
   REPEATED_PASS_INSTANCE(AddLoopPreheaders);
+  REPEATED_PASS_INSTANCE(AddLoopsToCreateIntConstantSynonyms);
   REPEATED_PASS_INSTANCE(AddOpPhiSynonyms);
   REPEATED_PASS_INSTANCE(AddParameters);
   REPEATED_PASS_INSTANCE(AddRelaxedDecorations);
