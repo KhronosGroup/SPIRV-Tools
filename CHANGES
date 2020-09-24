@@ -4,6 +4,7 @@ v2020.5-dev 2020-09-22
  - General
    - Enable building with BUILD_SHARED_LIBS=1 (#3490)
    - Avoid using /MP4 for clang on windows. (#3662)
+   - Fix compiler error on macOS with XCode12. (#3836)
  - Optimizer
    - Preserve OpenCL.DebugInfo.100 through private-to-local pass (#3571)
    - Preserve debug info in scalar replacement pass (#3461)
@@ -24,6 +25,7 @@ v2020.5-dev 2020-09-22
    - Allow DebugTypeTemplate for Type operand (#3702)
    - spirv-val: Add Vulkan VUID labels to BuiltIn (#3756)
    - Allow SPV_KHR_8bit_storage extension. (#3780)
+   - Validate SPIRV Version number when parsing binary header (#3834)
  - Reduce
    - Support reducing a specific function (#3774)
  - Fuzz
@@ -42,6 +44,9 @@ v2020.5-dev 2020-09-22
    - Add SPIRV_FUZZ_PROTOC_COMMAND (#3789)
    - Add TransformationDuplicateRegionWithSelection (#3773)
    - Transformation to flatten conditional branch (#3667)
+   - Handle OpPhis in TransformationInlineFunction (#3833)
+   - Create synonym of int constant using a loop (#3790)
+   - Support dead blocks in TransformationAddSynonym (#3832)
  - Linker
 
 v2020.4 2020-07-22
