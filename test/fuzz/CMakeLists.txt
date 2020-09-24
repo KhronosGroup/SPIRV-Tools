@@ -30,6 +30,7 @@ if (${SPIRV_BUILD_FUZZER})
           instruction_descriptor_test.cpp
           fuzzer_pass_test.cpp
           replayer_test.cpp
+          shrinker_test.cpp
           transformation_access_chain_test.cpp
           transformation_add_bit_instruction_synonym_test.cpp
           transformation_add_constant_boolean_test.cpp
