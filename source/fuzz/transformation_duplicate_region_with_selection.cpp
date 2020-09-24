@@ -115,7 +115,7 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
   auto entry_block_preds = ir_context->cfg()->preds(entry_block->id());
   std::sort(entry_block_preds.begin(), entry_block_preds.end());
   entry_block_preds.erase(
-      unique(entry_block_preds.begin(), entry_block_preds.end()),
+      std::unique(entry_block_preds.begin(), entry_block_preds.end()),
       entry_block_preds.end());
   if (entry_block_preds.size() > 1) {
     return false;
