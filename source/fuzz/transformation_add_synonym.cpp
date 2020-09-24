@@ -74,9 +74,8 @@ bool TransformationAddSynonym::IsApplicable(
          "|insert_before_inst| must be in some block");
 
   if (transformation_context.GetFactManager()->BlockIsDead(
-          insert_before_inst_block->id()) &&
-      !ir_context->get_type_mgr()->GetType(synonym->type_id())->AsPointer()) {
-    // All non-pointer ids in dead blocks are considered irrelevant.
+          insert_before_inst_block->id())) {
+    // We don't create synonyms in dead blocks.
     return false;
   }
 

@@ -1476,45 +1476,10 @@ TEST(TransformationAddSynonymTest, HandlesDeadBlocks) {
                    insert_before)
                    .IsApplicable(context.get(), transformation_context));
 
-  TransformationAddSynonym transformation(
-      12, protobufs::TransformationAddSynonym::COPY_OBJECT, 100, insert_before);
-  ASSERT_TRUE(
-      transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(12, {}),
-                                        MakeDataDescriptor(100, {})));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(100, context.get()));
-
-  std::string after_transformation = R"(
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 320
-          %2 = OpTypeVoid
-          %3 = OpTypeFunction %2
-          %6 = OpTypeBool
-          %7 = OpConstantTrue %6
-         %11 = OpTypePointer Function %6
-          %4 = OpFunction %2 None %3
-          %5 = OpLabel
-         %12 = OpVariable %11 Function
-               OpSelectionMerge %10 None
-               OpBranchConditional %7 %8 %9
-          %8 = OpLabel
-               OpBranch %10
-          %9 = OpLabel
-        %100 = OpCopyObject %11 %12
-               OpBranch %10
-         %10 = OpLabel
-               OpReturn
-               OpFunctionEnd
-  )";
-
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+  ASSERT_FALSE(TransformationAddSynonym(
+                   12, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,
+                   insert_before)
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace
