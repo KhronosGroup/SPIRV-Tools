@@ -72,6 +72,13 @@ bool IsEqual(const spv_target_env env, const opt::IRContext* ir_1,
   return IsEqual(env, binary_1, binary_2);
 }
 
+bool IsEqual(const spv_target_env env, const std::vector<uint32_t>& binary_1,
+             const opt::IRContext* ir_2) {
+  std::vector<uint32_t> binary_2;
+  ir_2->module()->ToBinary(&binary_2, false);
+  return IsEqual(env, binary_1, binary_2);
+}
+
 bool IsValid(spv_target_env env, const opt::IRContext* ir) {
   std::vector<uint32_t> binary;
   ir->module()->ToBinary(&binary, false);

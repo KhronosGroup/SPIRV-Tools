@@ -59,7 +59,7 @@ Replayer::ReplayerResult Replayer::Run() {
               "The number of transformations to be replayed must not "
               "exceed the size of the transformation sequence.");
     return {Replayer::ReplayerResultStatus::kTooManyTransformationsRequested,
-            std::vector<uint32_t>(), protobufs::TransformationSequence()};
+            nullptr, nullptr, protobufs::TransformationSequence()};
   }
 
   spvtools::SpirvTools tools(target_env_);
@@ -67,15 +67,15 @@ Replayer::ReplayerResult Replayer::Run() {
     consumer_(SPV_MSG_ERROR, nullptr, {},
               "Failed to create SPIRV-Tools interface; stopping.");
     return {Replayer::ReplayerResultStatus::kFailedToCreateSpirvToolsInterface,
-            std::vector<uint32_t>(), protobufs::TransformationSequence()};
+            nullptr, nullptr, protobufs::TransformationSequence()};
   }
 
   // Initial binary should be valid.
   if (!tools.Validate(&binary_in_[0], binary_in_.size(), validator_options_)) {
     consumer_(SPV_MSG_INFO, nullptr, {},
               "Initial binary is invalid; stopping.");
-    return {Replayer::ReplayerResultStatus::kInitialBinaryInvalid,
-            std::vector<uint32_t>(), protobufs::TransformationSequence()};
+    return {Replayer::ReplayerResultStatus::kInitialBinaryInvalid, nullptr,
+            nullptr, protobufs::TransformationSequence()};
   }
 
   // Build the module from the input binary.
@@ -140,7 +140,7 @@ Replayer::ReplayerResult Replayer::Run() {
                     "Binary became invalid during replay (set a "
                     "breakpoint to inspect); stopping.");
           return {Replayer::ReplayerResultStatus::kReplayValidationFailure,
-                  std::vector<uint32_t>(), protobufs::TransformationSequence()};
+                  nullptr, nullptr, protobufs::TransformationSequence()};
         }
 
         // The binary was valid, so it becomes the latest valid binary.
@@ -149,10 +149,8 @@ Replayer::ReplayerResult Replayer::Run() {
     }
   }
 
-  // Write out the module as a binary.
-  std::vector<uint32_t> binary_out;
-  ir_context->module()->ToBinary(&binary_out, false);
-  return {Replayer::ReplayerResultStatus::kComplete, std::move(binary_out),
+  return {Replayer::ReplayerResultStatus::kComplete, std::move(ir_context),
+          std::move(transformation_context),
           std::move(transformation_sequence_out)};
 }
 

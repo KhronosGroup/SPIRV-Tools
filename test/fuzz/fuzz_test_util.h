@@ -45,6 +45,11 @@ bool IsEqual(spv_target_env env, const std::string& expected_text,
 bool IsEqual(spv_target_env env, const opt::IRContext* ir_1,
              const opt::IRContext* ir_2);
 
+// Turns |ir_2| into a binary, then returns true if and only if the resulting
+// binary is bit-wise equal to |binary_1|.
+bool IsEqual(spv_target_env env, const std::vector<uint32_t>& binary_1,
+             const opt::IRContext* ir_2);
+
 // Assembles the given IR context and returns true if and only if
 // the resulting binary is valid.
 bool IsValid(spv_target_env env, const opt::IRContext* ir);
