@@ -66,11 +66,9 @@ TEST(TransformationAddImageSampleUnusedComponentsTest, IsApplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests applicable image instruction.
   auto instruction_descriptor =
       MakeInstructionDescriptor(25, SpvOpImageSampleImplicitLod, 0);
@@ -194,11 +192,9 @@ TEST(TransformationAddImageSampleUnusedComponentsTest, Apply) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(25, SpvOpImageSampleImplicitLod, 0);
   auto transformation =

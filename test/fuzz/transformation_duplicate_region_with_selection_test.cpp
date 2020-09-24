@@ -78,11 +78,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, BasicUseTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
           500, 19, 501, 800, 800, {{800, 100}}, {{13, 201}, {15, 202}},
@@ -210,11 +208,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, BasicExitBlockTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
           500, 19, 501, 800, 800, {{800, 100}}, {{13, 201}, {15, 202}},
@@ -349,11 +345,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableCFGTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: |entry_block_id| refers to the entry block of the function (this
   // transformation currently avoids such cases).
   TransformationDuplicateRegionWithSelection transformation_bad_1 =
@@ -447,11 +441,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableIdTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: A value in the |original_label_to_duplicate_label| is not a fresh id.
   TransformationDuplicateRegionWithSelection transformation_bad_1 =
       TransformationDuplicateRegionWithSelection(
@@ -618,10 +610,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableCFGTest2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: The exit block cannot be a header of a loop, because the region won't
   // be a single-entry, single-exit region.
   TransformationDuplicateRegionWithSelection transformation_bad_1 =
@@ -701,10 +692,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableCFGTest3) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: The block with id 7, which is not an exit block, has two successors:
   // the block with id 10 and the block with id 16. The block with id 16 is not
   // in the region.
@@ -786,11 +776,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, MultipleBlocksLoopTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
           500, 30, 501, 50, 15,
@@ -975,11 +963,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
@@ -1130,11 +1116,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableEarlyReturn) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: The block with id 50, which is the entry block, has two successors:
   // the block with id 18 and the block with id 22. The block 22 has an early
   // return from the function, so that the entry block is not post-dominated by
@@ -1209,11 +1193,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
@@ -1346,11 +1328,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: There is no required capability CapabilityVariablePointers
   TransformationDuplicateRegionWithSelection transformation_bad_1 =
       TransformationDuplicateRegionWithSelection(
@@ -1408,11 +1388,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
@@ -1528,11 +1506,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
@@ -1667,11 +1643,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationDuplicateRegionWithSelection transformation_bad =
       TransformationDuplicateRegionWithSelection(
           500, 50, 501, 27, 14, {{27, 101}, {14, 102}}, {{29, 201}, {31, 202}},

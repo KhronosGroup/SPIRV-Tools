@@ -75,11 +75,9 @@ TEST(ComparatorDeepBlocksFirstTest, Compare) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto is_deeper = ComparatorDeepBlocksFirst(context.get());
 
   // The block ids and the corresponding depths are:
@@ -109,11 +107,9 @@ TEST(ComparatorDeepBlocksFirstTest, Sort) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Check that, sorting using the comparator, the blocks are ordered from more
   // deeply nested to less deeply nested.
   // 17 has depth 1, 20 has depth 2, 13 has depth 0.

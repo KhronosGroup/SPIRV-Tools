@@ -76,11 +76,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Reminder: the first four parameters of the constructor are the constants
   // with values for C, I, S, N respectively.
 
@@ -187,11 +185,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
-                                                 validator_options);
-
+    TransformationContext transformation_context(
+        MakeUnique<FactManager>(context.get()), validator_options);
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
                      9, 10, 8, 7, 12, 100, 101, 102, 103, 104, 105, 106, 107)
                      .IsApplicable(context.get(), transformation_context));
@@ -228,11 +224,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
-                                                 validator_options);
-
+    TransformationContext transformation_context(
+        MakeUnique<FactManager>(context.get()), validator_options);
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
                      9, 10, 8, 7, 12, 100, 101, 102, 103, 104, 105, 106, 107)
                      .IsApplicable(context.get(), transformation_context));
@@ -269,11 +263,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
-                                                 validator_options);
-
+    TransformationContext transformation_context(
+        MakeUnique<FactManager>(context.get()), validator_options);
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
                      9, 10, 8, 7, 12, 100, 101, 102, 103, 104, 105, 106, 107)
                      .IsApplicable(context.get(), transformation_context));
@@ -337,11 +329,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Block %14 has no predecessors.
   ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
                    12, 13, 11, 10, 14, 100, 101, 102, 103, 104, 105, 106, 107)
@@ -561,11 +551,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // These tests check that the transformation is applicable and is applied
   // correctly with integers, scalar and vectors, of different signedness.
 
@@ -752,11 +740,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // These tests check that the transformation can be applied, and is applied
   // correctly, to 64-bit integer (scalar and vector) constants.
 
@@ -871,11 +857,9 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // These tests check that underflows are taken into consideration when
   // deciding if  transformation is applicable.
 

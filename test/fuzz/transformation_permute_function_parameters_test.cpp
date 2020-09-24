@@ -253,11 +253,9 @@ TEST(TransformationPermuteFunctionParametersTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Can't permute main function
   ASSERT_FALSE(TransformationPermuteFunctionParameters(4, 105, {})
                    .IsApplicable(context.get(), transformation_context));

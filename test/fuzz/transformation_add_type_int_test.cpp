@@ -46,11 +46,9 @@ TEST(TransformationAddTypeIntTest, IsApplicable) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests non-fresh id.
   auto transformation = TransformationAddTypeInt(1, 32, false);
   ASSERT_FALSE(
@@ -114,11 +112,9 @@ TEST(TransformationAddTypeIntTest, Apply) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Adds signed 8-bit integer type.
   auto transformation = TransformationAddTypeInt(6, 8, true);
   transformation.Apply(context.get(), &transformation_context);

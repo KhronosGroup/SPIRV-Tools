@@ -89,11 +89,9 @@ TEST(TransformationSplitBlockTest, NotApplicable) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // No split before OpVariable
   ASSERT_FALSE(TransformationSplitBlock(
                    MakeInstructionDescriptor(8, SpvOpVariable, 0), 100)
@@ -202,11 +200,9 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto split_1 = TransformationSplitBlock(
       MakeInstructionDescriptor(5, SpvOpStore, 0), 100);
   ASSERT_TRUE(split_1.IsApplicable(context.get(), transformation_context));
@@ -418,11 +414,9 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSelectBranch) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Illegal to split between the merge and the conditional branch.
   ASSERT_FALSE(
       TransformationSplitBlock(
@@ -550,11 +544,9 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSwitchBranch) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Illegal to split between the merge and the conditional branch.
   ASSERT_FALSE(TransformationSplitBlock(
                    MakeInstructionDescriptor(9, SpvOpSwitch, 0), 100)
@@ -686,11 +678,9 @@ TEST(TransformationSplitBlockTest, NoSplitDuringOpPhis) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // We cannot split before OpPhi instructions, since the number of incoming
   // blocks may not appropriately match after splitting.
   ASSERT_FALSE(
@@ -741,11 +731,9 @@ TEST(TransformationSplitBlockTest, SplitOpPhiWithSinglePredecessor) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(
       TransformationSplitBlock(MakeInstructionDescriptor(21, SpvOpPhi, 0), 100)
           .IsApplicable(context.get(), transformation_context));
@@ -823,11 +811,9 @@ TEST(TransformationSplitBlockTest, DeadBlockShouldSplitToTwoDeadBlocks) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Record the fact that block 8 is dead.
   transformation_context.GetFactManager()->AddFactBlockIsDead(8);
 
@@ -913,11 +899,9 @@ TEST(TransformationSplitBlockTest, DoNotSplitUseOfOpSampledImage) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto split = TransformationSplitBlock(
       MakeInstructionDescriptor(217, SpvOpImageSampleImplicitLod, 0), 500);
   ASSERT_FALSE(split.IsApplicable(context.get(), transformation_context));

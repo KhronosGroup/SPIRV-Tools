@@ -73,11 +73,9 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // |block_id| is invalid.
   ASSERT_FALSE(TransformationPropagateInstructionUp(40, {{}}).IsApplicable(
       context.get(), transformation_context));
@@ -357,11 +355,9 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationPropagateInstructionUp transformation(
       15, {{{14, 40}, {19, 41}, {26, 42}}});
   ASSERT_TRUE(
@@ -476,11 +472,9 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationPropagateInstructionUp transformation(
       15, {{{14, 40}, {19, 41}, {26, 42}}});
   ASSERT_TRUE(
@@ -591,11 +585,9 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor3) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationPropagateInstructionUp transformation(
       15, {{{14, 40}, {19, 41}, {15, 42}}});
   ASSERT_TRUE(
@@ -686,11 +678,9 @@ TEST(TransformationPropagateInstructionUpTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Required capabilities haven't yet been specified.
   TransformationPropagateInstructionUp transformation(9, {{{5, 40}}});
   ASSERT_FALSE(
@@ -767,11 +757,9 @@ TEST(TransformationPropagateInstructionUpTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Required capabilities haven't yet been specified
   TransformationPropagateInstructionUp transformation(9, {{{5, 40}}});
   ASSERT_FALSE(
@@ -848,11 +836,9 @@ TEST(TransformationPropagateInstructionUpTest, MultipleIdenticalPredecessors) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationPropagateInstructionUp transformation(9, {{{5, 40}}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));

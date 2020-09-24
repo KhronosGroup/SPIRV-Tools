@@ -79,11 +79,9 @@ TEST(TransformationAddLocalVariableTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // A few cases of inapplicable transformations:
   // Id 4 is already in use
   ASSERT_FALSE(TransformationAddLocalVariable(4, 50, 4, 51, true)

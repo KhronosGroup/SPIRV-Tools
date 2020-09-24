@@ -116,11 +116,9 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Parameter id is invalid.
   ASSERT_FALSE(TransformationReplaceParameterWithGlobal(50, 50, 51)
                    .IsApplicable(context.get(), transformation_context));
@@ -326,26 +324,26 @@ TEST(TransformationReplaceParameterWithGlobalTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  fact_manager.AddFactIdIsIrrelevant(10);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(10);
 
   {
     TransformationReplaceParameterWithGlobal transformation(20, 10, 21);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(21));
+    ASSERT_TRUE(
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(21));
   }
   {
     TransformationReplaceParameterWithGlobal transformation(22, 11, 23);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
-    ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(23));
+    ASSERT_FALSE(
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(23));
   }
 }
 

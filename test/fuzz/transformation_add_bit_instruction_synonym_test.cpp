@@ -81,11 +81,9 @@ TEST(TransformationAddBitInstructionSynonymTest, IsApplicable) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests undefined bit instruction.
   auto transformation = TransformationAddBitInstructionSynonym(
       40, {41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,
@@ -222,11 +220,9 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationAddBitInstructionSynonym(
       39, {40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,
            53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
@@ -455,8 +451,8 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
 
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(166, {}),
-                                        MakeDataDescriptor(39, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
 }
 
 }  // namespace
