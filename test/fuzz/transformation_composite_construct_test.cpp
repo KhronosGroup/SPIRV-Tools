@@ -129,11 +129,9 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a vec2[3]
   TransformationCompositeConstruct make_vec2_array_length_3(
       37, {41, 45, 27}, MakeInstructionDescriptor(46, SpvOpAccessChain, 0),
@@ -395,11 +393,9 @@ TEST(TransformationCompositeConstructTest, ConstructMatrices) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // make a mat3x4
   TransformationCompositeConstruct make_mat34(
       32, {25, 28, 31}, MakeInstructionDescriptor(31, SpvOpReturn, 0), 200);
@@ -608,11 +604,9 @@ TEST(TransformationCompositeConstructTest, ConstructStructs) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // make an Inner
   TransformationCompositeConstruct make_inner(
       9, {25, 19}, MakeInstructionDescriptor(57, SpvOpAccessChain, 0), 200);
@@ -932,11 +926,9 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationCompositeConstruct make_vec2(
       7, {17, 11}, MakeInstructionDescriptor(100, SpvOpStore, 0), 200);
   // Bad: not enough data for a vec2
@@ -1426,21 +1418,19 @@ TEST(TransformationCompositeConstructTest, AddSynonymsForRelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationCompositeConstruct transformation(
       32, {25, 28, 31}, MakeInstructionDescriptor(31, SpvOpReturn, 0), 200);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(25, {}),
-                                        MakeDataDescriptor(200, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(28, {}),
-                                        MakeDataDescriptor(200, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(28, {}), MakeDataDescriptor(200, {1})));
 }
 
 TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
@@ -1510,12 +1500,10 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  fact_manager.AddFactIdIsIrrelevant(25);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(25);
 
   TransformationCompositeConstruct transformation(
       32, {25, 28, 31}, MakeInstructionDescriptor(31, SpvOpReturn, 0), 200);
@@ -1523,10 +1511,10 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(25, {}),
-                                         MakeDataDescriptor(200, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(28, {}),
-                                        MakeDataDescriptor(200, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(28, {}), MakeDataDescriptor(200, {1})));
 }
 
 }  // namespace

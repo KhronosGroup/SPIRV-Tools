@@ -144,11 +144,9 @@ TEST(TransformationAddFunctionTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationAddFunction transformation1(std::vector<protobufs::Instruction>(
       {MakeInstructionMessage(
            SpvOpFunction, 8, 13,
@@ -493,11 +491,9 @@ TEST(TransformationAddFunctionTest, InapplicableTransformations) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // No instructions
   ASSERT_FALSE(
       TransformationAddFunction(std::vector<protobufs::Instruction>({}))
@@ -635,13 +631,11 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
-  FactManager fact_manager1(context1.get());
-  FactManager fact_manager2(context2.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
-                                                validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
-                                                validator_options);
+  TransformationContext transformation_context1(
+      MakeUnique<FactManager>(context1.get()), validator_options);
+  TransformationContext transformation_context2(
+      MakeUnique<FactManager>(context2.get()), validator_options);
 
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
@@ -857,13 +851,11 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
-  FactManager fact_manager1(context1.get());
-  FactManager fact_manager2(context2.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
-                                                validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
-                                                validator_options);
+  TransformationContext transformation_context1(
+      MakeUnique<FactManager>(context1.get()), validator_options);
+  TransformationContext transformation_context2(
+      MakeUnique<FactManager>(context2.get()), validator_options);
 
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
@@ -1012,13 +1004,11 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
-  FactManager fact_manager1(context1.get());
-  FactManager fact_manager2(context2.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
-                                                validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
-                                                validator_options);
+  TransformationContext transformation_context1(
+      MakeUnique<FactManager>(context1.get()), validator_options);
+  TransformationContext transformation_context2(
+      MakeUnique<FactManager>(context2.get()), validator_options);
 
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
@@ -1299,13 +1289,11 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
-  FactManager fact_manager1(context1.get());
-  FactManager fact_manager2(context2.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
-                                                validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
-                                                validator_options);
+  TransformationContext transformation_context1(
+      MakeUnique<FactManager>(context1.get()), validator_options);
+  TransformationContext transformation_context2(
+      MakeUnique<FactManager>(context2.get()), validator_options);
 
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
@@ -1626,13 +1614,11 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
-  FactManager fact_manager1(context1.get());
-  FactManager fact_manager2(context2.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
-                                                validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
-                                                validator_options);
+  TransformationContext transformation_context1(
+      MakeUnique<FactManager>(context1.get()), validator_options);
+  TransformationContext transformation_context2(
+      MakeUnique<FactManager>(context2.get()), validator_options);
 
   // Mark function 6 as livesafe.
   transformation_context2.GetFactManager()->AddFactFunctionIsLivesafe(6);
@@ -1726,13 +1712,11 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context1.get()));
 
-  FactManager fact_manager1(context1.get());
-  FactManager fact_manager2(context2.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
-                                                validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
-                                                validator_options);
+  TransformationContext transformation_context1(
+      MakeUnique<FactManager>(context1.get()), validator_options);
+  TransformationContext transformation_context2(
+      MakeUnique<FactManager>(context2.get()), validator_options);
 
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
@@ -1856,11 +1840,9 @@ TEST(TransformationAddFunctionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
@@ -2013,11 +1995,9 @@ TEST(TransformationAddFunctionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
@@ -2168,11 +2148,9 @@ TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
@@ -2315,11 +2293,9 @@ TEST(TransformationAddFunctionTest, InfiniteLoop) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
@@ -2429,11 +2405,9 @@ TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
@@ -2594,11 +2568,9 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %8 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
@@ -2786,11 +2758,9 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %8 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =
@@ -2936,11 +2906,9 @@ TEST(TransformationAddFunctionTest, StaticallyOutOfBoundsArrayAccess) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
   // |donor|.
   std::vector<protobufs::Instruction> instructions =

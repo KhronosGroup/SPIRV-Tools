@@ -887,17 +887,17 @@ TEST(FactManagerTest, HandlesCorollariesWithInvalidIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Add required facts.
-  fact_manager.AddFactIdEquation(14, SpvOpConvertSToF, {9});
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(14, {}),
-                                  MakeDataDescriptor(17, {}));
+  transformation_context.GetFactManager()->AddFactIdEquation(
+      14, SpvOpConvertSToF, {9});
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(14, {}), MakeDataDescriptor(17, {}));
 
   // Apply TransformationMergeBlocks which will remove %17 from the module.
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
   TransformationMergeBlocks transformation(16);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -907,26 +907,28 @@ TEST(FactManagerTest, HandlesCorollariesWithInvalidIds) {
   ASSERT_EQ(context->get_def_use_mgr()->GetDef(17), nullptr);
 
   // Add another equation.
-  fact_manager.AddFactIdEquation(15, SpvOpConvertSToF, {9});
+  transformation_context.GetFactManager()->AddFactIdEquation(
+      15, SpvOpConvertSToF, {9});
 
   // Check that two ids are synonymous even though one of them doesn't exist in
   // the module (%17).
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
-                                        MakeDataDescriptor(17, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(15, {}),
-                                        MakeDataDescriptor(14, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(17, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(15, {}), MakeDataDescriptor(14, {})));
 
   // Remove some instructions from the module. At this point, the equivalence
   // class of %14 has no valid members.
   ASSERT_TRUE(context->KillDef(14));
   ASSERT_TRUE(context->KillDef(15));
 
-  fact_manager.AddFactIdEquation(18, SpvOpConvertSToF, {9});
+  transformation_context.GetFactManager()->AddFactIdEquation(
+      18, SpvOpConvertSToF, {9});
 
   // We don't create synonyms if at least one of the equivalence classes has no
   // valid members.
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(14, {}),
-                                         MakeDataDescriptor(18, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(14, {}), MakeDataDescriptor(18, {})));
 }
 
 TEST(FactManagerTest, LogicalNotEquationFacts) {

@@ -104,11 +104,9 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::UniformBufferElementDescriptor blockname_a =
       MakeUniformBufferElementDescriptor(0, 0, {0});
   protobufs::UniformBufferElementDescriptor blockname_b =
@@ -467,11 +465,9 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::UniformBufferElementDescriptor blockname_1 =
       MakeUniformBufferElementDescriptor(0, 0, {0});
   protobufs::UniformBufferElementDescriptor blockname_2 =
@@ -708,11 +704,9 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::UniformBufferElementDescriptor blockname_0 =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
@@ -785,11 +779,9 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::UniformBufferElementDescriptor blockname_0 =
       MakeUniformBufferElementDescriptor(0, 0, {0});
   protobufs::UniformBufferElementDescriptor blockname_9 =
@@ -861,11 +853,9 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::UniformBufferElementDescriptor blockname_3 =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
@@ -951,11 +941,9 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::UniformBufferElementDescriptor blockname_9 =
       MakeUniformBufferElementDescriptor(0, 0, {0});
   protobufs::UniformBufferElementDescriptor blockname_10 =
@@ -1168,11 +1156,9 @@ TEST(TransformationReplaceConstantWithUniformTest, ComplexReplacements) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   const float float_array_values[5] = {1.0, 1.5, 1.75, 1.875, 1.9375};
   uint32_t float_array_data[5];
   memcpy(&float_array_data, &float_array_values, sizeof(float_array_values));
@@ -1511,11 +1497,9 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::UniformBufferElementDescriptor blockname_a =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
@@ -1571,11 +1555,9 @@ TEST(TransformationReplaceConstantWithUniformTest, ReplaceOpPhiOperand) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto int_descriptor = MakeUniformBufferElementDescriptor(0, 0, {0});
 
   ASSERT_TRUE(AddFactHelper(&transformation_context, 2, int_descriptor));

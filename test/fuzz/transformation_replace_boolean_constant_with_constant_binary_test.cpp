@@ -162,11 +162,9 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   std::vector<protobufs::IdUseDescriptor> uses_of_true = {
       MakeIdUseDescriptor(41, MakeInstructionDescriptor(44, SpvOpStore, 12), 1),
       MakeIdUseDescriptor(41, MakeInstructionDescriptor(46, SpvOpLogicalOr, 0),
@@ -537,11 +535,9 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto use_of_true_in_if = MakeIdUseDescriptor(
       13, MakeInstructionDescriptor(10, SpvOpBranchConditional, 0), 0);
   auto use_of_false_in_while = MakeIdUseDescriptor(
@@ -653,11 +649,9 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest, OpPhi) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor = MakeInstructionDescriptor(14, SpvOpPhi, 0);
   auto id_use_descriptor = MakeIdUseDescriptor(8, instruction_descriptor, 0);
   auto transformation = TransformationReplaceBooleanConstantWithConstantBinary(
@@ -732,11 +726,9 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationReplaceBooleanConstantWithConstantBinary(
                    MakeIdUseDescriptor(
                        9, MakeInstructionDescriptor(50, SpvOpVariable, 0), 1),

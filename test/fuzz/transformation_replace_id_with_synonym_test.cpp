@@ -220,11 +220,9 @@ TEST(TransformationReplaceIdWithSynonymTest, IllegalTransformations) {
       BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
 
   // %202 cannot replace %15 as in-operand 0 of %300, since %202 does not
@@ -295,11 +293,9 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
 
   auto global_constant_synonym = TransformationReplaceIdWithSynonym(
@@ -518,11 +514,9 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(10, 100));
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(8, 101));
 
@@ -650,11 +644,9 @@ TEST(TransformationReplaceIdWithSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(14, 100));
 
   // Replace %14 with %100 in:
@@ -815,11 +807,9 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym facts corresponding to the OpCopyObject operations that have
   // been applied to all constants in the module.
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(16, 100));
@@ -1303,11 +1293,9 @@ TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %50 and %12.
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(50, 12));
   // Add synonym fact relating %51 and %14.
@@ -1414,11 +1402,9 @@ TEST(TransformationReplaceIdWithSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %100 and %9.
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(100, 9));
 
@@ -1475,11 +1461,9 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerConstants) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %10 and %13 (equivalent integer constant with
   // different signedness).
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(10, 13));
@@ -1619,11 +1603,9 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %10 and %13 (equivalent integer vectors with
   // different signedness).
   transformation_context.GetFactManager()->AddFact(MakeSynonymFact(14, 15));
@@ -1723,21 +1705,19 @@ TEST(TransformationReplaceIdWithSynonymTest, IncompatibleTypes) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto* op_i_add = context->get_def_use_mgr()->GetDef(18);
   ASSERT_TRUE(op_i_add);
 
   auto* op_f_add = context->get_def_use_mgr()->GetDef(19);
   ASSERT_TRUE(op_f_add);
 
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(12, {}),
-                                  MakeDataDescriptor(13, {}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(12, {}),
-                                  MakeDataDescriptor(10, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(13, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(12, {}), MakeDataDescriptor(10, {}));
 
   // Synonym differs only in signedness for OpIAdd.
   ASSERT_TRUE(TransformationReplaceIdWithSynonym(

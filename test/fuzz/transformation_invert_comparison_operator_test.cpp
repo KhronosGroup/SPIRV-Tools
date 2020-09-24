@@ -59,11 +59,9 @@ TEST(TransformationInvertComparisonOperatorTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Operator id is not valid.
   ASSERT_FALSE(TransformationInvertComparisonOperator(23, 23).IsApplicable(
       context.get(), transformation_context));

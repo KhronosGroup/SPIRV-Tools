@@ -196,10 +196,9 @@ TEST(FuzzerPassDonateModulesTest, BasicDonation) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -274,10 +273,9 @@ TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -402,10 +400,9 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -494,10 +491,9 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -561,10 +557,9 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -686,10 +681,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImages) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -779,10 +773,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesSampler) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -908,10 +901,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageStructField) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1041,10 +1033,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1120,10 +1111,9 @@ TEST(FuzzerPassDonateModulesTest, DonateShaderWithImageStorageClass) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1204,10 +1194,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArray) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1305,10 +1294,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArrayLivesafe) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1374,10 +1362,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithWorkgroupVariables) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1481,10 +1468,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithAtomics) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1662,10 +1648,9 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator rng(0);
   FuzzerContext fuzzer_context(&rng, 100);
@@ -1731,10 +1716,9 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
@@ -1885,10 +1869,9 @@ TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator rng(0);
   FuzzerContext fuzzer_context(&rng, 100);
@@ -1955,10 +1938,9 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator rng(0);
   FuzzerContext fuzzer_context(&rng, 100);
@@ -2185,10 +2167,9 @@ TEST(FuzzerPassDonateModulesTest, HandlesOpPhisInMergeBlock) {
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, donor_context.get()));
 
-  FactManager fact_manager(recipient_context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);

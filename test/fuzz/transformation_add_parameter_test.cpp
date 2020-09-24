@@ -102,11 +102,9 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Can't modify entry point function.
   ASSERT_FALSE(TransformationAddParameter(4, 60, 7, {{}}, 61)
                    .IsApplicable(context.get(), transformation_context));
@@ -137,28 +135,28 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(60));
+    ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(60));
   }
   {
     TransformationAddParameter correct(17, 62, 7, {{}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(62));
+    ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(62));
   }
   {
     TransformationAddParameter correct(29, 64, 31, {{}}, 65);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(64));
+    ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(64));
   }
   {
     TransformationAddParameter correct(34, 66, 7, {{}}, 67);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(66));
+    ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(66));
   }
 
   std::string expected_shader = R"(
@@ -322,11 +320,9 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: Id 19 is not available in the caller that has id 34.
   TransformationAddParameter transformation_bad_1(12, 50, 8,
                                                   {{{34, 19}, {38, 19}}}, 51);
@@ -449,11 +445,9 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: Pointer of id 61 has storage class Output, which is not supported.
   TransformationAddParameter transformation_bad_1(12, 50, 60,
                                                   {{{38, 61}, {42, 61}}}, 51);
@@ -668,11 +662,9 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Good: Global variable of id 28 (storage class Private) is defined in the
   // caller (main).
   TransformationAddParameter transformation_good_1(12, 70, 27,
@@ -881,11 +873,9 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Good: Local variable of id 21 is defined in every caller (id 27 and id 31).
   TransformationAddParameter transformation_good_1(
       10, 70, 7, {{{27, 21}, {31, 21}, {30, 21}}}, 71);
@@ -1037,11 +1027,9 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationAddParameter transformation_good_1(10, 70, 7,
                                                    {{{28, 22}, {32, 22}}}, 71);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
@@ -1051,7 +1039,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Function).
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(70));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(70));
 
   TransformationAddParameter transformation_good_2(10, 72, 19,
                                                    {{{28, 20}, {32, 20}}}, 73);
@@ -1062,7 +1051,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Private).
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(72));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(72));
 
   TransformationAddParameter transformation_good_3(10, 74, 50,
                                                    {{{28, 51}, {32, 51}}}, 75);
@@ -1073,7 +1063,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Workgroup).
-  ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(74));
+  ASSERT_TRUE(
+      transformation_context.GetFactManager()->PointeeValueIsIrrelevant(74));
 }
 
 }  // namespace

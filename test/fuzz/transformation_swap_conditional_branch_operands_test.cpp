@@ -69,11 +69,9 @@ TEST(TransformationSwapConditionalBranchOperandsTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Invalid instruction descriptor.
   ASSERT_FALSE(TransformationSwapConditionalBranchOperands(
                    MakeInstructionDescriptor(26, SpvOpPhi, 0), 26)

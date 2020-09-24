@@ -47,11 +47,9 @@ TEST(TransformationAddTypeStructTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Id already in use
   ASSERT_FALSE(TransformationAddTypeStruct(4, {}).IsApplicable(
       context.get(), transformation_context));
@@ -139,11 +137,9 @@ TEST(TransformationAddTypeStructTest, HandlesBuiltInMembers) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // From the spec for the BuiltIn decoration:
   // - When applied to a structure-type member, that structure type cannot
   //   be contained as a member of another structure type.

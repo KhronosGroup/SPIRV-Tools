@@ -97,11 +97,9 @@ TEST(TransformationAddTypePointerTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto bad_type_id_does_not_exist =
       TransformationAddTypePointer(100, SpvStorageClassFunction, 101);
   auto bad_type_id_is_not_type =

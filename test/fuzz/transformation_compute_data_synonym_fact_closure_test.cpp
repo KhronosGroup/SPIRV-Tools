@@ -123,254 +123,252 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(TransformationComputeDataSynonymFactClosure(100).IsApplicable(
       context.get(), transformation_context));
 
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {}),
-                                         MakeDataDescriptor(101, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {0}),
-                                         MakeDataDescriptor(101, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {1}),
-                                         MakeDataDescriptor(101, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {0}),
-                                         MakeDataDescriptor(101, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {}), MakeDataDescriptor(101, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {0}), MakeDataDescriptor(101, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {1}), MakeDataDescriptor(101, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {0}), MakeDataDescriptor(101, {1})));
 
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(24, {}),
-                                  MakeDataDescriptor(101, {}));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {}),
-                                        MakeDataDescriptor(101, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {0}),
-                                        MakeDataDescriptor(101, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {1}),
-                                        MakeDataDescriptor(101, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(24, {0}),
-                                         MakeDataDescriptor(101, {1})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(24, {}), MakeDataDescriptor(101, {}));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {}), MakeDataDescriptor(101, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {0}), MakeDataDescriptor(101, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {1}), MakeDataDescriptor(101, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(24, {0}), MakeDataDescriptor(101, {1})));
 
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {}),
-                                         MakeDataDescriptor(102, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {0}),
-                                         MakeDataDescriptor(102, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {1}),
-                                         MakeDataDescriptor(102, {1})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(27, {0}),
-                                  MakeDataDescriptor(102, {0}));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {}),
-                                         MakeDataDescriptor(102, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {0}),
-                                        MakeDataDescriptor(102, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {1}),
-                                         MakeDataDescriptor(102, {1})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(27, {1}),
-                                  MakeDataDescriptor(102, {1}));
-
-  TransformationComputeDataSynonymFactClosure(100).Apply(
-      context.get(), &transformation_context);
-
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {}),
-                                        MakeDataDescriptor(102, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {0}),
-                                        MakeDataDescriptor(102, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(27, {1}),
-                                        MakeDataDescriptor(102, {1})));
-
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {}),
-                                         MakeDataDescriptor(103, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {0}),
-                                         MakeDataDescriptor(103, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1}),
-                                         MakeDataDescriptor(103, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {}),
-                                         MakeDataDescriptor(104, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {0}),
-                                         MakeDataDescriptor(104, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {1}),
-                                         MakeDataDescriptor(104, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {}),
-                                         MakeDataDescriptor(105, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {0}),
-                                         MakeDataDescriptor(105, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {1}),
-                                         MakeDataDescriptor(105, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {2}),
-                                         MakeDataDescriptor(105, {2})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {3}),
-                                         MakeDataDescriptor(105, {3})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(30, {}),
-                                  MakeDataDescriptor(103, {}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(33, {}),
-                                  MakeDataDescriptor(104, {}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {0}),
-                                  MakeDataDescriptor(105, {0}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {1}),
-                                  MakeDataDescriptor(105, {1}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {2}),
-                                  MakeDataDescriptor(105, {2}));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {}),
-                                        MakeDataDescriptor(103, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {0}),
-                                        MakeDataDescriptor(103, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1}),
-                                        MakeDataDescriptor(103, {1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {}),
-                                        MakeDataDescriptor(104, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {0}),
-                                        MakeDataDescriptor(104, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {1}),
-                                        MakeDataDescriptor(104, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {}),
-                                         MakeDataDescriptor(105, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {0}),
-                                        MakeDataDescriptor(105, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {1}),
-                                        MakeDataDescriptor(105, {1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {2}),
-                                        MakeDataDescriptor(105, {2})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {3}),
-                                         MakeDataDescriptor(105, {3})));
-
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(34, {3}),
-                                  MakeDataDescriptor(105, {3}));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(33, {0}),
-                                        MakeDataDescriptor(104, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(34, {3}),
-                                        MakeDataDescriptor(105, {3})));
-
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
-                                         MakeDataDescriptor(100, {})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {0}),
-                                  MakeDataDescriptor(100, {0}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {1}),
-                                  MakeDataDescriptor(100, {1}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {2}),
-                                  MakeDataDescriptor(100, {2}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {3}),
-                                  MakeDataDescriptor(100, {3}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(21, {4}),
-                                  MakeDataDescriptor(100, {4}));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {}), MakeDataDescriptor(102, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {0}), MakeDataDescriptor(102, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {1}), MakeDataDescriptor(102, {1})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(27, {0}), MakeDataDescriptor(102, {0}));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {}), MakeDataDescriptor(102, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {0}), MakeDataDescriptor(102, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {1}), MakeDataDescriptor(102, {1})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(27, {1}), MakeDataDescriptor(102, {1}));
 
   TransformationComputeDataSynonymFactClosure(100).Apply(
       context.get(), &transformation_context);
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
-                                        MakeDataDescriptor(100, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {}), MakeDataDescriptor(102, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {0}), MakeDataDescriptor(102, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(27, {1}), MakeDataDescriptor(102, {1})));
 
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(39, {0}),
-                                         MakeDataDescriptor(107, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(35, {}),
-                                         MakeDataDescriptor(39, {0})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(39, {0}),
-                                  MakeDataDescriptor(35, {}));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(39, {0}),
-                                         MakeDataDescriptor(107, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(35, {}),
-                                        MakeDataDescriptor(39, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {}), MakeDataDescriptor(103, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {0}), MakeDataDescriptor(103, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1}), MakeDataDescriptor(103, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(33, {}), MakeDataDescriptor(104, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(33, {0}), MakeDataDescriptor(104, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(33, {1}), MakeDataDescriptor(104, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {}), MakeDataDescriptor(105, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {0}), MakeDataDescriptor(105, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {1}), MakeDataDescriptor(105, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {2}), MakeDataDescriptor(105, {2})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {3}), MakeDataDescriptor(105, {3})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(30, {}), MakeDataDescriptor(103, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(33, {}), MakeDataDescriptor(104, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(34, {0}), MakeDataDescriptor(105, {0}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(34, {1}), MakeDataDescriptor(105, {1}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(34, {2}), MakeDataDescriptor(105, {2}));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {}), MakeDataDescriptor(103, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {0}), MakeDataDescriptor(103, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1}), MakeDataDescriptor(103, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(33, {}), MakeDataDescriptor(104, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(33, {0}), MakeDataDescriptor(104, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(33, {1}), MakeDataDescriptor(104, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {}), MakeDataDescriptor(105, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {0}), MakeDataDescriptor(105, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {1}), MakeDataDescriptor(105, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {2}), MakeDataDescriptor(105, {2})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {3}), MakeDataDescriptor(105, {3})));
 
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(38, {0}),
-                                         MakeDataDescriptor(36, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(38, {1}),
-                                         MakeDataDescriptor(37, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(106, {0}),
-                                         MakeDataDescriptor(36, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(106, {1}),
-                                         MakeDataDescriptor(37, {})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(38, {}),
-                                         MakeDataDescriptor(106, {})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(38, {0}),
-                                  MakeDataDescriptor(36, {}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(106, {0}),
-                                  MakeDataDescriptor(36, {}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(38, {1}),
-                                  MakeDataDescriptor(37, {}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(106, {1}),
-                                  MakeDataDescriptor(37, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(34, {3}), MakeDataDescriptor(105, {3}));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(33, {0}), MakeDataDescriptor(104, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(34, {3}), MakeDataDescriptor(105, {3})));
+
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(100, {})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(21, {0}), MakeDataDescriptor(100, {0}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(21, {1}), MakeDataDescriptor(100, {1}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(21, {2}), MakeDataDescriptor(100, {2}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(21, {3}), MakeDataDescriptor(100, {3}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(21, {4}), MakeDataDescriptor(100, {4}));
 
   TransformationComputeDataSynonymFactClosure(100).Apply(
       context.get(), &transformation_context);
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(38, {0}),
-                                        MakeDataDescriptor(36, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(38, {1}),
-                                        MakeDataDescriptor(37, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(106, {0}),
-                                        MakeDataDescriptor(36, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(106, {1}),
-                                        MakeDataDescriptor(37, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(38, {}),
-                                        MakeDataDescriptor(106, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(100, {})));
 
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {}),
-                                         MakeDataDescriptor(108, {})));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(107, {0}),
-                                  MakeDataDescriptor(35, {}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {0}),
-                                  MakeDataDescriptor(108, {0}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {1}),
-                                  MakeDataDescriptor(108, {1}));
-  fact_manager.AddFactDataSynonym(MakeDataDescriptor(40, {2}),
-                                  MakeDataDescriptor(108, {2}));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(39, {0}), MakeDataDescriptor(107, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(35, {}), MakeDataDescriptor(39, {0})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(39, {0}), MakeDataDescriptor(35, {}));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(39, {0}), MakeDataDescriptor(107, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(35, {}), MakeDataDescriptor(39, {0})));
+
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(38, {0}), MakeDataDescriptor(36, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(38, {1}), MakeDataDescriptor(37, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(106, {0}), MakeDataDescriptor(36, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(106, {1}), MakeDataDescriptor(37, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(38, {}), MakeDataDescriptor(106, {})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(38, {0}), MakeDataDescriptor(36, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(106, {0}), MakeDataDescriptor(36, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(38, {1}), MakeDataDescriptor(37, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(106, {1}), MakeDataDescriptor(37, {}));
 
   TransformationComputeDataSynonymFactClosure(100).Apply(
       context.get(), &transformation_context);
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {}),
-                                        MakeDataDescriptor(108, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {0}),
-                                        MakeDataDescriptor(108, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1}),
-                                        MakeDataDescriptor(108, {1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {2}),
-                                        MakeDataDescriptor(108, {2})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {0, 0}),
-                                        MakeDataDescriptor(108, {0, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {0, 1}),
-                                        MakeDataDescriptor(108, {0, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {0, 2}),
-                                        MakeDataDescriptor(108, {0, 2})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {0, 3}),
-                                        MakeDataDescriptor(108, {0, 3})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {0, 4}),
-                                        MakeDataDescriptor(108, {0, 4})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 0}),
-                                        MakeDataDescriptor(108, {1, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 1}),
-                                        MakeDataDescriptor(108, {1, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 2}),
-                                        MakeDataDescriptor(108, {1, 2})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 3}),
-                                        MakeDataDescriptor(108, {1, 3})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 0, 0}),
-                                        MakeDataDescriptor(108, {1, 0, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 1, 0}),
-                                        MakeDataDescriptor(108, {1, 1, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 2, 0}),
-                                        MakeDataDescriptor(108, {1, 2, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 3, 0}),
-                                        MakeDataDescriptor(108, {1, 3, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 0, 1}),
-                                        MakeDataDescriptor(108, {1, 0, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 1, 1}),
-                                        MakeDataDescriptor(108, {1, 1, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 2, 1}),
-                                        MakeDataDescriptor(108, {1, 2, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {1, 3, 1}),
-                                        MakeDataDescriptor(108, {1, 3, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(38, {0}), MakeDataDescriptor(36, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(38, {1}), MakeDataDescriptor(37, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(106, {0}), MakeDataDescriptor(36, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(106, {1}), MakeDataDescriptor(37, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(38, {}), MakeDataDescriptor(106, {})));
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {2, 0}),
-                                        MakeDataDescriptor(108, {2, 0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {}), MakeDataDescriptor(108, {})));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(107, {0}), MakeDataDescriptor(35, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(40, {0}), MakeDataDescriptor(108, {0}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(40, {1}), MakeDataDescriptor(108, {1}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(40, {2}), MakeDataDescriptor(108, {2}));
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {2, 1}),
-                                        MakeDataDescriptor(108, {2, 1})));
+  TransformationComputeDataSynonymFactClosure(100).Apply(
+      context.get(), &transformation_context);
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {2, 1, 0}),
-                                        MakeDataDescriptor(108, {2, 1, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {}), MakeDataDescriptor(108, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {0}), MakeDataDescriptor(108, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1}), MakeDataDescriptor(108, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {2}), MakeDataDescriptor(108, {2})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {0, 0}), MakeDataDescriptor(108, {0, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {0, 1}), MakeDataDescriptor(108, {0, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {0, 2}), MakeDataDescriptor(108, {0, 2})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {0, 3}), MakeDataDescriptor(108, {0, 3})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {0, 4}), MakeDataDescriptor(108, {0, 4})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 0}), MakeDataDescriptor(108, {1, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 1}), MakeDataDescriptor(108, {1, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 2}), MakeDataDescriptor(108, {1, 2})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 3}), MakeDataDescriptor(108, {1, 3})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 0, 0}), MakeDataDescriptor(108, {1, 0, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 1, 0}), MakeDataDescriptor(108, {1, 1, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 2, 0}), MakeDataDescriptor(108, {1, 2, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 3, 0}), MakeDataDescriptor(108, {1, 3, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 0, 1}), MakeDataDescriptor(108, {1, 0, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 1, 1}), MakeDataDescriptor(108, {1, 1, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 2, 1}), MakeDataDescriptor(108, {1, 2, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {1, 3, 1}), MakeDataDescriptor(108, {1, 3, 1})));
 
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(40, {2, 1, 1}),
-                                        MakeDataDescriptor(108, {2, 1, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {2, 0}), MakeDataDescriptor(108, {2, 0})));
+
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {2, 1}), MakeDataDescriptor(108, {2, 1})));
+
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {2, 1, 0}), MakeDataDescriptor(108, {2, 1, 0})));
+
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(40, {2, 1, 1}), MakeDataDescriptor(108, {2, 1, 1})));
 }
 
 }  // namespace

@@ -112,11 +112,9 @@ TEST(TransformationToggleAccessChainInstructionTest, IsApplicableTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests existing access chain instructions
   auto instructionDescriptor =
       MakeInstructionDescriptor(18, SpvOpAccessChain, 0);
@@ -308,11 +306,9 @@ TEST(TransformationToggleAccessChainInstructionTest, ApplyTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instructionDescriptor =
       MakeInstructionDescriptor(18, SpvOpAccessChain, 0);
   auto transformation =
