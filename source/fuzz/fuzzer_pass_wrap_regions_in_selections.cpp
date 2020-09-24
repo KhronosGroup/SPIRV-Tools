@@ -115,15 +115,7 @@ FuzzerPassWrapRegionsInSelections::MaybeGetHeaderBlockCandidate(
 
   // Try to split |header_block_candidate| if it's already a header block.
   if (header_block_candidate->GetMergeInst()) {
-    auto* split_before_inst = &*header_block_candidate->begin();
-    while (split_before_inst->opcode() == SpvOpVariable ||
-           split_before_inst->opcode() == SpvOpPhi) {
-      split_before_inst = split_before_inst->NextNode();
-    }
-
-    ApplyTransformation(TransformationSplitBlock(
-        MakeInstructionDescriptor(GetIRContext(), split_before_inst),
-        GetFuzzerContext()->GetFreshId()));
+    SplitBlockAfterOpPhiOrOpVariable(header_block_candidate->id());
   }
 
   return header_block_candidate;
@@ -135,21 +127,10 @@ opt::BasicBlock* FuzzerPassWrapRegionsInSelections::MaybeGetMergeBlockCandidate(
   // it and return a newly created block.
   if (GetIRContext()->GetStructuredCFGAnalysis()->IsMergeBlock(
           merge_block_candidate->id())) {
-    if (merge_block_candidate->IsLoopHeader()) {
-      // We can't split a merge block if it's also a loop header.
-      return nullptr;
-    }
-
-    auto* split_before_inst = &*merge_block_candidate->begin();
-    while (split_before_inst->opcode() == SpvOpPhi) {
-      split_before_inst = split_before_inst->NextNode();
-    }
-
-    auto new_block_id = GetFuzzerContext()->GetFreshId();
-    ApplyTransformation(TransformationSplitBlock(
-        MakeInstructionDescriptor(GetIRContext(), split_before_inst),
-        new_block_id));
-    return GetIRContext()->cfg()->block(new_block_id);
+    // We can't split a merge block if it's also a loop header.
+    return merge_block_candidate->IsLoopHeader()
+               ? nullptr
+               : SplitBlockAfterOpPhiOrOpVariable(merge_block_candidate->id());
   }
 
   return merge_block_candidate;
