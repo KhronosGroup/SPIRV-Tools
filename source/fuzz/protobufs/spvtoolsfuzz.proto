@@ -545,11 +545,11 @@ message TransformationAddBitInstructionSynonym {
   //   OpBitwiseOr
   //   OpBitwiseXor
   //   OpBitwiseAnd
+  //   OpNot
   // To be supported in the future:
   //   OpShiftRightLogical
   //   OpShiftRightArithmetic
   //   OpShiftLeftLogical
-  //   OpNot
   //   OpBitReverse
   //   OpBitCount
 

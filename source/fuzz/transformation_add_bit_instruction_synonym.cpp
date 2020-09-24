@@ -98,7 +98,9 @@ void TransformationAddBitInstructionSynonym::Apply(
     case SpvOpBitwiseOr:
     case SpvOpBitwiseXor:
     case SpvOpBitwiseAnd:
-      AddBitwiseSynonym(ir_context, transformation_context, bit_instruction);
+    case SpvOpNot:
+      AddOpBitwiseOrOpNotSynonym(ir_context, transformation_context,
+                                 bit_instruction);
       break;
     default:
       assert(false && "Should be unreachable.");
@@ -123,7 +125,9 @@ uint32_t TransformationAddBitInstructionSynonym::GetRequiredFreshIdCount(
     case SpvOpBitwiseOr:
     case SpvOpBitwiseXor:
     case SpvOpBitwiseAnd:
-      return 4 * ir_context->get_type_mgr()
+    case SpvOpNot:
+      return (2 + bit_instruction->NumInOperands()) *
+                 ir_context->get_type_mgr()
                      ->GetType(bit_instruction->type_id())
                      ->AsInteger()
                      ->width() -
@@ -134,7 +138,7 @@ uint32_t TransformationAddBitInstructionSynonym::GetRequiredFreshIdCount(
   }
 }
 
-void TransformationAddBitInstructionSynonym::AddBitwiseSynonym(
+void TransformationAddBitInstructionSynonym::AddOpBitwiseOrOpNotSynonym(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     opt::Instruction* bit_instruction) const {
   // Fresh id iterator.
@@ -150,9 +154,10 @@ void TransformationAddBitInstructionSynonym::AddBitwiseSynonym(
   const uint32_t count = fuzzerutil::MaybeGetIntegerConstant(
       ir_context, *transformation_context, {1}, 32, false, false);
 
-  // |bitwise_ids| is the collection of OpBiwise* instructions that evaluate a
-  // pair of extracted bits. Those ids will be used to insert the result bits.
-  std::vector<uint32_t> bitwise_ids(width);
+  // |extracted_bit_instructions| is the collection of OpBiwise* or OpNot
+  // instructions that evaluate the extracted bits. Those ids will be used to
+  // insert the result bits.
+  std::vector<uint32_t> extracted_bit_instructions(width);
 
   for (uint32_t i = 0; i < width; i++) {
     // |offset| is the current bit index.
@@ -160,7 +165,7 @@ void TransformationAddBitInstructionSynonym::AddBitwiseSynonym(
         ir_context, *transformation_context, {i}, 32, false, false);
 
     // |bit_extract_ids| are the two extracted bits from the operands.
-    std::vector<uint32_t> bit_extract_ids;
+    opt::Instruction::OperandList bit_extract_ids;
 
     // Extracts the i-th bit from operands.
     for (auto operand = bit_instruction->begin() + 2;
@@ -173,30 +178,31 @@ void TransformationAddBitInstructionSynonym::AddBitwiseSynonym(
                             {SPV_OPERAND_TYPE_ID, {count}}});
       bit_instruction->InsertBefore(MakeUnique<opt::Instruction>(bit_extract));
       fuzzerutil::UpdateModuleIdBound(ir_context, bit_extract.result_id());
-      bit_extract_ids.push_back(bit_extract.result_id());
+      bit_extract_ids.push_back(
+          {SPV_OPERAND_TYPE_ID, {bit_extract.result_id()}});
     }
 
-    // Applies |bit_instruction| to the pair of extracted bits.
-    auto bitwise =
-        opt::Instruction(ir_context, bit_instruction->opcode(),
-                         bit_instruction->type_id(), *fresh_id++,
-                         {{SPV_OPERAND_TYPE_ID, {bit_extract_ids[0]}},
-                          {SPV_OPERAND_TYPE_ID, {bit_extract_ids[1]}}});
-    bit_instruction->InsertBefore(MakeUnique<opt::Instruction>(bitwise));
-    fuzzerutil::UpdateModuleIdBound(ir_context, bitwise.result_id());
-    bitwise_ids[i] = bitwise.result_id();
+    // Applies |bit_instruction| to the extracted bits.
+    auto extracted_bit_instruction = opt::Instruction(
+        ir_context, bit_instruction->opcode(), bit_instruction->type_id(),
+        *fresh_id++, bit_extract_ids);
+    bit_instruction->InsertBefore(
+        MakeUnique<opt::Instruction>(extracted_bit_instruction));
+    fuzzerutil::UpdateModuleIdBound(ir_context,
+                                    extracted_bit_instruction.result_id());
+    extracted_bit_instructions[i] = extracted_bit_instruction.result_id();
   }
 
-  // The first two ids in |bitwise_ids| are used to insert the first two bits of
-  // the result.
+  // The first two ids in |extracted_bit_instructions| are used to insert the
+  // first two bits of the result.
   uint32_t offset = fuzzerutil::MaybeGetIntegerConstant(
       ir_context, *transformation_context, {1}, 32, false, false);
-  auto bit_insert = opt::Instruction(ir_context, SpvOpBitFieldInsert,
-                                     bit_instruction->type_id(), *fresh_id++,
-                                     {{SPV_OPERAND_TYPE_ID, {bitwise_ids[0]}},
-                                      {SPV_OPERAND_TYPE_ID, {bitwise_ids[1]}},
-                                      {SPV_OPERAND_TYPE_ID, {offset}},
-                                      {SPV_OPERAND_TYPE_ID, {count}}});
+  auto bit_insert = opt::Instruction(
+      ir_context, SpvOpBitFieldInsert, bit_instruction->type_id(), *fresh_id++,
+      {{SPV_OPERAND_TYPE_ID, {extracted_bit_instructions[0]}},
+       {SPV_OPERAND_TYPE_ID, {extracted_bit_instructions[1]}},
+       {SPV_OPERAND_TYPE_ID, {offset}},
+       {SPV_OPERAND_TYPE_ID, {count}}});
   bit_instruction->InsertBefore(MakeUnique<opt::Instruction>(bit_insert));
   fuzzerutil::UpdateModuleIdBound(ir_context, bit_insert.result_id());
 
@@ -204,13 +210,13 @@ void TransformationAddBitInstructionSynonym::AddBitwiseSynonym(
   for (uint32_t i = 2; i < width; i++) {
     offset = fuzzerutil::MaybeGetIntegerConstant(
         ir_context, *transformation_context, {i}, 32, false, false);
-    bit_insert =
-        opt::Instruction(ir_context, SpvOpBitFieldInsert,
-                         bit_instruction->type_id(), *fresh_id++,
-                         {{SPV_OPERAND_TYPE_ID, {bit_insert.result_id()}},
-                          {SPV_OPERAND_TYPE_ID, {bitwise_ids[i]}},
-                          {SPV_OPERAND_TYPE_ID, {offset}},
-                          {SPV_OPERAND_TYPE_ID, {count}}});
+    bit_insert = opt::Instruction(
+        ir_context, SpvOpBitFieldInsert, bit_instruction->type_id(),
+        *fresh_id++,
+        {{SPV_OPERAND_TYPE_ID, {bit_insert.result_id()}},
+         {SPV_OPERAND_TYPE_ID, {extracted_bit_instructions[i]}},
+         {SPV_OPERAND_TYPE_ID, {offset}},
+         {SPV_OPERAND_TYPE_ID, {count}}});
     bit_instruction->InsertBefore(MakeUnique<opt::Instruction>(bit_insert));
     fuzzerutil::UpdateModuleIdBound(ir_context, bit_insert.result_id());
   }

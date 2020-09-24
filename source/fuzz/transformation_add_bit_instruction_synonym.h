@@ -129,10 +129,10 @@ class TransformationAddBitInstructionSynonym : public Transformation {
  private:
   protobufs::TransformationAddBitInstructionSynonym message_;
 
-  // Adds an OpBitwise* synonym.
-  void AddBitwiseSynonym(opt::IRContext* ir_context,
-                         TransformationContext* transformation_context,
-                         opt::Instruction* bitwise_instruction) const;
+  // Adds OpBitwise* or OpNot synonym.
+  void AddOpBitwiseOrOpNotSynonym(opt::IRContext* ir_context,
+                                  TransformationContext* transformation_context,
+                                  opt::Instruction* bitwise_instruction) const;
 };
 
 }  // namespace fuzz
