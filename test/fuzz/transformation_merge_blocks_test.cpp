@@ -44,9 +44,8 @@ TEST(TransformationMergeBlocksTest, BlockDoesNotExist) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   ASSERT_FALSE(TransformationMergeBlocks(3).IsApplicable(
@@ -86,9 +85,8 @@ TEST(TransformationMergeBlocksTest, DoNotMergeFirstBlockHasMultipleSuccessors) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   ASSERT_FALSE(TransformationMergeBlocks(6).IsApplicable(
@@ -127,9 +125,8 @@ TEST(TransformationMergeBlocksTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   ASSERT_FALSE(TransformationMergeBlocks(10).IsApplicable(
@@ -169,9 +166,8 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsSelectionMerge) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationMergeBlocks transformation(10);
@@ -243,9 +239,8 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsLoopMerge) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationMergeBlocks transformation(10);
@@ -322,9 +317,8 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsLoopContinue) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationMergeBlocks transformation(11);
@@ -397,9 +391,8 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockStartsWithOpPhi) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationMergeBlocks transformation(6);
@@ -478,9 +471,8 @@ TEST(TransformationMergeBlocksTest, BasicMerge) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   for (auto& transformation :
@@ -570,9 +562,8 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsSelectionHeader) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   for (auto& transformation :
@@ -661,9 +652,8 @@ TEST(TransformationMergeBlocksTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationMergeBlocks transformation(101);

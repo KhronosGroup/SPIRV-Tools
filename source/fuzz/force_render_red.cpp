@@ -182,11 +182,11 @@ bool ForceRenderRed(
   assert(ir_context);
 
   // Set up a fact manager with any given initial facts.
-  FactManager fact_manager;
+  std::unique_ptr<FactManager> fact_manager = MakeUnique<FactManager>();
   for (auto& fact : initial_facts.fact()) {
-    fact_manager.AddFact(fact, ir_context.get());
+    fact_manager->AddFact(fact, ir_context.get());
   }
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(std::move(fact_manager),
                                                validator_options);
 
   auto entry_point_function =
@@ -264,7 +264,8 @@ bool ForceRenderRed(
 
     auto float_type_id = ir_context->get_type_mgr()->GetId(float_type);
     auto types_for_which_uniforms_are_known =
-        fact_manager.GetTypesForWhichUniformValuesAreKnown();
+        transformation_context.GetFactManager()
+            ->GetTypesForWhichUniformValuesAreKnown();
 
     // Check whether we have any float uniforms.
     if (std::find(types_for_which_uniforms_are_known.begin(),
@@ -272,9 +273,9 @@ bool ForceRenderRed(
                   float_type_id) != types_for_which_uniforms_are_known.end()) {
       // We have at least one float uniform; let's see whether we have at least
       // two.
-      auto available_constants =
-          fact_manager.GetConstantsAvailableFromUniformsForType(
-              ir_context.get(), float_type_id);
+      auto available_constants = transformation_context.GetFactManager()
+                                     ->GetConstantsAvailableFromUniformsForType(
+                                         ir_context.get(), float_type_id);
       if (available_constants.size() > 1) {
         // Grab the float constants associated with the first two known float
         // uniforms.
@@ -320,13 +321,13 @@ bool ForceRenderRed(
               id_guaranteed_to_be_false, greater_than_operands));
 
           first_greater_then_operand_replacement =
-              MakeConstantUniformReplacement(ir_context.get(), fact_manager,
-                                             smaller_constant,
-                                             id_guaranteed_to_be_false, 0);
+              MakeConstantUniformReplacement(
+                  ir_context.get(), *transformation_context.GetFactManager(),
+                  smaller_constant, id_guaranteed_to_be_false, 0);
           second_greater_then_operand_replacement =
-              MakeConstantUniformReplacement(ir_context.get(), fact_manager,
-                                             larger_constant,
-                                             id_guaranteed_to_be_false, 1);
+              MakeConstantUniformReplacement(
+                  ir_context.get(), *transformation_context.GetFactManager(),
+                  larger_constant, id_guaranteed_to_be_false, 1);
         }
       }
     }

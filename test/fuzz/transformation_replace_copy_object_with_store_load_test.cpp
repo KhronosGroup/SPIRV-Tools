@@ -77,9 +77,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 

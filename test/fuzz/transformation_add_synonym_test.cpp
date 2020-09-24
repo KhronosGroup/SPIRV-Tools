@@ -70,12 +70,12 @@ TEST(TransformationAddSynonymTest, NotApplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(24, context.get());
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(24,
+                                                                 context.get());
 
   auto insert_before = MakeInstructionDescriptor(22, SpvOpReturn, 0);
 
@@ -208,9 +208,8 @@ TEST(TransformationAddSynonymTest, AddZeroSubZeroMulOne) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto insert_before = MakeInstructionDescriptor(5, SpvOpReturn, 0);
@@ -245,8 +244,8 @@ TEST(TransformationAddSynonymTest, AddZeroSubZeroMulOne) {
       ASSERT_TRUE(
           transformation.IsApplicable(context.get(), transformation_context));
       transformation.Apply(context.get(), &transformation_context);
-      ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(result_id, {}),
-                                            MakeDataDescriptor(fresh_id, {})));
+      ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(result_id, {}), MakeDataDescriptor(fresh_id, {})));
       ++fresh_id;
     }
   }
@@ -345,9 +344,8 @@ TEST(TransformationAddSynonymTest, LogicalAndLogicalOr) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto insert_before = MakeInstructionDescriptor(5, SpvOpReturn, 0);
@@ -373,8 +371,8 @@ TEST(TransformationAddSynonymTest, LogicalAndLogicalOr) {
       ASSERT_TRUE(
           transformation.IsApplicable(context.get(), transformation_context));
       transformation.Apply(context.get(), &transformation_context);
-      ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(result_id, {}),
-                                            MakeDataDescriptor(fresh_id, {})));
+      ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(result_id, {}), MakeDataDescriptor(fresh_id, {})));
       ++fresh_id;
     }
   }
@@ -439,9 +437,8 @@ TEST(TransformationAddSynonymTest, LogicalAndConstantIsNotPresent) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto insert_before = MakeInstructionDescriptor(5, SpvOpReturn, 0);
@@ -479,9 +476,8 @@ TEST(TransformationAddSynonymTest, LogicalOrConstantIsNotPresent) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto insert_before = MakeInstructionDescriptor(5, SpvOpReturn, 0);
@@ -539,9 +535,8 @@ TEST(TransformationAddSynonymTest, CopyObject) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto insert_before = MakeInstructionDescriptor(5, SpvOpReturn, 0);
@@ -557,8 +552,8 @@ TEST(TransformationAddSynonymTest, CopyObject) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(result_id, {}),
-                                          MakeDataDescriptor(fresh_id, {})));
+    ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+        MakeDataDescriptor(result_id, {}), MakeDataDescriptor(fresh_id, {})));
     ++fresh_id;
   }
 
@@ -636,9 +631,8 @@ TEST(TransformationAddSynonymTest, CopyBooleanConstants) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   ASSERT_EQ(0, transformation_context.GetFactManager()
@@ -944,9 +938,8 @@ TEST(TransformationAddSynonymTest, CheckIllegalCases) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Inapplicable because %18 is decorated.
@@ -1139,9 +1132,8 @@ TEST(TransformationAddSynonymTest, MiscellaneousCopies) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   std::vector<TransformationAddSynonym> transformations = {
@@ -1249,9 +1241,8 @@ TEST(TransformationAddSynonymTest, DoNotCopyNullOrUndefPointers) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Illegal to copy null.
@@ -1295,9 +1286,8 @@ TEST(TransformationAddSynonymTest, PropagateIrrelevantPointeeFact) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
@@ -1381,9 +1371,8 @@ TEST(TransformationAddSynonym, DoNotCopyOpSampledImage) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   ASSERT_FALSE(
@@ -1421,9 +1410,8 @@ TEST(TransformationAddSynonym, DoNotCopyVoidRunctionResult) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   ASSERT_FALSE(TransformationAddSynonym(

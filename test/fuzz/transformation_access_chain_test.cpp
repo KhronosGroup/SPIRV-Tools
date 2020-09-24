@@ -117,9 +117,8 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   // Indices 0-5 are in ids 80-85
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
@@ -403,9 +402,8 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   {
@@ -511,9 +509,8 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Bad: no ids given for clamping

@@ -95,9 +95,8 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Bad: |fresh_id| is not fresh.
@@ -216,9 +215,8 @@ TEST(TransformationCompositeInsertTest, EmptyCompositeScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Bad: The composite with |composite_id| cannot be empty.
@@ -359,13 +357,13 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Add fact that the composite is irrelevant.
-  fact_manager.AddFactIdIsIrrelevant(30, context.get());
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(30,
+                                                                 context.get());
 
   auto transformation_good_1 = TransformationCompositeInsert(
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
@@ -375,16 +373,16 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // No synonyms should have been added.
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {0}),
-                                         MakeDataDescriptor(50, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 1}),
-                                         MakeDataDescriptor(50, {1, 1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 2}),
-                                         MakeDataDescriptor(50, {1, 2})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 0, 1}),
-                                         MakeDataDescriptor(50, {1, 0, 1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {1, 0, 0}),
-                                         MakeDataDescriptor(11, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {0}), MakeDataDescriptor(50, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 1}), MakeDataDescriptor(50, {1, 1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 2}), MakeDataDescriptor(50, {1, 2})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 0, 1}), MakeDataDescriptor(50, {1, 0, 1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {1, 0, 0}), MakeDataDescriptor(11, {})));
 }
 TEST(TransformationCompositeInsertTest, IrrelevantObjectSomeSynonyms) {
   // This test handles cases where |object| is irrelevant.
@@ -464,13 +462,13 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectSomeSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Add fact that the object is irrelevant.
-  fact_manager.AddFactIdIsIrrelevant(11, context.get());
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(11,
+                                                                 context.get());
 
   auto transformation_good_1 = TransformationCompositeInsert(
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
@@ -480,17 +478,17 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectSomeSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // These synonyms should have been added.
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {0}),
-                                        MakeDataDescriptor(50, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 1}),
-                                        MakeDataDescriptor(50, {1, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 2}),
-                                        MakeDataDescriptor(50, {1, 2})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 0, 1}),
-                                        MakeDataDescriptor(50, {1, 0, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {0}), MakeDataDescriptor(50, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 1}), MakeDataDescriptor(50, {1, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 2}), MakeDataDescriptor(50, {1, 2})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 0, 1}), MakeDataDescriptor(50, {1, 0, 1})));
   // This synonym shouldn't have been added.
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {1, 0, 0}),
-                                         MakeDataDescriptor(11, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {1, 0, 0}), MakeDataDescriptor(11, {})));
 }
 
 TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
@@ -571,9 +569,8 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto transformation_good_1 = TransformationCompositeInsert(
@@ -584,24 +581,24 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // These synonyms should have been added.
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {0}),
-                                        MakeDataDescriptor(50, {0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 1}),
-                                        MakeDataDescriptor(50, {1, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 2}),
-                                        MakeDataDescriptor(50, {1, 2})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 0, 1}),
-                                        MakeDataDescriptor(50, {1, 0, 1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {1, 0, 0}),
-                                        MakeDataDescriptor(11, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {0}), MakeDataDescriptor(50, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 1}), MakeDataDescriptor(50, {1, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 2}), MakeDataDescriptor(50, {1, 2})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 0, 1}), MakeDataDescriptor(50, {1, 0, 1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {1, 0, 0}), MakeDataDescriptor(11, {})));
 
   // These synonyms should not have been added.
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1}),
-                                         MakeDataDescriptor(50, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 0}),
-                                         MakeDataDescriptor(50, {1, 0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(30, {1, 0, 0}),
-                                         MakeDataDescriptor(50, {1, 0, 0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1}), MakeDataDescriptor(50, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 0}), MakeDataDescriptor(50, {1, 0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(30, {1, 0, 0}), MakeDataDescriptor(50, {1, 0, 0})));
 
   auto transformation_good_2 = TransformationCompositeInsert(
       MakeInstructionDescriptor(50, SpvOpStore, 0), 51, 50, 11, {0, 1, 1});
@@ -611,24 +608,24 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // These synonyms should have been added.
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {1}),
-                                        MakeDataDescriptor(51, {1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {0, 0}),
-                                        MakeDataDescriptor(51, {0, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {0, 2}),
-                                        MakeDataDescriptor(51, {0, 2})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {0, 1, 0}),
-                                        MakeDataDescriptor(51, {0, 1, 0})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(51, {0, 1, 1}),
-                                        MakeDataDescriptor(11, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {1}), MakeDataDescriptor(51, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {0, 0}), MakeDataDescriptor(51, {0, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {0, 2}), MakeDataDescriptor(51, {0, 2})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {0, 1, 0}), MakeDataDescriptor(51, {0, 1, 0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(51, {0, 1, 1}), MakeDataDescriptor(11, {})));
 
   // These synonyms should not have been added.
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {0}),
-                                         MakeDataDescriptor(51, {0})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {0, 1}),
-                                         MakeDataDescriptor(51, {0, 1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(50, {0, 1, 1}),
-                                         MakeDataDescriptor(51, {0, 1, 1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {0}), MakeDataDescriptor(51, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {0, 1}), MakeDataDescriptor(51, {0, 1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(50, {0, 1, 1}), MakeDataDescriptor(51, {0, 1, 1})));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -774,9 +771,8 @@ TEST(TransformationCompositeInsertTest, IdNotAvailableScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Bad: The object with |object_id| is not available at

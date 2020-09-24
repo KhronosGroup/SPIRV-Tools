@@ -132,9 +132,8 @@ TEST(TransformationFlattenConditionalBranchTest, Inapplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Block %15 does not end with OpBranchConditional.
@@ -240,9 +239,8 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto transformation1 = TransformationFlattenConditionalBranch(7, true, {});
@@ -412,9 +410,8 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
 #ifndef NDEBUG
@@ -495,7 +492,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
 
   // Make a new transformation context with a source of overflow ids.
   TransformationContext new_transformation_context(
-      &fact_manager, validator_options,
+      MakeUnique<FactManager>(), validator_options,
       MakeUnique<CounterOverflowIdSource>(1000));
 
   auto transformation2 = TransformationFlattenConditionalBranch(
@@ -686,9 +683,8 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
 #ifndef NDEBUG

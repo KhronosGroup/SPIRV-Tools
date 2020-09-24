@@ -96,9 +96,8 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Tests the reference shader validity.
@@ -327,9 +326,8 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   uint32_t value_id = 80;
@@ -486,16 +484,16 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
   )";
 
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(80, {}),
-                                        MakeDataDescriptor(100, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
-                                        MakeDataDescriptor(102, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(95, {}),
-                                        MakeDataDescriptor(104, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(80, {}),
-                                        MakeDataDescriptor(106, {})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
-                                        MakeDataDescriptor(108, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(80, {}), MakeDataDescriptor(100, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(102, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(95, {}), MakeDataDescriptor(104, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(80, {}), MakeDataDescriptor(106, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(108, {})));
 }
 
 TEST(TransformationPushIdThroughVariableTest, AddSynonymsForRelevantIds) {
@@ -573,9 +571,8 @@ TEST(TransformationPushIdThroughVariableTest, AddSynonymsForRelevantIds) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Tests the reference shader validity.
@@ -595,8 +592,8 @@ TEST(TransformationPushIdThroughVariableTest, AddSynonymsForRelevantIds) {
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
-                                        MakeDataDescriptor(62, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(62, {})));
 }
 
 TEST(TransformationPushIdThroughVariableTest, DontAddSynonymsForIrrelevantIds) {
@@ -674,15 +671,15 @@ TEST(TransformationPushIdThroughVariableTest, DontAddSynonymsForIrrelevantIds) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Tests the reference shader validity.
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  fact_manager.AddFactIdIsIrrelevant(21, context.get());
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(21,
+                                                                 context.get());
 
   uint32_t value_id = 21;
   uint32_t value_synonym_id = 62;
@@ -698,8 +695,8 @@ TEST(TransformationPushIdThroughVariableTest, DontAddSynonymsForIrrelevantIds) {
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(21, {}),
-                                         MakeDataDescriptor(62, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(62, {})));
 }
 
 }  // namespace

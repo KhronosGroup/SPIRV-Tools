@@ -122,9 +122,8 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, HelperFunctions) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   PseudoRandomGenerator prng(0);
@@ -135,7 +134,7 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, HelperFunctions) {
                                          &fuzzer_context,
                                          &transformation_sequence);
 
-  SetUpIdSynonyms(&fact_manager, context.get());
+  SetUpIdSynonyms(transformation_context.GetFactManager(), context.get());
 
   std::vector<std::set<uint32_t>> expected_equivalence_classes = {
       {9, 15, 21}, {11, 16, 22}, {10, 23}, {6}, {24, 26, 30}};

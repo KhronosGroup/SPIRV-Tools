@@ -43,9 +43,8 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // True and false can both be added as neither is present.
@@ -107,10 +106,14 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   irrelevant_false.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(100, context.get()));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(101, context.get()));
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(102, context.get()));
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(103, context.get()));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(
+      100, context.get()));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(
+      101, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(
+      102, context.get()));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(
+      103, context.get()));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -160,9 +163,8 @@ TEST(TransformationAddConstantBooleanTest, NoOpTypeBoolPresent) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Neither true nor false can be added as OpTypeBool is not present.

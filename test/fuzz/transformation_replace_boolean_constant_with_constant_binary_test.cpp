@@ -162,9 +162,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   std::vector<protobufs::IdUseDescriptor> uses_of_true = {
@@ -537,9 +536,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto use_of_true_in_if = MakeIdUseDescriptor(
@@ -653,9 +651,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest, OpPhi) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   auto instruction_descriptor = MakeInstructionDescriptor(14, SpvOpPhi, 0);
@@ -732,9 +729,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   ASSERT_FALSE(TransformationReplaceBooleanConstantWithConstantBinary(

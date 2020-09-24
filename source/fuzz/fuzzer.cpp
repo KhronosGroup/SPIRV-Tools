@@ -211,10 +211,10 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
   fuzzer_context_ =
       MakeUnique<FuzzerContext>(random_generator_.get(), minimum_fresh_id);
 
-  FactManager fact_manager;
-  fact_manager.AddFacts(consumer_, initial_facts_, ir_context_.get());
-  transformation_context_ =
-      MakeUnique<TransformationContext>(&fact_manager, validator_options_);
+  transformation_context_ = MakeUnique<TransformationContext>(
+      MakeUnique<FactManager>(), validator_options_);
+  transformation_context_->GetFactManager()->AddFacts(consumer_, initial_facts_,
+                                                      ir_context_.get());
 
   RepeatedPassInstances pass_instances{};
   do {

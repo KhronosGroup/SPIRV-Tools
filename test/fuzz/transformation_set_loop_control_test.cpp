@@ -255,9 +255,8 @@ TEST(TransformationSetLoopControlTest, VariousScenarios) {
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // These are the loop headers together with the selection controls of their
@@ -944,9 +943,8 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
   const auto context_1_5 =
       BuildModule(SPV_ENV_UNIVERSAL_1_5, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationSetLoopControl set_peel_and_partial(

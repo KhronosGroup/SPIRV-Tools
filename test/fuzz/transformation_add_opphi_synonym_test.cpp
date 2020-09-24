@@ -85,13 +85,13 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
-  SetUpIdSynonyms(&fact_manager, context.get());
-  fact_manager.AddFact(MakeSynonymFact(23, 24), context.get());
+  SetUpIdSynonyms(transformation_context.GetFactManager(), context.get());
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(23, 24),
+                                                   context.get());
 
   // %13 is not a block label.
   ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{}}, 100)
@@ -207,46 +207,47 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
-  SetUpIdSynonyms(&fact_manager, context.get());
+  SetUpIdSynonyms(transformation_context.GetFactManager(), context.get());
 
   // Add some further synonym facts.
-  fact_manager.AddFact(MakeSynonymFact(28, 9), context.get());
-  fact_manager.AddFact(MakeSynonymFact(30, 9), context.get());
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(28, 9),
+                                                   context.get());
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(30, 9),
+                                                   context.get());
 
   auto transformation1 = TransformationAddOpPhiSynonym(17, {{{15, 13}}}, 100);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
   transformation1.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(100, {}),
-                                        MakeDataDescriptor(9, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(100, {}), MakeDataDescriptor(9, {})));
 
   auto transformation2 =
       TransformationAddOpPhiSynonym(16, {{{17, 19}, {18, 13}}}, 101);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
   transformation2.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(101, {}),
-                                        MakeDataDescriptor(9, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(101, {}), MakeDataDescriptor(9, {})));
 
   auto transformation3 =
       TransformationAddOpPhiSynonym(23, {{{22, 13}, {27, 28}, {29, 30}}}, 102);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
   transformation3.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(102, {}),
-                                        MakeDataDescriptor(9, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(102, {}), MakeDataDescriptor(9, {})));
 
   auto transformation4 = TransformationAddOpPhiSynonym(31, {{{23, 13}}}, 103);
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
   transformation4.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(103, {}),
-                                        MakeDataDescriptor(9, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(103, {}), MakeDataDescriptor(9, {})));
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -352,14 +353,15 @@ TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Declare synonyms
-  fact_manager.AddFact(MakeSynonymFact(3, 15), context.get());
-  fact_manager.AddFact(MakeSynonymFact(12, 16), context.get());
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(3, 15),
+                                                   context.get());
+  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(12, 16),
+                                                   context.get());
 
   // Remove the VariablePointers capability.
   context.get()->get_feature_mgr()->RemoveCapability(

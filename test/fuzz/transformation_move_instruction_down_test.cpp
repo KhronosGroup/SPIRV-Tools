@@ -66,9 +66,8 @@ TEST(TransformationMoveInstructionDownTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Instruction descriptor is invalid.
@@ -209,9 +208,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesUnsupportedInstructions) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Swap memory instruction with an unsupported one.
@@ -314,9 +312,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesBarrierInstructions) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Swap two barrier instructions.
@@ -395,9 +392,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Swap simple and barrier instructions.
@@ -602,12 +598,12 @@ TEST(TransformationMoveInstructionDownTest, HandlesMemoryInstructions) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
-  fact_manager.AddFactValueOfPointeeIsIrrelevant(22, context.get());
+  transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+      22, context.get());
 
   // Invalid swaps.
 

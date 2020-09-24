@@ -144,9 +144,8 @@ TEST(TransformationAddFunctionTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationAddFunction transformation1(std::vector<protobufs::Instruction>(
@@ -493,9 +492,8 @@ TEST(TransformationAddFunctionTest, InapplicableTransformations) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // No instructions
@@ -631,12 +629,10 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager1;
-  FactManager fact_manager2;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
+  TransformationContext transformation_context1(MakeUnique<FactManager>(),
                                                 validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
+  TransformationContext transformation_context2(MakeUnique<FactManager>(),
                                                 validator_options);
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -853,12 +849,10 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
   instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager1;
-  FactManager fact_manager2;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
+  TransformationContext transformation_context1(MakeUnique<FactManager>(),
                                                 validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
+  TransformationContext transformation_context2(MakeUnique<FactManager>(),
                                                 validator_options);
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -1008,12 +1002,10 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
   instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager1;
-  FactManager fact_manager2;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
+  TransformationContext transformation_context1(MakeUnique<FactManager>(),
                                                 validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
+  TransformationContext transformation_context2(MakeUnique<FactManager>(),
                                                 validator_options);
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -1295,12 +1287,10 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager1;
-  FactManager fact_manager2;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
+  TransformationContext transformation_context1(MakeUnique<FactManager>(),
                                                 validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
+  TransformationContext transformation_context2(MakeUnique<FactManager>(),
                                                 validator_options);
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -1622,12 +1612,10 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager1;
-  FactManager fact_manager2;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
+  TransformationContext transformation_context1(MakeUnique<FactManager>(),
                                                 validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
+  TransformationContext transformation_context2(MakeUnique<FactManager>(),
                                                 validator_options);
 
   // Mark function 6 as livesafe.
@@ -1722,12 +1710,10 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
-  FactManager fact_manager1;
-  FactManager fact_manager2;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context1(&fact_manager1,
+  TransformationContext transformation_context1(MakeUnique<FactManager>(),
                                                 validator_options);
-  TransformationContext transformation_context2(&fact_manager2,
+  TransformationContext transformation_context2(MakeUnique<FactManager>(),
                                                 validator_options);
 
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -1854,9 +1840,8 @@ TEST(TransformationAddFunctionTest,
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -2012,9 +1997,8 @@ TEST(TransformationAddFunctionTest,
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -2168,9 +2152,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -2316,9 +2299,8 @@ TEST(TransformationAddFunctionTest, InfiniteLoop) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -2431,9 +2413,8 @@ TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -2597,9 +2578,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi1) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -2790,9 +2770,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -2941,9 +2920,8 @@ TEST(TransformationAddFunctionTest, StaticallyOutOfBoundsArrayAccess) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);

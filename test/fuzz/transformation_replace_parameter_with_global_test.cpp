@@ -115,9 +115,8 @@ TEST(TransformationReplaceParameterWithGlobalTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Parameter id is invalid.
@@ -325,26 +324,28 @@ TEST(TransformationReplaceParameterWithGlobalTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(10, context.get());
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(10,
+                                                                 context.get());
 
   {
     TransformationReplaceParameterWithGlobal transformation(20, 10, 21);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(21));
+    ASSERT_TRUE(
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(21));
   }
   {
     TransformationReplaceParameterWithGlobal transformation(22, 11, 23);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
-    ASSERT_FALSE(fact_manager.PointeeValueIsIrrelevant(23));
+    ASSERT_FALSE(
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(23));
   }
 }
 

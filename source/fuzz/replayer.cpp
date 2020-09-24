@@ -90,14 +90,15 @@ Replayer::ReplayerResult Replayer::Run() {
     last_valid_binary = binary_in_;
   }
 
-  FactManager fact_manager;
-  fact_manager.AddFacts(consumer_, initial_facts_, ir_context.get());
   std::unique_ptr<TransformationContext> transformation_context =
       first_overflow_id_ == 0
-          ? MakeUnique<TransformationContext>(&fact_manager, validator_options_)
+          ? MakeUnique<TransformationContext>(MakeUnique<FactManager>(),
+                                              validator_options_)
           : MakeUnique<TransformationContext>(
-                &fact_manager, validator_options_,
+                MakeUnique<FactManager>(), validator_options_,
                 MakeUnique<CounterOverflowIdSource>(first_overflow_id_));
+  transformation_context->GetFactManager()->AddFacts(consumer_, initial_facts_,
+                                                     ir_context.get());
 
   // We track the largest id bound observed, to ensure that it only increases
   // as transformations are applied.

@@ -86,9 +86,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   transformation_context.GetFactManager()->AddFactDataSynonym(
@@ -489,9 +488,8 @@ TEST(TransformationVectorShuffleTest, IllegalInsertionPoints) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Cannot insert before the OpVariables of a function.
@@ -606,9 +604,8 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   TransformationVectorShuffle transformation(
@@ -617,10 +614,10 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds1) {
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(12, {0}),
-                                        MakeDataDescriptor(200, {1})));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(112, {0}),
-                                        MakeDataDescriptor(200, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {0}), MakeDataDescriptor(200, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(112, {0}), MakeDataDescriptor(200, {0})));
 }
 
 TEST(TransformationVectorShuffle, HandlesIrrelevantIds2) {
@@ -688,22 +685,22 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(112, context.get());
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(112,
+                                                                 context.get());
   TransformationVectorShuffle transformation(
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 200, 12, 112, {2, 0});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(12, {0}),
-                                        MakeDataDescriptor(200, {1})));
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(112, {0}),
-                                         MakeDataDescriptor(200, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(12, {0}), MakeDataDescriptor(200, {1})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(112, {0}), MakeDataDescriptor(200, {0})));
 }
 
 }  // namespace

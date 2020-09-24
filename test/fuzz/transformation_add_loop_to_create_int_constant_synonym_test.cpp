@@ -76,9 +76,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Reminder: the first four parameters of the constructor are the constants
@@ -187,9 +186,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
+    TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                  validator_options);
 
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
@@ -228,9 +226,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
+    TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                  validator_options);
 
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
@@ -269,9 +266,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
+    TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                  validator_options);
 
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
@@ -337,9 +333,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // Block %14 has no predecessors.
@@ -561,9 +556,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // These tests check that the transformation is applicable and is applied
@@ -752,9 +746,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // These tests check that the transformation can be applied, and is applied
@@ -871,9 +864,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
+  TransformationContext transformation_context(MakeUnique<FactManager>(),
                                                validator_options);
 
   // These tests check that underflows are taken into consideration when
