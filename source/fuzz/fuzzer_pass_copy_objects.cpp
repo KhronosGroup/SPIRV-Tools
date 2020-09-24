@@ -41,6 +41,12 @@ void FuzzerPassCopyObjects::Apply() {
                "The opcode of the instruction we might insert before must be "
                "the same as the opcode in the descriptor for the instruction");
 
+        if (GetTransformationContext()->GetFactManager()->BlockIsDead(
+                block->id())) {
+          // Don't create synonyms in dead blocks.
+          return;
+        }
+
         // Check whether it is legitimate to insert a copy before this
         // instruction.
         if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpCopyObject,
