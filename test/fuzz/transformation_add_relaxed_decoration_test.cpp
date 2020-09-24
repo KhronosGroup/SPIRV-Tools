@@ -67,12 +67,10 @@ TEST(TransformationAddRelaxedDecorationTest, BasicScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  fact_manager.AddFactBlockIsDead(100);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(100);
 
   // Invalid: 200 is not an id.
   ASSERT_FALSE(TransformationAddRelaxedDecoration(200).IsApplicable(

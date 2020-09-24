@@ -70,11 +70,9 @@ TEST(TransformationAddConstantScalarTest, IsApplicable) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests |fresh_id| being non-fresh.
   auto transformation = TransformationAddConstantScalar(18, 2, {0}, false);
   ASSERT_FALSE(
@@ -166,11 +164,9 @@ TEST(TransformationAddConstantScalarTest, Apply) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Adds 32-bit unsigned integer (1 logical operand with 1 word).
   auto transformation = TransformationAddConstantScalar(19, 2, {4}, false);
   transformation.Apply(context.get(), &transformation_context);
@@ -272,11 +268,13 @@ TEST(TransformationAddConstantScalarTest, Apply) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   for (uint32_t result_id = 19; result_id <= 24; ++result_id) {
-    ASSERT_FALSE(fact_manager.IdIsIrrelevant(result_id));
+    ASSERT_FALSE(
+        transformation_context.GetFactManager()->IdIsIrrelevant(result_id));
   }
 
   for (uint32_t result_id = 25; result_id <= 30; ++result_id) {
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(result_id));
+    ASSERT_TRUE(
+        transformation_context.GetFactManager()->IdIsIrrelevant(result_id));
   }
 
   std::string variant_shader = R"(

@@ -59,11 +59,9 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: |struct_fresh_id| must be fresh.
   auto transformation_bad_1 =
       TransformationReplaceAddSubMulWithCarryingExtended(14, 15);
@@ -147,11 +145,9 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: The transformation cannot be applied to an instruction OpIMul that has
   // different signedness of the types of operands.
   auto transformation_bad_1 =
@@ -244,11 +240,9 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation_bad_1 =
       TransformationReplaceAddSubMulWithCarryingExtended(50, 15);
   ASSERT_FALSE(
@@ -407,11 +401,9 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation_good_1 =
       TransformationReplaceAddSubMulWithCarryingExtended(80, 15);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),

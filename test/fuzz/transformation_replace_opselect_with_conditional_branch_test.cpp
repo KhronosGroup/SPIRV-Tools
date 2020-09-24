@@ -86,11 +86,9 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // %20 is not an OpSelect instruction.
   ASSERT_FALSE(TransformationReplaceOpSelectWithConditionalBranch(20, 100, 101)
                    .IsApplicable(context.get(), transformation_context));
@@ -190,11 +188,9 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation =
       TransformationReplaceOpSelectWithConditionalBranch(20, 100, 101);
   ASSERT_TRUE(

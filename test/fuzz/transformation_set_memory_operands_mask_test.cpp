@@ -93,11 +93,9 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Not OK: the instruction is not a memory access.
   ASSERT_FALSE(TransformationSetMemoryOperandsMask(
                    MakeInstructionDescriptor(21, SpvOpAccessChain, 0),
@@ -338,11 +336,9 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   {
     TransformationSetMemoryOperandsMask transformation(
         MakeInstructionDescriptor(21, SpvOpCopyMemory, 0),

@@ -96,11 +96,9 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Instruction does not exist.
   ASSERT_FALSE(TransformationCompositeExtract(
                    MakeInstructionDescriptor(36, SpvOpIAdd, 0), 200, 101, {0})
@@ -351,11 +349,9 @@ TEST(TransformationCompositeExtractTest, IllegalInsertionPoints) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Cannot insert before the OpVariables of a function.
   ASSERT_FALSE(
       TransformationCompositeExtract(
@@ -475,18 +471,16 @@ TEST(TransformationCompositeExtractTest, AddSynonymsForRelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationCompositeExtract transformation(
       MakeInstructionDescriptor(36, SpvOpConvertFToS, 0), 201, 100, {2});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(201, {}),
-                                        MakeDataDescriptor(100, {2})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2})));
 }
 
 TEST(TransformationCompositeExtractTest, DontAddSynonymsForIrrelevantIds) {
@@ -564,19 +558,17 @@ TEST(TransformationCompositeExtractTest, DontAddSynonymsForIrrelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
-  fact_manager.AddFactIdIsIrrelevant(100);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(100);
   TransformationCompositeExtract transformation(
       MakeInstructionDescriptor(36, SpvOpConvertFToS, 0), 201, 100, {2});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
-  ASSERT_FALSE(fact_manager.IsSynonymous(MakeDataDescriptor(201, {}),
-                                         MakeDataDescriptor(100, {2})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2})));
 }
 
 }  // namespace

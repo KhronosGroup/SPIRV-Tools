@@ -82,11 +82,9 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicStructs) {
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
-                                                 validator_options);
-
+    TransformationContext transformation_context(
+        MakeUnique<FactManager>(context.get()), validator_options);
     FuzzerContext fuzzer_context(prng.get(), 100);
     protobufs::TransformationSequence transformation_sequence;
 
@@ -164,11 +162,9 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicArrays) {
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
-                                                 validator_options);
-
+    TransformationContext transformation_context(
+        MakeUnique<FactManager>(context.get()), validator_options);
     FuzzerContext fuzzer_context(prng.get(), 100);
     protobufs::TransformationSequence transformation_sequence;
 

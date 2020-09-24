@@ -48,11 +48,9 @@ TEST(TransformationEquationInstructionTest, SignedNegate) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -166,11 +164,9 @@ TEST(TransformationEquationInstructionTest, LogicalNot) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -258,11 +254,9 @@ TEST(TransformationEquationInstructionTest, AddSubNegate1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -382,11 +376,9 @@ TEST(TransformationEquationInstructionTest, AddSubNegate2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -524,11 +516,9 @@ TEST(TransformationEquationInstructionTest, Bitcast) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Too many operands.
@@ -649,11 +639,9 @@ TEST(TransformationEquationInstructionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Scalar floating-point type does not exist.
@@ -698,11 +686,9 @@ TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Scalar integral type does not exist.
@@ -743,11 +729,9 @@ TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   {
@@ -818,11 +802,9 @@ TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist3) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   {
@@ -892,11 +874,9 @@ TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist4) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   {
@@ -963,11 +943,9 @@ TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist5) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   {
@@ -1036,11 +1014,9 @@ TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist6) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   {
@@ -1115,11 +1091,9 @@ TEST(TransformationEquationInstructionTest, BitcastResultTypeIntDoesNotExist7) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto insert_before = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   {
@@ -1189,11 +1163,9 @@ TEST(TransformationEquationInstructionTest, Miscellaneous1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -1259,11 +1231,9 @@ TEST(TransformationEquationInstructionTest, Miscellaneous2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -1343,11 +1313,9 @@ TEST(TransformationEquationInstructionTest, ConversionInstructions) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -1511,11 +1479,9 @@ TEST(TransformationEquationInstructionTest, FloatResultTypeDoesNotExist) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::InstructionDescriptor return_instruction =
       MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
@@ -1564,11 +1530,9 @@ TEST(TransformationEquationInstructionTest, HandlesIrrelevantIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto return_instruction = MakeInstructionDescriptor(13, SpvOpReturn, 0);
 
   // Applicable.
@@ -1578,10 +1542,10 @@ TEST(TransformationEquationInstructionTest, HandlesIrrelevantIds) {
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Handles irrelevant ids.
-  fact_manager.AddFactIdIsIrrelevant(16);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(16);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
-  fact_manager.AddFactIdIsIrrelevant(15);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(15);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 }

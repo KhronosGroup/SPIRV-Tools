@@ -43,11 +43,9 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // True and false can both be added as neither is present.
   ASSERT_TRUE(TransformationAddConstantBoolean(7, true, false)
                   .IsApplicable(context.get(), transformation_context));
@@ -107,10 +105,10 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   irrelevant_false.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(100));
-  ASSERT_FALSE(fact_manager.IdIsIrrelevant(101));
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(102));
-  ASSERT_TRUE(fact_manager.IdIsIrrelevant(103));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(100));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(101));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(102));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(103));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -160,11 +158,9 @@ TEST(TransformationAddConstantBooleanTest, NoOpTypeBoolPresent) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Neither true nor false can be added as OpTypeBool is not present.
   ASSERT_FALSE(TransformationAddConstantBoolean(6, true, false)
                    .IsApplicable(context.get(), transformation_context));

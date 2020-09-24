@@ -93,11 +93,9 @@ TEST(TransformationMakeVectorOperationDynamicTest, IsApplicable) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests undefined instruction.
   auto transformation = TransformationMakeVectorOperationDynamic(50, 10);
   ASSERT_FALSE(
@@ -206,11 +204,9 @@ TEST(TransformationMakeVectorOperationDynamicTest, Apply) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationMakeVectorOperationDynamic(22, 9);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));

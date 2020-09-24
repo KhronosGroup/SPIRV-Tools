@@ -62,11 +62,9 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Id 4 is already in use
   auto transformation = TransformationAddDeadBlock(4, 11, true);
   ASSERT_FALSE(
@@ -172,11 +170,9 @@ TEST(TransformationAddDeadBlockTest, TargetBlockMustNotBeSelectionMerge) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true)
                    .IsApplicable(context.get(), transformation_context));
 }
@@ -220,11 +216,9 @@ TEST(TransformationAddDeadBlockTest, TargetBlockMustNotBeLoopMergeOrContinue) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad because 9's successor is the loop continue target.
   ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true)
                    .IsApplicable(context.get(), transformation_context));
@@ -266,11 +260,9 @@ TEST(TransformationAddDeadBlockTest, SourceBlockMustNotBeLoopHead) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Bad because 8 is a loop head.
   ASSERT_FALSE(TransformationAddDeadBlock(100, 8, true)
                    .IsApplicable(context.get(), transformation_context));
@@ -306,11 +298,9 @@ TEST(TransformationAddDeadBlockTest, OpPhiInTarget) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationAddDeadBlock transformation(100, 5, true);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -379,11 +369,9 @@ TEST(TransformationAddDeadBlockTest, BackEdge) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // 9 is a back edge block, so it would not be OK to add a dead block here,
   // as then both 9 and the dead block would branch to the loop header, 8.
   ASSERT_FALSE(TransformationAddDeadBlock(100, 9, true)

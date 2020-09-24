@@ -53,11 +53,9 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible1) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationMoveBlockDown(11);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -94,11 +92,9 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible2) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationMoveBlockDown(5);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -137,11 +133,9 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible3) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationMoveBlockDown(100);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -184,11 +178,9 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible4) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationMoveBlockDown(12);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -293,11 +285,9 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   const auto context =
       BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // The block ids are: 5 14 20 23 21 25 29 32 30 15
   // We make a transformation to move each of them down, plus a transformation
   // to move a non-block, 27, down.
@@ -710,11 +700,9 @@ TEST(TransformationMoveBlockDownTest, DoNotMoveUnreachable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationMoveBlockDown(6);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));

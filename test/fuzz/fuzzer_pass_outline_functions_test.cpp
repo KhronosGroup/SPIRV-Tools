@@ -119,11 +119,9 @@ TEST(FuzzerPassOutlineFunctionsTest, EntryIsAlreadySuitable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
   protobufs::TransformationSequence transformation_sequence;
@@ -164,11 +162,9 @@ TEST(FuzzerPassOutlineFunctionsTest, EntryHasOpVariable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
   protobufs::TransformationSequence transformation_sequence;
@@ -290,11 +286,9 @@ TEST(FuzzerPassOutlineFunctionsTest, EntryBlockIsHeader) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
   protobufs::TransformationSequence transformation_sequence;
@@ -459,11 +453,9 @@ TEST(FuzzerPassOutlineFunctionsTest, ExitBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   PseudoRandomGenerator prng(0);
   FuzzerContext fuzzer_context(&prng, 100);
   protobufs::TransformationSequence transformation_sequence;

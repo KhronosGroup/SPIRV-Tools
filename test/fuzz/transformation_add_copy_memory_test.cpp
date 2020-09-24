@@ -140,11 +140,9 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Target id is not fresh (59).
   ASSERT_FALSE(TransformationAddCopyMemory(
                    MakeInstructionDescriptor(27, SpvOpFunctionCall, 0), 59, 19,
@@ -244,7 +242,9 @@ TEST(TransformationAddCopyMemoryTest, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     transformation.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.PointeeValueIsIrrelevant(fresh_id));
+    ASSERT_TRUE(
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(
+            fresh_id));
     fresh_id++;
   }
 

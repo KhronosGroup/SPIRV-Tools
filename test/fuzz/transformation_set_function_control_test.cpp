@@ -118,11 +118,9 @@ TEST(TransformationSetFunctionControlTest, VariousScenarios) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // %36 is not a function
   ASSERT_FALSE(TransformationSetFunctionControl(36, SpvFunctionControlMaskNone)
                    .IsApplicable(context.get(), transformation_context));

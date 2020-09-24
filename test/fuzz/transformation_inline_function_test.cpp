@@ -141,11 +141,9 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests undefined OpFunctionCall instruction.
   auto transformation = TransformationInlineFunction(67, {});
   ASSERT_FALSE(
@@ -273,11 +271,9 @@ TEST(TransformationInlineFunctionTest, Apply) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationInlineFunction(43, {{22, 45},
                                                           {23, 46},
                                                           {24, 47},
@@ -513,11 +509,9 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationInlineFunction(30, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -784,11 +778,9 @@ TEST(TransformationInlineFunctionTest, HandlesOpPhisInTheSecondBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   TransformationInlineFunction transformation(6,
                                               {{{8, 20}, {13, 21}, {12, 22}}});
   ASSERT_TRUE(

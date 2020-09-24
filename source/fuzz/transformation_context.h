@@ -31,20 +31,20 @@ class TransformationContext {
   // Constructs a transformation context with a given fact manager and validator
   // options.  Overflow ids are not available from a transformation context
   // constructed in this way.
-  TransformationContext(FactManager* fact_manager,
+  TransformationContext(std::unique_ptr<FactManager>,
                         spv_validator_options validator_options);
 
   // Constructs a transformation context with a given fact manager, validator
   // options and overflow id source.
-  TransformationContext(FactManager* fact_manager,
+  TransformationContext(std::unique_ptr<FactManager>,
                         spv_validator_options validator_options,
                         std::unique_ptr<OverflowIdSource> overflow_id_source);
 
   ~TransformationContext();
 
-  FactManager* GetFactManager() { return fact_manager_; }
+  FactManager* GetFactManager() { return fact_manager_.get(); }
 
-  const FactManager* GetFactManager() const { return fact_manager_; }
+  const FactManager* GetFactManager() const { return fact_manager_.get(); }
 
   OverflowIdSource* GetOverflowIdSource() { return overflow_id_source_.get(); }
 
@@ -59,7 +59,7 @@ class TransformationContext {
  private:
   // Manages facts that inform whether transformations can be applied, and that
   // are produced by applying transformations.
-  FactManager* fact_manager_;
+  std::unique_ptr<FactManager> fact_manager_;
 
   // Options to control validation when deciding whether transformations can be
   // applied.

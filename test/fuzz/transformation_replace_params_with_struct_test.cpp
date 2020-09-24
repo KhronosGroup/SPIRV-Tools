@@ -124,11 +124,9 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // |parameter_id| is empty.
   ASSERT_FALSE(
       TransformationReplaceParamsWithStruct({}, 90, 91, {{33, 92}, {90, 93}})
@@ -373,11 +371,9 @@ TEST(TransformationReplaceParamsWithStructTest, ParametersRemainValid) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   {
     // Try to replace parameters in "increasing" order of their declaration.
     TransformationReplaceParamsWithStruct transformation({16, 17, 19}, 70, 71,

@@ -70,11 +70,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, IsApplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   // Tests linear algebra instructions.
   auto instruction_descriptor = MakeInstructionDescriptor(24, SpvOpDot, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -245,11 +243,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpTranspose) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(56, SpvOpTranspose, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -503,11 +499,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(17, SpvOpVectorTimesScalar, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -675,11 +669,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(56, SpvOpMatrixTimesScalar, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -963,11 +955,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(56, SpvOpVectorTimesMatrix, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -1298,11 +1288,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(56, SpvOpMatrixTimesVector, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -1685,11 +1673,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(56, SpvOpMatrixTimesMatrix, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -2159,11 +2145,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpOuterProduct) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor =
       MakeInstructionDescriptor(47, SpvOpOuterProduct, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
@@ -2397,11 +2381,9 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpDot) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor = MakeInstructionDescriptor(24, SpvOpDot, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {27, 28, 29, 30, 31, 32}, instruction_descriptor);
