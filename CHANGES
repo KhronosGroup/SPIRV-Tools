@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2020.6 2020-09-24
+ - Start SPIRV-Tools v2020.6
+
 v2020.5 2020-09-22
  - General
    - Enable building with BUILD_SHARED_LIBS=1 (#3490)
