@@ -96,7 +96,7 @@ TEST(TransformationWrapRegionInSelectionTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -109,7 +109,7 @@ TEST(TransformationWrapRegionInSelectionTest, BasicTest) {
   ASSERT_FALSE(TransformationWrapRegionInSelection(5, 6, true)
                    .IsApplicable(context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(8, context.get());
+  fact_manager.AddFactIdIsIrrelevant(8);
 
   // Block ids are invalid.
   ASSERT_FALSE(TransformationWrapRegionInSelection(100, 6, true)
