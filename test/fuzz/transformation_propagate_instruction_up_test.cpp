@@ -73,7 +73,7 @@ TEST(TransformationPropagateInstructionUpTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -357,7 +357,7 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor1) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -476,7 +476,7 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor2) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -591,7 +591,7 @@ TEST(TransformationPropagateInstructionUpTest, BlockDominatesPredecessor3) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -686,7 +686,7 @@ TEST(TransformationPropagateInstructionUpTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -767,7 +767,7 @@ TEST(TransformationPropagateInstructionUpTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -848,7 +848,7 @@ TEST(TransformationPropagateInstructionUpTest, MultipleIdenticalPredecessors) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

@@ -30,13 +30,13 @@ protobufs::Fact MakeSynonymFact(uint32_t first, uint32_t second) {
 }
 
 // Adds synonym facts to the fact manager.
-void SetUpIdSynonyms(FactManager* fact_manager, opt::IRContext* context) {
-  fact_manager->AddFact(MakeSynonymFact(11, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(13, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(14, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(19, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(20, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(10, 21), context);
+void SetUpIdSynonyms(FactManager* fact_manager) {
+  fact_manager->AddFact(MakeSynonymFact(11, 9));
+  fact_manager->AddFact(MakeSynonymFact(13, 9));
+  fact_manager->AddFact(MakeSynonymFact(14, 9));
+  fact_manager->AddFact(MakeSynonymFact(19, 9));
+  fact_manager->AddFact(MakeSynonymFact(20, 9));
+  fact_manager->AddFact(MakeSynonymFact(10, 21));
 }
 
 TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
@@ -85,13 +85,13 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  SetUpIdSynonyms(&fact_manager, context.get());
-  fact_manager.AddFact(MakeSynonymFact(23, 24), context.get());
+  SetUpIdSynonyms(&fact_manager);
+  fact_manager.AddFact(MakeSynonymFact(23, 24));
 
   // %13 is not a block label.
   ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{}}, 100)
@@ -207,16 +207,16 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  SetUpIdSynonyms(&fact_manager, context.get());
+  SetUpIdSynonyms(&fact_manager);
 
   // Add some further synonym facts.
-  fact_manager.AddFact(MakeSynonymFact(28, 9), context.get());
-  fact_manager.AddFact(MakeSynonymFact(30, 9), context.get());
+  fact_manager.AddFact(MakeSynonymFact(28, 9));
+  fact_manager.AddFact(MakeSynonymFact(30, 9));
 
   auto transformation1 = TransformationAddOpPhiSynonym(17, {{{15, 13}}}, 100);
   ASSERT_TRUE(
@@ -352,14 +352,14 @@ TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
   // Declare synonyms
-  fact_manager.AddFact(MakeSynonymFact(3, 15), context.get());
-  fact_manager.AddFact(MakeSynonymFact(12, 16), context.get());
+  fact_manager.AddFact(MakeSynonymFact(3, 15));
+  fact_manager.AddFact(MakeSynonymFact(12, 16));
 
   // Remove the VariablePointers capability.
   context.get()->get_feature_mgr()->RemoveCapability(

@@ -95,7 +95,7 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -216,7 +216,7 @@ TEST(TransformationCompositeInsertTest, EmptyCompositeScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -359,13 +359,13 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
   // Add fact that the composite is irrelevant.
-  fact_manager.AddFactIdIsIrrelevant(30, context.get());
+  fact_manager.AddFactIdIsIrrelevant(30);
 
   auto transformation_good_1 = TransformationCompositeInsert(
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
@@ -464,13 +464,13 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectSomeSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
   // Add fact that the object is irrelevant.
-  fact_manager.AddFactIdIsIrrelevant(11, context.get());
+  fact_manager.AddFactIdIsIrrelevant(11);
 
   auto transformation_good_1 = TransformationCompositeInsert(
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
@@ -571,7 +571,7 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -774,7 +774,7 @@ TEST(TransformationCompositeInsertTest, IdNotAvailableScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

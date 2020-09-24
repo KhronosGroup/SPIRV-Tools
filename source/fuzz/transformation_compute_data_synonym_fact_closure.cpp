@@ -35,10 +35,10 @@ bool TransformationComputeDataSynonymFactClosure::IsApplicable(
 }
 
 void TransformationComputeDataSynonymFactClosure::Apply(
-    opt::IRContext* ir_context,
+    opt::IRContext* /*unused*/,
     TransformationContext* transformation_context) const {
   transformation_context->GetFactManager()->ComputeClosureOfFacts(
-      ir_context, message_.maximum_equivalence_class_size());
+      message_.maximum_equivalence_class_size());
 }
 
 protobufs::Transformation

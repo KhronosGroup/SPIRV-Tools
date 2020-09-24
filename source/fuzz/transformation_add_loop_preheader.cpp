@@ -104,7 +104,6 @@ void TransformationAddLoopPreheader::Apply(
       loop_header->id(),
       [this, &ir_context, &dominator_analysis, &loop_header,
        &back_edge_block_id](opt::Instruction* use_inst, uint32_t use_index) {
-
         if (dominator_analysis->Dominates(loop_header->GetLabelInst(),
                                           use_inst)) {
           // If |use_inst| is a branch instruction dominated by the header, the
@@ -144,7 +143,6 @@ void TransformationAddLoopPreheader::Apply(
   loop_header->ForEachPhiInst([this, &ir_context, &preheader,
                                &back_edge_block_id,
                                &phi_ids_used](opt::Instruction* phi_inst) {
-
     // The loop header must have at least 2 incoming edges (the back edge, and
     // at least one from outside the loop).
     assert(phi_inst->NumInOperands() >= 4);

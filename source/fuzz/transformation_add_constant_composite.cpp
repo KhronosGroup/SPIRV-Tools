@@ -122,7 +122,7 @@ void TransformationAddConstantComposite::Apply(
 
   if (message_.is_irrelevant()) {
     transformation_context->GetFactManager()->AddFactIdIsIrrelevant(
-        message_.fresh_id(), ir_context);
+        message_.fresh_id());
   }
 }
 

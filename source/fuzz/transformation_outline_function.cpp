@@ -451,7 +451,6 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionInputIds(
           inst,
           [ir_context, &inst, region_exit_block, &region_set, &result](
               opt::Instruction* use, uint32_t /*unused*/) -> bool {
-
             // Find the block in which this id use occurs, recording the id as
             // an input id if the block is outside the region, with some
             // exceptions detailed below.
@@ -500,7 +499,6 @@ std::vector<uint32_t> TransformationOutlineFunction::GetRegionOutputIds(
           &inst,
           [&region_set, ir_context, &inst, region_exit_block, &result](
               opt::Instruction* use, uint32_t /*unused*/) -> bool {
-
             // Find the block in which this id use occurs, recording the id as
             // an output id if the block is outside the region, with some
             // exceptions detailed below.
@@ -651,8 +649,7 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
     if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
             id)) {
       transformation_context->GetFactManager()
-          ->AddFactValueOfPointeeIsIrrelevant(input_id_to_fresh_id_map.at(id),
-                                              ir_context);
+          ->AddFactValueOfPointeeIsIrrelevant(input_id_to_fresh_id_map.at(id));
     }
   }
 

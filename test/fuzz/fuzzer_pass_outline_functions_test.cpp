@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
+
 #include "source/fuzz/pseudo_random_generator.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -118,7 +119,7 @@ TEST(FuzzerPassOutlineFunctionsTest, EntryIsAlreadySuitable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -163,7 +164,7 @@ TEST(FuzzerPassOutlineFunctionsTest, EntryHasOpVariable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -289,7 +290,7 @@ TEST(FuzzerPassOutlineFunctionsTest, EntryBlockIsHeader) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -458,7 +459,7 @@ TEST(FuzzerPassOutlineFunctionsTest, ExitBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

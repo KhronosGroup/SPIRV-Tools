@@ -413,7 +413,7 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
   // Record that |message_.syn_id| is synonymous with |message_.constant_id|.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.syn_id(), {}),
-      MakeDataDescriptor(message_.constant_id(), {}), ir_context);
+      MakeDataDescriptor(message_.constant_id(), {}));
 }
 
 protobufs::Transformation

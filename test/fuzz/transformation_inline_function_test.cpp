@@ -141,7 +141,7 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -273,7 +273,7 @@ TEST(TransformationInlineFunctionTest, Apply) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -513,7 +513,7 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -784,7 +784,7 @@ TEST(TransformationInlineFunctionTest, HandlesOpPhisInTheSecondBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

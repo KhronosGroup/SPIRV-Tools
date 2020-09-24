@@ -21,18 +21,20 @@ namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
+ConstantUniformFacts::ConstantUniformFacts(opt::IRContext* ir_context)
+    : ir_context_(ir_context) {}
+
 uint32_t ConstantUniformFacts::GetConstantId(
-    opt::IRContext* context,
     const protobufs::FactConstantUniform& constant_uniform_fact,
-    uint32_t type_id) {
-  auto type = context->get_type_mgr()->GetType(type_id);
+    uint32_t type_id) const {
+  auto type = ir_context_->get_type_mgr()->GetType(type_id);
   assert(type != nullptr && "Unknown type id.");
   const opt::analysis::Constant* known_constant;
   if (type->AsInteger()) {
     opt::analysis::IntConstant candidate_constant(
         type->AsInteger(), GetConstantWords(constant_uniform_fact));
     known_constant =
-        context->get_constant_mgr()->FindConstant(&candidate_constant);
+        ir_context_->get_constant_mgr()->FindConstant(&candidate_constant);
   } else {
     assert(
         type->AsFloat() &&
@@ -40,13 +42,13 @@ uint32_t ConstantUniformFacts::GetConstantId(
     opt::analysis::FloatConstant candidate_constant(
         type->AsFloat(), GetConstantWords(constant_uniform_fact));
     known_constant =
-        context->get_constant_mgr()->FindConstant(&candidate_constant);
+        ir_context_->get_constant_mgr()->FindConstant(&candidate_constant);
   }
   if (!known_constant) {
     return 0;
   }
-  return context->get_constant_mgr()->FindDeclaredConstant(known_constant,
-                                                           type_id);
+  return ir_context_->get_constant_mgr()->FindDeclaredConstant(known_constant,
+                                                               type_id);
 }
 
 std::vector<uint32_t> ConstantUniformFacts::GetConstantWords(
@@ -71,15 +73,14 @@ bool ConstantUniformFacts::DataMatches(
 
 std::vector<uint32_t>
 ConstantUniformFacts::GetConstantsAvailableFromUniformsForType(
-    opt::IRContext* ir_context, uint32_t type_id) const {
+    uint32_t type_id) const {
   std::vector<uint32_t> result;
   std::set<uint32_t> already_seen;
   for (auto& fact_and_type_id : facts_and_type_ids_) {
     if (fact_and_type_id.second != type_id) {
       continue;
     }
-    if (auto constant_id =
-            GetConstantId(ir_context, fact_and_type_id.first, type_id)) {
+    if (auto constant_id = GetConstantId(fact_and_type_id.first, type_id)) {
       if (already_seen.find(constant_id) == already_seen.end()) {
         result.push_back(constant_id);
         already_seen.insert(constant_id);
@@ -91,9 +92,9 @@ ConstantUniformFacts::GetConstantsAvailableFromUniformsForType(
 
 std::vector<protobufs::UniformBufferElementDescriptor>
 ConstantUniformFacts::GetUniformDescriptorsForConstant(
-    opt::IRContext* ir_context, uint32_t constant_id) const {
+    uint32_t constant_id) const {
   std::vector<protobufs::UniformBufferElementDescriptor> result;
-  auto constant_inst = ir_context->get_def_use_mgr()->GetDef(constant_id);
+  auto constant_inst = ir_context_->get_def_use_mgr()->GetDef(constant_id);
   assert(constant_inst->opcode() == SpvOpConstant &&
          "The given id must be that of a constant");
   auto type_id = constant_inst->type_id();
@@ -110,7 +111,6 @@ ConstantUniformFacts::GetUniformDescriptorsForConstant(
 }
 
 uint32_t ConstantUniformFacts::GetConstantFromUniformDescriptor(
-    opt::IRContext* context,
     const protobufs::UniformBufferElementDescriptor& uniform_descriptor) const {
   // Consider each fact.
   for (auto& fact_and_type : facts_and_type_ids_) {
@@ -119,7 +119,7 @@ uint32_t ConstantUniformFacts::GetConstantFromUniformDescriptor(
     if (UniformBufferElementDescriptorEquals()(
             &uniform_descriptor,
             &fact_and_type.first.uniform_buffer_element_descriptor())) {
-      return GetConstantId(context, fact_and_type.first, fact_and_type.second);
+      return GetConstantId(fact_and_type.first, fact_and_type.second);
     }
   }
   // No fact associated with the given uniform descriptor was found.
@@ -163,13 +163,12 @@ bool ConstantUniformFacts::FloatingPointValueIsSuitable(
   return true;
 }
 
-bool ConstantUniformFacts::AddFact(const protobufs::FactConstantUniform& fact,
-                                   opt::IRContext* context) {
+bool ConstantUniformFacts::AddFact(const protobufs::FactConstantUniform& fact) {
   // Try to find a unique instruction that declares a variable such that the
   // variable is decorated with the descriptor set and binding associated with
   // the constant uniform fact.
   opt::Instruction* uniform_variable = FindUniformVariable(
-      fact.uniform_buffer_element_descriptor(), context, true);
+      fact.uniform_buffer_element_descriptor(), ir_context_, true);
 
   if (!uniform_variable) {
     return false;
@@ -179,7 +178,7 @@ bool ConstantUniformFacts::AddFact(const protobufs::FactConstantUniform& fact,
   assert(SpvStorageClassUniform == uniform_variable->GetSingleWordInOperand(0));
 
   auto should_be_uniform_pointer_type =
-      context->get_type_mgr()->GetType(uniform_variable->type_id());
+      ir_context_->get_type_mgr()->GetType(uniform_variable->type_id());
   if (!should_be_uniform_pointer_type->AsPointer()) {
     return false;
   }
@@ -188,18 +187,18 @@ bool ConstantUniformFacts::AddFact(const protobufs::FactConstantUniform& fact,
     return false;
   }
   auto should_be_uniform_pointer_instruction =
-      context->get_def_use_mgr()->GetDef(uniform_variable->type_id());
+      ir_context_->get_def_use_mgr()->GetDef(uniform_variable->type_id());
   auto composite_type =
       should_be_uniform_pointer_instruction->GetSingleWordInOperand(1);
 
   auto final_element_type_id = fuzzerutil::WalkCompositeTypeIndices(
-      context, composite_type,
+      ir_context_, composite_type,
       fact.uniform_buffer_element_descriptor().index());
   if (!final_element_type_id) {
     return false;
   }
   auto final_element_type =
-      context->get_type_mgr()->GetType(final_element_type_id);
+      ir_context_->get_type_mgr()->GetType(final_element_type_id);
   assert(final_element_type &&
          "There should be a type corresponding to this id.");
 

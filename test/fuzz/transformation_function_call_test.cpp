@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_function_call.h"
+
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -133,7 +134,7 @@ TEST(TransformationFunctionCallTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -147,23 +148,23 @@ TEST(TransformationFunctionCallTest, BasicTest) {
   transformation_context.GetFactManager()->AddFactFunctionIsLivesafe(21);
   transformation_context.GetFactManager()->AddFactFunctionIsLivesafe(200);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      71, context.get());
+      71);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      72, context.get());
+      72);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      19, context.get());
+      19);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      20, context.get());
+      20);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      23, context.get());
+      23);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      44, context.get());
+      44);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      46, context.get());
+      46);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      51, context.get());
+      51);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      52, context.get());
+      52);
 
   // Livesafe functions with argument types: 21(7, 13), 200(7, 13)
   // Non-livesafe functions with argument types: 4(), 10(7), 17(7, 13), 24(7)
@@ -446,7 +447,7 @@ TEST(TransformationFunctionCallTest, DoNotInvokeEntryPoint) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

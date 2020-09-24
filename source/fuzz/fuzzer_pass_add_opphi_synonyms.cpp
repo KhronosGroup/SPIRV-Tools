@@ -157,7 +157,7 @@ FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
 
     // Exclude irrelevant ids.
     if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-            pair.first, GetIRContext())) {
+            pair.first)) {
       continue;
     }
 
@@ -195,7 +195,7 @@ FuzzerPassAddOpPhiSynonyms::GetIdEquivalenceClasses() {
 
       // The synonym must not be irrelevant.
       if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
-              synonym->object(), GetIRContext())) {
+              synonym->object())) {
         continue;
       }
 

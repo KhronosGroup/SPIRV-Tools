@@ -211,8 +211,8 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
   fuzzer_context_ =
       MakeUnique<FuzzerContext>(random_generator_.get(), minimum_fresh_id);
 
-  FactManager fact_manager;
-  fact_manager.AddFacts(consumer_, initial_facts_, ir_context_.get());
+  FactManager fact_manager(ir_context_.get());
+  fact_manager.AddFacts(consumer_, initial_facts_);
   transformation_context_ =
       MakeUnique<TransformationContext>(&fact_manager, validator_options_);
 

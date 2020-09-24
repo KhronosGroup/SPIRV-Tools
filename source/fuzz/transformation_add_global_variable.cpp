@@ -105,7 +105,7 @@ void TransformationAddGlobalVariable::Apply(
 
   if (message_.value_is_irrelevant()) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-        message_.fresh_id(), ir_context);
+        message_.fresh_id());
   }
 }
 

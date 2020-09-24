@@ -143,7 +143,7 @@ void TransformationCompositeInsert::Apply(
 
   // If |composite_id| is irrelevant then don't add any synonyms.
   if (transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.composite_id(), ir_context)) {
+          message_.composite_id())) {
     return;
   }
   uint32_t current_node_type_id = composite_type_id;
@@ -174,8 +174,7 @@ void TransformationCompositeInsert::Apply(
           MakeDataDescriptor(message_.fresh_id(),
                              std::vector<uint32_t>(current_index)),
           MakeDataDescriptor(message_.composite_id(),
-                             std::vector<uint32_t>(current_index)),
-          ir_context);
+                             std::vector<uint32_t>(current_index)));
       current_index.pop_back();
     }
     // Store the prefix of the |index|.
@@ -184,11 +183,10 @@ void TransformationCompositeInsert::Apply(
   // The element which has been changed is synonymous to the found object
   // itself. Add this fact only if |object_id| is not irrelevant.
   if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.object_id(), ir_context)) {
+          message_.object_id())) {
     transformation_context->GetFactManager()->AddFactDataSynonym(
         MakeDataDescriptor(message_.object_id(), {}),
-        MakeDataDescriptor(message_.fresh_id(), std::vector<uint32_t>(index)),
-        ir_context);
+        MakeDataDescriptor(message_.fresh_id(), std::vector<uint32_t>(index)));
   }
 }
 

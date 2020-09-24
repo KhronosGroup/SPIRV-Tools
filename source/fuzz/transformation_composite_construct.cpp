@@ -96,8 +96,7 @@ bool TransformationCompositeConstruct::IsApplicable(
 
     // We should be able to create a synonym of |component| if it's not
     // irrelevant.
-    if (!transformation_context.GetFactManager()->IdIsIrrelevant(component,
-                                                                 ir_context) &&
+    if (!transformation_context.GetFactManager()->IdIsIrrelevant(component) &&
         !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
                                       inst)) {
       return false;
@@ -160,10 +159,10 @@ void TransformationCompositeConstruct::Apply(
            subvector_index < component_type->AsVector()->element_count();
            subvector_index++) {
         if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-                component, ir_context)) {
+                component)) {
           transformation_context->GetFactManager()->AddFactDataSynonym(
               MakeDataDescriptor(component, {subvector_index}),
-              MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
+              MakeDataDescriptor(message_.fresh_id(), {index}));
         }
         index++;
       }
@@ -171,10 +170,10 @@ void TransformationCompositeConstruct::Apply(
       // The other cases are simple: the component is made directly synonymous
       // with the element of the composite being constructed.
       if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-              component, ir_context)) {
+              component)) {
         transformation_context->GetFactManager()->AddFactDataSynonym(
             MakeDataDescriptor(component, {}),
-            MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
+            MakeDataDescriptor(message_.fresh_id(), {index}));
       }
       index++;
     }

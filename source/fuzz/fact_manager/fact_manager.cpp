@@ -87,27 +87,30 @@ std::string ToString(const protobufs::Fact& fact) {
 
 }  // namespace
 
+FactManager::FactManager(opt::IRContext* ir_context)
+    : constant_uniform_facts_(ir_context),
+      data_synonym_and_id_equation_facts_(ir_context),
+      dead_block_facts_(),
+      livesafe_function_facts_(),
+      irrelevant_value_facts_(ir_context) {}
+
 void FactManager::AddFacts(const MessageConsumer& message_consumer,
-                           const protobufs::FactSequence& initial_facts,
-                           opt::IRContext* context) {
+                           const protobufs::FactSequence& initial_facts) {
   for (auto& fact : initial_facts.fact()) {
-    if (!AddFact(fact, context)) {
+    if (!AddFact(fact)) {
       auto message = "Invalid fact " + ToString(fact) + " ignored.";
       message_consumer(SPV_MSG_WARNING, nullptr, {}, message.c_str());
     }
   }
 }
 
-bool FactManager::AddFact(const fuzz::protobufs::Fact& fact,
-                          opt::IRContext* context) {
+bool FactManager::AddFact(const fuzz::protobufs::Fact& fact) {
   switch (fact.fact_case()) {
     case protobufs::Fact::kConstantUniformFact:
-      return constant_uniform_facts_.AddFact(fact.constant_uniform_fact(),
-                                             context);
+      return constant_uniform_facts_.AddFact(fact.constant_uniform_fact());
     case protobufs::Fact::kDataSynonymFact:
       data_synonym_and_id_equation_facts_.AddFact(
-          fact.data_synonym_fact(), dead_block_facts_, irrelevant_value_facts_,
-          context);
+          fact.data_synonym_fact(), dead_block_facts_, irrelevant_value_facts_);
       return true;
     case protobufs::Fact::kBlockIsDeadFact:
       dead_block_facts_.AddFact(fact.block_is_dead_fact());
@@ -122,33 +125,29 @@ bool FactManager::AddFact(const fuzz::protobufs::Fact& fact,
 }
 
 void FactManager::AddFactDataSynonym(const protobufs::DataDescriptor& data1,
-                                     const protobufs::DataDescriptor& data2,
-                                     opt::IRContext* context) {
+                                     const protobufs::DataDescriptor& data2) {
   protobufs::FactDataSynonym fact;
   *fact.mutable_data1() = data1;
   *fact.mutable_data2() = data2;
   data_synonym_and_id_equation_facts_.AddFact(fact, dead_block_facts_,
-                                              irrelevant_value_facts_, context);
+                                              irrelevant_value_facts_);
 }
 
 std::vector<uint32_t> FactManager::GetConstantsAvailableFromUniformsForType(
-    opt::IRContext* ir_context, uint32_t type_id) const {
+    uint32_t type_id) const {
   return constant_uniform_facts_.GetConstantsAvailableFromUniformsForType(
-      ir_context, type_id);
+      type_id);
 }
 
 std::vector<protobufs::UniformBufferElementDescriptor>
-FactManager::GetUniformDescriptorsForConstant(opt::IRContext* ir_context,
-                                              uint32_t constant_id) const {
-  return constant_uniform_facts_.GetUniformDescriptorsForConstant(ir_context,
-                                                                  constant_id);
+FactManager::GetUniformDescriptorsForConstant(uint32_t constant_id) const {
+  return constant_uniform_facts_.GetUniformDescriptorsForConstant(constant_id);
 }
 
 uint32_t FactManager::GetConstantFromUniformDescriptor(
-    opt::IRContext* context,
     const protobufs::UniformBufferElementDescriptor& uniform_descriptor) const {
   return constant_uniform_facts_.GetConstantFromUniformDescriptor(
-      context, uniform_descriptor);
+      uniform_descriptor);
 }
 
 std::vector<uint32_t> FactManager::GetTypesForWhichUniformValuesAreKnown()
@@ -208,36 +207,28 @@ bool FactManager::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
   return irrelevant_value_facts_.PointeeValueIsIrrelevant(pointer_id);
 }
 
-bool FactManager::IdIsIrrelevant(uint32_t result_id,
-                                 opt::IRContext* context) const {
-  return irrelevant_value_facts_.IdIsIrrelevant(result_id, dead_block_facts_,
-                                                context);
+bool FactManager::IdIsIrrelevant(uint32_t result_id) const {
+  return irrelevant_value_facts_.IdIsIrrelevant(result_id, dead_block_facts_);
 }
 
-std::unordered_set<uint32_t> FactManager::GetIrrelevantIds(
-    opt::IRContext* context) const {
-  return irrelevant_value_facts_.GetIrrelevantIds(dead_block_facts_, context);
+std::unordered_set<uint32_t> FactManager::GetIrrelevantIds() const {
+  return irrelevant_value_facts_.GetIrrelevantIds(dead_block_facts_);
 }
 
-void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id,
-                                                    opt::IRContext* context) {
+void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id) {
   protobufs::FactPointeeValueIsIrrelevant fact;
   fact.set_pointer_id(pointer_id);
-  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_,
-                                  context);
+  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_);
 }
 
-void FactManager::AddFactIdIsIrrelevant(uint32_t result_id,
-                                        opt::IRContext* context) {
+void FactManager::AddFactIdIsIrrelevant(uint32_t result_id) {
   protobufs::FactIdIsIrrelevant fact;
   fact.set_result_id(result_id);
-  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_,
-                                  context);
+  irrelevant_value_facts_.AddFact(fact, data_synonym_and_id_equation_facts_);
 }
 
 void FactManager::AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
-                                    const std::vector<uint32_t>& rhs_id,
-                                    opt::IRContext* context) {
+                                    const std::vector<uint32_t>& rhs_id) {
   protobufs::FactIdEquation fact;
   fact.set_lhs_id(lhs_id);
   fact.set_opcode(opcode);
@@ -245,13 +236,13 @@ void FactManager::AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
     fact.add_rhs_id(an_rhs_id);
   }
   data_synonym_and_id_equation_facts_.AddFact(fact, dead_block_facts_,
-                                              irrelevant_value_facts_, context);
+                                              irrelevant_value_facts_);
 }
 
 void FactManager::ComputeClosureOfFacts(
-    opt::IRContext* ir_context, uint32_t maximum_equivalence_class_size) {
+    uint32_t maximum_equivalence_class_size) {
   data_synonym_and_id_equation_facts_.ComputeClosureOfFacts(
-      ir_context, maximum_equivalence_class_size);
+      maximum_equivalence_class_size);
 }
 
 }  // namespace fuzz

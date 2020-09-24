@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_replace_opphi_id_from_dead_predecessor.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -74,7 +75,7 @@ TEST(TransformationReplaceOpPhiIdFromDeadPredecessorTest, Inapplicable) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -116,7 +117,7 @@ TEST(TransformationReplaceOpPhiIdFromDeadPredecessorTest, Apply) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

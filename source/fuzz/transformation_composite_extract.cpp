@@ -56,7 +56,7 @@ bool TransformationCompositeExtract::IsApplicable(
     return false;
   }
   if (!transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.composite_id(), ir_context) &&
+          message_.composite_id()) &&
       !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
                                     composite_instruction)) {
     // |composite_id| will participate in DataSynonym facts. Thus, it can't be
@@ -115,7 +115,7 @@ void TransformationCompositeExtract::Apply(
   // Add the fact that the id storing the extracted element is synonymous with
   // the index into the structure.
   if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.composite_id(), ir_context)) {
+          message_.composite_id())) {
     std::vector<uint32_t> indices;
     for (auto an_index : message_.index()) {
       indices.push_back(an_index);
@@ -125,8 +125,7 @@ void TransformationCompositeExtract::Apply(
     protobufs::DataDescriptor data_descriptor_for_result_id =
         MakeDataDescriptor(message_.fresh_id(), {});
     transformation_context->GetFactManager()->AddFactDataSynonym(
-        data_descriptor_for_extracted_element, data_descriptor_for_result_id,
-        ir_context);
+        data_descriptor_for_extracted_element, data_descriptor_for_result_id);
   }
 }
 
