@@ -33,7 +33,7 @@ uint32_t MaybeGetOpConstant(opt::IRContext* ir_context,
     if (inst.opcode() == SpvOpConstant && inst.type_id() == type_id &&
         inst.GetInOperand(0).words == words &&
         transformation_context.GetFactManager()->IdIsIrrelevant(
-            inst.result_id(), ir_context) == is_irrelevant) {
+            inst.result_id()) == is_irrelevant) {
       return inst.result_id();
     }
   }
@@ -261,8 +261,8 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context,
     // We can only make a synonym of an instruction that generates an id.
     return false;
   }
-  if (transformation_context.GetFactManager()->IdIsIrrelevant(inst->result_id(),
-                                                              ir_context)) {
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          inst->result_id())) {
     // An irrelevant id can't be a synonym of anything.
     return false;
   }
@@ -1149,7 +1149,7 @@ uint32_t MaybeGetCompositeConstant(
     if (inst.opcode() == SpvOpConstantComposite &&
         inst.type_id() == composite_type_id &&
         transformation_context.GetFactManager()->IdIsIrrelevant(
-            inst.result_id(), ir_context) == is_irrelevant &&
+            inst.result_id()) == is_irrelevant &&
         inst.NumInOperands() == component_ids.size()) {
       bool is_match = true;
 
@@ -1229,7 +1229,7 @@ uint32_t MaybeGetBoolConstant(
       if (inst.opcode() == (value ? SpvOpConstantTrue : SpvOpConstantFalse) &&
           inst.type_id() == type_id &&
           transformation_context.GetFactManager()->IdIsIrrelevant(
-              inst.result_id(), ir_context) == is_irrelevant) {
+              inst.result_id()) == is_irrelevant) {
         return inst.result_id();
       }
     }

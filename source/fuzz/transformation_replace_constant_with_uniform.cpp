@@ -157,7 +157,7 @@ bool TransformationReplaceConstantWithUniform::IsApplicable(
   // by the uniform buffer element descriptor will hold a scalar value.
   auto constant_id_associated_with_uniform =
       transformation_context.GetFactManager()->GetConstantFromUniformDescriptor(
-          ir_context, message_.uniform_descriptor());
+          message_.uniform_descriptor());
   if (!constant_id_associated_with_uniform) {
     return false;
   }

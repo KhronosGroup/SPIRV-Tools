@@ -41,9 +41,9 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
   }
 
   if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.constant1_id(), ir_context) ||
+          message_.constant1_id()) ||
       transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.constant2_id(), ir_context)) {
+          message_.constant2_id())) {
     return false;
   }
 
@@ -52,12 +52,12 @@ bool TransformationRecordSynonymousConstants::IsApplicable(
 }
 
 void TransformationRecordSynonymousConstants::Apply(
-    opt::IRContext* ir_context,
+    opt::IRContext* /*unused*/,
     TransformationContext* transformation_context) const {
   // Add the fact to the fact manager
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.constant1_id(), {}),
-      MakeDataDescriptor(message_.constant2_id(), {}), ir_context);
+      MakeDataDescriptor(message_.constant2_id(), {}));
 }
 
 protobufs::Transformation TransformationRecordSynonymousConstants::ToMessage()

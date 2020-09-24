@@ -143,7 +143,7 @@ void TransformationAddCopyMemory::Apply(
   // about the destination pointer, and record this fact so that the destination
   // pointer can be used freely by other fuzzer passes.
   transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      message_.fresh_id(), ir_context);
+      message_.fresh_id());
 }
 
 protobufs::Transformation TransformationAddCopyMemory::ToMessage() const {

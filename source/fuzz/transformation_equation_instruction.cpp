@@ -60,8 +60,7 @@ bool TransformationEquationInstruction::IsApplicable(
     if (inst->opcode() == SpvOpUndef) {
       return false;
     }
-    if (transformation_context.GetFactManager()->IdIsIrrelevant(id,
-                                                                ir_context)) {
+    if (transformation_context.GetFactManager()->IdIsIrrelevant(id)) {
       return false;
     }
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
@@ -94,8 +93,7 @@ void TransformationEquationInstruction::Apply(
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
   transformation_context->GetFactManager()->AddFactIdEquation(
-      message_.fresh_id(), static_cast<SpvOp>(message_.opcode()), rhs_id,
-      ir_context);
+      message_.fresh_id(), static_cast<SpvOp>(message_.opcode()), rhs_id);
 }
 
 protobufs::Transformation TransformationEquationInstruction::ToMessage() const {

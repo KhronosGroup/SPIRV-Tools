@@ -428,7 +428,7 @@ message Transformation {
     TransformationAddTypeInt add_type_int = 7;
     TransformationAddDeadBreak add_dead_break = 8;
     TransformationReplaceBooleanConstantWithConstantBinary
-      replace_boolean_constant_with_constant_binary = 9;
+        replace_boolean_constant_with_constant_binary = 9;
     TransformationAddTypePointer add_type_pointer = 10;
     TransformationReplaceConstantWithUniform replace_constant_with_uniform = 11;
     TransformationAddDeadContinue add_dead_continue = 12;
@@ -1678,19 +1678,19 @@ message TransformationRecordSynonymousConstants {
 
 message TransformationReplaceAddSubMulWithCarryingExtended {
 
-   // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow, OpIMul
-   // with OpUMulExtended or OpSMulExtended (depending on the signedness
-   // of the operands) and stores the result into a |struct_fresh_id|.
-   // In the original instruction the result type id and the type ids of
-   // the operands must be the same. Then the transformation extracts
-   // the first element of the result into the original |result_id|.
-   // This value is the same as the result of the original instruction.
+  // Replaces OpIAdd with OpIAddCarry, OpISub with OpISubBorrow, OpIMul
+  // with OpUMulExtended or OpSMulExtended (depending on the signedness
+  // of the operands) and stores the result into a |struct_fresh_id|.
+  // In the original instruction the result type id and the type ids of
+  // the operands must be the same. Then the transformation extracts
+  // the first element of the result into the original |result_id|.
+  // This value is the same as the result of the original instruction.
 
-   // The fresh id of the intermediate result.
-   uint32 struct_fresh_id = 1;
+  // The fresh id of the intermediate result.
+  uint32 struct_fresh_id = 1;
 
-   // The result id of the original instruction.
-   uint32 result_id = 2;
+  // The result id of the original instruction.
+  uint32 result_id = 2;
 
 }
 
@@ -1754,16 +1754,16 @@ message TransformationReplaceConstantWithUniform {
 
 message TransformationReplaceCopyMemoryWithLoadStore {
 
-   // A transformation that replaces instructions OpCopyMemory with loading
-   // the source variable to an intermediate value and storing this value into the
-   // target variable of the original OpCopyMemory instruction.
+  // A transformation that replaces instructions OpCopyMemory with loading
+  // the source variable to an intermediate value and storing this value into the
+  // target variable of the original OpCopyMemory instruction.
 
-   // The intermediate value.
-   uint32 fresh_id = 1;
+  // The intermediate value.
+  uint32 fresh_id = 1;
 
-   // The instruction descriptor to OpCopyMemory. It is necessary, because
-   // OpCopyMemory doesn't have a result id.
-   InstructionDescriptor copy_memory_instruction_descriptor = 2;
+  // The instruction descriptor to OpCopyMemory. It is necessary, because
+  // OpCopyMemory doesn't have a result id.
+  InstructionDescriptor copy_memory_instruction_descriptor = 2;
 }
 
 message TransformationReplaceCopyObjectWithStoreLoad {

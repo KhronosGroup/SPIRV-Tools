@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_set_loop_control.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -255,7 +256,7 @@ TEST(TransformationSetLoopControlTest, VariousScenarios) {
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -930,43 +931,42 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
                OpFunctionEnd
   )";
 
-  const auto consumer = nullptr;
-  const auto context_1_0 =
-      BuildModule(SPV_ENV_UNIVERSAL_1_0, consumer, shader, kFuzzAssembleOption);
-  const auto context_1_1 =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer, shader, kFuzzAssembleOption);
-  const auto context_1_2 =
-      BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer, shader, kFuzzAssembleOption);
-  const auto context_1_3 =
-      BuildModule(SPV_ENV_UNIVERSAL_1_3, consumer, shader, kFuzzAssembleOption);
-  const auto context_1_4 =
-      BuildModule(SPV_ENV_UNIVERSAL_1_4, consumer, shader, kFuzzAssembleOption);
-  const auto context_1_5 =
-      BuildModule(SPV_ENV_UNIVERSAL_1_5, consumer, shader, kFuzzAssembleOption);
+  for (auto env :
+       {SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1, SPV_ENV_UNIVERSAL_1_2,
+        SPV_ENV_UNIVERSAL_1_3, SPV_ENV_UNIVERSAL_1_4, SPV_ENV_UNIVERSAL_1_5}) {
+    const auto consumer = nullptr;
+    const auto context =
+        BuildModule(env, consumer, shader, kFuzzAssembleOption);
+    ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+    FactManager fact_manager(context.get());
+    spvtools::ValidatorOptions validator_options;
+    TransformationContext transformation_context(&fact_manager,
+                                                 validator_options);
 
-  TransformationSetLoopControl set_peel_and_partial(
-      10, SpvLoopControlPeelCountMask | SpvLoopControlPartialCountMask, 4, 4);
+    TransformationSetLoopControl transformation(
+        10, SpvLoopControlPeelCountMask | SpvLoopControlPartialCountMask, 4, 4);
 
-  // PeelCount and PartialCount were introduced in SPIRV 1.4, so are not valid
-  // in the context of older versions.
-  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_0.get(),
-                                                 transformation_context));
-  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_1.get(),
-                                                 transformation_context));
-  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_2.get(),
-                                                 transformation_context));
-  ASSERT_FALSE(set_peel_and_partial.IsApplicable(context_1_3.get(),
-                                                 transformation_context));
-
-  ASSERT_TRUE(set_peel_and_partial.IsApplicable(context_1_4.get(),
-                                                transformation_context));
-  ASSERT_TRUE(set_peel_and_partial.IsApplicable(context_1_5.get(),
-                                                transformation_context));
+    switch (env) {
+      case SPV_ENV_UNIVERSAL_1_0:
+      case SPV_ENV_UNIVERSAL_1_1:
+      case SPV_ENV_UNIVERSAL_1_2:
+      case SPV_ENV_UNIVERSAL_1_3:
+        // PeelCount and PartialCount were introduced in SPIRV 1.4, so are not
+        // valid in the context of older versions.
+        ASSERT_FALSE(
+            transformation.IsApplicable(context.get(), transformation_context));
+        break;
+      case SPV_ENV_UNIVERSAL_1_4:
+      case SPV_ENV_UNIVERSAL_1_5:
+        ASSERT_TRUE(
+            transformation.IsApplicable(context.get(), transformation_context));
+        break;
+      default:
+        assert(false && "Unhandled environment");
+        break;
+    }
+  }
 }
 
 }  // namespace

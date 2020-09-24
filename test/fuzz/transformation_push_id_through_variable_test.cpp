@@ -96,7 +96,7 @@ TEST(TransformationPushIdThroughVariableTest, IsApplicable) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -327,7 +327,7 @@ TEST(TransformationPushIdThroughVariableTest, Apply) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -573,7 +573,7 @@ TEST(TransformationPushIdThroughVariableTest, AddSynonymsForRelevantIds) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -674,7 +674,7 @@ TEST(TransformationPushIdThroughVariableTest, DontAddSynonymsForIrrelevantIds) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -682,7 +682,7 @@ TEST(TransformationPushIdThroughVariableTest, DontAddSynonymsForIrrelevantIds) {
   // Tests the reference shader validity.
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  fact_manager.AddFactIdIsIrrelevant(21, context.get());
+  fact_manager.AddFactIdIsIrrelevant(21);
 
   uint32_t value_id = 21;
   uint32_t value_synonym_id = 62;

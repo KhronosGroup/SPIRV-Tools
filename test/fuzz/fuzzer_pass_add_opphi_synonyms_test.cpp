@@ -30,23 +30,23 @@ protobufs::Fact MakeSynonymFact(uint32_t first, uint32_t second) {
 }
 
 // Adds synonym facts to the fact manager.
-void SetUpIdSynonyms(FactManager* fact_manager, opt::IRContext* context) {
+void SetUpIdSynonyms(FactManager* fact_manager) {
   // Synonyms {9, 11, 15, 16, 21, 22}
-  fact_manager->AddFact(MakeSynonymFact(11, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(15, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(16, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(21, 9), context);
-  fact_manager->AddFact(MakeSynonymFact(22, 9), context);
+  fact_manager->AddFact(MakeSynonymFact(11, 9));
+  fact_manager->AddFact(MakeSynonymFact(15, 9));
+  fact_manager->AddFact(MakeSynonymFact(16, 9));
+  fact_manager->AddFact(MakeSynonymFact(21, 9));
+  fact_manager->AddFact(MakeSynonymFact(22, 9));
 
   // Synonyms {10, 23}
-  fact_manager->AddFact(MakeSynonymFact(10, 23), context);
+  fact_manager->AddFact(MakeSynonymFact(10, 23));
 
   // Synonyms {14, 27}
-  fact_manager->AddFact(MakeSynonymFact(14, 27), context);
+  fact_manager->AddFact(MakeSynonymFact(14, 27));
 
   // Synonyms {24, 26, 30}
-  fact_manager->AddFact(MakeSynonymFact(26, 24), context);
-  fact_manager->AddFact(MakeSynonymFact(30, 24), context);
+  fact_manager->AddFact(MakeSynonymFact(26, 24));
+  fact_manager->AddFact(MakeSynonymFact(30, 24));
 }
 
 // Returns true if the given lists have the same elements, regardless of their
@@ -122,7 +122,7 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, HelperFunctions) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -135,7 +135,7 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, HelperFunctions) {
                                          &fuzzer_context,
                                          &transformation_sequence);
 
-  SetUpIdSynonyms(&fact_manager, context.get());
+  SetUpIdSynonyms(&fact_manager);
 
   std::vector<std::set<uint32_t>> expected_equivalence_classes = {
       {9, 15, 21}, {11, 16, 22}, {10, 23}, {6}, {24, 26, 30}};

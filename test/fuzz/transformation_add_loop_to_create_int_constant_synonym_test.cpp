@@ -76,7 +76,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -187,7 +187,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
+    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
     TransformationContext transformation_context(&fact_manager,
                                                  validator_options);
@@ -228,7 +228,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
+    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
     TransformationContext transformation_context(&fact_manager,
                                                  validator_options);
@@ -269,7 +269,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
+    FactManager fact_manager(context.get());
     spvtools::ValidatorOptions validator_options;
     TransformationContext transformation_context(&fact_manager,
                                                  validator_options);
@@ -337,7 +337,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -561,7 +561,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -752,7 +752,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -871,7 +871,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

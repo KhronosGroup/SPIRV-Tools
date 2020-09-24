@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_duplicate_regions_with_selections.h"
+
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_duplicate_region_with_selection.h"
 

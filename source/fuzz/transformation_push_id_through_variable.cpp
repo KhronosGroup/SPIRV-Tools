@@ -76,7 +76,7 @@ bool TransformationPushIdThroughVariable::IsApplicable(
 
   // We should be able to create a synonym of |value_id| if it's not irrelevant.
   if (!transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.value_id(), ir_context) &&
+          message_.value_id()) &&
       !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
                                     value_instruction)) {
     return false;
@@ -154,12 +154,12 @@ void TransformationPushIdThroughVariable::Apply(
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
   if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.value_id(), ir_context)) {
+          message_.value_id())) {
     // Adds the fact that |message_.value_synonym_id|
     // and |message_.value_id| are synonymous.
     transformation_context->GetFactManager()->AddFactDataSynonym(
         MakeDataDescriptor(message_.value_synonym_id(), {}),
-        MakeDataDescriptor(message_.value_id(), {}), ir_context);
+        MakeDataDescriptor(message_.value_id(), {}));
   }
 }
 

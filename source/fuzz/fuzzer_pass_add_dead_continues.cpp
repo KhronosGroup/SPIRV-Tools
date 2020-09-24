@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_add_dead_continues.h"
+
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_add_dead_continue.h"
 #include "source/opt/ir_context.h"

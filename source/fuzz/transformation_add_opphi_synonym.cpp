@@ -155,7 +155,7 @@ void TransformationAddOpPhiSynonym::Apply(
   // that it is a synonym of the first one.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(message_.fresh_id(), {}),
-      MakeDataDescriptor(first_id, {}), ir_context);
+      MakeDataDescriptor(first_id, {}));
 }
 
 protobufs::Transformation TransformationAddOpPhiSynonym::ToMessage() const {

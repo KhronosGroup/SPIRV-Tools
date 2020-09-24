@@ -23,8 +23,7 @@ namespace fuzz {
 namespace {
 
 bool AddFactHelper(
-    TransformationContext* transformation_context, opt::IRContext* context,
-    uint32_t word,
+    TransformationContext* transformation_context, uint32_t word,
     const protobufs::UniformBufferElementDescriptor& descriptor) {
   protobufs::FactConstantUniform constant_uniform_fact;
   constant_uniform_fact.add_constant_word(word);
@@ -32,7 +31,7 @@ bool AddFactHelper(
       descriptor;
   protobufs::Fact fact;
   *fact.mutable_constant_uniform_fact() = constant_uniform_fact;
-  return transformation_context->GetFactManager()->AddFact(fact, context);
+  return transformation_context->GetFactManager()->AddFact(fact);
 }
 
 TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
@@ -105,7 +104,7 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -117,12 +116,9 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   protobufs::UniformBufferElementDescriptor blockname_c =
       MakeUniformBufferElementDescriptor(0, 0, {2});
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 1, blockname_a));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 2, blockname_b));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 3, blockname_c));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 1, blockname_a));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 2, blockname_b));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 3, blockname_c));
 
   // The constant ids are 9, 11 and 14, for 1, 2 and 3 respectively.
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -471,7 +467,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -485,14 +481,10 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   protobufs::UniformBufferElementDescriptor blockname_4 =
       MakeUniformBufferElementDescriptor(0, 0, {1, 0, 1, 0});
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 1, blockname_1));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 2, blockname_2));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 3, blockname_3));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 4, blockname_4));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 1, blockname_1));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 2, blockname_2));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 3, blockname_3));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 4, blockname_4));
 
   // The constant ids are 13, 15, 17 and 20, for 1, 2, 3 and 4 respectively.
   protobufs::IdUseDescriptor use_of_13_in_store =
@@ -716,7 +708,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -724,8 +716,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
   protobufs::UniformBufferElementDescriptor blockname_0 =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 0, blockname_0));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 0, blockname_0));
 
   // The constant id is 9 for 0.
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -794,7 +785,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -804,8 +795,7 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
   protobufs::UniformBufferElementDescriptor blockname_9 =
       MakeUniformBufferElementDescriptor(0, 0, {1});
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 9, blockname_9));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 9, blockname_9));
 
   // The constant id is 9 for 9.
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -871,7 +861,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -882,8 +872,8 @@ TEST(TransformationReplaceConstantWithUniformTest,
   uint32_t float_data[1];
   float temp = 3.0;
   memcpy(&float_data[0], &temp, sizeof(float));
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_data[0], blockname_3));
+  ASSERT_TRUE(
+      AddFactHelper(&transformation_context, float_data[0], blockname_3));
 
   // The constant id is 9 for 3.0.
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -961,7 +951,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -971,10 +961,8 @@ TEST(TransformationReplaceConstantWithUniformTest,
   protobufs::UniformBufferElementDescriptor blockname_10 =
       MakeUniformBufferElementDescriptor(0, 0, {1});
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 9, blockname_9));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 10, blockname_10));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 9, blockname_9));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 10, blockname_10));
 
   // The constant ids for 9 and 10 are 9 and 11 respectively
   protobufs::IdUseDescriptor use_of_9_in_store =
@@ -1180,7 +1168,7 @@ TEST(TransformationReplaceConstantWithUniformTest, ComplexReplacements) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1231,43 +1219,35 @@ TEST(TransformationReplaceConstantWithUniformTest, ComplexReplacements) {
   protobufs::UniformBufferElementDescriptor uniform_h_y =
       MakeUniformBufferElementDescriptor(0, 0, {2, 1});
 
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_array_data[0], uniform_f_a_0));
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_array_data[1], uniform_f_a_1));
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_array_data[2], uniform_f_a_2));
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_array_data[3], uniform_f_a_3));
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_array_data[4], uniform_f_a_4));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_array_data[0],
+                            uniform_f_a_0));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_array_data[1],
+                            uniform_f_a_1));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_array_data[2],
+                            uniform_f_a_2));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_array_data[3],
+                            uniform_f_a_3));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_array_data[4],
+                            uniform_f_a_4));
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 1, uniform_f_b_x));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 2, uniform_f_b_y));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 3, uniform_f_b_z));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 4, uniform_f_b_w));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 1, uniform_f_b_x));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 2, uniform_f_b_y));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 3, uniform_f_b_z));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 4, uniform_f_b_w));
 
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_vector_data[0], uniform_f_c_x));
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_vector_data[1], uniform_f_c_y));
-  ASSERT_TRUE(AddFactHelper(&transformation_context, context.get(),
-                            float_vector_data[2], uniform_f_c_z));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_vector_data[0],
+                            uniform_f_c_x));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_vector_data[1],
+                            uniform_f_c_y));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, float_vector_data[2],
+                            uniform_f_c_z));
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 42, uniform_f_d));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 42, uniform_f_d));
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 22, uniform_g));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 22, uniform_g));
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 100, uniform_h_x));
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 200, uniform_h_y));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 100, uniform_h_x));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 200, uniform_h_y));
 
   std::vector<TransformationReplaceConstantWithUniform> transformations;
 
@@ -1531,7 +1511,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1539,8 +1519,7 @@ TEST(TransformationReplaceConstantWithUniformTest,
   protobufs::UniformBufferElementDescriptor blockname_a =
       MakeUniformBufferElementDescriptor(0, 0, {0});
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 0, blockname_a));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 0, blockname_a));
 
   ASSERT_FALSE(TransformationReplaceConstantWithUniform(
                    MakeIdUseDescriptor(
@@ -1592,15 +1571,14 @@ TEST(TransformationReplaceConstantWithUniformTest, ReplaceOpPhiOperand) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
   auto int_descriptor = MakeUniformBufferElementDescriptor(0, 0, {0});
 
-  ASSERT_TRUE(
-      AddFactHelper(&transformation_context, context.get(), 2, int_descriptor));
+  ASSERT_TRUE(AddFactHelper(&transformation_context, 2, int_descriptor));
 
   {
     TransformationReplaceConstantWithUniform transformation(

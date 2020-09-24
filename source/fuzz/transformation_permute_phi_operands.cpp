@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_permute_phi_operands.h"
+
 #include <vector>
 
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/transformation_permute_phi_operands.h"
 
 namespace spvtools {
 namespace fuzz {

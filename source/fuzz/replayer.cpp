@@ -90,8 +90,8 @@ Replayer::ReplayerResult Replayer::Run() {
     last_valid_binary = binary_in_;
   }
 
-  FactManager fact_manager;
-  fact_manager.AddFacts(consumer_, initial_facts_, ir_context.get());
+  FactManager fact_manager(ir_context.get());
+  fact_manager.AddFacts(consumer_, initial_facts_);
   std::unique_ptr<TransformationContext> transformation_context =
       first_overflow_id_ == 0
           ? MakeUnique<TransformationContext>(&fact_manager, validator_options_)

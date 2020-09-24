@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_load.h"
+
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -84,21 +85,21 @@ TEST(TransformationLoadTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      27, context.get());
+      27);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      11, context.get());
+      11);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      46, context.get());
+      46);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      16, context.get());
+      16);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
-      52, context.get());
+      52);
 
   transformation_context.GetFactManager()->AddFactBlockIsDead(36);
 

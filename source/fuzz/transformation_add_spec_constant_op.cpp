@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/transformation_add_spec_constant_op.h"
+
 #include <utility>
 
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/transformation_add_spec_constant_op.h"
 
 namespace spvtools {
 namespace fuzz {

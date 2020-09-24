@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_parameter.h"
+
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -101,7 +102,7 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -136,28 +137,28 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(60, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(60));
   }
   {
     TransformationAddParameter correct(17, 62, 7, {{}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(62, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(62));
   }
   {
     TransformationAddParameter correct(29, 64, 31, {{}}, 65);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(64, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(64));
   }
   {
     TransformationAddParameter correct(34, 66, 7, {{}}, 67);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     correct.Apply(context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_TRUE(fact_manager.IdIsIrrelevant(66, context.get()));
+    ASSERT_TRUE(fact_manager.IdIsIrrelevant(66));
   }
 
   std::string expected_shader = R"(
@@ -321,7 +322,7 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -448,7 +449,7 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -667,7 +668,7 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -880,7 +881,7 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -1036,7 +1037,7 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

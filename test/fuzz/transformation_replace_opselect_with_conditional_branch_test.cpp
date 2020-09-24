@@ -14,10 +14,9 @@
 
 #include "source/fuzz/transformation_replace_opselect_with_conditional_branch.h"
 
-#include "test/fuzz/fuzz_test_util.h"
-
 #include "source/fuzz/fuzzer_pass_replace_opselects_with_conditional_branches.h"
 #include "source/fuzz/pseudo_random_generator.h"
+#include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -87,7 +86,7 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
@@ -191,7 +190,7 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);

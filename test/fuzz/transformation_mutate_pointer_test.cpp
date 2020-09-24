@@ -79,13 +79,13 @@ TEST(TransformationMutatePointerTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(35, context.get());
-  fact_manager.AddFactIdIsIrrelevant(39, context.get());
+  fact_manager.AddFactIdIsIrrelevant(35);
+  fact_manager.AddFactIdIsIrrelevant(39);
 
   const auto insert_before = MakeInstructionDescriptor(26, SpvOpReturn, 0);
 
@@ -140,7 +140,7 @@ TEST(TransformationMutatePointerTest, BasicTest) {
                    26, 70, MakeInstructionDescriptor(26, SpvOpAccessChain, 0))
                    .IsApplicable(context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(40, context.get());
+  fact_manager.AddFactIdIsIrrelevant(40);
 
   uint32_t fresh_id = 70;
   uint32_t pointer_ids[] = {
@@ -269,12 +269,12 @@ TEST(TransformationMutatePointerTest, HandlesUnreachableBlocks) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  fact_manager.AddFactIdIsIrrelevant(7, context.get());
+  fact_manager.AddFactIdIsIrrelevant(7);
 
   ASSERT_FALSE(
       context->GetDominatorAnalysis(context->GetFunction(4))->IsReachable(10));

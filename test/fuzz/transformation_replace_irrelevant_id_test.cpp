@@ -61,12 +61,11 @@ const std::string shader = R"(
                OpFunctionEnd
 )";
 
-void SetUpIrrelevantIdFacts(FactManager* fact_manager,
-                            opt::IRContext* context) {
-  fact_manager->AddFactIdIsIrrelevant(17, context);
-  fact_manager->AddFactIdIsIrrelevant(23, context);
-  fact_manager->AddFactIdIsIrrelevant(24, context);
-  fact_manager->AddFactIdIsIrrelevant(25, context);
+void SetUpIrrelevantIdFacts(FactManager* fact_manager) {
+  fact_manager->AddFactIdIsIrrelevant(17);
+  fact_manager->AddFactIdIsIrrelevant(23);
+  fact_manager->AddFactIdIsIrrelevant(24);
+  fact_manager->AddFactIdIsIrrelevant(25);
 }
 
 TEST(TransformationReplaceIrrelevantIdTest, Inapplicable) {
@@ -75,13 +74,12 @@ TEST(TransformationReplaceIrrelevantIdTest, Inapplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  SetUpIrrelevantIdFacts(transformation_context.GetFactManager(),
-                         context.get());
+  SetUpIrrelevantIdFacts(transformation_context.GetFactManager());
 
   auto instruction_21_descriptor =
       MakeInstructionDescriptor(21, SpvOpAccessChain, 0);
@@ -129,13 +127,12 @@ TEST(TransformationReplaceIrrelevantIdTest, Apply) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
+  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(&fact_manager,
                                                validator_options);
 
-  SetUpIrrelevantIdFacts(transformation_context.GetFactManager(),
-                         context.get());
+  SetUpIrrelevantIdFacts(transformation_context.GetFactManager());
 
   auto instruction_24_descriptor = MakeInstructionDescriptor(24, SpvOpIAdd, 0);
 
