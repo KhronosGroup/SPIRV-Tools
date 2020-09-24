@@ -766,9 +766,8 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiMergeBlock) {
                                                  transformation_context));
   transformation_good_1.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-
   std::string expected_shader = R"(
-               OpCapability Shader
+                 OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
@@ -800,15 +799,14 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiMergeBlock) {
                OpStore %54 %14
                OpBranch %8
           %8 = OpLabel
-               OpStore %54 %14
-               OpLoopMerge %10 %11 None
-               OpBranchConditional %14 %104 %10
-        %104 = OpLabel
         %101 = OpLoad %50 %53
         %102 = OpIAdd %50 %101 %57
                OpStore %53 %102
         %103 = OpULessThan %13 %102 %55
-               OpBranchConditional %103 %11 %10
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %103 %104 %10
+        %104 = OpLabel
+               OpBranchConditional %14 %11 %10
          %11 = OpLabel
                OpBranch %8
          %10 = OpLabel
@@ -832,7 +830,7 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiMergeBlock) {
          %71 = OpPhi %13 %70 %107
                OpReturn
                OpFunctionEnd
-      )";
+        )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
@@ -905,7 +903,7 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiHeaderBlock) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string expected_shader = R"(
-               OpCapability Shader
+                 OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
@@ -941,15 +939,14 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiHeaderBlock) {
                OpBranch %8
           %8 = OpLabel
          %72 = OpPhi %13 %71 %70 %71 %11
-               OpStore %54 %14
-               OpLoopMerge %10 %11 None
-               OpBranchConditional %14 %104 %10
-        %104 = OpLabel
         %101 = OpLoad %50 %53
         %102 = OpIAdd %50 %101 %57
                OpStore %53 %102
         %103 = OpULessThan %13 %102 %55
-               OpBranchConditional %103 %11 %10
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %103 %104 %10
+        %104 = OpLabel
+               OpBranchConditional %14 %11 %10
          %11 = OpLabel
                OpBranch %8
          %10 = OpLabel
@@ -971,7 +968,7 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiHeaderBlock) {
          %20 = OpLabel
                OpReturn
                OpFunctionEnd
-      )";
+        )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
@@ -1043,7 +1040,6 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiBodyBlock) {
                                                  transformation_context));
   transformation_good_1.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-
   std::string expected_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1077,16 +1073,15 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiBodyBlock) {
                OpStore %54 %14
                OpBranch %8
           %8 = OpLabel
-         %70 = OpCopyObject %13 %14
-               OpStore %54 %14
-               OpLoopMerge %10 %11 None
-               OpBranchConditional %14 %104 %10
-        %104 = OpLabel
         %101 = OpLoad %50 %53
         %102 = OpIAdd %50 %101 %57
                OpStore %53 %102
         %103 = OpULessThan %13 %102 %55
-               OpBranchConditional %103 %30 %10
+               OpLoopMerge %10 %11 None
+               OpBranchConditional %103 %104 %10
+        %104 = OpLabel
+         %70 = OpCopyObject %13 %14
+               OpBranchConditional %14 %30 %10
          %30 = OpLabel
          %71 = OpPhi %13 %70 %104
                OpBranch %11
@@ -1114,7 +1109,7 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiBodyBlock) {
          %20 = OpLabel
                OpReturn
                OpFunctionEnd
-      )";
+        )";
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 

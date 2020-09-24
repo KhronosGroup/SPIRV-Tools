@@ -308,7 +308,7 @@ void TransformationSplitLoop::Apply(
   std::vector<uint32_t> logical_not_fresh_ids =
       fuzzerutil::RepeatedFieldToVector(message_.logical_not_fresh_ids());
 
-  // Create 3 new blocks |selection_merge_block|, |new_body_entry_block|,
+  // Create three new blocks |selection_merge_block|, |new_body_entry_block|,
   // |conditional_block|. They will be inserted at the end of this method.
   std::unique_ptr<opt::BasicBlock> selection_merge_block =
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
@@ -324,6 +324,24 @@ void TransformationSplitLoop::Apply(
       MakeUnique<opt::BasicBlock>(MakeUnique<opt::Instruction>(
           ir_context, SpvOpLabel, 0, message_.conditional_block_fresh_id(),
           opt::Instruction::OperandList{}));
+
+  // In the terminator of |loop_header| take first branch which is not a merge
+  // block and set it to |new_body_entry|, which will be the first block of the
+  // body of the loop.
+  auto loop_header_terminator = loop_header_block->terminator();
+  auto loop_header_merge_instr = loop_header_block->GetLoopMergeInst();
+  uint32_t next_not_merge_id;
+  if (loop_header_terminator->opcode() == SpvOpBranch) {
+    next_not_merge_id = loop_header_terminator->GetSingleWordInOperand(0);
+  } else /*SpvOpBranchConditional*/ {
+    uint32_t first_id = loop_header_terminator->GetSingleWordInOperand(1);
+    uint32_t second_id = loop_header_terminator->GetSingleWordInOperand(2);
+    if (first_id != merge_block->id()) {
+      next_not_merge_id = first_id;
+    } else {
+      next_not_merge_id = second_id;
+    }
+  }
 
   // We know that the execution of the transformed region will end in
   // |selection_merge_block|. Hence, we need to resolve OpPhi instructions:
@@ -430,9 +448,9 @@ void TransformationSplitLoop::Apply(
     }
   }
 
+  // Move the terminator of |merge_block| to the end of
+  // |selection_merge_block|
   {
-    // Move the terminator of |merge_block| to the end of
-    // |selection_merge_block|
     auto instr = merge_block->terminator();
     auto cloned_instr = instr->Clone(ir_context);
     selection_merge_block->AddInstruction(
@@ -441,7 +459,7 @@ void TransformationSplitLoop::Apply(
   }
 
   // |merge_block| of the original function will now branch to
-  // |conditional_block|
+  // |conditional_block|.
   merge_block->AddInstruction(MakeUnique<opt::Instruction>(opt::Instruction(
       ir_context, SpvOpBranch, 0, 0,
       opt::Instruction::OperandList(
@@ -474,8 +492,7 @@ void TransformationSplitLoop::Apply(
             {original_label_to_duplicate_label[loop_header_block->id()]}},
            {SPV_OPERAND_TYPE_ID, {selection_merge_block->id()}}})));
 
-  // |duplicated_merge_block| of the function will now branch to the
-  // |selection_merge_block|.
+  // |duplicated_merge_block| will now branch to the |selection_merge_block|.
   duplicated_merge_block->AddInstruction(MakeUnique<opt::Instruction>(
       opt::Instruction(ir_context, SpvOpBranch, 0, 0,
                        opt::Instruction::OperandList(
@@ -503,15 +520,37 @@ void TransformationSplitLoop::Apply(
                       ->GetDef(message_.variable_counter_id())
                       ->type_id());
 
-  // Add incrementation instructions in |new_body_entry_block|.
-  new_body_entry_block->AddInstruction(
+  // Move all instructions except OpLabel, OpLoopMerge and OpPhi to the
+  // |new_body_entry_block|. The terminator, which is OpBranch or
+  // OpBranchConditional is also moved. If there any of these instructions that
+  // cause side effects (like OpStore), avoid executing them incorrect number of
+  // times due to |counter| reaching its iteration limit.
+  std::vector<opt::Instruction> instructions_in_block;
+
+  for (auto iter = loop_header_block->begin();
+       iter != loop_header_block->end();) {
+    if (iter->opcode() == SpvOpLabel || iter->opcode() == SpvOpLoopMerge ||
+        iter->opcode() == SpvOpPhi) {
+      ++iter;
+    } else {
+      new_body_entry_block->AddInstruction(
+          std::unique_ptr<opt::Instruction>(iter->Clone(ir_context)));
+      auto new_iter = ir_context->KillInst(&*iter);
+      if (!new_iter) break;
+      iter = new_iter;
+    }
+  }
+
+  // Add incrementation instructions to |loop_header_block|. At this point, the
+  // terminator is an OpLoopMerge instruction.
+  loop_header_block->terminator()->InsertBefore(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpLoad, counter_type_id,
           message_.load_counter_fresh_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.variable_counter_id()}}}))));
 
-  new_body_entry_block->AddInstruction(
+  loop_header_block->terminator()->InsertBefore(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpIAdd, counter_type_id,
           message_.increment_counter_fresh_id(),
@@ -519,7 +558,7 @@ void TransformationSplitLoop::Apply(
               {{SPV_OPERAND_TYPE_ID, {message_.load_counter_fresh_id()}},
                {SPV_OPERAND_TYPE_ID, {const_one_id}}}))));
 
-  new_body_entry_block->AddInstruction(
+  loop_header_block->terminator()->InsertBefore(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpStore, 0, 0,
           opt::Instruction::OperandList(
@@ -530,12 +569,23 @@ void TransformationSplitLoop::Apply(
   auto bool_type_id = fuzzerutil::MaybeGetBoolType(ir_context);
   assert(bool_type_id && "The bool type must be present.");
 
-  new_body_entry_block->AddInstruction(
+  loop_header_block->terminator()->InsertBefore(
       MakeUnique<opt::Instruction>(opt::Instruction(
           ir_context, SpvOpULessThan, bool_type_id,
           message_.condition_counter_fresh_id(),
           {{SPV_OPERAND_TYPE_ID, {message_.increment_counter_fresh_id()}},
            {SPV_OPERAND_TYPE_ID, {message_.constant_limit_id()}}})));
+
+  // Insert conditional branch at the end of |loop_header|. If the number of
+  // iterations is smaller than the limit, go to |new_body_entry|. Otherwise,
+  // we have finished the iteration in the first loop, therefore go to
+  // |merge_block|.
+  loop_header_block->AddInstruction(
+      MakeUnique<opt::Instruction>(opt::Instruction(
+          ir_context, SpvOpBranchConditional, 0, 0,
+          {{SPV_OPERAND_TYPE_ID, {message_.condition_counter_fresh_id()}},
+           {SPV_OPERAND_TYPE_ID, {message_.new_body_entry_block_fresh_id()}},
+           {SPV_OPERAND_TYPE_ID, {merge_block->id()}}})));
 
   // Set |run_second| for every branch to the merge block.
   auto merge_block_instr = merge_block->GetLabelInst();
@@ -547,8 +597,8 @@ void TransformationSplitLoop::Apply(
         if (loop_blocks.find(user_block) == loop_blocks.end()) {
           return;
         }
-        // If we branch unconditionally to the merge block, set |run_second| to
-        // false.
+        // If we branch unconditionally to the merge block, set |run_second|
+        // to false.
         if (user->opcode() == SpvOpBranch) {
           user->InsertBefore(MakeUnique<opt::Instruction>(opt::Instruction(
               ir_context, SpvOpStore, 0, 0,
@@ -557,13 +607,14 @@ void TransformationSplitLoop::Apply(
                    {SPV_OPERAND_TYPE_ID, {const_false_id}}}))));
         } else if (user->opcode() == SpvOpBranchConditional) {
           auto instr_to_insert_before = user;
+          // In the header block, insert before the OpLoopMerge instruction.
           if (user_block->IsLoopHeader()) {
             instr_to_insert_before = user->PreviousNode();
           }
           if (operand == 2) {
             // If we have an instruction of form: "OpBranchConditional %cond
-            // %other %merge" then set |run_second| to the value of the boolean
-            // condition %cond
+            // %other %merge" then set |run_second| to the value of the
+            // boolean condition %cond
             instr_to_insert_before->InsertBefore(MakeUnique<opt::Instruction>(
                 opt::Instruction(ir_context, SpvOpStore, 0, 0,
                                  opt::Instruction::OperandList(
@@ -573,8 +624,8 @@ void TransformationSplitLoop::Apply(
                                        {user->GetSingleWordInOperand(0)}}}))));
           } else if (operand == 1) {
             // If we have an instruction of form: "OpBranchConditional %cond
-            // %merge %other" then set |run_second| to the negation of the value
-            // of the boolean condition %cond.
+            // %merge %other" then set |run_second| to the negation of the
+            // value of the boolean condition %cond.
             auto result_id = logical_not_fresh_ids.back();
             logical_not_fresh_ids.pop_back();
             instr_to_insert_before->InsertBefore(
@@ -593,47 +644,6 @@ void TransformationSplitLoop::Apply(
         }
       });
 
-  // In the terminator of |loop_header| take first branch which is not a merge
-  // block and set it to |new_body_entry|, which will be the first block of the
-  // body of the loop.
-  auto loop_header_terminator = loop_header_block->terminator();
-  uint32_t next_not_merge_id;
-  uint32_t next_not_merge_pos;
-  if (loop_header_terminator->opcode() == SpvOpBranch) {
-    next_not_merge_id = loop_header_terminator->GetSingleWordInOperand(0);
-    next_not_merge_pos = 0;
-  } else /*SpvOpBranchConditional*/ {
-    uint32_t first_id = loop_header_terminator->GetSingleWordInOperand(1);
-    uint32_t second_id = loop_header_terminator->GetSingleWordInOperand(2);
-    if (first_id != merge_block->id()) {
-      next_not_merge_id = first_id;
-      next_not_merge_pos = 1;
-    } else {
-      next_not_merge_id = second_id;
-      next_not_merge_pos = 2;
-    }
-  }
-  loop_header_terminator->SetInOperand(next_not_merge_pos,
-                                       {new_body_entry_block->id()});
-  // If the |loop_header_id| was used in the OpLoopMerge instruction as a
-  // continue target, change it to |new_body_entry_block_id|.
-  loop_header_block->GetLoopMergeInst()->ForEachInOperand([this](uint32_t* id) {
-    if (*id == message_.loop_header_id()) {
-      *id = message_.new_body_entry_block_fresh_id();
-    }
-  });
-
-  // Insert conditional branch at the end of |new_body_entry|. If the number of
-  // iterations is smaller than the limit, go to |next_not_merge_id|. Otherwise,
-  // we have finished the iteration in the first loop, therefore go to
-  // |merge_block->id()|
-  new_body_entry_block->AddInstruction(
-      MakeUnique<opt::Instruction>(opt::Instruction(
-          ir_context, SpvOpBranchConditional, 0, 0,
-          {{SPV_OPERAND_TYPE_ID, {message_.condition_counter_fresh_id()}},
-           {SPV_OPERAND_TYPE_ID, {next_not_merge_id}},
-           {SPV_OPERAND_TYPE_ID, {merge_block->id()}}})));
-
   // Insert newly created blocks.
   enclosing_function->InsertBasicBlockAfter(std::move(new_body_entry_block),
                                             loop_header_block);
@@ -642,8 +652,16 @@ void TransformationSplitLoop::Apply(
   enclosing_function->InsertBasicBlockAfter(std::move(conditional_block),
                                             merge_block);
 
-  // In the original loop, if there are OpPhi instructions referring to the loop
-  // header, change these ids to |new_body_entry_block_id|, since
+  // If the |loop_header_id| was used in the OpLoopMerge instruction as a
+  // continue target, change it to |new_body_entry_block_id|.
+  loop_header_merge_instr->ForEachInOperand([this](uint32_t* id) {
+    if (*id == message_.loop_header_id()) {
+      *id = message_.new_body_entry_block_fresh_id();
+    }
+  });
+
+  // In the original loop, if there are OpPhi instructions referring to the
+  // loop header, change these ids to |new_body_entry_block_id|, since
   // |new_body_entry_block| was inserted after the loop header.
   {
     auto block = ir_context->cfg()->block(next_not_merge_id);
@@ -657,7 +675,7 @@ void TransformationSplitLoop::Apply(
       }
     }
   }
-
+  // Since we have changed the module, the analyses are now invalid.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
