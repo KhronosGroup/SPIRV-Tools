@@ -70,7 +70,7 @@ Shrinker::Shrinker(
     uint32_t step_limit, bool validate_during_replay,
     spv_validator_options validator_options)
     : target_env_(target_env),
-      consumer_(consumer),
+      consumer_(std::move(consumer)),
       binary_in_(binary_in),
       initial_facts_(initial_facts),
       transformation_sequence_in_(transformation_sequence_in),
@@ -120,8 +120,9 @@ Shrinker::ShrinkerResult Shrinker::Run() {
   // Get the binary that results from running these transformations, and the
   // subsequence of the initial transformations that actually apply (in
   // principle this could be a strict subsequence).
-  std::vector<uint32_t> current_best_binary =
-      std::move(initial_replay_result.transformed_binary);
+  std::vector<uint32_t> current_best_binary;
+  initial_replay_result.transformed_module->module()->ToBinary(
+      &current_best_binary, false);
   protobufs::TransformationSequence current_best_transformations =
       std::move(initial_replay_result.applied_transformations);
 
@@ -215,12 +216,14 @@ Shrinker::ShrinkerResult Shrinker::Run() {
           "Removing this chunk of transformations should not have an effect "
           "on earlier chunks.");
 
-      if (interestingness_function_(replay_result.transformed_binary,
-                                    attempt)) {
+      std::vector<uint32_t> transformed_binary;
+      replay_result.transformed_module->module()->ToBinary(&transformed_binary,
+                                                           false);
+      if (interestingness_function_(transformed_binary, attempt)) {
         // If the binary arising from the smaller transformation sequence is
         // interesting, this becomes our current best binary and transformation
         // sequence.
-        current_best_binary = std::move(replay_result.transformed_binary);
+        current_best_binary = std::move(transformed_binary);
         current_best_transformations =
             std::move(replay_result.applied_transformations);
         progress_this_round = true;
