@@ -522,6 +522,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateWrapOpKillPass());
   } else if (pass_name == "amd-ext-to-khr") {
     RegisterPass(CreateAmdExtToKhrPass());
+  } else if (pass_name == "propagate-debugvalue") {
+    RegisterPass(CreatePropagateDebugvaluePass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -977,6 +979,11 @@ Optimizer::PassToken CreateWrapOpKillPass() {
 Optimizer::PassToken CreateAmdExtToKhrPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::AmdExtensionToKhrPass>());
+}
+
+Optimizer::PassToken CreatePropagateDebugvaluePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::PropagateDebugvalue>());
 }
 
 }  // namespace spvtools

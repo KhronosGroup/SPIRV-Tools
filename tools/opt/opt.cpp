@@ -399,6 +399,13 @@ Options (in lexicographical order):)",
                Change the scope of private variables that are used in a single
                function to that function.)");
   printf(R"(
+  --propagate-debugvalue
+               Adds OpenCL.DebugInfo.100 DebugValue instructions needed to be
+               placed in the beginning of each basic block.  When a debugger
+               shows the values of local variables, it can conduct an analysis
+               using this pass to find available DebugValue instructions.
+               )");
+  printf(R"(
   --reduce-load-size
                Replaces loads of composite objects where not every component is
                used by loads of just the elements that are used.)");

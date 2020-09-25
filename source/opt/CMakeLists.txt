@@ -90,6 +90,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   pass_manager.h
   private_to_local_pass.h
   process_lines_pass.h
+  propagate_debugvalue.h
   propagator.h
   reduce_load_size.h
   redundancy_elimination.h
@@ -197,6 +198,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   pass_manager.cpp
   private_to_local_pass.cpp
   process_lines_pass.cpp
+  propagate_debugvalue.cpp
   propagator.cpp
   reduce_load_size.cpp
   redundancy_elimination.cpp

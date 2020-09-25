@@ -887,6 +887,12 @@ Optimizer::PassToken CreateWrapOpKillPass();
 // capabilities.
 Optimizer::PassToken CreateAmdExtToKhrPass();
 
+// Adds OpenCL.DebugInfo.100 DebugValue instructions needed to be
+// placed in the beginning of each basic block.  When a debugger
+// shows the values of local variables, it can conduct an analysis
+// using this pass to find available DebugValue instructions.
+Optimizer::PassToken CreatePropagateDebugvaluePass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
