@@ -126,6 +126,9 @@ class Disassembler {
   const bool show_byte_offset_;  // Should we print byte offset, in hex?
   size_t byte_offset_;           // The number of bytes processed so far.
   spvtools::NameMapper name_mapper_;
+  bool inserted_decoration_space_ = false;
+  bool inserted_debug_space_ = false;
+  bool inserted_type_space_ = false;
 };
 
 spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
@@ -160,6 +163,31 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
 
 spv_result_t Disassembler::HandleInstruction(
     const spv_parsed_instruction_t& inst) {
+  auto opcode = static_cast<SpvOp>(inst.opcode);
+  if (opcode == SpvOpFunction) {
+    stream_ << std::endl;
+    stream_ << std::string(indent_, ' ');
+    stream_ << "; Function " << name_mapper_(inst.result_id) << std::endl;
+  }
+  if (!inserted_decoration_space_ && spvOpcodeIsDecoration(opcode)) {
+    inserted_decoration_space_ = true;
+    stream_ << std::endl;
+    stream_ << std::string(indent_, ' ');
+    stream_ << "; Annotations" << std::endl;
+  }
+  if (!inserted_debug_space_ && spvOpcodeIsDebug(opcode)) {
+    inserted_debug_space_ = true;
+    stream_ << std::endl;
+    stream_ << std::string(indent_, ' ');
+    stream_ << "; Debug Information" << std::endl;
+  }
+  if (!inserted_type_space_ && spvOpcodeGeneratesType(opcode)) {
+    inserted_type_space_ = true;
+    stream_ << std::endl;
+    stream_ << std::string(indent_, ' ');
+    stream_ << "; Types, variables and constants" << std::endl;
+  }
+
   if (inst.result_id) {
     SetBlue();
     const std::string id_name = name_mapper_(inst.result_id);
@@ -172,7 +200,7 @@ spv_result_t Disassembler::HandleInstruction(
     stream_ << std::string(indent_, ' ');
   }
 
-  stream_ << "Op" << spvOpcodeString(static_cast<SpvOp>(inst.opcode));
+  stream_ << "Op" << spvOpcodeString(opcode);
 
   for (uint16_t i = 0; i < inst.num_operands; i++) {
     const spv_operand_type_t type = inst.operands[i].type;
