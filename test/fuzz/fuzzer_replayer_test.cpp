@@ -1684,8 +1684,8 @@ void RunFuzzerAndReplayer(const std::string& shader,
     replayer_result.applied_transformations.SerializeToString(
         &replayer_transformations_string);
     ASSERT_EQ(fuzzer_transformations_string, replayer_transformations_string);
-    ASSERT_EQ(fuzzer_result.transformed_binary,
-              replayer_result.transformed_binary);
+    ASSERT_TRUE(IsEqual(env, fuzzer_result.transformed_binary,
+                        replayer_result.transformed_module.get()));
   }
 }
 

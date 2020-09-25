@@ -19,6 +19,8 @@
 #include <vector>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/transformation_context.h"
+#include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
@@ -39,7 +41,8 @@ class Replayer {
 
   struct ReplayerResult {
     ReplayerResultStatus status;
-    std::vector<uint32_t> transformed_binary;
+    std::unique_ptr<opt::IRContext> transformed_module;
+    std::unique_ptr<TransformationContext> transformation_context;
     protobufs::TransformationSequence applied_transformations;
   };
 
@@ -70,9 +73,10 @@ class Replayer {
   // ids will be available during replay starting from this value.
   //
   // On success, returns a successful result status together with the
-  // transformations that were successfully applied and the binary resulting
-  // from applying them.  Otherwise, returns an appropriate result status
-  // together with an empty binary and empty transformation sequence.
+  // transformations that were applied, the IR for the transformed module, and
+  // the transformation context that arises from applying these transformations.
+  // Otherwise, returns an appropriate result status, an empty transformation
+  // sequence, and null pointers for the IR context and transformation context.
   ReplayerResult Run();
 
  private:
