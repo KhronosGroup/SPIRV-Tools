@@ -51,6 +51,9 @@ class TransformationMergeFunctionReturns : public Transformation {
   //   - there is no mapping, but overflow ids are available and, for every
   //     OpPhi instruction in the merge blocks that need to be modified, a
   //     suitable id, available at the end of the entry block, can be found.
+  // - The addition of new predecessors to the relevant merge blocks does not
+  //   cause any id use to be invalid (i.e. every id must dominate all its uses
+  //   even after the transformation has added new branches).
   // - All of the fresh ids that are provided and needed by the transformation
   //   are valid.
   bool IsApplicable(

@@ -1159,7 +1159,7 @@ TEST(TransformationMergeFunctionReturnsTest, MissingIdsForOpPhi) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // This tests checks whether the transformation is able to find suitable ids
+  // This test checks whether the transformation is able to find suitable ids
   // to use in existing OpPhi instructions if they are not provided in the
   // corresponding mapping.
 
@@ -1226,6 +1226,420 @@ TEST(TransformationMergeFunctionReturnsTest, MissingIdsForOpPhi) {
 )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules1) {
+  // An id defined in a loop is used in the corresponding merge block. After the
+  // transformation, the id will not dominate the merge block anymore. This is
+  // only OK if the use is inside an OpPhi instruction. (Note that there is also
+  // another condition for this transformation that forbids non-OpPhi
+  // instructions in relevant merge blocks, but that case is also considered
+  // here for completeness).
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranch %12
+         %12 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %7 %13 %14
+         %14 = OpLabel
+               OpReturn
+         %13 = OpLabel
+         %15 = OpCopyObject %5 %7
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %9 %10
+         %10 = OpLabel
+         %16 = OpCopyObject %5 %15
+               OpBranch %17
+         %17 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %18 = OpFunction %3 None %4
+         %19 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpLoopMerge %21 %22 None
+               OpBranch %23
+         %23 = OpLabel
+               OpSelectionMerge %24 None
+               OpBranchConditional %7 %24 %25
+         %25 = OpLabel
+               OpReturn
+         %24 = OpLabel
+         %26 = OpCopyObject %5 %7
+               OpBranch %22
+         %22 = OpLabel
+               OpBranchConditional %7 %20 %21
+         %21 = OpLabel
+         %27 = OpPhi %5 %26 %22
+               OpBranch %28
+         %28 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // In function %2, the definition of id %15 will not dominate its use in
+  // instruction %16 (inside merge block %10) after a new branch from return
+  // block %14 is added.
+  ASSERT_FALSE(
+      TransformationMergeFunctionReturns(
+          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}})
+          .IsApplicable(context.get(), transformation_context));
+
+  // In function %18, The definition of id %26 will still dominate its use in
+  // instruction %27 (inside merge block %21), because %27 is an OpPhi
+  // instruction.
+  auto transformation = TransformationMergeFunctionReturns(
+      18, 100, 101, 0, 0, {{MakeReturnMergingInfo(21, 102, 103, {{}})}});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranch %12
+         %12 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %7 %13 %14
+         %14 = OpLabel
+               OpReturn
+         %13 = OpLabel
+         %15 = OpCopyObject %5 %7
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %9 %10
+         %10 = OpLabel
+         %16 = OpCopyObject %5 %15
+               OpBranch %17
+         %17 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %18 = OpFunction %3 None %4
+         %19 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %100 None
+               OpBranchConditional %6 %20 %100
+         %20 = OpLabel
+               OpLoopMerge %21 %22 None
+               OpBranch %23
+         %23 = OpLabel
+               OpSelectionMerge %24 None
+               OpBranchConditional %7 %24 %25
+         %25 = OpLabel
+               OpBranch %21
+         %24 = OpLabel
+         %26 = OpCopyObject %5 %7
+               OpBranch %22
+         %22 = OpLabel
+               OpBranchConditional %7 %20 %21
+         %21 = OpLabel
+        %102 = OpPhi %5 %6 %25 %7 %22
+         %27 = OpPhi %5 %26 %22 %6 %25
+               OpBranchConditional %102 %101 %28
+         %28 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules2) {
+  // An id defined in a loop is used after the corresponding merge block. After
+  // the transformation, the id will not dominate its use anymore, regardless of
+  // the kind of instruction in which it is used.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranch %12
+         %12 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %7 %13 %14
+         %14 = OpLabel
+               OpReturn
+         %13 = OpLabel
+         %15 = OpCopyObject %5 %7
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %9 %10
+         %10 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpCopyObject %5 %15
+               OpReturn
+               OpFunctionEnd
+         %18 = OpFunction %3 None %4
+         %19 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpLoopMerge %21 %22 None
+               OpBranch %23
+         %23 = OpLabel
+               OpSelectionMerge %24 None
+               OpBranchConditional %7 %24 %25
+         %25 = OpLabel
+               OpReturn
+         %24 = OpLabel
+         %26 = OpCopyObject %5 %7
+               OpBranch %22
+         %22 = OpLabel
+               OpBranchConditional %7 %20 %21
+         %21 = OpLabel
+               OpBranch %27
+         %27 = OpLabel
+         %28 = OpPhi %5 %26 %21
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // In function %2, the definition of id %15 will not dominate its use in
+  // instruction %17 (inside block %16) after a new branch from return
+  // block %14 to merge block %10 is added.
+  ASSERT_FALSE(
+      TransformationMergeFunctionReturns(
+          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}})
+          .IsApplicable(context.get(), transformation_context));
+
+  // In function %18, the definition of id %26 will not dominate its use in
+  // instruction %28 (inside block %27) after a new branch from return
+  // block %25 to merge block %21 is added.
+  ASSERT_FALSE(
+      TransformationMergeFunctionReturns(
+          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(21, 102, 103, {{}})}})
+          .IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules3) {
+  // An id defined in a loop is used inside the loop.
+  // Changes to the predecessors of the merge block do not affect the validity
+  // of the uses of such id.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranch %12
+         %12 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %7 %13 %14
+         %14 = OpLabel
+               OpReturn
+         %13 = OpLabel
+         %15 = OpCopyObject %5 %7
+               OpSelectionMerge %16 None
+               OpBranchConditional %7 %16 %17
+         %17 = OpLabel
+         %18 = OpPhi %5 %15 %13
+         %19 = OpCopyObject %5 %15
+               OpBranch %16
+         %16 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %9 %10
+         %10 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // In function %2, the definition of id %15 will still dominate its use in
+  // instructions %18 and %19 after the transformation is applied, because the
+  // fact that the id definition dominates the uses does not depend on it
+  // dominating the merge block.
+  ASSERT_TRUE(
+      TransformationMergeFunctionReturns(
+          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}})
+          .IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules4) {
+  // An id defined in a loop, which contain 2 return statements, is used after
+  // the loop. We can only apply the transformation if the id dominates all of
+  // the return blocks.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranch %12
+         %12 = OpLabel
+         %13 = OpCopyObject %5 %7
+               OpSelectionMerge %14 None
+               OpBranchConditional %7 %14 %15
+         %15 = OpLabel
+               OpReturn
+         %14 = OpLabel
+               OpSelectionMerge %16 None
+               OpBranchConditional %7 %16 %17
+         %17 = OpLabel
+               OpReturn
+         %16 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %9 %10
+         %10 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+         %19 = OpCopyObject %5 %13
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %3 None %4
+         %21 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpLoopMerge %23 %24 None
+               OpBranch %25
+         %25 = OpLabel
+               OpSelectionMerge %26 None
+               OpBranchConditional %7 %26 %27
+         %27 = OpLabel
+               OpReturn
+         %26 = OpLabel
+         %28 = OpCopyObject %5 %7
+               OpSelectionMerge %29 None
+               OpBranchConditional %7 %29 %30
+         %30 = OpLabel
+               OpReturn
+         %29 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpBranchConditional %7 %22 %23
+         %23 = OpLabel
+               OpBranch %31
+         %31 = OpLabel
+         %32 = OpCopyObject %5 %28
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // In function %2, the definition of id %13 will still dominate its use in
+  // instruction %19 after the transformation is applied, because %13 dominates
+  // all of the return blocks.
+  ASSERT_TRUE(
+      TransformationMergeFunctionReturns(
+          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}})
+          .IsApplicable(context.get(), transformation_context));
+
+  // In function %20, the definition of id %28 will still dominate its use in
+  // instruction %32 after the transformation is applied, because %28 dominates
+  // all of the return blocks.
+  ASSERT_TRUE(
+      TransformationMergeFunctionReturns(
+          20, 100, 101, 0, 0, {{MakeReturnMergingInfo(23, 102, 103, {{}})}})
+          .IsApplicable(context.get(), transformation_context));
 }
 }  // namespace
 }  // namespace fuzz

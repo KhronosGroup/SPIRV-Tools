@@ -62,13 +62,27 @@ bool TransformationMergeFunctionReturns::IsApplicable(
   auto return_blocks =
       fuzzerutil::GetReachableReturnBlocks(ir_context, message_.function_id());
 
-  // Get all the merge blocks of loops containing reachable return blocks.
-  std::set<uint32_t> merge_blocks;
+  // Map each merge block of loops containing reachable return blocks to the
+  // corresponding returning predecessors (all the blocks that, at the end of
+  // the transformation, will branch to the merge block because the function is
+  // returning).
+  std::map<uint32_t, std::set<uint32_t>> merge_blocks_to_returning_preds;
   for (uint32_t block : return_blocks) {
     uint32_t merge_block =
         ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(block);
-    while (merge_block != 0 && !merge_blocks.count(merge_block)) {
-      merge_blocks.emplace(merge_block);
+
+    while (merge_block != 0 &&
+           !merge_blocks_to_returning_preds.count(merge_block)) {
+      // Add a new entry if we have not seen this merge block before.
+      if (!merge_blocks_to_returning_preds.count(merge_block)) {
+        merge_blocks_to_returning_preds.emplace(merge_block,
+                                                std::set<uint32_t>());
+      }
+      // Add |block| to the list of returning predecessors for the merge block.
+      merge_blocks_to_returning_preds[merge_block].emplace(block);
+
+      // Walk up the loop tree.
+      block = merge_block;
       merge_block =
           ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(merge_block);
     }
@@ -84,7 +98,7 @@ bool TransformationMergeFunctionReturns::IsApplicable(
   auto function_type = ir_context->get_type_mgr()->GetType(function->type_id());
   assert(function_type && "The function type should always exist.");
 
-  if (!function_type->AsVoid() && !merge_blocks.empty()) {
+  if (!function_type->AsVoid() && !merge_blocks_to_returning_preds.empty()) {
     auto returnable_val_def =
         ir_context->get_def_use_mgr()->GetDef(message_.any_returnable_val_id());
     if (!returnable_val_def) {
@@ -104,7 +118,8 @@ bool TransformationMergeFunctionReturns::IsApplicable(
 
   // Instructions in the relevant merge blocks must be restricted to OpLabel,
   // OpPhi and OpBranch.
-  for (uint32_t merge_block : merge_blocks) {
+  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
+    uint32_t merge_block = merge_block_entry.first;
     bool all_instructions_allowed =
         ir_context->get_instr_block(merge_block)
             ->WhileEachInst([](opt::Instruction* inst) {
@@ -149,7 +164,8 @@ bool TransformationMergeFunctionReturns::IsApplicable(
   auto merge_blocks_to_info = GetMappingOfMergeBlocksToInfo();
 
   // For each relevant merge block, check that the correct ids are available.
-  for (uint32_t merge_block : merge_blocks) {
+  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
+    uint32_t merge_block = merge_block_entry.first;
     // A map from OpPhi ids to ids of the same type available at the beginning
     // of the merge block.
     std::map<uint32_t, uint32_t> phi_to_id;
