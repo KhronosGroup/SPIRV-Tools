@@ -48,6 +48,10 @@ class TransformationSplitLoop : public Transformation {
   //   |condition_counter_fresh_id|, |new_body_entry_block_fresh_id|,
   //   |conditional_block_fresh_id|, |load_run_second_fresh_id|,
   //   |selection_merge_block_fresh_id| must be distinct, fresh ids.
+  // - |variable_counter_fresh_id| is used to create a local variable pointing
+  //   to unsigned integer type.
+  // - |variable_run_second_id| is used to create a local variable pointing to
+  //   bool type.
   // - |logical_not_fresh_ids| must contain at least as many distinct fresh ids
   //   as there are terminators of form "OpBranchConditional %cond %merge
   //   %other" in the loop.

@@ -117,23 +117,27 @@ bool TransformationSplitLoop::IsApplicable(
   }
 
   // |loop_header_block| must refer to the loop header.
-  auto loop_header_block = ir_context->cfg()->block(message_.loop_header_id());
-  if (!loop_header_block->IsLoopHeader()) {
+  auto loop_header_instr =
+      ir_context->get_def_use_mgr()->GetDef(message_.loop_header_id());
+  if (!loop_header_instr || loop_header_instr->opcode() != SpvOpLabel) {
+    return false;
+  }
+  auto loop_header_block =
+      fuzzerutil::MaybeFindBlock(ir_context, message_.loop_header_id());
+  if (!loop_header_block || !loop_header_block->IsLoopHeader()) {
     return false;
   }
 
-  // Since we add initialization instructions to the first block of the
-  // function, the header of the loop cannot be the first block.
+  // The header of the loop cannot be the first block.
   auto enclosing_function = loop_header_block->GetParent();
-  if (&*enclosing_function->begin() == loop_header_block) {
-    return false;
-  }
+  assert(&*enclosing_function->begin() != loop_header_block &&
+         "A loop header cannot be an entry block of a function.");
 
   auto continue_id = loop_header_block->ContinueBlockId();
   auto entry_block_pred_ids = ir_context->cfg()->preds(loop_header_block->id());
   std::sort(entry_block_pred_ids.begin(), entry_block_pred_ids.end());
   entry_block_pred_ids.erase(
-      unique(entry_block_pred_ids.begin(), entry_block_pred_ids.end()),
+      std::unique(entry_block_pred_ids.begin(), entry_block_pred_ids.end()),
       entry_block_pred_ids.end());
 
   // We remove a back edge from the continue block.
@@ -164,7 +168,7 @@ bool TransformationSplitLoop::IsApplicable(
   // We don't allow OpPhi instructions in merge block, since the
   // |new_body_entry_block| will branch to the merge block and resolving these
   // OpPhi instructions can be complicated.
-  for (auto instr : *merge_block) {
+  for (const auto& instr : *merge_block) {
     if (instr.opcode() == SpvOpPhi) {
       return false;
     }
@@ -214,7 +218,7 @@ bool TransformationSplitLoop::IsApplicable(
             duplicate_label, ir_context, &ids_used_by_this_transformation)) {
       return false;
     }
-    for (auto instr : *block) {
+    for (const auto& instr : *block) {
       if (!instr.HasResultId()) {
         continue;
       }
@@ -269,7 +273,7 @@ void TransformationSplitLoop::Apply(
   auto merge_block =
       ir_context->cfg()->block(loop_header_block->MergeBlockId());
 
-  // Create local variables: |counter| and |run_second|.
+  // Create local variables: counter and run_second.
   auto run_second_pointer_type_id = fuzzerutil::MaybeGetPointerType(
       ir_context, fuzzerutil::MaybeGetBoolType(ir_context),
       SpvStorageClassFunction);
@@ -336,6 +340,9 @@ void TransformationSplitLoop::Apply(
   if (loop_header_terminator->opcode() == SpvOpBranch) {
     next_not_merge_id = loop_header_terminator->GetSingleWordInOperand(0);
   } else /*SpvOpBranchConditional*/ {
+    assert(loop_header_terminator->opcode() == SpvOpBranchConditional &&
+           "At this point the terminator of the loop header must be "
+           "OpBranchConditional");
     uint32_t first_id = loop_header_terminator->GetSingleWordInOperand(1);
     uint32_t second_id = loop_header_terminator->GetSingleWordInOperand(2);
     if (first_id != merge_block->id()) {
@@ -389,6 +396,8 @@ void TransformationSplitLoop::Apply(
 
     std::vector<opt::Instruction*> instructions_to_move_block;
     for (auto& instr : *block) {
+      // The terminator of |merge_block| will be moved to
+      // |selection_merge_block|. It won't be duplicated, so we skip it here.
       if (block == merge_block && (instr.opcode() == SpvOpReturn ||
                                    instr.opcode() == SpvOpReturnValue ||
                                    instr.opcode() == SpvOpBranch)) {
@@ -431,7 +440,7 @@ void TransformationSplitLoop::Apply(
       }
     }
 
-    // If the block is the first duplicated block, insert it before the exit
+    // If the block is the first duplicated block, insert it after the exit
     // block of the original region. Otherwise, insert it after the preceding
     // one.
     auto duplicated_block_ptr = duplicated_block.get();
@@ -460,7 +469,7 @@ void TransformationSplitLoop::Apply(
     ir_context->KillInst(instr);
   }
 
-  // |merge_block| of the original function will now branch to
+  // |merge_block| of the original loop will now branch to
   // |conditional_block|.
   merge_block->AddInstruction(MakeUnique<opt::Instruction>(opt::Instruction(
       ir_context, SpvOpBranch, 0, 0,
@@ -479,7 +488,8 @@ void TransformationSplitLoop::Apply(
   conditional_block->AddInstruction(MakeUnique<opt::Instruction>(
       opt::Instruction(ir_context, SpvOpSelectionMerge, 0, 0,
                        {{SPV_OPERAND_TYPE_ID, {selection_merge_block->id()}},
-                        {SPV_OPERAND_TYPE_SELECTION_CONTROL, {0}}})));
+                        {SPV_OPERAND_TYPE_SELECTION_CONTROL,
+                         {SpvSelectionControlMaskNone}}})));
 
   conditional_block->AddInstruction(
       MakeUnique<opt::Instruction>(opt::Instruction(
@@ -489,7 +499,8 @@ void TransformationSplitLoop::Apply(
             {original_label_to_duplicate_label[loop_header_block->id()]}},
            {SPV_OPERAND_TYPE_ID, {selection_merge_block->id()}}})));
 
-  // |duplicated_merge_block| will now branch to the |selection_merge_block|.
+  // |duplicated_merge_block| of the duplicated loop will now branch to
+  // |selection_merge_block|.
   duplicated_merge_block->AddInstruction(MakeUnique<opt::Instruction>(
       opt::Instruction(ir_context, SpvOpBranch, 0, 0,
                        opt::Instruction::OperandList(
@@ -633,11 +644,12 @@ void TransformationSplitLoop::Apply(
 
   // If the |loop_header_id| was used in the OpLoopMerge instruction as a
   // continue target, change it to |new_body_entry_block_id|.
-  loop_header_merge_instr->ForEachInOperand([this](uint32_t* id) {
-    if (*id == message_.loop_header_id()) {
-      *id = message_.new_body_entry_block_fresh_id();
-    }
-  });
+  auto loop_header_merge_instr_continue_target =
+      loop_header_merge_instr->GetSingleWordInOperand(1);
+  if (loop_header_merge_instr_continue_target == message_.loop_header_id()) {
+    loop_header_merge_instr->SetInOperand(
+        1, {message_.new_body_entry_block_fresh_id()});
+  }
 
   // In the original loop, if there are OpPhi instructions referring to the
   // loop header, change these ids to |new_body_entry_block_id|, since
@@ -663,6 +675,10 @@ protobufs::Transformation TransformationSplitLoop::ToMessage() const {
   *result.mutable_split_loop() = message_;
   return result;
 }
+
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3785):
+//     The following code has been copied from TransformationOutlineFunction.
+//     Consider refactoring to avoid duplication.
 
 std::set<opt::BasicBlock*> TransformationSplitLoop::GetRegionBlocks(
     opt::IRContext* ir_context, opt::BasicBlock* entry_block,
