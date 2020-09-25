@@ -130,6 +130,9 @@ bool TransformationSplitLoop::IsApplicable(
 
   // The header of the loop cannot be the first block.
   auto enclosing_function = loop_header_block->GetParent();
+  // Avoid unused variable warning in release mode.
+  (void)enclosing_function;
+
   assert(&*enclosing_function->begin() != loop_header_block &&
          "A loop header cannot be an entry block of a function.");
 
