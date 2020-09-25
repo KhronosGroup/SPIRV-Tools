@@ -52,35 +52,11 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     return false;
   }
 
-  // If the function has a non-void return type,
-  // |message_.any_returnable_val_id| must exist, have the same type as the
-  // return type of the function and be available at the end of the entry block.
-  auto function_type = ir_context->get_type_mgr()->GetType(function->type_id());
-  assert(function_type && "The function type should always exist.");
-
   // Get a map from the types for which ids are available at the end of the
   // entry block to one of the ids with that type. We compute this here to avoid
   // potentially doing it multiple times later on.
   auto types_to_available_ids =
       GetTypesToIdAvailableAfterEntryBlock(ir_context);
-
-  if (!function_type->AsVoid()) {
-    auto returnable_val_def =
-        ir_context->get_def_use_mgr()->GetDef(message_.any_returnable_val_id());
-    if (!returnable_val_def) {
-      // Check if a suitable id can be found in the module.
-      if (types_to_available_ids.count(function->type_id()) == 0) {
-        return false;
-      }
-    } else if (returnable_val_def->type_id() != function->type_id()) {
-      return false;
-    } else if (!fuzzerutil::IdIsAvailableBeforeInstruction(
-                   ir_context, function->entry()->terminator(),
-                   message_.any_returnable_val_id())) {
-      // The id must be available at the end of the entry block.
-      return false;
-    }
-  }
 
   // Get the reachable return blocks.
   auto return_blocks =
@@ -98,8 +74,36 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     }
   }
 
-  // All of the relevant merge blocks must not contain instructions whose opcode
-  // is not one of OpLabel, OpPhi or OpBranch.
+  // If the function has a non-void return type, and there are merge loops which
+  // contain return instructions, we need to check that either:
+  // - |message_.any_returnable_val_id| exists. In this case, it must have the
+  //   same type as the return type of the function and be available at the end
+  //   of the entry block.
+  // - a suitable id, available at the end of the entry block can be found in
+  //   the module.
+  auto function_type = ir_context->get_type_mgr()->GetType(function->type_id());
+  assert(function_type && "The function type should always exist.");
+
+  if (!function_type->AsVoid() && !merge_blocks.empty()) {
+    auto returnable_val_def =
+        ir_context->get_def_use_mgr()->GetDef(message_.any_returnable_val_id());
+    if (!returnable_val_def) {
+      // Check if a suitable id can be found in the module.
+      if (types_to_available_ids.count(function->type_id()) == 0) {
+        return false;
+      }
+    } else if (returnable_val_def->type_id() != function->type_id()) {
+      return false;
+    } else if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+                   ir_context, function->entry()->terminator(),
+                   message_.any_returnable_val_id())) {
+      // The id must be available at the end of the entry block.
+      return false;
+    }
+  }
+
+  // Instructions in the relevant merge blocks must be restricted to OpLabel,
+  // OpPhi and OpBranch.
   for (uint32_t merge_block : merge_blocks) {
     bool all_instructions_allowed =
         ir_context->get_instr_block(merge_block)
@@ -229,19 +233,6 @@ void TransformationMergeFunctionReturns::Apply(
   auto types_to_available_ids =
       GetTypesToIdAvailableAfterEntryBlock(ir_context);
 
-  // Get a reference to an instruction with the same type id as the function's
-  // return type, if the type of the function is not void.
-  uint32_t returnable_val_id = 0;
-  if (!function_type->AsVoid()) {
-    // If |message.any_returnable_val_id| can be found in the module, use it.
-    // Otherwise, use another suitable id found in the module.
-    auto returnable_val_def =
-        ir_context->get_def_use_mgr()->GetDef(message_.any_returnable_val_id());
-    returnable_val_id = returnable_val_def
-                            ? returnable_val_def->result_id()
-                            : types_to_available_ids[function->type_id()];
-  }
-
   uint32_t bool_type = fuzzerutil::MaybeGetBoolType(ir_context);
 
   uint32_t constant_true = fuzzerutil::MaybeGetBoolConstant(
@@ -275,6 +266,21 @@ void TransformationMergeFunctionReturns::Apply(
       merge_block_id = ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(
           merge_block_id);
     }
+  }
+
+  // Get a reference to an instruction with the same type id as the function's
+  // return type, if the type of the function is not void and ther are loops
+  // containing return instructions.
+  uint32_t returnable_val_id = 0;
+  if (!function_type->AsVoid() &&
+      !merge_blocks_to_returning_predecessors.empty()) {
+    // If |message.any_returnable_val_id| can be found in the module, use it.
+    // Otherwise, use another suitable id found in the module.
+    auto returnable_val_def =
+        ir_context->get_def_use_mgr()->GetDef(message_.any_returnable_val_id());
+    returnable_val_id = returnable_val_def
+                            ? returnable_val_def->result_id()
+                            : types_to_available_ids[function->type_id()];
   }
 
   // Keep a map from all the new predecessors of the merge block of the new
@@ -321,7 +327,12 @@ void TransformationMergeFunctionReturns::Apply(
   for (const auto& entry : merge_blocks_to_returning_predecessors) {
     merge_blocks.emplace_back(entry.first);
   }
+
   // Sort the list so that deeper merge blocks come first.
+  // We need to consider deeper merge blocks first so that, when a merge block
+  // is considered, all the merge blocks enclosed by the corresponding loop have
+  // already been considered and, thus, the mapping from this merge block to the
+  // returning predecessors is complete.
   std::sort(merge_blocks.begin(), merge_blocks.end(),
             ComparatorDeepBlocksFirst(ir_context));
 

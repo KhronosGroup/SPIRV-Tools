@@ -108,7 +108,7 @@ TEST(TransformationMergeFunctionReturnsTest, SimpleInapplicable) {
          %40 = OpLabel
                OpBranch %51
          %51 = OpLabel
-               OpSelectionMerge %41 None
+               OpLoopMerge %41 %53 None
                OpBranchConditional %10 %42 %41
          %42 = OpLabel
          %43 = OpConvertSToF %7 %12
@@ -116,19 +116,23 @@ TEST(TransformationMergeFunctionReturnsTest, SimpleInapplicable) {
          %41 = OpLabel
          %44 = OpConvertSToF %7 %13
                OpReturnValue %44
+         %53 = OpLabel
+               OpBranch %51
                OpFunctionEnd
          %45 = OpFunction %5 None %6
          %46 = OpLabel
                OpBranch %52
          %52 = OpLabel
          %47 = OpConvertSToF %7 %13
-               OpSelectionMerge %48 None
+               OpLoopMerge %48 %54 None
                OpBranchConditional %10 %49 %48
          %49 = OpLabel
                OpReturnValue %12
          %48 = OpLabel
          %50 = OpCopyObject %5 %12
                OpReturnValue %13
+         %54 = OpLabel
+               OpBranch %52
                OpFunctionEnd
 )";
 
@@ -137,10 +141,9 @@ TEST(TransformationMergeFunctionReturnsTest, SimpleInapplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Function %1 does not exist.
   ASSERT_FALSE(TransformationMergeFunctionReturns(1, 100, 101, 0, 0, {{}})
@@ -227,10 +230,9 @@ TEST(TransformationMergeFunctionReturnsTest, MissingBooleans) {
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
-                                                 validator_options);
+    TransformationContext transformation_context(
+        MakeUnique<FactManager>(context.get()), validator_options);
 
     ASSERT_FALSE(TransformationMergeFunctionReturns(3, 100, 101, 0, 0, {{}})
                      .IsApplicable(context.get(), transformation_context));
@@ -280,10 +282,9 @@ TEST(TransformationMergeFunctionReturnsTest, MissingBooleans) {
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
 
-    FactManager fact_manager;
     spvtools::ValidatorOptions validator_options;
-    TransformationContext transformation_context(&fact_manager,
-                                                 validator_options);
+    TransformationContext transformation_context(
+        MakeUnique<FactManager>(context.get()), validator_options);
 
     ASSERT_FALSE(TransformationMergeFunctionReturns(3, 100, 101, 0, 0, {{}})
                      .IsApplicable(context.get(), transformation_context));
@@ -377,10 +378,9 @@ TEST(TransformationMergeFunctionReturnsTest, InvalidIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Fresh id %100 is used twice.
   ASSERT_FALSE(
@@ -553,10 +553,9 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // The 0s are allowed because the function's return type is void.
   auto transformation1 =
@@ -792,10 +791,9 @@ TEST(TransformationMergeFunctionReturnsTest, NestedLoops) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   auto transformation = TransformationMergeFunctionReturns(
       14, 100, 101, 102, 11,
@@ -976,13 +974,12 @@ TEST(TransformationMergeFunctionReturnsTest, OverflowIds) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   TransformationContext transformation_context_with_overflow_ids(
-      &fact_manager, validator_options,
+      MakeUnique<FactManager>(context.get()), validator_options,
       MakeUnique<CounterOverflowIdSource>(1000));
 
   // No mapping from merge block %16 to fresh ids is given, so overflow ids are
@@ -1158,10 +1155,9 @@ TEST(TransformationMergeFunctionReturnsTest, MissingIdsForOpPhi) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // This tests checks whether the transformation is able to find suitable ids
   // to use in existing OpPhi instructions if they are not provided in the

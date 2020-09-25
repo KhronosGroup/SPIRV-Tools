@@ -36,8 +36,10 @@ class TransformationMergeFunctionReturns : public Transformation {
   //   return type of the function and which is available at the end of the
   //   entry block. If this id is not found in the module, the transformation
   //   will try to find a suitable one.
-  // - Merge blocks of reachable loops that contain return statements do not
-  //   contain instructions other than OpLabel, OpPhi or OpBranch.
+  //   If the function is void, or no loops in the function contain return
+  //   statements, this id will be ignored.
+  // - Merge blocks of reachable loops that contain return statements only
+  //   consist of OpLabel, OpPhi or OpBranch instructions.
   // - The model contains OpConstantTrue and OpConstantFalse instructions.
   // - For all merge blocks of reachable loops that contain return statements,
   //   either:

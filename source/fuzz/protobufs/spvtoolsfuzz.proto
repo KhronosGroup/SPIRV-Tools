@@ -400,25 +400,28 @@ message ReturnMergingInfo {
   //
   // is transformed into:
   //               %block = OpLabel
-  //     %is_returning_id = OpPhi %bool %false %pred1 %false %pred2 %is_bb1_returning %ret_bb1 %true %is_bb2_returning
+  //     %is_returning_id = OpPhi %bool %false %pred1 %false %pred2 %true %ret_bb1 %is_bb2_returning %mer_bb2
   // %maybe_return_val_id = OpPhi %return_type %any_returnable_val %pred1 %any_returnable_val %pred2
-  //                                            %ret_val1 %ret_bb1 %ret_val2 %ret_bb2
+  //                                            %ret_val1 %ret_bb1 %ret_val2 %mer_bb2
   //                %phi1 = OpPhi %type1 %val1_1 %pred1 %val1_2 %pred2
-  //                                     %any_suitable_id_1 %ret_bb1 %any_suitable_id_1 %ret_bb2
+  //                                     %any_suitable_id_1 %ret_bb1 %any_suitable_id_1 %mer_bb2
   //                %phi2 = OpPhi %type2 %val2_1 %pred1 %val2_2 %pred2
-  //                                     %any_suitable_id_1 %ret_bb1 %any_suitable_id_1 %ret_bb2
+  //                                     %any_suitable_id_1 %ret_bb1 %any_suitable_id_1 %mer_bb2
   //                        OpBranchConditional %is_returning_id %innermost_loop_merge %next
   //
-  // where %ret_bb1 and %ret_bb2 are blocks inside the loop where the functions might be returning.
+  // where %ret_bb1 is a block that originally contains a return instruction and %mer_bb2 is the merge block of an inner
+  // loop, from where the function might be returning.
   //
-  // Note that the block is required to have no instructions that are not
-  // OpLabel, OpPhi or OpBranch.
+  // Note that the block is required to only have OpLabel, OpPhi or OpBranch instructions.
 
   // The id of the merge block that needs to be modified.
   uint32 merge_block_id = 1;
 
   // A fresh id for a boolean OpPhi whose value will be true iff the function
-  // is returning.
+  // is returning. This will be used to decide whether to break out of the loop
+  // or to use the original branch of the function. This value will also be
+  // used by the merge block of the enclosing loop (if there is one) if the
+  // function is returning from this block.
   uint32 is_returning_id = 2;
 
   // A fresh id that will get the value being returned, if the function is
@@ -1548,11 +1551,12 @@ message TransformationMergeFunctionReturns {
   //
   // Each return instruction is replaced by:
   //     OpBranch %innermost_loop_merge
-  // where %innermost_loop_merge is the innermost loop containing such return.
+  // where %innermost_loop_merge is the innermost loop containing the return
+  // instruction.
   //
-  // Each merge block containing return instructions is changed so that it
-  // branches to the merge block of the loop containing it, as explained in
-  // the comments to the ReturnMergingInfo message.
+  // Each merge block whose associated loop contains return instructions is
+  // changed so that it branches to the merge block of the loop containing it,
+  // as explained in the comments to the ReturnMergingInfo message.
   //
   // The new return block (the merge block of the new outer loop) will be of
   // the following form (if the return type is not void):
@@ -1580,9 +1584,15 @@ message TransformationMergeFunctionReturns {
   // This is ignored if the function has void return type.
   uint32 return_val_id = 4;
 
-  // An existing id of the same type as the return value,
-  // which is available to use at the end of the entry block.
-  // This is ignored if the function has void return type.
+  // An existing id of the same type as the return value, which is
+  // available to use at the end of the entry block.
+  // This is ignored if the function has void return type or if no
+  // loops in the function contain a return instruction.
+  // If the function is not void, the transformation will add an
+  // OpPhi instruction to each merge block whose associated loop
+  // contains at least a return instruction. The value associated
+  // with existing predecessors from which the function cannot be
+  // returning will be this id, used as a placeholder.
   uint32 any_returnable_val_id = 5;
 
   // The information needed to modify the merge blocks of
