@@ -221,7 +221,8 @@ TEST(TransformationAddBitInstructionSynonymTest, AddOpBitwiseOrSynonym) {
   ASSERT_TRUE(IsValid(env, context.get()));
 
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(MakeUnique<FactManager>(context.get()), validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Adds OpBitwiseOr synonym.
   auto transformation = TransformationAddBitInstructionSynonym(
@@ -236,7 +237,8 @@ TEST(TransformationAddBitInstructionSynonymTest, AddOpBitwiseOrSynonym) {
            144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156,
            157, 158, 159, 160, 161, 162, 163, 164, 165, 166});
   transformation.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(MakeDataDescriptor(169, {}), MakeDataDescriptor(39, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -516,10 +518,9 @@ TEST(TransformationAddBitInstructionSynonymTest, AddOpNotSynonym) {
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Adds OpNot synonym.
   auto transformation = TransformationAddBitInstructionSynonym(
@@ -531,8 +532,8 @@ TEST(TransformationAddBitInstructionSynonymTest, AddOpNotSynonym) {
            110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
            124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134});
   transformation.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fact_manager.IsSynonymous(MakeDataDescriptor(134, {}),
-                                        MakeDataDescriptor(39, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(134, {}), MakeDataDescriptor(39, {})));
 
   std::string variant_shader = R"(
                OpCapability Shader
