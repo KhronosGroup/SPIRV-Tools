@@ -1721,10 +1721,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   TransformationDuplicateRegionWithSelection transformation_bad =
       TransformationDuplicateRegionWithSelection(500, 25, 501, 60, 60,
