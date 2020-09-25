@@ -1537,10 +1537,62 @@ TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules3) {
   // instructions %18 and %19 after the transformation is applied, because the
   // fact that the id definition dominates the uses does not depend on it
   // dominating the merge block.
+  auto transformation = TransformationMergeFunctionReturns(
+      2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}});
   ASSERT_TRUE(
-      TransformationMergeFunctionReturns(
-          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}})
-          .IsApplicable(context.get(), transformation_context));
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %100 None
+               OpBranchConditional %6 %9 %100
+          %9 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranch %12
+         %12 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %7 %13 %14
+         %14 = OpLabel
+               OpBranch %10
+         %13 = OpLabel
+         %15 = OpCopyObject %5 %7
+               OpSelectionMerge %16 None
+               OpBranchConditional %7 %16 %17
+         %17 = OpLabel
+         %18 = OpPhi %5 %15 %13
+         %19 = OpCopyObject %5 %15
+               OpBranch %16
+         %16 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %9 %10
+         %10 = OpLabel
+        %102 = OpPhi %5 %6 %14 %7 %11
+               OpBranchConditional %102 %101 %20
+         %20 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules4) {
@@ -1628,18 +1680,96 @@ TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules4) {
   // In function %2, the definition of id %13 will still dominate its use in
   // instruction %19 after the transformation is applied, because %13 dominates
   // all of the return blocks.
+  auto transformation = TransformationMergeFunctionReturns(
+      2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}});
   ASSERT_TRUE(
-      TransformationMergeFunctionReturns(
-          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}})
-          .IsApplicable(context.get(), transformation_context));
+      transformation.IsApplicable(context.get(), transformation_context));
+  transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
 
-  // In function %20, the definition of id %28 will still dominate its use in
+  // In function %20, the definition of id %28 will not dominate its use in
   // instruction %32 after the transformation is applied, because %28 dominates
-  // all of the return blocks.
-  ASSERT_TRUE(
+  // only one of the return blocks.
+  ASSERT_FALSE(
       TransformationMergeFunctionReturns(
           20, 100, 101, 0, 0, {{MakeReturnMergingInfo(23, 102, 103, {{}})}})
           .IsApplicable(context.get(), transformation_context));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %100 None
+               OpBranchConditional %6 %9 %100
+          %9 = OpLabel
+               OpLoopMerge %10 %11 None
+               OpBranch %12
+         %12 = OpLabel
+         %13 = OpCopyObject %5 %7
+               OpSelectionMerge %14 None
+               OpBranchConditional %7 %14 %15
+         %15 = OpLabel
+               OpBranch %10
+         %14 = OpLabel
+               OpSelectionMerge %16 None
+               OpBranchConditional %7 %16 %17
+         %17 = OpLabel
+               OpBranch %10
+         %16 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpBranchConditional %7 %9 %10
+         %10 = OpLabel
+        %102 = OpPhi %5 %6 %15 %6 %17 %7 %11
+               OpBranchConditional %102 %101 %18
+         %18 = OpLabel
+         %19 = OpCopyObject %5 %13
+               OpBranch %101
+        %101 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %20 = OpFunction %3 None %4
+         %21 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+               OpLoopMerge %23 %24 None
+               OpBranch %25
+         %25 = OpLabel
+               OpSelectionMerge %26 None
+               OpBranchConditional %7 %26 %27
+         %27 = OpLabel
+               OpReturn
+         %26 = OpLabel
+         %28 = OpCopyObject %5 %7
+               OpSelectionMerge %29 None
+               OpBranchConditional %7 %29 %30
+         %30 = OpLabel
+               OpReturn
+         %29 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpBranchConditional %7 %22 %23
+         %23 = OpLabel
+               OpBranch %31
+         %31 = OpLabel
+         %32 = OpCopyObject %5 %28
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 }  // namespace
 }  // namespace fuzz

@@ -132,6 +132,95 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     }
   }
 
+  // Check that adding new predecessors to the relevant merge blocks does not
+  // render any instructions invalid (each id definition must still dominate
+  // each of its uses).
+  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
+    uint32_t merge_block = merge_block_entry.first;
+    const auto& returning_preds = merge_block_entry.second;
+
+    // Find a list of blocks in which there might be problematic definitions.
+    // These are all the blocks that dominate the merge block but do not
+    // dominate all of the new predecessors.
+    std::vector<opt::BasicBlock*> problematic_blocks;
+
+    auto dominator_analysis = ir_context->GetDominatorAnalysis(function);
+
+    // Start from the immediate dominator of the merge block.
+    auto current_block = dominator_analysis->ImmediateDominator(merge_block);
+    assert(current_block &&
+           "Each merge block should have at least one dominator.");
+
+    for (uint32_t pred : returning_preds) {
+      while (!dominator_analysis->Dominates(current_block->id(), pred)) {
+        // The current block does not dominate all of the return blocks, so it
+        // might be problematic.
+        problematic_blocks.emplace_back(current_block);
+
+        // Walk up the dominator tree.
+        current_block = dominator_analysis->ImmediateDominator(current_block);
+        assert(current_block &&
+               "We should be able to find a dominator for all the blocks, "
+               "since they must all be dominated at least by the header.");
+      }
+    }
+
+    // Identify the loop header corresponding to the merge block.
+    uint32_t loop_header =
+        fuzzerutil::GetLoopFromMergeBlock(ir_context, merge_block);
+
+    // For all the ids defined in blocks inside |problematic_blocks|, check that
+    // all their uses are either:
+    // - inside the loop (or in the loop header). If this is the case, the path
+    //   from the definition to the use does not go through the merge block, so
+    //   adding new predecessor to it is not a problem.
+    // - inside an OpPhi instruction in the merge block. If this is the case,
+    //   the definition does not need to dominate the merge block.
+    for (auto block : problematic_blocks) {
+      assert((block->id() == loop_header ||
+              ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
+                  block->id()) == loop_header) &&
+             "The problematic blocks should all be inside the loop (also "
+             "considering the header).");
+      bool dominance_rules_maintained =
+          block->WhileEachInst([ir_context, loop_header,
+                                merge_block](opt::Instruction* instruction) {
+            // Instruction without a result id do not cause any problems.
+            if (!instruction->HasResultId()) {
+              return true;
+            }
+
+            // Check that all the uses of the id are inside the loop.
+            return ir_context->get_def_use_mgr()->WhileEachUse(
+                instruction->result_id(),
+                [ir_context, loop_header, merge_block](
+                    opt::Instruction* inst_use, uint32_t /* unused */) {
+                  uint32_t block_use =
+                      ir_context->get_instr_block(inst_use)->id();
+
+                  // The usage is OK if it is inside the loop (including the
+                  // header).
+                  if (block_use == loop_header ||
+                      ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
+                          block_use)) {
+                    return true;
+                  }
+
+                  // The usage is OK if it is inside an OpPhi instruction in the
+                  // merge block.
+                  return block_use == merge_block &&
+                         inst_use->opcode() == SpvOpPhi;
+                });
+          });
+
+      // If not all instructions in the block satisfy the requirement, the
+      // transformation is not applicable.
+      if (!dominance_rules_maintained) {
+        return false;
+      }
+    }
+  }
+
   // The module must contain an OpConstantTrue instruction.
   if (!fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
                                         true, false)) {
