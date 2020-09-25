@@ -62,7 +62,7 @@ void FuzzerPassSplitLoops::Apply() {
             }
           }
         }
-        // Create the required constants and variables.
+        // Create the required constants, variables and pointer types.
         FindOrCreateIntegerConstant({0}, 32, false, false);
         FindOrCreateIntegerConstant({1}, 32, false, false);
         FindOrCreateBoolConstant(true, false);
@@ -70,25 +70,19 @@ void FuzzerPassSplitLoops::Apply() {
         uint32_t constant_limit_id = FindOrCreateIntegerConstant(
             {GetFuzzerContext()->GetRandomLimitOfIterationsWhenSplittingLoop()},
             32, false, false);
-
-        uint32_t local_unsigned_int_type = FindOrCreatePointerType(
-            FindOrCreateIntegerType(32, false), SpvStorageClassFunction);
-        uint32_t variable_counter_id = FindOrCreateLocalVariable(
-            local_unsigned_int_type, function.result_id(), false);
-
-        uint32_t local_bool_type = FindOrCreatePointerType(
-            FindOrCreateBoolType(), SpvStorageClassFunction);
-        uint32_t variable_run_second_id = FindOrCreateLocalVariable(
-            local_bool_type, function.result_id(), false);
+        FindOrCreatePointerType(FindOrCreateIntegerType(32, false),
+                                SpvStorageClassFunction);
+        FindOrCreatePointerType(FindOrCreateBoolType(),
+                                SpvStorageClassFunction);
 
         // Apply the transformation.
         TransformationSplitLoop transformation = TransformationSplitLoop(
-            block->id(), variable_counter_id, variable_run_second_id,
-            constant_limit_id, GetFuzzerContext()->GetFreshId(),
+            block->id(), GetFuzzerContext()->GetFreshId(),
+            GetFuzzerContext()->GetFreshId(), constant_limit_id,
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
             GetFuzzerContext()->GetFreshId(), GetFuzzerContext()->GetFreshId(),
-            std::move(logical_not_fresh_ids),
+            GetFuzzerContext()->GetFreshId(), std::move(logical_not_fresh_ids),
             std::move(original_label_to_duplicate_label),
             std::move(original_id_to_duplicate_id));
         MaybeApplyTransformation(transformation);

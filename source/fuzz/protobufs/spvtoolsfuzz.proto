@@ -2012,11 +2012,11 @@ message TransformationSplitLoop {
     // Block id of the header of the original loop.
     uint32 loop_header_id = 1;
 
-    // Id for a variable which stores the number of iterations.
-    uint32 variable_counter_id = 2;
+    // Fresh id for a variable which stores the number of iterations.
+    uint32 variable_counter_fresh_id = 2;
 
-    // Id for a variable which indicates if the second loop should be executed.
-    uint32 variable_run_second_id = 3;
+    // Fresh id for a variable which indicates if the second loop should be executed.
+    uint32 variable_run_second_fresh_id = 3;
 
     // Id for a limit of the number of iterations in the first loop.
     uint32 constant_limit_id = 4;

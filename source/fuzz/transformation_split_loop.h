@@ -29,8 +29,8 @@ class TransformationSplitLoop : public Transformation {
       const protobufs::TransformationSplitLoop& message);
 
   explicit TransformationSplitLoop(
-      uint32_t loop_header_id, uint32_t variable_counter_id,
-      uint32_t variable_run_second_id, uint32_t constant_limit_id,
+      uint32_t loop_header_id, uint32_t variable_counter_fresh_id,
+      uint32_t variable_run_second_fresh_id, uint32_t constant_limit_id,
       uint32_t load_counter_fresh_id, uint32_t increment_counter_fresh_id,
       uint32_t condition_counter_fresh_id,
       uint32_t new_body_entry_block_fresh_id,
@@ -41,11 +41,10 @@ class TransformationSplitLoop : public Transformation {
       const std::map<uint32_t, uint32_t>& original_id_to_duplicate_id);
 
   // - |loop_header_id| must refer to an existing loop header.
-  // - |variable_counter_id| must refer to a variable of type integer.
-  // - |variable_run_second_id| must refer to a variable of type bool.
   // - |constant_limit_id| must correspond to an integer constant (the limit of
   //   iterations in the first loop).
-  // - |load_counter_fresh_id|, |increment_counter_fresh_id|,
+  // - |variable_counter_fresh_id|, |variable_run_second_fresh_id|,
+  //   |load_counter_fresh_id|, |increment_counter_fresh_id|,
   //   |condition_counter_fresh_id|, |new_body_entry_block_fresh_id|,
   //   |conditional_block_fresh_id|, |load_run_second_fresh_id|,
   //   |selection_merge_block_fresh_id| must be distinct, fresh ids.
