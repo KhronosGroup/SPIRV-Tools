@@ -89,10 +89,9 @@ TEST(TransformationSplitLoopTest, BasicScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   auto transformation = TransformationSplitLoop(11, 50, 54, 24, 101, 102, 103,
                                                 104, 105, 106, 107, {{}},
@@ -215,10 +214,9 @@ TEST(TransformationSplitLoopTest, TestShaderFirstLoop) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   auto transformation = TransformationSplitLoop(12, 100, 102, 9, 201, 202, 203,
                                                 204, 205, 206, 207, {{}},
@@ -348,10 +346,9 @@ TEST(TransformationSplitLoopTest, TestShaderSecondLoop) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   auto transformation = TransformationSplitLoop(
       42, 100, 102, 9, 201, 202, 203, 204, 205, 206, 207, {{}},
@@ -417,10 +414,10 @@ TEST(TransformationSplitLoopTest, HeaderIsContinueTargetTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
   auto transformation =
       TransformationSplitLoop(11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
                               {}, {{11, 201}, {13, 202}}, {{}});
@@ -486,10 +483,10 @@ TEST(TransformationSplitLoopTest, BranchConditionalContinueTargetTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
   auto transformation =
       TransformationSplitLoop(11, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
                               {108}, {{11, 201}, {12, 202}, {13, 203}}, {{}});
@@ -555,10 +552,9 @@ TEST(TransformationSplitLoopTest, NotApplicableScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Bad: |load_counter_fresh_id| is not fresh.
   auto transformation_bad_1 = TransformationSplitLoop(
@@ -754,10 +750,10 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiMergeBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
   auto transformation_good_1 = TransformationSplitLoop(
       8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
       {{8, 201}, {11, 202}, {10, 203}}, {{70, 301}});
@@ -889,10 +885,10 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiHeaderBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
   auto transformation_good_1 = TransformationSplitLoop(
       8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
       {{8, 201}, {11, 202}, {10, 203}}, {{72, 301}});
@@ -1027,10 +1023,9 @@ TEST(TransformationSplitLoopTest, ResolvingOpPhiBodyBlock) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   auto transformation_good_1 = TransformationSplitLoop(
       8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
@@ -1166,10 +1161,10 @@ TEST(TransformationSplitLoopTest, OpPhiInMergeBlockNotApplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
   auto transformation_bad = TransformationSplitLoop(
       8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107, {{}},
       {{8, 201}, {11, 202}, {10, 203}}, {{70, 301}, {71, 302}});
@@ -1230,10 +1225,10 @@ TEST(TransformationSplitLoopTest, LogicalNotFreshIdsNotApplicable) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
   // Bad: Insufficient number of fresh ids as |logical_not_fresh_ids|.
   auto transformation_bad_1 =
       TransformationSplitLoop(8, 53, 54, 55, 101, 102, 103, 104, 105, 106, 107,
