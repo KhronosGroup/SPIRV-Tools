@@ -160,7 +160,7 @@ TEST(TransformationAddBitInstructionSynonymTest, IsApplicable) {
       transformation.IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
+TEST(TransformationAddBitInstructionSynonymTest, AddOpBitwiseOrSynonym) {
   std::string reference_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -209,7 +209,7 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
 ; main function
          %37 = OpFunction %3 None %4
          %38 = OpLabel
-         %39 = OpBitwiseOr %2 %5 %6
+         %39 = OpBitwiseOr %2 %5 %6 ; bit instruction
                OpReturn
                OpFunctionEnd
   )";
@@ -223,6 +223,8 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
+
+  // Adds OpBitwiseOr synonym.
   auto transformation = TransformationAddBitInstructionSynonym(
       39, {40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,
            53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
@@ -235,6 +237,8 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
            144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156,
            157, 158, 159, 160, 161, 162, 163, 164, 165, 166});
   transformation.Apply(context.get(), &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -285,6 +289,7 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
          %37 = OpFunction %3 None %4
          %38 = OpLabel
 
+; Add OpBitwiseOr synonym
          %40 = OpBitFieldUExtract %2 %5 %5 %6 ; extracts bit 0 from %5
          %41 = OpBitFieldUExtract %2 %6 %5 %6 ; extracts bit 0 from %6
          %42 = OpBitwiseOr %2 %40 %41
@@ -451,8 +456,269 @@ TEST(TransformationAddBitInstructionSynonymTest, AddBitwiseSynonym) {
 
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+}
+
+TEST(TransformationAddBitInstructionSynonymTest, AddOpNotSynonym) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %37 "main"
+
+; Types
+          %2 = OpTypeInt 32 0
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+
+; Constants
+          %5 = OpConstant %2 0
+          %6 = OpConstant %2 1
+          %7 = OpConstant %2 2
+          %8 = OpConstant %2 3
+          %9 = OpConstant %2 4
+         %10 = OpConstant %2 5
+         %11 = OpConstant %2 6
+         %12 = OpConstant %2 7
+         %13 = OpConstant %2 8
+         %14 = OpConstant %2 9
+         %15 = OpConstant %2 10
+         %16 = OpConstant %2 11
+         %17 = OpConstant %2 12
+         %18 = OpConstant %2 13
+         %19 = OpConstant %2 14
+         %20 = OpConstant %2 15
+         %21 = OpConstant %2 16
+         %22 = OpConstant %2 17
+         %23 = OpConstant %2 18
+         %24 = OpConstant %2 19
+         %25 = OpConstant %2 20
+         %26 = OpConstant %2 21
+         %27 = OpConstant %2 22
+         %28 = OpConstant %2 23
+         %29 = OpConstant %2 24
+         %30 = OpConstant %2 25
+         %31 = OpConstant %2 26
+         %32 = OpConstant %2 27
+         %33 = OpConstant %2 28
+         %34 = OpConstant %2 29
+         %35 = OpConstant %2 30
+         %36 = OpConstant %2 31
+
+; main function
+         %37 = OpFunction %3 None %4
+         %38 = OpLabel
+         %39 = OpNot %2 %5 ; bit instruction
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // Adds OpNot synonym.
+  auto transformation = TransformationAddBitInstructionSynonym(
+      39, {40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,
+           54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,
+           68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,
+           82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,
+           96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+           110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
+           124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134});
+  transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
+      MakeDataDescriptor(134, {}), MakeDataDescriptor(39, {})));
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %37 "main"
+
+; Types
+          %2 = OpTypeInt 32 0
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+
+; Constants
+          %5 = OpConstant %2 0
+          %6 = OpConstant %2 1
+          %7 = OpConstant %2 2
+          %8 = OpConstant %2 3
+          %9 = OpConstant %2 4
+         %10 = OpConstant %2 5
+         %11 = OpConstant %2 6
+         %12 = OpConstant %2 7
+         %13 = OpConstant %2 8
+         %14 = OpConstant %2 9
+         %15 = OpConstant %2 10
+         %16 = OpConstant %2 11
+         %17 = OpConstant %2 12
+         %18 = OpConstant %2 13
+         %19 = OpConstant %2 14
+         %20 = OpConstant %2 15
+         %21 = OpConstant %2 16
+         %22 = OpConstant %2 17
+         %23 = OpConstant %2 18
+         %24 = OpConstant %2 19
+         %25 = OpConstant %2 20
+         %26 = OpConstant %2 21
+         %27 = OpConstant %2 22
+         %28 = OpConstant %2 23
+         %29 = OpConstant %2 24
+         %30 = OpConstant %2 25
+         %31 = OpConstant %2 26
+         %32 = OpConstant %2 27
+         %33 = OpConstant %2 28
+         %34 = OpConstant %2 29
+         %35 = OpConstant %2 30
+         %36 = OpConstant %2 31
+
+; main function
+         %37 = OpFunction %3 None %4
+         %38 = OpLabel
+
+; Add OpNot synonym
+         %40 = OpBitFieldUExtract %2 %5 %5 %6 ; extracts bit 0 from %5
+         %41 = OpNot %2 %40
+
+         %42 = OpBitFieldUExtract %2 %5 %6 %6 ; extracts bit 1 from %5
+         %43 = OpNot %2 %42
+
+         %44 = OpBitFieldUExtract %2 %5 %7 %6 ; extracts bit 2 from %5
+         %45 = OpNot %2 %44
+
+         %46 = OpBitFieldUExtract %2 %5 %8 %6 ; extracts bit 3 from %5
+         %47 = OpNot %2 %46
+
+         %48 = OpBitFieldUExtract %2 %5 %9 %6 ; extracts bit 4 from %5
+         %49 = OpNot %2 %48
+
+         %50 = OpBitFieldUExtract %2 %5 %10 %6 ; extracts bit 5 from %5
+         %51 = OpNot %2 %50
+
+         %52 = OpBitFieldUExtract %2 %5 %11 %6 ; extracts bit 6 from %5
+         %53 = OpNot %2 %52
+
+         %54 = OpBitFieldUExtract %2 %5 %12 %6 ; extracts bit 7 from %5
+         %55 = OpNot %2 %54
+
+         %56 = OpBitFieldUExtract %2 %5 %13 %6 ; extracts bit 8 from %5
+         %57 = OpNot %2 %56
+
+         %58 = OpBitFieldUExtract %2 %5 %14 %6 ; extracts bit 9 from %5
+         %59 = OpNot %2 %58
+
+         %60 = OpBitFieldUExtract %2 %5 %15 %6 ; extracts bit 10 from %5
+         %61 = OpNot %2 %60
+
+         %62 = OpBitFieldUExtract %2 %5 %16 %6 ; extracts bit 11 from %5
+         %63 = OpNot %2 %62
+
+         %64 = OpBitFieldUExtract %2 %5 %17 %6 ; extracts bit 12 from %5
+         %65 = OpNot %2 %64
+
+         %66 = OpBitFieldUExtract %2 %5 %18 %6 ; extracts bit 13 from %5
+         %67 = OpNot %2 %66
+
+         %68 = OpBitFieldUExtract %2 %5 %19 %6 ; extracts bit 14 from %5
+         %69 = OpNot %2 %68
+
+         %70 = OpBitFieldUExtract %2 %5 %20 %6 ; extracts bit 15 from %5
+         %71 = OpNot %2 %70
+
+         %72 = OpBitFieldUExtract %2 %5 %21 %6 ; extracts bit 16 from %5
+         %73 = OpNot %2 %72
+
+         %74 = OpBitFieldUExtract %2 %5 %22 %6 ; extracts bit 17 from %5
+         %75 = OpNot %2 %74
+
+         %76 = OpBitFieldUExtract %2 %5 %23 %6 ; extracts bit 18 from %5
+         %77 = OpNot %2 %76
+
+         %78 = OpBitFieldUExtract %2 %5 %24 %6 ; extracts bit 19 from %5
+         %79 = OpNot %2 %78
+
+         %80 = OpBitFieldUExtract %2 %5 %25 %6 ; extracts bit 20 from %5
+         %81 = OpNot %2 %80
+
+         %82 = OpBitFieldUExtract %2 %5 %26 %6 ; extracts bit 21 from %5
+         %83 = OpNot %2 %82
+
+         %84 = OpBitFieldUExtract %2 %5 %27 %6 ; extracts bit 22 from %5
+         %85 = OpNot %2 %84
+
+         %86 = OpBitFieldUExtract %2 %5 %28 %6 ; extracts bit 23 from %5
+         %87 = OpNot %2 %86
+
+         %88 = OpBitFieldUExtract %2 %5 %29 %6 ; extracts bit 24 from %5
+         %89 = OpNot %2 %88
+
+         %90 = OpBitFieldUExtract %2 %5 %30 %6 ; extracts bit 25 from %5
+         %91 = OpNot %2 %90
+
+         %92 = OpBitFieldUExtract %2 %5 %31 %6 ; extracts bit 26 from %5
+         %93 = OpNot %2 %92
+
+         %94 = OpBitFieldUExtract %2 %5 %32 %6 ; extracts bit 27 from %5
+         %95 = OpNot %2 %94
+
+         %96 = OpBitFieldUExtract %2 %5 %33 %6 ; extracts bit 28 from %5
+         %97 = OpNot %2 %96
+
+         %98 = OpBitFieldUExtract %2 %5 %34 %6 ; extracts bit 29 from %5
+         %99 = OpNot %2 %98
+
+        %100 = OpBitFieldUExtract %2 %5 %35 %6 ; extracts bit 30 from %5
+        %101 = OpNot %2 %100
+
+        %102 = OpBitFieldUExtract %2 %5 %36 %6 ; extracts bit 31 from %5
+        %103 = OpNot %2 %102
+
+        %104 = OpBitFieldInsert %2 %41 %43 %6 %6 ; inserts bit 1
+        %105 = OpBitFieldInsert %2 %104 %45 %7 %6 ; inserts bit 2
+        %106 = OpBitFieldInsert %2 %105 %47 %8 %6 ; inserts bit 3
+        %107 = OpBitFieldInsert %2 %106 %49 %9 %6 ; inserts bit 4
+        %108 = OpBitFieldInsert %2 %107 %51 %10 %6 ; inserts bit 5
+        %109 = OpBitFieldInsert %2 %108 %53 %11 %6 ; inserts bit 6
+        %110 = OpBitFieldInsert %2 %109 %55 %12 %6 ; inserts bit 7
+        %111 = OpBitFieldInsert %2 %110 %57 %13 %6 ; inserts bit 8
+        %112 = OpBitFieldInsert %2 %111 %59 %14 %6 ; inserts bit 9
+        %113 = OpBitFieldInsert %2 %112 %61 %15 %6 ; inserts bit 10
+        %114 = OpBitFieldInsert %2 %113 %63 %16 %6 ; inserts bit 11
+        %115 = OpBitFieldInsert %2 %114 %65 %17 %6 ; inserts bit 12
+        %116 = OpBitFieldInsert %2 %115 %67 %18 %6 ; inserts bit 13
+        %117 = OpBitFieldInsert %2 %116 %69 %19 %6 ; inserts bit 14
+        %118 = OpBitFieldInsert %2 %117 %71 %20 %6 ; inserts bit 15
+        %119 = OpBitFieldInsert %2 %118 %73 %21 %6 ; inserts bit 16
+        %120 = OpBitFieldInsert %2 %119 %75 %22 %6 ; inserts bit 17
+        %121 = OpBitFieldInsert %2 %120 %77 %23 %6 ; inserts bit 18
+        %122 = OpBitFieldInsert %2 %121 %79 %24 %6 ; inserts bit 19
+        %123 = OpBitFieldInsert %2 %122 %81 %25 %6 ; inserts bit 20
+        %124 = OpBitFieldInsert %2 %123 %83 %26 %6 ; inserts bit 21
+        %125 = OpBitFieldInsert %2 %124 %85 %27 %6 ; inserts bit 22
+        %126 = OpBitFieldInsert %2 %125 %87 %28 %6 ; inserts bit 23
+        %127 = OpBitFieldInsert %2 %126 %89 %29 %6 ; inserts bit 24
+        %128 = OpBitFieldInsert %2 %127 %91 %30 %6 ; inserts bit 25
+        %129 = OpBitFieldInsert %2 %128 %93 %31 %6 ; inserts bit 26
+        %130 = OpBitFieldInsert %2 %129 %95 %32 %6 ; inserts bit 27
+        %131 = OpBitFieldInsert %2 %130 %97 %33 %6 ; inserts bit 28
+        %132 = OpBitFieldInsert %2 %131 %99 %34 %6 ; inserts bit 29
+        %133 = OpBitFieldInsert %2 %132 %101 %35 %6 ; inserts bit 30
+        %134 = OpBitFieldInsert %2 %133 %103 %36 %6 ; inserts bit 31
+         %39 = OpNot %2 %5
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
 }  // namespace
