@@ -47,7 +47,8 @@ void FuzzerPassAddBitInstructionSynonyms::Apply() {
         //  |spvOpcodeIsBit|.
         if (instruction.opcode() != SpvOpBitwiseOr &&
             instruction.opcode() != SpvOpBitwiseXor &&
-            instruction.opcode() != SpvOpBitwiseAnd) {
+            instruction.opcode() != SpvOpBitwiseAnd &&
+            instruction.opcode() != SpvOpNot) {
           continue;
         }
 
