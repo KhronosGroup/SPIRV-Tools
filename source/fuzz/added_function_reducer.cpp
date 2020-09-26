@@ -205,6 +205,7 @@ void AddedFunctionReducer::ReplayPrefixAndAddFunction(
               .add_function();
   bool success = TransformationAddFunction(transformation_add_function_message)
                      .TryToAddFunction(ir_context.get());
+  (void)success;  // Keep release mode compilers happy.
   assert(success && "Addition of the function should have succeeded.");
 
   // Get the binary representation of the module with this function added.
