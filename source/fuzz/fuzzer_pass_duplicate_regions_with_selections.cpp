@@ -72,7 +72,7 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
       // the block if it heads a selection construct or a loop construct.
       if (dominator_analysis->Dominates(entry_block,
                                         postdominates_entry_block) &&
-          !postdominates_entry_block->GetLoopMergeInst()) {
+          !postdominates_entry_block->GetMergeInst()) {
         candidate_exit_blocks.push_back(postdominates_entry_block);
       }
     }
