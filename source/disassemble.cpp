@@ -154,7 +154,6 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
     stream_ << "; " << SPV_GENERATOR_MISC_PART(generator) << "\n"
             << "; Bound: " << id_bound << "\n"
             << "; Schema: " << schema << "\n";
-    ResetColor();
   }
 
   byte_offset_ = SPV_INDEX_INSTRUCTION * sizeof(uint32_t);
