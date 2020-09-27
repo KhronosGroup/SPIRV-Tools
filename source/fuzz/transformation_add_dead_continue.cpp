@@ -158,5 +158,12 @@ void TransformationAddDeadContinue::ApplyImpl(
       message_.phi_id());
 }
 
+std::unordered_set<uint32_t> TransformationAddDeadContinue::GetFreshIds()
+    const {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
+  assert(false && "Not implemented yet.");
+  return {};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

@@ -62,5 +62,11 @@ protobufs::Transformation TransformationAddTypePointer::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t> TransformationAddTypePointer::GetFreshIds() const {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
+  assert(false && "Not implemented yet.");
+  return {};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

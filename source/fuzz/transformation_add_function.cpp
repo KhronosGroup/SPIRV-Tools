@@ -927,5 +927,11 @@ opt::Instruction* TransformationAddFunction::FollowCompositeIndex(
   return ir_context->get_def_use_mgr()->GetDef(sub_object_type_id);
 }
 
+std::unordered_set<uint32_t> TransformationAddFunction::GetFreshIds() const {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
+  assert(false && "Not implemented yet.");
+  return {};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

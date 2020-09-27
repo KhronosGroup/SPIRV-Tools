@@ -159,5 +159,12 @@ bool TransformationReplaceIdWithSynonym::TypesAreCompatible(
           fuzzerutil::TypesAreEqualUpToSign(ir_context, type_id_1, type_id_2));
 }
 
+std::unordered_set<uint32_t> TransformationReplaceIdWithSynonym::GetFreshIds()
+    const {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
+  assert(false && "Not implemented yet.");
+  return {};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

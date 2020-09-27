@@ -970,5 +970,12 @@ void TransformationOutlineFunction::ShrinkOriginalRegion(
       std::move(cloned_exit_block_terminator));
 }
 
+std::unordered_set<uint32_t> TransformationOutlineFunction::GetFreshIds()
+    const {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
+  assert(false && "Not implemented yet.");
+  return {};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools
