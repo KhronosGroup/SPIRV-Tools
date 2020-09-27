@@ -19,6 +19,8 @@
 
 #include "gtest/gtest.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/fuzz/transformation.h"
+#include "source/fuzz/transformation_context.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.h"
@@ -110,6 +112,10 @@ void DumpShader(const std::vector<uint32_t>& binary, const char* filename);
 void DumpTransformationsJson(
     const protobufs::TransformationSequence& transformations,
     const char* filename);
+
+void ApplyAndCheckFreshIds(const Transformation& transformation,
+                           opt::IRContext* ir_context,
+                           TransformationContext* transformation_context);
 
 }  // namespace fuzz
 }  // namespace spvtools

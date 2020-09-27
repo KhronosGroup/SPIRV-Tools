@@ -185,8 +185,8 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
                    .IsApplicable(context.get(), transformation_context));
 
   // Apply the use of 9 in a store.
-  transformation_use_of_9_in_store.Apply(context.get(),
-                                         &transformation_context);
+  ApplyAndCheckFreshIds(transformation_use_of_9_in_store, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string after_replacing_use_of_9_in_store = R"(
                OpCapability Shader
@@ -240,7 +240,8 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   ASSERT_TRUE(transformation_use_of_11_in_add.IsApplicable(
       context.get(), transformation_context));
   // Apply the use of 11 in an add.
-  transformation_use_of_11_in_add.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_use_of_11_in_add, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string after_replacing_use_of_11_in_add = R"(
                OpCapability Shader
@@ -296,7 +297,8 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   ASSERT_TRUE(transformation_use_of_14_in_add.IsApplicable(
       context.get(), transformation_context));
   // Apply the use of 15 in an add.
-  transformation_use_of_14_in_add.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_use_of_14_in_add, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string after_replacing_use_of_14_in_add = R"(
                OpCapability Shader
@@ -523,8 +525,8 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(
       context.get(), transformation_context));
 
-  transformation_use_of_13_in_store.Apply(context.get(),
-                                          &transformation_context);
+  ApplyAndCheckFreshIds(transformation_use_of_13_in_store, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(
       context.get(), transformation_context));
@@ -535,7 +537,8 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(
       context.get(), transformation_context));
 
-  transformation_use_of_15_in_add.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_use_of_15_in_add, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(
       context.get(), transformation_context));
@@ -546,7 +549,8 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(
       context.get(), transformation_context));
 
-  transformation_use_of_17_in_add.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_use_of_17_in_add, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(
       context.get(), transformation_context));
@@ -557,8 +561,8 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(
       context.get(), transformation_context));
 
-  transformation_use_of_20_in_store.Apply(context.get(),
-                                          &transformation_context);
+  ApplyAndCheckFreshIds(transformation_use_of_20_in_store, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation_use_of_13_in_store.IsApplicable(
       context.get(), transformation_context));
@@ -1294,7 +1298,8 @@ TEST(TransformationReplaceConstantWithUniformTest, ComplexReplacements) {
   for (auto& transformation : transformations) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -1568,7 +1573,8 @@ TEST(TransformationReplaceConstantWithUniformTest, ReplaceOpPhiOperand) {
         int_descriptor, 50, 51);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 

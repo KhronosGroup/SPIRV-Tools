@@ -256,13 +256,13 @@ TEST(TransformationAdjustBranchWeightsTest, ApplyTest) {
       MakeInstructionDescriptor(33, SpvOpBranchConditional, 0);
   auto transformation =
       TransformationAdjustBranchWeights(instruction_descriptor, {5, 6});
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(21, SpvOpBranchConditional, 0);
   transformation =
       TransformationAdjustBranchWeights(instruction_descriptor, {7, 8});
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader

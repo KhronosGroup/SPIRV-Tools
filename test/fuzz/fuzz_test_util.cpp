@@ -17,6 +17,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "source/opt/def_use_manager.h"
 #include "tools/io.h"
 
 namespace spvtools {
@@ -126,6 +127,22 @@ void DumpTransformationsJson(
     std::ofstream transformations_json_file(filename);
     transformations_json_file << json_string;
     transformations_json_file.close();
+  }
+}
+
+void ApplyAndCheckFreshIds(const Transformation& transformation,
+                           opt::IRContext* ir_context,
+                           TransformationContext* transformation_context) {
+  opt::analysis::DefUseManager::IdToDefMap before_transformation =
+      ir_context->get_def_use_mgr()->id_to_defs();
+  transformation.Apply(ir_context, transformation_context);
+  opt::analysis::DefUseManager::IdToDefMap after_transformation =
+      ir_context->get_def_use_mgr()->id_to_defs();
+  std::unordered_set<uint32_t> fresh_ids_for_transformation =
+      transformation.GetFreshIds();
+  for (auto& entry : after_transformation) {
+    ASSERT_TRUE((before_transformation.count(entry.first) == 0) ==
+                (fresh_ids_for_transformation.count(entry.first) != 0));
   }
 }
 

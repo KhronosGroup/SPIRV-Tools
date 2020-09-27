@@ -313,29 +313,29 @@ TEST(TransformationToggleAccessChainInstructionTest, ApplyTest) {
       MakeInstructionDescriptor(18, SpvOpAccessChain, 0);
   auto transformation =
       TransformationToggleAccessChainInstruction(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor =
       MakeInstructionDescriptor(20, SpvOpInBoundsAccessChain, 0);
   transformation =
       TransformationToggleAccessChainInstruction(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor = MakeInstructionDescriptor(24, SpvOpAccessChain, 0);
   transformation =
       TransformationToggleAccessChainInstruction(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor =
       MakeInstructionDescriptor(26, SpvOpInBoundsAccessChain, 0);
   transformation =
       TransformationToggleAccessChainInstruction(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor = MakeInstructionDescriptor(38, SpvOpAccessChain, 0);
   transformation =
       TransformationToggleAccessChainInstruction(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variantShader = R"(
                OpCapability Shader

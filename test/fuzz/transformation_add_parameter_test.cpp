@@ -133,28 +133,28 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
   {
     TransformationAddParameter correct(9, 60, 11, {{{13, 8}}}, 61);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
-    correct.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(60));
   }
   {
     TransformationAddParameter correct(17, 62, 7, {{}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
-    correct.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(62));
   }
   {
     TransformationAddParameter correct(29, 64, 31, {{}}, 65);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
-    correct.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(64));
   }
   {
     TransformationAddParameter correct(34, 66, 7, {{}}, 67);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
-    correct.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(66));
   }
@@ -460,28 +460,32 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
                                                    {{{38, 31}, {42, 31}}}, 51);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Local variable of id 34 is defined in the caller (main).
   TransformationAddParameter transformation_good_2(14, 52, 9, {{{43, 34}}}, 53);
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Local variable of id 39 is defined in the caller (main).
   TransformationAddParameter transformation_good_3(6, 54, 9, {{{33, 39}}}, 55);
   ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: This adds another pointer parameter to the function of id 6.
   TransformationAddParameter transformation_good_4(6, 56, 30, {{{33, 31}}}, 57);
   ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_4, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string expected_shader = R"(
@@ -671,7 +675,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                    {{{38, 28}, {42, 28}}}, 71);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Global variable of id 61 is (storage class Workgroup) is defined in
@@ -680,14 +685,16 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                    {{{38, 28}, {42, 28}}}, 73);
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_2, context.get(),
+                        &transformation_context);
 
   // Good: Global variable of id 28 (storage class Private) is defined in the
   // caller (main).
   TransformationAddParameter transformation_good_3(6, 74, 27, {{{33, 28}}}, 75);
   ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Global variable of id 61 is (storage class Workgroup) is defined in
@@ -695,7 +702,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
   TransformationAddParameter transformation_good_4(6, 76, 60, {{{33, 61}}}, 77);
   ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_4, context.get(),
+                        &transformation_context);
 
   // Good: Global variable of id 28 (storage class Private) is defined in the
   // caller (main).
@@ -703,7 +711,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                    79);
   ASSERT_TRUE(transformation_good_5.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_5.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_5, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Global variable of id 61 is (storage class Workgroup) is defined in
@@ -712,7 +721,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                    81);
   ASSERT_TRUE(transformation_good_6.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_6.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_6, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string expected_shader = R"(
@@ -881,7 +891,8 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
       10, 70, 7, {{{27, 21}, {31, 21}, {30, 21}}}, 71);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Good: Local variable of id 28 is defined in every caller (id 27 and id 31).
@@ -889,7 +900,8 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
       10, 72, 7, {{{27, 28}, {31, 28}, {14, 21}, {16, 14}}}, 73);
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string expected_shader = R"(
@@ -1034,7 +1046,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
                                                    {{{28, 22}, {32, 22}}}, 71);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
@@ -1046,7 +1059,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
                                                    {{{28, 20}, {32, 20}}}, 73);
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
@@ -1058,7 +1072,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
                                                    {{{28, 51}, {32, 51}}}, 75);
   ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter

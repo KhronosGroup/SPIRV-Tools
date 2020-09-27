@@ -408,9 +408,12 @@ bool TransformationAccessChain::ValidIndexToComposite(
 }
 
 std::unordered_set<uint32_t> TransformationAccessChain::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  std::unordered_set<uint32_t> result = {message_.fresh_id()};
+  for (auto& fresh_ids_for_clamping : message_.fresh_ids_for_clamping()) {
+    result.insert(fresh_ids_for_clamping.first());
+    result.insert(fresh_ids_for_clamping.second());
+  }
+  return result;
 }
 
 }  // namespace fuzz

@@ -195,19 +195,21 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
       TransformationReplaceOpSelectWithConditionalBranch(20, 100, 101);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   auto transformation2 =
       TransformationReplaceOpSelectWithConditionalBranch(24, 0, 102);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
 
   auto transformation3 =
       TransformationReplaceOpSelectWithConditionalBranch(26, 103, 0);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 

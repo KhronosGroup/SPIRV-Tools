@@ -142,42 +142,48 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
       MakeInstructionDescriptor(36, SpvOpConvertFToS, 0), 201, 100, {2});
   ASSERT_TRUE(
       transformation_1.IsApplicable(context.get(), transformation_context));
-  transformation_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationCompositeExtract transformation_2(
       MakeInstructionDescriptor(37, SpvOpAccessChain, 0), 202, 104, {0, 2});
   ASSERT_TRUE(
       transformation_2.IsApplicable(context.get(), transformation_context));
-  transformation_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationCompositeExtract transformation_3(
       MakeInstructionDescriptor(29, SpvOpAccessChain, 0), 203, 104, {0});
   ASSERT_TRUE(
       transformation_3.IsApplicable(context.get(), transformation_context));
-  transformation_3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationCompositeExtract transformation_4(
       MakeInstructionDescriptor(24, SpvOpStore, 0), 204, 101, {0});
   ASSERT_TRUE(
       transformation_4.IsApplicable(context.get(), transformation_context));
-  transformation_4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_4, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationCompositeExtract transformation_5(
       MakeInstructionDescriptor(29, SpvOpBranch, 0), 205, 102, {2});
   ASSERT_TRUE(
       transformation_5.IsApplicable(context.get(), transformation_context));
-  transformation_5.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_5, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   TransformationCompositeExtract transformation_6(
       MakeInstructionDescriptor(37, SpvOpReturn, 0), 206, 103, {1});
   ASSERT_TRUE(
       transformation_6.IsApplicable(context.get(), transformation_context));
-  transformation_6.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_6, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -478,7 +484,7 @@ TEST(TransformationCompositeExtractTest, AddSynonymsForRelevantIds) {
       MakeInstructionDescriptor(36, SpvOpConvertFToS, 0), 201, 100, {2});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2})));
 }
@@ -566,7 +572,7 @@ TEST(TransformationCompositeExtractTest, DontAddSynonymsForIrrelevantIds) {
       MakeInstructionDescriptor(36, SpvOpConvertFToS, 0), 201, 100, {2});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2})));
 }

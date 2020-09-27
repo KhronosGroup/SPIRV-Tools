@@ -229,7 +229,8 @@ TEST(TransformationCompositeInsertTest, EmptyCompositeScenarios) {
       MakeInstructionDescriptor(64, SpvOpStore, 0), 50, 64, 62, {1});
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformations = R"(
@@ -365,7 +366,8 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // No synonyms should have been added.
@@ -468,7 +470,8 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectSomeSynonyms) {
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // These synonyms should have been added.
@@ -570,7 +573,8 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
       MakeInstructionDescriptor(30, SpvOpStore, 0), 50, 30, 11, {1, 0, 0});
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // These synonyms should have been added.
@@ -597,7 +601,8 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
       MakeInstructionDescriptor(50, SpvOpStore, 0), 51, 50, 11, {0, 1, 1});
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // These synonyms should have been added.

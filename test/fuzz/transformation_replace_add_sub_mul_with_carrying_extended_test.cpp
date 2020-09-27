@@ -408,56 +408,64 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
       TransformationReplaceAddSubMulWithCarryingExtended(80, 15);
   ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_2 =
       TransformationReplaceAddSubMulWithCarryingExtended(81, 18);
   ASSERT_TRUE(transformation_good_2.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_3 =
       TransformationReplaceAddSubMulWithCarryingExtended(82, 21);
   ASSERT_TRUE(transformation_good_3.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_4 =
       TransformationReplaceAddSubMulWithCarryingExtended(83, 31);
   ASSERT_TRUE(transformation_good_4.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_4, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_5 =
       TransformationReplaceAddSubMulWithCarryingExtended(84, 42);
   ASSERT_TRUE(transformation_good_5.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_5.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_5, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_6 =
       TransformationReplaceAddSubMulWithCarryingExtended(85, 45);
   ASSERT_TRUE(transformation_good_6.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_6.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_6, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_7 =
       TransformationReplaceAddSubMulWithCarryingExtended(86, 48);
   ASSERT_TRUE(transformation_good_7.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_7.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_7, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_good_8 =
       TransformationReplaceAddSubMulWithCarryingExtended(87, 59);
   ASSERT_TRUE(transformation_good_8.IsApplicable(context.get(),
                                                  transformation_context));
-  transformation_good_8.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_good_8, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
