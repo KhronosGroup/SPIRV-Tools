@@ -66,6 +66,8 @@ class TransformationDuplicateRegionWithSelection : public Transformation {
       opt::IRContext* ir_context, opt::BasicBlock* entry_block,
       opt::BasicBlock* exit_block);
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
  private:

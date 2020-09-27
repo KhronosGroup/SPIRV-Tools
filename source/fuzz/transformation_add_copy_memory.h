@@ -54,6 +54,8 @@ class TransformationAddCopyMemory : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
   // Returns true if we can copy memory from |instruction| using OpCopyMemory.

@@ -48,6 +48,8 @@ class TransformationReplaceIdWithSynonym : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
   // Returns true if |type_id_1| and |type_id_2| represent compatible types
