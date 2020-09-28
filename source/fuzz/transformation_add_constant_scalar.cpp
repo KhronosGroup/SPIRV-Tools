@@ -92,9 +92,7 @@ protobufs::Transformation TransformationAddConstantScalar::ToMessage() const {
 
 std::unordered_set<uint32_t> TransformationAddConstantScalar::GetFreshIds()
     const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  return {message_.fresh_id()};
 }
 
 }  // namespace fuzz
