@@ -241,7 +241,7 @@ void LocalAccessChainConvertPass::FindTargetVars(Function* func) {
   }
 }
 
-bool LocalAccessChainConvertPass::HasNoOpenCL100DebugRef(
+bool LocalAccessChainConvertPass::HasOpenCL100DebugRef(
     Instruction* inst) const {
   return !get_def_use_mgr()->WhileEachUser(inst, [](Instruction* user) {
     if (user->IsOpenCL100DebugInstr()) {
@@ -262,11 +262,11 @@ Pass::Status LocalAccessChainConvertPass::ConvertLocalAccessChains(
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       switch (ii->opcode()) {
         case SpvOpLoad: {
-          if (HasNoOpenCL100DebugRef(&*ii)) break;
+          if (HasOpenCL100DebugRef(&*ii)) break;
           uint32_t varId;
           Instruction* ptrInst = GetPtr(&*ii, &varId);
           if (!IsNonPtrAccessChain(ptrInst->opcode())) break;
-          if (HasNoOpenCL100DebugRef(ptrInst)) break;
+          if (HasOpenCL100DebugRef(ptrInst)) break;
           if (!IsTargetVar(varId)) break;
           std::vector<std::unique_ptr<Instruction>> newInsts;
           if (!ReplaceAccessChainLoad(ptrInst, &*ii)) {
@@ -279,7 +279,7 @@ Pass::Status LocalAccessChainConvertPass::ConvertLocalAccessChains(
           Instruction* store = &*ii;
           Instruction* ptrInst = GetPtr(store, &varId);
           if (!IsNonPtrAccessChain(ptrInst->opcode())) break;
-          if (HasNoOpenCL100DebugRef(ptrInst)) break;
+          if (HasOpenCL100DebugRef(ptrInst)) break;
           if (!IsTargetVar(varId)) break;
           std::vector<std::unique_ptr<Instruction>> newInsts;
           uint32_t valId = store->GetSingleWordInOperand(kStoreValIdInIdx);
