@@ -221,7 +221,7 @@ bool TransformationSetMemoryOperandsMask::
 
 std::unordered_set<uint32_t> TransformationSetMemoryOperandsMask::GetFreshIds()
     const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

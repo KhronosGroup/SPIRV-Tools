@@ -98,7 +98,7 @@ opt::Instruction* TransformationSetFunctionControl ::FindFunctionDefInstruction(
 
 std::unordered_set<uint32_t> TransformationSetFunctionControl::GetFreshIds()
     const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

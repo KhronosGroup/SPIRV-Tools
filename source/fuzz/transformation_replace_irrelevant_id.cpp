@@ -108,7 +108,7 @@ protobufs::Transformation TransformationReplaceIrrelevantId::ToMessage() const {
 
 std::unordered_set<uint32_t> TransformationReplaceIrrelevantId::GetFreshIds()
     const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

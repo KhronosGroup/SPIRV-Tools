@@ -62,7 +62,7 @@ protobufs::Transformation TransformationSwapCommutableOperands::ToMessage()
 
 std::unordered_set<uint32_t> TransformationSwapCommutableOperands::GetFreshIds()
     const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

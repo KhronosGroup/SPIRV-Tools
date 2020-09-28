@@ -160,7 +160,7 @@ void TransformationAddDeadContinue::ApplyImpl(
 
 std::unordered_set<uint32_t> TransformationAddDeadContinue::GetFreshIds()
     const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

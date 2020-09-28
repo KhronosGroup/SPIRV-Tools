@@ -144,7 +144,7 @@ bool TransformationAddRelaxedDecoration::IsNumeric(uint32_t opcode) {
 
 std::unordered_set<uint32_t> TransformationAddRelaxedDecoration::GetFreshIds()
     const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

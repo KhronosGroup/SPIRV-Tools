@@ -161,7 +161,7 @@ bool TransformationReplaceIdWithSynonym::TypesAreCompatible(
 
 std::unordered_set<uint32_t> TransformationReplaceIdWithSynonym::GetFreshIds()
     const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz
