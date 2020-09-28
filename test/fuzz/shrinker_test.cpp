@@ -134,7 +134,14 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
                OpFunctionEnd
   )";
 
-  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  // Note: |env| should ideally be declared const.  However, due to a known
+  // issue with older versions of MSVC we would have to mark |env| as being
+  // captured due to its used in a lambda below, and other compilers would warn
+  // that such capturing is not necessary.  Not declaring |env| as const means
+  // that it needs to be captured to be used in the lambda, and thus all
+  // compilers are kept happy.  See:
+  // https://developercommunity.visualstudio.com/content/problem/367326/problems-with-capturing-constexpr-in-lambda.html
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = kSilentConsumer;
 
   SpirvTools tools(env);
@@ -164,10 +171,6 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
 
   protobufs::FactSequence no_facts;
 
-  // Note: it should not be necessary to capture |env| as it is a constexpr.
-  // However, due to a known issue with older versions of MSVC we mark |env| as
-  // captured (see
-  // https://developercommunity.visualstudio.com/content/problem/367326/problems-with-capturing-constexpr-in-lambda.html)
   Shrinker::InterestingnessFunction interestingness_function =
       [consumer, env](const std::vector<uint32_t>& binary,
                       uint32_t /*unused*/) -> bool {
