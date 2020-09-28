@@ -106,7 +106,7 @@ protobufs::Transformation TransformationMoveBlockDown::ToMessage() const {
 }
 
 std::unordered_set<uint32_t> TransformationMoveBlockDown::GetFreshIds() const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

@@ -108,7 +108,7 @@ TransformationReplaceOpPhiIdFromDeadPredecessor::ToMessage() const {
 
 std::unordered_set<uint32_t>
 TransformationReplaceOpPhiIdFromDeadPredecessor::GetFreshIds() const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

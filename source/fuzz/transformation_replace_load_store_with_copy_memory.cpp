@@ -182,7 +182,7 @@ TransformationReplaceLoadStoreWithCopyMemory::ToMessage() const {
 
 std::unordered_set<uint32_t>
 TransformationReplaceLoadStoreWithCopyMemory::GetFreshIds() const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

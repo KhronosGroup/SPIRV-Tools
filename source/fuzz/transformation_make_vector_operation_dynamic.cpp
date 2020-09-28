@@ -109,7 +109,7 @@ bool TransformationMakeVectorOperationDynamic::IsVectorOperation(
 
 std::unordered_set<uint32_t>
 TransformationMakeVectorOperationDynamic::GetFreshIds() const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

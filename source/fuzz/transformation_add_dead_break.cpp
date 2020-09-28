@@ -212,7 +212,7 @@ void TransformationAddDeadBreak::ApplyImpl(
 }
 
 std::unordered_set<uint32_t> TransformationAddDeadBreak::GetFreshIds() const {
-  return {};
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz
