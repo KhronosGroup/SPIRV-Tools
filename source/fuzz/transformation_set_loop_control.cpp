@@ -214,8 +214,6 @@ bool TransformationSetLoopControl::PeelCountIsSupported(
 }
 
 std::unordered_set<uint32_t> TransformationSetLoopControl::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
   return {};
 }
 

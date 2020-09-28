@@ -113,13 +113,16 @@ void DumpTransformationsJson(
     const protobufs::TransformationSequence& transformations,
     const char* filename);
 
-// TODO comment
+// Applies |transformation| to |ir_context| and |transformation_context|, and
+// asserts that any ids in |ir_context| that are only present post-
+// transformation are either contained in |transformation.GetFreshIds()|, or
+// in |issued_overflow_ids|.
 void ApplyAndCheckFreshIds(
     const Transformation& transformation, opt::IRContext* ir_context,
     TransformationContext* transformation_context,
     const std::unordered_set<uint32_t>& issued_overflow_ids);
 
-// TODO comment
+// Invokes ApplyAndCheckFreshIds above, with an empty set of overflow ids.
 void ApplyAndCheckFreshIds(const Transformation& transformation,
                            opt::IRContext* ir_context,
                            TransformationContext* transformation_context);

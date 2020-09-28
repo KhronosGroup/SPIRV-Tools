@@ -108,8 +108,6 @@ protobufs::Transformation TransformationReplaceIrrelevantId::ToMessage() const {
 
 std::unordered_set<uint32_t> TransformationReplaceIrrelevantId::GetFreshIds()
     const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
   return {};
 }
 

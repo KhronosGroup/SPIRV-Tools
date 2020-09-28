@@ -1030,9 +1030,11 @@ void TransformationReplaceLinearAlgebraInstruction::ReplaceOpDot(
 
 std::unordered_set<uint32_t>
 TransformationReplaceLinearAlgebraInstruction::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  std::unordered_set<uint32_t> result;
+  for (auto id : message_.fresh_ids()) {
+    result.insert(id);
+  }
+  return result;
 }
 
 }  // namespace fuzz

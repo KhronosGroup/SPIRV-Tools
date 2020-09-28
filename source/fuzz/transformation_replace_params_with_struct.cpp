@@ -306,9 +306,12 @@ TransformationReplaceParamsWithStruct::ComputeIndicesOfReplacedParameters(
 
 std::unordered_set<uint32_t>
 TransformationReplaceParamsWithStruct::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  std::unordered_set<uint32_t> result = {message_.fresh_function_type_id(),
+                                         message_.fresh_parameter_id()};
+  for (auto& pair : message_.caller_id_to_fresh_composite_id()) {
+    result.insert(pair.second());
+  }
+  return result;
 }
 
 }  // namespace fuzz

@@ -230,9 +230,7 @@ TransformationReplaceAddSubMulWithCarryingExtended::ToMessage() const {
 
 std::unordered_set<uint32_t>
 TransformationReplaceAddSubMulWithCarryingExtended::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  return {message_.struct_fresh_id()};
 }
 
 }  // namespace fuzz
