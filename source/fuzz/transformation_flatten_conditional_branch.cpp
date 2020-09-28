@@ -333,16 +333,26 @@ void TransformationFlattenConditionalBranch::Apply(
     // with OpSelect.
 
     ir_context->get_instr_block(convergence_block_id)
-        ->ForEachPhiInst([&condition_operand](opt::Instruction* phi_inst) {
+        ->ForEachPhiInst([branch_instruction, &condition_operand, header_block,
+                          ir_context](opt::Instruction* phi_inst) {
           phi_inst->SetOpcode(SpvOpSelect);
           std::vector<opt::Operand> operands;
           operands.emplace_back(condition_operand);
+          assert(phi_inst->NumInOperands() == 4 &&
+                 "We are going to replace an OpPhi with an OpSelect.  This "
+                 "only makes sense if the block has two distinct "
+                 "predecessors.");
           // Only consider the operands referring to the instructions ids, as
           // the block labels are not necessary anymore.
-          for (uint32_t i = 0; i < phi_inst->NumInOperands(); i += 2) {
-            operands.emplace_back(phi_inst->GetInOperand(i));
+          if (ir_context->GetDominatorAnalysis(header_block->GetParent())
+                  ->Dominates(branch_instruction->GetSingleWordInOperand(1),
+                              phi_inst->GetSingleWordInOperand(1))) {
+            operands.emplace_back(phi_inst->GetInOperand(0));
+            operands.emplace_back(phi_inst->GetInOperand(2));
+          } else {
+            operands.emplace_back(phi_inst->GetInOperand(2));
+            operands.emplace_back(phi_inst->GetInOperand(0));
           }
-
           phi_inst->SetInOperands(std::move(operands));
         });
   }
