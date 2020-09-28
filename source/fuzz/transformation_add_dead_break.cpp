@@ -212,11 +212,7 @@ void TransformationAddDeadBreak::ApplyImpl(
 }
 
 std::unordered_set<uint32_t> TransformationAddDeadBreak::GetFreshIds() const {
-  std::unordered_set<uint32_t> result;
-  for (auto id : message_.phi_id()) {
-    result.insert(id);
-  }
-  return result;
+  return {};
 }
 
 }  // namespace fuzz

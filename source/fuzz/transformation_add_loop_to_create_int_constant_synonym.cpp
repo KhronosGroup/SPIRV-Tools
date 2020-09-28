@@ -425,9 +425,10 @@ TransformationAddLoopToCreateIntConstantSynonym::ToMessage() const {
 
 std::unordered_set<uint32_t>
 TransformationAddLoopToCreateIntConstantSynonym::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  return {message_.syn_id(),          message_.loop_id(),
+          message_.ctr_id(),          message_.temp_id(),
+          message_.eventual_syn_id(), message_.incremented_ctr_id(),
+          message_.cond_id(),         message_.additional_block_id()};
 }
 
 }  // namespace fuzz

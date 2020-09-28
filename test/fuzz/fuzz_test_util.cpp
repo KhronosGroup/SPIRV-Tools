@@ -141,8 +141,13 @@ void ApplyAndCheckFreshIds(const Transformation& transformation,
   std::unordered_set<uint32_t> fresh_ids_for_transformation =
       transformation.GetFreshIds();
   for (auto& entry : after_transformation) {
-    ASSERT_TRUE((before_transformation.count(entry.first) == 0) ==
-                (fresh_ids_for_transformation.count(entry.first) != 0));
+    uint32_t id = entry.first;
+    auto count = fresh_ids_for_transformation.count(id);
+    if (before_transformation.count(entry.first)) {
+      ASSERT_FALSE(count);
+    } else {
+      ASSERT_TRUE(count);
+    }
   }
 }
 

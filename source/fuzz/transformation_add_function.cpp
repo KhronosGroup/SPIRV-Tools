@@ -933,21 +933,19 @@ std::unordered_set<uint32_t> TransformationAddFunction::GetFreshIds() const {
     result.insert(instruction.result_id());
   }
   if (message_.is_livesafe()) {
-    result.insert(message_.loop_limit_constant_id());
-  }
-  for (auto& loop_limiter_info : message_.loop_limiter_info()) {
-    result.insert(loop_limiter_info.load_id());
-    result.insert(loop_limiter_info.increment_id());
-    result.insert(loop_limiter_info.compare_id());
-    result.insert(loop_limiter_info.logical_op_id());
-    for (auto id : loop_limiter_info.phi_id()) {
-      result.insert(id);
+    result.insert(message_.loop_limiter_variable_id());
+    for (auto& loop_limiter_info : message_.loop_limiter_info()) {
+      result.insert(loop_limiter_info.load_id());
+      result.insert(loop_limiter_info.increment_id());
+      result.insert(loop_limiter_info.compare_id());
+      result.insert(loop_limiter_info.logical_op_id());
     }
-  }
-  for (auto& access_chain_clamping_info :
-       message_.access_chain_clamping_info()) {
-    for (auto& pair : access_chain_clamping_info.compare_and_select_ids()) {
-      result.insert(pair.first(), pair.second());
+    for (auto& access_chain_clamping_info :
+         message_.access_chain_clamping_info()) {
+      for (auto& pair : access_chain_clamping_info.compare_and_select_ids()) {
+        result.insert(pair.first());
+        result.insert(pair.second());
+      }
     }
   }
   return result;
