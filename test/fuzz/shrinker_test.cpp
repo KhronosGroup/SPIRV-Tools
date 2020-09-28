@@ -164,9 +164,13 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
 
   protobufs::FactSequence no_facts;
 
+  // Note: it should not be necessary to capture |env| as it is a constexpr.
+  // However, due to a known issue with older versions of MSVC we mark |env| as
+  // captured (see
+  // https://developercommunity.visualstudio.com/content/problem/367326/problems-with-capturing-constexpr-in-lambda.html)
   Shrinker::InterestingnessFunction interestingness_function =
-      [consumer](const std::vector<uint32_t>& binary,
-                 uint32_t /*unused*/) -> bool {
+      [consumer, env](const std::vector<uint32_t>& binary,
+                      uint32_t /*unused*/) -> bool {
     bool found_op_not = false;
     uint32_t op_call_count = 0;
     auto temp_ir_context =
