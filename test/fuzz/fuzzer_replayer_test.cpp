@@ -1669,7 +1669,7 @@ void RunFuzzerAndReplayer(const std::string& shader,
             fuzzer_result.applied_transformations,
             static_cast<uint32_t>(
                 fuzzer_result.applied_transformations.transformation_size()),
-            0, false, validator_options)
+            false, validator_options)
             .Run();
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
               replayer_result.status);

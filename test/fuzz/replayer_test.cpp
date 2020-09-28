@@ -97,7 +97,7 @@ TEST(ReplayerTest, PartialReplay) {
     protobufs::FactSequence empty_facts;
     auto replayer_result =
         Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
-                 11, 0, true, validator_options)
+                 11, true, validator_options)
             .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -183,7 +183,7 @@ TEST(ReplayerTest, PartialReplay) {
     protobufs::FactSequence empty_facts;
     auto replayer_result =
         Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
-                 5, 0, true, validator_options)
+                 5, true, validator_options)
             .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -261,7 +261,7 @@ TEST(ReplayerTest, PartialReplay) {
     protobufs::FactSequence empty_facts;
     auto replayer_result =
         Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
-                 0, 0, true, validator_options)
+                 0, true, validator_options)
             .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -279,7 +279,7 @@ TEST(ReplayerTest, PartialReplay) {
     // of transformations
     auto replayer_result =
         Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
-                 12, 0, true, validator_options)
+                 12, true, validator_options)
             .Run();
 
     // Replay should not succeed.
@@ -349,8 +349,7 @@ TEST(ReplayerTest, CheckFactsAfterReplay) {
   protobufs::FactSequence empty_facts;
   auto replayer_result =
       Replayer(env, kSilentConsumer, binary_in, empty_facts, transformations,
-               transformations.transformation_size(), 0, true,
-               validator_options)
+               transformations.transformation_size(), true, validator_options)
           .Run();
   // Replay should succeed.
   ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete, replayer_result.status);

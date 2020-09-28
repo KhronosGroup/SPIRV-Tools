@@ -478,7 +478,7 @@ bool Replay(const spv_target_env& target_env,
       spvtools::fuzz::Replayer(
           target_env, spvtools::utils::CLIMessageConsumer, binary_in,
           initial_facts, transformation_sequence, num_transformations_to_apply,
-          0, fuzzer_options->replay_validation_enabled, validator_options)
+          fuzzer_options->replay_validation_enabled, validator_options)
           .Run();
   replay_result.transformed_module->module()->ToBinary(binary_out, false);
   *transformations_applied = std::move(replay_result.applied_transformations);

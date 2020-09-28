@@ -109,8 +109,7 @@ Shrinker::ShrinkerResult Shrinker::Run() {
                transformation_sequence_in_,
                static_cast<uint32_t>(
                    transformation_sequence_in_.transformation_size()),
-               /* No overflow ids */ 0, validate_during_replay_,
-               validator_options_)
+               validate_during_replay_, validator_options_)
           .Run();
   if (initial_replay_result.status !=
       Replayer::ReplayerResultStatus::kComplete) {
@@ -134,12 +133,6 @@ Shrinker::ShrinkerResult Shrinker::Run() {
     return {ShrinkerResultStatus::kInitialBinaryNotInteresting,
             std::vector<uint32_t>(), protobufs::TransformationSequence()};
   }
-
-  // The largest id used by the module before any shrinking has been applied
-  // serves as the first id that can be used for overflow purposes.
-  const uint32_t first_overflow_id = GetIdBound(current_best_binary);
-  assert(first_overflow_id >= GetIdBound(binary_in_) &&
-         "Applying transformations should only increase a module's id bound.");
 
   uint32_t attempt = 0;  // Keeps track of the number of shrink attempts that
                          // have been tried, whether successful or not.
@@ -202,7 +195,7 @@ Shrinker::ShrinkerResult Shrinker::Run() {
               transformations_with_chunk_removed,
               static_cast<uint32_t>(
                   transformations_with_chunk_removed.transformation_size()),
-              first_overflow_id, validate_during_replay_, validator_options_)
+              validate_during_replay_, validator_options_)
               .Run();
       if (replay_result.status != Replayer::ReplayerResultStatus::kComplete) {
         // Replay should not fail; if it does, we need to abort shrinking.

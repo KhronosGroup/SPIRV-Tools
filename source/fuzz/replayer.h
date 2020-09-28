@@ -50,8 +50,7 @@ class Replayer {
            const std::vector<uint32_t>& binary_in,
            const protobufs::FactSequence& initial_facts,
            const protobufs::TransformationSequence& transformation_sequence_in,
-           uint32_t num_transformations_to_apply, uint32_t first_overflow_id,
-           bool validate_during_replay,
+           uint32_t num_transformations_to_apply, bool validate_during_replay,
            spv_validator_options validator_options);
 
   // Disables copy/move constructor/assignment operations.
@@ -66,11 +65,6 @@ class Replayer {
   // from |transformation_sequence_in_| to |binary_in_|.  Initial facts about
   // the input binary and the context in which it will execute are provided via
   // |initial_facts_|.
-  //
-  // |first_overflow_id_| should be set to 0 if overflow ids are not available
-  // during replay.  Otherwise |first_overflow_id_| must be larger than any id
-  // referred to in |binary_in_| or |transformation_sequence_in_|, and overflow
-  // ids will be available during replay starting from this value.
   //
   // On success, returns a successful result status together with the
   // transformations that were applied, the IR for the transformed module, and
@@ -97,10 +91,6 @@ class Replayer {
 
   // The number of transformations that should be replayed.
   const uint32_t num_transformations_to_apply_;
-
-  // Zero if overflow ids are not available, otherwise hold the value of the
-  // smallest id that may be used for overflow purposes.
-  const uint32_t first_overflow_id_;
 
   // Controls whether the validator should be run after every replay step.
   const bool validate_during_replay_;
