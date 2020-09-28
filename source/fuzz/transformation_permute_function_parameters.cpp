@@ -163,9 +163,7 @@ protobufs::Transformation TransformationPermuteFunctionParameters::ToMessage()
 
 std::unordered_set<uint32_t>
 TransformationPermuteFunctionParameters::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  return {message_.function_type_fresh_id()};
 }
 
 }  // namespace fuzz

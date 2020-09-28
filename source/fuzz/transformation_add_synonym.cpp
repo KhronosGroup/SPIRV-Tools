@@ -321,9 +321,7 @@ bool TransformationAddSynonym::IsAdditionalConstantRequired(
 }
 
 std::unordered_set<uint32_t> TransformationAddSynonym::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  return {message_.synonym_fresh_id()};
 }
 
 }  // namespace fuzz

@@ -130,9 +130,10 @@ void DumpTransformationsJson(
   }
 }
 
-void ApplyAndCheckFreshIds(const Transformation& transformation,
-                           opt::IRContext* ir_context,
-                           TransformationContext* transformation_context) {
+void ApplyAndCheckFreshIds(
+    const Transformation& transformation, opt::IRContext* ir_context,
+    TransformationContext* transformation_context,
+    const std::unordered_set<uint32_t>& issued_overflow_ids) {
   opt::analysis::DefUseManager::IdToDefMap before_transformation =
       ir_context->get_def_use_mgr()->id_to_defs();
   transformation.Apply(ir_context, transformation_context);
@@ -142,13 +143,25 @@ void ApplyAndCheckFreshIds(const Transformation& transformation,
       transformation.GetFreshIds();
   for (auto& entry : after_transformation) {
     uint32_t id = entry.first;
-    auto count = fresh_ids_for_transformation.count(id);
+    bool introduced_by_transformation_message =
+        fresh_ids_for_transformation.count(id);
+    bool introduced_by_overflow_ids = issued_overflow_ids.count(id);
+    ASSERT_FALSE(introduced_by_transformation_message &&
+                 introduced_by_overflow_ids);
     if (before_transformation.count(entry.first)) {
-      ASSERT_FALSE(count);
+      ASSERT_FALSE(introduced_by_transformation_message ||
+                   introduced_by_overflow_ids);
     } else {
-      ASSERT_TRUE(count);
+      ASSERT_TRUE(introduced_by_transformation_message ||
+                  introduced_by_overflow_ids);
     }
   }
+}
+
+void ApplyAndCheckFreshIds(const Transformation& transformation,
+                           opt::IRContext* ir_context,
+                           TransformationContext* transformation_context) {
+  ApplyAndCheckFreshIds(transformation, ir_context, transformation_context, {});
 }
 
 }  // namespace fuzz

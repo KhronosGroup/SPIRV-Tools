@@ -2815,9 +2815,11 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
     const auto context =
         BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
+    auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(2000);
+    auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
     TransformationContext new_transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options,
-        MakeUnique<CounterOverflowIdSource>(2000));
+        std::move(overflow_ids_unique_ptr));
     ASSERT_TRUE(transformation_with_missing_input_id.IsApplicable(
         context.get(), new_transformation_context));
     ASSERT_TRUE(transformation_with_missing_output_id.IsApplicable(
@@ -2825,7 +2827,8 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
     ASSERT_TRUE(transformation_with_missing_input_and_output_ids.IsApplicable(
         context.get(), new_transformation_context));
     ApplyAndCheckFreshIds(transformation_with_missing_input_and_output_ids,
-                          context.get(), &new_transformation_context);
+                          context.get(), &new_transformation_context,
+                          overflow_ids_ptr->GetIssuedOverflowIds());
     ASSERT_TRUE(IsValid(env, context.get()));
 
     std::string variant_shader = R"(

@@ -18,12 +18,18 @@ namespace spvtools {
 namespace fuzz {
 
 CounterOverflowIdSource::CounterOverflowIdSource(uint32_t first_available_id)
-    : next_available_id_(first_available_id) {}
+    : next_available_id_(first_available_id), issued_ids_() {}
 
 bool CounterOverflowIdSource::HasOverflowIds() const { return true; }
 
 uint32_t CounterOverflowIdSource::GetNextOverflowId() {
+  issued_ids_.insert(next_available_id_);
   return next_available_id_++;
+}
+
+const std::unordered_set<uint32_t>&
+CounterOverflowIdSource::GetIssuedOverflowIds() const {
+  return issued_ids_;
 }
 
 }  // namespace fuzz

@@ -35,8 +35,12 @@ class CounterOverflowIdSource : public OverflowIdSource {
   //  account for the case where the maximum allowed id is reached.
   uint32_t GetNextOverflowId() override;
 
+  const std::unordered_set<uint32_t>& GetIssuedOverflowIds() const override;
+
  private:
   uint32_t next_available_id_;
+
+  std::unordered_set<uint32_t> issued_ids_;
 };
 
 }  // namespace fuzz

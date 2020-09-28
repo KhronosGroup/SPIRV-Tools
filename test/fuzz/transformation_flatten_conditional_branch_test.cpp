@@ -492,9 +492,11 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(103));
 
   // Make a new transformation context with a source of overflow ids.
+  auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(1000);
+  auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
   TransformationContext new_transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options,
-      MakeUnique<CounterOverflowIdSource>(1000));
+      std::move(overflow_ids_unique_ptr));
 
   auto transformation2 = TransformationFlattenConditionalBranch(
       36, false,
@@ -503,7 +505,8 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), new_transformation_context));
   ApplyAndCheckFreshIds(transformation2, context.get(),
-                        &new_transformation_context);
+                        &new_transformation_context,
+                        overflow_ids_ptr->GetIssuedOverflowIds());
 
   ASSERT_TRUE(IsValid(env, context.get()));
 

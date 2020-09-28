@@ -113,6 +113,13 @@ void DumpTransformationsJson(
     const protobufs::TransformationSequence& transformations,
     const char* filename);
 
+// TODO comment
+void ApplyAndCheckFreshIds(
+    const Transformation& transformation, opt::IRContext* ir_context,
+    TransformationContext* transformation_context,
+    const std::unordered_set<uint32_t>& issued_overflow_ids);
+
+// TODO comment
 void ApplyAndCheckFreshIds(const Transformation& transformation,
                            opt::IRContext* ir_context,
                            TransformationContext* transformation_context);

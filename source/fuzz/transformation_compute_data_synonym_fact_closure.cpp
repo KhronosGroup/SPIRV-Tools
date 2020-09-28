@@ -50,8 +50,6 @@ TransformationComputeDataSynonymFactClosure::ToMessage() const {
 
 std::unordered_set<uint32_t>
 TransformationComputeDataSynonymFactClosure::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
   return {};
 }
 

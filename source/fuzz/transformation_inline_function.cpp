@@ -293,9 +293,11 @@ void TransformationInlineFunction::AdaptInlinedInstruction(
 }
 
 std::unordered_set<uint32_t> TransformationInlineFunction::GetFreshIds() const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  std::unordered_set<uint32_t> result;
+  for (auto& pair : message_.result_id_map()) {
+    result.insert(pair.second());
+  }
+  return result;
 }
 
 }  // namespace fuzz

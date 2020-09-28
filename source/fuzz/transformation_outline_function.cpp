@@ -972,9 +972,20 @@ void TransformationOutlineFunction::ShrinkOriginalRegion(
 
 std::unordered_set<uint32_t> TransformationOutlineFunction::GetFreshIds()
     const {
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3851): Implement.
-  assert(false && "Not implemented yet.");
-  return {};
+  std::unordered_set<uint32_t> result = {
+      message_.new_function_struct_return_type_id(),
+      message_.new_function_type_id(),
+      message_.new_function_id(),
+      message_.new_function_region_entry_block(),
+      message_.new_caller_result_id(),
+      message_.new_callee_result_id()};
+  for (auto& pair : message_.input_id_to_fresh_id()) {
+    result.insert(pair.second());
+  }
+  for (auto& pair : message_.output_id_to_fresh_id()) {
+    result.insert(pair.second());
+  }
+  return result;
 }
 
 }  // namespace fuzz
