@@ -119,7 +119,7 @@ class Disassembler {
   const bool print_;  // Should we also print to the standard output stream?
   const bool color_;  // Should we print in colour?
   const int indent_;  // How much to indent. 0 means don't indent
-  const int comment_; // Should we comment the source
+  const int comment_;        // Should we comment the source
   spv_endianness_t endian_;  // The detected endianness of the binary.
   std::stringstream text_;   // Captures the text, if not printing.
   out_stream out_;  // The Output stream.  Either to text_ or standard output.
@@ -169,7 +169,8 @@ spv_result_t Disassembler::HandleInstruction(
     stream_ << std::string(indent_, ' ');
     stream_ << "; Function " << name_mapper_(inst.result_id) << std::endl;
   }
-  if (comment_ && !inserted_decoration_space_ && spvOpcodeIsDecoration(opcode)) {
+  if (comment_ && !inserted_decoration_space_ &&
+      spvOpcodeIsDecoration(opcode)) {
     inserted_decoration_space_ = true;
     stream_ << std::endl;
     stream_ << std::string(indent_, ' ');
