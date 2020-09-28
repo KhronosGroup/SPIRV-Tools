@@ -273,8 +273,9 @@ TEST_F(RedundancyEliminationTest, KeepRedundantAddWithoutPhi) {
 }
 
 // Test that it can get a simple case of local redundancy elimination
-// when it has OpenCL.DebugInfo.100 DebugDeclare/DebugValue instructions.
-TEST_F(RedundancyEliminationTest, DebugValue) {
+// when it has OpenCL.DebugInfo.100 instructions.
+TEST_F(RedundancyEliminationTest, OpenCLDebugInfo100) {
+  // When three redundant DebugValues exist, only one DebugValue must remain.
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "OpenCL.DebugInfo.100"
@@ -301,21 +302,28 @@ TEST_F(RedundancyEliminationTest, DebugValue) {
          %19 = OpExtInst %void %1 DebugTypeVector %18 4
          %20 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %19
          %21 = OpExtInst %void %1 DebugFunction %7 %20 %16 4 1 %17 %7 FlagIsProtected|FlagIsPrivate 4 %3
+; CHECK:     [[dbg_local_var:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable
          %22 = OpExtInst %void %1 DebugLocalVariable %6 %19 %16 0 0 %21 FlagIsLocal
+         %14 = OpExtInst %void %1 DebugLocalVariable %6 %19 %16 0 0 %21 FlagIsLocal
           %3 = OpFunction %void None %9
          %23 = OpLabel
          %24 = OpExtInst %void %1 DebugScope %21
          %25 = OpVariable %_ptr_Function_float Function
          %26 = OpLoad %float %25
                OpLine %4 0 0
+; Two `OpFAdd %float %26 %26` are the same. One must be removed.
+; After removing one `OpFAdd %float %26 %26`, two DebugValues are the same.
+; One must be removed.
+;
 ; CHECK:      [[add:%\w+]] = OpFAdd %float [[value:%\w+]]
-; CHECK-NEXT: DebugValue {{%\w+}} [[add]]
+; CHECK-NEXT: DebugValue [[dbg_local_var]] [[add]]
 ; CHECK-NEXT: OpFAdd %float [[add]] [[value]]
+; CHECK-NEXT: OpReturn
          %27 = OpFAdd %float %26 %26
          %28 = OpExtInst %void %1 DebugValue %22 %27 %15 %uint_0
                OpLine %4 1 0
          %29 = OpFAdd %float %26 %26
-         %30 = OpExtInst %void %1 DebugValue %22 %29 %15 %uint_0
+         %30 = OpExtInst %void %1 DebugValue %14 %29 %15 %uint_0
          %31 = OpExtInst %void %1 DebugValue %22 %29 %15 %uint_0
          %32 = OpFAdd %float %29 %26
          %33 = OpFAdd %float %27 %26
