@@ -828,8 +828,7 @@ TEST(TransformationFlattenConditionalBranchTest, PhiToSelect1) {
   auto transformation = TransformationFlattenConditionalBranch(7, true, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  // TODO change this once fresh ids PR is merged.
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -894,8 +893,7 @@ TEST(TransformationFlattenConditionalBranchTest, PhiToSelect2) {
   auto transformation = TransformationFlattenConditionalBranch(7, true, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  // TODO change this once fresh ids PR is merged.
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -962,8 +960,7 @@ TEST(TransformationFlattenConditionalBranchTest, PhiToSelect3) {
   auto transformation = TransformationFlattenConditionalBranch(7, true, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  // TODO change this once fresh ids PR is merged.
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1032,8 +1029,7 @@ TEST(TransformationFlattenConditionalBranchTest, PhiToSelect4) {
   auto transformation = TransformationFlattenConditionalBranch(7, true, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  // TODO change this once fresh ids PR is merged.
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
