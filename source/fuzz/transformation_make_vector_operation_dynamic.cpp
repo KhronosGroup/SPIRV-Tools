@@ -107,5 +107,10 @@ bool TransformationMakeVectorOperationDynamic::IsVectorOperation(
   return true;
 }
 
+std::unordered_set<uint32_t>
+TransformationMakeVectorOperationDynamic::GetFreshIds() const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

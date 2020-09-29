@@ -304,5 +304,15 @@ TransformationReplaceParamsWithStruct::ComputeIndicesOfReplacedParameters(
   return result;
 }
 
+std::unordered_set<uint32_t>
+TransformationReplaceParamsWithStruct::GetFreshIds() const {
+  std::unordered_set<uint32_t> result = {message_.fresh_function_type_id(),
+                                         message_.fresh_parameter_id()};
+  for (auto& pair : message_.caller_id_to_fresh_composite_id()) {
+    result.insert(pair.second());
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

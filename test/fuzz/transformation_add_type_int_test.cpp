@@ -117,35 +117,35 @@ TEST(TransformationAddTypeIntTest, Apply) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Adds signed 8-bit integer type.
   auto transformation = TransformationAddTypeInt(6, 8, true);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds signed 16-bit integer type.
   transformation = TransformationAddTypeInt(7, 16, true);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds signed 32-bit integer type.
   transformation = TransformationAddTypeInt(8, 32, true);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds signed 64-bit integer type.
   transformation = TransformationAddTypeInt(9, 64, true);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds unsigned 8-bit integer type.
   transformation = TransformationAddTypeInt(10, 8, false);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds unsigned 16-bit integer type.
   transformation = TransformationAddTypeInt(11, 16, false);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds unsigned 32-bit integer type.
   transformation = TransformationAddTypeInt(12, 32, false);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds unsigned 64-bit integer type.
   transformation = TransformationAddTypeInt(13, 64, false);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
          OpCapability Shader

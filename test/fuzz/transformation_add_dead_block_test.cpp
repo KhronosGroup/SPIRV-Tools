@@ -93,7 +93,7 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
   transformation = TransformationAddDeadBlock(14, 11, true);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(14));
 
@@ -304,7 +304,7 @@ TEST(TransformationAddDeadBlockTest, OpPhiInTarget) {
   TransformationAddDeadBlock transformation(100, 5, true);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(100));

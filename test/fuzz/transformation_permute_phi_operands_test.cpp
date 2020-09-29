@@ -101,7 +101,7 @@ TEST(TransformationPermutePhiOperandsTest, BasicTest) {
   TransformationPermutePhiOperands transformation(25, {1, 0});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string after_transformation = R"(
                OpCapability Shader

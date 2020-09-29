@@ -290,23 +290,23 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
 
   ASSERT_TRUE(replace_true_with_double_comparison.IsApplicable(
       context.get(), transformation_context));
-  replace_true_with_double_comparison.Apply(context.get(),
-                                            &transformation_context);
+  ApplyAndCheckFreshIds(replace_true_with_double_comparison, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(replace_true_with_uint32_comparison.IsApplicable(
       context.get(), transformation_context));
-  replace_true_with_uint32_comparison.Apply(context.get(),
-                                            &transformation_context);
+  ApplyAndCheckFreshIds(replace_true_with_uint32_comparison, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(replace_false_with_float_comparison.IsApplicable(
       context.get(), transformation_context));
-  replace_false_with_float_comparison.Apply(context.get(),
-                                            &transformation_context);
+  ApplyAndCheckFreshIds(replace_false_with_float_comparison, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(replace_false_with_sint64_comparison.IsApplicable(
       context.get(), transformation_context));
-  replace_false_with_sint64_comparison.Apply(context.get(),
-                                             &transformation_context);
+  ApplyAndCheckFreshIds(replace_false_with_sint64_comparison, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after = R"(
@@ -550,12 +550,12 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
 
   ASSERT_TRUE(
       replacement_1.IsApplicable(context.get(), transformation_context));
-  replacement_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement_1, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(
       replacement_2.IsApplicable(context.get(), transformation_context));
-  replacement_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement_2, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after = R"(
@@ -658,7 +658,7 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest, OpPhi) {
       id_use_descriptor, 6, 7, SpvOpULessThan, 15);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader

@@ -52,6 +52,8 @@ class TransformationReplaceAddSubMulWithCarryingExtended
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
   // Checks if an OpIAdd, OpISub or OpIMul instruction can be used by the

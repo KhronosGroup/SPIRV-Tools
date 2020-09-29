@@ -189,5 +189,9 @@ bool TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(
   }
 }
 
+std::unordered_set<uint32_t> TransformationAddCopyMemory::GetFreshIds() const {
+  return {message_.fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

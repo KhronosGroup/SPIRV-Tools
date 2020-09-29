@@ -738,11 +738,12 @@ message TransformationAddFunction {
   // Id of an existing global value with the same return type as the function
   // that can be used to replace OpKill and OpReachable instructions with
   // ReturnValue instructions.  Ignored if the function has void return type.
+  // Only relevant if |is_livesafe| holds.
   uint32 kill_unreachable_return_value_id = 6;
 
   // A mapping (represented as a sequence) from every access chain result id in
   // the function to the ids required to clamp its indices to ensure they are in
-  // bounds.
+  // bounds; only relevant if |is_livesafe| holds.
   repeated AccessChainClampingInfo access_chain_clamping_info = 7;
 
 }

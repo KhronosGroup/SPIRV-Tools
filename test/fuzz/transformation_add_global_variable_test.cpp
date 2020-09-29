@@ -144,7 +144,8 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
   for (auto& transformation : transformations) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
   ASSERT_TRUE(
       transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
@@ -266,7 +267,8 @@ TEST(TransformationAddGlobalVariableTest, TestEntryPointInterfaceEnlargement) {
   for (auto& transformation : transformations) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
   ASSERT_TRUE(
       transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
@@ -364,7 +366,8 @@ TEST(TransformationAddGlobalVariableTest, TestAddingWorkgroupGlobals) {
   for (auto& transformation : transformations) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
   ASSERT_TRUE(
       transformation_context.GetFactManager()->PointeeValueIsIrrelevant(8));

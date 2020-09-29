@@ -35,6 +35,14 @@ class NullOverflowIdSource : public OverflowIdSource {
     assert(false && "Bad attempt to request an overflow id.");
     return 0;
   }
+
+  const std::unordered_set<uint32_t>& GetIssuedOverflowIds() const override {
+    assert(false && "Operation not supported.");
+    return placeholder_;
+  }
+
+ private:
+  std::unordered_set<uint32_t> placeholder_;
 };
 
 }  // namespace

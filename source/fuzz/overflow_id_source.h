@@ -16,6 +16,7 @@
 #define SOURCE_FUZZ_OVERFLOW_ID_SOURCE_H_
 
 #include <cstdint>
+#include <unordered_set>
 
 namespace spvtools {
 namespace fuzz {
@@ -98,6 +99,10 @@ class OverflowIdSource {
   // Precondition: HasOverflowIds() must hold.  Returns the next available
   // overflow id.
   virtual uint32_t GetNextOverflowId() = 0;
+
+  // Returns the set of overflow ids from this source that have been previously
+  // issued via calls to GetNextOverflowId().
+  virtual const std::unordered_set<uint32_t>& GetIssuedOverflowIds() const = 0;
 };
 
 }  // namespace fuzz

@@ -320,5 +320,9 @@ bool TransformationAddSynonym::IsAdditionalConstantRequired(
   }
 }
 
+std::unordered_set<uint32_t> TransformationAddSynonym::GetFreshIds() const {
+  return {message_.synonym_fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

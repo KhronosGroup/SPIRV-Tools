@@ -160,5 +160,9 @@ bool TransformationMutatePointer::IsValidPointerInstruction(
   return fuzzerutil::CanCreateConstant(*pointer_type->pointee_type());
 }
 
+std::unordered_set<uint32_t> TransformationMutatePointer::GetFreshIds() const {
+  return {message_.fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

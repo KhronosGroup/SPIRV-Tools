@@ -220,5 +220,10 @@ bool TransformationCompositeInsert::IsCompositeInstructionSupported(
   return true;
 }
 
+std::unordered_set<uint32_t> TransformationCompositeInsert::GetFreshIds()
+    const {
+  return {message_.fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

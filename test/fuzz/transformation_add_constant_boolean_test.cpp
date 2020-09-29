@@ -66,7 +66,7 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   auto add_false = TransformationAddConstantBoolean(8, false, false);
 
   ASSERT_TRUE(add_true.IsApplicable(context.get(), transformation_context));
-  add_true.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_true, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Having added true, we cannot add it again with the same id.
@@ -75,11 +75,11 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   auto add_true_again = TransformationAddConstantBoolean(100, true, false);
   ASSERT_TRUE(
       add_true_again.IsApplicable(context.get(), transformation_context));
-  add_true_again.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_true_again, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(add_false.IsApplicable(context.get(), transformation_context));
-  add_false.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_false, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Having added false, we cannot add it again with the same id.
@@ -88,21 +88,24 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   auto add_false_again = TransformationAddConstantBoolean(101, false, false);
   ASSERT_TRUE(
       add_false_again.IsApplicable(context.get(), transformation_context));
-  add_false_again.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_false_again, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // We can create an irrelevant OpConstantTrue.
   TransformationAddConstantBoolean irrelevant_true(102, true, true);
   ASSERT_TRUE(
       irrelevant_true.IsApplicable(context.get(), transformation_context));
-  irrelevant_true.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(irrelevant_true, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // We can create an irrelevant OpConstantFalse.
   TransformationAddConstantBoolean irrelevant_false(103, false, true);
   ASSERT_TRUE(
       irrelevant_false.IsApplicable(context.get(), transformation_context));
-  irrelevant_false.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(irrelevant_false, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(100));

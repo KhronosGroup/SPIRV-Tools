@@ -1028,5 +1028,14 @@ void TransformationReplaceLinearAlgebraInstruction::ReplaceOpDot(
   }
 }
 
+std::unordered_set<uint32_t>
+TransformationReplaceLinearAlgebraInstruction::GetFreshIds() const {
+  std::unordered_set<uint32_t> result;
+  for (auto id : message_.fresh_ids()) {
+    result.insert(id);
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

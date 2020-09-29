@@ -94,14 +94,16 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
       20, instruction_descriptor_valid_1);
   ASSERT_TRUE(transformation_valid_1.IsApplicable(context.get(),
                                                   transformation_context));
-  transformation_valid_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_valid_1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto transformation_valid_2 = TransformationReplaceCopyMemoryWithLoadStore(
       21, instruction_descriptor_valid_2);
   ASSERT_TRUE(transformation_valid_2.IsApplicable(context.get(),
                                                   transformation_context));
-  transformation_valid_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation_valid_2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(

@@ -250,34 +250,34 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpTranspose) {
       MakeInstructionDescriptor(56, SpvOpTranspose, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {65, 66, 67, 68, 69, 70, 71, 72, 73, 74}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(57, SpvOpTranspose, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(58, SpvOpTranspose, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105,
        106},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(59, SpvOpTranspose, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120,
        121},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(60, SpvOpTranspose, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,
        133, 134, 135, 136, 137, 138, 139, 140, 141, 142},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -506,19 +506,19 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       MakeInstructionDescriptor(17, SpvOpVectorTimesScalar, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {20, 21, 22, 23}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(18, SpvOpVectorTimesScalar, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {24, 25, 26, 27, 28, 29}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(19, SpvOpVectorTimesScalar, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {30, 31, 32, 33, 34, 35, 36, 37}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -676,14 +676,14 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       MakeInstructionDescriptor(56, SpvOpMatrixTimesScalar, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(57, SpvOpMatrixTimesScalar, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(58, SpvOpMatrixTimesScalar, 0);
@@ -691,7 +691,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       {95,  96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106,
        107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -963,7 +963,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(57, SpvOpVectorTimesMatrix, 0);
@@ -971,7 +971,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       {79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
        89, 90, 91, 92, 93, 94, 95, 96, 97, 98},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(58, SpvOpVectorTimesMatrix, 0);
@@ -979,7 +979,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       {99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
        112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(59, SpvOpVectorTimesMatrix, 0);
@@ -987,7 +987,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       {125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135,
        136, 137, 138, 139, 140, 141, 142, 143, 144, 145},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -1296,7 +1296,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(57, SpvOpMatrixTimesVector, 0);
@@ -1304,7 +1304,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       {79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96,
        97},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(58, SpvOpMatrixTimesVector, 0);
@@ -1312,7 +1312,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       {98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
        110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(59, SpvOpMatrixTimesVector, 0);
@@ -1320,7 +1320,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
       {122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,
        133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -1683,7 +1683,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
        97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
        111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(57, SpvOpMatrixTimesMatrix, 0);
@@ -1694,7 +1694,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
        159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170,
        171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(58, SpvOpMatrixTimesMatrix, 0);
@@ -1706,7 +1706,7 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest,
        239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252,
        253, 254, 255, 256, 257, 258, 259, 260, 261, 262},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -2152,27 +2152,27 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpOuterProduct) {
       MakeInstructionDescriptor(47, SpvOpOuterProduct, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(48, SpvOpOuterProduct, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(49, SpvOpOuterProduct, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {86, 87, 88,  89,  90,  91,  92,  93,  94,  95,  96,  97,
        98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(50, SpvOpOuterProduct, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
        124, 125},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -2387,18 +2387,18 @@ TEST(TransformationReplaceLinearAlgebraInstructionTest, ReplaceOpDot) {
   auto instruction_descriptor = MakeInstructionDescriptor(24, SpvOpDot, 0);
   auto transformation = TransformationReplaceLinearAlgebraInstruction(
       {27, 28, 29, 30, 31, 32}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(25, SpvOpDot, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {33, 34, 35, 36, 37, 38, 39, 40, 41, 42}, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor = MakeInstructionDescriptor(26, SpvOpDot, 0);
   transformation = TransformationReplaceLinearAlgebraInstruction(
       {43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56},
       instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader

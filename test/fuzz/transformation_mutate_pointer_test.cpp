@@ -154,7 +154,8 @@ TEST(TransformationMutatePointerTest, BasicTest) {
                                                insert_before);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -285,7 +286,7 @@ TEST(TransformationMutatePointerTest, HandlesUnreachableBlocks) {
   TransformationMutatePointer transformation(12, 50, insert_before);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(

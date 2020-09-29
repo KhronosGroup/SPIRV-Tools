@@ -77,5 +77,10 @@ TransformationToggleAccessChainInstruction::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t>
+TransformationToggleAccessChainInstruction::GetFreshIds() const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

@@ -115,5 +115,10 @@ protobufs::Transformation TransformationAddGlobalVariable::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t> TransformationAddGlobalVariable::GetFreshIds()
+    const {
+  return {message_.fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

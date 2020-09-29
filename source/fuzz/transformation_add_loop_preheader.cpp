@@ -221,5 +221,14 @@ protobufs::Transformation TransformationAddLoopPreheader::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t> TransformationAddLoopPreheader::GetFreshIds()
+    const {
+  std::unordered_set<uint32_t> result = {message_.fresh_id()};
+  for (auto id : message_.phi_id()) {
+    result.insert(id);
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

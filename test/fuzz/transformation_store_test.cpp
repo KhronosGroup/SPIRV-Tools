@@ -232,7 +232,8 @@ TEST(TransformationStoreTest, BasicTest) {
         27, 80, MakeInstructionDescriptor(38, SpvOpAccessChain, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -242,7 +243,8 @@ TEST(TransformationStoreTest, BasicTest) {
         11, 95, MakeInstructionDescriptor(95, SpvOpReturnValue, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -252,7 +254,8 @@ TEST(TransformationStoreTest, BasicTest) {
         46, 80, MakeInstructionDescriptor(95, SpvOpReturnValue, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -262,7 +265,8 @@ TEST(TransformationStoreTest, BasicTest) {
         16, 21, MakeInstructionDescriptor(95, SpvOpReturnValue, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -272,7 +276,8 @@ TEST(TransformationStoreTest, BasicTest) {
         53, 21, MakeInstructionDescriptor(38, SpvOpAccessChain, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 

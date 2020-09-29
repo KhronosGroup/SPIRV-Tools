@@ -101,15 +101,15 @@ TEST(TransformationAddTypeFloatTest, Apply) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Adds 16-bit float type.
   auto transformation = TransformationAddTypeFloat(6, 16);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds 32-bit float type.
   transformation = TransformationAddTypeFloat(7, 32);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Adds 64-bit float type.
   transformation = TransformationAddTypeFloat(8, 64);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
          OpCapability Shader

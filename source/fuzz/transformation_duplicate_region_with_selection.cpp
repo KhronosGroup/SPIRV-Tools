@@ -600,5 +600,21 @@ TransformationDuplicateRegionWithSelection::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t>
+TransformationDuplicateRegionWithSelection::GetFreshIds() const {
+  std::unordered_set<uint32_t> result = {message_.new_entry_fresh_id(),
+                                         message_.merge_label_fresh_id()};
+  for (auto& pair : message_.original_label_to_duplicate_label()) {
+    result.insert(pair.second());
+  }
+  for (auto& pair : message_.original_id_to_duplicate_id()) {
+    result.insert(pair.second());
+  }
+  for (auto& pair : message_.original_id_to_phi_id()) {
+    result.insert(pair.second());
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

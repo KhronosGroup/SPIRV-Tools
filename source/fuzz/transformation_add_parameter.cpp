@@ -211,5 +211,9 @@ bool TransformationAddParameter::IsParameterTypeSupported(
   }
 }
 
+std::unordered_set<uint32_t> TransformationAddParameter::GetFreshIds() const {
+  return {message_.parameter_fresh_id(), message_.function_type_fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

@@ -27,8 +27,9 @@ namespace {
 void ApplyTransformationAndCheckFactManager(
     uint32_t constant1_id, uint32_t constant2_id, opt::IRContext* ir_context,
     TransformationContext* transformation_context) {
-  TransformationRecordSynonymousConstants(constant1_id, constant2_id)
-      .Apply(ir_context, transformation_context);
+  ApplyAndCheckFreshIds(
+      TransformationRecordSynonymousConstants(constant1_id, constant2_id),
+      ir_context, transformation_context);
 
   ASSERT_TRUE(transformation_context->GetFactManager()->IsSynonymous(
       MakeDataDescriptor(constant1_id, {}),

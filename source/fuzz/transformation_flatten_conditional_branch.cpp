@@ -699,5 +699,18 @@ bool TransformationFlattenConditionalBranch::InstructionCanBeHandled(
   return true;
 }
 
+std::unordered_set<uint32_t>
+TransformationFlattenConditionalBranch::GetFreshIds() const {
+  std::unordered_set<uint32_t> result;
+  for (auto& side_effect_wrapper_info : message_.side_effect_wrapper_info()) {
+    result.insert(side_effect_wrapper_info.merge_block_id());
+    result.insert(side_effect_wrapper_info.execute_block_id());
+    result.insert(side_effect_wrapper_info.actual_result_id());
+    result.insert(side_effect_wrapper_info.alternative_block_id());
+    result.insert(side_effect_wrapper_info.placeholder_result_id());
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

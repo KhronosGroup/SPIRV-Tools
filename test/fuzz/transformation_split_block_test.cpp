@@ -206,7 +206,7 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
   auto split_1 = TransformationSplitBlock(
       MakeInstructionDescriptor(5, SpvOpStore, 0), 100);
   ASSERT_TRUE(split_1.IsApplicable(context.get(), transformation_context));
-  split_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(split_1, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split_1 = R"(
@@ -254,7 +254,7 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
   auto split_2 = TransformationSplitBlock(
       MakeInstructionDescriptor(11, SpvOpStore, 0), 101);
   ASSERT_TRUE(split_2.IsApplicable(context.get(), transformation_context));
-  split_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(split_2, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split_2 = R"(
@@ -304,7 +304,7 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
   auto split_3 = TransformationSplitBlock(
       MakeInstructionDescriptor(14, SpvOpLoad, 0), 102);
   ASSERT_TRUE(split_3.IsApplicable(context.get(), transformation_context));
-  split_3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(split_3, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split_3 = R"(
@@ -430,7 +430,7 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSelectBranch) {
   auto split = TransformationSplitBlock(
       MakeInstructionDescriptor(14, SpvOpSelectionMerge, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
-  split.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split = R"(
@@ -558,7 +558,7 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSwitchBranch) {
   auto split = TransformationSplitBlock(
       MakeInstructionDescriptor(9, SpvOpSelectionMerge, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
-  split.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split = R"(
@@ -742,7 +742,7 @@ TEST(TransformationSplitBlockTest, SplitOpPhiWithSinglePredecessor) {
   auto split =
       TransformationSplitBlock(MakeInstructionDescriptor(20, SpvOpPhi, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
-  split.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_split = R"(
@@ -820,7 +820,7 @@ TEST(TransformationSplitBlockTest, DeadBlockShouldSplitToTwoDeadBlocks) {
   auto split = TransformationSplitBlock(
       MakeInstructionDescriptor(8, SpvOpBranch, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
-  split.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(8));

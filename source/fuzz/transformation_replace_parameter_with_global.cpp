@@ -204,5 +204,11 @@ bool TransformationReplaceParameterWithGlobal::IsParameterTypeSupported(
   return fuzzerutil::CanCreateConstant(type);
 }
 
+std::unordered_set<uint32_t>
+TransformationReplaceParameterWithGlobal::GetFreshIds() const {
+  return {message_.function_type_fresh_id(),
+          message_.global_variable_fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

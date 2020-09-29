@@ -256,7 +256,8 @@ TEST(TransformationFunctionCallTest, BasicTest) {
         100, 21, {71, 72}, MakeInstructionDescriptor(59, SpvOpBranch, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -265,7 +266,8 @@ TEST(TransformationFunctionCallTest, BasicTest) {
         101, 21, {71, 72}, MakeInstructionDescriptor(98, SpvOpAccessChain, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -274,7 +276,8 @@ TEST(TransformationFunctionCallTest, BasicTest) {
         102, 200, {19, 20}, MakeInstructionDescriptor(36, SpvOpLoad, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -283,7 +286,8 @@ TEST(TransformationFunctionCallTest, BasicTest) {
         103, 10, {23}, MakeInstructionDescriptor(45, SpvOpLoad, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -292,7 +296,8 @@ TEST(TransformationFunctionCallTest, BasicTest) {
         104, 10, {201}, MakeInstructionDescriptor(205, SpvOpBranch, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -301,7 +306,8 @@ TEST(TransformationFunctionCallTest, BasicTest) {
         105, 21, {62, 65}, MakeInstructionDescriptor(59, SpvOpBranch, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
