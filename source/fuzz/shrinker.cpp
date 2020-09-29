@@ -260,9 +260,8 @@ Shrinker::ShrinkerResult Shrinker::Run() {
     auto added_function_reducer_result =
         AddedFunctionReducer(target_env_, consumer_, binary_in_, initial_facts_,
                              current_best_transformations, transformation_index,
-                             first_overflow_id, interestingness_function_,
-                             validate_during_replay_, validator_options_,
-                             step_limit_, attempt)
+                             interestingness_function_, validate_during_replay_,
+                             validator_options_, step_limit_, attempt)
             .Run();
     // Reducing the added function should succeed.  If it doesn't, we report
     // a shrinking error.

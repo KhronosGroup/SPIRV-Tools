@@ -48,7 +48,7 @@ class AddedFunctionReducer {
       const std::vector<uint32_t>& binary_in,
       const protobufs::FactSequence& initial_facts,
       const protobufs::TransformationSequence& transformation_sequence_in,
-      uint32_t index_of_add_function_transformation, uint32_t first_overflow_id,
+      uint32_t index_of_add_function_transformation,
       const Shrinker::InterestingnessFunction&
           shrinker_interestingness_function,
       bool validate_during_replay, spv_validator_options validator_options,
@@ -156,10 +156,6 @@ class AddedFunctionReducer {
   // transformation.  This is the transformation to be simplified using
   // spirv-reduce.
   const uint32_t index_of_add_function_transformation_;
-
-  // The first available overflow id that can be used when replaying
-  // transformations.
-  const uint32_t first_overflow_id_;
 
   // The interestingness function that has been provided to guide the
   // overall shrinking process.  The AddFunction transformation being simplified

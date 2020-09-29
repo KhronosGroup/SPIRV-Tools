@@ -29,7 +29,7 @@ AddedFunctionReducer::AddedFunctionReducer(
     const std::vector<uint32_t>& binary_in,
     const protobufs::FactSequence& initial_facts,
     const protobufs::TransformationSequence& transformation_sequence_in,
-    uint32_t index_of_add_function_transformation, uint32_t first_overflow_id,
+    uint32_t index_of_add_function_transformation,
     const Shrinker::InterestingnessFunction& shrinker_interestingness_function,
     bool validate_during_replay, spv_validator_options validator_options,
     uint32_t shrinker_step_limit, uint32_t num_existing_shrink_attempts)
@@ -40,7 +40,6 @@ AddedFunctionReducer::AddedFunctionReducer(
       transformation_sequence_in_(transformation_sequence_in),
       index_of_add_function_transformation_(
           index_of_add_function_transformation),
-      first_overflow_id_(first_overflow_id),
       shrinker_interestingness_function_(shrinker_interestingness_function),
       validate_during_replay_(validate_during_replay),
       validator_options_(validator_options),
@@ -170,12 +169,11 @@ void AddedFunctionReducer::ReplayPrefixAndAddFunction(
              .has_add_function() &&
          "A TransformationAddFunction is required at the given index.");
 
-  auto replay_result =
-      Replayer(target_env_, consumer_, binary_in_, initial_facts_,
-               transformation_sequence_in_,
-               index_of_add_function_transformation_, first_overflow_id_,
-               validate_during_replay_, validator_options_)
-          .Run();
+  auto replay_result = Replayer(target_env_, consumer_, binary_in_,
+                                initial_facts_, transformation_sequence_in_,
+                                index_of_add_function_transformation_,
+                                validate_during_replay_, validator_options_)
+                           .Run();
   assert(replay_result.status == Replayer::ReplayerResultStatus::kComplete &&
          "Replay should succeed");
   assert(static_cast<uint32_t>(
@@ -262,12 +260,11 @@ void AddedFunctionReducer::ReplayAdaptedTransformations(
       transformation_sequence_in_.transformation_size() ==
           modified_transformations.transformation_size() &&
       "The original and modified transformations should have the same size.");
-  auto replay_result =
-      Replayer(target_env_, consumer_, binary_in_, initial_facts_,
-               modified_transformations,
-               modified_transformations.transformation_size(),
-               first_overflow_id_, validate_during_replay_, validator_options_)
-          .Run();
+  auto replay_result = Replayer(target_env_, consumer_, binary_in_,
+                                initial_facts_, modified_transformations,
+                                modified_transformations.transformation_size(),
+                                validate_during_replay_, validator_options_)
+                           .Run();
   assert(replay_result.status == Replayer::ReplayerResultStatus::kComplete &&
          "Replay should succeed.");
   replay_result.transformed_module->module()->ToBinary(binary_out, false);
