@@ -29,7 +29,7 @@ class RepeatedPassManagerSimple : public RepeatedPassManager {
 
   ~RepeatedPassManagerSimple() override;
 
-  FuzzerPass* ChoosePass() override;
+  FuzzerPass* ChoosePass(const protobufs::TransformationSequence& applied_transformations) override;
 };
 
 }  // namespace fuzz
