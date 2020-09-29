@@ -504,6 +504,130 @@ OpFunctionEnd
   SinglePassRunAndCheck<IfConversion>(text, text, true, true);
 }
 
+TEST_F(IfConversionTest, DebugInfoSimpleIfThenElse) {
+  // When it replaces an OpPhi with OpSelect, the new OpSelect must have
+  // the same scope and line information with the OpPhi.
+  const std::string text = R"(
+; CHECK: OpSelectionMerge [[merge:%\w+]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NOT: OpPhi
+; CHECK: DebugScope
+; CHECK-NEXT: OpLine {{%\w+}} 3 7
+; CHECK-NEXT: [[sel:%\w+]] = OpSelect %uint %true %uint_0 %uint_1
+; CHECK-NEXT: DebugValue {{%\w+}} [[sel]]
+; CHECK: OpStore {{%\w+}} [[sel]]
+OpCapability Shader
+%ext = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%name = OpString "test"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%uint_32 = OpConstant %uint 32
+%_ptr_Output_uint = OpTypePointer Output %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%11 = OpTypeFunction %void
+%null_expr = OpExtInst %void %ext DebugExpression
+%src = OpExtInst %void %ext DebugSource %name
+%cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+%dbg_tf = OpExtInst %void %ext DebugTypeBasic %name %uint_32 Float
+%dbg_f = OpExtInst %void %ext DebugLocalVariable %name %dbg_tf %src 0 0 %cu FlagIsLocal
+%1 = OpFunction %void None %11
+%12 = OpLabel
+OpSelectionMerge %14 None
+OpBranchConditional %true %15 %16
+%15 = OpLabel
+OpBranch %14
+%16 = OpLabel
+OpBranch %14
+%14 = OpLabel
+%scope = OpExtInst %void %ext DebugScope %cu
+OpLine %name 3 7
+%18 = OpPhi %uint %uint_0 %15 %uint_1 %16
+%value = OpExtInst %void %ext DebugValue %dbg_f %18 %null_expr
+OpStore %2 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<IfConversion>(text, true);
+}
+
+TEST_F(IfConversionTest, DebugInfoCodeMotionMultipleInstructions) {
+  // When the code uses the same multiple values for an OpPhi and we replaces
+  // the users of the OpPhi with its value, we have to update DebugValue that
+  // has the OpPhi as an operand.
+  const std::string text = R"(
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: OpFunction
+; CHECK: OpLabel
+; CHECK-NOT: OpLabel
+; CHECK: DebugScope
+; CHECK: OpLine {{%\w+}} 0 0
+; CHECK: [[a1:%\w+]] = OpIAdd %uint %uint_0 %uint_1
+; CHECK: OpLine {{%\w+}} 1 0
+; CHECK: [[a2:%\w+]] = OpIAdd %uint [[a1]] %uint_1
+; CHECK: OpSelectionMerge [[merge_lab:%\w+]] None
+; CHECK-NEXT: OpBranchConditional
+; CHECK: [[merge_lab]] = OpLabel
+; CHECK-NOT: OpLabel
+; CHECK: DebugValue {{%\w+}} [[a2]]
+; CHECK: OpStore [[var]] [[a2]]
+                    OpCapability Shader
+             %ext = OpExtInstImport "OpenCL.DebugInfo.100"
+                    OpMemoryModel Logical GLSL450
+                    OpEntryPoint Vertex %1 "func" %2
+            %name = OpString "test"
+            %void = OpTypeVoid
+            %uint = OpTypeInt 32 0
+          %uint_0 = OpConstant %uint 0
+          %uint_1 = OpConstant %uint 1
+         %uint_32 = OpConstant %uint 32
+%_ptr_Output_uint = OpTypePointer Output %uint
+               %2 = OpVariable %_ptr_Output_uint Output
+               %8 = OpTypeFunction %void
+            %bool = OpTypeBool
+            %true = OpConstantTrue %bool
+       %null_expr = OpExtInst %void %ext DebugExpression
+             %src = OpExtInst %void %ext DebugSource %name
+              %cu = OpExtInst %void %ext DebugCompilationUnit 1 4 %src HLSL
+          %dbg_tf = OpExtInst %void %ext DebugTypeBasic %name %uint_32 Float
+           %dbg_f = OpExtInst %void %ext DebugLocalVariable %name %dbg_tf %src 0 0 %cu FlagIsLocal
+               %1 = OpFunction %void None %8
+              %11 = OpLabel
+                    OpSelectionMerge %12 None
+                    OpBranchConditional %true %13 %15
+              %13 = OpLabel
+          %scope0 = OpExtInst %void %ext DebugScope %cu
+                    OpLine %name 0 0
+              %a1 = OpIAdd %uint %uint_0 %uint_1
+                    OpLine %name 1 0
+              %a2 = OpIAdd %uint %a1 %uint_1
+                    OpBranch %12
+              %15 = OpLabel
+          %scope1 = OpExtInst %void %ext DebugScope %cu
+                    OpLine %name 2 0
+              %b1 = OpIAdd %uint %uint_0 %uint_1
+                    OpLine %name 3 0
+              %b2 = OpIAdd %uint %b1 %uint_1
+                    OpBranch %12
+              %12 = OpLabel
+          %scope2 = OpExtInst %void %ext DebugScope %cu
+                    OpLine %name 4 0
+              %17 = OpPhi %uint %b2 %15 %a2 %13
+           %value = OpExtInst %void %ext DebugValue %dbg_f %17 %null_expr
+                    OpStore %2 %17
+                    OpReturn
+                    OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<IfConversion>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
