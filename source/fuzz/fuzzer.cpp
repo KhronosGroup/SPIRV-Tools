@@ -135,7 +135,8 @@ template <typename FuzzerPassT, typename... Args>
 void Fuzzer::MaybeAddRepeatedPass(uint32_t percentage_chance_of_adding_pass,
                                   RepeatedPassInstances* pass_instances,
                                   Args&&... extra_args) {
-  if (enable_all_passes_ || fuzzer_context_->ChoosePercentage(percentage_chance_of_adding_pass)) {
+  if (enable_all_passes_ ||
+      fuzzer_context_->ChoosePercentage(percentage_chance_of_adding_pass)) {
     pass_instances->SetPass(MakeUnique<FuzzerPassT>(
         ir_context_.get(), transformation_context_.get(), fuzzer_context_.get(),
         &transformation_sequence_out_, std::forward<Args>(extra_args)...));
@@ -219,6 +220,9 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
 
   RepeatedPassInstances pass_instances{};
 
+  // The following passes are likely to be very useful: many other passes
+  // introduce synonyms, irrelevant ids and constants that these passes can work
+  // with.  We thus enable them with high probability.
   MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(90, &pass_instances);
   MaybeAddRepeatedPass<FuzzerPassApplyIdSynonyms>(90, &pass_instances);
   MaybeAddRepeatedPass<FuzzerPassReplaceIrrelevantIds>(90, &pass_instances);
