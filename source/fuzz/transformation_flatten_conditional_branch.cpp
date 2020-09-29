@@ -335,24 +335,35 @@ void TransformationFlattenConditionalBranch::Apply(
     ir_context->get_instr_block(convergence_block_id)
         ->ForEachPhiInst([branch_instruction, &condition_operand, header_block,
                           ir_context](opt::Instruction* phi_inst) {
-          phi_inst->SetOpcode(SpvOpSelect);
-          std::vector<opt::Operand> operands;
-          operands.emplace_back(condition_operand);
           assert(phi_inst->NumInOperands() == 4 &&
                  "We are going to replace an OpPhi with an OpSelect.  This "
                  "only makes sense if the block has two distinct "
                  "predecessors.");
-          // Only consider the operands referring to the instructions ids, as
-          // the block labels are not necessary anymore.
+          // The OpPhi takes values from two distinct predecessors.  One
+          // predecessor is associated with the "true" path of the conditional
+          // we are flattening, the other with the "false" path, but these
+          // predecessors can appear in either order as operands to the OpPhi
+          // instruction.
+
+          std::vector<opt::Operand> operands;
+          operands.emplace_back(condition_operand);
+
           if (ir_context->GetDominatorAnalysis(header_block->GetParent())
                   ->Dominates(branch_instruction->GetSingleWordInOperand(1),
                               phi_inst->GetSingleWordInOperand(1))) {
+            // The "true" branch is handled first in the OpPhi's operands; we
+            // thus provide operands to OpSelect in the same order that they
+            // appear in the OpPhi.
             operands.emplace_back(phi_inst->GetInOperand(0));
             operands.emplace_back(phi_inst->GetInOperand(2));
           } else {
+            // The "false" branch is handled first in the OpPhi's operands; we
+            // thus provide operands to OpSelect in reverse of the order that
+            // they appear in the OpPhi.
             operands.emplace_back(phi_inst->GetInOperand(2));
             operands.emplace_back(phi_inst->GetInOperand(0));
           }
+          phi_inst->SetOpcode(SpvOpSelect);
           phi_inst->SetInOperands(std::move(operands));
         });
   }
