@@ -46,6 +46,8 @@ class TransformationMakeVectorOperationDynamic : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
   // Checks |instruction| is defined, is an OpCompositeExtract/Insert

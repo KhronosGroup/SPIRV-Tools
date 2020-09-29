@@ -725,5 +725,10 @@ bool TransformationMoveInstructionDown::CanSafelySwapInstructions(
          IsMemoryReadInstruction(ir_context, b);
 }
 
+std::unordered_set<uint32_t> TransformationMoveInstructionDown::GetFreshIds()
+    const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

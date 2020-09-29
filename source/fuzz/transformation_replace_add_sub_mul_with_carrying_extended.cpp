@@ -228,5 +228,10 @@ TransformationReplaceAddSubMulWithCarryingExtended::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t>
+TransformationReplaceAddSubMulWithCarryingExtended::GetFreshIds() const {
+  return {message_.struct_fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

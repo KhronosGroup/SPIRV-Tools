@@ -83,7 +83,8 @@ TEST(TransformationAddGlobalUndefTest, BasicTest) {
   for (auto& transformation : transformations) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
   ASSERT_TRUE(IsValid(env, context.get()));
 

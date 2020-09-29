@@ -199,13 +199,13 @@ TEST(TransformationAddImageSampleUnusedComponentsTest, Apply) {
       MakeInstructionDescriptor(25, SpvOpImageSampleImplicitLod, 0);
   auto transformation =
       TransformationAddImageSampleUnusedComponents(23, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instruction_descriptor =
       MakeInstructionDescriptor(26, SpvOpImageSampleExplicitLod, 0);
   transformation =
       TransformationAddImageSampleUnusedComponents(24, instruction_descriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader

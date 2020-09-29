@@ -166,8 +166,8 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   transformation_context.GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(27, {1}), MakeDataDescriptor(102, {1}));
 
-  TransformationComputeDataSynonymFactClosure(100).Apply(
-      context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(TransformationComputeDataSynonymFactClosure(100),
+                        context.get(), &transformation_context);
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(27, {}), MakeDataDescriptor(102, {})));
@@ -251,8 +251,8 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   transformation_context.GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(21, {4}), MakeDataDescriptor(100, {4}));
 
-  TransformationComputeDataSynonymFactClosure(100).Apply(
-      context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(TransformationComputeDataSynonymFactClosure(100),
+                        context.get(), &transformation_context);
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(21, {}), MakeDataDescriptor(100, {})));
@@ -287,8 +287,8 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   transformation_context.GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(106, {1}), MakeDataDescriptor(37, {}));
 
-  TransformationComputeDataSynonymFactClosure(100).Apply(
-      context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(TransformationComputeDataSynonymFactClosure(100),
+                        context.get(), &transformation_context);
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(38, {0}), MakeDataDescriptor(36, {})));
@@ -312,8 +312,8 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   transformation_context.GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(40, {2}), MakeDataDescriptor(108, {2}));
 
-  TransformationComputeDataSynonymFactClosure(100).Apply(
-      context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(TransformationComputeDataSynonymFactClosure(100),
+                        context.get(), &transformation_context);
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(40, {}), MakeDataDescriptor(108, {})));

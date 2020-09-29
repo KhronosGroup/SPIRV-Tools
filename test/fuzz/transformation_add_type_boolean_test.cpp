@@ -52,7 +52,7 @@ TEST(TransformationAddTypeBooleanTest, BasicTest) {
   auto add_type_bool = TransformationAddTypeBoolean(100);
   ASSERT_TRUE(
       add_type_bool.IsApplicable(context.get(), transformation_context));
-  add_type_bool.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_type_bool, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Not applicable as we already have this type now.

@@ -292,5 +292,13 @@ void TransformationInlineFunction::AdaptInlinedInstruction(
   }
 }
 
+std::unordered_set<uint32_t> TransformationInlineFunction::GetFreshIds() const {
+  std::unordered_set<uint32_t> result;
+  for (auto& pair : message_.result_id_map()) {
+    result.insert(pair.second());
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

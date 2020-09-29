@@ -170,5 +170,10 @@ protobufs::Transformation TransformationPushIdThroughVariable::ToMessage()
   return result;
 }
 
+std::unordered_set<uint32_t> TransformationPushIdThroughVariable::GetFreshIds()
+    const {
+  return {message_.value_synonym_id(), message_.variable_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

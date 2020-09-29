@@ -217,7 +217,8 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
   auto transformation1 = TransformationAddOpPhiSynonym(17, {{{15, 13}}}, 100);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(100, {}), MakeDataDescriptor(9, {})));
 
@@ -225,7 +226,8 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
       TransformationAddOpPhiSynonym(16, {{{17, 19}, {18, 13}}}, 101);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(101, {}), MakeDataDescriptor(9, {})));
 
@@ -233,14 +235,16 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
       TransformationAddOpPhiSynonym(23, {{{22, 13}, {27, 28}, {29, 30}}}, 102);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(102, {}), MakeDataDescriptor(9, {})));
 
   auto transformation4 = TransformationAddOpPhiSynonym(31, {{{23, 13}}}, 103);
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
-  transformation4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation4, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(103, {}), MakeDataDescriptor(9, {})));
 
@@ -377,7 +381,7 @@ TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
       TransformationAddOpPhiSynonym(13, {{{11, 3}, {14, 15}}}, 100);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string after_transformation = R"(
                OpCapability Shader

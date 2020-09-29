@@ -111,7 +111,8 @@ TEST(TransformationMoveInstructionDownTest, BasicTest) {
         MakeInstructionDescriptor(11, SpvOpISub, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -119,7 +120,8 @@ TEST(TransformationMoveInstructionDownTest, BasicTest) {
         MakeInstructionDescriptor(22, SpvOpIAdd, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -225,7 +227,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesUnsupportedInstructions) {
       MakeInstructionDescriptor(8, SpvOpCopyObject, 0));
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -332,7 +334,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesBarrierInstructions) {
         MakeInstructionDescriptor(23, SpvOpCopyObject, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -340,7 +343,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesBarrierInstructions) {
         MakeInstructionDescriptor(22, SpvOpMemoryBarrier, 1));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -398,7 +402,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
         MakeInstructionDescriptor(40, SpvOpCopyObject, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -406,7 +411,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
         MakeInstructionDescriptor(21, SpvOpMemoryBarrier, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -416,7 +422,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
         MakeInstructionDescriptor(41, SpvOpCopyObject, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -424,7 +431,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
         MakeInstructionDescriptor(22, SpvOpLoad, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -434,7 +442,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
         MakeInstructionDescriptor(23, SpvOpCopyObject, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
@@ -685,7 +694,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesMemoryInstructions) {
     TransformationMoveInstructionDown transformation(descriptor);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 

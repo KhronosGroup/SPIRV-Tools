@@ -60,5 +60,10 @@ protobufs::Transformation TransformationSwapCommutableOperands::ToMessage()
   return result;
 }
 
+std::unordered_set<uint32_t> TransformationSwapCommutableOperands::GetFreshIds()
+    const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

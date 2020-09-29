@@ -230,5 +230,14 @@ void TransformationAddBitInstructionSynonym::AddOpBitwiseOrOpNotSynonym(
       MakeDataDescriptor(bit_instruction->result_id(), {}));
 }
 
+std::unordered_set<uint32_t>
+TransformationAddBitInstructionSynonym::GetFreshIds() const {
+  std::unordered_set<uint32_t> result;
+  for (auto id : message_.fresh_ids()) {
+    result.insert(id);
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

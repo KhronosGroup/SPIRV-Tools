@@ -91,5 +91,10 @@ protobufs::Transformation TransformationPermutePhiOperands::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t> TransformationPermutePhiOperands::GetFreshIds()
+    const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

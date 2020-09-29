@@ -135,5 +135,10 @@ protobufs::Transformation TransformationCompositeExtract::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t> TransformationCompositeExtract::GetFreshIds()
+    const {
+  return {message_.fresh_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

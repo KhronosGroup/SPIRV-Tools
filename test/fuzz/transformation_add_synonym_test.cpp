@@ -240,7 +240,8 @@ TEST(TransformationAddSynonymTest, AddZeroSubZeroMulOne) {
                                               insert_before);
       ASSERT_TRUE(
           transformation.IsApplicable(context.get(), transformation_context));
-      transformation.Apply(context.get(), &transformation_context);
+      ApplyAndCheckFreshIds(transformation, context.get(),
+                            &transformation_context);
       ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
           MakeDataDescriptor(result_id, {}), MakeDataDescriptor(fresh_id, {})));
       ++fresh_id;
@@ -366,7 +367,8 @@ TEST(TransformationAddSynonymTest, LogicalAndLogicalOr) {
                                               insert_before);
       ASSERT_TRUE(
           transformation.IsApplicable(context.get(), transformation_context));
-      transformation.Apply(context.get(), &transformation_context);
+      ApplyAndCheckFreshIds(transformation, context.get(),
+                            &transformation_context);
       ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
           MakeDataDescriptor(result_id, {}), MakeDataDescriptor(fresh_id, {})));
       ++fresh_id;
@@ -544,7 +546,8 @@ TEST(TransformationAddSynonymTest, CopyObject) {
                                             insert_before);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
         MakeDataDescriptor(result_id, {}), MakeDataDescriptor(fresh_id, {})));
     ++fresh_id;
@@ -636,7 +639,7 @@ TEST(TransformationAddSynonymTest, CopyBooleanConstants) {
         7, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,
         MakeInstructionDescriptor(5, SpvOpReturn, 0));
     ASSERT_TRUE(copy_true.IsApplicable(context.get(), transformation_context));
-    copy_true.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(copy_true, context.get(), &transformation_context);
 
     std::vector<uint32_t> ids_for_which_synonyms_are_known =
         transformation_context.GetFactManager()
@@ -657,7 +660,7 @@ TEST(TransformationAddSynonymTest, CopyBooleanConstants) {
         8, protobufs::TransformationAddSynonym::COPY_OBJECT, 101,
         MakeInstructionDescriptor(100, SpvOpReturn, 0));
     ASSERT_TRUE(copy_false.IsApplicable(context.get(), transformation_context));
-    copy_false.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(copy_false, context.get(), &transformation_context);
     std::vector<uint32_t> ids_for_which_synonyms_are_known =
         transformation_context.GetFactManager()
             ->GetIdsForWhichSynonymsAreKnown();
@@ -678,7 +681,8 @@ TEST(TransformationAddSynonymTest, CopyBooleanConstants) {
         MakeInstructionDescriptor(5, SpvOpReturn, 0));
     ASSERT_TRUE(
         copy_false_again.IsApplicable(context.get(), transformation_context));
-    copy_false_again.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(copy_false_again, context.get(),
+                          &transformation_context);
     std::vector<uint32_t> ids_for_which_synonyms_are_known =
         transformation_context.GetFactManager()
             ->GetIdsForWhichSynonymsAreKnown();
@@ -700,7 +704,8 @@ TEST(TransformationAddSynonymTest, CopyBooleanConstants) {
         MakeInstructionDescriptor(102, SpvOpReturn, 0));
     ASSERT_TRUE(
         copy_true_again.IsApplicable(context.get(), transformation_context));
-    copy_true_again.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(copy_true_again, context.get(),
+                          &transformation_context);
     std::vector<uint32_t> ids_for_which_synonyms_are_known =
         transformation_context.GetFactManager()
             ->GetIdsForWhichSynonymsAreKnown();
@@ -1152,7 +1157,8 @@ TEST(TransformationAddSynonymTest, MiscellaneousCopies) {
   for (auto& transformation : transformations) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -1292,13 +1298,16 @@ TEST(TransformationAddSynonymTest, PropagateIrrelevantPointeeFact) {
 
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
 
   ASSERT_TRUE(
       transformation_context.GetFactManager()->PointeeValueIsIrrelevant(8));

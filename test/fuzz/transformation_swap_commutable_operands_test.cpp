@@ -343,23 +343,23 @@ TEST(TransformationSwapCommutableOperandsTest, ApplyTest) {
   auto instructionDescriptor = MakeInstructionDescriptor(22, SpvOpIAdd, 0);
   auto transformation =
       TransformationSwapCommutableOperands(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor = MakeInstructionDescriptor(28, SpvOpIMul, 0);
   transformation = TransformationSwapCommutableOperands(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor = MakeInstructionDescriptor(42, SpvOpFAdd, 0);
   transformation = TransformationSwapCommutableOperands(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor = MakeInstructionDescriptor(48, SpvOpFMul, 0);
   transformation = TransformationSwapCommutableOperands(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   instructionDescriptor = MakeInstructionDescriptor(66, SpvOpDot, 0);
   transformation = TransformationSwapCommutableOperands(instructionDescriptor);
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variantShader = R"(
                OpCapability Shader

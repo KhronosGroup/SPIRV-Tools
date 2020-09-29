@@ -213,5 +213,9 @@ bool TransformationSetLoopControl::PeelCountIsSupported(
   }
 }
 
+std::unordered_set<uint32_t> TransformationSetLoopControl::GetFreshIds() const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

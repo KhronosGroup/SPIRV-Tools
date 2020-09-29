@@ -303,7 +303,8 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       210);
   ASSERT_TRUE(global_constant_synonym.IsApplicable(context.get(),
                                                    transformation_context));
-  global_constant_synonym.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(global_constant_synonym, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto replace_vector_access_chain_index = TransformationReplaceIdWithSynonym(
@@ -312,8 +313,8 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       204);
   ASSERT_TRUE(replace_vector_access_chain_index.IsApplicable(
       context.get(), transformation_context));
-  replace_vector_access_chain_index.Apply(context.get(),
-                                          &transformation_context);
+  ApplyAndCheckFreshIds(replace_vector_access_chain_index, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // This is an interesting case because it replaces something that is being
@@ -324,7 +325,8 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       201);
   ASSERT_TRUE(
       regular_replacement.IsApplicable(context.get(), transformation_context));
-  regular_replacement.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(regular_replacement, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto regular_replacement2 = TransformationReplaceIdWithSynonym(
@@ -332,14 +334,15 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       203);
   ASSERT_TRUE(
       regular_replacement2.IsApplicable(context.get(), transformation_context));
-  regular_replacement2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(regular_replacement2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   auto good_op_phi = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(74, MakeInstructionDescriptor(86, SpvOpPhi, 0), 2),
       205);
   ASSERT_TRUE(good_op_phi.IsApplicable(context.get(), transformation_context));
-  good_op_phi.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(good_op_phi, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   const std::string after_transformation = R"(
@@ -526,7 +529,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       MakeIdUseDescriptor(10, MakeInstructionDescriptor(11, SpvOpLoad, 0), 0),
       100);
   ASSERT_TRUE(replacement1.IsApplicable(context.get(), transformation_context));
-  replacement1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement1, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %8 with %101 in:
@@ -535,7 +538,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       MakeIdUseDescriptor(8, MakeInstructionDescriptor(11, SpvOpStore, 0), 0),
       101);
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
-  replacement2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement2, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %8 with %101 in:
@@ -544,7 +547,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       MakeIdUseDescriptor(8, MakeInstructionDescriptor(12, SpvOpLoad, 0), 0),
       101);
   ASSERT_TRUE(replacement3.IsApplicable(context.get(), transformation_context));
-  replacement3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement3, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replace %10 with %100 in:
@@ -553,7 +556,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       MakeIdUseDescriptor(10, MakeInstructionDescriptor(12, SpvOpStore, 0), 0),
       100);
   ASSERT_TRUE(replacement4.IsApplicable(context.get(), transformation_context));
-  replacement4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement4, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   const std::string after_transformation = R"(
@@ -866,7 +869,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
           16, MakeInstructionDescriptor(52, SpvOpAccessChain, 0), 1),
       100);
   ASSERT_TRUE(replacement4.IsApplicable(context.get(), transformation_context));
-  replacement4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement4, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %52 = OpAccessChain %23 %50 %16 *%16*
@@ -897,7 +900,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
           16, MakeInstructionDescriptor(53, SpvOpAccessChain, 0), 4),
       100);
   ASSERT_TRUE(replacement7.IsApplicable(context.get(), transformation_context));
-  replacement7.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement7, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replacements of the form %21 -> %101
@@ -931,7 +934,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       101);
   ASSERT_TRUE(
       replacement10.IsApplicable(context.get(), transformation_context));
-  replacement10.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement10, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %44 = OpAccessChain %23 %37 *%21* %21 %43
@@ -973,7 +976,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       101);
   ASSERT_TRUE(
       replacement14.IsApplicable(context.get(), transformation_context));
-  replacement14.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement14, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %53 = OpAccessChain %19 %50 %21 *%21* %16 %16
@@ -1027,7 +1030,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       102);
   ASSERT_TRUE(
       replacement19.IsApplicable(context.get(), transformation_context));
-  replacement19.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement19, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %27 = OpAccessChain %26 %15 %17
@@ -1059,7 +1062,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       102);
   ASSERT_TRUE(
       replacement22.IsApplicable(context.get(), transformation_context));
-  replacement22.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement22, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %58 = OpInBoundsAccessChain %26 %50 %57 %21 %17
@@ -1083,7 +1086,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       103);
   ASSERT_TRUE(
       replacement24.IsApplicable(context.get(), transformation_context));
-  replacement24.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement24, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replacements of the form %32 -> %106
@@ -1097,7 +1100,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       106);
   ASSERT_TRUE(
       replacement25.IsApplicable(context.get(), transformation_context));
-  replacement25.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement25, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replacements of the form %43 -> %107
@@ -1111,7 +1114,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       107);
   ASSERT_TRUE(
       replacement26.IsApplicable(context.get(), transformation_context));
-  replacement26.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement26, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replacements of the form %55 -> %108
@@ -1125,7 +1128,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       108);
   ASSERT_TRUE(
       replacement27.IsApplicable(context.get(), transformation_context));
-  replacement27.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement27, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // Replacements of the form %8 -> %109
@@ -1139,7 +1142,7 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       109);
   ASSERT_TRUE(
       replacement28.IsApplicable(context.get(), transformation_context));
-  replacement28.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement28, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   const std::string after_transformation = R"(
@@ -1315,7 +1318,7 @@ TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
           12, MakeInstructionDescriptor(16, SpvOpAccessChain, 0), 2),
       50);
   ASSERT_TRUE(replacement1.IsApplicable(context.get(), transformation_context));
-  replacement1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement1, context.get(), &transformation_context);
 
   // Fine to replace an index into a vector inside the runtime array.
   auto replacement2 = TransformationReplaceIdWithSynonym(
@@ -1323,7 +1326,7 @@ TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
           14, MakeInstructionDescriptor(16, SpvOpAccessChain, 0), 3),
       51);
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
-  replacement2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement2, context.get(), &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -1474,21 +1477,21 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerConstants) {
                           0),
       13);
   ASSERT_TRUE(replacement1.IsApplicable(context.get(), transformation_context));
-  replacement1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement1, context.get(), &transformation_context);
 
   // Legal because OpIAdd does not care about the signedness of the operands
   auto replacement2 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(10, MakeInstructionDescriptor(16, SpvOpIAdd, 0), 0),
       13);
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
-  replacement2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement2, context.get(), &transformation_context);
 
   // Legal because OpSDiv does not care about the signedness of the operands
   auto replacement3 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(10, MakeInstructionDescriptor(17, SpvOpSDiv, 0), 0),
       13);
   ASSERT_TRUE(replacement3.IsApplicable(context.get(), transformation_context));
-  replacement3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement3, context.get(), &transformation_context);
 
   // Not legal because OpUDiv requires unsigned integers
   ASSERT_FALSE(TransformationReplaceIdWithSynonym(
@@ -1503,7 +1506,7 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerConstants) {
                           0),
       13);
   ASSERT_TRUE(replacement4.IsApplicable(context.get(), transformation_context));
-  replacement4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement4, context.get(), &transformation_context);
 
   // Not legal because OpSelect requires both operands to have the same type as
   // the result type
@@ -1615,7 +1618,7 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
       MakeIdUseDescriptor(14, MakeInstructionDescriptor(18, SpvOpIAdd, 0), 0),
       15);
   ASSERT_TRUE(replacement1.IsApplicable(context.get(), transformation_context));
-  replacement1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement1, context.get(), &transformation_context);
 
   // Not legal because OpStore requires the object to match the type pointed
   // to by the pointer.
@@ -1635,7 +1638,7 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
           13, MakeInstructionDescriptor(19, SpvOpAccessChain, 0), 1),
       12);
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
-  replacement2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(replacement2, context.get(), &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 

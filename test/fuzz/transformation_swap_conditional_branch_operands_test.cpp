@@ -91,7 +91,7 @@ TEST(TransformationSwapConditionalBranchOperandsTest, BasicTest) {
       MakeInstructionDescriptor(15, SpvOpBranchConditional, 0), 26);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string after_transformation = R"(
                OpCapability Shader

@@ -218,7 +218,8 @@ TEST(TransformationAddFunctionTest, BasicTest) {
 
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation1 = R"(
@@ -339,7 +340,8 @@ TEST(TransformationAddFunctionTest, BasicTest) {
 
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation2 = R"(
@@ -640,7 +642,8 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
-  add_dead_function.Apply(context1.get(), &transformation_context1);
+  ApplyAndCheckFreshIds(add_dead_function, context1.get(),
+                        &transformation_context1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(
@@ -725,7 +728,8 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
                                                   loop_limiters, 0, {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(),
                                                  transformation_context2));
-  add_livesafe_function.Apply(context2.get(), &transformation_context2);
+  ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
+                        &transformation_context2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(30));
@@ -860,7 +864,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
-  add_dead_function.Apply(context1.get(), &transformation_context1);
+  ApplyAndCheckFreshIds(add_dead_function, context1.get(),
+                        &transformation_context1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(
@@ -906,7 +911,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
                                                   {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(),
                                                  transformation_context2));
-  add_livesafe_function.Apply(context2.get(), &transformation_context2);
+  ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
+                        &transformation_context2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(10));
@@ -1013,7 +1019,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
-  add_dead_function.Apply(context1.get(), &transformation_context1);
+  ApplyAndCheckFreshIds(add_dead_function, context1.get(),
+                        &transformation_context1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(
@@ -1060,7 +1067,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
                                                   {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(),
                                                  transformation_context2));
-  add_livesafe_function.Apply(context2.get(), &transformation_context2);
+  ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
+                        &transformation_context2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(10));
@@ -1298,7 +1306,8 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
-  add_dead_function.Apply(context1.get(), &transformation_context1);
+  ApplyAndCheckFreshIds(add_dead_function, context1.get(),
+                        &transformation_context1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The function should not be deemed livesafe
   ASSERT_FALSE(
@@ -1438,7 +1447,8 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
                                                   access_chain_clamping_info);
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(),
                                                  transformation_context2));
-  add_livesafe_function.Apply(context2.get(), &transformation_context2);
+  ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
+                        &transformation_context2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The function should be deemed livesafe
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(12));
@@ -1626,7 +1636,8 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
-  add_dead_function.Apply(context1.get(), &transformation_context1);
+  ApplyAndCheckFreshIds(add_dead_function, context1.get(),
+                        &transformation_context1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The function should not be deemed livesafe
   ASSERT_FALSE(transformation_context1.GetFactManager()->FunctionIsLivesafe(8));
@@ -1663,7 +1674,8 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
                                                   {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context2.get(),
                                                  transformation_context2));
-  add_livesafe_function.Apply(context2.get(), &transformation_context2);
+  ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
+                        &transformation_context2);
   ASSERT_TRUE(IsValid(env, context2.get()));
   // The function should be deemed livesafe
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(8));
@@ -1721,7 +1733,8 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
   TransformationAddFunction add_dead_function(instructions);
   ASSERT_TRUE(
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
-  add_dead_function.Apply(context1.get(), &transformation_context1);
+  ApplyAndCheckFreshIds(add_dead_function, context1.get(),
+                        &transformation_context1);
   ASSERT_TRUE(IsValid(env, context1.get()));
   // The function should not be deemed livesafe
   ASSERT_FALSE(transformation_context1.GetFactManager()->FunctionIsLivesafe(8));
@@ -1858,7 +1871,8 @@ TEST(TransformationAddFunctionTest,
                                                   {loop_limiter_info}, 0, {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(),
                                                  transformation_context));
-  add_livesafe_function.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string expected = R"(
                OpCapability Shader
@@ -2013,7 +2027,8 @@ TEST(TransformationAddFunctionTest,
                                                   {loop_limiter_info}, 0, {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(),
                                                  transformation_context));
-  add_livesafe_function.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string expected = R"(
                OpCapability Shader
@@ -2166,7 +2181,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
                                                   {loop_limiter_info}, 0, {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(),
                                                  transformation_context));
-  add_livesafe_function.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string expected = R"(
                OpCapability Shader
@@ -2423,7 +2439,8 @@ TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
                                                   {loop_limiter_info}, 0, {});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(),
                                                  transformation_context));
-  add_livesafe_function.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string expected = R"(
                OpCapability Shader
@@ -2597,7 +2614,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi1) {
                                              {loop_limiter_info}, 0, {});
   ASSERT_TRUE(
       with_op_phi_data.IsApplicable(context.get(), transformation_context));
-  with_op_phi_data.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(with_op_phi_data, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string expected = R"(
                OpCapability Shader
@@ -2777,7 +2795,7 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
                                            {loop_limiter_info}, 0, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string expected = R"(
                OpCapability Shader
@@ -2918,7 +2936,8 @@ TEST(TransformationAddFunctionTest, StaticallyOutOfBoundsArrayAccess) {
       instructions, 0, 0, {}, 0, {MakeAccessClampingInfo(17, {{100, 101}})});
   ASSERT_TRUE(add_livesafe_function.IsApplicable(context.get(),
                                                  transformation_context));
-  add_livesafe_function.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   std::string expected = R"(
                OpCapability Shader

@@ -389,7 +389,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
       12, 13, 11, 10, 15, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -400,7 +401,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
       12, 13, 11, 10, 17, 107, 108, 109, 110, 111, 112, 113, 114);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(107, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -411,7 +413,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
       12, 13, 11, 10, 26, 115, 116, 117, 118, 119, 120, 121, 0);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(115, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -562,7 +565,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
       12, 18, 16, 10, 26, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -572,7 +576,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
       12, 18, 11, 10, 27, 108, 109, 110, 111, 112, 113, 114, 0);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(108, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -582,7 +587,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
       17, 18, 16, 10, 28, 115, 116, 117, 118, 119, 120, 121, 0);
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(17, {}), MakeDataDescriptor(115, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -592,7 +598,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
       22, 23, 24, 10, 29, 122, 123, 124, 125, 126, 127, 128, 0);
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
-  transformation4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation4, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(22, {}), MakeDataDescriptor(122, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -602,7 +609,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
       21, 23, 24, 10, 30, 129, 130, 131, 132, 133, 134, 135, 0);
   ASSERT_TRUE(
       transformation5.IsApplicable(context.get(), transformation_context));
-  transformation5.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation5, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(21, {}), MakeDataDescriptor(129, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -751,7 +759,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
       13, 14, 12, 10, 20, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(13, {}), MakeDataDescriptor(100, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -761,7 +770,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
       16, 17, 18, 10, 21, 107, 108, 109, 110, 111, 112, 113, 0);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(16, {}), MakeDataDescriptor(107, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -869,7 +879,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
       12, 8, 14, 11, 17, 100, 101, 102, 103, 104, 105, 106, 0);
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
   ASSERT_TRUE(IsValid(env, context.get()));
@@ -880,7 +891,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
       15, 8, 11, 10, 18, 107, 108, 109, 110, 111, 112, 113, 0);
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(15, {}), MakeDataDescriptor(107, {})));
   ASSERT_TRUE(IsValid(env, context.get()));

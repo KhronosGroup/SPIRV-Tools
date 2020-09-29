@@ -158,5 +158,10 @@ void TransformationAddDeadContinue::ApplyImpl(
       message_.phi_id());
 }
 
+std::unordered_set<uint32_t> TransformationAddDeadContinue::GetFreshIds()
+    const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

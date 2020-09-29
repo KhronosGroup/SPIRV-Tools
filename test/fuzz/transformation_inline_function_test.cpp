@@ -291,7 +291,7 @@ TEST(TransformationInlineFunctionTest, Apply) {
                                                           {36, 59},
                                                           {37, 60},
                                                           {38, 61}});
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -515,7 +515,7 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
   auto transformation = TransformationInlineFunction(30, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   // Tests a parameter included in the id map.
   transformation = TransformationInlineFunction(25, {{55, 69},
@@ -559,7 +559,7 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
                                                      {66, 78}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   transformation = TransformationInlineFunction(21, {{39, 79},
                                                      {40, 80},
@@ -578,7 +578,7 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
                                                      {53, 93}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -785,7 +785,7 @@ TEST(TransformationInlineFunctionTest, HandlesOpPhisInTheSecondBlock) {
                                               {{{8, 20}, {13, 21}, {12, 22}}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(

@@ -64,6 +64,8 @@ class TransformationReplaceLoadStoreWithCopyMemory : public Transformation {
   static bool IsStorageClassSafeAcrossMemoryBarriers(
       SpvStorageClass storage_class);
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
  private:

@@ -61,6 +61,8 @@ class TransformationAddOpPhiSynonym : public Transformation {
   // enabled and the storage class is Workgroup or StorageBuffer.
   static bool CheckTypeIsAllowed(opt::IRContext* ir_context, uint32_t type_id);
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
  private:

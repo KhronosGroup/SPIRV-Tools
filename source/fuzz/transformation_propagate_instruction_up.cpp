@@ -398,5 +398,14 @@ bool TransformationPropagateInstructionUp::IsApplicableToBlock(
                      });
 }
 
+std::unordered_set<uint32_t> TransformationPropagateInstructionUp::GetFreshIds()
+    const {
+  std::unordered_set<uint32_t> result;
+  for (auto& pair : message_.predecessor_id_to_fresh_id()) {
+    result.insert(pair.second());
+  }
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

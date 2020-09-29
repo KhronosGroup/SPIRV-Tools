@@ -122,5 +122,10 @@ bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
   return true;
 }
 
+std::unordered_set<uint32_t>
+TransformationRecordSynonymousConstants::GetFreshIds() const {
+  return std::unordered_set<uint32_t>();
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

@@ -244,22 +244,26 @@ TEST(TransformationFlattenConditionalBranchTest, Simple) {
   auto transformation1 = TransformationFlattenConditionalBranch(7, true, {});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
 
   auto transformation2 = TransformationFlattenConditionalBranch(13, false, {});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
 
   auto transformation3 = TransformationFlattenConditionalBranch(15, true, {});
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
 
   auto transformation4 = TransformationFlattenConditionalBranch(22, false, {});
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
-  transformation4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation4, context.get(),
+                        &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -481,15 +485,18 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                                  106, 105)});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
 
   // Check that the placeholder id was marked as irrelevant.
   ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(103));
 
   // Make a new transformation context with a source of overflow ids.
+  auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(1000);
+  auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
   TransformationContext new_transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options,
-      MakeUnique<CounterOverflowIdSource>(1000));
+      std::move(overflow_ids_unique_ptr));
 
   auto transformation2 = TransformationFlattenConditionalBranch(
       36, false,
@@ -497,7 +504,9 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                                  114, 113)});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), new_transformation_context));
-  transformation2.Apply(context.get(), &new_transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &new_transformation_context,
+                        overflow_ids_ptr->GetIssuedOverflowIds());
 
   ASSERT_TRUE(IsValid(env, context.get()));
 
@@ -697,7 +706,8 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
           MakeInstructionDescriptor(10, SpvOpFunctionCall, 0), 100, 101)}});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
 
   // The selection construct headed by %8 cannot be flattened because it
   // contains a function call returning void, whose result id is used.
@@ -715,7 +725,8 @@ TEST(TransformationFlattenConditionalBranchTest, EdgeCases) {
   auto transformation2 = TransformationFlattenConditionalBranch(20, false, {});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
 
   ASSERT_TRUE(IsValid(env, context.get()));
 

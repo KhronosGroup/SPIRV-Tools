@@ -53,7 +53,7 @@ TEST(TransformationOutlineFunctionTest, TrivialOutline) {
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -171,7 +171,7 @@ TEST(TransformationOutlineFunctionTest, OutlineInterestingControlFlowNoState) {
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -258,7 +258,7 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesUnusedIds) {
                                                /* not relevant */ 201, {}, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -333,7 +333,7 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatGeneratesSingleUsedId) {
                                                105, {}, {{9, 104}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -431,7 +431,7 @@ TEST(TransformationOutlineFunctionTest, OutlineDiamondThatGeneratesSeveralIds) {
       {{15, 106}, {9, 107}, {7, 108}, {8, 109}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -528,7 +528,7 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesASingleId) {
                                                105, {{7, 106}}, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -604,7 +604,7 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAVariable) {
                                                105, {{13, 106}}, {});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -690,7 +690,7 @@ TEST(TransformationOutlineFunctionTest, OutlineCodeThatUsesAParameter) {
                                                105, {{9, 106}}, {{14, 107}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1186,7 +1186,7 @@ TEST(TransformationOutlineFunctionTest, OutlineRegionEndingWithReturnVoid) {
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1275,7 +1275,7 @@ TEST(TransformationOutlineFunctionTest, OutlineRegionEndingWithReturnValue) {
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1368,7 +1368,7 @@ TEST(TransformationOutlineFunctionTest,
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1456,7 +1456,7 @@ TEST(TransformationOutlineFunctionTest,
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1833,7 +1833,7 @@ TEST(TransformationOutlineFunctionTest,
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1993,7 +1993,7 @@ TEST(TransformationOutlineFunctionTest, OutlineLivesafe) {
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // The original function should still be livesafe.
@@ -2218,7 +2218,7 @@ TEST(TransformationOutlineFunctionTest, OutlineWithDeadBlocks1) {
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   // All the original blocks, plus the new function entry block, should be dead.
   for (uint32_t block_id : {16u, 23u, 24u, 26u, 27u, 34u, 35u, 50u, 203u}) {
@@ -2300,7 +2300,7 @@ TEST(TransformationOutlineFunctionTest, OutlineWithDeadBlocks2) {
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   // The blocks that were originally dead, but not others, should be dead.
   for (uint32_t block_id : {32u, 34u, 35u}) {
@@ -2383,7 +2383,7 @@ TEST(TransformationOutlineFunctionTest,
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   // The variables that were originally irrelevant, plus input parameters
   // corresponding to them, should be irrelevant.  The rest should not be.
@@ -2509,7 +2509,7 @@ TEST(TransformationOutlineFunctionTest, ExitBlockHeadsLoop) {
 
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 }
 
 TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
@@ -2693,7 +2693,8 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
 
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
 
     std::string variant_shader = R"(
@@ -2814,17 +2815,20 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous1) {
     const auto context =
         BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
     ASSERT_TRUE(IsValid(env, context.get()));
+    auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(2000);
+    auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
     TransformationContext new_transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options,
-        MakeUnique<CounterOverflowIdSource>(2000));
+        std::move(overflow_ids_unique_ptr));
     ASSERT_TRUE(transformation_with_missing_input_id.IsApplicable(
         context.get(), new_transformation_context));
     ASSERT_TRUE(transformation_with_missing_output_id.IsApplicable(
         context.get(), new_transformation_context));
     ASSERT_TRUE(transformation_with_missing_input_and_output_ids.IsApplicable(
         context.get(), new_transformation_context));
-    transformation_with_missing_input_and_output_ids.Apply(
-        context.get(), &new_transformation_context);
+    ApplyAndCheckFreshIds(transformation_with_missing_input_and_output_ids,
+                          context.get(), &new_transformation_context,
+                          overflow_ids_ptr->GetIssuedOverflowIds());
     ASSERT_TRUE(IsValid(env, context.get()));
 
     std::string variant_shader = R"(
@@ -3049,7 +3053,7 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous3) {
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -3140,7 +3144,7 @@ TEST(TransformationOutlineFunctionTest, Miscellaneous4) {
 
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(

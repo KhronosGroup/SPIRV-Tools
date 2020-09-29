@@ -143,5 +143,10 @@ TransformationReplaceCopyObjectWithStoreLoad::ToMessage() const {
   return result;
 }
 
+std::unordered_set<uint32_t>
+TransformationReplaceCopyObjectWithStoreLoad::GetFreshIds() const {
+  return {message_.fresh_variable_id()};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

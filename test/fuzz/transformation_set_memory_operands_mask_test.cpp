@@ -115,7 +115,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
         SpvMemoryAccessAlignedMask | SpvMemoryAccessVolatileMask, 0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   // Not OK to remove Aligned
@@ -139,7 +140,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
         0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   // Not OK to remove Volatile
@@ -161,7 +163,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
         SpvMemoryAccessNontemporalMask | SpvMemoryAccessVolatileMask, 0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -171,7 +174,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
         SpvMemoryAccessNontemporalMask | SpvMemoryAccessVolatileMask, 0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -181,7 +185,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
         SpvMemoryAccessNontemporalMask | SpvMemoryAccessVolatileMask, 0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -191,7 +196,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, PreSpirv14) {
         SpvMemoryAccessVolatileMask, 0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   std::string after_transformation = R"(
@@ -350,7 +356,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
                      .IsApplicable(context.get(), transformation_context));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -364,7 +371,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
                      .IsApplicable(context.get(), transformation_context));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -374,7 +382,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
         SpvMemoryAccessNontemporalMask | SpvMemoryAccessVolatileMask, 0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -384,7 +393,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
         SpvMemoryAccessNontemporalMask | SpvMemoryAccessVolatileMask, 1);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -399,7 +409,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
             .IsApplicable(context.get(), transformation_context));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -408,7 +419,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
         SpvMemoryAccessVolatileMask, 1);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -417,7 +429,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
         SpvMemoryAccessVolatileMask | SpvMemoryAccessAlignedMask, 0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -426,7 +439,8 @@ TEST(TransformationSetMemoryOperandsMaskTest, Spirv14) {
         0);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
   }
 
   std::string after_transformation = R"(

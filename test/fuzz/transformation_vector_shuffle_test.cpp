@@ -246,7 +246,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 200, 12, 112, {1, 0});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   temp_dd = MakeDataDescriptor(200, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(11, {}), temp_dd));
@@ -259,7 +260,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
       {0xFFFFFFFF, 3, 5});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   temp_dd = MakeDataDescriptor(201, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(11, {}), temp_dd));
@@ -271,7 +273,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 202, 27, 35, {5, 4, 1});
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
   temp_dd = MakeDataDescriptor(202, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(26, {}), temp_dd));
@@ -286,7 +289,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 203, 42, 46, {0, 1});
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
-  transformation4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation4, context.get(),
+                        &transformation_context);
   temp_dd = MakeDataDescriptor(203, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(40, {}), temp_dd));
@@ -298,7 +302,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 204, 42, 46, {2, 3, 4});
   ASSERT_TRUE(
       transformation5.IsApplicable(context.get(), transformation_context));
-  transformation5.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation5, context.get(),
+                        &transformation_context);
   temp_dd = MakeDataDescriptor(204, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(40, {}), temp_dd));
@@ -314,7 +319,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
       {0, 1, 2, 3});
   ASSERT_TRUE(
       transformation6.IsApplicable(context.get(), transformation_context));
-  transformation6.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation6, context.get(),
+                        &transformation_context);
   temp_dd = MakeDataDescriptor(205, {0});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(40, {}), temp_dd));
@@ -334,7 +340,8 @@ TEST(TransformationVectorShuffle, BasicTest) {
       {0xFFFFFFFF, 3, 6, 0xFFFFFFFF});
   ASSERT_TRUE(
       transformation7.IsApplicable(context.get(), transformation_context));
-  transformation7.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation7, context.get(),
+                        &transformation_context);
   temp_dd = MakeDataDescriptor(206, {1});
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(56, {}), temp_dd));
@@ -609,7 +616,7 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds1) {
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 200, 12, 112, {2, 0});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {0}), MakeDataDescriptor(200, {1})));
@@ -690,7 +697,7 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds2) {
       MakeInstructionDescriptor(100, SpvOpReturn, 0), 200, 12, 112, {2, 0});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {0}), MakeDataDescriptor(200, {1})));

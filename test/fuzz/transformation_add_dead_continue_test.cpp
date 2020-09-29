@@ -142,17 +142,20 @@ TEST(TransformationAddDeadContinueTest, SimpleExample) {
 
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -383,7 +386,8 @@ TEST(TransformationAddDeadContinueTest, LoopNest) {
     const TransformationAddDeadContinue transformation(from_block, true, {});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_FALSE(
         transformation.IsApplicable(context.get(), transformation_context));
   }
@@ -621,7 +625,8 @@ TEST(TransformationAddDeadConditionalTest, LoopInContinueConstruct) {
     const TransformationAddDeadContinue transformation(from_block, false, {});
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_FALSE(
         transformation.IsApplicable(context.get(), transformation_context));
   }
@@ -830,12 +835,14 @@ TEST(TransformationAddDeadContinueTest, PhiInstructions) {
   auto transformation1 = TransformationAddDeadContinue(29, true, {13, 21});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
 
   auto transformation2 = TransformationAddDeadContinue(30, true, {22, 46});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
 
   // 75 already has the continue block as a successor, so we should not provide
   // phi ids.
@@ -846,7 +853,8 @@ TEST(TransformationAddDeadContinueTest, PhiInstructions) {
   auto transformation3 = TransformationAddDeadContinue(75, true, {});
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -1002,19 +1010,22 @@ TEST(TransformationAddDeadContinueTest, RespectDominanceRules1) {
   auto good_transformation_1 = TransformationAddDeadContinue(7, false, {});
   ASSERT_TRUE(good_transformation_1.IsApplicable(context.get(),
                                                  transformation_context));
-  good_transformation_1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(good_transformation_1, context.get(),
+                        &transformation_context);
 
   auto good_transformation_2 = TransformationAddDeadContinue(22, false, {});
   ASSERT_TRUE(good_transformation_2.IsApplicable(context.get(),
                                                  transformation_context));
-  good_transformation_2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(good_transformation_2, context.get(),
+                        &transformation_context);
 
   // This transformation is OK, because the definition of %21 in the loop body
   // is only used in an OpPhi in the loop's continue target.
   auto good_transformation_3 = TransformationAddDeadContinue(6, false, {11});
   ASSERT_TRUE(good_transformation_3.IsApplicable(context.get(),
                                                  transformation_context));
-  good_transformation_3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(good_transformation_3, context.get(),
+                        &transformation_context);
 
   std::string after_transformations = R"(
                OpCapability Shader
