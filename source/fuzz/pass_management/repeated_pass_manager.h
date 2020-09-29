@@ -34,9 +34,11 @@ class RepeatedPassManager {
 
   virtual ~RepeatedPassManager();
 
-  // Returns the fuzzer pass instance that should be run next.  The transformations that have been applied so far are
-  // provided via |applied_transformations| and can be used to influence the decision.
-  virtual FuzzerPass* ChoosePass(const protobufs::TransformationSequence& applied_transformations) = 0;
+  // Returns the fuzzer pass instance that should be run next.  The
+  // transformations that have been applied so far are provided via
+  // |applied_transformations| and can be used to influence the decision.
+  virtual FuzzerPass* ChoosePass(
+      const protobufs::TransformationSequence& applied_transformations) = 0;
 
  protected:
   FuzzerContext* GetFuzzerContext() { return fuzzer_context_; }

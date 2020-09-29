@@ -315,8 +315,9 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
   }
 
   do {
-    if (!ApplyPassAndCheckValidity(repeated_pass_manager->ChoosePass(transformation_sequence_out_),
-                                   tools)) {
+    if (!ApplyPassAndCheckValidity(
+            repeated_pass_manager->ChoosePass(transformation_sequence_out_),
+            tools)) {
       return {Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule,
               std::vector<uint32_t>(), protobufs::TransformationSequence()};
     }

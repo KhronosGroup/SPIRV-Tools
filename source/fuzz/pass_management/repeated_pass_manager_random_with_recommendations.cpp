@@ -23,18 +23,24 @@ RepeatedPassManagerRandomWithRecommendations::
         RepeatedPassRecommender* pass_recommender)
     : RepeatedPassManager(fuzzer_context, pass_instances),
       pass_recommender_(pass_recommender),
-num_transformations_applied_before_last_pass_choice_(0),
-last_pass_choice_(nullptr) {}
+      num_transformations_applied_before_last_pass_choice_(0),
+      last_pass_choice_(nullptr) {}
 
 RepeatedPassManagerRandomWithRecommendations::
     ~RepeatedPassManagerRandomWithRecommendations() = default;
 
-FuzzerPass* RepeatedPassManagerRandomWithRecommendations::ChoosePass(const protobufs::TransformationSequence& applied_transformations) {
-  assert (static_cast<uint32_t>(applied_transformations.transformation_size()) >= num_transformations_applied_before_last_pass_choice_ && "The number of applied transformations should not decrease.");
-  if (last_pass_choice_ != nullptr && static_cast<uint32_t>(applied_transformations.transformation_size()) > num_transformations_applied_before_last_pass_choice_) {
-    // The last pass had some effect, so we make future recommendations based on it.
+FuzzerPass* RepeatedPassManagerRandomWithRecommendations::ChoosePass(
+    const protobufs::TransformationSequence& applied_transformations) {
+  assert(static_cast<uint32_t>(applied_transformations.transformation_size()) >=
+             num_transformations_applied_before_last_pass_choice_ &&
+         "The number of applied transformations should not decrease.");
+  if (last_pass_choice_ != nullptr &&
+      static_cast<uint32_t>(applied_transformations.transformation_size()) >
+          num_transformations_applied_before_last_pass_choice_) {
+    // The last pass had some effect, so we make future recommendations based on
+    // it.
     for (auto future_pass :
-        pass_recommender_->GetFuturePassRecommendations(*last_pass_choice_)) {
+         pass_recommender_->GetFuturePassRecommendations(*last_pass_choice_)) {
       recommended_passes_.push_back(future_pass);
     }
   }

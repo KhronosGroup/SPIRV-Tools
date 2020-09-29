@@ -41,7 +41,8 @@ class RepeatedPassManagerLoopedWithRecommendations
 
   ~RepeatedPassManagerLoopedWithRecommendations() override;
 
-  FuzzerPass* ChoosePass(const protobufs::TransformationSequence& applied_transformations) override;
+  FuzzerPass* ChoosePass(const protobufs::TransformationSequence&
+                             applied_transformations) override;
 
  private:
   // The loop of fuzzer passes to be applied, populated on construction.

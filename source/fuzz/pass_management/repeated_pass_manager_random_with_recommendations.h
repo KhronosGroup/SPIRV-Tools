@@ -42,7 +42,8 @@ class RepeatedPassManagerRandomWithRecommendations
 
   ~RepeatedPassManagerRandomWithRecommendations() override;
 
-  FuzzerPass* ChoosePass(const protobufs::TransformationSequence& applied_transformations) override;
+  FuzzerPass* ChoosePass(const protobufs::TransformationSequence&
+                             applied_transformations) override;
 
  private:
   // The queue of passes that have been recommended based on previously-chosen
