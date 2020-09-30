@@ -1,4 +1,5 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2017 Google Inc. 
+// Modifications Copyright (C) 2020 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -5100,7 +5101,6 @@ OpCapability Int64ImageEXT
   CompileSuccessfully(GenerateShaderCode("",extra,"Fragment","",SPV_ENV_UNIVERSAL_1_3,"GLSL450",declarations_image64).c_str());
   ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
 }
-
 
 TEST_F(ValidateImage, ImageTexelPointer64Success) {
   const std::string body = R"(
