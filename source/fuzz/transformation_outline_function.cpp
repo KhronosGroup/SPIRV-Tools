@@ -367,10 +367,10 @@ void TransformationOutlineFunction::Apply(
 
   // Fill out the body of the outlined function according to the region that is
   // being outlined.
-  PopulateOutlinedFunction(
-      *original_region_entry_block, *original_region_exit_block, region_blocks,
-      region_output_ids, output_id_to_fresh_id_map, ir_context,
-      outlined_function.get());
+  PopulateOutlinedFunction(*original_region_entry_block,
+                           *original_region_exit_block, region_blocks,
+                           region_output_ids, output_id_to_fresh_id_map,
+                           ir_context, outlined_function.get());
 
   // Collapse the region that has been outlined into a function down to a single
   // block that calls said function.

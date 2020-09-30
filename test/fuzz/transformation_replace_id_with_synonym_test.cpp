@@ -520,8 +520,10 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(10, 100));
-  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(8, 101));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(10, 100));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(8, 101));
 
   // Replace %10 with %100 in:
   // %11 = OpLoad %6 %10
@@ -650,7 +652,8 @@ TEST(TransformationReplaceIdWithSynonymTest,
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(14, 100));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(14, 100));
 
   // Replace %14 with %100 in:
   // %16 = OpFunctionCall %2 %10 %14

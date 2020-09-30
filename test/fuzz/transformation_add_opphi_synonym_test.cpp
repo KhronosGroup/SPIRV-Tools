@@ -89,7 +89,8 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
-  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(23, 24));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(23, 24));
 
   // %13 is not a block label.
   ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{}}, 100)
@@ -357,7 +358,8 @@ TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Declare synonyms
   transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(3, 15));
-  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(12, 16));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(12, 16));
 
   // Remove the VariablePointers capability.
   context.get()->get_feature_mgr()->RemoveCapability(

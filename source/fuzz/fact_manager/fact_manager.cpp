@@ -95,7 +95,7 @@ FactManager::FactManager(opt::IRContext* ir_context)
       irrelevant_value_facts_(ir_context) {}
 
 void FactManager::AddInitialFacts(const MessageConsumer& message_consumer,
-                           const protobufs::FactSequence& facts) {
+                                  const protobufs::FactSequence& facts) {
   for (auto& fact : facts.fact()) {
     if (!MaybeAddFact(fact)) {
       auto message = "Invalid fact " + ToString(fact) + " ignored.";
@@ -209,7 +209,8 @@ bool FactManager::FunctionIsLivesafe(uint32_t function_id) const {
 void FactManager::AddFactFunctionIsLivesafe(uint32_t function_id) {
   protobufs::FactFunctionIsLivesafe fact;
   fact.set_function_id(function_id);
-  assert(livesafe_function_facts_.MaybeAddFact(fact) && "|function_id| is invalid");
+  assert(livesafe_function_facts_.MaybeAddFact(fact) &&
+         "|function_id| is invalid");
 }
 
 bool FactManager::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
