@@ -76,6 +76,8 @@ class TransformationWrapRegionInSelection : public Transformation {
                                        uint32_t header_block_candidate_id,
                                        uint32_t merge_block_candidate_id);
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
  private:
   protobufs::TransformationWrapRegionInSelection message_;
 };

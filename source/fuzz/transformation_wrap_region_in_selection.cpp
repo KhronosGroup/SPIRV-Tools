@@ -157,5 +157,10 @@ bool TransformationWrapRegionInSelection::IsApplicableToBlockRange(
   return true;
 }
 
+std::unordered_set<uint32_t> TransformationWrapRegionInSelection::GetFreshIds()
+    const {
+  return {};
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

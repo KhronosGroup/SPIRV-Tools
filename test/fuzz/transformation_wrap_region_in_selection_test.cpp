@@ -96,10 +96,9 @@ TEST(TransformationWrapRegionInSelectionTest, BasicTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  FactManager fact_manager(context.get());
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Boolean constant does not exist.
   ASSERT_FALSE(TransformationWrapRegionInSelection(5, 6, false)
@@ -109,7 +108,7 @@ TEST(TransformationWrapRegionInSelectionTest, BasicTest) {
   ASSERT_FALSE(TransformationWrapRegionInSelection(5, 6, true)
                    .IsApplicable(context.get(), transformation_context));
 
-  fact_manager.AddFactIdIsIrrelevant(8);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(8);
 
   // Block ids are invalid.
   ASSERT_FALSE(TransformationWrapRegionInSelection(100, 6, true)
@@ -161,7 +160,8 @@ TEST(TransformationWrapRegionInSelectionTest, BasicTest) {
     TransformationWrapRegionInSelection transformation(15, 16, true);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -169,7 +169,8 @@ TEST(TransformationWrapRegionInSelectionTest, BasicTest) {
     TransformationWrapRegionInSelection transformation(5, 6, true);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
   {
@@ -177,7 +178,8 @@ TEST(TransformationWrapRegionInSelectionTest, BasicTest) {
     TransformationWrapRegionInSelection transformation(10, 26, true);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_TRUE(IsValid(env, context.get()));
   }
 
