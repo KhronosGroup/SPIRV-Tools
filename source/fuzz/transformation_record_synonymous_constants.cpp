@@ -81,7 +81,10 @@ bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
   auto constant1 = ir_context->get_constant_mgr()->GetConstantFromInst(def_1);
   auto constant2 = ir_context->get_constant_mgr()->GetConstantFromInst(def_2);
 
-  assert(constant1 && constant2 && "The ids must refer to constants.");
+  // The ids must refer to constants.
+  if (!constant1 || !constant2) {
+    return false;
+  }
 
   // The types must be compatible.
   if (!fuzzerutil::TypesAreEqualUpToSign(ir_context, def_1->type_id(),
