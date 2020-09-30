@@ -47,6 +47,7 @@
 #include "source/fuzz/fuzzer_pass_invert_comparison_operators.h"
 #include "source/fuzz/fuzzer_pass_make_vector_operations_dynamic.h"
 #include "source/fuzz/fuzzer_pass_merge_blocks.h"
+#include "source/fuzz/fuzzer_pass_merge_function_returns.h"
 #include "source/fuzz/fuzzer_pass_mutate_pointers.h"
 #include "source/fuzz/fuzzer_pass_obfuscate_constants.h"
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
@@ -137,6 +138,7 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(InvertComparisonOperators);
   REPEATED_PASS_INSTANCE(MakeVectorOperationsDynamic);
   REPEATED_PASS_INSTANCE(MergeBlocks);
+  REPEATED_PASS_INSTANCE(MergeFunctionReturns);
   REPEATED_PASS_INSTANCE(MutatePointers);
   REPEATED_PASS_INSTANCE(ObfuscateConstants);
   REPEATED_PASS_INSTANCE(OutlineFunctions);

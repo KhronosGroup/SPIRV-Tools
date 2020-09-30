@@ -71,15 +71,18 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     uint32_t merge_block =
         ir_context->GetStructuredCFGAnalysis()->LoopMergeBlock(block);
 
-    while (merge_block != 0 &&
-           !merge_blocks_to_returning_preds.count(merge_block)) {
-      // Add a new entry if we have not seen this merge block before.
-      if (!merge_blocks_to_returning_preds.count(merge_block)) {
-        merge_blocks_to_returning_preds.emplace(merge_block,
-                                                std::set<uint32_t>());
+    while (merge_block != 0) {
+      // If we have seen this merge block before, update the corresponding set
+      // and break out of the loop.
+      if (merge_blocks_to_returning_preds.count(merge_block)) {
+        merge_blocks_to_returning_preds[merge_block].emplace(block);
+        break;
       }
-      // Add |block| to the list of returning predecessors for the merge block.
-      merge_blocks_to_returning_preds[merge_block].emplace(block);
+
+      // If we have not seen this merge block before, add a new entry and walk
+      // up the loop tree.
+      merge_blocks_to_returning_preds.emplace(merge_block,
+                                              std::set<uint32_t>({block}));
 
       // Walk up the loop tree.
       block = merge_block;

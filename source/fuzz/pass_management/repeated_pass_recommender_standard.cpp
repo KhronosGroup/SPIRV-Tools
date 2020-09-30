@@ -221,6 +221,11 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     //   different way
     return RandomOrderAndNonNull({pass_instances_->GetSplitBlocks()});
   }
+  if (&pass == pass_instances_->GetMergeFunctionReturns()) {
+    // - Functions without early returns are more likely to be able to be
+    //   inlined.
+    return RandomOrderAndNonNull({pass_instances_->GetMergeFunctionReturns()});
+  }
   if (&pass == pass_instances_->GetMutatePointers()) {
     // - This creates irrelevant ids, which can be replaced
     return RandomOrderAndNonNull({pass_instances_->GetReplaceIrrelevantIds()});
