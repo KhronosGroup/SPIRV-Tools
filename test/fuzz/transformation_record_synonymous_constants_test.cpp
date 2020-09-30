@@ -90,19 +90,11 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-#ifndef NDEBUG
   // %3 is not a constant declaration
-  ASSERT_DEATH(TransformationRecordSynonymousConstants(3, 9).IsApplicable(
-                   context.get(), transformation_context),
-               "The ids must refer to constants.");
-#endif
-
-#ifndef NDEBUG
-  // %3 is not a constant declaration
-  ASSERT_DEATH(TransformationRecordSynonymousConstants(9, 3).IsApplicable(
-                   context.get(), transformation_context),
-               "The ids must refer to constants.");
-#endif
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(3, 9).IsApplicable(
+      context.get(), transformation_context));
+  ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 3).IsApplicable(
+      context.get(), transformation_context));
 
   // The two constants must be different
   ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 9).IsApplicable(

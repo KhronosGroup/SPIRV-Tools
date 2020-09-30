@@ -81,7 +81,10 @@ bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
   auto constant1 = ir_context->get_constant_mgr()->GetConstantFromInst(def_1);
   auto constant2 = ir_context->get_constant_mgr()->GetConstantFromInst(def_2);
 
-  assert(constant1 && constant2 && "The ids must refer to constants.");
+  // The ids must refer to constants.
+  if (!constant1 || !constant2) {
+    return false;
+  }
 
   // The types must be compatible.
   if (!fuzzerutil::TypesAreEqualUpToSign(ir_context, def_1->type_id(),
@@ -100,11 +103,14 @@ bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
 
   // If the constants are scalar, they are equal iff their words are the same
   if (auto scalar1 = constant1->AsScalarConstant()) {
+    // Either both or neither constant is scalar since we've already checked
+    // that their types are compatible.
+    assert(constant2->AsScalarConstant() && "Both constants must be scalar");
     return scalar1->words() == constant2->AsScalarConstant()->words();
   }
 
   // The only remaining possibility is that the constants are composite
-  assert(constant1->AsCompositeConstant() &&
+  assert(constant1->AsCompositeConstant() && constant2->AsCompositeConstant() &&
          "Equivalence of constants can only be checked with scalar, composite "
          "or null constants.");
 
