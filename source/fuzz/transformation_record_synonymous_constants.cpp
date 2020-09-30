@@ -103,11 +103,14 @@ bool TransformationRecordSynonymousConstants::AreEquivalentConstants(
 
   // If the constants are scalar, they are equal iff their words are the same
   if (auto scalar1 = constant1->AsScalarConstant()) {
+    // Either both or neither constant is scalar since we've already checked
+    // that their types are compatible.
+    assert(constant2->AsScalarConstant() && "Both constants must be scalar");
     return scalar1->words() == constant2->AsScalarConstant()->words();
   }
 
   // The only remaining possibility is that the constants are composite
-  assert(constant1->AsCompositeConstant() &&
+  assert(constant1->AsCompositeConstant() && constant2->AsCompositeConstant() &&
          "Equivalence of constants can only be checked with scalar, composite "
          "or null constants.");
 
