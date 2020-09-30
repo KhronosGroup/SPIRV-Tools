@@ -185,7 +185,7 @@ bool ForceRenderRed(
   TransformationContext transformation_context(
       MakeUnique<FactManager>(ir_context.get()), validator_options);
   for (auto& fact : initial_facts.fact()) {
-    transformation_context.GetFactManager()->AddFact(fact);
+    transformation_context.GetFactManager()->MaybeAddFact(fact);
   }
 
   auto entry_point_function =

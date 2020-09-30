@@ -189,8 +189,7 @@ class TransformationOutlineFunction : public Transformation {
       const std::set<opt::BasicBlock*>& region_blocks,
       const std::vector<uint32_t>& region_output_ids,
       const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
-      opt::IRContext* ir_context, opt::Function* outlined_function,
-      TransformationContext* transformation_context) const;
+      opt::IRContext* ir_context, opt::Function* outlined_function) const;
 
   // Shrinks the outlined region, given by |region_blocks|, down to the single
   // block |original_region_entry_block|.  This block is itself shrunk to just
@@ -209,7 +208,8 @@ class TransformationOutlineFunction : public Transformation {
   // function is called, this information cannot be gotten from the def-use
   // manager.
   void ShrinkOriginalRegion(
-      opt::IRContext* ir_context, std::set<opt::BasicBlock*>& region_blocks,
+      opt::IRContext* ir_context,
+      const std::set<opt::BasicBlock*>& region_blocks,
       const std::vector<uint32_t>& region_input_ids,
       const std::vector<uint32_t>& region_output_ids,
       const std::map<uint32_t, uint32_t>& output_id_to_type_id,

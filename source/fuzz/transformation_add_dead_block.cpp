@@ -157,10 +157,6 @@ void TransformationAddDeadBlock::Apply(
   enclosing_function->InsertBasicBlockAfter(std::move(new_block),
                                             existing_block);
 
-  // Record the fact that the new block is dead.
-  transformation_context->GetFactManager()->AddFactBlockIsDead(
-      message_.fresh_id());
-
   // Fix up OpPhi instructions in the successor block, so that the values they
   // yield when control has transferred from the new block are the same as if
   // control had transferred from |message_.existing_block|.  This is guaranteed
@@ -181,6 +177,10 @@ void TransformationAddDeadBlock::Apply(
   // Do not rely on any existing analysis results since the control flow graph
   // of the module has changed.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
+  // Record the fact that the new block is dead.
+  transformation_context->GetFactManager()->AddFactBlockIsDead(
+      message_.fresh_id());
 }
 
 protobufs::Transformation TransformationAddDeadBlock::ToMessage() const {

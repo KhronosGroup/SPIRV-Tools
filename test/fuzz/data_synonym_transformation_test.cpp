@@ -125,19 +125,20 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->AddFact(
+
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(12, {}, 100, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(13, {}, 100, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(22, {}, 100, {2}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(28, {}, 101, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(23, {}, 101, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(32, {}, 101, {2}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(23, {}, 101, {3}));
 
   // Replace %12 with %100[0] in '%25 = OpAccessChain %24 %20 %12'
@@ -411,11 +412,12 @@ TEST(DataSynonymTransformationTest, MatrixCompositeSynonyms) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->AddFact(
+
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(23, {}, 100, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(25, {}, 100, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(50, {}, 100, {2}));
 
   // Replace %23 with %100[0] in '%26 = OpFAdd %7 %23 %25'
@@ -579,19 +581,20 @@ TEST(DataSynonymTransformationTest, StructCompositeSynonyms) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->AddFact(
+
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(16, {}, 100, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(45, {}, 100, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(27, {}, 101, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(36, {}, 101, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(27, {}, 101, {2}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(22, {}, 102, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(15, {}, 102, {1}));
 
   // Replace %45 with %100[1] in '%46 = OpCompositeConstruct %32 %35 %45'
@@ -867,45 +870,46 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->AddFact(
+
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(20, {0}, 100, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(20, {1}, 100, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(20, {2}, 100, {2}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(54, {}, 100, {3}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(15, {0}, 101, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(15, {1}, 101, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(19, {0}, 101, {2}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(19, {1}, 101, {3}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(27, {}, 102, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(15, {0}, 102, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(15, {1}, 102, {2}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(33, {}, 103, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(47, {0}, 103, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(47, {1}, 103, {2}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(47, {2}, 103, {3}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(42, {}, 104, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(45, {}, 104, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(38, {0}, 105, {0}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(38, {1}, 105, {1}));
-  transformation_context.GetFactManager()->AddFact(
+  transformation_context.GetFactManager()->MaybeAddFact(
       MakeSynonymFact(46, {}, 105, {2}));
 
   // Replace %20 with %100[0:2] in '%80 = OpCopyObject %16 %20'

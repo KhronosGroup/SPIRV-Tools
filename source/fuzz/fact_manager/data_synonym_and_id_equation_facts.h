@@ -38,19 +38,21 @@ class DataSynonymAndIdEquationFacts {
  public:
   explicit DataSynonymAndIdEquationFacts(opt::IRContext* ir_context);
 
-  // See method in FactManager which delegates to this method.
-  // |dead_block_facts| and |irrelevant_value_facts| are passed for consistency
-  // checks.
-  void AddFact(const protobufs::FactDataSynonym& fact,
-               const DeadBlockFacts& dead_block_facts,
-               const IrrelevantValueFacts& irrelevant_value_facts);
+  // See method in FactManager which delegates to this method. Returns true if
+  // neither |fact.data1()| nor |fact.data2()| contain an
+  // irrelevant id. Otherwise, returns false. |dead_block_facts| and
+  // |irrelevant_value_facts| are passed for consistency checks.
+  bool MaybeAddFact(const protobufs::FactDataSynonym& fact,
+                    const DeadBlockFacts& dead_block_facts,
+                    const IrrelevantValueFacts& irrelevant_value_facts);
 
-  // See method in FactManager which delegates to this method.
-  // |dead_block_facts| and |irrelevant_value_facts| are passed for consistency
-  // checks.
-  void AddFact(const protobufs::FactIdEquation& fact,
-               const DeadBlockFacts& dead_block_facts,
-               const IrrelevantValueFacts& irrelevant_value_facts);
+  // See method in FactManager which delegates to this method. Returns true if
+  // neither |fact.lhs_id()| nor any of |fact.rhs_id()| is irrelevant. Returns
+  // false otherwise. |dead_block_facts| and |irrelevant_value_facts| are passed
+  // for consistency checks.
+  bool MaybeAddFact(const protobufs::FactIdEquation& fact,
+                    const DeadBlockFacts& dead_block_facts,
+                    const IrrelevantValueFacts& irrelevant_value_facts);
 
   // See method in FactManager which delegates to this method.
   std::vector<const protobufs::DataDescriptor*> GetSynonymsForId(

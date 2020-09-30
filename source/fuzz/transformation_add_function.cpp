@@ -163,21 +163,22 @@ void TransformationAddFunction::Apply(
     TransformationContext* transformation_context) const {
   // Add the function to the module.  As the transformation is applicable, this
   // should succeed.
-  bool success = TryToAddFunction(ir_context);
-  assert(success && "The function should be successfully added.");
-  (void)(success);  // Keep release builds happy (otherwise they may complain
-                    // that |success| is not used).
+  assert(TryToAddFunction(ir_context) &&
+         "The function should be successfully added.");
 
   if (message_.is_livesafe()) {
     // Make the function livesafe, which also should succeed.
-    success = TryToMakeFunctionLivesafe(ir_context, *transformation_context);
-    assert(success && "It should be possible to make the function livesafe.");
-    (void)(success);  // Keep release builds happy.
+    assert(TryToMakeFunctionLivesafe(ir_context, *transformation_context) &&
+           "It should be possible to make the function livesafe.");
+  }
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
+  assert(message_.instruction(0).opcode() == SpvOpFunction &&
+         "The first instruction of an 'add function' transformation must be "
+         "OpFunction.");
+
+  if (message_.is_livesafe()) {
     // Inform the fact manager that the function is livesafe.
-    assert(message_.instruction(0).opcode() == SpvOpFunction &&
-           "The first instruction of an 'add function' transformation must be "
-           "OpFunction.");
     transformation_context->GetFactManager()->AddFactFunctionIsLivesafe(
         message_.instruction(0).result_id());
   } else {
@@ -189,7 +190,6 @@ void TransformationAddFunction::Apply(
       }
     }
   }
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
   // Record the fact that all pointer parameters and variables declared in the
   // function should be regarded as having irrelevant values.  This allows other

@@ -35,17 +35,21 @@ class IrrelevantValueFacts {
  public:
   explicit IrrelevantValueFacts(opt::IRContext* ir_context);
 
-  // See method in FactManager which delegates to this method.
-  // |data_synonym_and_id_equation_facts| and |context| are passed for
-  // consistency checks.
-  void AddFact(
+  // See method in FactManager which delegates to this method. Returns true if
+  // |fact.pointer_id()| is a result id of pointer type in the |ir_context_| and
+  // |fact.pointer_id()| does not participate in DataSynonym facts. Returns
+  // false otherwise. |data_synonym_and_id_equation_facts| and |context| are
+  // passed for consistency checks.
+  bool MaybeAddFact(
       const protobufs::FactPointeeValueIsIrrelevant& fact,
       const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts);
 
-  // See method in FactManager which delegates to this method.
-  // |data_synonym_and_id_equation_facts| and |context| are passed for
-  // consistency checks.
-  void AddFact(
+  // See method in FactManager which delegates to this method. Returns true if
+  // |fact.result_id()| is a result id of non-pointer type in the |ir_context_|
+  // and |fact.result_id()| does not participate in DataSynonym facts. Returns
+  // false otherwise. |data_synonym_and_id_equation_facts| and |context| are
+  // passed for consistency checks.
+  bool MaybeAddFact(
       const protobufs::FactIdIsIrrelevant& fact,
       const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts);
 

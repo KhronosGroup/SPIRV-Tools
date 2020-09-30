@@ -45,7 +45,7 @@ bool AddFactHelper(
       descriptor;
   protobufs::Fact fact;
   *fact.mutable_constant_uniform_fact() = constant_uniform_fact;
-  return fact_manager->AddFact(fact);
+  return fact_manager->MaybeAddFact(fact);
 }
 
 TEST(FactManagerTest, ConstantsAvailableViaUniforms) {

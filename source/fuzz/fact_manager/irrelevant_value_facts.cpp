@@ -27,36 +27,52 @@ namespace fact_manager {
 IrrelevantValueFacts::IrrelevantValueFacts(opt::IRContext* ir_context)
     : ir_context_(ir_context) {}
 
-void IrrelevantValueFacts::AddFact(
+bool IrrelevantValueFacts::MaybeAddFact(
     const protobufs::FactPointeeValueIsIrrelevant& fact,
     const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts) {
-  (void)data_synonym_and_id_equation_facts;  // Keep release compilers happy.
-  assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.pointer_id())
-             .empty() &&
-         "The id cannot participate in DataSynonym facts.");
-  auto pointer_def = ir_context_->get_def_use_mgr()->GetDef(fact.pointer_id());
-  assert(pointer_def && "The id must exist in the module.");
-  auto type = ir_context_->get_type_mgr()->GetType(pointer_def->type_id());
-  (void)type;  // Keep release compilers happy.
-  assert(type && type->AsPointer() && "The id must be a pointer.");
+  const auto* inst = ir_context_->get_def_use_mgr()->GetDef(fact.pointer_id());
+  if (!inst || !inst->type_id()) {
+    // The id must exist in the module and have type id.
+    return false;
+  }
+
+  if (!ir_context_->get_type_mgr()->GetType(inst->type_id())->AsPointer()) {
+    // The id must be a pointer.
+    return false;
+  }
+
+  if (!data_synonym_and_id_equation_facts.GetSynonymsForId(fact.pointer_id())
+           .empty()) {
+    // Irrelevant id cannot participate in DataSynonym facts.
+    return false;
+  }
 
   pointers_to_irrelevant_pointees_ids_.insert(fact.pointer_id());
+  return true;
 }
 
-void IrrelevantValueFacts::AddFact(
+bool IrrelevantValueFacts::MaybeAddFact(
     const protobufs::FactIdIsIrrelevant& fact,
     const DataSynonymAndIdEquationFacts& data_synonym_and_id_equation_facts) {
-  (void)data_synonym_and_id_equation_facts;  // Keep release compilers happy.
-  assert(data_synonym_and_id_equation_facts.GetSynonymsForId(fact.result_id())
-             .empty() &&
-         "The id cannot participate in DataSynonym facts.");
-  auto pointer_def = ir_context_->get_def_use_mgr()->GetDef(fact.result_id());
-  assert(pointer_def && "The id must exist in the module.");
-  auto type = ir_context_->get_type_mgr()->GetType(pointer_def->type_id());
-  (void)type;  // Keep release compilers happy.
-  assert(type && !type->AsPointer() && "The id must not be a pointer.");
+  const auto* inst = ir_context_->get_def_use_mgr()->GetDef(fact.result_id());
+  if (!inst || !inst->type_id()) {
+    // The id must exist in the module and have type id.
+    return false;
+  }
+
+  if (ir_context_->get_type_mgr()->GetType(inst->type_id())->AsPointer()) {
+    // The id may not be a pointer.
+    return false;
+  }
+
+  if (!data_synonym_and_id_equation_facts.GetSynonymsForId(fact.result_id())
+           .empty()) {
+    // Irrelevant id cannot participate in DataSynonym facts.
+    return false;
+  }
 
   irrelevant_ids_.insert(fact.result_id());
+  return true;
 }
 
 bool IrrelevantValueFacts::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
