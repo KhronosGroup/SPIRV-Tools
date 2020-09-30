@@ -130,6 +130,9 @@ bool FactManager::MaybeAddFact(const fuzz::protobufs::Fact& fact) {
       assert(false && "The fact must be set");
       return false;
   }
+
+  assert(false && "Unreachable");
+  return false;
 }
 
 void FactManager::AddFactDataSynonym(const protobufs::DataDescriptor& data1,
