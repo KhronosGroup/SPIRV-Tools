@@ -80,6 +80,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfCreatingIntSynonymsUsingLoops = {
 const std::pair<uint32_t, uint32_t> kChanceOfDonatingAdditionalModule = {5, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfDuplicatingRegionWithSelection = {
     20, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfExpandingVectorReduction = {20,
+                                                                         90};
 const std::pair<uint32_t, uint32_t> kChanceOfFlatteningConditionalBranch = {45,
                                                                             95};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperToInsertInComposite = {
@@ -261,6 +263,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfDonatingAdditionalModule);
   chance_of_duplicating_region_with_selection_ =
       ChooseBetweenMinAndMax(kChanceOfDuplicatingRegionWithSelection);
+  chance_of_expanding_vector_reduction_ =
+      ChooseBetweenMinAndMax(kChanceOfExpandingVectorReduction);
   chance_of_flattening_conditional_branch_ =
       ChooseBetweenMinAndMax(kChanceOfFlatteningConditionalBranch);
   chance_of_going_deeper_to_insert_in_composite_ =

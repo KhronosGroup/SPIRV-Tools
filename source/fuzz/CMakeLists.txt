@@ -85,6 +85,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_copy_objects.h
         fuzzer_pass_donate_modules.h
         fuzzer_pass_duplicate_regions_with_selections.h
+        fuzzer_pass_expand_vector_reductions.h
         fuzzer_pass_flatten_conditional_branches.h
         fuzzer_pass_inline_functions.h
         fuzzer_pass_invert_comparison_operators.h
@@ -178,6 +179,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.h
         transformation_duplicate_region_with_selection.h
         transformation_equation_instruction.h
+        transformation_expand_vector_reduction.h
         transformation_flatten_conditional_branch.h
         transformation_function_call.h
         transformation_inline_function.h
@@ -272,6 +274,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_copy_objects.cpp
         fuzzer_pass_donate_modules.cpp
         fuzzer_pass_duplicate_regions_with_selections.cpp
+        fuzzer_pass_expand_vector_reductions.cpp
         fuzzer_pass_flatten_conditional_branches.cpp
         fuzzer_pass_inline_functions.cpp
         fuzzer_pass_invert_comparison_operators.cpp
@@ -363,6 +366,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_context.cpp
         transformation_duplicate_region_with_selection.cpp
         transformation_equation_instruction.cpp
+        transformation_expand_vector_reduction.cpp
         transformation_flatten_conditional_branch.cpp
         transformation_function_call.cpp
         transformation_inline_function.cpp
