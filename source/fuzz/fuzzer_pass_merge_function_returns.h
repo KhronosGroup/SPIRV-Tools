@@ -38,6 +38,22 @@ class FuzzerPassMergeFunctionReturns : public FuzzerPass {
   // available at the end of the entry block of |function|.
   std::map<uint32_t, std::vector<uint32_t>>
   GetTypesToIdsAvailableAfterEntryBlock(opt::Function* function) const;
+
+  // Returns the set of all the loop merge blocks whose corresponding loops
+  // contain at least one of the blocks in |blocks|.
+  std::set<uint32_t> GetMergeBlocksOfLoopsContainingBlocks(
+      const std::set<uint32_t>& blocks) const;
+
+  // Returns a list of ReturnMergingInfo messages, containing the information
+  // needed by the transformation for each of the relevant merge blocks.
+  // If a new id is created (because |ids_available_after_entry_block| does not
+  // have an entry for the corresponding type), a new entry is added to
+  // |ids_available_after_entry_block|, mapping its type to a singleton set
+  // containing it.
+  std::vector<protobufs::ReturnMergingInfo> GetInfoNeededForMergeBlocks(
+      const std::vector<uint32_t>& merge_blocks,
+      std::map<uint32_t, std::vector<uint32_t>>*
+          ids_available_after_entry_block);
 };
 }  // namespace fuzz
 }  // namespace spvtools

@@ -68,22 +68,7 @@ void FuzzerPassMergeFunctionReturns::Apply() {
 
     // Collect the merge blocks of the function whose corresponding loops
     // contain return blocks.
-    std::set<uint32_t> merge_blocks;
-    for (uint32_t block : return_blocks) {
-      uint32_t merge_block =
-          GetIRContext()->GetStructuredCFGAnalysis()->LoopMergeBlock(block);
-
-      while (merge_block != 0 && !merge_blocks.count(merge_block)) {
-        // Add a new entry.
-        merge_blocks.emplace(merge_block);
-
-        // Walk up the loop tree.
-        block = merge_block;
-        merge_block =
-            GetIRContext()->GetStructuredCFGAnalysis()->LoopMergeBlock(
-                merge_block);
-      }
-    }
+    auto merge_blocks = GetMergeBlocksOfLoopsContainingBlocks(return_blocks);
 
     // Split the merge blocks, if they contain instructions different from
     // OpLabel, OpPhi and OpBranch. Collect the new ids of merge blocks.
@@ -151,44 +136,8 @@ void FuzzerPassMergeFunctionReturns::Apply() {
     }
 
     // Collect all the ids needed for merge blocks.
-    std::vector<protobufs::ReturnMergingInfo> merge_blocks_info;
-
-    for (uint32_t merge_block : actual_merge_blocks) {
-      protobufs::ReturnMergingInfo info;
-      info.set_merge_block_id(merge_block);
-      info.set_is_returning_id(GetFuzzerContext()->GetFreshId());
-      info.set_maybe_return_val_id(GetFuzzerContext()->GetFreshId());
-
-      // Add all the ids needed for the OpPhi instructions.
-      GetIRContext()
-          ->get_instr_block(merge_block)
-          ->ForEachPhiInst([this, &info, &ids_available_after_entry_block](
-                               opt::Instruction* phi_inst) {
-            protobufs::UInt32Pair entry;
-            entry.set_first(phi_inst->result_id());
-
-            // If there is an id of the suitable type, choose one at random.
-            if (ids_available_after_entry_block.count(phi_inst->type_id())) {
-              const auto& candidates =
-                  ids_available_after_entry_block[phi_inst->type_id()];
-              entry.set_second(
-                  candidates[GetFuzzerContext()->RandomIndex(candidates)]);
-            } else {
-              // If there is no id, add a global OpUndef.
-              uint32_t suitable_id =
-                  FindOrCreateGlobalUndef(phi_inst->type_id());
-              // Add the new id to the map of available ids.
-              ids_available_after_entry_block.emplace(
-                  phi_inst->type_id(), std::vector<uint32_t>({suitable_id}));
-              entry.set_second(suitable_id);
-            }
-
-            // Add the entry to the list.
-            *info.add_opphi_to_suitable_id() = entry;
-          });
-
-      merge_blocks_info.emplace_back(info);
-    }
+    auto merge_blocks_info = GetInfoNeededForMergeBlocks(
+        actual_merge_blocks, &ids_available_after_entry_block);
 
     // Apply the transformation if it is applicable (it could be inapplicable if
     // adding new predecessors to merge blocks breaks dominance rules).
@@ -231,6 +180,74 @@ FuzzerPassMergeFunctionReturns::GetTypesToIdsAvailableAfterEntryBlock(
       }
       result[inst.type_id()].emplace_back(inst.result_id());
     }
+  }
+
+  return result;
+}
+
+std::set<uint32_t>
+FuzzerPassMergeFunctionReturns::GetMergeBlocksOfLoopsContainingBlocks(
+    const std::set<uint32_t>& blocks) const {
+  std::set<uint32_t> result;
+  for (uint32_t block : blocks) {
+    uint32_t merge_block =
+        GetIRContext()->GetStructuredCFGAnalysis()->LoopMergeBlock(block);
+
+    while (merge_block != 0 && !result.count(merge_block)) {
+      // Add a new entry.
+      result.emplace(merge_block);
+
+      // Walk up the loop tree.
+      block = merge_block;
+      merge_block = GetIRContext()->GetStructuredCFGAnalysis()->LoopMergeBlock(
+          merge_block);
+    }
+  }
+
+  return result;
+}
+
+std::vector<protobufs::ReturnMergingInfo>
+FuzzerPassMergeFunctionReturns::GetInfoNeededForMergeBlocks(
+    const std::vector<uint32_t>& merge_blocks,
+    std::map<uint32_t, std::vector<uint32_t>>*
+        ids_available_after_entry_block) {
+  std::vector<protobufs::ReturnMergingInfo> result;
+  for (uint32_t merge_block : merge_blocks) {
+    protobufs::ReturnMergingInfo info;
+    info.set_merge_block_id(merge_block);
+    info.set_is_returning_id(this->GetFuzzerContext()->GetFreshId());
+    info.set_maybe_return_val_id(this->GetFuzzerContext()->GetFreshId());
+
+    // Add all the ids needed for the OpPhi instructions.
+    this->GetIRContext()
+        ->get_instr_block(merge_block)
+        ->ForEachPhiInst([this, &info, &ids_available_after_entry_block](
+                             opt::Instruction* phi_inst) {
+          protobufs::UInt32Pair entry;
+          entry.set_first(phi_inst->result_id());
+
+          // If there is an id of the suitable type, choose one at random.
+          if (ids_available_after_entry_block->count(phi_inst->type_id())) {
+            auto& candidates =
+                ids_available_after_entry_block->at(phi_inst->type_id());
+            entry.set_second(
+                candidates[this->GetFuzzerContext()->RandomIndex(candidates)]);
+          } else {
+            // If there is no id, add a global OpUndef.
+            uint32_t suitable_id =
+                this->FindOrCreateGlobalUndef(phi_inst->type_id());
+            // Add the new id to the map of available ids.
+            ids_available_after_entry_block->emplace(
+                phi_inst->type_id(), std::vector<uint32_t>({suitable_id}));
+            entry.set_second(suitable_id);
+          }
+
+          // Add the entry to the list.
+          *info.add_opphi_to_suitable_id() = entry;
+        });
+
+    result.emplace_back(info);
   }
 
   return result;
