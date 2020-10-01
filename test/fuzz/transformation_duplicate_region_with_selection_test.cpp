@@ -14,6 +14,7 @@
 
 #include "source/fuzz/transformation_duplicate_region_with_selection.h"
 
+#include "source/fuzz/counter_overflow_id_source.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -1738,6 +1739,130 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
 
   ASSERT_FALSE(
       transformation_bad.IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest, OverflowIds) {
+  // This test checks that the transformation correctly uses overflow ids, when
+  // they are both needed and provided.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun("
+               OpName %10 "s"
+               OpName %17 "b"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 2
+         %15 = OpTypeBool
+         %16 = OpTypePointer Function %15
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %17 = OpVariable %16 Function
+               OpStore %17 %18
+         %19 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpBranch %50
+         %50 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %8 %10
+         %14 = OpIAdd %8 %12 %13
+               OpStore %10 %14
+               OpKill
+               OpFunctionEnd
+         )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(1000);
+  auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options,
+      std::move(overflow_ids_unique_ptr));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  // The mappings do not provide sufficient ids, thus overflow ids are required.
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(500, 18, 501, 50, 50, {},
+                                                 {{12, 201}}, {{14, 302}});
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context,
+                        overflow_ids_ptr->GetIssuedOverflowIds());
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "fun("
+               OpName %10 "s"
+               OpName %17 "b"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 0
+         %13 = OpConstant %8 2
+         %15 = OpTypeBool
+         %16 = OpTypePointer Function %15
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %17 = OpVariable %16 Function
+               OpStore %17 %18
+         %19 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+               OpBranch %500
+        %500 = OpLabel
+               OpSelectionMerge %501 None
+               OpBranchConditional %18 %50 %1000
+         %50 = OpLabel
+               OpStore %10 %11
+         %12 = OpLoad %8 %10
+         %14 = OpIAdd %8 %12 %13
+               OpStore %10 %14
+               OpBranch %501
+       %1000 = OpLabel
+               OpStore %10 %11
+        %201 = OpLoad %8 %10
+       %1002 = OpIAdd %8 %201 %13
+               OpStore %10 %1002
+               OpBranch %501
+        %501 = OpLabel
+       %1001 = OpPhi %8 %12 %50 %201 %1000
+        %302 = OpPhi %8 %14 %50 %1002 %1000
+               OpKill
+               OpFunctionEnd
+        )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
 }  // namespace
