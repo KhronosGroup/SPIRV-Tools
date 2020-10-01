@@ -61,13 +61,13 @@ class TransformationPropagateInstructionDown : public Transformation {
   // Returns true if this transformation can be applied to the block with id
   // |block_id|. Concretely, returns true iff:
   // - |block_id| is a result id of some reachable basic block in the module.
-  // - the block must have an instruction to propagate (see
+  // - the block has an instruction to propagate (see
   //   GetInstructionToPropagate method).
-  // - the block must have at least one acceptable successor (see
+  // - the block has at least one acceptable successor (see
   //   GetAcceptableSuccessors method).
-  // - none of the acceptable successors may have OpPhi instructions that use
-  //   the original instruction.
-  // - it should be possible to replace every use of the original instruction
+  // - none of the acceptable successors have OpPhi instructions that use the
+  //   original instruction.
+  // - it is possible to replace every use of the original instruction
   //   with some of the propagated instructions (or an OpPhi if we can create
   //   it - see CanAddOpPhiInstruction method).
   static bool IsApplicableToBlock(opt::IRContext* ir_context,
