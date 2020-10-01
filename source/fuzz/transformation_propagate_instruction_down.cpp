@@ -19,20 +19,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace {
-
-uint32_t GetInOperandIndexForId(const opt::Instruction& inst, uint32_t id) {
-  for (uint32_t i = 0; i < inst.NumInOperands(); ++i) {
-    const auto& operand = inst.GetInOperand(i);
-    if (spvIsInIdType(operand.type) && operand.words[0] == id) {
-      return i;
-    }
-  }
-
-  return inst.NumInOperands();
-}
-
-}  // namespace
 
 TransformationPropagateInstructionDown::TransformationPropagateInstructionDown(
     const protobufs::TransformationPropagateInstructionDown& message)
@@ -48,7 +34,8 @@ TransformationPropagateInstructionDown::TransformationPropagateInstructionDown(
 }
 
 bool TransformationPropagateInstructionDown::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // Check that we can apply this transformation to the |block_id|.
   if (!IsApplicableToBlock(ir_context, message_.block_id())) {
     return false;
@@ -59,8 +46,9 @@ bool TransformationPropagateInstructionDown::IsApplicable(
 
   for (auto id : GetAcceptableSuccessors(ir_context, message_.block_id())) {
     // Each successor must have a fresh id in the |successor_id_to_fresh_id|
-    // map.
-    if (!successor_id_to_fresh_id.count(id)) {
+    // map. We use overflow ids if available.
+    if (!successor_id_to_fresh_id.count(id) &&
+        !transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
       return false;
     }
   }
@@ -87,7 +75,7 @@ void TransformationPropagateInstructionDown::Apply(
       GetInstructionToPropagate(ir_context, message_.block_id());
   assert(inst_to_propagate && "There must be an instruction to propagate");
 
-  const auto successor_id_to_fresh_id =
+  auto successor_id_to_fresh_id =
       fuzzerutil::RepeatedUInt32PairToMap(message_.successor_id_to_fresh_id());
   std::vector<uint32_t> created_inst_ids;
   auto successor_ids = GetAcceptableSuccessors(ir_context, message_.block_id());
@@ -97,7 +85,17 @@ void TransformationPropagateInstructionDown::Apply(
     std::unique_ptr<opt::Instruction> clone(
         inst_to_propagate->Clone(ir_context));
 
-    auto new_result_id = successor_id_to_fresh_id.at(successor_id);
+    uint32_t new_result_id;
+    if (successor_id_to_fresh_id.count(successor_id)) {
+      new_result_id = successor_id_to_fresh_id.at(successor_id);
+    } else {
+      assert(transformation_context->GetOverflowIdSource()->HasOverflowIds() &&
+             "Overflow ids must be available");
+      new_result_id =
+          transformation_context->GetOverflowIdSource()->GetNextOverflowId();
+      successor_id_to_fresh_id[successor_id] = new_result_id;
+    }
+
     clone->SetResultId(new_result_id);
     fuzzerutil::UpdateModuleIdBound(ir_context, new_result_id);
 
@@ -194,7 +192,10 @@ void TransformationPropagateInstructionDown::Apply(
         assert(false && "Every user of |inst_to_propagate| must be updated");
       });
 
-  // Add synonyms about  newly created instructions.
+  // Add synonyms about newly created instructions.
+  //
+  // TODO(review): Not sure if we should do this: it will probably be only
+  //  useful if we create OpPhi instruction.
   assert(inst_to_propagate->HasResultId() &&
          "Result id is required to add facts");
   for (auto id : created_inst_ids) {
@@ -204,7 +205,7 @@ void TransformationPropagateInstructionDown::Apply(
     } else {
       transformation_context->GetFactManager()->AddFactDataSynonym(
           MakeDataDescriptor(id, {}),
-          MakeDataDescriptor(created_inst_ids[0], {}), ir_context);
+          MakeDataDescriptor(created_inst_ids[0], {}));
     }
   }
 
@@ -404,25 +405,30 @@ bool TransformationPropagateInstructionDown::IsApplicableToBlock(
         continue;
       }
 
-      if (GetInOperandIndexForId(maybe_phi_inst,
-                                 inst_to_propagate->result_id()) !=
-          maybe_phi_inst.NumInOperands()) {
-        return false;
+      for (uint32_t i = 0; i < maybe_phi_inst.NumInOperands(); i += 2) {
+        if (maybe_phi_inst.GetSingleWordInOperand(i) ==
+            inst_to_propagate->result_id()) {
+          return false;
+        }
       }
     }
   }
 
-  uint32_t phi_block_id =
-      CanAddOpPhiInstruction(ir_context, block_id, *inst_to_propagate,
-                             successor_ids)
-          ? block->GetMergeInst()->GetSingleWordInOperand(0)
-          : 0;
+  // Get the result id of the block we will insert OpPhi instruction into.
+  // This is either 0 or a result id of some merge block in the function.
+  uint32_t phi_block_id = 0;
+  if (CanAddOpPhiInstruction(ir_context, block_id, *inst_to_propagate,
+                             successor_ids)) {
+    assert(block->GetMergeInst() &&
+           "|block| must be a header of some construct");
+    phi_block_id = block->GetMergeInst()->GetSingleWordInOperand(0);
+  }
 
   // Make sure we can adjust all users of the propagated instruction.
-  return ir_context->get_def_use_mgr()->WhileEachUser(
+  return ir_context->get_def_use_mgr()->WhileEachUse(
       inst_to_propagate,
-      [ir_context, &successor_ids, dominator_analysis, inst_to_propagate,
-       phi_block_id](opt::Instruction* user) {
+      [ir_context, &successor_ids, dominator_analysis, phi_block_id](
+          opt::Instruction* user, uint32_t index) {
         const auto* user_block = ir_context->get_instr_block(user);
 
         if (!user_block) {
@@ -432,24 +438,22 @@ bool TransformationPropagateInstructionDown::IsApplicableToBlock(
 
         // Check that at least one of the ids in |successor_ids| or a
         // |phi_block_id| dominates |user|'s block (or its predecessor if the
-        // user is an OpPhi).
-        auto block_id_to_dominate = user_block->id();
-        if (user->opcode() == SpvOpPhi) {
-          auto index =
-              GetInOperandIndexForId(*user, inst_to_propagate->result_id());
-          assert(block_id_to_dominate != user->NumInOperands() &&
-                 "|user| doesn't use |inst_to_propagate");
-          block_id_to_dominate = user->GetSingleWordInOperand(index + 1);
+        // user is an OpPhi). We can't use fuzzerutil::IdIsAvailableAtUse since
+        // the id in question hasn't yet been created in the module.
+        auto block_id_to_dominate = user->opcode() == SpvOpPhi
+                                        ? user->GetSingleWordOperand(index + 1)
+                                        : user_block->id();
+
+        if (phi_block_id != 0 &&
+            dominator_analysis->Dominates(phi_block_id, block_id_to_dominate)) {
+          return true;
         }
 
-        return (phi_block_id && dominator_analysis->Dominates(
-                                    phi_block_id, block_id_to_dominate)) ||
-               std::any_of(
-                   successor_ids.begin(), successor_ids.end(),
-                   [dominator_analysis, block_id_to_dominate](uint32_t id) {
-                     return dominator_analysis->Dominates(id,
-                                                          block_id_to_dominate);
-                   });
+        return std::any_of(
+            successor_ids.begin(), successor_ids.end(),
+            [dominator_analysis, block_id_to_dominate](uint32_t id) {
+              return dominator_analysis->Dominates(id, block_id_to_dominate);
+            });
       });
 }
 
@@ -524,10 +528,9 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
 
   auto merge_block_id = merge_inst->GetSingleWordInOperand(0);
 
-  // Header block always strictly dominates its merge block unless the latter is
-  // unreachable.
-  if (!dominator_analysis->StrictlyDominates(maybe_header_block_id,
-                                             merge_block_id)) {
+  // Check that |merge_block_id| is reachable in the CFG. If it is, then the
+  // header block must dominate it according to structured control flow rules.
+  if (!dominator_analysis->IsReachable(merge_block_id)) {
     return false;
   }
 
@@ -566,7 +569,8 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
   assert(propagate_type && "|inst_to_propagate| must have a valid type");
 
   // VariablePointers capability implicitly declares
-  // VariablePointersStorageBuffer.
+  // VariablePointersStorageBuffer. We need those capabilities since otherwise
+  // OpPhi instructions cannot have operands of pointer types.
   return !propagate_type->AsPointer() ||
          ir_context->get_feature_mgr()->HasCapability(
              SpvCapabilityVariablePointersStorageBuffer);

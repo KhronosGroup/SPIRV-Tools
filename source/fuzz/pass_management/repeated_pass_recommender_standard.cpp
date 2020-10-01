@@ -255,6 +255,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // No obvious follow-on passes
     return {};
   }
+  if (&pass == pass_instances_->GetPropagateInstructionsDown()) {
+    // No obvious follow-on passes
+    return {};
+  }
   if (&pass == pass_instances_->GetPropagateInstructionsUp()) {
     // No obvious follow-on passes
     return {};

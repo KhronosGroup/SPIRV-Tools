@@ -47,6 +47,8 @@ void FuzzerPassPropagateInstructionsDown::Apply() {
 
       if (TransformationPropagateInstructionDown::IsApplicableToBlock(
               GetIRContext(), block->id())) {
+        // Record fresh ids for every successor of the |block| that we can
+        // propagate an instruction into.
         std::map<uint32_t, uint32_t> fresh_ids;
         for (auto id :
              TransformationPropagateInstructionDown::GetAcceptableSuccessors(

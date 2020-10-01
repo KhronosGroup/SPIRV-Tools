@@ -34,12 +34,12 @@ class TransformationPropagateInstructionDown : public Transformation {
       uint32_t block_id, uint32_t phi_fresh_id,
       const std::map<uint32_t, uint32_t>& successor_id_to_fresh_id);
 
-  // - it should be possible to apply this transformation to |block_id| (see
+  // - It should be possible to apply this transformation to |block_id| (see
   //   IsApplicableToBlock method).
-  // - every acceptable successor of |block_id| (see GetAcceptableSuccessors
-  //   method)
-  //   must have an entry in the |successor_id_to_fresh_id| map.
-  // - all values in |successor_id_to_fresh_id| and |phi_fresh_id| must be
+  // - Every acceptable successor of |block_id| (see GetAcceptableSuccessors
+  //   method) must have an entry in the |successor_id_to_fresh_id| map unless
+  //   overflow ids are available.
+  // - All values in |successor_id_to_fresh_id| and |phi_fresh_id| must be
   //   unique and fresh.
   bool IsApplicable(
       opt::IRContext* ir_context,
@@ -60,8 +60,7 @@ class TransformationPropagateInstructionDown : public Transformation {
 
   // Returns true if this transformation can be applied to the block with id
   // |block_id|. Concretely, returns true iff:
-  // - |block_id| must be a result id of some reachable basic block in the
-  //   module.
+  // - |block_id| is a result id of some reachable basic block in the module.
   // - the block must have an instruction to propagate (see
   //   GetInstructionToPropagate method).
   // - the block must have at least one acceptable successor (see
@@ -78,19 +77,31 @@ class TransformationPropagateInstructionDown : public Transformation {
   // instruction into. Concretely, a successor block is acceptable if all
   // dependencies of the propagated instruction dominate it. Note that this
   // implies that an acceptable successor must be reachable in the CFG.
+  // For example:
+  //    %1 = OpLabel
+  //         OpSelectionMerge %2 None
+  //         OpBranchConditional %cond %2 %3
+  //    %3 = OpLabel
+  //    %4 = OpUndef %int
+  //    %5 = OpCopyObject %int %4
+  //         OpBranch %2
+  //    %2 = OpLabel
+  //    ...
+  // In this example, %2 is not an acceptable successor of %3 since one of the
+  // dependencies (%4) of the propagated instruction (%5) does not dominate it.
   static std::unordered_set<uint32_t> GetAcceptableSuccessors(
       opt::IRContext* ir_context, uint32_t block_id);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
  private:
-  // Returns the instruction that will be propagated into the successors of
-  // the |block_id|. Returns nullptr if no such an instruction exists.
-  // Concretely, the returned instruction:
+  // Returns the last possible instruction in the |block_id| that satisfies the
+  // following properties:
   // - has result id
   // - has type id
   // - has supported opcode (see IsOpcodeSupported method)
   // - has no users in its basic block.
+  // Returns nullptr if no such an instruction exists.
   static opt::Instruction* GetInstructionToPropagate(opt::IRContext* ir_context,
                                                      uint32_t block_id);
 
