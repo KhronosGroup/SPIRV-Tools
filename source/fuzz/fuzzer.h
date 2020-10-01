@@ -16,6 +16,7 @@
 #define SOURCE_FUZZ_FUZZER_H_
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "source/fuzz/fuzzer_context.h"
@@ -87,17 +88,27 @@ class Fuzzer {
 
  private:
   // A convenience method to add a repeated fuzzer pass to |pass_instances| with
-  // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
+  // probability |percentage_chance_of_adding_pass|%, or with probability 100%
+  // if |enable_all_passes_| is true.
   //
   // All fuzzer passes take members |ir_context_|, |transformation_context_|,
   // |fuzzer_context_| and |transformation_sequence_out_| as parameters.  Extra
   // arguments can be provided via |extra_args|.
   template <typename FuzzerPassT, typename... Args>
-  void MaybeAddRepeatedPass(RepeatedPassInstances* pass_instances,
+  void MaybeAddRepeatedPass(uint32_t percentage_chance_of_adding_pass,
+                            RepeatedPassInstances* pass_instances,
                             Args&&... extra_args);
 
+  // The same as the above, with |percentage_chance_of_adding_pass| == 50%.
+  template <typename FuzzerPassT, typename... Args>
+  void MaybeAddRepeatedPass(RepeatedPassInstances* pass_instances,
+                            Args&&... extra_args) {
+    MaybeAddRepeatedPass<FuzzerPassT>(50, pass_instances,
+                                      std::forward<Args>(extra_args)...);
+  }
+
   // A convenience method to add a final fuzzer pass to |passes| with
-  // probability 0.5, or with probability 1 if |enable_all_passes_| is true.
+  // probability 50%, or with probability 100% if |enable_all_passes_| is true.
   //
   // All fuzzer passes take members |ir_context_|, |transformation_context_|,
   // |fuzzer_context_| and |transformation_sequence_out_| as parameters.  Extra

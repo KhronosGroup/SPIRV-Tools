@@ -132,9 +132,11 @@ Fuzzer::Fuzzer(spv_target_env target_env, MessageConsumer consumer,
 Fuzzer::~Fuzzer() = default;
 
 template <typename FuzzerPassT, typename... Args>
-void Fuzzer::MaybeAddRepeatedPass(RepeatedPassInstances* pass_instances,
+void Fuzzer::MaybeAddRepeatedPass(uint32_t percentage_chance_of_adding_pass,
+                                  RepeatedPassInstances* pass_instances,
                                   Args&&... extra_args) {
-  if (enable_all_passes_ || fuzzer_context_->ChooseEven()) {
+  if (enable_all_passes_ ||
+      fuzzer_context_->ChoosePercentage(percentage_chance_of_adding_pass)) {
     pass_instances->SetPass(MakeUnique<FuzzerPassT>(
         ir_context_.get(), transformation_context_.get(), fuzzer_context_.get(),
         &transformation_sequence_out_, std::forward<Args>(extra_args)...));
@@ -217,12 +219,18 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
                                                       initial_facts_);
 
   RepeatedPassInstances pass_instances{};
+
+  // The following passes are likely to be very useful: many other passes
+  // introduce synonyms, irrelevant ids and constants that these passes can work
+  // with.  We thus enable them with high probability.
+  MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(90, &pass_instances);
+  MaybeAddRepeatedPass<FuzzerPassApplyIdSynonyms>(90, &pass_instances);
+  MaybeAddRepeatedPass<FuzzerPassReplaceIrrelevantIds>(90, &pass_instances);
+
   do {
     // Each call to MaybeAddRepeatedPass randomly decides whether the given pass
     // should be enabled, and adds an instance of the pass to |pass_instances|
     // if it is enabled.
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3764): Consider
-    //  enabling some passes always, or with higher probability.
     MaybeAddRepeatedPass<FuzzerPassAddAccessChains>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddBitInstructionSynonyms>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddCompositeInserts>(&pass_instances);
@@ -248,7 +256,6 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     MaybeAddRepeatedPass<FuzzerPassAddSynonyms>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddVectorShuffleInstructions>(
         &pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassApplyIdSynonyms>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassConstructComposites>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassCopyObjects>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassDonateModules>(&pass_instances,
@@ -262,7 +269,6 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
         &pass_instances);
     MaybeAddRepeatedPass<FuzzerPassMergeBlocks>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassMutatePointers>(&pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassOutlineFunctions>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(&pass_instances);
@@ -280,7 +286,6 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     MaybeAddRepeatedPass<FuzzerPassReplaceParameterWithGlobal>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassReplaceLinearAlgebraInstructions>(
         &pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceIrrelevantIds>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
         &pass_instances);
     MaybeAddRepeatedPass<FuzzerPassReplaceOpSelectsWithConditionalBranches>(
