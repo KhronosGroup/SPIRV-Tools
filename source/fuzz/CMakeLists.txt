@@ -114,6 +114,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_swap_commutable_operands.h
         fuzzer_pass_swap_conditional_branch_operands.h
         fuzzer_pass_toggle_access_chain_instruction.h
+        fuzzer_pass_wrap_regions_in_selections.h
         fuzzer_util.h
         id_use_descriptor.h
         instruction_descriptor.h
@@ -211,6 +212,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_conditional_branch_operands.h
         transformation_toggle_access_chain_instruction.h
         transformation_vector_shuffle.h
+        transformation_wrap_region_in_selection.h
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
@@ -290,6 +292,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_swap_commutable_operands.cpp
         fuzzer_pass_swap_conditional_branch_operands.cpp
         fuzzer_pass_toggle_access_chain_instruction.cpp
+        fuzzer_pass_wrap_regions_in_selections.cpp
         fuzzer_util.cpp
         id_use_descriptor.cpp
         instruction_descriptor.cpp
@@ -385,6 +388,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_conditional_branch_operands.cpp
         transformation_toggle_access_chain_instruction.cpp
         transformation_vector_shuffle.cpp
+        transformation_wrap_region_in_selection.cpp
         uniform_buffer_element_descriptor.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
         )

@@ -120,7 +120,8 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     //   outlining functions.
     return RandomOrderAndNonNull(
         {pass_instances_->GetDuplicateRegionsWithSelections(),
-         pass_instances_->GetOutlineFunctions()});
+         pass_instances_->GetOutlineFunctions(),
+         pass_instances_->GetWrapRegionsInSelections()});
   }
   if (&pass == pass_instances_->GetAddLoopsToCreateIntConstantSynonyms()) {
     // - New synonyms can be applied
@@ -307,6 +308,16 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
   if (&pass == pass_instances_->GetSwapBranchConditionalOperands()) {
     // No obvious follow-on passes
     return {};
+  }
+  if (&pass == pass_instances_->GetWrapRegionsInSelections()) {
+    // - This pass uses an irrelevant boolean constant - we can replace it with
+    //   something more interesting.
+    // - We can obfuscate that very constant as well.
+    // - We can flatten created selection construct.
+    return RandomOrderAndNonNull(
+        {pass_instances_->GetObfuscateConstants(),
+         pass_instances_->GetReplaceIrrelevantIds(),
+         pass_instances_->GetFlattenConditionalBranches()});
   }
   assert(false && "Unreachable: every fuzzer pass should be dealt with.");
   return {};
