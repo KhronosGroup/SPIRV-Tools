@@ -45,24 +45,27 @@ class FactManager {
   explicit FactManager(opt::IRContext* ir_context);
 
   // Adds all the facts from |facts|, checking them for validity with respect to
-  // |context|.  Warnings about invalid facts are communicated via
+  // |ir_context_|. Warnings about invalid facts are communicated via
   // |message_consumer|; such facts are otherwise ignored.
-  void AddFacts(const MessageConsumer& message_consumer,
-                const protobufs::FactSequence& facts);
+  void AddInitialFacts(const MessageConsumer& message_consumer,
+                       const protobufs::FactSequence& facts);
 
-  // Checks the fact for validity with respect to |context|.  Returns false,
-  // with no side effects, if the fact is invalid.  Otherwise adds |fact| to the
+  // Checks the fact for validity with respect to |ir_context_|. Returns false,
+  // with no side effects, if the fact is invalid. Otherwise adds |fact| to the
   // fact manager.
-  bool AddFact(const protobufs::Fact& fact);
+  bool MaybeAddFact(const protobufs::Fact& fact);
 
-  // Record the fact that |data1| and |data2| are synonymous.
+  // Record the fact that |data1| and |data2| are synonymous. Neither |data1|
+  // nor |data2| may contain an irrelevant id.
   void AddFactDataSynonym(const protobufs::DataDescriptor& data1,
                           const protobufs::DataDescriptor& data2);
 
-  // Records the fact that |block_id| is dead.
+  // Records the fact that |block_id| is dead. |block_id| must be a result id
+  // of some OpLabel instruction in the |ir_context_|.
   void AddFactBlockIsDead(uint32_t block_id);
 
-  // Records the fact that |function_id| is livesafe.
+  // Records the fact that |function_id| is livesafe. |function_id| must be a
+  // result id of some non-entry-point function in the module.
   void AddFactFunctionIsLivesafe(uint32_t function_id);
 
   // Records the fact that the value of the pointee associated with |pointer_id|
@@ -72,13 +75,14 @@ class FactManager {
 
   // Records a fact that the |result_id| is irrelevant (i.e. it doesn't affect
   // the semantics of the module).
-  // |result_id| must exist in the module and actually be a pointer.
+  // |result_id| must exist in the module and it may not be a pointer.
   void AddFactIdIsIrrelevant(uint32_t result_id);
 
   // Records the fact that |lhs_id| is defined by the equation:
   //
   //   |lhs_id| = |opcode| |rhs_id[0]| ... |rhs_id[N-1]|
   //
+  // Neither |lhs_id| nor any of |rhs_id| may be irrelevant.
   void AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
                          const std::vector<uint32_t>& rhs_id);
 
@@ -117,7 +121,7 @@ class FactManager {
       uint32_t type_id) const;
 
   // Provides details of all uniform elements that are known to be equal to the
-  // constant associated with |constant_id| in |ir_context|.
+  // constant associated with |constant_id| in |ir_context_|.
   std::vector<protobufs::UniformBufferElementDescriptor>
   GetUniformDescriptorsForConstant(uint32_t constant_id) const;
 

@@ -124,6 +124,10 @@ void TransformationSplitBlock::Apply(
     phi_inst->SetInOperand(1, {block_to_split->id()});
   });
 
+  // Invalidate all analyses
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisNone);
+
   // If the block being split was dead, the new block arising from the split is
   // also dead.
   if (transformation_context->GetFactManager()->BlockIsDead(
@@ -131,10 +135,6 @@ void TransformationSplitBlock::Apply(
     transformation_context->GetFactManager()->AddFactBlockIsDead(
         message_.fresh_id());
   }
-
-  // Invalidate all analyses
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationSplitBlock::ToMessage() const {

@@ -31,12 +31,12 @@ protobufs::Fact MakeSynonymFact(uint32_t first, uint32_t second) {
 
 // Adds synonym facts to the fact manager.
 void SetUpIdSynonyms(FactManager* fact_manager) {
-  fact_manager->AddFact(MakeSynonymFact(11, 9));
-  fact_manager->AddFact(MakeSynonymFact(13, 9));
-  fact_manager->AddFact(MakeSynonymFact(14, 9));
-  fact_manager->AddFact(MakeSynonymFact(19, 9));
-  fact_manager->AddFact(MakeSynonymFact(20, 9));
-  fact_manager->AddFact(MakeSynonymFact(10, 21));
+  fact_manager->MaybeAddFact(MakeSynonymFact(11, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(13, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(14, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(19, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(20, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(10, 21));
 }
 
 TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
@@ -89,7 +89,8 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(23, 24));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(23, 24));
 
   // %13 is not a block label.
   ASSERT_FALSE(TransformationAddOpPhiSynonym(13, {{}}, 100)
@@ -211,8 +212,8 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
   SetUpIdSynonyms(transformation_context.GetFactManager());
 
   // Add some further synonym facts.
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(28, 9));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(30, 9));
+  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(28, 9));
+  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(30, 9));
 
   auto transformation1 = TransformationAddOpPhiSynonym(17, {{{15, 13}}}, 100);
   ASSERT_TRUE(
@@ -356,8 +357,9 @@ TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Declare synonyms
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(3, 15));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(12, 16));
+  transformation_context.GetFactManager()->MaybeAddFact(MakeSynonymFact(3, 15));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(12, 16));
 
   // Remove the VariablePointers capability.
   context.get()->get_feature_mgr()->RemoveCapability(

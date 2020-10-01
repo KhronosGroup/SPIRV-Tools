@@ -200,17 +200,17 @@ protobufs::Fact MakeSynonymFact(uint32_t first, uint32_t second) {
 
 // Equips the fact manager with synonym facts for the above shader.
 void SetUpIdSynonyms(FactManager* fact_manager) {
-  fact_manager->AddFact(MakeSynonymFact(15, 200));
-  fact_manager->AddFact(MakeSynonymFact(15, 201));
-  fact_manager->AddFact(MakeSynonymFact(15, 202));
-  fact_manager->AddFact(MakeSynonymFact(55, 203));
-  fact_manager->AddFact(MakeSynonymFact(54, 204));
-  fact_manager->AddFact(MakeSynonymFact(74, 205));
-  fact_manager->AddFact(MakeSynonymFact(78, 206));
-  fact_manager->AddFact(MakeSynonymFact(84, 207));
-  fact_manager->AddFact(MakeSynonymFact(33, 208));
-  fact_manager->AddFact(MakeSynonymFact(12, 209));
-  fact_manager->AddFact(MakeSynonymFact(19, 210));
+  fact_manager->MaybeAddFact(MakeSynonymFact(15, 200));
+  fact_manager->MaybeAddFact(MakeSynonymFact(15, 201));
+  fact_manager->MaybeAddFact(MakeSynonymFact(15, 202));
+  fact_manager->MaybeAddFact(MakeSynonymFact(55, 203));
+  fact_manager->MaybeAddFact(MakeSynonymFact(54, 204));
+  fact_manager->MaybeAddFact(MakeSynonymFact(74, 205));
+  fact_manager->MaybeAddFact(MakeSynonymFact(78, 206));
+  fact_manager->MaybeAddFact(MakeSynonymFact(84, 207));
+  fact_manager->MaybeAddFact(MakeSynonymFact(33, 208));
+  fact_manager->MaybeAddFact(MakeSynonymFact(12, 209));
+  fact_manager->MaybeAddFact(MakeSynonymFact(19, 210));
 }
 
 TEST(TransformationReplaceIdWithSynonymTest, IllegalTransformations) {
@@ -520,8 +520,10 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(10, 100));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(8, 101));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(10, 100));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(8, 101));
 
   // Replace %10 with %100 in:
   // %11 = OpLoad %6 %10
@@ -650,7 +652,8 @@ TEST(TransformationReplaceIdWithSynonymTest,
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(14, 100));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(14, 100));
 
   // Replace %14 with %100 in:
   // %16 = OpFunctionCall %2 %10 %14
@@ -815,19 +818,32 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym facts corresponding to the OpCopyObject operations that have
   // been applied to all constants in the module.
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(16, 100));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(21, 101));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(17, 102));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(57, 103));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(18, 104));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(40, 105));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(32, 106));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(43, 107));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(55, 108));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(8, 109));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(47, 110));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(28, 111));
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(45, 112));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(16, 100));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(21, 101));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(17, 102));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(57, 103));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(18, 104));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(40, 105));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(32, 106));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(43, 107));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(55, 108));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(8, 109));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(47, 110));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(28, 111));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(45, 112));
 
   // Replacements of the form %16 -> %100
 
@@ -1300,9 +1316,11 @@ TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %50 and %12.
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(50, 12));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(50, 12));
   // Add synonym fact relating %51 and %14.
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(51, 14));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(51, 14));
 
   // Not legal because the index being replaced is a struct index.
   ASSERT_FALSE(
@@ -1409,7 +1427,8 @@ TEST(TransformationReplaceIdWithSynonymTest,
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %100 and %9.
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(100, 9));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(100, 9));
 
   // Not legal the Sample argument of OpImageTexelPointer needs to be a zero
   // constant.
@@ -1469,7 +1488,8 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerConstants) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %10 and %13 (equivalent integer constant with
   // different signedness).
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(10, 13));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(10, 13));
 
   // Legal because OpSNegate always considers the integer as signed
   auto replacement1 = TransformationReplaceIdWithSynonym(
@@ -1611,7 +1631,8 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %10 and %13 (equivalent integer vectors with
   // different signedness).
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(14, 15));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(14, 15));
 
   // Legal because OpIAdd does not consider the signedness of the operands
   auto replacement1 = TransformationReplaceIdWithSynonym(
@@ -1630,7 +1651,8 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
 
   // Add synonym fact relating %12 and %13 (equivalent integer constants with
   // different signedness).
-  transformation_context.GetFactManager()->AddFact(MakeSynonymFact(12, 13));
+  transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(12, 13));
 
   // Legal because the indices of OpAccessChain are always treated as signed
   auto replacement2 = TransformationReplaceIdWithSynonym(

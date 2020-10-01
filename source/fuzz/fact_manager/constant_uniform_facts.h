@@ -31,7 +31,7 @@ class ConstantUniformFacts {
   explicit ConstantUniformFacts(opt::IRContext* ir_context);
 
   // See method in FactManager which delegates to this method.
-  bool AddFact(const protobufs::FactConstantUniform& fact);
+  bool MaybeAddFact(const protobufs::FactConstantUniform& fact);
 
   // See method in FactManager which delegates to this method.
   std::vector<uint32_t> GetConstantsAvailableFromUniformsForType(

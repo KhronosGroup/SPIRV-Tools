@@ -55,32 +55,39 @@ DataSynonymAndIdEquationFacts::DataSynonymAndIdEquationFacts(
     opt::IRContext* ir_context)
     : ir_context_(ir_context) {}
 
-void DataSynonymAndIdEquationFacts::AddFact(
+bool DataSynonymAndIdEquationFacts::MaybeAddFact(
     const protobufs::FactDataSynonym& fact,
     const DeadBlockFacts& dead_block_facts,
     const IrrelevantValueFacts& irrelevant_value_facts) {
-  (void)dead_block_facts;        // Keep release compilers happy.
-  (void)irrelevant_value_facts;  // Keep release compilers happy.
-  assert(!irrelevant_value_facts.IdIsIrrelevant(fact.data1().object(),
-                                                dead_block_facts) &&
-         !irrelevant_value_facts.IdIsIrrelevant(fact.data2().object(),
-                                                dead_block_facts) &&
-         "Irrelevant ids cannot be synonymous with other ids.");
+  if (irrelevant_value_facts.IdIsIrrelevant(fact.data1().object(),
+                                            dead_block_facts) ||
+      irrelevant_value_facts.IdIsIrrelevant(fact.data2().object(),
+                                            dead_block_facts)) {
+    // Irrelevant ids cannot be synonymous with other ids.
+    return false;
+  }
 
   // Add the fact, including all facts relating sub-components of the data
   // descriptors that are involved.
   AddDataSynonymFactRecursive(fact.data1(), fact.data2());
+  return true;
 }
 
-void DataSynonymAndIdEquationFacts::AddFact(
+bool DataSynonymAndIdEquationFacts::MaybeAddFact(
     const protobufs::FactIdEquation& fact,
     const DeadBlockFacts& dead_block_facts,
     const IrrelevantValueFacts& irrelevant_value_facts) {
-  (void)dead_block_facts;        // Keep release compilers happy.
-  (void)irrelevant_value_facts;  // Keep release compilers happy.
-  assert(
-      !irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id(), dead_block_facts) &&
-      "Irrelevant ids are not allowed.");
+  if (irrelevant_value_facts.IdIsIrrelevant(fact.lhs_id(), dead_block_facts)) {
+    // Irrelevant ids cannot participate in IdEquation facts.
+    return false;
+  }
+
+  for (auto id : fact.rhs_id()) {
+    if (irrelevant_value_facts.IdIsIrrelevant(id, dead_block_facts)) {
+      // Irrelevant ids cannot participate in IdEquation facts.
+      return false;
+    }
+  }
 
   protobufs::DataDescriptor lhs_dd = MakeDataDescriptor(fact.lhs_id(), {});
 
@@ -91,9 +98,6 @@ void DataSynonymAndIdEquationFacts::AddFact(
   // equation.
   std::vector<const protobufs::DataDescriptor*> rhs_dds;
   for (auto rhs_id : fact.rhs_id()) {
-    assert(!irrelevant_value_facts.IdIsIrrelevant(rhs_id, dead_block_facts) &&
-           "Irrelevant ids are not allowed.");
-
     // Register a data descriptor based on this id in the equivalence relation
     // if needed, and then record the equivalence class representative.
     rhs_dds.push_back(RegisterDataDescriptor(MakeDataDescriptor(rhs_id, {})));
@@ -101,6 +105,7 @@ void DataSynonymAndIdEquationFacts::AddFact(
 
   // Now add the fact.
   AddEquationFactRecursive(lhs_dd, static_cast<SpvOp>(fact.opcode()), rhs_dds);
+  return true;
 }
 
 DataSynonymAndIdEquationFacts::OperationSet

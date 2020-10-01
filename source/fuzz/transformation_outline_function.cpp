@@ -358,14 +358,6 @@ void TransformationOutlineFunction::Apply(
       region_input_ids, region_output_ids, input_id_to_fresh_id_map, ir_context,
       transformation_context);
 
-  // If the original function was livesafe, the new function should also be
-  // livesafe.
-  if (transformation_context->GetFactManager()->FunctionIsLivesafe(
-          original_region_entry_block->GetParent()->result_id())) {
-    transformation_context->GetFactManager()->AddFactFunctionIsLivesafe(
-        message_.new_function_id());
-  }
-
   // Adapt the region to be outlined so that its input ids are replaced with the
   // ids of the outlined function's input parameters, and so that output ids
   // are similarly remapped.
@@ -375,10 +367,10 @@ void TransformationOutlineFunction::Apply(
 
   // Fill out the body of the outlined function according to the region that is
   // being outlined.
-  PopulateOutlinedFunction(
-      *original_region_entry_block, *original_region_exit_block, region_blocks,
-      region_output_ids, output_id_to_fresh_id_map, ir_context,
-      outlined_function.get(), transformation_context);
+  PopulateOutlinedFunction(*original_region_entry_block,
+                           *original_region_exit_block, region_blocks,
+                           region_output_ids, output_id_to_fresh_id_map,
+                           ir_context, outlined_function.get());
 
   // Collapse the region that has been outlined into a function down to a single
   // block that calls said function.
@@ -389,11 +381,28 @@ void TransformationOutlineFunction::Apply(
       std::move(cloned_exit_block_terminator), original_region_entry_block);
 
   // Add the outlined function to the module.
+  const auto* outlined_function_ptr = outlined_function.get();
   ir_context->module()->AddFunction(std::move(outlined_function));
 
   // Major surgery has been conducted on the module, so invalidate all analyses.
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
+
+  // If the original function was livesafe, the new function should also be
+  // livesafe.
+  if (transformation_context->GetFactManager()->FunctionIsLivesafe(
+          original_region_entry_block->GetParent()->result_id())) {
+    transformation_context->GetFactManager()->AddFactFunctionIsLivesafe(
+        message_.new_function_id());
+  }
+
+  // Record the fact that all blocks in the outlined region are dead if the
+  // first block is dead.
+  if (transformation_context->GetFactManager()->BlockIsDead(
+          original_region_entry_block->id())) {
+    transformation_context->GetFactManager()->AddFactBlockIsDead(
+        outlined_function_ptr->entry()->id());
+  }
 }
 
 protobufs::Transformation TransformationOutlineFunction::ToMessage() const {
@@ -750,8 +759,7 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
     const std::set<opt::BasicBlock*>& region_blocks,
     const std::vector<uint32_t>& region_output_ids,
     const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
-    opt::IRContext* ir_context, opt::Function* outlined_function,
-    TransformationContext* transformation_context) const {
+    opt::IRContext* ir_context, opt::Function* outlined_function) const {
   // When we create the exit block for the outlined region, we use this pointer
   // to track of it so that we can manipulate it later.
   opt::BasicBlock* outlined_region_exit_block = nullptr;
@@ -764,14 +772,6 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
           ir_context, SpvOpLabel, 0, message_.new_function_region_entry_block(),
           opt::Instruction::OperandList()));
   outlined_region_entry_block->SetParent(outlined_function);
-
-  // If the original region's entry block was dead, the outlined region's entry
-  // block is also dead.
-  if (transformation_context->GetFactManager()->BlockIsDead(
-          original_region_entry_block.id())) {
-    transformation_context->GetFactManager()->AddFactBlockIsDead(
-        outlined_region_entry_block->id());
-  }
 
   if (&original_region_entry_block == &original_region_exit_block) {
     outlined_region_exit_block = outlined_region_entry_block.get();
@@ -879,7 +879,7 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
 }
 
 void TransformationOutlineFunction::ShrinkOriginalRegion(
-    opt::IRContext* ir_context, std::set<opt::BasicBlock*>& region_blocks,
+    opt::IRContext* ir_context, const std::set<opt::BasicBlock*>& region_blocks,
     const std::vector<uint32_t>& region_input_ids,
     const std::vector<uint32_t>& region_output_ids,
     const std::map<uint32_t, uint32_t>& output_id_to_type_id,

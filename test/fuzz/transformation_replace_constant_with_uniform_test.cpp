@@ -31,7 +31,7 @@ bool AddFactHelper(
       descriptor;
   protobufs::Fact fact;
   *fact.mutable_constant_uniform_fact() = constant_uniform_fact;
-  return transformation_context->GetFactManager()->AddFact(fact);
+  return transformation_context->GetFactManager()->MaybeAddFact(fact);
 }
 
 TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {

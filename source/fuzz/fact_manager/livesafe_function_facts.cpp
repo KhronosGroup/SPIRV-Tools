@@ -14,13 +14,27 @@
 
 #include "source/fuzz/fact_manager/livesafe_function_facts.h"
 
+#include "source/fuzz/fuzzer_util.h"
+
 namespace spvtools {
 namespace fuzz {
 namespace fact_manager {
 
-void LivesafeFunctionFacts::AddFact(
+LivesafeFunctionFacts::LivesafeFunctionFacts(opt::IRContext* ir_context)
+    : ir_context_(ir_context) {}
+
+bool LivesafeFunctionFacts::MaybeAddFact(
     const protobufs::FactFunctionIsLivesafe& fact) {
+  if (!fuzzerutil::FindFunction(ir_context_, fact.function_id())) {
+    return false;
+  }
+
+  if (fuzzerutil::FunctionIsEntryPoint(ir_context_, fact.function_id())) {
+    return false;
+  }
+
   livesafe_function_ids_.insert(fact.function_id());
+  return true;
 }
 
 bool LivesafeFunctionFacts::FunctionIsLivesafe(uint32_t function_id) const {
