@@ -21,7 +21,10 @@ if (${SPIRV_BUILD_FUZZER})
           comparator_deep_blocks_first_test.cpp
           data_synonym_transformation_test.cpp
           equivalence_relation_test.cpp
-          fact_manager_test.cpp
+          fact_manager/constant_uniform_facts_test.cpp
+          fact_manager/data_synonym_and_id_equation_facts_test.cpp
+          fact_manager/dead_block_facts_test.cpp
+          fact_manager/irrelevant_value_facts_test.cpp
           fuzz_test_util.cpp
           fuzzer_pass_add_opphi_synonyms_test.cpp
           fuzzer_pass_construct_composites_test.cpp
