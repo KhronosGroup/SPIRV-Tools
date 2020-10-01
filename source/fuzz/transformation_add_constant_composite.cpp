@@ -50,7 +50,8 @@ bool TransformationAddConstantComposite::IsApplicable(
     return false;
   }
   // Gather up the operands for the composite constant, in the process checking
-  // whether the given type really defines a composite.
+  // whether the given type really defines a composite and - in the case of a
+  // struct - whether its decorations are OK.
   std::vector<uint32_t> constituent_type_ids;
   switch (composite_type_instruction->opcode()) {
     case SpvOpTypeArray:
@@ -72,6 +73,19 @@ bool TransformationAddConstantComposite::IsApplicable(
       }
       break;
     case SpvOpTypeStruct:
+      // We do not create constants of structs decorated with Block nor
+      // BufferBlock.  The SPIR-V spec does not explicitly disallow this, but it
+      // seems like a strange thing to do, so we disallow it to avoid triggering
+      // low priorty edge case issues related to it.
+      for (auto decoration : {SpvDecorationBlock, SpvDecorationBufferBlock}) {
+        if (!ir_context->get_decoration_mgr()->WhileEachDecoration(
+                composite_type_instruction->result_id(), decoration,
+                [](const opt::Instruction & /*unused*/) -> bool {
+                  return false;
+                })) {
+          return false;
+        }
+      }
       composite_type_instruction->ForEachInOperand(
           [&constituent_type_ids](const uint32_t* member_type_id) {
             constituent_type_ids.push_back(*member_type_id);
