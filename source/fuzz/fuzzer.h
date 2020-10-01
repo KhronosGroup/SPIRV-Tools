@@ -16,6 +16,7 @@
 #define SOURCE_FUZZ_FUZZER_H_
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "source/fuzz/fuzzer_context.h"
@@ -102,7 +103,8 @@ class Fuzzer {
   template <typename FuzzerPassT, typename... Args>
   void MaybeAddRepeatedPass(RepeatedPassInstances* pass_instances,
                             Args&&... extra_args) {
-    MaybeAddRepeatedPass<FuzzerPassT>(50, pass_instances, extra_args...);
+    MaybeAddRepeatedPass<FuzzerPassT>(50, pass_instances,
+                                      std::forward<Args>(extra_args)...);
   }
 
   // A convenience method to add a final fuzzer pass to |passes| with
