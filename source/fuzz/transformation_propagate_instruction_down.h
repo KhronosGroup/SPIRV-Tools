@@ -67,9 +67,9 @@ class TransformationPropagateInstructionDown : public Transformation {
   //   GetAcceptableSuccessors method).
   // - none of the acceptable successors have OpPhi instructions that use the
   //   original instruction.
-  // - it is possible to replace every use of the original instruction
-  //   with some of the propagated instructions (or an OpPhi if we can create
-  //   it - see CanAddOpPhiInstruction method).
+  // - it is possible to replace every use of the original instruction with some
+  //   of the propagated instructions (or an OpPhi if we can create it - see
+  //   CanAddOpPhiInstruction method).
   static bool IsApplicableToBlock(opt::IRContext* ir_context,
                                   uint32_t block_id);
 
