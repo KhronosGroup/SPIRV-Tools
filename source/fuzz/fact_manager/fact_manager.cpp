@@ -140,9 +140,10 @@ void FactManager::AddFactDataSynonym(const protobufs::DataDescriptor& data1,
   protobufs::FactDataSynonym fact;
   *fact.mutable_data1() = data1;
   *fact.mutable_data2() = data2;
-  assert(data_synonym_and_id_equation_facts_.MaybeAddFact(
-             fact, dead_block_facts_, irrelevant_value_facts_) &&
-         "Unable to create DataSynonym fact");
+  auto success = data_synonym_and_id_equation_facts_.MaybeAddFact(
+      fact, dead_block_facts_, irrelevant_value_facts_);
+  (void)success;  // Keep compilers happy in release mode.
+  assert(success && "Unable to create DataSynonym fact");
 }
 
 std::vector<uint32_t> FactManager::GetConstantsAvailableFromUniformsForType(
@@ -202,7 +203,9 @@ bool FactManager::BlockIsDead(uint32_t block_id) const {
 void FactManager::AddFactBlockIsDead(uint32_t block_id) {
   protobufs::FactBlockIsDead fact;
   fact.set_block_id(block_id);
-  assert(dead_block_facts_.MaybeAddFact(fact) && "|block_id| is invalid");
+  auto success = dead_block_facts_.MaybeAddFact(fact);
+  (void)success;  // Keep compilers happy in release mode.
+  assert(success && "|block_id| is invalid");
 }
 
 bool FactManager::FunctionIsLivesafe(uint32_t function_id) const {
@@ -212,8 +215,9 @@ bool FactManager::FunctionIsLivesafe(uint32_t function_id) const {
 void FactManager::AddFactFunctionIsLivesafe(uint32_t function_id) {
   protobufs::FactFunctionIsLivesafe fact;
   fact.set_function_id(function_id);
-  assert(livesafe_function_facts_.MaybeAddFact(fact) &&
-         "|function_id| is invalid");
+  auto success = livesafe_function_facts_.MaybeAddFact(fact);
+  (void)success;  // Keep compilers happy in release mode.
+  assert(success && "|function_id| is invalid");
 }
 
 bool FactManager::PointeeValueIsIrrelevant(uint32_t pointer_id) const {
@@ -231,17 +235,19 @@ std::unordered_set<uint32_t> FactManager::GetIrrelevantIds() const {
 void FactManager::AddFactValueOfPointeeIsIrrelevant(uint32_t pointer_id) {
   protobufs::FactPointeeValueIsIrrelevant fact;
   fact.set_pointer_id(pointer_id);
-  assert(irrelevant_value_facts_.MaybeAddFact(
-             fact, data_synonym_and_id_equation_facts_) &&
-         "|pointer_id| is invalid");
+  auto success = irrelevant_value_facts_.MaybeAddFact(
+      fact, data_synonym_and_id_equation_facts_);
+  (void)success;  // Keep compilers happy in release mode.
+  assert(success && "|pointer_id| is invalid");
 }
 
 void FactManager::AddFactIdIsIrrelevant(uint32_t result_id) {
   protobufs::FactIdIsIrrelevant fact;
   fact.set_result_id(result_id);
-  assert(irrelevant_value_facts_.MaybeAddFact(
-             fact, data_synonym_and_id_equation_facts_) &&
-         "|result_id| is invalid");
+  auto success = irrelevant_value_facts_.MaybeAddFact(
+      fact, data_synonym_and_id_equation_facts_);
+  (void)success;  // Keep compilers happy in release mode.
+  assert(success && "|result_id| is invalid");
 }
 
 void FactManager::AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
@@ -252,9 +258,10 @@ void FactManager::AddFactIdEquation(uint32_t lhs_id, SpvOp opcode,
   for (auto an_rhs_id : rhs_id) {
     fact.add_rhs_id(an_rhs_id);
   }
-  assert(data_synonym_and_id_equation_facts_.MaybeAddFact(
-             fact, dead_block_facts_, irrelevant_value_facts_) &&
-         "Can't create IdIsIrrelevant fact");
+  auto success = data_synonym_and_id_equation_facts_.MaybeAddFact(
+      fact, dead_block_facts_, irrelevant_value_facts_);
+  (void)success;  // Keep compilers happy in release mode.
+  assert(success && "Can't create IdIsIrrelevant fact");
 }
 
 void FactManager::ComputeClosureOfFacts(

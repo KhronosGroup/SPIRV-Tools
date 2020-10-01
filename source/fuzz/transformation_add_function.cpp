@@ -163,13 +163,16 @@ void TransformationAddFunction::Apply(
     TransformationContext* transformation_context) const {
   // Add the function to the module.  As the transformation is applicable, this
   // should succeed.
-  assert(TryToAddFunction(ir_context) &&
-         "The function should be successfully added.");
+  bool success = TryToAddFunction(ir_context);
+  assert(success && "The function should be successfully added.");
+  (void)(success);  // Keep release builds happy (otherwise they may complain
+                    // that |success| is not used).
 
   if (message_.is_livesafe()) {
     // Make the function livesafe, which also should succeed.
-    assert(TryToMakeFunctionLivesafe(ir_context, *transformation_context) &&
-           "It should be possible to make the function livesafe.");
+    success = TryToMakeFunctionLivesafe(ir_context, *transformation_context);
+    assert(success && "It should be possible to make the function livesafe.");
+    (void)(success);  // Keep release builds happy.
   }
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
