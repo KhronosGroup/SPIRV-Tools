@@ -505,6 +505,7 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableIdTest) {
   ASSERT_FALSE(
       transformation_bad_7.IsApplicable(context.get(), transformation_context));
 
+#ifndef NDEBUG
   // Bad: Instruction with id 15 is from the original region and is available
   // at the end of the region but it is not present in the
   // |original_id_to_phi_id|.
@@ -512,8 +513,9 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableIdTest) {
       TransformationDuplicateRegionWithSelection(
           500, 19, 501, 800, 800, {{800, 100}}, {{13, 201}, {15, 202}},
           {{13, 301}});
-  ASSERT_FALSE(
-      transformation_bad_8.IsApplicable(context.get(), transformation_context));
+  ASSERT_DEATH(
+      transformation_bad_8.IsApplicable(context.get(), transformation_context),
+      "Bad attempt to query whether overflow ids are available.");
 
   // Bad: Instruction with id 15 is from the original region but it is
   // not present in the |original_id_to_duplicate_id|.
@@ -521,8 +523,10 @@ TEST(TransformationDuplicateRegionWithSelectionTest, NotApplicableIdTest) {
       TransformationDuplicateRegionWithSelection(500, 19, 501, 800, 800,
                                                  {{800, 100}}, {{13, 201}},
                                                  {{13, 301}, {15, 302}});
-  ASSERT_FALSE(
-      transformation_bad_9.IsApplicable(context.get(), transformation_context));
+  ASSERT_DEATH(
+      transformation_bad_9.IsApplicable(context.get(), transformation_context),
+      "Bad attempt to query whether overflow ids are available.");
+#endif
 
   // Bad: |condition_id| does not refer to the valid instruction.
   TransformationDuplicateRegionWithSelection transformation_bad_10 =
