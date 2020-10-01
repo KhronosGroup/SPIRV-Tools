@@ -96,7 +96,7 @@ OpFunctionEnd
                                                      true);
 }
 
-TEST_F(LocalAccessChainConvertTest, DebugInfo) {
+TEST_F(LocalAccessChainConvertTest, DebugScopeAndLineInfoForNewInstructions) {
   //  #version 140
   //
   //  in vec4 BaseColor;
@@ -193,7 +193,7 @@ OpFunctionEnd
                                                      true);
 }
 
-TEST_F(LocalAccessChainConvertTest, DebugInfoReference) {
+TEST_F(LocalAccessChainConvertTest, TestTargetsReferencedByDebugValue) {
   //  #version 140
   //
   //  in vec4 BaseColor;
@@ -257,20 +257,23 @@ OpName %gl_FragColor "gl_FragColor"
 
   const std::string before =
       R"(
-; CHECK: [[deref:%\w+]] = OpExtInst {{%\w+}} {{%\w+}} DebugOperation Deref
-; CHECK: [[deref_expr:%\w+]] = OpExtInst {{%\w+}} {{%\w+}} DebugExpression [[deref]]
-; CHECK: [[null_expr:%\w+]] = OpExtInst {{%\w+}} {{%\w+}} DebugExpression
 ; CHECK: [[st_id:%\w+]] = OpLoad %v4float %BaseColor
 ; CHECK: OpLine {{%\w+}} 0 0
 ; CHECK: [[s0_1_ptr:%\w+]] = OpAccessChain %_ptr_Function_v4float %s0 %int_1
-; CHECK: DebugValue [[s0:%\w+]] [[s0_1_ptr]] [[deref_expr]] %int_1
+; CHECK: DebugValue [[dbg_s0:%\w+]] [[s0_1_ptr]]
 ; CHECK: OpLine {{%\w+}} 1 0
-; CHECK: OpStore [[s0_1_ptr]] [[st_id]]
+; CHECK: [[s0:%\w+]] = OpLoad %S_t %s0
+; CHECK: OpLine {{%\w+}} 1 0
+; CHECK: [[comp:%\w+]] = OpCompositeInsert %S_t [[st_id]] [[s0]] 1
+; CHECK: OpLine {{%\w+}} 1 0
+; CHECK: OpStore %s0 [[comp]]
 ; CHECK: OpLine {{%\w+}} 2 0
 ; CHECK: [[s0_2_ptr:%\w+]] = OpAccessChain %_ptr_Function_v4float %s0 %int_1
 ; CHECK: OpLine {{%\w+}} 3 0
-; CHECK: [[s0_2_val:%\w+]] = OpLoad %v4float [[s0_2_ptr]]
-; CHECK: DebugValue [[s0]] [[s0_2_val]] [[null_expr]] %int_1
+; CHECK: [[s0:%\w+]] = OpLoad %S_t %s0
+; CHECK: OpLine {{%\w+}} 3 0
+; CHECK: [[s0_2_val:%\w+]] = OpCompositeExtract %v4float [[s0]] 1
+; CHECK: DebugValue [[dbg_s0]] [[s0_2_val]]
 ; CHECK: OpLine {{%\w+}} 4 0
 ; CHECK: OpStore %gl_FragColor [[s0_2_val]]
 %main = OpFunction %void None %8

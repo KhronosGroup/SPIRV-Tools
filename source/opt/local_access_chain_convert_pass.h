@@ -116,9 +116,6 @@ class LocalAccessChainConvertPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  // Return true if a user of |inst| is OpenCL.DebugInfo.100 instruction.
-  bool HasOpenCL100DebugRef(Instruction* inst) const;
-
   void Initialize();
   Pass::Status ProcessImpl();
 
