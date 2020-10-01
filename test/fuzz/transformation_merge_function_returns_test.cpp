@@ -562,7 +562,8 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
       TransformationMergeFunctionReturns(14, 100, 101, 0, 0, {{}});
   ASSERT_TRUE(
       transformation1.IsApplicable(context.get(), transformation_context));
-  transformation1.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %12 is available at the end of the entry block of %19 (it is a global
@@ -576,7 +577,8 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
       TransformationMergeFunctionReturns(19, 110, 111, 112, 1000, {{}});
   ASSERT_TRUE(
       transformation2.IsApplicable(context.get(), transformation_context));
-  transformation2.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %27 is available at the end of the entry block of %26 (it is a function
@@ -590,7 +592,8 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
       TransformationMergeFunctionReturns(26, 120, 121, 122, 1000, {{}});
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
-  transformation3.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // %35 is available at the end of the entry block of %33 (it is in the entry
@@ -604,7 +607,8 @@ TEST(TransformationMergeFunctionReturnsTest, Simple) {
       TransformationMergeFunctionReturns(33, 130, 131, 132, 1000, {{}});
   ASSERT_TRUE(
       transformation4.IsApplicable(context.get(), transformation_context));
-  transformation4.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation4, context.get(),
+                        &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformations = R"(
@@ -803,7 +807,7 @@ TEST(TransformationMergeFunctionReturnsTest, NestedLoops) {
         MakeReturnMergingInfo(23, 109, 110, {})}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -978,9 +982,11 @@ TEST(TransformationMergeFunctionReturnsTest, OverflowIds) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
+  auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(1000);
+  auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
   TransformationContext transformation_context_with_overflow_ids(
       MakeUnique<FactManager>(context.get()), validator_options,
-      MakeUnique<CounterOverflowIdSource>(1000));
+      std::move(overflow_ids_unique_ptr));
 
   // No mapping from merge block %16 to fresh ids is given, so overflow ids are
   // needed.
@@ -995,8 +1001,9 @@ TEST(TransformationMergeFunctionReturnsTest, OverflowIds) {
 
   ASSERT_TRUE(transformation1.IsApplicable(
       context.get(), transformation_context_with_overflow_ids));
-  transformation1.Apply(context.get(),
-                        &transformation_context_with_overflow_ids);
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context_with_overflow_ids,
+                        overflow_ids_ptr->GetIssuedOverflowIds());
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // No mapping from merge block %27 to fresh ids is given, so overflow ids are
@@ -1012,8 +1019,8 @@ TEST(TransformationMergeFunctionReturnsTest, OverflowIds) {
 
   ASSERT_TRUE(transformation2.IsApplicable(
       context.get(), transformation_context_with_overflow_ids));
-  transformation2.Apply(context.get(),
-                        &transformation_context_with_overflow_ids);
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context_with_overflow_ids, {1002});
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformations = R"(
@@ -1168,7 +1175,7 @@ TEST(TransformationMergeFunctionReturnsTest, MissingIdsForOpPhi) {
       {{MakeReturnMergingInfo(17, 103, 0, {{{25, 7}, {35, 8}}})}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1318,7 +1325,7 @@ TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules1) {
       18, 100, 101, 0, 0, {{MakeReturnMergingInfo(21, 102, 103, {{}})}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1542,7 +1549,7 @@ TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules3) {
       2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   std::string after_transformation = R"(
@@ -1685,7 +1692,7 @@ TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules4) {
       2, 100, 101, 0, 0, {{MakeReturnMergingInfo(10, 102, 103, {{}})}});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-  transformation.Apply(context.get(), &transformation_context);
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
   // In function %20, the definition of id %28 will not dominate its use in

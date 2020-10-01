@@ -574,6 +574,27 @@ void TransformationMergeFunctionReturns::Apply(
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
+std::unordered_set<uint32_t> TransformationMergeFunctionReturns::GetFreshIds()
+    const {
+  std::unordered_set<uint32_t> result;
+  result.emplace(message_.outer_header_id());
+  result.emplace(message_.outer_return_id());
+  // |message_.return_val_info| can be 0 if the function is void.
+  if (message_.return_val_id()) {
+    result.emplace(message_.return_val_id());
+  }
+
+  for (auto merging_info : message_.return_merging_info()) {
+    result.emplace(merging_info.is_returning_id());
+    // |maybe_return_val_id| can be 0 if the function is void.
+    if (merging_info.maybe_return_val_id()) {
+      result.emplace(merging_info.maybe_return_val_id());
+    }
+  }
+
+  return result;
+}
+
 protobufs::Transformation TransformationMergeFunctionReturns::ToMessage()
     const {
   return protobufs::Transformation();
