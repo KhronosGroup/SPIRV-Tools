@@ -153,7 +153,7 @@ bool AddedFunctionReducer::InterestingnessFunctionForReducingAddedFunction(
   // This is an optimization: the assumption is that having already shrunk the
   // transformation sequence down to minimal form, all transformations have a
   // role to play, and it's almost certainly a waste of time to invoke the
-  // shrinker's interestingness function is we have eliminated transformations
+  // shrinker's interestingness function if we have eliminated transformations
   // that the shrinker previously tried to -- but could not -- eliminate.
   std::vector<uint32_t> binary_out;
   protobufs::TransformationSequence modified_transformations;
