@@ -163,7 +163,8 @@ bool ConstantUniformFacts::FloatingPointValueIsSuitable(
   return true;
 }
 
-bool ConstantUniformFacts::AddFact(const protobufs::FactConstantUniform& fact) {
+bool ConstantUniformFacts::MaybeAddFact(
+    const protobufs::FactConstantUniform& fact) {
   // Try to find a unique instruction that declares a variable such that the
   // variable is decorated with the descriptor set and binding associated with
   // the constant uniform fact.

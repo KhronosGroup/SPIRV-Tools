@@ -18,6 +18,7 @@
 #include <unordered_set>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -27,14 +28,19 @@ namespace fact_manager {
 // facts about livesafe functions.
 class LivesafeFunctionFacts {
  public:
-  // See method in FactManager which delegates to this method.
-  void AddFact(const protobufs::FactFunctionIsLivesafe& fact);
+  explicit LivesafeFunctionFacts(opt::IRContext* ir_context);
+
+  // See method in FactManager which delegates to this method. Returns true if
+  // |fact.function_id()| is a result id of some non-entry-point function in
+  // |ir_context_|. Returns false otherwise.
+  bool MaybeAddFact(const protobufs::FactFunctionIsLivesafe& fact);
 
   // See method in FactManager which delegates to this method.
   bool FunctionIsLivesafe(uint32_t function_id) const;
 
  private:
   std::unordered_set<uint32_t> livesafe_function_ids_;
+  opt::IRContext* ir_context_;
 };
 
 }  // namespace fact_manager

@@ -216,8 +216,8 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
 
   transformation_context_ = MakeUnique<TransformationContext>(
       MakeUnique<FactManager>(ir_context_.get()), validator_options_);
-  transformation_context_->GetFactManager()->AddFacts(consumer_,
-                                                      initial_facts_);
+  transformation_context_->GetFactManager()->AddInitialFacts(consumer_,
+                                                             initial_facts_);
 
   RepeatedPassInstances pass_instances{};
 

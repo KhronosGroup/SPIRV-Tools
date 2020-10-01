@@ -108,7 +108,8 @@ Replayer::ReplayerResult Replayer::Run() {
       MakeUnique<TransformationContext>(
           MakeUnique<FactManager>(ir_context.get()), validator_options_,
           MakeUnique<CounterOverflowIdSource>(first_overflow_id));
-  transformation_context->GetFactManager()->AddFacts(consumer_, initial_facts_);
+  transformation_context->GetFactManager()->AddInitialFacts(consumer_,
+                                                            initial_facts_);
 
   // We track the largest id bound observed, to ensure that it only increases
   // as transformations are applied.

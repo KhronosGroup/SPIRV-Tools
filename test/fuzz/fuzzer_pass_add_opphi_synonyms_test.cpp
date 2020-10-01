@@ -32,21 +32,21 @@ protobufs::Fact MakeSynonymFact(uint32_t first, uint32_t second) {
 // Adds synonym facts to the fact manager.
 void SetUpIdSynonyms(FactManager* fact_manager) {
   // Synonyms {9, 11, 15, 16, 21, 22}
-  fact_manager->AddFact(MakeSynonymFact(11, 9));
-  fact_manager->AddFact(MakeSynonymFact(15, 9));
-  fact_manager->AddFact(MakeSynonymFact(16, 9));
-  fact_manager->AddFact(MakeSynonymFact(21, 9));
-  fact_manager->AddFact(MakeSynonymFact(22, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(11, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(15, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(16, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(21, 9));
+  fact_manager->MaybeAddFact(MakeSynonymFact(22, 9));
 
   // Synonyms {10, 23}
-  fact_manager->AddFact(MakeSynonymFact(10, 23));
+  fact_manager->MaybeAddFact(MakeSynonymFact(10, 23));
 
   // Synonyms {14, 27}
-  fact_manager->AddFact(MakeSynonymFact(14, 27));
+  fact_manager->MaybeAddFact(MakeSynonymFact(14, 27));
 
   // Synonyms {24, 26, 30}
-  fact_manager->AddFact(MakeSynonymFact(26, 24));
-  fact_manager->AddFact(MakeSynonymFact(30, 24));
+  fact_manager->MaybeAddFact(MakeSynonymFact(26, 24));
+  fact_manager->MaybeAddFact(MakeSynonymFact(30, 24));
 }
 
 // Returns true if the given lists have the same elements, regardless of their
