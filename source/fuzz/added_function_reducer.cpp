@@ -69,7 +69,7 @@ AddedFunctionReducer::AddedFunctionReducerResult AddedFunctionReducer::Run() {
             binary_under_reduction, irrelevant_pointee_global_variables);
       });
 
-  // Instruction spirv-reduce to only target the function with the id associated
+  // Instruct spirv-reduce to only target the function with the id associated
   // with the AddFunction transformation that we care about.
   spvtools::ReducerOptions reducer_options;
   reducer_options.set_target_function(GetAddedFunctionId());
@@ -142,10 +142,19 @@ bool AddedFunctionReducer::InterestingnessFunctionForReducingAddedFunction(
     }
   }
 
-  // It must be possible to successfully apply all the transformations, with
-  // the transformation at index |index_of_add_function_transformation_|
-  // simplified to use the version of the added function from
-  // |binary_under_reduction|.
+  // For the binary to be deemed interesting, it must be possible to
+  // successfully apply all the transformations, with the transformation at
+  // index |index_of_add_function_transformation_| simplified to use the version
+  // of the added function from |binary_under_reduction|.
+  //
+  // This might not be the case: spirv-reduce might have removed a chunk of the
+  // added function on which future transformations depend.
+  //
+  // This is an optimization: the assumption is that having already shrunk the
+  // transformation sequence down to minimal form, all transformations have a
+  // role to play, and it's almost certainly a waste of time to invoke the
+  // shrinker's interestingness function is we have eliminated transformations
+  // that the shrinker previously tried to -- but could not -- eliminate.
   std::vector<uint32_t> binary_out;
   protobufs::TransformationSequence modified_transformations;
   ReplayAdaptedTransformations(binary_under_reduction, &binary_out,
@@ -181,7 +190,7 @@ void AddedFunctionReducer::ReplayPrefixAndAddFunction(
              index_of_add_function_transformation_ &&
          "All requested transformations should have applied.");
 
-  auto ir_context = std::move(replay_result.transformed_module);
+  auto* ir_context = replay_result.transformed_module.get();
 
   for (auto& type_or_value : ir_context->module()->types_values()) {
     if (type_or_value.opcode() != SpvOpVariable) {
@@ -202,7 +211,7 @@ void AddedFunctionReducer::ReplayPrefixAndAddFunction(
               .transformation(index_of_add_function_transformation_)
               .add_function();
   bool success = TransformationAddFunction(transformation_add_function_message)
-                     .TryToAddFunction(ir_context.get());
+                     .TryToAddFunction(ir_context);
   (void)success;  // Keep release mode compilers happy.
   assert(success && "Addition of the function should have succeeded.");
 

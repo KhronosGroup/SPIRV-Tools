@@ -121,11 +121,14 @@ class AddedFunctionReducer {
       const std::unordered_set<uint32_t>& irrelevant_pointee_global_variables);
 
   // Starting with |binary_in_| and |initial_facts_|, the transformations in
-  // |transformation_sequence_in_| are replayed.  However, the transforamtion
+  // |transformation_sequence_in_| are replayed.  However, the transformation
   // at index |index_of_add_function_transformation_| of
   // |transformation_sequence_in_| -- which is guaranteed to be an AddFunction
   // transformation -- is adapted so that the function to be added is replaced
   // with the function in |binary_under_reduction| with id |added_function_id_|.
+  //
+  // The binary resulting from this replay is returned via |binary_out|, and the
+  // adapted transformation sequence via |transformation_sequence_out|.
   void ReplayAdaptedTransformations(
       const std::vector<uint32_t>& binary_under_reduction,
       std::vector<uint32_t>* binary_out,
