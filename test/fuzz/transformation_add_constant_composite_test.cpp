@@ -195,6 +195,92 @@ TEST(TransformationAddConstantCompositeTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationAddConstantCompositeTest, DisallowBufferBlockDecoration) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main"
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %7 "buf"
+               OpMemberName %7 0 "a"
+               OpMemberName %7 1 "b"
+               OpName %9 ""
+               OpMemberDecorate %7 0 Offset 0
+               OpMemberDecorate %7 1 Offset 4
+               OpDecorate %7 BufferBlock
+               OpDecorate %9 DescriptorSet 0
+               OpDecorate %9 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %10 = OpConstant %6 42
+          %7 = OpTypeStruct %6 %6
+          %8 = OpTypePointer Uniform %7
+          %9 = OpVariable %8 Uniform
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_0;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_FALSE(TransformationAddConstantComposite(100, 7, {10, 10}, false)
+                   .IsApplicable(context.get(), transformation_context));
+}
+
+TEST(TransformationAddConstantCompositeTest, DisallowBlockDecoration) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %9
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %7 "buf"
+               OpMemberName %7 0 "a"
+               OpMemberName %7 1 "b"
+               OpName %9 ""
+               OpMemberDecorate %7 0 Offset 0
+               OpMemberDecorate %7 1 Offset 4
+               OpDecorate %7 Block
+               OpDecorate %9 DescriptorSet 0
+               OpDecorate %9 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %10 = OpConstant %6 42
+          %7 = OpTypeStruct %6 %6
+          %8 = OpTypePointer StorageBuffer %7
+          %9 = OpVariable %8 StorageBuffer
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_FALSE(TransformationAddConstantComposite(100, 7, {10, 10}, false)
+                   .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
