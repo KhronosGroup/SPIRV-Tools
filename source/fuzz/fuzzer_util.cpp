@@ -1673,12 +1673,14 @@ bool InstructionHasNoSideEffects(const opt::Instruction& instruction) {
   }
 }
 
-bool IdHasDecoration(opt::IRContext* ir_context, uint32_t id,
-                     const std::unordered_set<SpvDecoration>& relevant_decorations) {
+bool IdHasDecoration(
+    opt::IRContext* ir_context, uint32_t id,
+    const std::unordered_set<SpvDecoration>& relevant_decorations) {
   for (auto decoration : relevant_decorations) {
     if (!ir_context->get_decoration_mgr()->WhileEachDecoration(
-            id, decoration,
-            [](const opt::Instruction& /*unused*/) -> bool { return false; })) {
+            id, decoration, [](const opt::Instruction & /*unused*/) -> bool {
+              return false;
+            })) {
       return true;
     }
   }

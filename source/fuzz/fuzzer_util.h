@@ -549,8 +549,9 @@ bool InstructionHasNoSideEffects(const opt::Instruction& instruction);
 
 // Returns true if and only if |id| is decorated with at least one decoration
 // from |relevant_decorations|.
-bool IdHasDecoration(opt::IRContext* ir_context, uint32_t id,
-                     const std::unordered_set<SpvDecoration>& relevant_decorations);
+bool IdHasDecoration(
+    opt::IRContext* ir_context, uint32_t id,
+    const std::unordered_set<SpvDecoration>& relevant_decorations);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz

@@ -32,11 +32,15 @@ FuzzerPassConstructComposites::FuzzerPassConstructComposites(
 FuzzerPassConstructComposites::~FuzzerPassConstructComposites() = default;
 
 void FuzzerPassConstructComposites::Apply() {
-  // Gather up the ids of all composite types, but skip block-/buffer block-decorated struct types.
+  // Gather up the ids of all composite types, but skip block-/buffer
+  // block-decorated struct types.
   std::vector<uint32_t> composite_type_ids;
   for (auto& inst : GetIRContext()->types_values()) {
     if (fuzzerutil::IsCompositeType(
-            GetIRContext()->get_type_mgr()->GetType(inst.result_id())) && !fuzzerutil::IdHasDecoration(GetIRContext(), inst.result_id(), {SpvDecorationBlock, SpvDecorationBufferBlock})) {
+            GetIRContext()->get_type_mgr()->GetType(inst.result_id())) &&
+        !fuzzerutil::IdHasDecoration(
+            GetIRContext(), inst.result_id(),
+            {SpvDecorationBlock, SpvDecorationBufferBlock})) {
       composite_type_ids.push_back(inst.result_id());
     }
   }

@@ -421,13 +421,10 @@ TEST(TransformationAddCopyMemoryTest, DisallowBufferBlockDecoration) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_FALSE(TransformationAddCopyMemory(MakeInstructionDescriptor(
-                                               5, SpvOpReturn, 0),
-                                           100,
-                                           9,
-                                           SpvStorageClassPrivate,
-                                           50)
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationAddCopyMemory(MakeInstructionDescriptor(5, SpvOpReturn, 0),
+                                  100, 9, SpvStorageClassPrivate, 50)
+          .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationAddCopyMemoryTest, DisallowBlockDecoration) {
@@ -470,13 +467,10 @@ TEST(TransformationAddCopyMemoryTest, DisallowBlockDecoration) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_FALSE(TransformationAddCopyMemory(MakeInstructionDescriptor(
-      5, SpvOpReturn, 0),
-                                           100,
-                                           9,
-                                           SpvStorageClassPrivate,
-                                           50)
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationAddCopyMemory(MakeInstructionDescriptor(5, SpvOpReturn, 0),
+                                  100, 9, SpvStorageClassPrivate, 50)
+          .IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace
