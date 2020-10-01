@@ -52,6 +52,38 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     return false;
   }
 
+  // The module must contain an OpConstantTrue instruction.
+  if (!fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
+                                        true, false)) {
+    return false;
+  }
+
+  // The module must contain an OpConstantFalse instruction.
+  if (!fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
+                                        false, false)) {
+    return false;
+  }
+
+  // Check that the fresh ids provided are fresh and distinct.
+  std::set<uint32_t> used_fresh_ids;
+  for (uint32_t id : {message_.outer_header_id(), message_.outer_return_id()}) {
+    if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
+                                                             &used_fresh_ids)) {
+      return false;
+    }
+  }
+
+  // Check the additional fresh id required if the function is not void.
+  auto function_type = ir_context->get_type_mgr()->GetType(function->type_id());
+  assert(function_type && "The function type should always exist.");
+
+  if (!function_type->AsVoid() &&
+      (!message_.return_val_id() ||
+       !CheckIdIsFreshAndNotUsedByThisTransformation(
+           message_.return_val_id(), ir_context, &used_fresh_ids))) {
+    return false;
+  }
+
   // Get a map from the types for which ids are available at the end of the
   // entry block to one of the ids with that type. We compute this here to avoid
   // potentially doing it multiple times later on.
@@ -91,6 +123,34 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     }
   }
 
+  // Instructions in the relevant merge blocks must be restricted to OpLabel,
+  // OpPhi and OpBranch.
+  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
+    uint32_t merge_block = merge_block_entry.first;
+    bool all_instructions_allowed =
+        ir_context->get_instr_block(merge_block)
+            ->WhileEachInst([](opt::Instruction* inst) {
+              return inst->opcode() == SpvOpLabel ||
+                     inst->opcode() == SpvOpPhi ||
+                     inst->opcode() == SpvOpBranch;
+            });
+    if (!all_instructions_allowed) {
+      return false;
+    }
+  }
+
+  auto merge_blocks_to_info = GetMappingOfMergeBlocksToInfo();
+
+  // For each relevant merge block, check that the correct ids are available.
+  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
+    if (!CheckThatTheCorrectIdsAreGivenForMergeBlock(
+            merge_block_entry.first, merge_blocks_to_info,
+            types_to_available_ids, function_type->AsVoid(), ir_context,
+            transformation_context, &used_fresh_ids)) {
+      return false;
+    }
+  }
+
   // If the function has a non-void return type, and there are merge loops which
   // contain return instructions, we need to check that either:
   // - |message_.any_returnable_val_id| exists. In this case, it must have the
@@ -98,9 +158,6 @@ bool TransformationMergeFunctionReturns::IsApplicable(
   //   of the entry block.
   // - a suitable id, available at the end of the entry block can be found in
   //   the module.
-  auto function_type = ir_context->get_type_mgr()->GetType(function->type_id());
-  assert(function_type && "The function type should always exist.");
-
   if (!function_type->AsVoid() && !merge_blocks_to_returning_preds.empty()) {
     auto returnable_val_def =
         ir_context->get_def_use_mgr()->GetDef(message_.any_returnable_val_id());
@@ -119,211 +176,12 @@ bool TransformationMergeFunctionReturns::IsApplicable(
     }
   }
 
-  // Instructions in the relevant merge blocks must be restricted to OpLabel,
-  // OpPhi and OpBranch.
-  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
-    uint32_t merge_block = merge_block_entry.first;
-    bool all_instructions_allowed =
-        ir_context->get_instr_block(merge_block)
-            ->WhileEachInst([](opt::Instruction* inst) {
-              return inst->opcode() == SpvOpLabel ||
-                     inst->opcode() == SpvOpPhi ||
-                     inst->opcode() == SpvOpBranch;
-            });
-    if (!all_instructions_allowed) {
-      return false;
-    }
-  }
-
   // Check that adding new predecessors to the relevant merge blocks does not
   // render any instructions invalid (each id definition must still dominate
   // each of its uses).
-  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
-    uint32_t merge_block = merge_block_entry.first;
-    const auto& returning_preds = merge_block_entry.second;
-
-    // Find a list of blocks in which there might be problematic definitions.
-    // These are all the blocks that dominate the merge block but do not
-    // dominate all of the new predecessors.
-    std::vector<opt::BasicBlock*> problematic_blocks;
-
-    auto dominator_analysis = ir_context->GetDominatorAnalysis(function);
-
-    // Start from the immediate dominator of the merge block.
-    auto current_block = dominator_analysis->ImmediateDominator(merge_block);
-    assert(current_block &&
-           "Each merge block should have at least one dominator.");
-
-    for (uint32_t pred : returning_preds) {
-      while (!dominator_analysis->Dominates(current_block->id(), pred)) {
-        // The current block does not dominate all of the return blocks, so it
-        // might be problematic.
-        problematic_blocks.emplace_back(current_block);
-
-        // Walk up the dominator tree.
-        current_block = dominator_analysis->ImmediateDominator(current_block);
-        assert(current_block &&
-               "We should be able to find a dominator for all the blocks, "
-               "since they must all be dominated at least by the header.");
-      }
-    }
-
-    // Identify the loop header corresponding to the merge block.
-    uint32_t loop_header =
-        fuzzerutil::GetLoopFromMergeBlock(ir_context, merge_block);
-
-    // For all the ids defined in blocks inside |problematic_blocks|, check that
-    // all their uses are either:
-    // - inside the loop (or in the loop header). If this is the case, the path
-    //   from the definition to the use does not go through the merge block, so
-    //   adding new predecessor to it is not a problem.
-    // - inside an OpPhi instruction in the merge block. If this is the case,
-    //   the definition does not need to dominate the merge block.
-    for (auto block : problematic_blocks) {
-      assert((block->id() == loop_header ||
-              ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
-                  block->id()) == loop_header) &&
-             "The problematic blocks should all be inside the loop (also "
-             "considering the header).");
-      bool dominance_rules_maintained =
-          block->WhileEachInst([ir_context, loop_header,
-                                merge_block](opt::Instruction* instruction) {
-            // Instruction without a result id do not cause any problems.
-            if (!instruction->HasResultId()) {
-              return true;
-            }
-
-            // Check that all the uses of the id are inside the loop.
-            return ir_context->get_def_use_mgr()->WhileEachUse(
-                instruction->result_id(),
-                [ir_context, loop_header, merge_block](
-                    opt::Instruction* inst_use, uint32_t /* unused */) {
-                  uint32_t block_use =
-                      ir_context->get_instr_block(inst_use)->id();
-
-                  // The usage is OK if it is inside the loop (including the
-                  // header).
-                  if (block_use == loop_header ||
-                      ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
-                          block_use)) {
-                    return true;
-                  }
-
-                  // The usage is OK if it is inside an OpPhi instruction in the
-                  // merge block.
-                  return block_use == merge_block &&
-                         inst_use->opcode() == SpvOpPhi;
-                });
-          });
-
-      // If not all instructions in the block satisfy the requirement, the
-      // transformation is not applicable.
-      if (!dominance_rules_maintained) {
-        return false;
-      }
-    }
-  }
-
-  // The module must contain an OpConstantTrue instruction.
-  if (!fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
-                                        true, false)) {
+  if (!CheckDefinitionsStillDominateUsesAfterAddingNewPredecessors(
+          ir_context, function, merge_blocks_to_returning_preds)) {
     return false;
-  }
-
-  // The module must contain an OpConstantFalse instruction.
-  if (!fuzzerutil::MaybeGetBoolConstant(ir_context, transformation_context,
-                                        false, false)) {
-    return false;
-  }
-
-  // Check that the fresh ids provided are fresh and distinct.
-  std::set<uint32_t> used_fresh_ids;
-  for (uint32_t id : {message_.outer_header_id(), message_.outer_return_id()}) {
-    if (!id || !CheckIdIsFreshAndNotUsedByThisTransformation(id, ir_context,
-                                                             &used_fresh_ids)) {
-      return false;
-    }
-  }
-
-  // Check the additional fresh id required if the function is not void.
-  if (!function_type->AsVoid() &&
-      (!message_.return_val_id() ||
-       !CheckIdIsFreshAndNotUsedByThisTransformation(
-           message_.return_val_id(), ir_context, &used_fresh_ids))) {
-    return false;
-  }
-
-  auto merge_blocks_to_info = GetMappingOfMergeBlocksToInfo();
-
-  // For each relevant merge block, check that the correct ids are available.
-  for (const auto& merge_block_entry : merge_blocks_to_returning_preds) {
-    uint32_t merge_block = merge_block_entry.first;
-    // A map from OpPhi ids to ids of the same type available at the beginning
-    // of the merge block.
-    std::map<uint32_t, uint32_t> phi_to_id;
-
-    if (merge_blocks_to_info.count(merge_block) > 0) {
-      // If the map contains an entry for the merge block, check that the fresh
-      // ids are fresh and distinct.
-      auto info = merge_blocks_to_info[merge_block];
-      if (!info.is_returning_id() ||
-          !CheckIdIsFreshAndNotUsedByThisTransformation(
-              info.is_returning_id(), ir_context, &used_fresh_ids)) {
-        return false;
-      }
-
-      if (!function_type->AsVoid() &&
-          (!info.maybe_return_val_id() ||
-           !CheckIdIsFreshAndNotUsedByThisTransformation(
-               info.maybe_return_val_id(), ir_context, &used_fresh_ids))) {
-        return false;
-      }
-
-      // Get the mapping from OpPhis to suitable ids.
-      phi_to_id = fuzzerutil::RepeatedUInt32PairToMap(
-          *info.mutable_opphi_to_suitable_id());
-    } else {
-      // If the map does not contain an entry for the merge block, check that
-      // overflow ids are available.
-      if (!transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
-        return false;
-      }
-    }
-
-    // For each OpPhi instruction, check that a suitable placeholder id is
-    // available.
-    bool suitable_info_for_phi =
-        ir_context->get_instr_block(merge_block)
-            ->WhileEachPhiInst([ir_context, &phi_to_id,
-                                &types_to_available_ids](
-                                   opt::Instruction* inst) {
-              if (phi_to_id.count(inst->result_id()) > 0) {
-                // If there exists a mapping for this instruction and the
-                // placeholder id exists in the module, check that it has the
-                // correct type and it is available before the instruction.
-                auto placeholder_def = ir_context->get_def_use_mgr()->GetDef(
-                    phi_to_id[inst->result_id()]);
-                if (placeholder_def) {
-                  if (inst->type_id() != placeholder_def->type_id()) {
-                    return false;
-                  }
-                  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
-                          ir_context, inst, placeholder_def->result_id())) {
-                    return false;
-                  }
-
-                  return true;
-                }
-              }
-
-              // If there is no mapping, check if there is a suitable id
-              // available at the end of the entry block.
-              return types_to_available_ids.count(inst->type_id()) > 0;
-            });
-
-    if (!suitable_info_for_phi) {
-      return false;
-    }
   }
 
   return true;
@@ -759,6 +617,178 @@ TransformationMergeFunctionReturns::GetTypesToIdAvailableAfterEntryBlock(
   }
 
   return result;
+}
+
+bool TransformationMergeFunctionReturns::
+    CheckDefinitionsStillDominateUsesAfterAddingNewPredecessors(
+        opt::IRContext* ir_context, const opt::Function* function,
+        const std::map<uint32_t, std::set<uint32_t>>&
+            merge_blocks_to_new_predecessors) {
+  for (const auto& merge_block_entry : merge_blocks_to_new_predecessors) {
+    uint32_t merge_block = merge_block_entry.first;
+    const auto& returning_preds = merge_block_entry.second;
+
+    // Find a list of blocks in which there might be problematic definitions.
+    // These are all the blocks that dominate the merge block but do not
+    // dominate all of the new predecessors.
+    std::vector<opt::BasicBlock*> problematic_blocks;
+
+    auto dominator_analysis = ir_context->GetDominatorAnalysis(function);
+
+    // Start from the immediate dominator of the merge block.
+    auto current_block = dominator_analysis->ImmediateDominator(merge_block);
+    assert(current_block &&
+           "Each merge block should have at least one dominator.");
+
+    for (uint32_t pred : returning_preds) {
+      while (!dominator_analysis->Dominates(current_block->id(), pred)) {
+        // The current block does not dominate all of the new predecessor
+        // blocks, so it might be problematic.
+        problematic_blocks.emplace_back(current_block);
+
+        // Walk up the dominator tree.
+        current_block = dominator_analysis->ImmediateDominator(current_block);
+        assert(current_block &&
+               "We should be able to find a dominator for all the blocks, "
+               "since they must all be dominated at least by the header.");
+      }
+    }
+
+    // Identify the loop header corresponding to the merge block.
+    uint32_t loop_header =
+        fuzzerutil::GetLoopFromMergeBlock(ir_context, merge_block);
+
+    // For all the ids defined in blocks inside |problematic_blocks|, check that
+    // all their uses are either:
+    // - inside the loop (or in the loop header). If this is the case, the path
+    //   from the definition to the use does not go through the merge block, so
+    //   adding new predecessor to it is not a problem.
+    // - inside an OpPhi instruction in the merge block. If this is the case,
+    //   the definition does not need to dominate the merge block.
+    for (auto block : problematic_blocks) {
+      assert((block->id() == loop_header ||
+              ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
+                  block->id()) == loop_header) &&
+             "The problematic blocks should all be inside the loop (also "
+             "considering the header).");
+      bool dominance_rules_maintained =
+          block->WhileEachInst([ir_context, loop_header,
+                                merge_block](opt::Instruction* instruction) {
+            // Instruction without a result id do not cause any problems.
+            if (!instruction->HasResultId()) {
+              return true;
+            }
+
+            // Check that all the uses of the id are inside the loop.
+            return ir_context->get_def_use_mgr()->WhileEachUse(
+                instruction->result_id(),
+                [ir_context, loop_header, merge_block](
+                    opt::Instruction* inst_use, uint32_t /* unused */) {
+                  uint32_t block_use =
+                      ir_context->get_instr_block(inst_use)->id();
+
+                  // The usage is OK if it is inside the loop (including the
+                  // header).
+                  if (block_use == loop_header ||
+                      ir_context->GetStructuredCFGAnalysis()->ContainingLoop(
+                          block_use)) {
+                    return true;
+                  }
+
+                  // The usage is OK if it is inside an OpPhi instruction in the
+                  // merge block.
+                  return block_use == merge_block &&
+                         inst_use->opcode() == SpvOpPhi;
+                });
+          });
+
+      // If not all instructions in the block satisfy the requirement, the
+      // transformation is not applicable.
+      if (!dominance_rules_maintained) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool TransformationMergeFunctionReturns::
+    CheckThatTheCorrectIdsAreGivenForMergeBlock(
+        uint32_t merge_block,
+        const std::map<uint32_t, protobufs::ReturnMergingInfo>&
+            merge_blocks_to_info,
+        const std::map<uint32_t, uint32_t>& types_to_available_id,
+        bool function_is_void, opt::IRContext* ir_context,
+        const TransformationContext& transformation_context,
+        std::set<uint32_t>* used_fresh_ids) {
+  // A map from OpPhi ids to ids of the same type available at the beginning
+  // of the merge block.
+  std::map<uint32_t, uint32_t> phi_to_id;
+
+  if (merge_blocks_to_info.count(merge_block) > 0) {
+    // If the map contains an entry for the merge block, check that the fresh
+    // ids are fresh and distinct.
+    auto info = merge_blocks_to_info.at(merge_block);
+    if (!info.is_returning_id() ||
+        !CheckIdIsFreshAndNotUsedByThisTransformation(
+            info.is_returning_id(), ir_context, used_fresh_ids)) {
+      return false;
+    }
+
+    if (!function_is_void &&
+        (!info.maybe_return_val_id() ||
+         !CheckIdIsFreshAndNotUsedByThisTransformation(
+             info.maybe_return_val_id(), ir_context, used_fresh_ids))) {
+      return false;
+    }
+
+    // Get the mapping from OpPhis to suitable ids.
+    phi_to_id = fuzzerutil::RepeatedUInt32PairToMap(
+        *info.mutable_opphi_to_suitable_id());
+  } else {
+    // If the map does not contain an entry for the merge block, check that
+    // overflow ids are available.
+    if (!transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
+      return false;
+    }
+  }
+
+  // For each OpPhi instruction, check that a suitable placeholder id is
+  // available.
+  bool suitable_info_for_phi =
+      ir_context->get_instr_block(merge_block)
+          ->WhileEachPhiInst([ir_context, &phi_to_id,
+                              &types_to_available_id](opt::Instruction* inst) {
+            if (phi_to_id.count(inst->result_id()) > 0) {
+              // If there exists a mapping for this instruction and the
+              // placeholder id exists in the module, check that it has the
+              // correct type and it is available before the instruction.
+              auto placeholder_def = ir_context->get_def_use_mgr()->GetDef(
+                  phi_to_id[inst->result_id()]);
+              if (placeholder_def) {
+                if (inst->type_id() != placeholder_def->type_id()) {
+                  return false;
+                }
+                if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+                        ir_context, inst, placeholder_def->result_id())) {
+                  return false;
+                }
+
+                return true;
+              }
+            }
+
+            // If there is no mapping, check if there is a suitable id
+            // available at the end of the entry block.
+            return types_to_available_id.count(inst->type_id()) > 0;
+          });
+
+  if (!suitable_info_for_phi) {
+    return false;
+  }
+
+  return true;
 }
 
 }  // namespace fuzz

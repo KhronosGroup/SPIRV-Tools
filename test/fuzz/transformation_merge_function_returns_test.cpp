@@ -1471,10 +1471,11 @@ TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules2) {
   // In function %18, the definition of id %26 will not dominate its use in
   // instruction %28 (inside block %27) after a new branch from return
   // block %25 to merge block %21 is added.
-  ASSERT_FALSE(
-      TransformationMergeFunctionReturns(
-          2, 100, 101, 0, 0, {{MakeReturnMergingInfo(21, 102, 103, {{}})}})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationMergeFunctionReturns(
+                   2, 100, 101, 0, 0,
+                   {{MakeReturnMergingInfo(10, 102, 0, {{}}),
+                     MakeReturnMergingInfo(21, 103, 0, {{}})}})
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules3) {

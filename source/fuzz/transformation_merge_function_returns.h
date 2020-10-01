@@ -83,6 +83,28 @@ class TransformationMergeFunctionReturns : public Transformation {
   std::map<uint32_t, uint32_t> GetTypesToIdAvailableAfterEntryBlock(
       opt::IRContext* ir_context) const;
 
+  // Returns true if adding new predecessors to the given loop merge blocks
+  // does not render any instructions invalid (each id definition must still
+  // dominate all of its uses). The loop merge blocks and corresponding new
+  // predecessors to consider are given in |merge_blocks_to_new_predecessors|.
+  // All of the new predecessors are assumed to be inside the loop associated
+  // with the corresponding loop merge block.
+  static bool CheckDefinitionsStillDominateUsesAfterAddingNewPredecessors(
+      opt::IRContext* ir_context, const opt::Function* function,
+      const std::map<uint32_t, std::set<uint32_t>>&
+          merge_blocks_to_new_predecessors);
+
+  // Returns true if the required ids for |merge_block| are provided in the
+  // |merge_blocks_to_info| map, or if ids of the suitable type can be found.
+  static bool CheckThatTheCorrectIdsAreGivenForMergeBlock(
+      uint32_t merge_block,
+      const std::map<uint32_t, protobufs::ReturnMergingInfo>&
+          merge_blocks_to_info,
+      const std::map<uint32_t, uint32_t>& types_to_available_id,
+      bool function_is_void, opt::IRContext* ir_context,
+      const TransformationContext& transformation_context,
+      std::set<uint32_t>* used_fresh_ids);
+
   protobufs::TransformationMergeFunctionReturns message_;
 };
 }  // namespace fuzz

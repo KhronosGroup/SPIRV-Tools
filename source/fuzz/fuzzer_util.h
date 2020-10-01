@@ -164,8 +164,8 @@ bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id);
 // Returns true if and only if |block_id| is a merge block or continue target
 bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
 
-// Returns the id of the header of the loop corresponding to the given merge
-// block. Returns 0 if |merge_block_id| is not a merge block.
+// Returns the id of the header of the loop corresponding to the given loop
+// merge block. Returns 0 if |merge_block_id| is not a loop merge block.
 uint32_t GetLoopFromMergeBlock(opt::IRContext* ir_context,
                                uint32_t merge_block_id);
 
