@@ -498,6 +498,7 @@ message Transformation {
     TransformationFlattenConditionalBranch flatten_conditional_branch = 76;
     TransformationAddBitInstructionSynonym add_bit_instruction_synonym = 77;
     TransformationAddLoopToCreateIntConstantSynonym add_loop_to_create_int_constant_synonym = 78;
+    TransformationWrapRegionInSelection wrap_region_in_selection = 79;
     // Add additional option using the next available number.
   }
 }
@@ -2070,5 +2071,35 @@ message TransformationVectorShuffle {
 
   // Indices that indicate which components of the input vectors should be used.
   repeated uint32 component = 5;
+
+}
+
+message TransformationWrapRegionInSelection {
+
+  // Transforms a single-entry-single-exit region R into
+  // if (|branch_condition|) { R } else { R }
+  // The entry block for R becomes a selection header and
+  // the exit block - a selection merge.
+  //
+  // Note that the region R is not duplicated. Thus, the effect of
+  // this transformation can be represented as follows:
+  //              entry
+  //  entry        / \
+  //    |          \ /
+  //    R   -->     R
+  //    |           |
+  //   exit        exit
+
+  // This behaviour is different from TransformationDuplicateRegionWithSelection
+  // that copies the blocks in R.
+
+  // The entry block for the region R.
+  uint32 region_entry_block_id = 1;
+
+  // The exit block for the region R.
+  uint32 region_exit_block_id = 2;
+
+  // Boolean value for the condition expression.
+  bool branch_condition = 3;
 
 }

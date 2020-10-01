@@ -107,6 +107,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_toggle_access_chain_instruction_test.cpp
           transformation_record_synonymous_constants_test.cpp
           transformation_vector_shuffle_test.cpp
+          transformation_wrap_region_in_selection_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
 
   if (${SPIRV_ENABLE_LONG_FUZZER_TESTS})

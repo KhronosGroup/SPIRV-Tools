@@ -95,6 +95,7 @@
 #include "source/fuzz/transformation_swap_conditional_branch_operands.h"
 #include "source/fuzz/transformation_toggle_access_chain_instruction.h"
 #include "source/fuzz/transformation_vector_shuffle.h"
+#include "source/fuzz/transformation_wrap_region_in_selection.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {
@@ -342,6 +343,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.toggle_access_chain_instruction());
     case protobufs::Transformation::TransformationCase::kVectorShuffle:
       return MakeUnique<TransformationVectorShuffle>(message.vector_shuffle());
+    case protobufs::Transformation::TransformationCase::kWrapRegionInSelection:
+      return MakeUnique<TransformationWrapRegionInSelection>(
+          message.wrap_region_in_selection());
     case protobufs::Transformation::TRANSFORMATION_NOT_SET:
       assert(false && "An unset transformation was encountered.");
       return nullptr;
