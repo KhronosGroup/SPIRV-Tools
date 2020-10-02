@@ -77,14 +77,9 @@ bool TransformationAddConstantComposite::IsApplicable(
       // BufferBlock.  The SPIR-V spec does not explicitly disallow this, but it
       // seems like a strange thing to do, so we disallow it to avoid triggering
       // low priorty edge case issues related to it.
-      for (auto decoration : {SpvDecorationBlock, SpvDecorationBufferBlock}) {
-        if (!ir_context->get_decoration_mgr()->WhileEachDecoration(
-                composite_type_instruction->result_id(), decoration,
-                [](const opt::Instruction & /*unused*/) -> bool {
-                  return false;
-                })) {
-          return false;
-        }
+      if (fuzzerutil::HasBlockOrBufferBlockDecoration(
+              ir_context, composite_type_instruction->result_id())) {
+        return false;
       }
       composite_type_instruction->ForEachInOperand(
           [&constituent_type_ids](const uint32_t* member_type_id) {

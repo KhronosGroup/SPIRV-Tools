@@ -162,8 +162,21 @@ bool TransformationAddCopyMemory::IsInstructionSupported(
   const auto* type = ir_context->get_type_mgr()->GetType(inst->type_id());
   assert(type && "Instruction must have a valid type");
 
-  return type->AsPointer() &&
-         CanUsePointeeWithCopyMemory(*type->AsPointer()->pointee_type());
+  if (!type->AsPointer()) {
+    return false;
+  }
+
+  // We do not support copying memory from a pointer to a block-/buffer
+  // block-decorated struct.
+  auto pointee_type_inst = ir_context->get_def_use_mgr()
+                               ->GetDef(inst->type_id())
+                               ->GetSingleWordInOperand(1);
+  if (fuzzerutil::HasBlockOrBufferBlockDecoration(ir_context,
+                                                  pointee_type_inst)) {
+    return false;
+  }
+
+  return CanUsePointeeWithCopyMemory(*type->AsPointer()->pointee_type());
 }
 
 bool TransformationAddCopyMemory::CanUsePointeeWithCopyMemory(

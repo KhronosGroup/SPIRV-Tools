@@ -439,17 +439,21 @@ FuzzerPass::GetAvailableBasicTypesAndPointers(
         }
         break;
       case SpvOpTypeStruct: {
-        // A struct type is basic if all of its members are basic.
-        bool all_members_are_basic_types = true;
-        for (uint32_t i = 0; i < inst.NumInOperands(); i++) {
-          if (!basic_types.count(inst.GetSingleWordInOperand(i))) {
-            all_members_are_basic_types = false;
-            break;
+        // A struct type is basic if it does not have the Block/BufferBlock
+        // decoration, and if all of its members are basic.
+        if (!fuzzerutil::HasBlockOrBufferBlockDecoration(GetIRContext(),
+                                                         inst.result_id())) {
+          bool all_members_are_basic_types = true;
+          for (uint32_t i = 0; i < inst.NumInOperands(); i++) {
+            if (!basic_types.count(inst.GetSingleWordInOperand(i))) {
+              all_members_are_basic_types = false;
+              break;
+            }
           }
-        }
-        if (all_members_are_basic_types) {
-          basic_types.insert(inst.result_id());
-          basic_type_to_pointers.insert({inst.result_id(), {}});
+          if (all_members_are_basic_types) {
+            basic_types.insert(inst.result_id());
+            basic_type_to_pointers.insert({inst.result_id(), {}});
+          }
         }
         break;
       }
@@ -515,6 +519,10 @@ uint32_t FuzzerPass::FindOrCreateZeroConstant(
           scalar_or_composite_type_id, is_irrelevant);
     }
     case SpvOpTypeStruct: {
+      assert(!fuzzerutil::HasBlockOrBufferBlockDecoration(
+                 GetIRContext(), scalar_or_composite_type_id) &&
+             "We do not construct constants of struct types decorated with "
+             "Block or BufferBlock.");
       std::vector<uint32_t> field_zero_ids;
       for (uint32_t index = 0; index < type_instruction->NumInOperands();
            index++) {

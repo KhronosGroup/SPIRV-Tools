@@ -38,7 +38,7 @@ class TransformationAddConstantComposite : public Transformation {
   // - |message_.type_id| must be the id of a composite type
   // - |message_.constituent_id| must refer to ids that match the constituent
   //   types of this composite type
-  // - If |message_.type_id| is a struc type, it must not have the Block or
+  // - If |message_.type_id| is a struct type, it must not have the Block or
   //   BufferBlock decoration
   bool IsApplicable(
       opt::IRContext* ir_context,
