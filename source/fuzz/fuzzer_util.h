@@ -536,6 +536,12 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
 bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
                                   uint32_t struct_type_id);
 
+// Returns true if and only if |id| is decorated with either Block or
+// BufferBlock.  Even though these decorations are only allowed on uct types,
+// for convenience |id| can be any result id so that it is possible to call this
+// method on something that *mihgt* be a struct type.
+bool HasBlockOrBufferBlockDecoration(opt::IRContext* ir_context, uint32_t id);
+
 // Returns true iff splitting block |block_to_split| just before the instruction
 // |split_before| would separate an OpSampledImage instruction from its usage.
 bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
@@ -546,12 +552,6 @@ bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
 //  missing instructions to the list. In particular, GLSL extended instructions
 //  (called using OpExtInst) have not been considered.
 bool InstructionHasNoSideEffects(const opt::Instruction& instruction);
-
-// Returns true if and only if |id| is decorated with at least one decoration
-// from |relevant_decorations|.
-bool IdHasDecoration(
-    opt::IRContext* ir_context, uint32_t id,
-    const std::unordered_set<SpvDecoration>& relevant_decorations);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz

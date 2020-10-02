@@ -38,9 +38,8 @@ void FuzzerPassConstructComposites::Apply() {
   for (auto& inst : GetIRContext()->types_values()) {
     if (fuzzerutil::IsCompositeType(
             GetIRContext()->get_type_mgr()->GetType(inst.result_id())) &&
-        !fuzzerutil::IdHasDecoration(
-            GetIRContext(), inst.result_id(),
-            {SpvDecorationBlock, SpvDecorationBufferBlock})) {
+        !fuzzerutil::HasBlockOrBufferBlockDecoration(GetIRContext(),
+                                                     inst.result_id())) {
       composite_type_ids.push_back(inst.result_id());
     }
   }

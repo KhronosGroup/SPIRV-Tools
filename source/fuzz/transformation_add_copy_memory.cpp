@@ -171,9 +171,8 @@ bool TransformationAddCopyMemory::IsInstructionSupported(
   auto pointee_type_inst = ir_context->get_def_use_mgr()
                                ->GetDef(inst->type_id())
                                ->GetSingleWordInOperand(1);
-  if (fuzzerutil::IdHasDecoration(
-          ir_context, pointee_type_inst,
-          {SpvDecorationBlock, SpvDecorationBufferBlock})) {
+  if (fuzzerutil::HasBlockOrBufferBlockDecoration(ir_context,
+                                                  pointee_type_inst)) {
     return false;
   }
 
