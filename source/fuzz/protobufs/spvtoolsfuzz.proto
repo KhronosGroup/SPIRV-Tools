@@ -553,6 +553,7 @@ message Transformation {
     TransformationWrapRegionInSelection wrap_region_in_selection = 79;
     TransformationAddEarlyTerminatorWrapper add_early_terminator_wrapper = 80;
     TransformationPropagateInstructionDown propagate_instruction_down = 81;
+    TransformationReplaceBranchFromDeadBlockWithExit replace_branch_from_dead_block_with_exit = 82;
     // Add additional option using the next available number.
   }
 }
@@ -1860,6 +1861,12 @@ message TransformationReplaceAddSubMulWithCarryingExtended {
 
   // The result id of the original instruction.
   uint32 result_id = 2;
+
+}
+
+message TransformationReplaceBranchFromDeadBlockWithExit {
+
+  // TODO comment and populate
 
 }
 

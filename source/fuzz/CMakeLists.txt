@@ -197,6 +197,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_record_synonymous_constants.h
         transformation_replace_add_sub_mul_with_carrying_extended.h
         transformation_replace_boolean_constant_with_constant_binary.h
+        transformation_replace_branch_from_dead_block_with_exit.h
         transformation_replace_constant_with_uniform.h
         transformation_replace_copy_memory_with_load_store.h
         transformation_replace_copy_object_with_store_load.h
@@ -379,6 +380,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_record_synonymous_constants.cpp
         transformation_replace_add_sub_mul_with_carrying_extended.cpp
         transformation_replace_boolean_constant_with_constant_binary.cpp
+        transformation_replace_branch_from_dead_block_with_exit.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_replace_copy_memory_with_load_store.cpp
         transformation_replace_copy_object_with_store_load.cpp
