@@ -195,14 +195,25 @@ void TransformationPropagateInstructionDown::Apply(
   // Add synonyms about newly created instructions.
   assert(inst_to_propagate->HasResultId() &&
          "Result id is required to add facts");
-  for (auto id : created_inst_ids) {
-    if (transformation_context->GetFactManager()->IdIsIrrelevant(
-            inst_to_propagate->result_id())) {
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          inst_to_propagate->result_id())) {
+    for (auto id : created_inst_ids) {
       transformation_context->GetFactManager()->AddFactIdIsIrrelevant(id);
-    } else {
+    }
+  } else {
+    std::vector<uint32_t> non_irrelevant_ids;
+    for (auto id : created_inst_ids) {
+      // |id| can be irrelevant implicitly (e.g. if we propagate it into a dead
+      // block).
+      if (!transformation_context->GetFactManager()->IdIsIrrelevant(id)) {
+        non_irrelevant_ids.push_back(id);
+      }
+    }
+
+    for (auto id : non_irrelevant_ids) {
       transformation_context->GetFactManager()->AddFactDataSynonym(
           MakeDataDescriptor(id, {}),
-          MakeDataDescriptor(created_inst_ids[0], {}));
+          MakeDataDescriptor(non_irrelevant_ids[0], {}));
     }
   }
 
