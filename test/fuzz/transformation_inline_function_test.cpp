@@ -14,6 +14,7 @@
 
 #include "source/fuzz/transformation_inline_function.h"
 
+#include "source/fuzz/counter_overflow_id_source.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -533,6 +534,7 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
+#ifndef NDEBUG
   // Tests the id of the returned value not included in the id map.
   transformation = TransformationInlineFunction(25, {{56, 69},
                                                      {57, 70},
@@ -544,8 +546,10 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
                                                      {64, 76},
                                                      {65, 77},
                                                      {66, 78}});
-  ASSERT_FALSE(
-      transformation.IsApplicable(context.get(), transformation_context));
+  ASSERT_DEATH(
+      transformation.IsApplicable(context.get(), transformation_context),
+      "Bad attempt to query whether overflow ids are available.");
+#endif
 
   transformation = TransformationInlineFunction(25, {{57, 69},
                                                      {58, 70},
@@ -817,6 +821,198 @@ TEST(TransformationInlineFunctionTest, HandlesOpPhisInTheSecondBlock) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationInlineFunctionTest, OverflowIds) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %39 "main"
+
+; Types
+          %2 = OpTypeFloat 32
+          %3 = OpTypeVector %2 4
+          %4 = OpTypePointer Function %3
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeFunction %2 %4 %4
+
+; Constant scalars
+          %8 = OpConstant %2 1
+          %9 = OpConstant %2 2
+         %10 = OpConstant %2 3
+         %11 = OpConstant %2 4
+         %12 = OpConstant %2 5
+         %13 = OpConstant %2 6
+         %14 = OpConstant %2 7
+         %15 = OpConstant %2 8
+
+; Constant vectors
+         %16 = OpConstantComposite %3 %8 %9 %10 %11
+         %17 = OpConstantComposite %3 %12 %13 %14 %15
+
+; dot product function
+         %18 = OpFunction %2 None %7
+         %19 = OpFunctionParameter %4
+         %20 = OpFunctionParameter %4
+         %21 = OpLabel
+         %22 = OpLoad %3 %19
+         %23 = OpLoad %3 %20
+         %24 = OpCompositeExtract %2 %22 0
+         %25 = OpCompositeExtract %2 %23 0
+         %26 = OpFMul %2 %24 %25
+         %27 = OpCompositeExtract %2 %22 1
+         %28 = OpCompositeExtract %2 %23 1
+         %29 = OpFMul %2 %27 %28
+               OpBranch %100
+        %100 = OpLabel
+         %30 = OpCompositeExtract %2 %22 2
+         %31 = OpCompositeExtract %2 %23 2
+         %32 = OpFMul %2 %30 %31
+         %33 = OpCompositeExtract %2 %22 3
+         %34 = OpCompositeExtract %2 %23 3
+         %35 = OpFMul %2 %33 %34
+         %36 = OpFAdd %2 %26 %29
+         %37 = OpFAdd %2 %32 %36
+         %38 = OpFAdd %2 %35 %37
+               OpReturnValue %38
+               OpFunctionEnd
+
+; main function
+         %39 = OpFunction %5 None %6
+         %40 = OpLabel
+         %41 = OpVariable %4 Function
+         %42 = OpVariable %4 Function
+               OpStore %41 %16
+               OpStore %42 %17
+         %43 = OpFunctionCall %2 %18 %41 %42 ; dot product function call
+               OpBranch %44
+         %44 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(1000);
+  auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options,
+      std::move(overflow_ids_unique_ptr));
+  auto transformation = TransformationInlineFunction(43, {{22, 45},
+                                                          {23, 46},
+                                                          {24, 47},
+                                                          {25, 48},
+                                                          {26, 49},
+                                                          {27, 50},
+                                                          {28, 51},
+                                                          {29, 52}});
+
+  // The following ids are left un-mapped; overflow ids will be required for
+  // them: 30, 31, 32, 33, 34, 35, 36, 37, 38, 100
+
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context,
+                        overflow_ids_ptr->GetIssuedOverflowIds());
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %39 "main"
+
+; Types
+          %2 = OpTypeFloat 32
+          %3 = OpTypeVector %2 4
+          %4 = OpTypePointer Function %3
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeFunction %2 %4 %4
+
+; Constant scalars
+          %8 = OpConstant %2 1
+          %9 = OpConstant %2 2
+         %10 = OpConstant %2 3
+         %11 = OpConstant %2 4
+         %12 = OpConstant %2 5
+         %13 = OpConstant %2 6
+         %14 = OpConstant %2 7
+         %15 = OpConstant %2 8
+
+; Constant vectors
+         %16 = OpConstantComposite %3 %8 %9 %10 %11
+         %17 = OpConstantComposite %3 %12 %13 %14 %15
+
+; dot product function
+         %18 = OpFunction %2 None %7
+         %19 = OpFunctionParameter %4
+         %20 = OpFunctionParameter %4
+         %21 = OpLabel
+         %22 = OpLoad %3 %19
+         %23 = OpLoad %3 %20
+         %24 = OpCompositeExtract %2 %22 0
+         %25 = OpCompositeExtract %2 %23 0
+         %26 = OpFMul %2 %24 %25
+         %27 = OpCompositeExtract %2 %22 1
+         %28 = OpCompositeExtract %2 %23 1
+         %29 = OpFMul %2 %27 %28
+               OpBranch %100
+        %100 = OpLabel
+         %30 = OpCompositeExtract %2 %22 2
+         %31 = OpCompositeExtract %2 %23 2
+         %32 = OpFMul %2 %30 %31
+         %33 = OpCompositeExtract %2 %22 3
+         %34 = OpCompositeExtract %2 %23 3
+         %35 = OpFMul %2 %33 %34
+         %36 = OpFAdd %2 %26 %29
+         %37 = OpFAdd %2 %32 %36
+         %38 = OpFAdd %2 %35 %37
+               OpReturnValue %38
+               OpFunctionEnd
+
+; main function
+         %39 = OpFunction %5 None %6
+         %40 = OpLabel
+         %41 = OpVariable %4 Function
+         %42 = OpVariable %4 Function
+               OpStore %41 %16
+               OpStore %42 %17
+         %45 = OpLoad %3 %41
+         %46 = OpLoad %3 %42
+         %47 = OpCompositeExtract %2 %45 0
+         %48 = OpCompositeExtract %2 %46 0
+         %49 = OpFMul %2 %47 %48
+         %50 = OpCompositeExtract %2 %45 1
+         %51 = OpCompositeExtract %2 %46 1
+         %52 = OpFMul %2 %50 %51
+               OpBranch %1000
+       %1000 = OpLabel
+       %1001 = OpCompositeExtract %2 %45 2
+       %1002 = OpCompositeExtract %2 %46 2
+       %1003 = OpFMul %2 %1001 %1002
+       %1004 = OpCompositeExtract %2 %45 3
+       %1005 = OpCompositeExtract %2 %46 3
+       %1006 = OpFMul %2 %1004 %1005
+       %1007 = OpFAdd %2 %49 %52
+       %1008 = OpFAdd %2 %1003 %1007
+       %1009 = OpFAdd %2 %1006 %1008
+         %43 = OpCopyObject %2 %1009
+               OpBranch %44
+         %44 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
 }  // namespace
