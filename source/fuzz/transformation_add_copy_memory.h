@@ -41,6 +41,8 @@ class TransformationAddCopyMemory : public Transformation {
   // - |fresh_id| must be a fresh id to copy memory into.
   // - type of |source_id| must be OpTypePointer where pointee can be used with
   //   OpCopyMemory.
+  // - If the pointee type of |source_id| is a struct type, it must not have the
+  //   Block or BufferBlock decoration.
   // - |storage_class| must be either Private or Function.
   // - type ids of instructions with result ids |source_id| and |initialize_id|
   //   must be the same.

@@ -1550,6 +1550,18 @@ bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
   return builtin_count != 0;
 }
 
+bool HasBlockOrBufferBlockDecoration(opt::IRContext* ir_context, uint32_t id) {
+  for (auto decoration : {SpvDecorationBlock, SpvDecorationBufferBlock}) {
+    if (!ir_context->get_decoration_mgr()->WhileEachDecoration(
+            id, decoration, [](const opt::Instruction & /*unused*/) -> bool {
+              return false;
+            })) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
     opt::BasicBlock* block_to_split, opt::Instruction* split_before) {
   std::set<uint32_t> sampled_image_result_ids;
