@@ -537,9 +537,9 @@ bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
                                   uint32_t struct_type_id);
 
 // Returns true if and only if |id| is decorated with either Block or
-// BufferBlock.  Even though these decorations are only allowed on uct types,
+// BufferBlock.  Even though these decorations are only allowed on struct types,
 // for convenience |id| can be any result id so that it is possible to call this
-// method on something that *mihgt* be a struct type.
+// method on something that *might* be a struct type.
 bool HasBlockOrBufferBlockDecoration(opt::IRContext* ir_context, uint32_t id);
 
 // Returns true iff splitting block |block_to_split| just before the instruction
