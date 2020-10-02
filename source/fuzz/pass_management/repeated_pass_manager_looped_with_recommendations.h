@@ -41,11 +41,22 @@ class RepeatedPassManagerLoopedWithRecommendations
 
   ~RepeatedPassManagerLoopedWithRecommendations() override;
 
-  FuzzerPass* ChoosePass() override;
+  FuzzerPass* ChoosePass(const protobufs::TransformationSequence&
+                             applied_transformations) override;
 
  private:
   // The loop of fuzzer passes to be applied, populated on construction.
   std::vector<FuzzerPass*> pass_loop_;
+
+  // A set of indices into |pass_loop_| recording which passes are in the loop
+  // because they are recommended based on previous passes in the loop.  This
+  // allows these recommended passes to be skipped if the passes they are
+  // meant to amplify had no effect.
+  std::unordered_set<uint32_t> recommended_pass_indices_;
+
+  // Used to detect when chosen passes have had no effect, so that their
+  // associated recommendations are skipped.
+  uint32_t num_transformations_applied_before_last_pass_choice_;
 
   // An index into |pass_loop_| specifying which pass should be served up next
   // time ChoosePass is invoked.

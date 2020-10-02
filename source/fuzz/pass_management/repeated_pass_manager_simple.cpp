@@ -23,7 +23,8 @@ RepeatedPassManagerSimple::RepeatedPassManagerSimple(
 
 RepeatedPassManagerSimple::~RepeatedPassManagerSimple() = default;
 
-FuzzerPass* RepeatedPassManagerSimple::ChoosePass() {
+FuzzerPass* RepeatedPassManagerSimple::ChoosePass(
+    const protobufs::TransformationSequence& /*unused*/) {
   auto& passes = GetPassInstances()->GetPasses();
   return passes[GetFuzzerContext()->RandomIndex(passes)].get();
 }

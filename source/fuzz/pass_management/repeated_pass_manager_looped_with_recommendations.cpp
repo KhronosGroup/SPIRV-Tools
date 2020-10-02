@@ -21,7 +21,9 @@ RepeatedPassManagerLoopedWithRecommendations::
     RepeatedPassManagerLoopedWithRecommendations(
         FuzzerContext* fuzzer_context, RepeatedPassInstances* pass_instances,
         RepeatedPassRecommender* pass_recommender)
-    : RepeatedPassManager(fuzzer_context, pass_instances), next_pass_index_(0) {
+    : RepeatedPassManager(fuzzer_context, pass_instances),
+      num_transformations_applied_before_last_pass_choice_(0),
+      next_pass_index_(0) {
   auto& passes = GetPassInstances()->GetPasses();
   do {
     FuzzerPass* current_pass =
@@ -29,6 +31,8 @@ RepeatedPassManagerLoopedWithRecommendations::
     pass_loop_.push_back(current_pass);
     for (auto future_pass :
          pass_recommender->GetFuturePassRecommendations(*current_pass)) {
+      recommended_pass_indices_.insert(
+          static_cast<uint32_t>(pass_loop_.size()));
       pass_loop_.push_back(future_pass);
     }
   } while (fuzzer_context->ChoosePercentage(
@@ -38,7 +42,24 @@ RepeatedPassManagerLoopedWithRecommendations::
 RepeatedPassManagerLoopedWithRecommendations::
     ~RepeatedPassManagerLoopedWithRecommendations() = default;
 
-FuzzerPass* RepeatedPassManagerLoopedWithRecommendations::ChoosePass() {
+FuzzerPass* RepeatedPassManagerLoopedWithRecommendations::ChoosePass(
+    const protobufs::TransformationSequence& applied_transformations) {
+  assert((next_pass_index_ > 0 ||
+          recommended_pass_indices_.count(next_pass_index_) == 0) &&
+         "The first pass in the loop should not be a recommendation.");
+  assert(static_cast<uint32_t>(applied_transformations.transformation_size()) >=
+             num_transformations_applied_before_last_pass_choice_ &&
+         "The number of applied transformations should not decrease.");
+  if (num_transformations_applied_before_last_pass_choice_ ==
+      static_cast<uint32_t>(applied_transformations.transformation_size())) {
+    // The last pass that was applied did not lead to any new transformations.
+    // We thus do not want to apply recommendations based on it, so we skip on
+    // to the next non-recommended pass.
+    while (recommended_pass_indices_.count(next_pass_index_)) {
+      next_pass_index_ =
+          (next_pass_index_ + 1) % static_cast<uint32_t>(pass_loop_.size());
+    }
+  }
   auto result = pass_loop_[next_pass_index_];
   next_pass_index_ =
       (next_pass_index_ + 1) % static_cast<uint32_t>(pass_loop_.size());

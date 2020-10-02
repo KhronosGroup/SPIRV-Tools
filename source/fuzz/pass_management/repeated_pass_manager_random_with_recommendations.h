@@ -42,7 +42,8 @@ class RepeatedPassManagerRandomWithRecommendations
 
   ~RepeatedPassManagerRandomWithRecommendations() override;
 
-  FuzzerPass* ChoosePass() override;
+  FuzzerPass* ChoosePass(const protobufs::TransformationSequence&
+                             applied_transformations) override;
 
  private:
   // The queue of passes that have been recommended based on previously-chosen
@@ -51,6 +52,14 @@ class RepeatedPassManagerRandomWithRecommendations
 
   // Used to recommend future passes.
   RepeatedPassRecommender* pass_recommender_;
+
+  // Used to detect when chosen passes have had no effect, so that their
+  // associated recommendations are skipped.
+  uint32_t num_transformations_applied_before_last_pass_choice_;
+
+  // The fuzzer pass returned last time ChoosePass() was called; nullptr if
+  // ChoosePass() has not yet been called.
+  FuzzerPass* last_pass_choice_;
 };
 
 }  // namespace fuzz
