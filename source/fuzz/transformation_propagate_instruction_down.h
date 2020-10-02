@@ -52,7 +52,8 @@ class TransformationPropagateInstructionDown : public Transformation {
   //   clones.
   // - If the original instruction's id was irrelevant - marks created
   //   instructions as irrelevant. Otherwise, marks the created instructions as
-  //   synonymous to each other.
+  //   synonymous to each other if possible (i.e. skips instructions, copied
+  //   into dead blocks).
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
@@ -108,9 +109,9 @@ class TransformationPropagateInstructionDown : public Transformation {
   //         OpStore %var %3
   //         OpBranch %some_block
   // In this example:
-  // - We can't propagate neither OpBranch nor OpStore since they
-  //   both have unsupported opcodes and have neither result ids nor type ids.
-  // - We can't propagate %3 either since it is used by OpStore.
+  // - We cannot propagate OpBranch nor OpStore since they both have unsupported
+  //   opcodes and have neither result ids nor type ids.
+  // - We cannot propagate %3 either since it is used by OpStore.
   // - We can propagate %2 since it satisfies all our conditions.
   // The basic idea behind this method it to make sure that the returned
   // instruction will not break domination rules in its original block when
@@ -165,7 +166,7 @@ class TransformationPropagateInstructionDown : public Transformation {
   // The fact that we introduce an OpPhi allows us to increase the applicability
   // of the transformation. Concretely, we wouldn't be able to apply it in the
   // example above if %2 were used in %5. Some more complicated examples can be
-  // found in unittests.
+  // found in unit tests.
   static bool CanAddOpPhiInstruction(
       opt::IRContext* ir_context, uint32_t block_id,
       const opt::Instruction& inst_to_propagate,
