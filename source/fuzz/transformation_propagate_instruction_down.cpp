@@ -110,14 +110,11 @@ void TransformationPropagateInstructionDown::Apply(
   // Add an OpPhi instruction into the module if possible.
   if (CanAddOpPhiInstruction(ir_context, message_.block_id(),
                              *inst_to_propagate, successor_ids)) {
-    const auto* source_block = ir_context->get_instr_block(inst_to_propagate);
-    assert(source_block &&
-           "Global instructions and function parameters are not propagated");
-    assert(source_block->GetMergeInst() &&
-           "|source_block| must be a header block");
-
     auto merge_block_id =
-        source_block->GetMergeInst()->GetSingleWordInOperand(0);
+        ir_context->GetStructuredCFGAnalysis()->MergeBlock(message_.block_id());
+    assert(merge_block_id &&
+           "Propagated instruction must belong to some construct");
+
     opt::Instruction::OperandList in_operands;
     std::unordered_set<uint32_t> visited_predecessors;
     for (auto predecessor_id : ir_context->cfg()->preds(merge_block_id)) {
@@ -128,8 +125,8 @@ void TransformationPropagateInstructionDown::Apply(
 
       visited_predecessors.insert(predecessor_id);
 
-      const auto* dominator_analysis =
-          ir_context->GetDominatorAnalysis(source_block->GetParent());
+      const auto* dominator_analysis = ir_context->GetDominatorAnalysis(
+          ir_context->cfg()->block(message_.block_id())->GetParent());
 
       // Find the successor of |source_block| that dominates the predecessor of
       // the merge block |predecessor_id|.
