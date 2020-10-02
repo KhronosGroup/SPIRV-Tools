@@ -437,6 +437,28 @@ bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id) {
   return result;
 }
 
+uint32_t GetLoopFromMergeBlock(opt::IRContext* ir_context,
+                               uint32_t merge_block_id) {
+  uint32_t result = 0;
+  ir_context->get_def_use_mgr()->WhileEachUse(
+      merge_block_id,
+      [ir_context, &result](opt::Instruction* use_instruction,
+                            uint32_t use_index) -> bool {
+        switch (use_instruction->opcode()) {
+          case SpvOpLoopMerge:
+            // The merge block operand is the first operand in OpLoopMerge.
+            if (use_index == 0) {
+              result = ir_context->get_instr_block(use_instruction)->id();
+              return false;
+            }
+            return true;
+          default:
+            return true;
+        }
+      });
+  return result;
+}
+
 uint32_t FindFunctionType(opt::IRContext* ir_context,
                           const std::vector<uint32_t>& type_ids) {
   // Look through the existing types for a match.
@@ -1671,6 +1693,23 @@ bool InstructionHasNoSideEffects(const opt::Instruction& instruction) {
     default:
       return false;
   }
+}
+
+std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
+                                            uint32_t function_id) {
+  auto function = ir_context->GetFunction(function_id);
+  assert(function && "The function |function_id| must exist.");
+
+  std::set<uint32_t> result;
+
+  ir_context->cfg()->ForEachBlockInPostOrder(function->entry().get(),
+                                             [&result](opt::BasicBlock* block) {
+                                               if (block->IsReturn()) {
+                                                 result.emplace(block->id());
+                                               }
+                                             });
+
+  return result;
 }
 
 }  // namespace fuzzerutil

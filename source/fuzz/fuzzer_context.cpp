@@ -99,6 +99,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfMakingDonorLivesafe = {40, 60};
 const std::pair<uint32_t, uint32_t> kChanceOfMakingVectorOperationDynamic = {
     20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfMergingBlocks = {20, 95};
+const std::pair<uint32_t, uint32_t> kChanceOfMergingFunctionReturns = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfMutatingPointer = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
@@ -277,6 +278,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
   chance_of_making_vector_operation_dynamic_ =
       ChooseBetweenMinAndMax(kChanceOfMakingVectorOperationDynamic);
   chance_of_merging_blocks_ = ChooseBetweenMinAndMax(kChanceOfMergingBlocks);
+  chance_of_merging_function_returns_ =
+      ChooseBetweenMinAndMax(kChanceOfMergingFunctionReturns);
   chance_of_moving_block_down_ =
       ChooseBetweenMinAndMax(kChanceOfMovingBlockDown);
   chance_of_mutating_pointer_ =

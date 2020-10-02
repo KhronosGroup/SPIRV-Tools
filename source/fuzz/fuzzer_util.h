@@ -164,6 +164,11 @@ bool IsNonFunctionTypeId(opt::IRContext* ir_context, uint32_t id);
 // Returns true if and only if |block_id| is a merge block or continue target
 bool IsMergeOrContinue(opt::IRContext* ir_context, uint32_t block_id);
 
+// Returns the id of the header of the loop corresponding to the given loop
+// merge block. Returns 0 if |merge_block_id| is not a loop merge block.
+uint32_t GetLoopFromMergeBlock(opt::IRContext* ir_context,
+                               uint32_t merge_block_id);
+
 // Returns the result id of an instruction of the form:
 //  %id = OpTypeFunction |type_ids|
 // or 0 if no such instruction exists.
@@ -546,6 +551,12 @@ bool SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
 //  missing instructions to the list. In particular, GLSL extended instructions
 //  (called using OpExtInst) have not been considered.
 bool InstructionHasNoSideEffects(const opt::Instruction& instruction);
+
+// Returns a set of the ids of all the return blocks that are reachable from
+// the entry block of |function_id|.
+// Assumes that the function exists in the module.
+std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
+                                            uint32_t function_id);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz
