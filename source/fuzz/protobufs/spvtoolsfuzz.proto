@@ -1751,7 +1751,7 @@ message TransformationPropagateInstructionDown {
   // Propagates an instruction from |block_id| into its successors.
   // Concretely, the transformation clones the propagated instruction
   // into some of the successors of |block_id| and removes the original
-  // instruction. Additionally, OpPhi instruction may be added to make sure
+  // instruction. Additionally, an OpPhi instruction may be added to make sure
   // that the transformation can be applied in various scenarios.
   //
   // Note that the instruction might not be propagated down into every successor

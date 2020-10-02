@@ -101,7 +101,20 @@ class TransformationPropagateInstructionDown : public Transformation {
   // - has type id
   // - has supported opcode (see IsOpcodeSupported method)
   // - has no users in its basic block.
-  // Returns nullptr if no such an instruction exists.
+  // Returns nullptr if no such an instruction exists. For example:
+  //    %1 = OpLabel
+  //    %2 = OpUndef %int
+  //    %3 = OpUndef %int
+  //         OpStore %var %3
+  //         OpBranch %some_block
+  // In this example:
+  // - We can't propagate neither OpBranch nor OpStore since they
+  //   both have unsupported opcodes and have neither result ids nor type ids.
+  // - We can't propagate %3 either since it is used by OpStore.
+  // - We can propagate %2 since it satisfies all out conditions.
+  // The basic idea behind this method it to make sure that the returned
+  // instruction will not break domination rules in its original block when
+  // propagated.
   static opt::Instruction* GetInstructionToPropagate(opt::IRContext* ir_context,
                                                      uint32_t block_id);
 
@@ -114,16 +127,47 @@ class TransformationPropagateInstructionDown : public Transformation {
       opt::IRContext* ir_context, uint32_t block_id, SpvOp opcode);
 
   // Returns true if we can add an OpPhi instruction that groups all the
-  // propagated clones of the original instruction. |maybe_header_block_id| is a
+  // propagated clones of the original instruction. |block_id| is a
   // result id of the block we propagate the instruction from. |successor_ids|
   // contains result ids of the successors we propagate the instruction into.
   // Concretely, returns true if:
-  // - |maybe_header_block_id| is a header block
-  // - the header's merge block is reachable
-  // - there must be at least one |maybe_header_block_id|'s acceptable successor
-  //   for every predecessor of the merge block, dominating that predecessor.
+  // - |block_id| is in some construct.
+  // - The merge block of that construct is reachable.
+  // - |block_id| dominates that merge block.
+  // - That merge block may not be an acceptable successor of |block_id|.
+  // - There must be at least one |block_id|'s acceptable successor for every
+  //   predecessor of the merge block, dominating that predecessor.
+  // A simple example of when we can insert an OpPhi instruction is:
+  // - This snippet of code:
+  //    %1 = OpLabel
+  //    %2 = OpUndef %int
+  //         OpSelectionMerge %5 None
+  //         OpBranchConditional %cond %3 %4
+  //    %3 = OpLabel
+  //         OpBranch %5
+  //    %4 = OpLabel
+  //         OpBranch %5
+  //    %5 = OpLabel
+  //         ...
+  //   will be transformed into the following one (if %2 is propagated):
+  //    %1 = OpLabel
+  //         OpSelectionMerge %5 None
+  //         OpBranchConditional %cond %3 %4
+  //    %3 = OpLabel
+  //    %6 = OpUndef %int
+  //         OpBranch %5
+  //    %4 = OpLabel
+  //    %7 = OpUndef %int
+  //         OpBranch %5
+  //    %5 = OpLabel
+  //    %8 = OpPhi %int %6 %3 %7 %4
+  //         ...
+  // The fact that we introduce an OpPhi allows us to increase the applicability
+  // of the transformation. Concretely, we wouldn't be able to apply it in the
+  // example above if %2 were used in %5. Some more complicated examples can be
+  // found in unittests.
   static bool CanAddOpPhiInstruction(
-      opt::IRContext* ir_context, uint32_t maybe_header_block_id,
+      opt::IRContext* ir_context, uint32_t block_id,
       const opt::Instruction& inst_to_propagate,
       const std::unordered_set<uint32_t>& successor_ids);
 

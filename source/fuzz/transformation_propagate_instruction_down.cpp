@@ -46,7 +46,7 @@ bool TransformationPropagateInstructionDown::IsApplicable(
 
   for (auto id : GetAcceptableSuccessors(ir_context, message_.block_id())) {
     // Each successor must have a fresh id in the |successor_id_to_fresh_id|
-    // map. We use overflow ids if available.
+    // map, unless overflow ids are available.
     if (!successor_id_to_fresh_id.count(id) &&
         !transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
       return false;
@@ -162,20 +162,23 @@ void TransformationPropagateInstructionDown::Apply(
   // Make sure analyses are updated when we adjust users of |inst_to_propagate|.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
+  // Copy decorations from the original instructions to its propagated copies.
+  for (auto id : created_inst_ids) {
+    ir_context->get_decoration_mgr()->CloneDecorations(
+        inst_to_propagate->result_id(), id);
+  }
+
+  // Remove all decorations from the original instruction.
+  ir_context->get_decoration_mgr()->RemoveDecorationsFrom(
+      inst_to_propagate->result_id());
+
   // Update every use of the |inst_to_propagate| with a result id of some of the
   // newly created instructions.
   ir_context->get_def_use_mgr()->ForEachUse(
       inst_to_propagate, [ir_context, &created_inst_ids](
                              opt::Instruction* user, uint32_t operand_index) {
-        if (!ir_context->get_instr_block(user)) {
-          // We need to update global instructions (e.g. OpDecorate since we
-          // will remove |inst_to_propagate| from the module later.
-          //
-          // TODO(review): Should we add similar OpDecorate for every id in
-          //  |created_inst_ids|?
-          user->SetOperand(operand_index, {created_inst_ids.front()});
-          return;
-        }
+        assert(ir_context->get_instr_block(user) &&
+               "All decorations should have already been adjusted");
 
         auto in_operand_index =
             fuzzerutil::InOperandIndexFromOperandIndex(*user, operand_index);
@@ -193,9 +196,6 @@ void TransformationPropagateInstructionDown::Apply(
       });
 
   // Add synonyms about newly created instructions.
-  //
-  // TODO(review): Not sure if we should do this: it will probably be only
-  //  useful if we create OpPhi instruction.
   assert(inst_to_propagate->HasResultId() &&
          "Result id is required to add facts");
   for (auto id : created_inst_ids) {
@@ -209,7 +209,7 @@ void TransformationPropagateInstructionDown::Apply(
     }
   }
 
-  // Remove the propagate instruction from the module.
+  // Remove the propagated instruction from the module.
   ir_context->KillInst(inst_to_propagate);
 
   // We've adjusted all users - make sure these changes are analyzed.
@@ -512,30 +512,35 @@ TransformationPropagateInstructionDown::GetAcceptableSuccessors(
 }
 
 bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
-    opt::IRContext* ir_context, uint32_t maybe_header_block_id,
+    opt::IRContext* ir_context, uint32_t block_id,
     const opt::Instruction& inst_to_propagate,
     const std::unordered_set<uint32_t>& successor_ids) {
-  const auto* block = ir_context->cfg()->block(maybe_header_block_id);
-  const auto* dominator_analysis =
-      ir_context->GetDominatorAnalysis(block->GetParent());
-
-  // We must propagate from the header block to be able to insert an OpPhi
-  // instruction.
-  const auto* merge_inst = block->GetMergeInst();
-  if (!merge_inst) {
+  // |block| must belong to some construct.
+  auto merge_block_id =
+      ir_context->GetStructuredCFGAnalysis()->MergeBlock(block_id);
+  if (!merge_block_id) {
     return false;
   }
 
-  auto merge_block_id = merge_inst->GetSingleWordInOperand(0);
+  const auto* block = ir_context->cfg()->block(block_id);
+  const auto* dominator_analysis =
+      ir_context->GetDominatorAnalysis(block->GetParent());
 
-  // Check that |merge_block_id| is reachable in the CFG. If it is, then the
-  // header block must dominate it according to structured control flow rules.
-  if (!dominator_analysis->IsReachable(merge_block_id)) {
+  // Check that |merge_block_id| is reachable in the CFG and |block_id|
+  // dominates |merge_block_id|.
+  if (!dominator_analysis->IsReachable(merge_block_id) ||
+      !dominator_analysis->Dominates(block_id, merge_block_id)) {
+    return false;
+  }
+
+  // We can't insert an OpPhi into |merge_block_id| if it's an acceptable
+  // successor of |block_id|.
+  if (successor_ids.count(merge_block_id)) {
     return false;
   }
 
   // All predecessors of the merge block must be dominated by at least one
-  // successor of the header block.
+  // successor of the |block_id|.
   assert(!ir_context->cfg()->preds(merge_block_id).empty() &&
          "Merge block must be reachable");
   for (auto predecessor_id : ir_context->cfg()->preds(merge_block_id)) {
@@ -548,21 +553,6 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
       return false;
     }
   }
-
-  // If the merge block is a successor, then it's either an acceptable one or
-  // not.
-  //
-  // In the former case, there is no point in inserting an OpPhi into it.
-  //
-  // In both cases, we would need at least one of the acceptable successors to
-  // dominate the merge block's predecessor - |maybe_header_block_id|. This is
-  // possible if one of the successors is a loop header since the loop header
-  // dominates its back-edge block. But it this case, |maybe_header_block_id| is
-  // not a header.
-  //
-  // Thus, this assertion should always succeed.
-  assert(!block->IsSuccessor(ir_context->cfg()->block(merge_block_id)) &&
-         "Merge can't be a header's successor");
 
   const auto* propagate_type =
       ir_context->get_type_mgr()->GetType(inst_to_propagate.type_id());
