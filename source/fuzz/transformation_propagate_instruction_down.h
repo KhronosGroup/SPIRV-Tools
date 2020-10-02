@@ -111,7 +111,7 @@ class TransformationPropagateInstructionDown : public Transformation {
   // - We can't propagate neither OpBranch nor OpStore since they
   //   both have unsupported opcodes and have neither result ids nor type ids.
   // - We can't propagate %3 either since it is used by OpStore.
-  // - We can propagate %2 since it satisfies all out conditions.
+  // - We can propagate %2 since it satisfies all our conditions.
   // The basic idea behind this method it to make sure that the returned
   // instruction will not break domination rules in its original block when
   // propagated.
