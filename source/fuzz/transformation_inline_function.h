@@ -67,8 +67,9 @@ class TransformationInlineFunction : public Transformation {
 
   // Inline |instruction_to_be_inlined| by setting its ids to the corresponding
   // ids in |result_id_map|.
-  void AdaptInlinedInstruction(opt::IRContext* ir_context,
-                               opt::Instruction* instruction) const;
+  void AdaptInlinedInstruction(
+      const std::map<uint32_t, uint32_t>& result_id_map,
+      opt::IRContext* ir_context, opt::Instruction* instruction) const;
 };
 
 }  // namespace fuzz
