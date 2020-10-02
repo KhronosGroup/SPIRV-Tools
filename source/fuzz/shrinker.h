@@ -37,6 +37,7 @@ class Shrinker {
     kInitialBinaryNotInteresting,
     kReplayFailed,
     kStepLimitReached,
+    kAddedFunctionReductionFailed,
   };
 
   struct ShrinkerResult {
@@ -107,7 +108,7 @@ class Shrinker {
   // The series of transformations to be shrunk.
   const protobufs::TransformationSequence& transformation_sequence_in_;
 
-  // Function that decides whether a given binary is interesting.
+  // Function that decides whether a given module is interesting.
   const InterestingnessFunction& interestingness_function_;
 
   // Step limit to decide when to terminate shrinking early.

@@ -73,7 +73,6 @@ class TransformationAddFunction : public Transformation {
   static uint32_t GetBackEdgeBlockId(opt::IRContext* ir_context,
                                      uint32_t loop_header_block_id);
 
- private:
   // Attempts to create a function from the series of instructions in
   // |message_.instruction| and add it to |ir_context|.
   //
@@ -94,6 +93,7 @@ class TransformationAddFunction : public Transformation {
   //   to add the function.
   bool TryToAddFunction(opt::IRContext* ir_context) const;
 
+ private:
   // Should only be called if |message_.is_livesafe| holds.  Attempts to make
   // the function livesafe (see FactFunctionIsLivesafe for a definition).
   // Returns false if this is not possible, due to |message_| or |ir_context|

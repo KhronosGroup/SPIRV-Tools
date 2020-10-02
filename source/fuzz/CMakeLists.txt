@@ -36,6 +36,7 @@ if(SPIRV_BUILD_FUZZER)
   )
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
+        added_function_reducer.h
         call_graph.h
         comparator_deep_blocks_first.h
         counter_overflow_id_source.h
@@ -218,6 +219,7 @@ if(SPIRV_BUILD_FUZZER)
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
+        added_function_reducer.cpp
         call_graph.cpp
         counter_overflow_id_source.cpp
         data_descriptor.cpp
@@ -429,6 +431,7 @@ if(SPIRV_BUILD_FUZZER)
   target_link_libraries(SPIRV-Tools-fuzz
         PUBLIC ${SPIRV_TOOLS}-static
         PUBLIC SPIRV-Tools-opt
+        PUBLIC SPIRV-Tools-reduce
         PUBLIC protobuf::libprotobuf)
 
   set_property(TARGET SPIRV-Tools-fuzz PROPERTY FOLDER "SPIRV-Tools libraries")
