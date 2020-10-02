@@ -381,6 +381,58 @@ message SideEffectWrapperInfo {
   uint32 value_to_copy_id = 7;
 }
 
+message ReturnMergingInfo {
+  // TransformationMergeFunctionReturns needs to modify each merge block of
+  // loops containing return instructions, by:
+  // - adding instructions to decide whether the function is returning
+  // - adding instructions to pass on the return value of the function,
+  //   if it is returning
+  // - changing the branch instruction (which must be an unconditional branch)
+  //   to a conditional branch that, if the function is returning, branches to
+  //   the merge block of the innermost loop that contains this merge block
+  //   (which can be the new merge block introduced by the transformation).
+  //
+  // One such merge block of the form:
+  //  %block = OpLabel
+  //   %phi1 = OpPhi %type1 %val1_1 %pred1 %val1_2 %pred2
+  //   %phi2 = OpPhi %type2 %val2_1 %pred1 %val2_2 %pred2
+  //           OpBranch %next
+  //
+  // is transformed into:
+  //               %block = OpLabel
+  //     %is_returning_id = OpPhi %bool %false %pred1 %false %pred2 %true %ret_bb1 %is_bb2_returning %mer_bb2
+  // %maybe_return_val_id = OpPhi %return_type %any_returnable_val %pred1 %any_returnable_val %pred2
+  //                                            %ret_val1 %ret_bb1 %ret_val2 %mer_bb2
+  //                %phi1 = OpPhi %type1 %val1_1 %pred1 %val1_2 %pred2
+  //                                     %any_suitable_id_1 %ret_bb1 %any_suitable_id_1 %mer_bb2
+  //                %phi2 = OpPhi %type2 %val2_1 %pred1 %val2_2 %pred2
+  //                                     %any_suitable_id_1 %ret_bb1 %any_suitable_id_1 %mer_bb2
+  //                        OpBranchConditional %is_returning_id %innermost_loop_merge %next
+  //
+  // where %ret_bb1 is a block that originally contains a return instruction and %mer_bb2 is the merge block of an inner
+  // loop, from where the function might be returning.
+  //
+  // Note that the block is required to only have OpLabel, OpPhi or OpBranch instructions.
+
+  // The id of the merge block that needs to be modified.
+  uint32 merge_block_id = 1;
+
+  // A fresh id for a boolean OpPhi whose value will be true iff the function
+  // is returning. This will be used to decide whether to break out of the loop
+  // or to use the original branch of the function. This value will also be
+  // used by the merge block of the enclosing loop (if there is one) if the
+  // function is returning from this block.
+  uint32 is_returning_id = 2;
+
+  // A fresh id that will get the value being returned, if the function is
+  // returning. If the function return type is void, this is ignored.
+  uint32 maybe_return_val_id = 3;
+
+  // A mapping from each existing OpPhi id to a suitable id of the same type
+  // available to use before the instruction.
+  repeated UInt32Pair opphi_to_suitable_id = 4;
+}
+
 message LoopLimiterInfo {
 
   // Structure capturing the information required to manipulate a loop limiter
@@ -1487,6 +1539,65 @@ message TransformationMergeBlocks {
   // block will have the *predecessor's* id.
   uint32 block_id = 1;
 
+}
+
+message TransformationMergeFunctionReturns {
+
+  // A transformation that modifies a function so that it does not return early,
+  // so it only has one return statement (ignoring unreachable blocks).
+  //
+  // The function is enclosed inside an outer loop, that is only executed once,
+  // and whose merge block is the new return block of the function.
+  //
+  // Each return instruction is replaced by:
+  //     OpBranch %innermost_loop_merge
+  // where %innermost_loop_merge is the innermost loop containing the return
+  // instruction.
+  //
+  // Each merge block whose associated loop contains return instructions is
+  // changed so that it branches to the merge block of the loop containing it,
+  // as explained in the comments to the ReturnMergingInfo message.
+  //
+  // The new return block (the merge block of the new outer loop) will be of
+  // the following form (if the return type is not void):
+  //  %outer_return_id = OpLabel
+  //   %return_val_id = OpPhi %return_type %val1 %block_1 %val2 %block_2 ...
+  //                    OpReturnValue %return_val_id
+  // where %block_k is either a return block that, in the original function, is
+  // outside of any loops, or the merge block of a loop that contains return
+  // instructions and is not, originally, nested inside another loop, and
+  // %block_k is the corresponding return value.
+  // If the function has void type, there will be no OpPhi instruction and the
+  // last instruction will be OpReturn.
+
+  // The id of the function to which the transformation is being applied.
+  uint32 function_id = 1;
+
+  // A fresh id for the header of the new outer loop.
+  uint32 outer_header_id = 2;
+
+  // A fresh id for the new return block of the function,
+  // i.e. the merge block of the new outer loop.
+  uint32 outer_return_id = 3;
+
+  // A fresh id for the value that will be returned.
+  // This is ignored if the function has void return type.
+  uint32 return_val_id = 4;
+
+  // An existing id of the same type as the return value, which is
+  // available to use at the end of the entry block.
+  // This is ignored if the function has void return type or if no
+  // loops in the function contain a return instruction.
+  // If the function is not void, the transformation will add an
+  // OpPhi instruction to each merge block whose associated loop
+  // contains at least a return instruction. The value associated
+  // with existing predecessors from which the function cannot be
+  // returning will be this id, used as a placeholder.
+  uint32 any_returnable_val_id = 5;
+
+  // The information needed to modify the merge blocks of
+  // loops containing return instructions.
+  repeated ReturnMergingInfo return_merging_info = 6;
 }
 
 message TransformationMoveBlockDown {

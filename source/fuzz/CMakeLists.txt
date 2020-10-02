@@ -91,6 +91,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_interchange_zero_like_constants.h
         fuzzer_pass_make_vector_operations_dynamic.h
         fuzzer_pass_merge_blocks.h
+        fuzzer_pass_merge_function_returns.h
         fuzzer_pass_mutate_pointers.h
         fuzzer_pass_obfuscate_constants.h
         fuzzer_pass_outline_functions.h
@@ -180,6 +181,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_load.h
         transformation_make_vector_operation_dynamic.h
         transformation_merge_blocks.h
+        transformation_merge_function_returns.h
         transformation_move_block_down.h
         transformation_move_instruction_down.h
         transformation_mutate_pointer.h
@@ -269,6 +271,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_interchange_zero_like_constants.cpp
         fuzzer_pass_make_vector_operations_dynamic.cpp
         fuzzer_pass_merge_blocks.cpp
+        fuzzer_pass_merge_function_returns.cpp
         fuzzer_pass_mutate_pointers.cpp
         fuzzer_pass_obfuscate_constants.cpp
         fuzzer_pass_outline_functions.cpp
@@ -356,6 +359,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_load.cpp
         transformation_make_vector_operation_dynamic.cpp
         transformation_merge_blocks.cpp
+        transformation_merge_function_returns.cpp
         transformation_move_block_down.cpp
         transformation_move_instruction_down.cpp
         transformation_mutate_pointer.cpp

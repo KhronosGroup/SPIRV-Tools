@@ -188,8 +188,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
   if (&pass == pass_instances_->GetDonateModules()) {
     // - New functions in the module can be called
     // - Donated dead functions produce irrelevant ids, which can be replaced
+    // - Donated functions are good candidates for having their returns merged
     return RandomOrderAndNonNull({pass_instances_->GetAddFunctionCalls(),
-                                  pass_instances_->GetReplaceIrrelevantIds()});
+                                  pass_instances_->GetReplaceIrrelevantIds(),
+                                  pass_instances_->GetMergeFunctionReturns()});
   }
   if (&pass == pass_instances_->GetDuplicateRegionsWithSelections()) {
     // - Parts of duplicated regions can be outlined
@@ -220,6 +222,11 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // - Having merged some blocks it may be interesting to split them in a
     //   different way
     return RandomOrderAndNonNull({pass_instances_->GetSplitBlocks()});
+  }
+  if (&pass == pass_instances_->GetMergeFunctionReturns()) {
+    // - Functions without early returns are more likely to be able to be
+    //   inlined.
+    return RandomOrderAndNonNull({pass_instances_->GetInlineFunctions()});
   }
   if (&pass == pass_instances_->GetMutatePointers()) {
     // - This creates irrelevant ids, which can be replaced
