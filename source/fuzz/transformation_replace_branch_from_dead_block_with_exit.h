@@ -28,7 +28,9 @@ class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
   explicit TransformationReplaceBranchFromDeadBlockWithExit(
       const protobufs::TransformationReplaceBranchFromDeadBlockWithExit& message);
 
-  TransformationReplaceBranchFromDeadBlockWithExit(/* TODO */);
+  TransformationReplaceBranchFromDeadBlockWithExit(uint32_t block_id,
+                                                   SpvOp opcode,
+                                                   uint32_t return_value_id);
 
   // TODO comment
   bool IsApplicable(opt::IRContext* ir_context,

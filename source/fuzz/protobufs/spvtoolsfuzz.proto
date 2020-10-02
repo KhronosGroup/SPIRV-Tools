@@ -1866,7 +1866,19 @@ message TransformationReplaceAddSubMulWithCarryingExtended {
 
 message TransformationReplaceBranchFromDeadBlockWithExit {
 
-  // TODO comment and populate
+  // Given a dead block that ends with OpBranch, replaces OpBranch with an
+  // "exit" instruction; one of OpReturn/OpReturnValue, OpKill (in a fragment
+  // shader) or OpUnreachable.
+
+  // The dead block whose terminator is to be replaced.
+  uint32 block_id = 1;
+
+  // The opcode of the new terminator.
+  uint32 opcode = 2;
+
+  // Ignored unless opcode is OpReturnValue, in which case this field provides
+  // a suitable result id to be returned.
+  uint32 return_value_id = 3;
 
 }
 
