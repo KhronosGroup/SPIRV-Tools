@@ -33,7 +33,8 @@ TransformationInlineFunction::TransformationInlineFunction(
 }
 
 bool TransformationInlineFunction::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // The values in the |message_.result_id_map| must be all fresh and all
   // distinct.
   const auto result_id_map =
@@ -71,7 +72,8 @@ bool TransformationInlineFunction::IsApplicable(
     // Since the entry block label will not be inlined, only the remaining
     // labels must have a corresponding value in the map.
     if (&block != &*called_function->entry() &&
-        !result_id_map.count(block.GetLabel()->result_id())) {
+        !result_id_map.count(block.id()) &&
+        !transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
       return false;
     }
 
@@ -81,7 +83,8 @@ bool TransformationInlineFunction::IsApplicable(
       // If |instruction| has result id, then it must have a mapped id in
       // |result_id_map|.
       if (instruction.HasResultId() &&
-          !result_id_map.count(instruction.result_id())) {
+          !result_id_map.count(instruction.result_id()) &&
+          !transformation_context.GetOverflowIdSource()->HasOverflowIds()) {
         return false;
       }
     }
@@ -100,15 +103,37 @@ bool TransformationInlineFunction::IsApplicable(
 }
 
 void TransformationInlineFunction::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
   auto* function_call_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.function_call_id());
   auto* caller_function =
       ir_context->get_instr_block(function_call_instruction)->GetParent();
   auto* called_function = fuzzerutil::FindFunction(
       ir_context, function_call_instruction->GetSingleWordInOperand(0));
-  const auto result_id_map =
+  std::map<uint32_t, uint32_t> result_id_map =
       fuzzerutil::RepeatedUInt32PairToMap(message_.result_id_map());
+
+  // If there are gaps in the result id map, fill them using overflow ids.
+  for (auto& block : *called_function) {
+    if (&block != &*called_function->entry() &&
+        !result_id_map.count(block.id())) {
+      result_id_map.insert(
+          {block.id(),
+           transformation_context->GetOverflowIdSource()->GetNextOverflowId()});
+    }
+    for (auto& instruction : block) {
+      // If |instruction| has result id, then it must have a mapped id in
+      // |result_id_map|.
+      if (instruction.HasResultId() &&
+          !result_id_map.count(instruction.result_id())) {
+        result_id_map.insert({instruction.result_id(),
+                              transformation_context->GetOverflowIdSource()
+                                  ->GetNextOverflowId()});
+      }
+    }
+  }
+
   auto* successor_block = ir_context->cfg()->block(
       ir_context->get_instr_block(function_call_instruction)
           ->terminator()
@@ -128,7 +153,7 @@ void TransformationInlineFunction::Apply(
           MakeUnique<opt::Instruction>(entry_block_instruction));
     }
 
-    AdaptInlinedInstruction(ir_context, inlined_instruction);
+    AdaptInlinedInstruction(result_id_map, ir_context, inlined_instruction);
   }
 
   // Inline the |called_function| non-entry blocks.
@@ -141,13 +166,11 @@ void TransformationInlineFunction::Apply(
     cloned_block = caller_function->InsertBasicBlockBefore(
         std::unique_ptr<opt::BasicBlock>(cloned_block), successor_block);
     cloned_block->SetParent(caller_function);
-    cloned_block->GetLabel()->SetResultId(
-        result_id_map.at(cloned_block->GetLabel()->result_id()));
-    fuzzerutil::UpdateModuleIdBound(ir_context,
-                                    cloned_block->GetLabel()->result_id());
+    cloned_block->GetLabel()->SetResultId(result_id_map.at(cloned_block->id()));
+    fuzzerutil::UpdateModuleIdBound(ir_context, cloned_block->id());
 
     for (auto& inlined_instruction : *cloned_block) {
-      AdaptInlinedInstruction(ir_context, &inlined_instruction);
+      AdaptInlinedInstruction(result_id_map, ir_context, &inlined_instruction);
     }
   }
 
@@ -202,14 +225,13 @@ bool TransformationInlineFunction::IsSuitableForInlining(
 }
 
 void TransformationInlineFunction::AdaptInlinedInstruction(
+    const std::map<uint32_t, uint32_t>& result_id_map,
     opt::IRContext* ir_context,
     opt::Instruction* instruction_to_be_inlined) const {
   auto* function_call_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.function_call_id());
   auto* called_function = fuzzerutil::FindFunction(
       ir_context, function_call_instruction->GetSingleWordInOperand(0));
-  const auto result_id_map =
-      fuzzerutil::RepeatedUInt32PairToMap(message_.result_id_map());
 
   const auto* function_call_block =
       ir_context->get_instr_block(function_call_instruction);

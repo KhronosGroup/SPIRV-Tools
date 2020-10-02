@@ -33,7 +33,7 @@ class TransformationInlineFunction : public Transformation {
       const std::map<uint32_t, uint32_t>& result_id_map);
 
   // - |message_.result_id_map| must map the instructions of the called function
-  //   to fresh ids.
+  //   to fresh ids, unless overflow ids are available.
   // - |message_.function_call_id| must be an OpFunctionCall instruction.
   //   It must not have an early return and must not use OpUnreachable or
   //   OpKill. This is to guard against making the module invalid when the
@@ -67,8 +67,9 @@ class TransformationInlineFunction : public Transformation {
 
   // Inline |instruction_to_be_inlined| by setting its ids to the corresponding
   // ids in |result_id_map|.
-  void AdaptInlinedInstruction(opt::IRContext* ir_context,
-                               opt::Instruction* instruction) const;
+  void AdaptInlinedInstruction(
+      const std::map<uint32_t, uint32_t>& result_id_map,
+      opt::IRContext* ir_context, opt::Instruction* instruction) const;
 };
 
 }  // namespace fuzz
