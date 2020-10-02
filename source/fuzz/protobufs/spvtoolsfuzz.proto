@@ -551,6 +551,7 @@ message Transformation {
     TransformationAddBitInstructionSynonym add_bit_instruction_synonym = 77;
     TransformationAddLoopToCreateIntConstantSynonym add_loop_to_create_int_constant_synonym = 78;
     TransformationWrapRegionInSelection wrap_region_in_selection = 79;
+    TransformationAddEarlyTerminationWrapper add_early_termination_wrapper = 80;
     // Add additional option using the next available number.
   }
 }
@@ -761,6 +762,12 @@ message TransformationAddDeadContinue {
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
   repeated uint32 phi_id = 3;
+
+}
+
+message TransformationAddEarlyTerminationWrapper {
+
+  // TODO comment and populate
 
 }
 
