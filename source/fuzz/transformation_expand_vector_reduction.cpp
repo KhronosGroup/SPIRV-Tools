@@ -35,7 +35,8 @@ TransformationExpandVectorReduction::TransformationExpandVectorReduction(
 }
 
 bool TransformationExpandVectorReduction::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   auto* instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
 
@@ -49,6 +50,18 @@ bool TransformationExpandVectorReduction::IsApplicable(
     return false;
   }
 
+  // |instruction| must not be irrelevant.
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          instruction->result_id())) {
+    return false;
+  }
+
+  // |instruction| block must not be a dead block.
+  if (transformation_context.GetFactManager()->BlockIsDead(
+          instruction->result_id())) {
+    return false;
+  }
+
   // |message_.fresh_ids.size| must have the exact number of fresh ids required
   // to apply the transformation.
   if (static_cast<uint32_t>(message_.fresh_ids().size()) !=
@@ -56,9 +69,16 @@ bool TransformationExpandVectorReduction::IsApplicable(
     return false;
   }
 
-  // All ids in |message_.fresh_ids| must be fresh.
+  std::set<uint32_t> ids_used_by_this_transformation;
   for (uint32_t fresh_id : message_.fresh_ids()) {
+    // All ids in |message_.fresh_ids| must be fresh.
     if (!fuzzerutil::IsFreshId(ir_context, fresh_id)) {
+      return false;
+    }
+
+    // All fresh ids need to be distinct.
+    if (!CheckIdIsFreshAndNotUsedByThisTransformation(
+            fresh_id, ir_context, &ids_used_by_this_transformation)) {
       return false;
     }
   }

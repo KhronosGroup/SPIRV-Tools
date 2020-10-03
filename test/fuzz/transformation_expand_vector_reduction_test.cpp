@@ -44,6 +44,13 @@ TEST(TransformationExpandVectorReductionTest, IsApplicable) {
          %10 = OpLabel
          %11 = OpAny %2 %8
          %12 = OpAll %2 %8
+               OpSelectionMerge %16 None
+               OpBranchConditional %7 %13 %16
+         %13 = OpLabel
+         %14 = OpAny %2 %8
+         %15 = OpAll %2 %8
+               OpBranch %16
+         %16 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -59,21 +66,33 @@ TEST(TransformationExpandVectorReductionTest, IsApplicable) {
       MakeUnique<FactManager>(context.get()), validator_options);
 
   // Tests undefined instruction.
-  auto transformation = TransformationExpandVectorReduction(13, {14, 15, 16});
+  auto transformation = TransformationExpandVectorReduction(17, {18, 19, 20});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests non OpAny or OpAll instruction.
-  transformation = TransformationExpandVectorReduction(10, {13, 14, 15});
+  transformation = TransformationExpandVectorReduction(10, {17, 18, 19});
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests irrelevant instruction.
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(14);
+  transformation = TransformationExpandVectorReduction(14, {17, 18, 19});
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Tests instruction block being a dead block.
+  transformation_context.GetFactManager()->AddFactBlockIsDead(13);
+  transformation = TransformationExpandVectorReduction(15, {17, 18, 19});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
   // Tests the number of fresh ids being different than the necessary.
-  transformation = TransformationExpandVectorReduction(11, {13, 14});
+  transformation = TransformationExpandVectorReduction(11, {17, 18});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationExpandVectorReduction(12, {13, 14, 15, 16});
+  transformation = TransformationExpandVectorReduction(12, {17, 18, 19, 20});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
@@ -82,12 +101,17 @@ TEST(TransformationExpandVectorReductionTest, IsApplicable) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
+  // Tests duplicated fresh ids.
+  transformation = TransformationExpandVectorReduction(11, {17, 17, 18});
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
   // Tests applicable transformations.
-  transformation = TransformationExpandVectorReduction(11, {13, 14, 15});
+  transformation = TransformationExpandVectorReduction(11, {17, 18, 19});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  transformation = TransformationExpandVectorReduction(12, {16, 17, 18});
+  transformation = TransformationExpandVectorReduction(12, {20, 21, 22});
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
 }
