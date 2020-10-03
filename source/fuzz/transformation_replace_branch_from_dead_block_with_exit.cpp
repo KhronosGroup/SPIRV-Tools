@@ -14,16 +14,21 @@
 
 #include "source/fuzz/transformation_replace_branch_from_dead_block_with_exit.h"
 
+#include "source/fuzz/fuzzer_util.h"
+
 namespace spvtools {
 namespace fuzz {
 
-TransformationReplaceBranchFromDeadBlockWithExit::TransformationReplaceBranchFromDeadBlockWithExit(
-    const spvtools::fuzz::protobufs::TransformationReplaceBranchFromDeadBlockWithExit& message)
+TransformationReplaceBranchFromDeadBlockWithExit::
+    TransformationReplaceBranchFromDeadBlockWithExit(
+        const spvtools::fuzz::protobufs::
+            TransformationReplaceBranchFromDeadBlockWithExit& message)
     : message_(message) {}
 
-TransformationReplaceBranchFromDeadBlockWithExit::TransformationReplaceBranchFromDeadBlockWithExit(uint32_t block_id,
-                                                                                                   SpvOp opcode,
-                                                                                                   uint32_t return_value_id) {
+TransformationReplaceBranchFromDeadBlockWithExit::
+    TransformationReplaceBranchFromDeadBlockWithExit(uint32_t block_id,
+                                                     SpvOp opcode,
+                                                     uint32_t return_value_id) {
   message_.set_block_id(block_id);
   message_.set_opcode(opcode);
   message_.set_return_value_id(return_value_id);
@@ -32,23 +37,75 @@ TransformationReplaceBranchFromDeadBlockWithExit::TransformationReplaceBranchFro
 bool TransformationReplaceBranchFromDeadBlockWithExit::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
+  // The block whose terminator is to be changed must exist.
   auto block = ir_context->get_instr_block(message_.block_id());
   if (!block) {
     return false;
   }
+  // The block must be dead.
   if (!transformation_context.GetFactManager()->BlockIsDead(block->id())) {
     return false;
   }
+  // The block's terminator must be OpBranch.
   if (block->terminator()->opcode() != SpvOpBranch) {
     return false;
   }
-  if (ir_context->GetStructuredCFGAnalysis()->IsInContinueConstruct(block->id())) {
+
+  auto function_return_type_id = block->GetParent()->type_id();
+  switch (message_.opcode()) {
+    case SpvOpKill:
+      for (auto& entry_point : ir_context->module()->entry_points()) {
+        if (entry_point.GetSingleWordInOperand(0) !=
+            SpvExecutionModelFragment) {
+          // OpKill is only allowed in a fragment shader.  This is a
+          // conservative check: if the module contains a non-fragment entry
+          // point then adding an OpKill might lead to OpKill being used in a
+          // non-fragment shader.
+          return false;
+        }
+      }
+      break;
+    case SpvOpReturn:
+      if (ir_context->get_def_use_mgr()
+              ->GetDef(function_return_type_id)
+              ->opcode() != SpvOpTypeVoid) {
+        // OpReturn is only allowed in a function with void return type.
+        return false;
+      }
+      break;
+    case SpvOpReturnValue: {
+      // If the terminator is to be changed to OpReturnValue, with
+      // |message_.return_value_id| being the value that will be returned, then
+      // |message_.return_value_id| must have a compatible type and be available
+      // at the block terminator.
+      auto return_value =
+          ir_context->get_def_use_mgr()->GetDef(message_.return_value_id());
+      if (!return_value || return_value->type_id() != function_return_type_id) {
+        return false;
+      }
+      if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+              ir_context, block->terminator(), message_.return_value_id())) {
+        return false;
+      }
+      break;
+    }
+    default:
+      assert(message_.opcode() == SpvOpUnreachable &&
+             "Invalid early exit opcode.");
+      break;
+  }
+
+  if (ir_context->GetStructuredCFGAnalysis()->IsInContinueConstruct(
+          block->id())) {
+    // Early exits from continue constructs are not allowed as they would break
+    // the SPIR-V structured control flow rules.
     return false;
   }
-  auto successor = ir_context->get_instr_block(block->terminator()->GetSingleWordInOperand(0));
-  auto predecessors_of_successor = ir_context->cfg()->preds(successor->id());
-  std::set<uint32_t> unique_predecessors_of_successor(predecessors_of_successor.begin(), predecessors_of_successor.end());
-  if (unique_predecessors_of_successor.size() < 2) {
+  // We only allow changing OpBranch to an early terminator if the target of the
+  // OpBranch has at least one other predecessor.
+  auto successor = ir_context->get_instr_block(
+      block->terminator()->GetSingleWordInOperand(0));
+  if (ir_context->cfg()->preds(successor->id()).size() < 2) {
     return false;
   }
   return true;
@@ -56,21 +113,25 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::IsApplicable(
 
 void TransformationReplaceBranchFromDeadBlockWithExit::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  auto terminator = ir_context->get_instr_block(message_.block_id())->terminator();
-  terminator->SetOpcode(static_cast<SpvOp>(message_.opcode()));
-  opt::Instruction::OperandList operands;
+  opt::Instruction::OperandList new_operands;
   if (message_.opcode() == SpvOpReturnValue) {
-    operands.push_back({ SPV_OPERAND_TYPE_TYPE_ID, { message_.return_value_id()}});
+    new_operands.push_back(
+        {SPV_OPERAND_TYPE_TYPE_ID, {message_.return_value_id()}});
   }
-  terminator->SetInOperands(std::move(operands));
+  auto terminator =
+      ir_context->get_instr_block(message_.block_id())->terminator();
+  terminator->SetOpcode(static_cast<SpvOp>(message_.opcode()));
+  terminator->SetInOperands(std::move(new_operands));
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
-std::unordered_set<uint32_t> TransformationReplaceBranchFromDeadBlockWithExit::GetFreshIds() const {
+std::unordered_set<uint32_t>
+TransformationReplaceBranchFromDeadBlockWithExit::GetFreshIds() const {
   return std::unordered_set<uint32_t>();
 }
 
-protobufs::Transformation TransformationReplaceBranchFromDeadBlockWithExit::ToMessage() const {
+protobufs::Transformation
+TransformationReplaceBranchFromDeadBlockWithExit::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_replace_branch_from_dead_block_with_exit() = message_;
   return result;

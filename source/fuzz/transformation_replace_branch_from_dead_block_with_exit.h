@@ -26,18 +26,37 @@ namespace fuzz {
 class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
  public:
   explicit TransformationReplaceBranchFromDeadBlockWithExit(
-      const protobufs::TransformationReplaceBranchFromDeadBlockWithExit& message);
+      const protobufs::TransformationReplaceBranchFromDeadBlockWithExit&
+          message);
 
   TransformationReplaceBranchFromDeadBlockWithExit(uint32_t block_id,
                                                    SpvOp opcode,
                                                    uint32_t return_value_id);
 
-  // TODO comment
-  bool IsApplicable(opt::IRContext* ir_context,
-                    const TransformationContext& transformation_context) const override;
+  // - |message_.block_id| must be the id of a dead block that is not part of
+  //   a continue construct
+  // - |message_.block_id| must end with OpBranch
+  // - The successor of |message_.block_id| must have at least one other
+  //   predecessor
+  // - |message_.opcode()| must be one of OpKill, OpReturn, OpReturnValue and
+  //   OpUnreachable
+  // - |message_.opcode()| can only be OpKill the module's entry points all
+  //   have Fragment execution mode
+  // - |message_.opcode()| can only be OpReturn if the return type of the
+  //   function containing the block is void
+  // - If |message_.opcode()| is OpReturnValue then |message_.return_value_id|
+  //   must be an id that is available at the block terminator and that matches
+  //   the return type of the enclosing function
+  bool IsApplicable(
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const override;
 
-  // TODO comment
-  void Apply(opt::IRContext* ir_context, TransformationContext* transformation_context) const override;
+  // Changes the terminator of |message_.block_id| to have opcode
+  // |message_.opcode|, additionally with input operand
+  // |message_.return_value_id| in the case that |message_.opcode| is
+  // OpReturnValue.
+  void Apply(opt::IRContext* ir_context,
+             TransformationContext* transformation_context) const override;
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 

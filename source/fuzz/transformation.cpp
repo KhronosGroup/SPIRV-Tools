@@ -283,7 +283,8 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kReplaceBooleanConstantWithConstantBinary:
       return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(
           message.replace_boolean_constant_with_constant_binary());
-    case protobufs::Transformation::TransformationCase::kReplaceBranchFromDeadBlockWithExit:
+    case protobufs::Transformation::TransformationCase::
+        kReplaceBranchFromDeadBlockWithExit:
       return MakeUnique<TransformationReplaceBranchFromDeadBlockWithExit>(
           message.replace_branch_from_dead_block_with_exit());
     case protobufs::Transformation::TransformationCase::
