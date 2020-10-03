@@ -42,15 +42,9 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::IsApplicable(
   if (!block) {
     return false;
   }
-  // The block must be dead.
-  if (!transformation_context.GetFactManager()->BlockIsDead(block->id())) {
+  if (!BlockIsSuitable(ir_context, transformation_context, *block)) {
     return false;
   }
-  // The block's terminator must be OpBranch.
-  if (block->terminator()->opcode() != SpvOpBranch) {
-    return false;
-  }
-
   auto function_return_type_id = block->GetParent()->type_id();
   switch (message_.opcode()) {
     case SpvOpKill:
@@ -94,20 +88,6 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::IsApplicable(
              "Invalid early exit opcode.");
       break;
   }
-
-  if (ir_context->GetStructuredCFGAnalysis()->IsInContinueConstruct(
-          block->id())) {
-    // Early exits from continue constructs are not allowed as they would break
-    // the SPIR-V structured control flow rules.
-    return false;
-  }
-  // We only allow changing OpBranch to an early terminator if the target of the
-  // OpBranch has at least one other predecessor.
-  auto successor = ir_context->get_instr_block(
-      block->terminator()->GetSingleWordInOperand(0));
-  if (ir_context->cfg()->preds(successor->id()).size() < 2) {
-    return false;
-  }
   return true;
 }
 
@@ -135,6 +115,33 @@ TransformationReplaceBranchFromDeadBlockWithExit::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_replace_branch_from_dead_block_with_exit() = message_;
   return result;
+}
+
+bool TransformationReplaceBranchFromDeadBlockWithExit::BlockIsSuitable(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context,
+    const opt::BasicBlock& block) {
+  // The block must be dead.
+  if (!transformation_context.GetFactManager()->BlockIsDead(block.id())) {
+    return false;
+  }
+  // The block's terminator must be OpBranch.
+  if (block.terminator()->opcode() != SpvOpBranch) {
+    return false;
+  }
+  if (ir_context->GetStructuredCFGAnalysis()->IsInContinueConstruct(
+          block.id())) {
+    // Early exits from continue constructs are not allowed as they would break
+    // the SPIR-V structured control flow rules.
+    return false;
+  }
+  // We only allow changing OpBranch to an early terminator if the target of the
+  // OpBranch has at least one other predecessor.
+  auto successor = ir_context->get_instr_block(
+      block.terminator()->GetSingleWordInOperand(0));
+  if (ir_context->cfg()->preds(successor->id()).size() < 2) {
+    return false;
+  }
 }
 
 }  // namespace fuzz

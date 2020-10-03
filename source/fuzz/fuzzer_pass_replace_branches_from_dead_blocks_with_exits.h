@@ -23,9 +23,10 @@ namespace fuzz {
 // TODO comment
 class FuzzerPassReplaceBranchesFromDeadBlocksWithExits : public FuzzerPass {
  public:
-  FuzzerPassReplaceBranchesFromDeadBlocksWithExits(opt::IRContext* ir_context, TransformationContext* transformation_context,
-                        FuzzerContext* fuzzer_context,
-                        protobufs::TransformationSequence* transformations);
+  FuzzerPassReplaceBranchesFromDeadBlocksWithExits(
+      opt::IRContext* ir_context, TransformationContext* transformation_context,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   ~FuzzerPassReplaceBranchesFromDeadBlocksWithExits();
 

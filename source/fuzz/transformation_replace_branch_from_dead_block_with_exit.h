@@ -18,6 +18,7 @@
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_context.h"
+#include "source/opt/basic_block.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -61,6 +62,12 @@ class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  // TODO comment
+  static bool BlockIsSuitable(
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context,
+      const opt::BasicBlock& block);
 
  private:
   protobufs::TransformationReplaceBranchFromDeadBlockWithExit message_;
