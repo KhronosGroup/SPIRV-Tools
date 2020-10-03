@@ -142,6 +142,7 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::BlockIsSuitable(
   if (ir_context->cfg()->preds(successor->id()).size() < 2) {
     return false;
   }
+  return true;
 }
 
 }  // namespace fuzz
