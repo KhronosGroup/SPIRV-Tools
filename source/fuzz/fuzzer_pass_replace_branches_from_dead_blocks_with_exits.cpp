@@ -104,21 +104,21 @@ void FuzzerPassReplaceBranchesFromDeadBlocksWithExits::Apply() {
     // Transformations of this type can disable one another.  For example,
     // suppose we have dead blocks A, B, C, D arranged as follows:
     //
-    //         A
-    //        / \
-    //       B   C
-    //        \ /
-    //         D
+    //         A         |
+    //        / \        |
+    //       B   C       |
+    //        \ /        |
+    //         D         |
     //
     // Here we can replace the terminator of either B or C with an early exit,
     // because D has two predecessors.  But if we replace the terminator of B,
     // say, we get:
     //
-    //         A
-    //        / \
-    //       B   C
-    //          /
-    //         D
+    //         A         |
+    //        / \        |
+    //       B   C       |
+    //          /        |
+    //         D         |
     //
     // and now it is no longer OK to replace the terminator of C as D only has
     // one predecessor and we do not want to make D unreachable in the control
