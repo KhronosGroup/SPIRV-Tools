@@ -29,7 +29,7 @@ TransformationAddEarlyTerminatorWrapper::
 TransformationAddEarlyTerminatorWrapper::
     TransformationAddEarlyTerminatorWrapper(uint32_t function_fresh_id,
                                             uint32_t label_fresh_id,
-                                            uint32_t opcode) {
+                                            SpvOp opcode) {
   message_.set_function_fresh_id(function_fresh_id);
   message_.set_label_fresh_id(label_fresh_id);
   message_.set_opcode(opcode);

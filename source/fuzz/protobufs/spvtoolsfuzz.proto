@@ -774,10 +774,10 @@ message TransformationAddEarlyTerminatorWrapper {
   // transformations (such as inlining) that are hard in the direct presence
   // of these instructions.
 
-  // Fresh id for the function
+  // Fresh id for the function.
   uint32 function_fresh_id = 1;
 
-  // Fresh id for the single basic block in the function
+  // Fresh id for the single basic block in the function.
   uint32 label_fresh_id = 2;
 
   // One of OpKill, OpUnreachable, OpTerminateInvocation.  If additional early

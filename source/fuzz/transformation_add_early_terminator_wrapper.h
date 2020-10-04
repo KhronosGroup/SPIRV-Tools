@@ -30,17 +30,22 @@ class TransformationAddEarlyTerminatorWrapper : public Transformation {
 
   TransformationAddEarlyTerminatorWrapper(uint32_t function_fresh_id,
                                           uint32_t label_fresh_id,
-                                          uint32_t opcode);
+                                          SpvOp opcode);
 
   // - |message_.function_fresh_id| and |message_.label_fresh_id| must be fresh
-  //   and distinct
-  // - OpTypeVoid must be declared in the module
-  // - The module must contain a type for a zero-argument void function
+  //   and distinct.
+  // - OpTypeVoid must be declared in the module.
+  // - The module must contain a type for a zero-argument void function.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // TODO comment
+  // Adds a function to the module of the form:
+  //
+  // |message_.function_fresh_id| = OpFunction %void None %zero_args_return_void
+  //    |message_.label_fresh_id| = OpLabel
+  //                                |message_.opcode|
+  //                                OpFunctionEnd
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
