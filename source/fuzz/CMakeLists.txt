@@ -220,6 +220,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_conditional_branch_operands.h
         transformation_toggle_access_chain_instruction.h
         transformation_vector_shuffle.h
+        transformation_wrap_early_terminator_in_function.h
         transformation_wrap_region_in_selection.h
         uniform_buffer_element_descriptor.h
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
@@ -404,6 +405,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_conditional_branch_operands.cpp
         transformation_toggle_access_chain_instruction.cpp
         transformation_vector_shuffle.cpp
+        transformation_wrap_early_terminator_in_function.cpp
         transformation_wrap_region_in_selection.cpp
         uniform_buffer_element_descriptor.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc

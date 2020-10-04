@@ -554,6 +554,7 @@ message Transformation {
     TransformationAddEarlyTerminatorWrapper add_early_terminator_wrapper = 80;
     TransformationPropagateInstructionDown propagate_instruction_down = 81;
     TransformationReplaceBranchFromDeadBlockWithExit replace_branch_from_dead_block_with_exit = 82;
+    TransformationWrapEarlyTerminatorInFunction wrap_early_terminator_in_function = 83;
     // Add additional option using the next available number.
   }
 }
@@ -2257,6 +2258,26 @@ message TransformationVectorShuffle {
 
   // Indices that indicate which components of the input vectors should be used.
   repeated uint32 component = 5;
+
+}
+
+message TransformationWrapEarlyTerminatorInFunction {
+
+  // Replaces an early terminator - OpKill, OpReachable or OpTerminateInvocation
+  // - with a call to a wrapper function for the terminator.
+
+  // A fresh id for a new OpFunctionCall instruction.
+  uint32 fresh_id = 1;
+
+  // A descriptor for an OpKill, OpUnreachable or OpTerminateInvocation
+  // instruction.
+  InstructionDescriptor early_terminator_instruction = 2;
+
+  // An id with the same type as the enclosing function's return type that is
+  // available at the early terminator.  This is used to change the terminator
+  // to OpReturnValue.  Ignored if the enclosing function has void return type,
+  // in which case OpReturn can be used as the new terminator.
+  uint32 returned_value_id = 3;
 
 }
 
